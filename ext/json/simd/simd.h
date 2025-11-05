@@ -6,6 +6,10 @@ typedef enum {
     SIMD_SSE2
 } SIMD_Implementation;
 
+#ifndef __has_builtin         // Optional of course.
+  #define __has_builtin(x) 0  // Compatibility with non-clang compilers.
+#endif
+
 #ifdef __clang__
 # if __has_builtin(__builtin_ctzll)
 #   define HAVE_BUILTIN_CTZLL 1

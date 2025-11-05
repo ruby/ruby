@@ -1064,6 +1064,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(s.string, :ascii_only?)
   end
 
+  def test_coderange_after_read_into_buffer
+    s = StringIO.new("01234567890".b)
+
+    buf = "¿Cómo estás? Ça va bien?"
+    assert_not_predicate(buf, :ascii_only?)
+
+    assert_predicate(s.string, :ascii_only?)
+
+    s.read(10, buf)
+
+    assert_predicate(buf, :ascii_only?)
+    assert_equal '0123456789', buf
+  end
+
   require "objspace"
   if ObjectSpace.respond_to?(:dump) && ObjectSpace.dump(eval(%{"test"})).include?('"chilled":true') # Ruby 3.4+ chilled strings
     def test_chilled_string

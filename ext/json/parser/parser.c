@@ -84,17 +84,55 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
     cache->entries[index] = rstring;
 }
 
-static inline int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+#define rstring_cache_memcmp memcmp
+
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+#if __has_builtin(__builtin_bswap64)
+#undef rstring_cache_memcmp
+static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
-    long rstring_length = RSTRING_LEN(rstring);
+    // The libc memcmp has numerous complex optimizations, but in this particular case,
+    // we know the string is small (JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH), so being able to
+    // inline a simpler memcmp outperforms calling the libc version.
+    long i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        uint64_t a, b;
+        memcpy(&a, str + i, 8);
+        memcpy(&b, rptr + i, 8);
+        if (a != b) {
+            a = __builtin_bswap64(a);
+            b = __builtin_bswap64(b);
+            return (a < b) ? -1 : 1;
+        }
+    }
+
+    for (; i < length; i++) {
+        if (str[i] != rptr[i]) {
+            return (str[i] < rptr[i]) ? -1 : 1;
+        }
+    }
+
+    return 0;
+}
+#endif
+#endif
+
+static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+{
+    const char *rstring_ptr;
+    long rstring_length;
+
+    RSTRING_GETMEM(rstring, rstring_ptr, rstring_length);
+
     if (length == rstring_length) {
-        return memcmp(str, RSTRING_PTR(rstring), length);
+        return rstring_cache_memcmp(str, rstring_ptr, length);
     } else {
         return (int)(length - rstring_length);
     }
 }
 
-static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+static ALWAYS_INLINE() VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
     int low = 0;
     int high = cache->length - 1;
@@ -323,7 +361,7 @@ typedef struct JSON_ParserStateStruct {
     int current_nesting;
 } JSON_ParserState;
 
-static inline ssize_t rest(JSON_ParserState *state) {
+static inline size_t rest(JSON_ParserState *state) {
     return state->end - state->cursor;
 }
 
@@ -525,7 +563,7 @@ json_eat_whitespace(JSON_ParserState *state)
                 state->cursor++;
 
                 // Heuristic: if we see a newline, there is likely consecutive spaces after it.
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
                 while (rest(state) > 8) {
                     uint64_t chunk;
                     memcpy(&chunk, state->cursor, sizeof(uint64_t));
@@ -966,7 +1004,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
 // From: https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
 // Additional References:
 // https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
@@ -995,8 +1033,8 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
 {
     const char *start = state->cursor;
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    while (rest(state) >= 8) {
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+    while (rest(state) >= sizeof(uint64_t)) {
         uint64_t next_8bytes;
         memcpy(&next_8bytes, state->cursor, sizeof(uint64_t));
 

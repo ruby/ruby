@@ -2549,7 +2549,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_opt
+          IncrCounter complex_arg_pass_param_opt
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2633,7 +2633,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_rest
+          IncrCounter complex_arg_pass_param_rest
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2683,34 +2683,6 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           SideExit UnhandledCallType(Kwarg)
-        ");
-    }
-
-    #[test]
-    fn string_bytesize_simple() {
-        eval("
-            def test = 'abc'.bytesize
-            test
-            test
-        ");
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
-        bb0():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v12:StringExact = StringCopy v10
-          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(String@0x1008)
-          IncrCounter inline_cfunc_optimized_send_count
-          v24:Fixnum = CCall bytesize@0x1040, v12
-          CheckInterrupts
-          Return v24
         ");
     }
 
@@ -2968,9 +2940,9 @@ mod hir_opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v43:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter fancy_arg_pass_param_opt
-          IncrCounter fancy_arg_pass_param_kw
-          IncrCounter fancy_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_opt
+          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_block
           v18:BasicObject = SendWithoutBlock v43, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -4843,6 +4815,7 @@ mod hir_opt_tests {
           v14:ArrayExact = NewArray
           GuardBlockParamProxy l0
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          IncrCounter complex_arg_pass_caller_blockarg
           v19:BasicObject = Send v14, 0x1008, :map, v17
           CheckInterrupts
           Return v19
@@ -6870,6 +6843,51 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_splat() {
+        eval("
+            def foo = itself
+
+            def test
+              # Use a local to inhibit compile.c peephole optimization to ensure callsites have VM_CALL_ARGS_SPLAT
+              empty = []
+              foo(*empty)
+              ''.display(*empty)
+              itself(*empty)
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
+          v18:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v20:BasicObject = SendWithoutBlock v8, :foo, v18
+          v23:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v25:StringExact = StringCopy v23
+          PatchPoint NoEPEscape(test)
+          v29:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v31:BasicObject = SendWithoutBlock v25, :display, v29
+          PatchPoint NoEPEscape(test)
+          v37:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v39:BasicObject = SendWithoutBlock v8, :itself, v37
+          CheckInterrupts
+          Return v39
+        ");
+    }
+
+    #[test]
     fn test_inline_symbol_to_sym() {
         eval(r#"
             def test(o) = o.to_sym
@@ -7161,7 +7179,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_specialize_string_bytesize() {
+    fn test_inline_string_bytesize() {
         eval(r#"
             def test(s)
               s.bytesize
@@ -7182,8 +7200,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v23:StringExact = GuardType v9, StringExact
+          v24:CInt64 = LoadField v23, :len@0x1038
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall bytesize@0x1038, v23
           CheckInterrupts
           Return v25
         ");
@@ -7249,7 +7268,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn counting_fancy_feature_use_for_fallback() {
+    fn counting_complex_feature_use_for_fallback() {
         eval("
             define_method(:fancy) { |_a, *_b, kw: 100, **kw_rest, &block| }
             def test = fancy(1)
@@ -7266,10 +7285,10 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_rest
-          IncrCounter fancy_arg_pass_param_kw
-          IncrCounter fancy_arg_pass_param_kwrest
-          IncrCounter fancy_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_rest
+          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kwrest
+          IncrCounter complex_arg_pass_param_block
           v12:BasicObject = SendWithoutBlock v6, :fancy, v10
           CheckInterrupts
           Return v12
@@ -7293,7 +7312,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          IncrCounter fancy_arg_pass_param_forwardable
+          IncrCounter complex_arg_pass_param_forwardable
           v11:BasicObject = SendWithoutBlock v6, :forwardable
           CheckInterrupts
           Return v11

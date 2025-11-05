@@ -145,6 +145,16 @@ class URI::TestMailTo < Test::Unit::TestCase
     u.to = 'a@valid.com'
     assert_equal(u.to, 'a@valid.com')
 
+    # Intentionally allowed violations of RFC 5322
+    u.to = 'a..a@valid.com'
+    assert_equal(u.to, 'a..a@valid.com')
+
+    u.to = 'hello.@valid.com'
+    assert_equal(u.to, 'hello.@valid.com')
+
+    u.to = '.hello@valid.com'
+    assert_equal(u.to, '.hello@valid.com')
+
     # Invalid emails
     assert_raise(URI::InvalidComponentError) do
       u.to = '#1@mail.com'
@@ -152,22 +162,6 @@ class URI::TestMailTo < Test::Unit::TestCase
 
     assert_raise(URI::InvalidComponentError) do
       u.to = '@invalid.email'
-    end
-
-    assert_raise(URI::InvalidComponentError) do
-      u.to = '.hello@invalid.email'
-    end
-
-    assert_raise(URI::InvalidComponentError) do
-      u.to = 'hello.@invalid.email'
-    end
-
-    assert_raise(URI::InvalidComponentError) do
-      u.to = 'n.@invalid.email'
-    end
-
-    assert_raise(URI::InvalidComponentError) do
-      u.to = 'n..t@invalid.email'
     end
 
     # Invalid host emails

@@ -191,7 +191,7 @@ The following default gems are updated.
 * fileutils 1.8.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
-* io-wait 0.3.2
+* io-wait 0.3.3
 * json 2.15.2
 * net-http 0.7.0
 * openssl 4.0.0.pre
@@ -203,7 +203,7 @@ The following default gems are updated.
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * timeout 0.4.4
-* uri 1.1.0
+* uri 1.1.1
 * weakref 0.1.4
 * zlib 3.2.2
 

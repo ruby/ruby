@@ -106,8 +106,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: boo
         }
 
         // Always mark the code region executable if asm.compile() has been used.
-        // We need to do this even if code_ptr is None because, whether gen_entry()
-        // fails or not, gen_iseq() may have already used asm.compile().
+        // We need to do this even if code_ptr is None because gen_iseq() may have already used asm.compile().
         cb.mark_all_executable();
 
         code_ptr.map_or(std::ptr::null(), |ptr| ptr.raw_ptr(cb))
@@ -131,10 +130,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
         debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
     })?;
 
-    // Compile an entry point to the JIT code
-    gen_entry(cb, iseq, start_ptr).inspect_err(|err| {
-        debug!("{err:?}: gen_entry failed: {}", iseq_get_location(iseq, 0));
-    })
+    Ok(start_ptr)
 }
 
 /// Stub a branch for a JIT-to-JIT call
@@ -170,14 +166,16 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
     };
 }
 
-/// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result<CodePtr, CompileError> {
+/// Compile a shared JIT entry trampoline
+pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    gen_entry_prologue(&mut asm, iseq);
+    gen_entry_prologue(&mut asm);
 
-    // Jump to the first block using a call instruction
-    asm.ccall(function_ptr.raw_ptr(cb), vec![]);
+    // Jump to the first block using a call instruction. This trampoline is used
+    // as rb_zjit_func_t in jit_exec(), which takes (EC, CFP, rb_jit_func_t).
+    // So C_ARG_OPNDS[2] is rb_jit_func_t, which is (EC, CFP) -> VALUE.
+    asm.ccall_reg(C_ARG_OPNDS[2], VALUE_BITS);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");
@@ -190,8 +188,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result
         let start_ptr = code_ptr.raw_addr(cb);
         let end_ptr = cb.get_write_ptr().raw_addr(cb);
         let code_size = end_ptr - start_ptr;
-        let iseq_name = iseq_get_location(iseq, 0);
-        register_with_perf(format!("entry for {iseq_name}"), start_ptr, code_size);
+        register_with_perf("ZJIT entry trampoline".into(), start_ptr, code_size);
     }
     Ok(code_ptr)
 }
@@ -403,6 +400,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
+        &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, opnd!(val), &function.frame_state(state)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
@@ -450,6 +448,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
+        Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
+        &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -987,8 +987,8 @@ fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd 
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
-fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
-    asm_comment!(asm, "ZJIT entry point: {}", iseq_get_location(iseq, 0));
+fn gen_entry_prologue(asm: &mut Assembler) {
+    asm_comment!(asm, "ZJIT entry trampoline");
     // Save the registers we'll use for CFP, EP, SP
     asm.frame_setup(lir::JIT_PRESERVED_REGS);
 
@@ -1328,6 +1328,50 @@ fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
     asm_ccall!(asm, rb_jit_array_len, array)
 }
 
+fn gen_array_include(
+    jit: &JITState,
+    asm: &mut Assembler,
+    elements: Vec<Opnd>,
+    target: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+
+    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
+    // The elements are at the bottom of the virtual stack, followed by the target.
+    // Get a pointer to the first element on the Ruby stack.
+    let stack_bottom = state.stack().len() - elements.len() - 1;
+    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+
+    unsafe extern "C" {
+        fn rb_vm_opt_newarray_include_p(ec: EcPtr, num: c_long, elts: *const VALUE, target: VALUE) -> VALUE;
+    }
+    asm.ccall(
+        rb_vm_opt_newarray_include_p as *const u8,
+        vec![EC, num.into(), elements_ptr, target],
+    )
+}
+
+fn gen_dup_array_include(
+    jit: &JITState,
+    asm: &mut Assembler,
+    ary: VALUE,
+    target: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    unsafe extern "C" {
+        fn rb_vm_opt_duparray_include_p(ec: EcPtr, ary: VALUE, target: VALUE) -> VALUE;
+    }
+    asm.ccall(
+        rb_vm_opt_duparray_include_p as *const u8,
+        vec![EC, ary.into(), target],
+    )
+}
+
 /// Compile a new hash instruction
 fn gen_new_hash(
     jit: &mut JITState,
@@ -1547,6 +1591,14 @@ fn gen_is_bit_not_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) 
 fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.test(val, val);
     asm.csel_nz(Opnd::Value(Qtrue), Opnd::Value(Qfalse))
+}
+
+fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    // Load the value, then test for overflow and tag it
+    let val = asm.load(val);
+    let shifted = asm.lshift(val, Opnd::UImm(1));
+    asm.jo(side_exit(jit, state, BoxFixnumOverflow));
+    asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
 }
 
 fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {

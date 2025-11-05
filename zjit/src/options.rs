@@ -117,7 +117,7 @@ impl Default for Options {
 /// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
 pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-mem-size=num",
-                     "Max amount of memory that ZJIT can use (in MiB)."),
+                     "Max amount of memory that ZJIT can use in MiB (default: 128)."),
     ("--zjit-call-threshold=num",
                      "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
@@ -174,6 +174,10 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::compile_exits,
     DumpLIR::scratch_split,
 ];
+
+/// Mamximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
+/// We set 1TiB just to avoid overflow. We could make it smaller.
+const MAX_MEM_MIB: usize = 1024 * 1024;
 
 /// Macro to dump LIR if --zjit-dump-lir is specified
 macro_rules! asm_dump {
@@ -257,17 +261,19 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("", "") => {}, // Simply --zjit
 
         ("mem-size", _) => match opt_val.parse::<usize>() {
-            Ok(n) => {
-                // Reject 0 or too large values that could overflow.
-                // The upper bound is 1 TiB but we could make it smaller.
-                if n == 0 || n > 1024 * 1024 {
-                    return None
-                }
+            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
+                // Convert from MiB to bytes internally for convenience
+                options.mem_bytes = n * 1024 * 1024;
+            }
+            _ => return None,
+        },
 
+        ("exec-mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
                 // Convert from MiB to bytes internally for convenience
                 options.exec_mem_bytes = n * 1024 * 1024;
             }
-            Err(_) => return None,
+            _ => return None,
         },
 
         ("call-threshold", _) => match opt_val.parse() {

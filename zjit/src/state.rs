@@ -1,6 +1,6 @@
 //! Runtime state of ZJIT.
 
-use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
+use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
@@ -9,14 +9,16 @@ use crate::options::get_option;
 use crate::stats::{Counters, InsnCounters, SideExitLocations};
 use crate::virtualmem::CodePtr;
 use std::collections::HashMap;
+use std::ptr::null;
 
+/// Shared trampoline to enter ZJIT. Not null when ZJIT is enabled.
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
-pub static mut rb_zjit_enabled_p: bool = false;
+pub static mut rb_zjit_entry: *const u8 = null();
 
 /// Like rb_zjit_enabled_p, but for Rust code.
 pub fn zjit_enabled_p() -> bool {
-    unsafe { rb_zjit_enabled_p }
+    unsafe { rb_zjit_entry != null() }
 }
 
 /// Global state needed for code generation
@@ -65,8 +67,8 @@ pub struct ZJITState {
 static mut ZJIT_STATE: Option<ZJITState> = None;
 
 impl ZJITState {
-    /// Initialize the ZJIT globals
-    pub fn init() {
+    /// Initialize the ZJIT globals. Return the address of the JIT entry trampoline.
+    pub fn init() -> *const u8 {
         let mut cb = {
             use crate::options::*;
             use crate::virtualmem::*;
@@ -79,6 +81,7 @@ impl ZJITState {
             CodeBlock::new(mem_block.clone(), get_option!(dump_disasm))
         };
 
+        let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
@@ -114,6 +117,8 @@ impl ZJITState {
             let code_ptr = gen_exit_trampoline_with_counter(cb, exit_trampoline).unwrap();
             ZJITState::get_instance().exit_trampoline_with_counter = code_ptr;
         }
+
+        entry_trampoline
     }
 
     /// Return true if zjit_state has been initialized
@@ -252,7 +257,7 @@ pub extern "C" fn rb_zjit_init() {
     let result = std::panic::catch_unwind(|| {
         // Initialize ZJIT states
         cruby::ids::init();
-        ZJITState::init();
+        let zjit_entry = ZJITState::init();
 
         // Install a panic hook for ZJIT
         rb_bug_panic_hook();
@@ -261,8 +266,8 @@ pub extern "C" fn rb_zjit_init() {
         unsafe { rb_vm_insn_count = 0; }
 
         // ZJIT enabled and initialized successfully
-        assert!(unsafe{ !rb_zjit_enabled_p });
-        unsafe { rb_zjit_enabled_p = true; }
+        assert!(unsafe{ rb_zjit_entry == null() });
+        unsafe { rb_zjit_entry = zjit_entry; }
     });
 
     if result.is_err() {

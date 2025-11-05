@@ -10,7 +10,7 @@
 #endif
 
 #if USE_ZJIT
-extern bool rb_zjit_enabled_p;
+extern void *rb_zjit_entry;
 extern uint64_t rb_zjit_call_threshold;
 extern uint64_t rb_zjit_profile_threshold;
 void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception);
@@ -29,7 +29,7 @@ void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 #else
-#define rb_zjit_enabled_p false
+#define rb_zjit_entry 0
 static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception) {}
 static inline void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec) {}
 static inline void rb_zjit_profile_enable(const rb_iseq_t *iseq) {}
@@ -41,5 +41,7 @@ static inline void rb_zjit_before_ractor_spawn(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 #endif // #if USE_ZJIT
+
+#define rb_zjit_enabled_p (rb_zjit_entry != 0)
 
 #endif // #ifndef ZJIT_H
