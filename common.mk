@@ -119,6 +119,7 @@ COMMONOBJS    = \
 		array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
+		box.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		compile.$(OBJEXT) \
@@ -146,7 +147,6 @@ COMMONOBJS    = \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
 		memory_view.$(OBJEXT) \
-		namespace.$(OBJEXT) \
 		node.$(OBJEXT) \
 		node_dump.$(OBJEXT) \
 		numeric.$(OBJEXT) \

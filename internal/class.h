@@ -10,7 +10,7 @@
  */
 #include "id.h"
 #include "id_table.h"           /* for struct rb_id_table */
-#include "internal/namespace.h" /* for rb_current_namespace */
+#include "internal/box.h"       /* for rb_current_namespace */
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
 #include "internal/variable.h"  /* for rb_class_ivar_set */

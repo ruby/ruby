@@ -12,6 +12,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/class.h"
 #include "internal/compile.h"
 #include "internal/cont.h"
@@ -21,7 +22,6 @@
 #include "internal/gc.h"
 #include "internal/inits.h"
 #include "internal/missing.h"
-#include "internal/namespace.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/re.h"
@@ -98,7 +98,7 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
 }
 
 #if VM_CHECK_MODE > 0
-// ruby_namespace_crashed defined in internal/namespace.h
+// ruby_namespace_crashed defined in internal/box.h
 #define VM_NAMESPACE_CRASHED() {ruby_namespace_crashed = true;}
 #define VM_NAMESPACE_ASSERT(expr, msg) \
     if (!(expr)) { ruby_namespace_crashed = true; rb_bug(msg); }

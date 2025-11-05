@@ -118,7 +118,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
-#include "internal/namespace.h"
+#include "internal/box.h"
 #include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/set_table.h"

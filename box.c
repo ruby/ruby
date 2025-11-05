@@ -2,6 +2,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/class.h"
 #include "internal/eval.h"
 #include "internal/error.h"
@@ -9,7 +10,6 @@
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/load.h"
-#include "internal/namespace.h"
 #include "internal/st.h"
 #include "internal/variable.h"
 #include "iseq.h"
