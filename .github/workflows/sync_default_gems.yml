@@ -32,6 +32,11 @@ jobs:
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+        with:
+          ruby-version: '3.4'
+          bundler: none
+
       - name: Run tool/sync_default_gems.rb
         id: sync
         run: |
