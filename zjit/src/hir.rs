@@ -2290,6 +2290,8 @@ impl Function {
                         // do not optimize into a `SendWithoutBlockDirect`.
                         let flags = unsafe { rb_vm_ci_flag(ci) };
                         if unspecializable_call_type(flags) {
+                            self.count_complex_call_features(block, flags);
+                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                             self.push_insn_id(block, insn_id); continue;
                         }
 
@@ -2770,6 +2772,8 @@ impl Function {
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
                     if unspecializable_call_type(ci_flags) {
+                        fun.count_complex_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     }
 
@@ -2877,6 +2881,7 @@ impl Function {
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         fun.count_complex_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     }
 
@@ -2948,7 +2953,10 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        fun.count_complex_call_features(block, ci_flags);
+                        // TODO(alan): Add fun.count_complex_call_features() here without double
+                        // counting splat
+                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
+                        return Err(());
                     } else {
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 

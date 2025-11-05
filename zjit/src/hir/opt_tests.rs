@@ -4815,6 +4815,7 @@ mod hir_opt_tests {
           v14:ArrayExact = NewArray
           GuardBlockParamProxy l0
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          IncrCounter complex_arg_pass_caller_blockarg
           v19:BasicObject = Send v14, 0x1008, :map, v17
           CheckInterrupts
           Return v19
@@ -6838,6 +6839,51 @@ mod hir_opt_tests {
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v12
+        ");
+    }
+
+    #[test]
+    fn test_splat() {
+        eval("
+            def foo = itself
+
+            def test
+              # Use a local to inhibit compile.c peephole optimization to ensure callsites have VM_CALL_ARGS_SPLAT
+              empty = []
+              foo(*empty)
+              ''.display(*empty)
+              itself(*empty)
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
+          v18:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v20:BasicObject = SendWithoutBlock v8, :foo, v18
+          v23:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v25:StringExact = StringCopy v23
+          PatchPoint NoEPEscape(test)
+          v29:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v31:BasicObject = SendWithoutBlock v25, :display, v29
+          PatchPoint NoEPEscape(test)
+          v37:ArrayExact = ToArray v14
+          IncrCounter complex_arg_pass_caller_splat
+          v39:BasicObject = SendWithoutBlock v8, :itself, v37
+          CheckInterrupts
+          Return v39
         ");
     }
 
