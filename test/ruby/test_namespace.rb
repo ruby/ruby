@@ -700,8 +700,13 @@ class TestNamespace < Test::Unit::TestCase
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       ns = Namespace.new
+      $gvar1 = 'bar'
       code = <<~EOC
       NS1 = Namespace.current
+      $gvar1 = 'foo'
+
+      def toplevel = $gvar1
+
       class Foo
         NS2 = Namespace.current
         NS2_proc = ->(){ NS2 }
@@ -721,6 +726,9 @@ class TestNamespace < Test::Unit::TestCase
 
         def self.yield_block = yield
         def self.call_block(&b) = b.call
+
+        def self.gvar1 = $gvar1
+        def self.call_toplevel = toplevel
       end
       FOO_NAME = Foo.name
 
@@ -748,6 +756,10 @@ class TestNamespace < Test::Unit::TestCase
 
       assert_equal outer, ns::Foo.yield_block{ Namespace.current } # method yields
       assert_equal outer, ns::Foo.call_block{ Namespace.current }  # method calls a block
+
+      assert_equal 'foo', ns::Foo.gvar1 # method refers gvar
+      assert_equal 'bar', $gvar1        # gvar value out of the ns
+      assert_equal 'foo', ns::Foo.call_toplevel # toplevel method referring gvar
 
       assert_equal ns, ns::NS_X # on TOP frame, referring a class in the current
       assert_equal ns, ns::NS_Y # on TOP frame, referring Kernel method defined by a CFUNC method
