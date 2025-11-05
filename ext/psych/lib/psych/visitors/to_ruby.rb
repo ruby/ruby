@@ -219,7 +219,8 @@ module Psych
             revive_data_members(members, o)
           end
           data ||= allocate_anon_data(o, members)
-          init_struct(data, **members)
+          values = data.members.map { |m| members[m] }
+          init_data(data, values)
           data.freeze
           data
 
