@@ -1969,6 +1969,19 @@ assert_equal 'ok', %q{
   roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
 }
 
+# move object with generic ivars and existing id2ref table
+# [Bug #21664]
+assert_equal 'ok', %q{
+  obj = [1]
+  obj.instance_variable_set("@field", :ok)
+  ObjectSpace._id2ref(obj.object_id) # build id2ref table
+
+  ractor = Ractor.new { Ractor.receive }
+  ractor.send(obj, move: true)
+  obj = ractor.value
+  obj.instance_variable_get("@field")
+}
+
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
   # Make Array too_complex
