@@ -150,6 +150,58 @@ jobs:
         working-directory:
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
+  # Separated from `make` job to avoid making it a required status check for now
+  ruby-bench:
+    strategy:
+      matrix:
+        include:
+          # Test --call-threshold=2 with 2 iterations in total
+          - ruby_opts: '--zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
+
+    runs-on: macos-14
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: ./.github/actions/setup/macos
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --prefix="$(pwd)/install" ${{ matrix.configure }}
+
+      - run: make install
+
+      - name: Checkout ruby-bench
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: ruby/ruby-bench
+          path: ruby-bench
+
+      - name: Run ruby-bench
+        run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
+        working-directory: ruby-bench
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ruby-bench ${{ matrix.bench_opts }} ${{ matrix.ruby_opts }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
 defaults:
   run:
     working-directory: build
