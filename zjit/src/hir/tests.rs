@@ -1572,7 +1572,9 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v15:BasicObject = SendWithoutBlock v8, :foo, v13
+          CheckInterrupts
+          Return v15
         ");
     }
 
