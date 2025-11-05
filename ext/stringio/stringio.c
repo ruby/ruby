@@ -444,7 +444,7 @@ strio_nil(VALUE self)
 }
 
 /*
- * Returns an object itself.  Just for compatibility to IO.
+ * Returns +self+; for compatibility with IO.
  */
 static VALUE
 strio_self(VALUE self)
