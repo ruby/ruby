@@ -683,6 +683,20 @@ beta-gems.example.com/ is not a URI
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
   end
+
+  def test_execute_prepend_bad_uri
+    @cmd.handle_options %w[--prepend beta-gems.example.com]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    assert_equal [@gem_repo], Gem.sources
+
+    expected = <<-EOF
+beta-gems.example.com/ is not a URI
     EOF
 
     assert_equal expected, @ui.output
