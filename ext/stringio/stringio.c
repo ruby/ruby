@@ -514,7 +514,7 @@ strio_get_string(VALUE self)
  * call-seq:
  *   string = other_string -> other_string
  *
- * Assigns the underlying string as +other_string+, and sets position to zero;
+ * Replaces the stored string with +other_string+, and sets the position to zero;
  * returns +other_string+:
  *
  *   StringIO.open('foo') do |strio|
@@ -528,7 +528,7 @@ strio_get_string(VALUE self)
  *   "foo"
  *   "bar"
  *
- * Related: StringIO#string (returns the underlying string).
+ * Related: StringIO#string (returns the stored string).
  */
 static VALUE
 strio_set_string(VALUE self, VALUE string)
