@@ -32,6 +32,15 @@ const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
     None
 };
 
+/// Maximum size of ISEQ that ZJIT is allowed to compile.
+/// The current number is intended to reject:
+///   advance@parser-3.3.9.0/lib/parser/lexer-F1.rb:8420 (iseq_size: 24107)
+///   advance@parser-3.3.9.0/lib/parser/lexer-strings.rb:3341 (iseq_size: 6444)
+/// which would otherwise cause CompileError::OutOfMemory with the default mem
+/// size and end up failing other unrelated ISEQs temporarily, leading to lower
+/// ratio_in_zjit in the rubocop benchmark.
+const MAX_ISEQ_SIZE: u32 = 4098;
+
 /// Ephemeral code generation state
 struct JITState {
     /// Instruction sequence for the method being compiled
@@ -1974,6 +1983,15 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     if stack_max >= i8::MAX as u32 {
         debug!("ISEQ stack too large: {stack_max}");
         return Err(CompileError::IseqStackTooLarge);
+    }
+
+    // Reject ISEQs with too many instructions.
+    // Compiling a too large ISEQ bumps zjit_alloc_bytes() temporarily,
+    // which may end up failing the compilation of other unrelated ISEQs.
+    let iseq_size = unsafe { rb_iseq_encoded_size(iseq) };
+    if iseq_size > MAX_ISEQ_SIZE {
+        debug!("ISEQ size too large ({iseq_size}): {}", iseq_get_location(iseq, 0));
+        return Err(CompileError::IseqSizeTooLarge);
     }
 
     let mut function = match iseq_to_hir(iseq) {
