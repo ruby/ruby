@@ -424,7 +424,7 @@ strio_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * Returns +false+.  Just for compatibility to IO.
+ * Returns +false+; for compatibility with IO.
  */
 static VALUE
 strio_false(VALUE self)
