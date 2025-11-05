@@ -1569,13 +1569,16 @@ class Socket < BasicSocket
     end
   end
 
-  class << self
-    private
-
-    def unix_socket_abstract_name?(path)
-      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
+  if RUBY_PLATFORM.include?("linux")
+    def self.unix_socket_abstract_name?(path)
+      path.empty? or path.start_with?("\0")
+    end
+  else
+    def self.unix_socket_abstract_name?(path)
+      false
     end
   end
+  private_class_method :unix_socket_abstract_name?
 
   # creates a UNIX socket server on _path_.
   # It calls the block for each socket accepted.
