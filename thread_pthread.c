@@ -2592,16 +2592,14 @@ ubf_threads_empty(void)
 static void
 ubf_wakeup_all_threads(void)
 {
-    if (!ubf_threads_empty()) {
-        rb_thread_t *th;
-        rb_native_mutex_lock(&ubf_list_lock);
-        {
-            ccan_list_for_each(&ubf_list_head, th, sched.node.ubf) {
-                ubf_wakeup_thread(th);
-            }
+    rb_thread_t *th;
+    rb_native_mutex_lock(&ubf_list_lock);
+    {
+        ccan_list_for_each(&ubf_list_head, th, sched.node.ubf) {
+            ubf_wakeup_thread(th);
         }
-        rb_native_mutex_unlock(&ubf_list_lock);
     }
+    rb_native_mutex_unlock(&ubf_list_lock);
 }
 
 #else /* USE_UBF_LIST */
@@ -2996,6 +2994,17 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 }
 
 static void
+timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    if (sched->running != th) {
+        thread_sched_to_ready_common(sched, th, true, false);
+    }
+    else {
+        // will be release the execution right
+    }
+}
+
+static void
 timer_thread_wakeup_thread(rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
@@ -3003,12 +3012,7 @@ timer_thread_wakeup_thread(rb_thread_t *th)
 
     thread_sched_lock(sched, th);
     {
-        if (sched->running != th) {
-            thread_sched_to_ready_common(sched, th, true, false);
-        }
-        else {
-            // will be release the execution right
-        }
+        timer_thread_wakeup_thread_locked(sched, th);
     }
     thread_sched_unlock(sched, th);
 }
