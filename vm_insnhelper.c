@@ -5497,6 +5497,12 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
 }
 
+enum rb_block_handler_type
+rb_vm_block_handler_type(VALUE block_handler)
+{
+    return vm_block_handler_type(block_handler);
+}
+
 static inline VALUE
 vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                 struct rb_calling_info *calling, const struct rb_callinfo *ci,
@@ -6057,6 +6063,12 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
         klass = rb_singleton_class(klass);
         rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
     }
+}
+
+VALUE
+rb_vm_get_block_handler(rb_control_frame_t *reg_cfp)
+{
+    return VM_CF_BLOCK_HANDLER(reg_cfp);
 }
 
 static VALUE
