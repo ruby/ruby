@@ -5498,7 +5498,7 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 }
 
 enum rb_block_handler_type
-rb_yarv_vm_block_handler_type(VALUE block_handler)
+rb_vm_block_handler_type(VALUE block_handler)
 {
     return vm_block_handler_type(block_handler);
 }
@@ -6066,7 +6066,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 }
 
 VALUE
-rb_yarv_get_block_handler(rb_control_frame_t *reg_cfp)
+rb_vm_get_block_handler(rb_control_frame_t *reg_cfp)
 {
     return VM_CF_BLOCK_HANDLER(reg_cfp);
 }

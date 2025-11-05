@@ -1446,6 +1446,6 @@ unsafe extern "C" {
         end: *mut ::std::os::raw::c_void,
     );
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
-    pub fn rb_yarv_get_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
-    pub fn rb_yarv_vm_block_handler_type(block_handler: VALUE) -> rb_block_handler_type;
+    pub fn rb_vm_get_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
+    pub fn rb_vm_block_handler_type(block_handler: VALUE) -> rb_block_handler_type;
 }

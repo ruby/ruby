@@ -4415,7 +4415,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let summary = TypeDistributionSummary::new(&self_type_distribution);
                             if summary.is_monomorphic() {
                                 let obj = summary.bucket(0).class();
-                                let bh_type = unsafe { rb_yarv_vm_block_handler_type(obj) };
+                                let bh_type = unsafe { rb_vm_block_handler_type(obj) };
                                 if bh_type == block_handler_type_iseq {
                                     fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_iseq));
                                 } else if bh_type == block_handler_type_ifunc {
