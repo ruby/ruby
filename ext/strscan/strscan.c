@@ -2233,6 +2233,7 @@ Init_strscan(void)
     tmp = rb_str_new2("$Id$");
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
+    rb_deprecate_constant(StringScanner, "Id");
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);

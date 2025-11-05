@@ -107,11 +107,6 @@ module StringScannerTests
     assert_equal(true, StringScanner::Version.frozen?)
   end
 
-  def test_const_Id
-    assert_instance_of(String, StringScanner::Id)
-    assert_equal(true, StringScanner::Id.frozen?)
-  end
-
   def test_inspect
     str = 'test string'.dup
     s = create_string_scanner(str, false)
