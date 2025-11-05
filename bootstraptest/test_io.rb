@@ -85,7 +85,7 @@ assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
 
-/freebsd/ =~ RUBY_PLATFORM or
+/(freebsd|mswin)/ =~ RUBY_PLATFORM or
 10.times do
   assert_normal_exit %q{
     at_exit { p :foo }
