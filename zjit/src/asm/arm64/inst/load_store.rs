@@ -124,6 +124,12 @@ impl LoadStore {
     pub fn sturh(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::STR, size: Size::Size16 }
     }
+
+    /// STURB (store register, byte, unscaled)
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STURH--Store-Register-Halfword--unscaled--?lang=en>
+    pub fn sturb(rt: u8, rn: u8, imm9: i16) -> Self {
+        Self { rt, rn, idx: Index::None, imm9, opc: Opc::STR, size: Size::Size8 }
+    }
 }
 
 /// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
