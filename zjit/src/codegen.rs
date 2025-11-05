@@ -220,6 +220,11 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
 
 /// Compile an ISEQ into machine code
 fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>, payload: &mut IseqPayload) -> Result<IseqCodePtrs, CompileError> {
+    // If we ran out of code region, we shouldn't attempt to generate new code.
+    if cb.has_dropped_bytes() {
+        return Err(CompileError::OutOfMemory);
+    }
+
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
@@ -227,7 +232,14 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function).inspect_err(|err| {
+        // If we use too much memory to compile this ISEQ, it would set cb.dropped_bytes = true.
+        // To avoid failing future compilation due to cb.has_dropped_bytes(), check the threshold
+        // again with the current zjit_alloc_bytes() which may be decreased after gen_function().
+        if *err == CompileError::OutOfMemory {
+            cb.check_remaining_bytes();
+        }
+    })?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {

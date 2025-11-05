@@ -208,6 +208,14 @@ impl CodeBlock {
         self.dropped_bytes
     }
 
+    /// Set false to dropped_bytes if the current zjit_alloc_bytes() + code_region_size
+    /// is below --zjit-mem-size.
+    pub fn check_remaining_bytes(&mut self) {
+        if self.mem_block.borrow().has_remaining_bytes() {
+            self.dropped_bytes = false;
+        }
+    }
+
     /// Allocate a new label with a given name
     pub fn new_label(&mut self, name: String) -> Label {
         assert!(!name.contains(' '), "use underscores in label names, not spaces");
