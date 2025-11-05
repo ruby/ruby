@@ -177,7 +177,7 @@ make_counters! {
         send_fallback_ccall_with_frame_too_many_args,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
-        send_fallback_fancy_call_feature,
+        send_fallback_one_or_more_complex_arg_pass,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
@@ -257,22 +257,22 @@ make_counters! {
     unspecialized_send_def_type_null,
 
     // Unsupported parameter features
-    fancy_arg_pass_param_rest,
-    fancy_arg_pass_param_opt,
-    fancy_arg_pass_param_kw,
-    fancy_arg_pass_param_kwrest,
-    fancy_arg_pass_param_block,
-    fancy_arg_pass_param_forwardable,
+    complex_arg_pass_param_rest,
+    complex_arg_pass_param_opt,
+    complex_arg_pass_param_kw,
+    complex_arg_pass_param_kwrest,
+    complex_arg_pass_param_block,
+    complex_arg_pass_param_forwardable,
 
     // Unsupported caller side features
-    fancy_arg_pass_caller_splat,
-    fancy_arg_pass_caller_blockarg,
-    fancy_arg_pass_caller_kwarg,
-    fancy_arg_pass_caller_kw_splat,
-    fancy_arg_pass_caller_tailcall,
-    fancy_arg_pass_caller_super,
-    fancy_arg_pass_caller_zsuper,
-    fancy_arg_pass_caller_forwarding,
+    complex_arg_pass_caller_splat,
+    complex_arg_pass_caller_blockarg,
+    complex_arg_pass_caller_kwarg,
+    complex_arg_pass_caller_kw_splat,
+    complex_arg_pass_caller_tailcall,
+    complex_arg_pass_caller_super,
+    complex_arg_pass_caller_zsuper,
+    complex_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
     vm_write_pc_count,
@@ -427,7 +427,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
-        FancyFeatureUse                           => send_fallback_fancy_call_feature,
+        ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
