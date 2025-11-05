@@ -60,6 +60,81 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_add_without_trailing_slash
+    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+
+    @cmd.handle_options %W[--add https://rubygems.pkg.github.com/my-org]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+
+    expected = <<-EOF
+https://rubygems.pkg.github.com/my-org/ added to sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+  def test_execute_add_multiple_trailing_slash
+    setup_fake_source('https://rubygems.pkg.github.com/my-org/')
+
+    @cmd.handle_options %W[--add https://rubygems.pkg.github.com/my-org///]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+
+    expected = <<-EOF
+https://rubygems.pkg.github.com/my-org/ added to sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+
+  def test_execute_append_without_trailing_slash
+    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+
+    @cmd.handle_options %W[--append https://rubygems.pkg.github.com/my-org]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+
+    expected = <<-EOF
+https://rubygems.pkg.github.com/my-org/ added to sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+
+  def test_execute_prepend_without_trailing_slash
+    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+
+    @cmd.handle_options %W[--prepend https://rubygems.pkg.github.com/my-org]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+
+    expected = <<-EOF
+https://rubygems.pkg.github.com/my-org/ added to sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_execute_append
     setup_fake_source(@new_repo)
 
@@ -583,7 +658,7 @@ source #{repo_with_slash} already present in the cache
     assert_equal [@gem_repo], Gem.sources
 
     expected = <<-EOF
-beta-gems.example.com is not a URI
+beta-gems.example.com/ is not a URI
     EOF
 
     assert_equal expected, @ui.output
@@ -602,7 +677,12 @@ beta-gems.example.com is not a URI
     assert_equal [@gem_repo], Gem.sources
 
     expected = <<-EOF
-beta-gems.example.com is not a URI
+beta-gems.example.com/ is not a URI
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
     EOF
 
     assert_equal expected, @ui.output

@@ -50,6 +50,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def add_source(source_uri) # :nodoc:
+    source_uri = add_trailing_slash(source_uri)
     check_rubygems_https source_uri
 
     source = Gem::Source.new source_uri
@@ -76,6 +77,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def append_source(source_uri) # :nodoc:
+    source_uri = add_trailing_slash(source_uri)
     check_rubygems_https source_uri
 
     source = Gem::Source.new source_uri
@@ -103,6 +105,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def prepend_source(source_uri) # :nodoc:
+    source_uri = add_trailing_slash(source_uri)
     check_rubygems_https source_uri
 
     source = Gem::Source.new source_uri
@@ -139,6 +142,19 @@ Do you want to add this source?
 
       terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
+  end
+
+  def add_trailing_slash(source_uri) # :nodoc:
+    # Ensure the source URI has a trailing slash for proper RFC 2396 path merging
+    # Without a trailing slash, the last path segment is treated as a file and removed
+    # during relative path resolution (e.g., "/blish" + "gems/foo.gem" = "/gems/foo.gem")
+    # With a trailing slash, it's treated as a directory (e.g., "/blish/" + "gems/foo.gem" = "/blish/gems/foo.gem")
+    uri = Gem::URI.parse(source_uri)
+    uri.path = uri.path.gsub(%r{/+$}, "") + "/" if uri.path && !uri.path.empty?
+    uri.to_s
+  rescue Gem::URI::Error
+    # If parsing fails, return the original URI and let later validation handle it
+    source_uri
   end
 
   def check_rubygems_https(source_uri) # :nodoc:
