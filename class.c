@@ -183,6 +183,12 @@ rb_class_set_namespace_classext(VALUE obj, const rb_namespace_t *ns, rb_classext
     };
 
     st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)ns->ns_object, rb_class_set_namespace_classext_update, (st_data_t)&args);
+
+    // FIXME: This is done here because this is the first time the objects in
+    // the classext are exposed via this class. It's likely that if GC
+    // compaction occurred between the VALUEs being copied in and this
+    // writebarrier trigger the values will be stale.
+    rb_gc_writebarrier_remember(obj);
 }
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
