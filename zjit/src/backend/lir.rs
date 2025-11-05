@@ -386,7 +386,9 @@ pub enum Insn {
     // C function call with N arguments (variadic)
     CCall {
         opnds: Vec<Opnd>,
-        fptr: *const u8,
+        /// The function pointer to be called. This should be Opnd::const_ptr
+        /// (Opnd::UImm) in most cases. gen_entry_trampoline() uses Opnd::Reg.
+        fptr: Opnd,
         /// Optional PosMarker to remember the start address of the C call.
         /// It's embedded here to insert the PosMarker after push instructions
         /// that are split from this CCall on alloc_regs().
@@ -1989,8 +1991,17 @@ impl Assembler {
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let canary_opnd = self.set_stack_canary();
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
+        let fptr = Opnd::const_ptr(fptr);
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
         self.clear_stack_canary(canary_opnd);
+        out
+    }
+
+    /// Call a C function stored in a register
+    pub fn ccall_reg(&mut self, fptr: Opnd, num_bits: u8) -> Opnd {
+        assert!(matches!(fptr, Opnd::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
+        let out = self.new_vreg(num_bits);
+        self.push_insn(Insn::CCall { fptr, opnds: vec![], start_marker: None, end_marker: None, out });
         out
     }
 
@@ -2005,7 +2016,7 @@ impl Assembler {
     ) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall {
-            fptr,
+            fptr: Opnd::const_ptr(fptr),
             opnds,
             start_marker: Some(Rc::new(start_marker)),
             end_marker: Some(Rc::new(end_marker)),

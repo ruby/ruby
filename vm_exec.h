@@ -175,11 +175,22 @@ default:                        \
 
 // Run the JIT from the interpreter
 #define JIT_EXEC(ec, val) do { \
-    rb_jit_func_t func; \
     /* don't run tailcalls since that breaks FINISH */ \
-    if (UNDEF_P(val) && GET_CFP() != ec->cfp && (func = jit_compile(ec))) { \
-        val = func(ec, ec->cfp); \
-        if (ec->tag->state) THROW_EXCEPTION(val); \
+    if (UNDEF_P(val) && GET_CFP() != ec->cfp) { \
+        rb_zjit_func_t zjit_entry; \
+        if (rb_yjit_enabled_p) { \
+            rb_jit_func_t func = yjit_compile(ec); \
+            if (func) { \
+                val = func(ec, ec->cfp); \
+                if (ec->tag->state) THROW_EXCEPTION(val); \
+            } \
+        } \
+        else if ((zjit_entry = rb_zjit_entry)) { \
+            rb_jit_func_t func = zjit_compile(ec); \
+            if (func) { \
+                val = zjit_entry(ec, ec->cfp, func); \
+            } \
+        } \
     } \
 } while (0)
 

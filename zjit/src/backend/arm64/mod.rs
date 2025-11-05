@@ -1428,17 +1428,25 @@ impl Assembler {
                     }
                 },
                 Insn::CCall { fptr, .. } => {
-                    // The offset to the call target in bytes
-                    let src_addr = cb.get_write_ptr().raw_ptr(cb) as i64;
-                    let dst_addr = *fptr as i64;
+                    match fptr {
+                        Opnd::UImm(fptr) => {
+                            // The offset to the call target in bytes
+                            let src_addr = cb.get_write_ptr().raw_ptr(cb) as i64;
+                            let dst_addr = *fptr as i64;
 
-                    // Use BL if the offset is short enough to encode as an immediate.
-                    // Otherwise, use BLR with a register.
-                    if b_offset_fits_bits((dst_addr - src_addr) / 4) {
-                        bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
-                    } else {
-                        emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
-                        blr(cb, Self::EMIT_OPND);
+                            // Use BL if the offset is short enough to encode as an immediate.
+                            // Otherwise, use BLR with a register.
+                            if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                                bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+                            } else {
+                                emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
+                                blr(cb, Self::EMIT_OPND);
+                            }
+                        }
+                        Opnd::Reg(_) => {
+                            blr(cb, fptr.into());
+                        }
+                        _ => unreachable!("unsupported ccall fptr: {fptr:?}")
                     }
                 },
                 Insn::CRet { .. } => {

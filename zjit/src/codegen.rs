@@ -106,8 +106,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: boo
         }
 
         // Always mark the code region executable if asm.compile() has been used.
-        // We need to do this even if code_ptr is None because, whether gen_entry()
-        // fails or not, gen_iseq() may have already used asm.compile().
+        // We need to do this even if code_ptr is None because gen_iseq() may have already used asm.compile().
         cb.mark_all_executable();
 
         code_ptr.map_or(std::ptr::null(), |ptr| ptr.raw_ptr(cb))
@@ -131,10 +130,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
         debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
     })?;
 
-    // Compile an entry point to the JIT code
-    gen_entry(cb, iseq, start_ptr).inspect_err(|err| {
-        debug!("{err:?}: gen_entry failed: {}", iseq_get_location(iseq, 0));
-    })
+    Ok(start_ptr)
 }
 
 /// Stub a branch for a JIT-to-JIT call
@@ -170,14 +166,16 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
     };
 }
 
-/// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result<CodePtr, CompileError> {
+/// Compile a shared JIT entry trampoline
+pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    gen_entry_prologue(&mut asm, iseq);
+    gen_entry_prologue(&mut asm);
 
-    // Jump to the first block using a call instruction
-    asm.ccall(function_ptr.raw_ptr(cb), vec![]);
+    // Jump to the first block using a call instruction. This trampoline is used
+    // as rb_zjit_func_t in jit_exec(), which takes (EC, CFP, rb_jit_func_t).
+    // So C_ARG_OPNDS[2] is rb_jit_func_t, which is (EC, CFP) -> VALUE.
+    asm.ccall_reg(C_ARG_OPNDS[2], VALUE_BITS);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");
@@ -190,8 +188,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result
         let start_ptr = code_ptr.raw_addr(cb);
         let end_ptr = cb.get_write_ptr().raw_addr(cb);
         let code_size = end_ptr - start_ptr;
-        let iseq_name = iseq_get_location(iseq, 0);
-        register_with_perf(format!("entry for {iseq_name}"), start_ptr, code_size);
+        register_with_perf("ZJIT entry trampoline".into(), start_ptr, code_size);
     }
     Ok(code_ptr)
 }
@@ -990,8 +987,8 @@ fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd 
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
-fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
-    asm_comment!(asm, "ZJIT entry point: {}", iseq_get_location(iseq, 0));
+fn gen_entry_prologue(asm: &mut Assembler) {
+    asm_comment!(asm, "ZJIT entry trampoline");
     // Save the registers we'll use for CFP, EP, SP
     asm.frame_setup(lir::JIT_PRESERVED_REGS);
 
