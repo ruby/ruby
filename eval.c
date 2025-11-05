@@ -78,9 +78,9 @@ ruby_setup(void)
 #endif
     Init_BareVM();
     rb_vm_encoded_insn_data_table_init();
-    Init_enable_namespace();
+    Init_enable_box();
     Init_vm_objects();
-    Init_root_namespace();
+    Init_root_box();
     Init_fstring_table();
 
     EC_PUSH_TAG(GET_EC());

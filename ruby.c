@@ -449,7 +449,7 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
 {
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
-    VALUE load_path = rb_root_namespace()->load_path;
+    VALUE load_path = rb_root_box()->load_path;
 #ifdef __CYGWIN__
     char rubylib[FILENAME_MAX];
     VALUE buf = 0;
@@ -754,7 +754,7 @@ ruby_init_loadpath(void)
     rb_gc_register_address(&ruby_archlibdir_path);
     ruby_archlibdir_path = archlibdir;
 
-    load_path = rb_root_namespace()->load_path;
+    load_path = rb_root_box()->load_path;
 
     ruby_push_include(getenv("RUBYLIB"), identical_path);
 
@@ -1831,11 +1831,11 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     ruby_init_prelude();
 
-    /* Initialize the main namespace after loading libraries (including rubygems)
+    /* Initialize the main box after loading libraries (including rubygems)
      * to enable those in both root and main */
-    if (rb_namespace_available())
-        rb_initialize_main_namespace();
-    rb_namespace_init_done();
+    if (rb_box_available())
+        rb_initialize_main_box();
+    rb_box_init_done();
 
     // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
@@ -2334,8 +2334,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
-    const rb_namespace_t *ns = rb_root_namespace();
-    const long loaded_before_enc = RARRAY_LEN(ns->loaded_features);
+    const rb_box_t *box = rb_root_box();
+    const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         const char *const progname =
@@ -2483,7 +2483,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
         long i;
-        VALUE load_path = ns->load_path;
+        VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
 
@@ -2506,11 +2506,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             RARRAY_ASET(load_path, i, path);
         }
         if (modifiable) {
-            rb_ary_replace(ns->load_path_snapshot, load_path);
+            rb_ary_replace(box->load_path_snapshot, load_path);
         }
     }
     {
-        VALUE loaded_features = ns->loaded_features;
+        VALUE loaded_features = box->loaded_features;
         bool modified = false;
         for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
             VALUE path = RARRAY_AREF(loaded_features, i);
@@ -2522,7 +2522,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             RARRAY_ASET(loaded_features, i, path);
         }
         if (modified) {
-            rb_ary_replace(ns->loaded_features_snapshot, loaded_features);
+            rb_ary_replace(box->loaded_features_snapshot, loaded_features);
         }
     }
 

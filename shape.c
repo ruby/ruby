@@ -744,7 +744,7 @@ rb_shape_transition_heap(VALUE obj, size_t heap_index)
 }
 
 void
-rb_set_namespaced_class_shape_id(VALUE obj, shape_id_t shape_id)
+rb_set_boxed_class_shape_id(VALUE obj, shape_id_t shape_id)
 {
     RBASIC_SET_SHAPE_ID(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), shape_id);
     // FIXME: How to do multi-shape?

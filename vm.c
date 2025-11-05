@@ -98,19 +98,19 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
 }
 
 #if VM_CHECK_MODE > 0
-// ruby_namespace_crashed defined in internal/box.h
-#define VM_NAMESPACE_CRASHED() {ruby_namespace_crashed = true;}
-#define VM_NAMESPACE_ASSERT(expr, msg) \
-    if (!(expr)) { ruby_namespace_crashed = true; rb_bug(msg); }
+// ruby_box_crashed defined in internal/box.h
+#define VM_BOX_CRASHED() {ruby_box_crashed = true;}
+#define VM_BOX_ASSERT(expr, msg) \
+    if (!(expr)) { ruby_box_crashed = true; rb_bug(msg); }
 #else
-#define VM_NAMESPACE_CRASHED() {}
-#define VM_NAMESPACE_ASSERT(expr, msg) ((void)0)
+#define VM_BOX_CRASHED() {}
+#define VM_BOX_ASSERT(expr, msg) ((void)0)
 #endif
 
 static const VALUE *
 VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
 {
-    // rb_vmdebug_namespace_env_dump_raw() simulates this function
+    // rb_vmdebug_box_env_dump_raw() simulates this function
     const VALUE *ep = current_cfp->ep;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
     const rb_control_frame_t *cfp = current_cfp;
@@ -120,20 +120,20 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
         /**
          * Returns CFUNC frame only in this case.
          *
-         * Usually CFUNC frame doesn't represent the current namespace and it should operate
-         * the caller namespace. See the example:
+         * Usually CFUNC frame doesn't represent the current box and it should operate
+         * the caller box. See the example:
          *
-         * # in the main namespace
+         * # in the main box
          * module Kernel
          *   def foo = "foo"
          *   module_function :foo
          * end
          *
-         * In the case above, `module_function` is defined in the root namespace.
-         * If `module_function` worked in the root namespace, `Kernel#foo` is invisible
+         * In the case above, `module_function` is defined in the root box.
+         * If `module_function` worked in the root box, `Kernel#foo` is invisible
          * from it and it causes NameError: undefined method `foo` for module `Kernel`.
          *
-         * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own namespace
+         * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own box
          * and its local env frame will be CFUNC frame.
          * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
          *
@@ -142,7 +142,7 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
          * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
          * to iterate the array's members (it's just like `#each`).
          * We expect that `chunk_i` works as expected by the implementation of `#chunk`
-         * without any overwritten definitions from namespaces.
+         * without any overwritten definitions from boxes.
          * So the definitions on IFUNC frames should be equal to the caller CFUNC.
          */
         VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC));
@@ -152,13 +152,13 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
     while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-        VM_NAMESPACE_ASSERT(cfp, "CFUNC should have a valid previous control frame");
-        VM_NAMESPACE_ASSERT(cfp < eocfp, "CFUNC should have a valid caller frame");
+        VM_BOX_ASSERT(cfp, "CFUNC should have a valid previous control frame");
+        VM_BOX_ASSERT(cfp < eocfp, "CFUNC should have a valid caller frame");
         if (!cfp || cfp >= eocfp) {
             return NULL;
         }
 
-        VM_NAMESPACE_ASSERT(cfp->ep, "CFUNC should have a valid caller frame with env");
+        VM_BOX_ASSERT(cfp->ep, "CFUNC should have a valid caller frame with env");
         ep = cfp->ep;
         if (!ep) {
             return NULL;
@@ -196,10 +196,10 @@ static inline VALUE
 VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
 {
     const VALUE *ep;
-    if (VM_ENV_NAMESPACED_P(cfp->ep)) {
+    if (VM_ENV_BOXED_P(cfp->ep)) {
         VM_ASSERT(VM_ENV_LOCAL_P(cfp->ep));
         /* Never set black_handler for VM_FRAME_MAGIC_TOP or VM_FRAME_MAGIC_CLASS
-         * and the specval is used for namespace (rb_namespace_t) in these case
+         * and the specval is used for boxes (rb_box_t) in these case
          */
         return VM_BLOCK_HANDLER_NONE;
     }
@@ -882,7 +882,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 /* control stack frame */
 
 static void
-vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_namespace_t *ns)
+vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_box_t *box)
 {
     if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP) {
         rb_raise(rb_eTypeError, "Not a toplevel InstructionSequence");
@@ -891,7 +891,7 @@ vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_nam
     /* for return */
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
                   rb_ec_thread_ptr(ec)->top_self,
-                  GC_GUARDED_PTR(ns),
+                  GC_GUARDED_PTR(box),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   ISEQ_BODY(iseq)->iseq_encoded, ec->cfp->sp,
                   ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
@@ -3032,11 +3032,11 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
 /* misc */
 
 VALUE
-rb_iseq_eval(const rb_iseq_t *iseq, const rb_namespace_t *ns)
+rb_iseq_eval(const rb_iseq_t *iseq, const rb_box_t *box)
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
-    vm_set_top_stack(ec, iseq, ns);
+    vm_set_top_stack(ec, iseq, box);
     val = vm_exec(ec);
     return val;
 }
@@ -3086,11 +3086,11 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
     const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_box_t *box = rb_current_box();
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  recv, GC_GUARDED_PTR(ns),
+                  recv, GC_GUARDED_PTR(box),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   0, reg_cfp->sp, 0, 0);
 
@@ -3100,11 +3100,11 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     return val;
 }
 
-/* namespace */
+/* Ruby::Box */
 
 VALUE
-rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
-                              VALUE filename, const rb_namespace_t *ns)
+rb_vm_call_cfunc_in_box(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
+                              VALUE filename, const rb_box_t *box)
 {
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
@@ -3112,7 +3112,7 @@ rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  recv, GC_GUARDED_PTR(ns),
+                  recv, GC_GUARDED_PTR(box),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   0, reg_cfp->sp, 0, 0);
 
@@ -3123,50 +3123,50 @@ rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg
 }
 
 void
-rb_vm_frame_flag_set_ns_require(const rb_execution_context_t *ec)
+rb_vm_frame_flag_set_box_require(const rb_execution_context_t *ec)
 {
-    VM_ASSERT(rb_namespace_available());
-    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_NS_REQUIRE);
+    VM_ASSERT(rb_box_available());
+    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE);
 }
 
-static const rb_namespace_t *
-current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+static const rb_box_t *
+current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     rb_callable_method_entry_t *cme;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     const VALUE *lep = VM_EP_RUBY_LEP(ec, cfp);
-    VM_NAMESPACE_ASSERT(lep, "lep should be valid");
-    VM_NAMESPACE_ASSERT(rb_namespace_available(), "namespace should be available here");
+    VM_BOX_ASSERT(lep, "lep should be valid");
+    VM_BOX_ASSERT(rb_box_available(), "box should be available here");
 
     if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CFUNC)) {
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
-        VM_NAMESPACE_ASSERT(cme, "cme should be valid");
-        VM_NAMESPACE_ASSERT(cme->def, "cme->def shold be valid");
-        return cme->def->ns;
+        VM_BOX_ASSERT(cme, "cme should be valid");
+        VM_BOX_ASSERT(cme->def, "cme->def shold be valid");
+        return cme->def->box;
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CLASS)) {
-        VM_NAMESPACE_ASSERT(VM_ENV_LOCAL_P(lep), "lep should be local on MAGIC_TOP or MAGIC_CLASS frames");
-        return VM_ENV_NAMESPACE(lep);
+        VM_BOX_ASSERT(VM_ENV_LOCAL_P(lep), "lep should be local on MAGIC_TOP or MAGIC_CLASS frames");
+        return VM_ENV_BOX(lep);
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_DUMMY)) {
         // No valid local ep found (just after process boot?)
-        // return the root namespace (the only valid namespace) until the main is initialized
-        ns = rb_main_namespace();
-        if (ns)
-            return ns;
-        return rb_root_namespace();
+        // return the root box (the only valid box) until the main is initialized
+        box = rb_main_box();
+        if (box)
+            return box;
+        return rb_root_box();
     }
     else {
-        VM_NAMESPACE_CRASHED();
-        rb_bug("BUG: Local ep without cme/namespace, flags: %08lX", (unsigned long)lep[VM_ENV_DATA_INDEX_FLAGS]);
+        VM_BOX_CRASHED();
+        rb_bug("BUG: Local ep without cme/box, flags: %08lX", (unsigned long)lep[VM_ENV_DATA_INDEX_FLAGS]);
     }
     UNREACHABLE_RETURN(0);
 }
 
-const rb_namespace_t *
-rb_vm_current_namespace(const rb_execution_context_t *ec)
+const rb_box_t *
+rb_vm_current_box(const rb_execution_context_t *ec)
 {
-    return current_namespace_on_cfp(ec, ec->cfp);
+    return current_box_on_cfp(ec, ec->cfp);
 }
 
 static const rb_control_frame_t *
@@ -3175,7 +3175,7 @@ find_loader_control_frame(const rb_execution_context_t *ec, const rb_control_fra
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (!VM_ENV_FRAME_TYPE_P(cfp->ep, VM_FRAME_MAGIC_CFUNC))
             break;
-        if (!NAMESPACE_ROOT_P(current_namespace_on_cfp(ec, cfp)))
+        if (!BOX_ROOT_P(current_box_on_cfp(ec, cfp)))
             break;
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
@@ -3183,32 +3183,32 @@ find_loader_control_frame(const rb_execution_context_t *ec, const rb_control_fra
     return cfp;
 }
 
-const rb_namespace_t *
-rb_vm_loading_namespace(const rb_execution_context_t *ec)
+const rb_box_t *
+rb_vm_loading_box(const rb_execution_context_t *ec)
 {
     const rb_control_frame_t *cfp, *current_cfp, *end_cfp;
 
-    if (!rb_namespace_available() || !ec)
-        return rb_root_namespace();
+    if (!rb_box_available() || !ec)
+        return rb_root_box();
 
     cfp = ec->cfp;
     current_cfp = cfp;
     end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-        if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE)) {
-            if (RTEST(cfp->self) && NAMESPACE_OBJ_P(cfp->self)) {
-                // Namespace#require, #require_relative, #load
-                return rb_get_namespace_t(cfp->self);
+        if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE)) {
+            if (RTEST(cfp->self) && BOX_OBJ_P(cfp->self)) {
+                // Box#require, #require_relative, #load
+                return rb_get_box_t(cfp->self);
             }
             // Kernel#require, #require_relative, #load
             cfp = find_loader_control_frame(ec, cfp, end_cfp);
-            return current_namespace_on_cfp(ec, cfp);
+            return current_box_on_cfp(ec, cfp);
         }
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
-    // no require/load with explicit namespaces.
-    return current_namespace_on_cfp(ec, current_cfp);
+    // no require/load with explicit boxes.
+    return current_box_on_cfp(ec, current_cfp);
 }
 
 /* vm */
@@ -3223,10 +3223,10 @@ rb_vm_update_references(void *ptr)
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
-        if (vm->root_namespace)
-            rb_namespace_gc_update_references(vm->root_namespace);
-        if (vm->main_namespace)
-            rb_namespace_gc_update_references(vm->main_namespace);
+        if (vm->root_box)
+            rb_box_gc_update_references(vm->root_box);
+        if (vm->main_box)
+            rb_box_gc_update_references(vm->main_box);
 
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3299,11 +3299,11 @@ rb_vm_mark(void *ptr)
 
         rb_gc_mark_movable(vm->self);
 
-        if (vm->root_namespace) {
-            rb_namespace_entry_mark(vm->root_namespace);
+        if (vm->root_box) {
+            rb_box_entry_mark(vm->root_box);
         }
-        if (vm->main_namespace) {
-            rb_namespace_entry_mark(vm->main_namespace);
+        if (vm->main_box) {
+            rb_box_entry_mark(vm->main_box);
         }
 
         rb_gc_mark_movable(vm->mark_object_ary);
@@ -3886,7 +3886,7 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 static void
 th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_box_t *box = rb_current_box();
 
     th->self = self;
 
@@ -3911,8 +3911,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
     th->top_wrapper = 0;
-    if (ns->top_self) {
-        th->top_self = ns->top_self;
+    if (box->top_self) {
+        th->top_self = box->top_self;
     }
     else {
         th->top_self = 0;
@@ -4745,20 +4745,20 @@ main_to_s(VALUE obj)
 VALUE
 rb_vm_top_self(void)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
-    VM_ASSERT(ns);
-    VM_ASSERT(ns->top_self);
-    return ns->top_self;
+    const rb_box_t *box = rb_current_box();
+    VM_ASSERT(box);
+    VM_ASSERT(box->top_self);
+    return box->top_self;
 }
 
 void
 Init_top_self(void)
 {
     rb_vm_t *vm = GET_VM();
-    vm->root_namespace = (rb_namespace_t *)rb_root_namespace();
-    vm->root_namespace->top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(vm->root_namespace->top_self, "to_s", main_to_s, 0);
-    rb_define_alias(rb_singleton_class(vm->root_namespace->top_self), "inspect", "to_s");
+    vm->root_box = (rb_box_t *)rb_root_box();
+    vm->root_box->top_self = rb_obj_alloc(rb_cObject);
+    rb_define_singleton_method(vm->root_box->top_self, "to_s", main_to_s, 0);
+    rb_define_alias(rb_singleton_class(vm->root_box->top_self), "inspect", "to_s");
 }
 
 VALUE *

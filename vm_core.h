@@ -754,9 +754,9 @@ typedef struct rb_vm_struct {
     struct global_object_list *global_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
-    /* namespace */
-    rb_namespace_t *root_namespace;
-    rb_namespace_t *main_namespace;
+    /* Ruby Box */
+    rb_box_t *root_box;
+    rb_box_t *main_box;
 
     /* load */
     // For running the init function of statically linked
@@ -1389,7 +1389,7 @@ enum vm_frame_env_flags {
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW  = 0x0400,
     VM_FRAME_FLAG_PASSED     = 0x0800,
-    VM_FRAME_FLAG_NS_REQUIRE = 0x1000,
+    VM_FRAME_FLAG_BOX_REQUIRE = 0x1000,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1528,7 +1528,7 @@ VM_FRAME_RUBYFRAME_P_UNCHECKED(const rb_control_frame_t *cfp)
 static inline int
 VM_FRAME_NS_REQUIRE_P(const rb_control_frame_t *cfp)
 {
-    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE) != 0;
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE) != 0;
 }
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
@@ -1563,7 +1563,7 @@ VM_ENV_PREV_EP(const VALUE *ep)
 }
 
 static inline bool
-VM_ENV_NAMESPACED_P(const VALUE *ep)
+VM_ENV_BOXED_P(const VALUE *ep)
 {
     return VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CLASS) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP);
 }
@@ -1571,7 +1571,7 @@ VM_ENV_NAMESPACED_P(const VALUE *ep)
 static inline VALUE
 VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
-    if (VM_ENV_NAMESPACED_P(ep)) {
+    if (VM_ENV_BOXED_P(ep)) {
         VM_ASSERT(VM_ENV_LOCAL_P(ep));
         return VM_BLOCK_HANDLER_NONE;
     }
@@ -1580,18 +1580,18 @@ VM_ENV_BLOCK_HANDLER(const VALUE *ep)
     return ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
-static inline const rb_namespace_t *
-VM_ENV_NAMESPACE(const VALUE *ep)
+static inline const rb_box_t *
+VM_ENV_BOX(const VALUE *ep)
 {
-    VM_ASSERT(VM_ENV_NAMESPACED_P(ep));
+    VM_ASSERT(VM_ENV_BOXED_P(ep));
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
-    return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+    return (const rb_box_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }
 
-static inline const rb_namespace_t *
-VM_ENV_NAMESPACE_UNCHECKED(const VALUE *ep)
+static inline const rb_box_t *
+VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 {
-    return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+    return (const rb_box_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }
 
 #if VM_CHECK_MODE > 0
@@ -1914,7 +1914,7 @@ NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int 
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_iseq_eval(const rb_iseq_t *iseq, const rb_namespace_t *ns);
+VALUE rb_iseq_eval(const rb_iseq_t *iseq, const rb_box_t *box);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);

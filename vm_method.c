@@ -384,7 +384,7 @@ struct invalidate_callable_method_entry_foreach_arg {
 };
 
 static void
-invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE namespace, void *data)
+invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
 {
     st_data_t me;
     struct invalidate_callable_method_entry_foreach_arg *arg = (struct invalidate_callable_method_entry_foreach_arg *)data;
@@ -1089,7 +1089,7 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def->type = type;
     def->original_id = mid;
     def->method_serial = (uintptr_t)RUBY_ATOMIC_FETCH_ADD(method_serial, 1);
-    def->ns = rb_current_namespace();
+    def->box = rb_current_box();
     return def;
 }
 

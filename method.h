@@ -204,7 +204,7 @@ struct rb_method_definition_struct {
 
     ID original_id;
     uintptr_t method_serial;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
 };
 
 struct rb_id_table;

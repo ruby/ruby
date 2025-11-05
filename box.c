@@ -24,7 +24,7 @@ VALUE rb_cNamespace = 0;
 VALUE rb_cNamespaceEntry = 0;
 VALUE rb_mNamespaceLoader = 0;
 
-static rb_namespace_t root_namespace_data = {
+static rb_box_t root_box_data = {
     /* Initialize values lazily in Init_namespace() */
     (VALUE)NULL, 0,
     (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL,
@@ -32,12 +32,12 @@ static rb_namespace_t root_namespace_data = {
     false, false
 };
 
-static rb_namespace_t * root_namespace = &root_namespace_data;
-static rb_namespace_t * main_namespace = 0;
+static rb_box_t * root_box = &root_box_data;
+static rb_box_t * main_box = 0;
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
 
-#define NAMESPACE_TMP_PREFIX "_ruby_ns_"
+#define BOX_TMP_PREFIX "_ruby_box_"
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -49,156 +49,156 @@ static bool tmp_dir_has_dirsep;
 # define DIRSEP "/"
 #endif
 
-bool ruby_namespace_enabled = false; // extern
-bool ruby_namespace_init_done = false; // extern
-bool ruby_namespace_crashed = false; // extern, changed only in vm.c
+bool ruby_box_enabled = false; // extern
+bool ruby_box_init_done = false; // extern
+bool ruby_box_crashed = false; // extern, changed only in vm.c
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
-static VALUE rb_namespace_inspect(VALUE obj);
+static VALUE rb_box_inspect(VALUE obj);
 
 void
-rb_namespace_init_done(void)
+rb_box_init_done(void)
 {
-    ruby_namespace_init_done = true;
+    ruby_box_init_done = true;
 }
 
-const rb_namespace_t *
-rb_root_namespace(void)
+const rb_box_t *
+rb_root_box(void)
 {
-    return root_namespace;
+    return root_box;
 }
 
-const rb_namespace_t *
-rb_main_namespace(void)
+const rb_box_t *
+rb_main_box(void)
 {
-    return main_namespace;
+    return main_box;
 }
 
-const rb_namespace_t *
-rb_current_namespace(void)
+const rb_box_t *
+rb_current_box(void)
 {
     /*
-     * If RUBY_NAMESPACE is not set, the root namespace is the only available one.
+     * If RUBY_NAMESPACE is not set, the root box is the only available one.
      *
-     * Until the main_namespace is not initialized, the root namespace is
-     * the only valid namespace.
+     * Until the main_box is not initialized, the root box is
+     * the only valid box.
      * This early return is to avoid accessing EC before its setup.
      */
-    if (!main_namespace)
-        return root_namespace;
+    if (!main_box)
+        return root_box;
 
-    return rb_vm_current_namespace(GET_EC());
+    return rb_vm_current_box(GET_EC());
 }
 
-const rb_namespace_t *
-rb_loading_namespace(void)
+const rb_box_t *
+rb_loading_box(void)
 {
-    if (!main_namespace)
-        return root_namespace;
+    if (!main_box)
+        return root_box;
 
-    return rb_vm_loading_namespace(GET_EC());
+    return rb_vm_loading_box(GET_EC());
 }
 
-const rb_namespace_t *
-rb_current_namespace_in_crash_report(void)
+const rb_box_t *
+rb_current_box_in_crash_report(void)
 {
-    if (ruby_namespace_crashed)
+    if (ruby_box_crashed)
         return NULL;
-    return rb_current_namespace();
+    return rb_current_box();
 }
 
-static long namespace_id_counter = 0;
+static long box_id_counter = 0;
 
 static long
-namespace_generate_id(void)
+box_generate_id(void)
 {
     long id;
     RB_VM_LOCKING() {
-        id = ++namespace_id_counter;
+        id = ++box_id_counter;
     }
     return id;
 }
 
 static VALUE
-namespace_main_to_s(VALUE obj)
+box_main_to_s(VALUE obj)
 {
     return rb_str_new2("main");
 }
 
 static void
-namespace_entry_initialize(rb_namespace_t *ns)
+box_entry_initialize(rb_box_t *box)
 {
-    const rb_namespace_t *root = rb_root_namespace();
+    const rb_box_t *root = rb_root_box();
 
     // These will be updated immediately
-    ns->ns_object = 0;
-    ns->ns_id = 0;
+    box->box_object = 0;
+    box->box_id = 0;
 
-    ns->top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(ns->top_self, "to_s", namespace_main_to_s, 0);
-    rb_define_alias(rb_singleton_class(ns->top_self), "inspect", "to_s");
-    ns->load_path = rb_ary_dup(root->load_path);
-    ns->expanded_load_path = rb_ary_dup(root->expanded_load_path);
-    ns->load_path_snapshot = rb_ary_new();
-    ns->load_path_check_cache = 0;
-    ns->loaded_features = rb_ary_dup(root->loaded_features);
-    ns->loaded_features_snapshot = rb_ary_new();
-    ns->loaded_features_index = st_init_numtable();
-    ns->loaded_features_realpaths = rb_hash_dup(root->loaded_features_realpaths);
-    ns->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
-    ns->loading_table = st_init_strtable();
-    ns->ruby_dln_libmap = rb_hash_new_with_size(0);
-    ns->gvar_tbl = rb_hash_new_with_size(0);
+    box->top_self = rb_obj_alloc(rb_cObject);
+    rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
+    rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
+    box->load_path = rb_ary_dup(root->load_path);
+    box->expanded_load_path = rb_ary_dup(root->expanded_load_path);
+    box->load_path_snapshot = rb_ary_new();
+    box->load_path_check_cache = 0;
+    box->loaded_features = rb_ary_dup(root->loaded_features);
+    box->loaded_features_snapshot = rb_ary_new();
+    box->loaded_features_index = st_init_numtable();
+    box->loaded_features_realpaths = rb_hash_dup(root->loaded_features_realpaths);
+    box->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
+    box->loading_table = st_init_strtable();
+    box->ruby_dln_libmap = rb_hash_new_with_size(0);
+    box->gvar_tbl = rb_hash_new_with_size(0);
 
-    ns->is_user = true;
-    ns->is_optional = true;
+    box->is_user = true;
+    box->is_optional = true;
 }
 
 void
-rb_namespace_gc_update_references(void *ptr)
+rb_box_gc_update_references(void *ptr)
 {
-    rb_namespace_t *ns = (rb_namespace_t *)ptr;
-    if (!ns) return;
+    rb_box_t *box = (rb_box_t *)ptr;
+    if (!box) return;
 
-    if (ns->ns_object)
-        ns->ns_object = rb_gc_location(ns->ns_object);
-    if (ns->top_self)
-        ns->top_self = rb_gc_location(ns->top_self);
-    ns->load_path = rb_gc_location(ns->load_path);
-    ns->expanded_load_path = rb_gc_location(ns->expanded_load_path);
-    ns->load_path_snapshot = rb_gc_location(ns->load_path_snapshot);
-    if (ns->load_path_check_cache) {
-        ns->load_path_check_cache = rb_gc_location(ns->load_path_check_cache);
+    if (box->box_object)
+        box->box_object = rb_gc_location(box->box_object);
+    if (box->top_self)
+        box->top_self = rb_gc_location(box->top_self);
+    box->load_path = rb_gc_location(box->load_path);
+    box->expanded_load_path = rb_gc_location(box->expanded_load_path);
+    box->load_path_snapshot = rb_gc_location(box->load_path_snapshot);
+    if (box->load_path_check_cache) {
+        box->load_path_check_cache = rb_gc_location(box->load_path_check_cache);
     }
-    ns->loaded_features = rb_gc_location(ns->loaded_features);
-    ns->loaded_features_snapshot = rb_gc_location(ns->loaded_features_snapshot);
-    ns->loaded_features_realpaths = rb_gc_location(ns->loaded_features_realpaths);
-    ns->loaded_features_realpath_map = rb_gc_location(ns->loaded_features_realpath_map);
-    ns->ruby_dln_libmap = rb_gc_location(ns->ruby_dln_libmap);
-    ns->gvar_tbl = rb_gc_location(ns->gvar_tbl);
+    box->loaded_features = rb_gc_location(box->loaded_features);
+    box->loaded_features_snapshot = rb_gc_location(box->loaded_features_snapshot);
+    box->loaded_features_realpaths = rb_gc_location(box->loaded_features_realpaths);
+    box->loaded_features_realpath_map = rb_gc_location(box->loaded_features_realpath_map);
+    box->ruby_dln_libmap = rb_gc_location(box->ruby_dln_libmap);
+    box->gvar_tbl = rb_gc_location(box->gvar_tbl);
 }
 
 void
-rb_namespace_entry_mark(void *ptr)
+rb_box_entry_mark(void *ptr)
 {
-    const rb_namespace_t *ns = (rb_namespace_t *)ptr;
-    if (!ns) return;
+    const rb_box_t *box = (rb_box_t *)ptr;
+    if (!box) return;
 
-    rb_gc_mark(ns->ns_object);
-    rb_gc_mark(ns->top_self);
-    rb_gc_mark(ns->load_path);
-    rb_gc_mark(ns->expanded_load_path);
-    rb_gc_mark(ns->load_path_snapshot);
-    rb_gc_mark(ns->load_path_check_cache);
-    rb_gc_mark(ns->loaded_features);
-    rb_gc_mark(ns->loaded_features_snapshot);
-    rb_gc_mark(ns->loaded_features_realpaths);
-    rb_gc_mark(ns->loaded_features_realpath_map);
-    if (ns->loading_table) {
-        rb_mark_tbl(ns->loading_table);
+    rb_gc_mark(box->box_object);
+    rb_gc_mark(box->top_self);
+    rb_gc_mark(box->load_path);
+    rb_gc_mark(box->expanded_load_path);
+    rb_gc_mark(box->load_path_snapshot);
+    rb_gc_mark(box->load_path_check_cache);
+    rb_gc_mark(box->loaded_features);
+    rb_gc_mark(box->loaded_features_snapshot);
+    rb_gc_mark(box->loaded_features_realpaths);
+    rb_gc_mark(box->loaded_features_realpath_map);
+    if (box->loading_table) {
+        rb_mark_tbl(box->loading_table);
     }
-    rb_gc_mark(ns->ruby_dln_libmap);
-    rb_gc_mark(ns->gvar_tbl);
+    rb_gc_mark(box->ruby_dln_libmap);
+    rb_gc_mark(box->gvar_tbl);
 }
 
 static int
@@ -218,186 +218,185 @@ free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 static void
-namespace_root_free(void *ptr)
+box_root_free(void *ptr)
 {
-    rb_namespace_t *ns = (rb_namespace_t *)ptr;
-    if (ns->loading_table) {
-        st_foreach(ns->loading_table, free_loading_table_entry, 0);
-        st_free_table(ns->loading_table);
-        ns->loading_table = 0;
+    rb_box_t *box = (rb_box_t *)ptr;
+    if (box->loading_table) {
+        st_foreach(box->loading_table, free_loading_table_entry, 0);
+        st_free_table(box->loading_table);
+        box->loading_table = 0;
     }
 
-    if (ns->loaded_features_index) {
-        st_foreach(ns->loaded_features_index, free_loaded_feature_index_i, 0);
-        st_free_table(ns->loaded_features_index);
+    if (box->loaded_features_index) {
+        st_foreach(box->loaded_features_index, free_loaded_feature_index_i, 0);
+        st_free_table(box->loaded_features_index);
     }
 }
 
 static void
-namespace_entry_free(void *ptr)
+box_entry_free(void *ptr)
 {
-    namespace_root_free(ptr);
+    box_root_free(ptr);
     xfree(ptr);
 }
 
 static size_t
-namespace_entry_memsize(const void *ptr)
+box_entry_memsize(const void *ptr)
 {
-    const rb_namespace_t *ns = (const rb_namespace_t *)ptr;
-    return sizeof(rb_namespace_t) + \
-        rb_st_memsize(ns->loaded_features_index) + \
-        rb_st_memsize(ns->loading_table);
+    const rb_box_t *box = (const rb_box_t *)ptr;
+    return sizeof(rb_box_t) + \
+        rb_st_memsize(box->loaded_features_index) + \
+        rb_st_memsize(box->loading_table);
 }
 
-const rb_data_type_t rb_namespace_data_type = {
+const rb_data_type_t rb_box_data_type = {
     "Namespace::Entry",
     {
-        rb_namespace_entry_mark,
-        namespace_entry_free,
-        namespace_entry_memsize,
-        rb_namespace_gc_update_references,
+        rb_box_entry_mark,
+        box_entry_free,
+        box_entry_memsize,
+        rb_box_gc_update_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
-const rb_data_type_t rb_root_namespace_data_type = {
+const rb_data_type_t rb_root_box_data_type = {
     "Namespace::Root",
     {
-        rb_namespace_entry_mark,
-        namespace_root_free,
-        namespace_entry_memsize,
-        rb_namespace_gc_update_references,
+        rb_box_entry_mark,
+        box_root_free,
+        box_entry_memsize,
+        rb_box_gc_update_references,
     },
-    &rb_namespace_data_type, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
+    &rb_box_data_type, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
 VALUE
-rb_namespace_entry_alloc(VALUE klass)
+rb_box_entry_alloc(VALUE klass)
 {
-    rb_namespace_t *entry;
-    VALUE obj = TypedData_Make_Struct(klass, rb_namespace_t, &rb_namespace_data_type, entry);
-    namespace_entry_initialize(entry);
+    rb_box_t *entry;
+    VALUE obj = TypedData_Make_Struct(klass, rb_box_t, &rb_box_data_type, entry);
+    box_entry_initialize(entry);
     return obj;
 }
 
-static rb_namespace_t *
-get_namespace_struct_internal(VALUE entry)
+static rb_box_t *
+get_box_struct_internal(VALUE entry)
 {
-    rb_namespace_t *sval;
-    TypedData_Get_Struct(entry, rb_namespace_t, &rb_namespace_data_type, sval);
+    rb_box_t *sval;
+    TypedData_Get_Struct(entry, rb_box_t, &rb_box_data_type, sval);
     return sval;
 }
 
-rb_namespace_t *
-rb_get_namespace_t(VALUE namespace)
+rb_box_t *
+rb_get_box_t(VALUE box)
 {
     VALUE entry;
-    ID id_namespace_entry;
+    ID id_box_entry;
 
-    VM_ASSERT(namespace);
+    VM_ASSERT(box);
 
-    if (NIL_P(namespace))
-        return root_namespace;
+    if (NIL_P(box))
+        return root_box;
 
-    VM_ASSERT(NAMESPACE_OBJ_P(namespace));
+    VM_ASSERT(BOX_OBJ_P(box));
 
-    CONST_ID(id_namespace_entry, "__namespace_entry__");
-    entry = rb_attr_get(namespace, id_namespace_entry);
-    return get_namespace_struct_internal(entry);
+    CONST_ID(id_box_entry, "__box_entry__");
+    entry = rb_attr_get(box, id_box_entry);
+    return get_box_struct_internal(entry);
 }
 
 VALUE
-rb_get_namespace_object(rb_namespace_t *ns)
+rb_get_box_object(rb_box_t *box)
 {
-    VM_ASSERT(ns && ns->ns_object);
-    return ns->ns_object;
+    VM_ASSERT(box && box->box_object);
+    return box->box_object;
 }
 
 /*
  *  call-seq:
- *    Namespace.new -> new_namespace
+ *    Namespace.new -> new_box
  *
- *  Returns a new Namespace object.
+ *  Returns a new Ruby::Box object.
  */
 static VALUE
-namespace_initialize(VALUE namespace)
+box_initialize(VALUE box_value)
 {
-    rb_namespace_t *ns;
+    rb_box_t *box;
     rb_classext_t *object_classext;
     VALUE entry;
-    ID id_namespace_entry;
-    CONST_ID(id_namespace_entry, "__namespace_entry__");
+    ID id_box_entry;
+    CONST_ID(id_box_entry, "__box_entry__");
 
-    if (!rb_namespace_available()) {
+    if (!rb_box_available()) {
         rb_raise(rb_eRuntimeError, "Namespace is disabled. Set RUBY_NAMESPACE=1 environment variable to use Namespace.");
     }
 
     entry = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespaceEntry);
-    ns = get_namespace_struct_internal(entry);
+    box = get_box_struct_internal(entry);
 
-    ns->ns_object = namespace;
-    ns->ns_id = namespace_generate_id();
-    rb_define_singleton_method(ns->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
+    box->box_object = box_value;
+    box->box_id = box_generate_id();
+    rb_define_singleton_method(box->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
-    // Set the Namespace object unique/consistent from any namespaces to have just single
-    // constant table from any view of every (including main) namespace.
-    // If a code in the namespace adds a constant, the constant will be visible even from root/main.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE(namespace, true);
+    // Set the Ruby::Box object unique/consistent from any boxes to have just single
+    // constant table from any view of every (including main) box.
+    // If a code in the box adds a constant, the constant will be visible even from root/main.
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE(box_value, true);
 
     // Get a clean constant table of Object even by writable one
     // because ns was just created, so it has not touched any constants yet.
-    object_classext = RCLASS_EXT_WRITABLE_IN_NS(rb_cObject, ns);
-    RCLASS_SET_CONST_TBL(namespace, RCLASSEXT_CONST_TBL(object_classext), true);
+    object_classext = RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, box);
+    RCLASS_SET_CONST_TBL(box_value, RCLASSEXT_CONST_TBL(object_classext), true);
 
-    rb_ivar_set(namespace, id_namespace_entry, entry);
+    rb_ivar_set(box_value, id_box_entry, entry);
 
-    return namespace;
+    return box_value;
 }
 
 /*
  *  call-seq:
  *    Namespace.enabled? -> true or false
  *
- *  Returns +true+ if namespace is enabled.
+ *  Returns +true+ if Ruby::Box is enabled.
  */
 static VALUE
-rb_namespace_s_getenabled(VALUE recv)
+rb_box_s_getenabled(VALUE recv)
 {
-    return RBOOL(rb_namespace_available());
+    return RBOOL(rb_box_available());
 }
 
 /*
  *  call-seq:
- *    Namespace.current -> namespace, nil or false
+ *    Namespace.current -> box, nil or false
  *
- *  Returns the current namespace.
- *  Returns +nil+ if it is the built-in namespace.
- *  Returns +false+ if namespace is not enabled.
+ *  Returns the current box.
+ *  Returns +nil+ if Ruby Box is not enabled.
  */
 static VALUE
-rb_namespace_s_current(VALUE recv)
+rb_box_s_current(VALUE recv)
 {
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
 
-    if (!rb_namespace_available())
+    if (!rb_box_available())
         return Qnil;
 
-    ns = rb_vm_current_namespace(GET_EC());
-    VM_ASSERT(ns && ns->ns_object);
-    return ns->ns_object;
+    box = rb_vm_current_box(GET_EC());
+    VM_ASSERT(box && box->box_object);
+    return box->box_object;
 }
 
 /*
  *  call-seq:
  *    load_path -> array
  *
- *  Returns namespace local load path.
+ *  Returns box local load path.
  */
 static VALUE
-rb_namespace_load_path(VALUE namespace)
+rb_box_load_path(VALUE box)
 {
-    VM_ASSERT(NAMESPACE_OBJ_P(namespace));
-    return rb_get_namespace_t(namespace)->load_path;
+    VM_ASSERT(BOX_OBJ_P(box));
+    return rb_get_box_t(box)->load_path;
 }
 
 #ifdef _WIN32
@@ -480,12 +479,12 @@ system_tmpdir(void)
 /* end of copy */
 
 static int
-sprint_ext_filename(char *str, size_t size, long namespace_id, const char *prefix, const char *basename)
+sprint_ext_filename(char *str, size_t size, long box_id, const char *prefix, const char *basename)
 {
     if (tmp_dir_has_dirsep) {
-        return snprintf(str, size, "%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, prefix, getpid(), namespace_id, basename);
+        return snprintf(str, size, "%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, prefix, getpid(), box_id, basename);
     }
-    return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), namespace_id, basename);
+    return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), box_id, basename);
 }
 
 #ifdef _WIN32
@@ -661,19 +660,19 @@ escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize
 }
 
 VALUE
-rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
+rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
     int copy_error, wrote;
     char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
-    rb_namespace_t *ns = rb_get_namespace_t(namespace);
+    rb_box_t *box = rb_get_box_t(box_value);
 
     fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
     escaped_basename(src_path, fname2, basename, sizeof(basename));
 
-    wrote = sprint_ext_filename(ext_path, sizeof(ext_path), ns->ns_id, NAMESPACE_TMP_PREFIX, basename);
+    wrote = sprint_ext_filename(ext_path, sizeof(ext_path), box->box_id, BOX_TMP_PREFIX, basename);
     if (wrote >= (int)sizeof(ext_path)) {
-        rb_bug("Extension file path in namespace was too long");
+        rb_bug("Extension file path in the box was too long");
     }
     copy_error = copy_ext_file(src_path, ext_path);
     if (copy_error) {
@@ -683,7 +682,7 @@ rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
 #else
         copy_ext_file_error(message, sizeof(message), copy_error, src_path, ext_path);
 #endif
-        rb_raise(rb_eLoadError, "can't prepare the extension file for namespaces (%s from %s): %s", ext_path, src_path, message);
+        rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
     }
     // TODO: register the path to be clean-uped
     return rb_str_new_cstr(ext_path);
@@ -694,40 +693,40 @@ rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
 //       And it requires calling dlclose before deleting it.
 
 static VALUE
-rb_namespace_load(int argc, VALUE *argv, VALUE namespace)
+rb_box_load(int argc, VALUE *argv, VALUE box)
 {
     VALUE fname, wrap;
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
-    rb_vm_frame_flag_set_ns_require(GET_EC());
+    rb_vm_frame_flag_set_box_require(GET_EC());
 
     VALUE args = rb_ary_new_from_args(2, fname, wrap);
     return rb_load_entrypoint(args);
 }
 
 static VALUE
-rb_namespace_require(VALUE namespace, VALUE fname)
+rb_box_require(VALUE box, VALUE fname)
 {
-    rb_vm_frame_flag_set_ns_require(GET_EC());
+    rb_vm_frame_flag_set_box_require(GET_EC());
 
     return rb_require_string(fname);
 }
 
 static VALUE
-rb_namespace_require_relative(VALUE namespace, VALUE fname)
+rb_box_require_relative(VALUE box, VALUE fname)
 {
-    rb_vm_frame_flag_set_ns_require(GET_EC());
+    rb_vm_frame_flag_set_box_require(GET_EC());
 
     return rb_require_relative_entrypoint(fname);
 }
 
 static void
-initialize_root_namespace(void)
+initialize_root_box(void)
 {
-    VALUE root_namespace, entry;
-    ID id_namespace_entry;
+    VALUE root_box, entry;
+    ID id_box_entry;
     rb_vm_t *vm = GET_VM();
-    rb_namespace_t *root = (rb_namespace_t *)rb_root_namespace();
+    rb_box_t *root = (rb_box_t *)rb_root_box();
 
     root->load_path = rb_ary_new();
     root->expanded_load_path = rb_ary_hidden_new(0);
@@ -746,98 +745,98 @@ initialize_root_namespace(void)
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
 
-    vm->root_namespace = root;
+    vm->root_box = root;
 
-    if (rb_namespace_available()) {
-        CONST_ID(id_namespace_entry, "__namespace_entry__");
+    if (rb_box_available()) {
+        CONST_ID(id_box_entry, "__box_entry__");
 
-        root_namespace = rb_obj_alloc(rb_cNamespace);
-        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_namespace, true);
-        RCLASS_SET_CONST_TBL(root_namespace, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
+        root_box = rb_obj_alloc(rb_cNamespace);
+        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_box, true);
+        RCLASS_SET_CONST_TBL(root_box, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
 
-        root->ns_id = namespace_generate_id();
-        root->ns_object = root_namespace;
+        root->box_id = box_generate_id();
+        root->box_object = root_box;
 
-        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_root_namespace_data_type, root);
-        rb_ivar_set(root_namespace, id_namespace_entry, entry);
+        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_root_box_data_type, root);
+        rb_ivar_set(root_box, id_box_entry, entry);
     }
     else {
-        root->ns_id = 1;
-        root->ns_object = Qnil;
+        root->box_id = 1;
+        root->box_object = Qnil;
     }
 }
 
 static VALUE
-rb_namespace_eval(VALUE namespace, VALUE str)
+rb_box_eval(VALUE box_value, VALUE str)
 {
     const rb_iseq_t *iseq;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
 
     StringValue(str);
 
     iseq = rb_iseq_compile_iseq(str, rb_str_new_cstr("eval"));
     VM_ASSERT(iseq);
 
-    ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    box = (const rb_box_t *)rb_get_box_t(box_value);
 
-    return rb_iseq_eval(iseq, ns);
+    return rb_iseq_eval(iseq, box);
 }
 
-static int namespace_experimental_warned = 0;
+static int box_experimental_warned = 0;
 
 void
-rb_initialize_main_namespace(void)
+rb_initialize_main_box(void)
 {
-    rb_namespace_t *ns;
-    VALUE main_ns;
+    rb_box_t *box;
+    VALUE main_box_value;
     rb_vm_t *vm = GET_VM();
 
-    VM_ASSERT(rb_namespace_available());
+    VM_ASSERT(rb_box_available());
 
-    if (!namespace_experimental_warned) {
+    if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
-                         "Namespace is experimental, and the behavior may change in the future!\n"
-                         "See doc/namespace.md for known issues, etc.");
-        namespace_experimental_warned = 1;
+                         "Ruby::Box is experimental, and the behavior may change in the future!\n"
+                         "See doc/box.md for known issues, etc.");
+        box_experimental_warned = 1;
     }
 
-    main_ns = rb_class_new_instance(0, NULL, rb_cNamespace);
-    VM_ASSERT(NAMESPACE_OBJ_P(main_ns));
-    ns = rb_get_namespace_t(main_ns);
-    ns->ns_object = main_ns;
-    ns->is_user = true;
-    ns->is_optional = false;
+    main_box_value = rb_class_new_instance(0, NULL, rb_cNamespace);
+    VM_ASSERT(BOX_OBJ_P(main_box_value));
+    box = rb_get_box_t(main_box_value);
+    box->box_object = main_box_value;
+    box->is_user = true;
+    box->is_optional = false;
 
-    rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_ns);
+    rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_box_value);
 
-    vm->main_namespace = main_namespace = ns;
+    vm->main_box = main_box = box;
 
     // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
-    RCLASS_EXT_WRITABLE_IN_NS(rb_cObject, ns);
+    RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, box);
 }
 
 static VALUE
-rb_namespace_inspect(VALUE obj)
+rb_box_inspect(VALUE obj)
 {
-    rb_namespace_t *ns;
+    rb_box_t *box;
     VALUE r;
     if (obj == Qfalse) {
         r = rb_str_new_cstr("#<Namespace:root>");
         return r;
     }
-    ns = rb_get_namespace_t(obj);
+    box = rb_get_box_t(obj);
     r = rb_str_new_cstr("#<Namespace:");
-    rb_str_concat(r, rb_funcall(LONG2NUM(ns->ns_id), rb_intern("to_s"), 0));
-    if (NAMESPACE_ROOT_P(ns)) {
+    rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
+    if (BOX_ROOT_P(box)) {
         rb_str_cat_cstr(r, ",root");
     }
-    if (NAMESPACE_USER_P(ns)) {
+    if (BOX_USER_P(box)) {
         rb_str_cat_cstr(r, ",user");
     }
-    if (NAMESPACE_MAIN_P(ns)) {
+    if (BOX_MAIN_P(box)) {
         rb_str_cat_cstr(r, ",main");
     }
-    else if (NAMESPACE_OPTIONAL_P(ns)) {
+    else if (BOX_OPTIONAL_P(box)) {
         rb_str_cat_cstr(r, ",optional");
     }
     rb_str_cat_cstr(r, ">");
@@ -845,65 +844,65 @@ rb_namespace_inspect(VALUE obj)
 }
 
 static VALUE
-rb_namespace_loading_func(int argc, VALUE *argv, VALUE _self)
+rb_box_loading_func(int argc, VALUE *argv, VALUE _self)
 {
-    rb_vm_frame_flag_set_ns_require(GET_EC());
+    rb_vm_frame_flag_set_box_require(GET_EC());
     return rb_call_super(argc, argv);
 }
 
 static void
-namespace_define_loader_method(const char *name)
+box_define_loader_method(const char *name)
 {
-    rb_define_private_method(rb_mNamespaceLoader, name, rb_namespace_loading_func, -1);
-    rb_define_singleton_method(rb_mNamespaceLoader, name, rb_namespace_loading_func, -1);
+    rb_define_private_method(rb_mNamespaceLoader, name, rb_box_loading_func, -1);
+    rb_define_singleton_method(rb_mNamespaceLoader, name, rb_box_loading_func, -1);
 }
 
 void
-Init_root_namespace(void)
+Init_root_box(void)
 {
-    root_namespace->loading_table = st_init_strtable();
+    root_box->loading_table = st_init_strtable();
 }
 
 void
-Init_enable_namespace(void)
+Init_enable_box(void)
 {
     const char *env = getenv("RUBY_NAMESPACE");
     if (env && strlen(env) == 1 && env[0] == '1') {
-        ruby_namespace_enabled = true;
+        ruby_box_enabled = true;
     }
     else {
-        ruby_namespace_init_done = true;
+        ruby_box_init_done = true;
     }
 }
 
 /* :nodoc: */
 static VALUE
-rb_namespace_s_root(VALUE recv)
+rb_box_s_root(VALUE recv)
 {
-    return root_namespace->ns_object;
+    return root_box->box_object;
 }
 
 /* :nodoc: */
 static VALUE
-rb_namespace_s_main(VALUE recv)
+rb_box_s_main(VALUE recv)
 {
-    return main_namespace->ns_object;
+    return main_box->box_object;
 }
 
 /* :nodoc: */
 static VALUE
-rb_namespace_root_p(VALUE namespace)
+rb_box_root_p(VALUE box_value)
 {
-    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
-    return RBOOL(NAMESPACE_ROOT_P(ns));
+    const rb_box_t *box = (const rb_box_t *)rb_get_box_t(box_value);
+    return RBOOL(BOX_ROOT_P(box));
 }
 
 /* :nodoc: */
 static VALUE
-rb_namespace_main_p(VALUE namespace)
+rb_box_main_p(VALUE box_value)
 {
-    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
-    return RBOOL(NAMESPACE_MAIN_P(ns));
+    const rb_box_t *box = (const rb_box_t *)rb_get_box_t(box_value);
+    return RBOOL(BOX_MAIN_P(box));
 }
 
 #if RUBY_DEBUG
@@ -940,14 +939,14 @@ dump_classext_constants_i(ID mid, VALUE _val, void *data)
 }
 
 static void
-dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _ns, void *data)
+dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _recv, void *data)
 {
     char buf[4096];
     struct rb_id_table *tbl;
     VALUE ary, res = (VALUE)data;
 
-    snprintf(buf, 4096, "Namespace %ld:%s classext %p\n",
-             RCLASSEXT_NS(ext)->ns_id, is_prime ? " prime" : "", (void *)ext);
+    snprintf(buf, 4096, "Ruby::Box %ld:%s classext %p\n",
+             RCLASSEXT_BOX(ext)->box_id, is_prime ? " prime" : "", (void *)ext);
     rb_str_cat_cstr(res, buf);
 
     snprintf(buf, 2048, "  Super: %s\n", classname(RCLASSEXT_SUPER(ext)));
@@ -989,13 +988,13 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     /*
      * The desired output String value is:
      * Class: 0x88800932 (String) [singleton]
-     * Prime classext namespace(2,main), readable(t), writable(f)
+     * Prime classext box(2,main), readable(t), writable(f)
      * Non-prime classexts: 3
-     * Namespace 2: prime classext 0x88800933
+     * Box 2: prime classext 0x88800933
      *   Super: Object
      *   Methods(43): aaaaa, bbbb, cccc, dddd, eeeee, ffff, gggg, hhhhh, ...
      *   Constants(12): FOO, Bar, ...
-     * Namespace 5: classext 0x88800934
+     * Box 5: classext 0x88800934
      *   Super: Object
      *   Methods(43): aaaaa, bbbb, cccc, dddd, eeeee, ffff, gggg, hhhhh, ...
      *   Constants(12): FOO, Bar, ...
@@ -1003,7 +1002,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     char buf[2048];
     VALUE res;
     const rb_classext_t *ext;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     st_table *classext_tbl;
 
     if (!(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE))) {
@@ -1021,10 +1020,10 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     res = rb_str_new_cstr(buf);
 
     ext = RCLASS_EXT_PRIME(klass);
-    ns = RCLASSEXT_NS(ext);
-    snprintf(buf, 2048, "Prime classext namespace(%ld,%s), readable(%s), writable(%s)\n",
-             ns->ns_id,
-             NAMESPACE_ROOT_P(ns) ? "root" : (NAMESPACE_MAIN_P(ns) ? "main" : "optional"),
+    box = RCLASSEXT_BOX(ext);
+    snprintf(buf, 2048, "Prime classext box(%ld,%s), readable(%s), writable(%s)\n",
+             box->box_id,
+             BOX_ROOT_P(box) ? "root" : (BOX_MAIN_P(box) ? "main" : "optional"),
              RCLASS_PRIME_CLASSEXT_READABLE_P(klass) ? "t" : "f",
              RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass) ? "t" : "f");
     rb_str_cat_cstr(res, buf);
@@ -1046,54 +1045,54 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
 #endif /* RUBY_DEBUG */
 
 /*
- *  Document-class: Namespace
+ *  Document-class: Ruby::Box
  *
- *  Namespace is designed to provide separated spaces in a Ruby
+ *  Ruby::Box is designed to provide separated spaces in a Ruby
  *  process, to isolate applications and libraries.
- *  See {Namespace}[rdoc-ref:namespace.md].
+ *  See {Ruby::Box}[rdoc-ref:box.md].
  */
 void
-Init_Namespace(void)
+Init_Box(void)
 {
     tmp_dir = system_tmpdir();
     tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
     rb_cNamespace = rb_define_class("Namespace", rb_cModule);
-    rb_define_method(rb_cNamespace, "initialize", namespace_initialize, 0);
+    rb_define_method(rb_cNamespace, "initialize", box_initialize, 0);
 
     /* :nodoc: */
     rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
-    rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
+    rb_define_alloc_func(rb_cNamespaceEntry, rb_box_entry_alloc);
 
-    initialize_root_namespace();
+    initialize_root_box();
 
     /* :nodoc: */
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
-    namespace_define_loader_method("require");
-    namespace_define_loader_method("require_relative");
-    namespace_define_loader_method("load");
+    box_define_loader_method("require");
+    box_define_loader_method("require_relative");
+    box_define_loader_method("load");
 
-    if (rb_namespace_available()) {
+    if (rb_box_available()) {
         rb_include_module(rb_cObject, rb_mNamespaceLoader);
 
-        rb_define_singleton_method(rb_cNamespace, "root", rb_namespace_s_root, 0);
-        rb_define_singleton_method(rb_cNamespace, "main", rb_namespace_s_main, 0);
-        rb_define_method(rb_cNamespace, "root?", rb_namespace_root_p, 0);
-        rb_define_method(rb_cNamespace, "main?", rb_namespace_main_p, 0);
+        rb_define_singleton_method(rb_cNamespace, "root", rb_box_s_root, 0);
+        rb_define_singleton_method(rb_cNamespace, "main", rb_box_s_main, 0);
+        rb_define_method(rb_cNamespace, "root?", rb_box_root_p, 0);
+        rb_define_method(rb_cNamespace, "main?", rb_box_main_p, 0);
 
 #if RUBY_DEBUG
         rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
 #endif
     }
 
-    rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
-    rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_s_current, 0);
+    rb_define_singleton_method(rb_cNamespace, "enabled?", rb_box_s_getenabled, 0);
+    rb_define_singleton_method(rb_cNamespace, "current", rb_box_s_current, 0);
 
-    rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
-    rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);
-    rb_define_method(rb_cNamespace, "require", rb_namespace_require, 1);
-    rb_define_method(rb_cNamespace, "require_relative", rb_namespace_require_relative, 1);
-    rb_define_method(rb_cNamespace, "eval", rb_namespace_eval, 1);
+    rb_define_method(rb_cNamespace, "load_path", rb_box_load_path, 0);
+    rb_define_method(rb_cNamespace, "load", rb_box_load, -1);
+    rb_define_method(rb_cNamespace, "require", rb_box_require, 1);
+    rb_define_method(rb_cNamespace, "require_relative", rb_box_require_relative, 1);
+    rb_define_method(rb_cNamespace, "eval", rb_box_eval, 1);
 
-    rb_define_method(rb_cNamespace, "inspect", rb_namespace_inspect, 0);
+    rb_define_method(rb_cNamespace, "inspect", rb_box_inspect, 0);
 }

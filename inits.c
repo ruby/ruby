@@ -52,7 +52,7 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(load);
-    CALL(Namespace);
+    CALL(Box);
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
