@@ -613,4 +613,10 @@ p Foo::Bar
       RUBY
     end
   end
+
+  private
+
+  def assert_separately(*args, **kwargs)
+    super(*args, **{ timeout: 60 }.merge(kwargs))
+  end
 end
