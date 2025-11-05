@@ -800,6 +800,7 @@ impl Assembler {
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
                     }
                 }
+                Insn::LShift { opnd, out, .. } |
                 Insn::RShift { opnd, out, .. } => {
                     *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
@@ -2689,5 +2690,25 @@ mod tests {
             0x14: blr x16
         ");
         assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae10302aae2030faa100080d200023fd6");
+    }
+
+    #[test]
+    fn test_split_spilled_lshift() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd_vreg = asm.load(1.into());
+        let out_vreg = asm.lshift(opnd_vreg, Opnd::UImm(1));
+        asm.mov(C_RET_OPND, out_vreg);
+        asm.compile_with_num_regs(&mut cb, 0); // spill every VReg
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: mov x16, #1
+        0x4: stur x16, [x29, #-8]
+        0x8: ldur x15, [x29, #-8]
+        0xc: lsl x15, x15, #1
+        0x10: stur x15, [x29, #-8]
+        0x14: ldur x0, [x29, #-8]
+        ");
+        assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8eff97fd3af831ff8a0835ff8");
     }
 }
