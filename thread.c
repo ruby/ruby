@@ -442,8 +442,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         th->keeping_mutexes = mutex->next_mutex;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->fiber);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
+        VM_ASSERT(mutex->fiber_serial);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, NULL);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
@@ -5263,7 +5263,7 @@ rb_thread_shield_owned(VALUE self)
 
     rb_mutex_t *m = mutex_ptr(mutex);
 
-    return m->fiber == GET_EC()->fiber_ptr;
+    return m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr);
 }
 
 /*
@@ -5282,7 +5282,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber == GET_EC()->fiber_ptr) return Qnil;
+    if (m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr)) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5799,8 +5799,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-                        (void *)mutex->fiber, rb_mutex_num_waiting(mutex));
+            rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
+                        (unsigned long long)mutex->fiber_serial, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5840,7 +5840,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !ccan_list_empty(&mutex->waitq))) {
+            if (mutex->fiber_serial == rb_fiber_serial(th->ec->fiber_ptr) || (!mutex->fiber_serial && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }
