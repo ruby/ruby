@@ -599,6 +599,7 @@ class Socket < BasicSocket
     __accept_nonblock(exception)
   end
 
+  # :stopdoc:
   RESOLUTION_DELAY = 0.05
   private_constant :RESOLUTION_DELAY
 
@@ -616,6 +617,7 @@ class Socket < BasicSocket
 
   IPV6_ADDRESS_FORMAT = /\A(?i:(?:(?:[0-9A-F]{1,4}:){7}(?:[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){6}(?:[0-9A-F]{1,4}|:(?:[0-9A-F]{1,4}:){1,5}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){5}(?:(?::[0-9A-F]{1,4}){1,2}|:(?:[0-9A-F]{1,4}:){1,4}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){4}(?:(?::[0-9A-F]{1,4}){1,3}|:(?:[0-9A-F]{1,4}:){1,3}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){3}(?:(?::[0-9A-F]{1,4}){1,4}|:(?:[0-9A-F]{1,4}:){1,2}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){2}(?:(?::[0-9A-F]{1,4}){1,5}|:(?:[0-9A-F]{1,4}:)[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){1}(?:(?::[0-9A-F]{1,4}){1,6}|:(?:[0-9A-F]{1,4}:){0,5}[0-9A-F]{1,4}|:)|(?:::(?:[0-9A-F]{1,4}:){0,7}[0-9A-F]{1,4}|::)))(?:%.+)?\z/
   private_constant :IPV6_ADDRESS_FORMAT
+  # :startdoc:
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
@@ -680,6 +682,7 @@ class Socket < BasicSocket
     end
   end
 
+  # :stopdoc:
   def self.tcp_with_fast_fallback(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil)
     if local_host || local_port
       local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, timeout: resolv_timeout)
@@ -923,6 +926,7 @@ class Socket < BasicSocket
       connecting_socket.close
     end
   end
+  private_class_method :tcp_with_fast_fallback
 
   def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     last_error = nil
@@ -1106,7 +1110,6 @@ class Socket < BasicSocket
   end
   private_constant :HostnameResolutionStore
 
-  # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
     sockets = []
     begin
@@ -1139,9 +1142,7 @@ class Socket < BasicSocket
     end
     sockets
   end
-  class << self
-    private :ip_sockets_port0
-  end
+  private_class_method :ip_sockets_port0
 
   def self.tcp_server_sockets_port0(host)
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
@@ -1569,6 +1570,7 @@ class Socket < BasicSocket
     end
   end
 
+  # :stopdoc:
   if RUBY_PLATFORM.include?("linux")
     def self.unix_socket_abstract_name?(path)
       path.empty? or path.start_with?("\0")
@@ -1579,6 +1581,7 @@ class Socket < BasicSocket
     end
   end
   private_class_method :unix_socket_abstract_name?
+  # :startdoc:
 
   # creates a UNIX socket server on _path_.
   # It calls the block for each socket accepted.
