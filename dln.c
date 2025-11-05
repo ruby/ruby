@@ -25,8 +25,8 @@ static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/compilers.h"
-#include "internal/namespace.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
