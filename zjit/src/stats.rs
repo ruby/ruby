@@ -286,6 +286,7 @@ make_counters! {
 
     // The number of times we ran a dynamic check
     guard_type_count,
+    guard_shape_count,
 }
 
 /// Increase a counter by a specified amount

@@ -152,6 +152,7 @@ class << RubyVM::ZJIT
     stats = self.stats
 
     stats[:guard_type_exit_ratio] = stats[:exit_guard_type_failure].to_f / stats[:guard_type_count] * 100
+    stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
 
     # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
@@ -206,6 +207,8 @@ class << RubyVM::ZJIT
 
       :guard_type_count,
       :guard_type_exit_ratio,
+      :guard_shape_count,
+      :guard_shape_exit_ratio,
 
       :code_region_bytes,
       :side_exit_count,
@@ -242,7 +245,7 @@ class << RubyVM::ZJIT
       case key
       when :ratio_in_zjit
         value = '%0.1f%%' % value
-      when :guard_type_exit_ratio
+      when :guard_type_exit_ratio, :guard_shape_exit_ratio
         value = '%0.1f%%' % value
       when /_time_ns\z/
         key = key.to_s.sub(/_time_ns\z/, '_time')

@@ -964,6 +964,7 @@ fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: 
 }
 
 fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
+    gen_incr_counter(asm, Counter::guard_shape_count);
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let val = asm.load(val);
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
