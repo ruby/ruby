@@ -5498,7 +5498,8 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 }
 
 enum rb_block_handler_type
-rb_yarv_vm_block_handler_type(VALUE block_handler) {
+rb_yarv_vm_block_handler_type(VALUE block_handler)
+{
     return vm_block_handler_type(block_handler);
 }
 
