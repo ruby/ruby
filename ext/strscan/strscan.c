@@ -1278,6 +1278,7 @@ strscan_must_ascii_compat(VALUE str)
     rb_must_asciicompat(str);
 }
 
+/* :nodoc: */
 static VALUE
 strscan_scan_base10_integer(VALUE self)
 {
@@ -1315,6 +1316,7 @@ strscan_scan_base10_integer(VALUE self)
     return strscan_parse_integer(p, 10, len);
 }
 
+/* :nodoc: */
 static VALUE
 strscan_scan_base16_integer(VALUE self)
 {
