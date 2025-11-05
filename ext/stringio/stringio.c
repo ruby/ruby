@@ -2071,10 +2071,9 @@ strio_external_encoding(VALUE self)
 
 /*
  *  call-seq:
- *     strio.internal_encoding   => encoding
+ *     internal_encoding -> nil
  *
- *  Returns the Encoding of the internal string if conversion is
- *  specified.  Otherwise returns +nil+.
+ *  Returns +nil+; for compatibility with IO.
  */
 
 static VALUE
