@@ -232,14 +232,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function).inspect_err(|err| {
-        // If we use too much memory to compile this ISEQ, it would set cb.dropped_bytes = true.
-        // To avoid failing future compilation due to cb.has_dropped_bytes(), check the threshold
-        // again with the current zjit_alloc_bytes() which may be decreased after gen_function().
-        if *err == CompileError::OutOfMemory {
-            cb.update_remaining_bytes();
-        }
-    })?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function)?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
