@@ -237,7 +237,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
         // To avoid failing future compilation due to cb.has_dropped_bytes(), check the threshold
         // again with the current zjit_alloc_bytes() which may be decreased after gen_function().
         if *err == CompileError::OutOfMemory {
-            cb.check_remaining_bytes();
+            cb.update_remaining_bytes();
         }
     })?;
 

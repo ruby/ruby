@@ -210,7 +210,7 @@ impl CodeBlock {
 
     /// Set false to dropped_bytes if the current zjit_alloc_bytes() + code_region_size
     /// is below --zjit-mem-size.
-    pub fn check_remaining_bytes(&mut self) {
+    pub fn update_remaining_bytes(&mut self) {
         if self.mem_block.borrow().has_remaining_bytes() {
             self.dropped_bytes = false;
         }
