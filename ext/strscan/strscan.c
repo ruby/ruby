@@ -1274,7 +1274,7 @@ static VALUE
 strscan_scan_base10_integer(VALUE self)
 {
     char *ptr;
-    long len = 0;
+    long len = 0, remaining_len;
     struct strscanner *p;
 
     GET_SCANNER(self, p);
@@ -1284,7 +1284,7 @@ strscan_scan_base10_integer(VALUE self)
 
     ptr = CURPTR(p);
 
-    long remaining_len = S_RESTLEN(p);
+    remaining_len = S_RESTLEN(p);
 
     if (remaining_len <= 0) {
         return Qnil;
@@ -1311,7 +1311,7 @@ static VALUE
 strscan_scan_base16_integer(VALUE self)
 {
     char *ptr;
-    long len = 0;
+    long len = 0, remaining_len;
     struct strscanner *p;
 
     GET_SCANNER(self, p);
@@ -1321,7 +1321,7 @@ strscan_scan_base16_integer(VALUE self)
 
     ptr = CURPTR(p);
 
-    long remaining_len = S_RESTLEN(p);
+    remaining_len = S_RESTLEN(p);
 
     if (remaining_len <= 0) {
         return Qnil;
