@@ -1228,7 +1228,7 @@ struct classext_foreach_args {
 };
 
 static void
-classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+classext_free(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
@@ -1236,7 +1236,7 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 }
 
 static void
-classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
@@ -1918,8 +1918,8 @@ object_id(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        // With namespaces, classes and modules have different fields
-        // in different namespaces, so we cannot store the object id
+        // With Ruby Box, classes and modules have different fields
+        // in different boxes, so we cannot store the object id
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
@@ -2271,7 +2271,7 @@ rb_gc_after_updating_jit_code(void)
 }
 
 static void
-classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_memsize(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     size_t *size = (size_t *)arg;
     size_t s = 0;
@@ -2295,7 +2295,7 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
 }
 
 static void
-classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     size_t *size = (size_t *)arg;
     size_t array_size;
@@ -3075,7 +3075,7 @@ struct gc_mark_classext_foreach_arg {
 };
 
 static void
-gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
@@ -3100,7 +3100,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
 }
 
 static void
-gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
@@ -3774,7 +3774,7 @@ update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_icla
 }
 
 static void
-update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+update_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     rb_objspace_t *objspace = args->objspace;
@@ -3798,7 +3798,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 }
 
 static void
-update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     rb_objspace_t *objspace = args->objspace;

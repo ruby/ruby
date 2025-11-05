@@ -41,21 +41,21 @@
  * 1:    RUBY_FL_SINGLETON
  *           This class is a singleton class.
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
- *           This class's prime classext is the only classext and writable from any namespaces.
- *           If unset, the prime classext is writable only from the root namespace.
+ *           This class's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
  * 3:    RCLASS_IS_INITIALIZED
  *           Class has been initialized.
- * 4:    RCLASS_NAMESPACEABLE
- *           Is a builtin class that may be namespaced. It larger than a normal class.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
  */
 
 /* Flags of T_ICLASS
  *
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
- *           This module's prime classext is the only classext and writable from any namespaces.
- *           If unset, the prime classext is writable only from the root namespace.
- * 4:    RCLASS_NAMESPACEABLE
- *           Is a builtin class that may be namespaced. It larger than a normal class.
+ *           This module's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
  */
 
 /* Flags of T_MODULE
@@ -66,12 +66,12 @@
  * 1:    <reserved>
  *          Ensures that RUBY_FL_SINGLETON is never set on a T_MODULE. See `rb_class_real`.
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
- *           This module's prime classext is the only classext and writable from any namespaces.
- *           If unset, the prime classext is writable only from the root namespace.
+ *           This module's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
  * 3:    RCLASS_IS_INITIALIZED
  *           Module has been initialized.
- * 4:    RCLASS_NAMESPACEABLE
- *           Is a builtin class that may be namespaced. It larger than a normal class.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
  * 5:    RMODULE_IS_REFINEMENT
  *           Module is used for refinements.
  */
@@ -150,15 +150,15 @@ iclass_free_orphan_classext(VALUE klass, rb_classext_t *ext)
     xfree(ext);
 }
 
-struct rb_class_set_namespace_classext_args {
+struct rb_class_set_box_classext_args {
     VALUE obj;
     rb_classext_t *ext;
 };
 
 static int
-rb_class_set_namespace_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
+rb_class_set_box_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
 {
-    struct rb_class_set_namespace_classext_args *args = (struct rb_class_set_namespace_classext_args *)a;
+    struct rb_class_set_box_classext_args *args = (struct rb_class_set_box_classext_args *)a;
 
     if (existing) {
         if (LIKELY(BUILTIN_TYPE(args->obj) == T_ICLASS)) {
@@ -175,14 +175,14 @@ rb_class_set_namespace_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, s
 }
 
 void
-rb_class_set_namespace_classext(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
+rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
 {
-    struct rb_class_set_namespace_classext_args args = {
+    struct rb_class_set_box_classext_args args = {
         .obj = obj,
         .ext = ext,
     };
 
-    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)ns->ns_object, rb_class_set_namespace_classext_update, (st_data_t)&args);
+    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, rb_class_set_box_classext_update, (st_data_t)&args);
 }
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
@@ -289,12 +289,12 @@ duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
 }
 
 static VALUE
-namespace_subclasses_tbl_key(const rb_namespace_t *ns)
+box_subclasses_tbl_key(const rb_box_t *box)
 {
-    if (!ns){
+    if (!box){
         return 0;
     }
-    return (VALUE)ns->ns_id;
+    return (VALUE)box->box_id;
 }
 
 static void
@@ -302,16 +302,16 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 {
     rb_subclass_anchor_t *anchor, *orig_anchor;
     rb_subclass_entry_t *head, *cur, *cdr, *entry, *first = NULL;
-    rb_ns_subclasses_t *ns_subclasses;
+    rb_box_subclasses_t *box_subclasses;
     struct st_table *tbl;
 
     if (RCLASSEXT_SUBCLASSES(orig)) {
         orig_anchor = RCLASSEXT_SUBCLASSES(orig);
-        ns_subclasses = orig_anchor->ns_subclasses;
-        tbl = ((rb_ns_subclasses_t *)ns_subclasses)->tbl;
+        box_subclasses = orig_anchor->box_subclasses;
+        tbl = ((rb_box_subclasses_t *)box_subclasses)->tbl;
 
         anchor = ZALLOC(rb_subclass_anchor_t);
-        anchor->ns_subclasses = rb_ns_subclasses_ref_inc(ns_subclasses);
+        anchor->box_subclasses = rb_box_subclasses_ref_inc(box_subclasses);
 
         head = ZALLOC(rb_subclass_entry_t);
         anchor->head = head;
@@ -333,28 +333,28 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
             cdr->prev = cur;
             cur->next = cdr;
             if (!first) {
-                VALUE ns_id = namespace_subclasses_tbl_key(RCLASSEXT_NS(copy));
+                VALUE box_id = box_subclasses_tbl_key(RCLASSEXT_BOX(copy));
                 first = cdr;
-                st_insert(tbl, ns_id, (st_data_t)first);
+                st_insert(tbl, box_id, (st_data_t)first);
             }
             cur = cdr;
             entry = entry->next;
         }
     }
 
-    if (RCLASSEXT_NS_SUPER_SUBCLASSES(orig))
-        RCLASSEXT_NS_SUPER_SUBCLASSES(copy) = rb_ns_subclasses_ref_inc(RCLASSEXT_NS_SUPER_SUBCLASSES(orig));
-    if (RCLASSEXT_NS_MODULE_SUBCLASSES(orig))
-        RCLASSEXT_NS_MODULE_SUBCLASSES(copy) = rb_ns_subclasses_ref_inc(RCLASSEXT_NS_MODULE_SUBCLASSES(orig));
+    if (RCLASSEXT_BOX_SUPER_SUBCLASSES(orig))
+        RCLASSEXT_BOX_SUPER_SUBCLASSES(copy) = rb_box_subclasses_ref_inc(RCLASSEXT_BOX_SUPER_SUBCLASSES(orig));
+    if (RCLASSEXT_BOX_MODULE_SUBCLASSES(orig))
+        RCLASSEXT_BOX_MODULE_SUBCLASSES(copy) = rb_box_subclasses_ref_inc(RCLASSEXT_BOX_MODULE_SUBCLASSES(orig));
 }
 
 static void
-class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_namespace_t *ns)
+class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_box_t *box)
 {
     RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
 
     rb_classext_t *src = RCLASS_EXT_PRIME(iclass);
-    rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, ns);
+    rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, box);
     int first_set = 0;
 
     if (ext) {
@@ -364,7 +364,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     ext = ZALLOC(rb_classext_t);
 
-    RCLASSEXT_NS(ext) = ns;
+    RCLASSEXT_BOX(ext) = box;
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
@@ -383,7 +383,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     // RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
     // RCLASSEXT_CC_TBL(ext) = NULL;
 
-    // subclasses, namespace_super_subclasses_tbl, namespace_module_subclasses_tbl
+    // subclasses, box_super_subclasses_tbl, box_module_subclasses_tbl
     duplicate_classext_subclasses(src, ext);
 
     RCLASSEXT_SET_ORIGIN(ext, iclass, RCLASSEXT_ORIGIN(src));
@@ -392,23 +392,23 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
-    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_NAMESPACEABLE));
+    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
 
-    first_set = RCLASS_SET_NAMESPACE_CLASSEXT(iclass, ns, ext);
+    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
     if (first_set) {
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
     }
 }
 
 rb_classext_t *
-rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace_t *ns)
+rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
 
     rb_classext_t *ext = ZALLOC(rb_classext_t);
     bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
 
-    RCLASSEXT_NS(ext) = ns;
+    RCLASSEXT_BOX(ext) = box;
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
@@ -433,7 +433,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
      * so initially, it can be NULL and let it be created lazily.
      * RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
      *
-     * cc_tbl is for method inline cache, and method calls from different namespaces never occur on
+     * cc_tbl is for method inline cache, and method calls from different boxes never occur on
      * the same code, so the copied classext should have a different cc_tbl from the prime one.
      * RCLASSEXT_CC_TBL(copy) = NULL
      */
@@ -445,7 +445,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     RCLASSEXT_SET_ORIGIN(ext, klass, RCLASSEXT_ORIGIN(orig));
     /*
-     * Members not copied to namespace classext values
+     * Members not copied to box's classext values
      * * refined_class
      * * as.class.allocator / as.singleton_class.attached_object
      * * includer
@@ -463,7 +463,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
         /*
          * ICLASS has the same m_tbl/const_tbl/cvc_tbl with the included module.
          * So the module's classext is copied, its tables should be also referred
-         * by the ICLASS's classext for the namespace.
+         * by the ICLASS's classext for the box.
          */
         rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
         rb_subclass_entry_t *subclass_entry = anchor->head;
@@ -472,9 +472,9 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
                 iclass = subclass_entry->klass;
                 if (RBASIC_CLASS(iclass) == klass) {
                     // Is the subclass an ICLASS including this module into another class
-                    // If so we need to re-associate it under our namespace with the new ext
-                    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_NAMESPACEABLE));
-                    class_duplicate_iclass_classext(iclass, ext, ns);
+                    // If so we need to re-associate it under our box with the new ext
+                    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
+                    class_duplicate_iclass_classext(iclass, ext, box);
                 }
             }
             subclass_entry = subclass_entry->next;
@@ -541,9 +541,9 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
 {
     rb_subclass_entry_t *entry, *head;
     rb_subclass_anchor_t *anchor;
-    rb_ns_subclasses_t *ns_subclasses;
+    rb_box_subclasses_t *box_subclasses;
     struct st_table *tbl;
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_box_t *box = rb_current_box();
 
     entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
@@ -551,9 +551,9 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
     RB_VM_LOCKING() {
         anchor = RCLASS_WRITABLE_SUBCLASSES(super);
         VM_ASSERT(anchor);
-        ns_subclasses = (rb_ns_subclasses_t *)anchor->ns_subclasses;
-        VM_ASSERT(ns_subclasses);
-        tbl = ns_subclasses->tbl;
+        box_subclasses = (rb_box_subclasses_t *)anchor->box_subclasses;
+        VM_ASSERT(box_subclasses);
+        tbl = box_subclasses->tbl;
         VM_ASSERT(tbl);
 
         head = anchor->head;
@@ -563,14 +563,14 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
         }
         head->next = entry;
         entry->prev = head;
-        st_insert(tbl, namespace_subclasses_tbl_key(ns), (st_data_t)entry);
+        st_insert(tbl, box_subclasses_tbl_key(box), (st_data_t)entry);
     }
 
     if (is_module) {
-        RCLASS_WRITE_NS_MODULE_SUBCLASSES(klass, anchor->ns_subclasses);
+        RCLASS_WRITE_BOX_MODULE_SUBCLASSES(klass, anchor->box_subclasses);
     }
     else {
-        RCLASS_WRITE_NS_SUPER_SUBCLASSES(klass, anchor->ns_subclasses);
+        RCLASS_WRITE_BOX_SUPER_SUBCLASSES(klass, anchor->box_subclasses);
     }
 }
 
@@ -598,10 +598,10 @@ rb_class_remove_subclass_head(VALUE klass)
 }
 
 static struct rb_subclass_entry *
-class_get_subclasses_for_ns(struct st_table *tbl, VALUE ns_id)
+class_get_subclasses_for_ns(struct st_table *tbl, VALUE box_id)
 {
     st_data_t value;
-    if (st_lookup(tbl, (st_data_t)ns_id, &value)) {
+    if (st_lookup(tbl, (st_data_t)box_id, &value)) {
         return (struct rb_subclass_entry *)value;
     }
     return NULL;
@@ -615,9 +615,9 @@ remove_class_from_subclasses_replace_first_entry(st_data_t *key, st_data_t *valu
 }
 
 static void
-remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
+remove_class_from_subclasses(struct st_table *tbl, VALUE box_id, VALUE klass)
 {
-    rb_subclass_entry_t *entry = class_get_subclasses_for_ns(tbl, ns_id);
+    rb_subclass_entry_t *entry = class_get_subclasses_for_ns(tbl, box_id);
     bool first_entry = true;
     while (entry) {
         if (entry->klass == klass) {
@@ -632,11 +632,11 @@ remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
 
             if (first_entry) {
                 if (next) {
-                    st_update(tbl, ns_id, remove_class_from_subclasses_replace_first_entry, (st_data_t)next);
+                    st_update(tbl, box_id, remove_class_from_subclasses_replace_first_entry, (st_data_t)next);
                 }
                 else {
                     // no subclass entries in this ns after the deletion
-                    st_delete(tbl, &ns_id, NULL);
+                    st_delete(tbl, &box_id, NULL);
                 }
             }
 
@@ -655,32 +655,32 @@ void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    rb_ns_subclasses_t *ns_subclasses = RCLASSEXT_NS_SUPER_SUBCLASSES(ext);
+    rb_box_subclasses_t *box_subclasses = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
 
-    if (!ns_subclasses) return;
-    remove_class_from_subclasses(ns_subclasses->tbl, namespace_subclasses_tbl_key(RCLASSEXT_NS(ext)), klass);
-    rb_ns_subclasses_ref_dec(ns_subclasses);
-    RCLASSEXT_NS_SUPER_SUBCLASSES(ext) = 0;
+    if (!box_subclasses) return;
+    remove_class_from_subclasses(box_subclasses->tbl, box_subclasses_tbl_key(RCLASSEXT_BOX(ext)), klass);
+    rb_box_subclasses_ref_dec(box_subclasses);
+    RCLASSEXT_BOX_SUPER_SUBCLASSES(ext) = 0;
 }
 
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    rb_ns_subclasses_t *ns_subclasses = RCLASSEXT_NS_MODULE_SUBCLASSES(ext);
+    rb_box_subclasses_t *box_subclasses = RCLASSEXT_BOX_MODULE_SUBCLASSES(ext);
 
-    if (!ns_subclasses) return;
-    remove_class_from_subclasses(ns_subclasses->tbl, namespace_subclasses_tbl_key(RCLASSEXT_NS(ext)), klass);
-    rb_ns_subclasses_ref_dec(ns_subclasses);
-    RCLASSEXT_NS_MODULE_SUBCLASSES(ext) = 0;
+    if (!box_subclasses) return;
+    remove_class_from_subclasses(box_subclasses->tbl, box_subclasses_tbl_key(RCLASSEXT_BOX(ext)), klass);
+    rb_box_subclasses_ref_dec(box_subclasses);
+    RCLASSEXT_BOX_MODULE_SUBCLASSES(ext) = 0;
 }
 
 void
 rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacing)
 {
     rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
-    struct st_table *tbl = anchor->ns_subclasses->tbl;
-    VALUE ns_id = namespace_subclasses_tbl_key(RCLASSEXT_NS(ext));
+    struct st_table *tbl = anchor->box_subclasses->tbl;
+    VALUE box_id = box_subclasses_tbl_key(RCLASSEXT_BOX(ext));
     rb_subclass_entry_t *next, *entry = anchor->head;
 
     while (entry) {
@@ -689,21 +689,21 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
         entry = next;
     }
     VM_ASSERT(
-        rb_ns_subclasses_ref_count(anchor->ns_subclasses) > 0,
-        "ns_subclasses refcount (%p) %d", anchor->ns_subclasses, rb_ns_subclasses_ref_count(anchor->ns_subclasses));
-    st_delete(tbl, &ns_id, NULL);
-    rb_ns_subclasses_ref_dec(anchor->ns_subclasses);
+        rb_box_subclasses_ref_count(anchor->box_subclasses) > 0,
+        "box_subclasses refcount (%p) %d", anchor->box_subclasses, rb_box_subclasses_ref_count(anchor->box_subclasses));
+    st_delete(tbl, &box_id, NULL);
+    rb_box_subclasses_ref_dec(anchor->box_subclasses);
     xfree(anchor);
 
-    if (!replacing && RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
-        rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_SUPER_SUBCLASSES(ext);
-        remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
-        rb_ns_subclasses_ref_dec(ns_sub);
+    if (!replacing && RCLASSEXT_BOX_SUPER_SUBCLASSES(ext)) {
+        rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
+        remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        rb_box_subclasses_ref_dec(box_sub);
     }
-    if (!replacing && RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
-        rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_MODULE_SUBCLASSES(ext);
-        remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
-        rb_ns_subclasses_ref_dec(ns_sub);
+    if (!replacing && RCLASSEXT_BOX_MODULE_SUBCLASSES(ext)) {
+        rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_MODULE_SUBCLASSES(ext);
+        remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        rb_box_subclasses_ref_dec(box_sub);
     }
 }
 
@@ -766,19 +766,19 @@ class_switch_superclass(VALUE super, VALUE klass)
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 {
-    rb_ns_subclasses_t *ns_subclasses;
+    rb_box_subclasses_t *box_subclasses;
     rb_subclass_anchor_t *anchor;
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_box_t *box = rb_current_box();
 
-    if (!ruby_namespace_init_done) {
-        namespaceable = true;
+    if (!ruby_box_init_done) {
+        boxable = true;
     }
 
     size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
-    if (namespaceable) {
-        alloc_size = sizeof(struct RClass_namespaceable);
+    if (boxable) {
+        alloc_size = sizeof(struct RClass_boxable);
     }
 
     // class_alloc is supposed to return a new object that is not promoted yet.
@@ -787,18 +787,18 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
     //
     // TODO: Note that this could cause memory leak.
     // If NEWOBJ_OF fails with out of memory, these buffers will leak.
-    ns_subclasses = ZALLOC(rb_ns_subclasses_t);
-    ns_subclasses->refcount = 1;
-    ns_subclasses->tbl = st_init_numtable();
+    box_subclasses = ZALLOC(rb_box_subclasses_t);
+    box_subclasses->refcount = 1;
+    box_subclasses->tbl = st_init_numtable();
     anchor = ZALLOC(rb_subclass_anchor_t);
-    anchor->ns_subclasses = ns_subclasses;
+    anchor->box_subclasses = box_subclasses;
     anchor->head = ZALLOC(rb_subclass_entry_t);
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
     VALUE flags = type | FL_SHAREABLE;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
-    if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
+    if (boxable) flags |= RCLASS_BOXABLE;
 
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
@@ -813,14 +813,14 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
       RCLASS_SET_SUPER((VALUE)obj, 0);
      */
 
-    if (namespaceable) {
-        ((struct RClass_namespaceable *)obj)->ns_classext_tbl = NULL;
+    if (boxable) {
+        ((struct RClass_boxable *)obj)->box_classext_tbl = NULL;
     }
 
-    RCLASS_PRIME_NS((VALUE)obj) = ns;
-    // Classes/Modules defined in user namespaces are
-    // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !namespaceable || NAMESPACE_USER_P(ns));
+    RCLASS_PRIME_BOX((VALUE)obj) = box;
+    // Classes/Modules defined in user boxes are
+    // writable directly because it exists only in a box.
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !boxable || BOX_USER_P(box));
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
@@ -872,9 +872,9 @@ class_clear_method_table(VALUE c)
 }
 
 static VALUE
-class_boot_namespaceable(VALUE super, bool namespaceable)
+class_boot_boxable(VALUE super, bool boxable)
 {
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, namespaceable);
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable);
 
     // initialize method table prior to class_associate_super()
     // because class_associate_super() may cause GC and promote klass
@@ -900,7 +900,7 @@ class_boot_namespaceable(VALUE super, bool namespaceable)
 VALUE
 rb_class_boot(VALUE super)
 {
-    return class_boot_namespaceable(super, false);
+    return class_boot_boxable(super, false);
 }
 
 static VALUE *
@@ -1387,7 +1387,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = class_boot_namespaceable(Qundef, FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
+    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE));
 
     FL_SET(metaclass, FL_SINGLETON);
     rb_singleton_class_attached(metaclass, klass);
@@ -1423,7 +1423,7 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = class_boot_namespaceable(orig_class, FL_TEST_RAW(orig_class, RCLASS_NAMESPACEABLE));
+    VALUE klass = class_boot_boxable(orig_class, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);

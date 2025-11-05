@@ -533,7 +533,7 @@ struct rb_global_variable {
     rb_gvar_marker_t *marker;
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
-    bool namespace_ready;
+    bool box_ready;
 };
 
 struct rb_global_entry {
@@ -612,10 +612,10 @@ rb_gvar_ractor_local(const char *name)
 }
 
 void
-rb_gvar_namespace_ready(const char *name)
+rb_gvar_box_ready(const char *name)
 {
     struct rb_global_entry *entry = rb_find_global_entry(rb_intern(name));
-    entry->var->namespace_ready = true;
+    entry->var->box_ready = true;
 }
 
 static void
@@ -645,7 +645,7 @@ rb_global_entry(ID id)
 
             var->block_trace = 0;
             var->trace = 0;
-            var->namespace_ready = false;
+            var->box_ready = false;
             rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
         }
     }
@@ -1000,30 +1000,30 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
     return val;
 }
 
-#define USE_NAMESPACE_GVAR_TBL(ns,entry) \
-    (NAMESPACE_USER_P(ns) && \
-     (!entry || !entry->var->namespace_ready || entry->var->setter != rb_gvar_readonly_setter))
+#define USE_BOX_GVAR_TBL(ns,entry) \
+    (BOX_USER_P(ns) && \
+     (!entry || !entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter))
 
 VALUE
 rb_gvar_set(ID id, VALUE val)
 {
     VALUE retval;
     struct rb_global_entry *entry;
-    const rb_namespace_t *ns = rb_current_namespace();
-    bool use_namespace_tbl = false;
+    const rb_box_t *box = rb_current_box();
+    bool use_box_tbl = false;
 
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
-        if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
-            use_namespace_tbl = true;
-            rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
+        if (USE_BOX_GVAR_TBL(box, entry)) {
+            use_box_tbl = true;
+            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
             // TODO: think about trace
         }
     }
 
-    if (!use_namespace_tbl) {
+    if (!use_box_tbl) {
         retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
@@ -1039,8 +1039,8 @@ VALUE
 rb_gvar_get(ID id)
 {
     VALUE retval, gvars, key;
-    const rb_namespace_t *ns = rb_current_namespace();
-    bool use_namespace_tbl = false;
+    const rb_box_t *box = rb_current_box();
+    bool use_box_tbl = false;
     struct rb_global_entry *entry;
     struct rb_global_variable *var;
     // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
@@ -1048,9 +1048,9 @@ rb_gvar_get(ID id)
         entry = rb_global_entry(id);
         var = entry->var;
 
-        if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
-            use_namespace_tbl = true;
-            gvars = ns->gvar_tbl;
+        if (USE_BOX_GVAR_TBL(box, entry)) {
+            use_box_tbl = true;
+            gvars = box->gvar_tbl;
             key = rb_id2sym(entry->id);
             if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
                 retval = rb_hash_aref(gvars, key);
@@ -1068,7 +1068,7 @@ rb_gvar_get(ID id)
             }
         }
     }
-    if (!use_namespace_tbl) {
+    if (!use_box_tbl) {
         retval = (*var->getter)(entry->id, var->data);
     }
     return retval;
@@ -1125,7 +1125,7 @@ rb_f_global_variables(void)
     if (!rb_ractor_main_p()) {
         rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
-    /* gvar access (get/set) in namespaces creates gvar entries globally */
+    /* gvar access (get/set) in boxes creates gvar entries globally */
 
     rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
     if (!NIL_P(backref)) {
@@ -2619,9 +2619,9 @@ struct autoload_const {
     // The shared "autoload_data" if multiple constants are defined from the same feature.
     VALUE autoload_data_value;
 
-    // The namespace object when the autoload is called in a user namespace
-    // Otherwise, Qnil means the builtin namespace, Qfalse means unspecified.
-    VALUE namespace;
+    // The box object when the autoload is called in a user box
+    // Otherwise, Qnil means the root box
+    VALUE box_value;
 
     // The module we are loading a constant into.
     VALUE module;
@@ -2698,7 +2698,7 @@ autoload_const_mark_and_move(void *ptr)
     rb_gc_mark_and_move(&ac->autoload_data_value);
     rb_gc_mark_and_move(&ac->value);
     rb_gc_mark_and_move(&ac->file);
-    rb_gc_mark_and_move(&ac->namespace);
+    rb_gc_mark_and_move(&ac->box_value);
 }
 
 static size_t
@@ -2744,17 +2744,17 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
 struct autoload_copy_table_data {
     VALUE dst_tbl_value;
     struct st_table *dst_tbl;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
 };
 
 static int
-autoload_copy_table_for_namespace_i(st_data_t key, st_data_t value, st_data_t arg)
+autoload_copy_table_for_box_i(st_data_t key, st_data_t value, st_data_t arg)
 {
     struct autoload_const *autoload_const;
     struct autoload_copy_table_data *data = (struct autoload_copy_table_data *)arg;
     struct st_table *tbl = data->dst_tbl;
     VALUE tbl_value = data->dst_tbl_value;
-    const rb_namespace_t *ns = data->ns;
+    const rb_box_t *box = data->box;
 
     VALUE src_value = (VALUE)value;
     struct autoload_const *src_const = rb_check_typeddata(src_value, &autoload_const_type);
@@ -2763,7 +2763,7 @@ autoload_copy_table_for_namespace_i(st_data_t key, st_data_t value, st_data_t ar
     struct autoload_data *autoload_data = rb_check_typeddata(autoload_data_value, &autoload_data_type);
 
     VALUE new_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-    autoload_const->namespace = rb_get_namespace_object((rb_namespace_t *)ns);
+    autoload_const->box_value = rb_get_box_object((rb_box_t *)box);
     autoload_const->module = src_const->module;
     autoload_const->name = src_const->name;
     autoload_const->value = src_const->value;
@@ -2778,7 +2778,7 @@ autoload_copy_table_for_namespace_i(st_data_t key, st_data_t value, st_data_t ar
 }
 
 void
-rb_autoload_copy_table_for_namespace(st_table *iv_ptr, const rb_namespace_t *ns)
+rb_autoload_copy_table_for_box(st_table *iv_ptr, const rb_box_t *box)
 {
     struct st_table *src_tbl, *dst_tbl;
     VALUE src_tbl_value, dst_tbl_value;
@@ -2798,10 +2798,10 @@ rb_autoload_copy_table_for_namespace(st_table *iv_ptr, const rb_namespace_t *ns)
     struct autoload_copy_table_data data = {
         .dst_tbl_value = dst_tbl_value,
         .dst_tbl = dst_tbl,
-        .ns = ns,
+        .box = box,
     };
 
-    st_foreach(src_tbl, autoload_copy_table_for_namespace_i, (st_data_t)&data);
+    st_foreach(src_tbl, autoload_copy_table_for_box_i, (st_data_t)&data);
     st_insert(iv_ptr, (st_data_t)autoload, (st_data_t)dst_tbl_value);
 }
 
@@ -2822,7 +2822,7 @@ struct autoload_arguments {
     VALUE module;
     ID name;
     VALUE feature;
-    VALUE namespace;
+    VALUE box_value;
 };
 
 static VALUE
@@ -2892,7 +2892,7 @@ autoload_synchronized(VALUE _arguments)
     {
         struct autoload_const *autoload_const;
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-        autoload_const->namespace = arguments->namespace;
+        autoload_const->box_value = arguments->box_value;
         autoload_const->module = arguments->module;
         autoload_const->name = arguments->name;
         autoload_const->value = Qundef;
@@ -2909,8 +2909,8 @@ autoload_synchronized(VALUE _arguments)
 void
 rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
-    VALUE current_namespace = rb_get_namespace_object((rb_namespace_t *)ns);
+    const rb_box_t *box = rb_current_box();
+    VALUE current_box_value = rb_get_box_object((rb_box_t *)box);
 
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
@@ -2925,7 +2925,7 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
         .module = module,
         .name = name,
         .feature = feature,
-        .namespace = current_namespace,
+        .box_value = current_box_value,
     };
 
     VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
@@ -3192,17 +3192,17 @@ autoload_feature_require(VALUE _arguments)
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
-    VALUE autoload_namespace = autoload_const->namespace;
+    VALUE autoload_box_value = autoload_const->box_value;
 
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
-    if (rb_namespace_available() && NAMESPACE_OBJ_P(autoload_namespace))
-        receiver = autoload_namespace;
+    if (rb_box_available() && BOX_OBJ_P(autoload_box_value))
+        receiver = autoload_box_value;
 
     /*
      * Clear the global cc cache table because the require method can be different from the current
-     * namespace's one and it may cause inconsistent cc-cme states.
+     * box's one and it may cause inconsistent cc-cme states.
      * For example, the assertion below may fail in gccct_method_search();
      * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
      */

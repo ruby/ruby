@@ -65,10 +65,10 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(rb_namespace_t *ns, enum expand_type type, int *has_relative, int *has_non_cache)
+rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache)
 {
-    VALUE load_path = ns->load_path;
-    VALUE expanded_load_path = ns->expanded_load_path;
+    VALUE load_path = box->load_path;
+    VALUE expanded_load_path = box->expanded_load_path;
     VALUE snapshot;
     VALUE ary;
     long i;
@@ -108,39 +108,39 @@ rb_construct_expanded_load_path(rb_namespace_t *ns, enum expand_type type, int *
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_ary_freeze(ary);
-    ns->expanded_load_path = ary;
-    snapshot = ns->load_path_snapshot;
-    load_path = ns->load_path;
+    box->expanded_load_path = ary;
+    snapshot = box->load_path_snapshot;
+    load_path = box->load_path;
     rb_ary_replace(snapshot, load_path);
 }
 
 static VALUE
-get_expanded_load_path(rb_namespace_t *ns)
+get_expanded_load_path(rb_box_t *box)
 {
     VALUE check_cache;
     const VALUE non_cache = Qtrue;
-    const VALUE load_path_snapshot = ns->load_path_snapshot;
-    const VALUE load_path = ns->load_path;
+    const VALUE load_path_snapshot = box->load_path_snapshot;
+    const VALUE load_path = box->load_path;
 
     if (!rb_ary_shared_with_p(load_path_snapshot, load_path)) {
         /* The load path was modified. Rebuild the expanded load path. */
         int has_relative = 0, has_non_cache = 0;
-        rb_construct_expanded_load_path(ns, EXPAND_ALL, &has_relative, &has_non_cache);
+        rb_construct_expanded_load_path(box, EXPAND_ALL, &has_relative, &has_non_cache);
         if (has_relative) {
-            ns->load_path_check_cache = rb_dir_getwd_ospath();
+            box->load_path_check_cache = rb_dir_getwd_ospath();
         }
         else if (has_non_cache) {
             /* Non string object. */
-            ns->load_path_check_cache = non_cache;
+            box->load_path_check_cache = non_cache;
         }
         else {
-            ns->load_path_check_cache = 0;
+            box->load_path_check_cache = 0;
         }
     }
-    else if ((check_cache = ns->load_path_check_cache) == non_cache) {
+    else if ((check_cache = box->load_path_check_cache) == non_cache) {
         int has_relative = 1, has_non_cache = 1;
         /* Expand only non-cacheable objects. */
-        rb_construct_expanded_load_path(ns, EXPAND_NON_CACHE,
+        rb_construct_expanded_load_path(box, EXPAND_NON_CACHE,
                                         &has_relative, &has_non_cache);
     }
     else if (check_cache) {
@@ -149,49 +149,49 @@ get_expanded_load_path(rb_namespace_t *ns)
         if (!rb_str_equal(check_cache, cwd)) {
             /* Current working directory or filesystem encoding was changed.
                Expand relative load path and non-cacheable objects again. */
-            ns->load_path_check_cache = cwd;
-            rb_construct_expanded_load_path(ns, EXPAND_RELATIVE,
+            box->load_path_check_cache = cwd;
+            rb_construct_expanded_load_path(box, EXPAND_RELATIVE,
                                             &has_relative, &has_non_cache);
         }
         else {
             /* Expand only tilde (User HOME) and non-cacheable objects. */
-            rb_construct_expanded_load_path(ns, EXPAND_HOME,
+            rb_construct_expanded_load_path(box, EXPAND_HOME,
                                             &has_relative, &has_non_cache);
         }
     }
-    return ns->expanded_load_path;
+    return box->expanded_load_path;
 }
 
 VALUE
 rb_get_expanded_load_path(void)
 {
-    return get_expanded_load_path((rb_namespace_t *)rb_loading_namespace());
+    return get_expanded_load_path((rb_box_t *)rb_loading_box());
 }
 
 static VALUE
 load_path_getter(ID _x, VALUE * _y)
 {
-    return rb_loading_namespace()->load_path;
+    return rb_loading_box()->load_path;
 }
 
 static VALUE
 get_LOADED_FEATURES(ID _x, VALUE *_y)
 {
-    return rb_loading_namespace()->loaded_features;
+    return rb_loading_box()->loaded_features;
 }
 
 static void
-reset_loaded_features_snapshot(const rb_namespace_t *ns)
+reset_loaded_features_snapshot(const rb_box_t *box)
 {
-    VALUE snapshot = ns->loaded_features_snapshot;
-    VALUE loaded_features = ns->loaded_features;
+    VALUE snapshot = box->loaded_features_snapshot;
+    VALUE loaded_features = box->loaded_features;
     rb_ary_replace(snapshot, loaded_features);
 }
 
 static struct st_table *
-get_loaded_features_index_raw(const rb_namespace_t *ns)
+get_loaded_features_index_raw(const rb_box_t *box)
 {
-    return ns->loaded_features_index;
+    return box->loaded_features_index;
 }
 
 static st_data_t
@@ -212,7 +212,7 @@ is_rbext_path(VALUE feature_path)
 typedef rb_darray(long) feature_indexes_t;
 
 struct features_index_add_single_args {
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     VALUE offset;
     bool rb;
 };
@@ -221,7 +221,7 @@ static int
 features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t raw_args, int existing)
 {
     struct features_index_add_single_args *args = (struct features_index_add_single_args *)raw_args;
-    const rb_namespace_t *ns = args->ns;
+    const rb_box_t *box = args->box;
     VALUE offset = args->offset;
     bool rb = args->rb;
 
@@ -229,7 +229,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
         VALUE this_feature_index = *value;
 
         if (FIXNUM_P(this_feature_index)) {
-            VALUE loaded_features = ns->loaded_features;
+            VALUE loaded_features = box->loaded_features;
             VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 
             feature_indexes_t feature_indexes;
@@ -249,7 +249,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             long pos = -1;
 
             if (rb) {
-                VALUE loaded_features = ns->loaded_features;
+                VALUE loaded_features = box->loaded_features;
                 for (size_t i = 0; i < rb_darray_size(feature_indexes); ++i) {
                     long idx = rb_darray_get(feature_indexes, i);
                     VALUE this_feature_path = RARRAY_AREF(loaded_features, idx);
@@ -281,7 +281,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
 }
 
 static void
-features_index_add_single(const rb_namespace_t *ns, const char* str, size_t len, VALUE offset, bool rb)
+features_index_add_single(const rb_box_t *box, const char* str, size_t len, VALUE offset, bool rb)
 {
     struct st_table *features_index;
     st_data_t short_feature_key;
@@ -289,10 +289,10 @@ features_index_add_single(const rb_namespace_t *ns, const char* str, size_t len,
     Check_Type(offset, T_FIXNUM);
     short_feature_key = feature_key(str, len);
 
-    features_index = get_loaded_features_index_raw(ns);
+    features_index = get_loaded_features_index_raw(box);
 
     struct features_index_add_single_args args = {
-        .ns = ns,
+        .box = box,
         .offset = offset,
         .rb = rb,
     };
@@ -309,7 +309,7 @@ features_index_add_single(const rb_namespace_t *ns, const char* str, size_t len,
    relies on for its fast lookup.
 */
 static void
-features_index_add(const rb_namespace_t *ns, VALUE feature, VALUE offset)
+features_index_add(const rb_box_t *box, VALUE feature, VALUE offset)
 {
     RUBY_ASSERT(rb_ractor_main_p());
 
@@ -337,14 +337,14 @@ features_index_add(const rb_namespace_t *ns, VALUE feature, VALUE offset)
         if (p < feature_str)
             break;
         /* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-        features_index_add_single(ns, p + 1, feature_end - p - 1, offset, false);
+        features_index_add_single(box, p + 1, feature_end - p - 1, offset, false);
         if (ext) {
-            features_index_add_single(ns, p + 1, ext - p - 1, offset, rb);
+            features_index_add_single(box, p + 1, ext - p - 1, offset, rb);
         }
     }
-    features_index_add_single(ns, feature_str, feature_end - feature_str, offset, false);
+    features_index_add_single(box, feature_str, feature_end - feature_str, offset, false);
     if (ext) {
-        features_index_add_single(ns, feature_str, ext - feature_str, offset, rb);
+        features_index_add_single(box, feature_str, ext - feature_str, offset, rb);
     }
 }
 
@@ -359,19 +359,19 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static st_table *
-get_loaded_features_index(const rb_namespace_t *ns)
+get_loaded_features_index(const rb_box_t *box)
 {
     int i;
-    VALUE features = ns->loaded_features;
-    const VALUE snapshot = ns->loaded_features_snapshot;
+    VALUE features = box->loaded_features;
+    const VALUE snapshot = box->loaded_features_snapshot;
 
     if (!rb_ary_shared_with_p(snapshot, features)) {
         /* The sharing was broken; something (other than us in rb_provide_feature())
            modified loaded_features.  Rebuild the index. */
-        st_foreach(ns->loaded_features_index, loaded_features_index_clear_i, 0);
+        st_foreach(box->loaded_features_index, loaded_features_index_clear_i, 0);
 
-        VALUE realpaths = ns->loaded_features_realpaths;
-        VALUE realpath_map = ns->loaded_features_realpath_map;
+        VALUE realpaths = box->loaded_features_realpaths;
+        VALUE realpath_map = box->loaded_features_realpath_map;
         VALUE previous_realpath_map = rb_hash_dup(realpath_map);
         rb_hash_clear(realpaths);
         rb_hash_clear(realpath_map);
@@ -387,15 +387,15 @@ get_loaded_features_index(const rb_namespace_t *ns)
             as_str = rb_fstring(as_str);
             if (as_str != entry)
                 rb_ary_store(features, i, as_str);
-            features_index_add(ns, as_str, INT2FIX(i));
+            features_index_add(box, as_str, INT2FIX(i));
         }
         /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, ns->loaded_features)) {
-            rb_ary_replace(ns->loaded_features, features);
+        if (!rb_ary_shared_with_p(features, box->loaded_features)) {
+            rb_ary_replace(box->loaded_features, features);
         }
-        reset_loaded_features_snapshot(ns);
+        reset_loaded_features_snapshot(box);
 
-        features = ns->loaded_features_snapshot;
+        features = box->loaded_features_snapshot;
         long j = RARRAY_LEN(features);
         for (i = 0; i < j; i++) {
             VALUE as_str = rb_ary_entry(features, i);
@@ -409,7 +409,7 @@ get_loaded_features_index(const rb_namespace_t *ns)
             rb_hash_aset(realpath_map, as_str, realpath);
         }
     }
-    return ns->loaded_features_index;
+    return box->loaded_features_index;
 }
 
 /* This searches `load_path` for a value such that
@@ -494,7 +494,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
  * 'u': unsuffixed
  */
 static int
-rb_feature_p(const rb_namespace_t *ns, const char *feature, const char *ext, int rb, int expanded, const char **fn)
+rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
     VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
@@ -515,8 +515,8 @@ rb_feature_p(const rb_namespace_t *ns, const char *feature, const char *ext, int
         elen = 0;
         type = 0;
     }
-    features = ns->loaded_features;
-    features_index = get_loaded_features_index(ns);
+    features = box->loaded_features;
+    features_index = get_loaded_features_index(box);
 
     key = feature_key(feature, strlen(feature));
     /* We search `features` for an entry such that either
@@ -564,7 +564,7 @@ rb_feature_p(const rb_namespace_t *ns, const char *feature, const char *ext, int
             if ((n = RSTRING_LEN(v)) < len) continue;
             if (strncmp(f, feature, len) != 0) {
                 if (expanded) continue;
-                if (!load_path) load_path = get_expanded_load_path((rb_namespace_t *)ns);
+                if (!load_path) load_path = get_expanded_load_path((rb_box_t *)box);
                 if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
                     continue;
                 expanded = 1;
@@ -584,14 +584,14 @@ rb_feature_p(const rb_namespace_t *ns, const char *feature, const char *ext, int
         }
     }
 
-    loading_tbl = ns->loading_table;
+    loading_tbl = box->loading_table;
     f = 0;
     if (!expanded && !rb_is_absolute_path(feature)) {
         struct loaded_feature_searching fs;
         fs.name = feature;
         fs.len = len;
         fs.type = type;
-        fs.load_path = load_path ? load_path : get_expanded_load_path((rb_namespace_t *)ns);
+        fs.load_path = load_path ? load_path : get_expanded_load_path((rb_box_t *)box);
         fs.result = 0;
         st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
         if ((f = fs.result) != 0) {
@@ -646,7 +646,7 @@ rb_provided(const char *feature)
 }
 
 static int
-feature_provided(rb_namespace_t *ns, const char *feature, const char **loading)
+feature_provided(rb_box_t *box, const char *feature, const char **loading)
 {
     const char *ext = strrchr(feature, '.');
     VALUE fullpath = 0;
@@ -658,15 +658,15 @@ feature_provided(rb_namespace_t *ns, const char *feature, const char **loading)
     }
     if (ext && !strchr(ext, '/')) {
         if (IS_RBEXT(ext)) {
-            if (rb_feature_p(ns, feature, ext, TRUE, FALSE, loading)) return TRUE;
+            if (rb_feature_p(box, feature, ext, TRUE, FALSE, loading)) return TRUE;
             return FALSE;
         }
         else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-            if (rb_feature_p(ns, feature, ext, FALSE, FALSE, loading)) return TRUE;
+            if (rb_feature_p(box, feature, ext, FALSE, FALSE, loading)) return TRUE;
             return FALSE;
         }
     }
-    if (rb_feature_p(ns, feature, 0, TRUE, FALSE, loading))
+    if (rb_feature_p(box, feature, 0, TRUE, FALSE, loading))
         return TRUE;
     RB_GC_GUARD(fullpath);
     return FALSE;
@@ -675,40 +675,40 @@ feature_provided(rb_namespace_t *ns, const char *feature, const char **loading)
 int
 rb_feature_provided(const char *feature, const char **loading)
 {
-    rb_namespace_t *ns = (rb_namespace_t *)rb_current_namespace();
-    return feature_provided(ns, feature, loading);
+    rb_box_t *box = (rb_box_t *)rb_current_box();
+    return feature_provided(box, feature, loading);
 }
 
 static void
-rb_provide_feature(const rb_namespace_t *ns, VALUE feature)
+rb_provide_feature(const rb_box_t *box, VALUE feature)
 {
     VALUE features;
 
-    features = ns->loaded_features;
+    features = box->loaded_features;
     if (OBJ_FROZEN(features)) {
         rb_raise(rb_eRuntimeError,
                  "$LOADED_FEATURES is frozen; cannot append feature");
     }
     feature = rb_fstring(feature);
 
-    get_loaded_features_index(ns);
+    get_loaded_features_index(box);
     // If loaded_features and loaded_features_snapshot share the same backing
     // array, pushing into it would cause the whole array to be copied.
     // To avoid this we first clear loaded_features_snapshot.
-    rb_ary_clear(ns->loaded_features_snapshot);
+    rb_ary_clear(box->loaded_features_snapshot);
     rb_ary_push(features, feature);
-    features_index_add(ns, feature, INT2FIX(RARRAY_LEN(features)-1));
-    reset_loaded_features_snapshot(ns);
+    features_index_add(box, feature, INT2FIX(RARRAY_LEN(features)-1));
+    reset_loaded_features_snapshot(box);
 }
 
 void
 rb_provide(const char *feature)
 {
     /*
-     * rb_provide() must use rb_current_namespace to store provided features
-     * in the current namespace's loaded_features, etc.
+     * rb_provide() must use rb_current_box to store provided features
+     * in the current box's loaded_features, etc.
      */
-    rb_provide_feature(rb_current_namespace(), rb_fstring_cstr(feature));
+    rb_provide_feature(rb_current_box(), rb_fstring_cstr(feature));
 }
 
 NORETURN(static void load_failed(VALUE));
@@ -729,14 +729,14 @@ realpath_internal_cached(VALUE hash, VALUE path)
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
         rb_execution_context_t *ec = GET_EC();
         VALUE v = rb_vm_push_frame_fname(ec, fname);
 
-        VALUE realpath_map = ns->loaded_features_realpath_map;
+        VALUE realpath_map = box->loaded_features_realpath_map;
 
         if (rb_ruby_prism_p()) {
             pm_parse_result_t result = { 0 };
@@ -781,14 +781,14 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
 
-    rb_iseq_eval(iseq, ns);
+    rb_iseq_eval(iseq, box);
 }
 
 static inline enum ruby_tag_type
 load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
 {
     enum ruby_tag_type state;
-    rb_namespace_t *ns;
+    rb_box_t *box;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
@@ -799,12 +799,12 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
     ec->errinfo = Qnil; /* ensure */
 
     /* load in module as toplevel */
-    if (NAMESPACE_OBJ_P(load_wrapper)) {
-        ns = rb_get_namespace_t(load_wrapper);
-        if (!ns->top_self) {
-            ns->top_self = rb_obj_clone(rb_vm_top_self());
+    if (BOX_OBJ_P(load_wrapper)) {
+        box = rb_get_box_t(load_wrapper);
+        if (!box->top_self) {
+            box->top_self = rb_obj_clone(rb_vm_top_self());
         }
-        th->top_self = ns->top_self;
+        th->top_self = box->top_self;
     }
     else {
         th->top_self = rb_obj_clone(rb_vm_top_self());
@@ -843,9 +843,9 @@ raise_load_if_failed(rb_execution_context_t *ec, enum ruby_tag_type state)
 static void
 rb_load_internal(VALUE fname, VALUE wrap)
 {
-    VALUE namespace;
+    VALUE box_value;
     rb_execution_context_t *ec = GET_EC();
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
     enum ruby_tag_type state = TAG_NONE;
     if (RTEST(wrap)) {
         if (!RB_TYPE_P(wrap, T_MODULE)) {
@@ -853,9 +853,9 @@ rb_load_internal(VALUE fname, VALUE wrap)
         }
         state = load_wrapping(ec, fname, wrap);
     }
-    else if (NAMESPACE_OPTIONAL_P(ns)) {
-        namespace = ns->ns_object;
-        state = load_wrapping(ec, fname, namespace);
+    else if (BOX_OPTIONAL_P(box)) {
+        box_value = box->box_object;
+        state = load_wrapping(ec, fname, box_value);
     }
     else {
         load_iseq_eval(ec, fname);
@@ -958,10 +958,10 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 }
 
 static char *
-load_lock(const rb_namespace_t *ns, const char *ftptr, bool warn)
+load_lock(const rb_box_t *box, const char *ftptr, bool warn)
 {
     st_data_t data;
-    st_table *loading_tbl = ns->loading_table;
+    st_table *loading_tbl = box->loading_table;
 
     if (!st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
         /* partial state */
@@ -1003,11 +1003,11 @@ release_thread_shield(st_data_t *key, st_data_t *value, st_data_t done, int exis
 }
 
 static void
-load_unlock(const rb_namespace_t *ns, const char *ftptr, int done)
+load_unlock(const rb_box_t *box, const char *ftptr, int done)
 {
     if (ftptr) {
         st_data_t key = (st_data_t)ftptr;
-        st_table *loading_tbl = ns->loading_table;
+        st_table *loading_tbl = box->loading_table;
 
         st_update(loading_tbl, key, release_thread_shield, done);
     }
@@ -1055,8 +1055,6 @@ static VALUE rb_require_string_internal(VALUE fname, bool resurrect);
 VALUE
 rb_f_require(VALUE obj, VALUE fname)
 {
-    // const rb_namespace_t *ns = rb_loading_namespace();
-    // printf("F:current loading ns: %ld\n", ns->ns_id);
     return rb_require_string(fname);
 }
 
@@ -1086,10 +1084,10 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     return rb_require_relative_entrypoint(fname);
 }
 
-typedef int (*feature_func)(const rb_namespace_t *ns, const char *feature, const char *ext, int rb, int expanded, const char **fn);
+typedef int (*feature_func)(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn);
 
 static int
-search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
+search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 {
     VALUE tmp;
     char *ext, *ftptr;
@@ -1100,20 +1098,20 @@ search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, fea
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
         if (IS_RBEXT(ext)) {
-            if (rb_feature_p(ns, ftptr, ext, TRUE, FALSE, &loading)) {
+            if (rb_feature_p(box, ftptr, ext, TRUE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 'r';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
                 ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-                if (!rb_feature_p(ns, ftptr, ext, TRUE, TRUE, &loading) || loading)
+                if (!rb_feature_p(box, ftptr, ext, TRUE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 'r';
             }
             return 0;
         }
         else if (IS_SOEXT(ext)) {
-            if (rb_feature_p(ns, ftptr, ext, FALSE, FALSE, &loading)) {
+            if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
             }
@@ -1122,25 +1120,25 @@ search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, fea
             OBJ_FREEZE(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
                 ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-                if (!rb_feature_p(ns, ftptr, ext, FALSE, TRUE, &loading) || loading)
+                if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
             }
         }
         else if (IS_DLEXT(ext)) {
-            if (rb_feature_p(ns, ftptr, ext, FALSE, FALSE, &loading)) {
+            if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
                 ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-                if (!rb_feature_p(ns, ftptr, ext, FALSE, TRUE, &loading) || loading)
+                if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
             }
         }
     }
-    else if ((ft = rb_feature_p(ns, ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
+    else if ((ft = rb_feature_p(box, ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
         if (loading) *path = rb_filesystem_str_new_cstr(loading);
         return 'r';
     }
@@ -1174,7 +1172,7 @@ search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, fea
         if (ft)
             goto feature_present;
         ftptr = RSTRING_PTR(tmp);
-        return rb_feature_p(ns, ftptr, 0, FALSE, TRUE, 0);
+        return rb_feature_p(box, ftptr, 0, FALSE, TRUE, 0);
 
       default:
         if (ft) {
@@ -1183,7 +1181,7 @@ search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, fea
         /* fall through */
       case loadable_ext_rb:
         ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-        if (rb_feature_p(ns, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
+        if (rb_feature_p(box, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;
     }
@@ -1204,9 +1202,9 @@ static VALUE
 load_ext(VALUE path, VALUE fname)
 {
     VALUE loaded = path;
-    const rb_namespace_t *ns = rb_loading_namespace();
-    if (NAMESPACE_USER_P(ns)) {
-        loaded = rb_namespace_local_extension(ns->ns_object, fname, path);
+    const rb_box_t *box = rb_loading_box();
+    if (BOX_USER_P(box)) {
+        loaded = rb_box_local_extension(box->box_object, fname, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     return (VALUE)dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
@@ -1228,7 +1226,7 @@ run_static_ext_init(VALUE vm_ptr, VALUE feature_value)
 }
 
 static int
-no_feature_p(const rb_namespace_t *ns, const char *feature, const char *ext, int rb, int expanded, const char **fn)
+no_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
     return 0;
 }
@@ -1240,11 +1238,11 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
     VALUE path;
     int found;
     VALUE sym;
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
-    found = search_required(ns, path, &path, no_feature_p);
+    found = search_required(box, path, &path, no_feature_p);
 
     switch (found) {
       case 'r':
@@ -1291,22 +1289,22 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 {
     volatile int result = -1;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
     volatile const struct {
         VALUE wrapper, self, errinfo;
         rb_execution_context_t *ec;
-        const rb_namespace_t *ns;
+        const rb_box_t *box;
     } saved = {
         th->top_wrapper, th->top_self, ec->errinfo,
-        ec, ns,
+        ec, box,
     };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
     volatile VALUE saved_path;
     volatile VALUE realpath = 0;
-    VALUE realpaths = ns->loaded_features_realpaths;
-    VALUE realpath_map = ns->loaded_features_realpath_map;
+    VALUE realpaths = box->loaded_features_realpaths;
+    VALUE realpath_map = box->loaded_features_realpath_map;
     volatile bool reset_ext_config = false;
     volatile struct rb_ext_config prev_ext_config;
 
@@ -1322,18 +1320,18 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         int found;
 
         RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(ns, path, &saved_path, rb_feature_p);
+        found = search_required(box, path, &saved_path, rb_feature_p);
         RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
         path = saved_path;
 
         if (found) {
-            if (!path || !(ftptr = load_lock(ns, RSTRING_PTR(path), warn))) {
+            if (!path || !(ftptr = load_lock(box, RSTRING_PTR(path), warn))) {
                 result = 0;
             }
             else if (!*ftptr) {
                 result = TAG_RETURN;
             }
-            else if (found == 's' && RTEST(rb_vm_call_cfunc_in_namespace(Qnil, run_static_ext_init, (VALUE)th->vm, path, path, ns))) {
+            else if (found == 's' && RTEST(rb_vm_call_cfunc_in_box(Qnil, run_static_ext_init, (VALUE)th->vm, path, path, box))) {
                 result = TAG_RETURN;
             }
             else if (RTEST(rb_hash_aref(realpaths,
@@ -1343,11 +1341,12 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    // iseq_eval_in_namespace will be called with the loading namespace eventually
-                    if (NAMESPACE_OPTIONAL_P(ns)) {
-                        // check with NAMESPACE_OPTIONAL_P (not NAMESPACE_USER_P) for NS1::xxx naming
-                        // it is not expected for the main namespace
-                        load_wrapping(saved.ec, path, ns->ns_object);
+                    // iseq_eval_in_box will be called with the loading box eventually
+                    if (BOX_OPTIONAL_P(box)) {
+                        // check with BOX_OPTIONAL_P (not BOX_USER_P) for NS1::xxx naming
+                        // it is not expected for the main box
+                        // TODO: no need to use load_wrapping() here?
+                        load_wrapping(saved.ec, path, box->box_object);
                     }
                     else {
                         load_iseq_eval(saved.ec, path);
@@ -1357,8 +1356,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                   case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    handle = rb_vm_call_cfunc_in_namespace(ns->top_self, load_ext, path, fname, path, ns);
-                    rb_hash_aset(ns->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
+                    handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
+                    rb_hash_aset(box->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
                     break;
                 }
                 result = TAG_RETURN;
@@ -1368,14 +1367,14 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     EC_POP_TAG();
 
     ec = saved.ec;
-    ns = saved.ns;
+    box = saved.box;
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
     th2->top_self = saved.self;
     th2->top_wrapper = saved.wrapper;
     if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
 
     path = saved_path;
-    if (ftptr) load_unlock(ns, RSTRING_PTR(path), !state);
+    if (ftptr) load_unlock(box, RSTRING_PTR(path), !state);
 
     if (state) {
         if (state == TAG_FATAL || state == TAG_THROW) {
@@ -1401,7 +1400,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     }
 
     if (result == TAG_RETURN) {
-        rb_provide_feature(ns, path);
+        rb_provide_feature(box, path);
         VALUE real = realpath;
         if (real) {
             real = rb_fstring(real);
@@ -1505,9 +1504,9 @@ ruby_init_ext(const char *name, void (*init)(void))
 {
     st_table *inits_table;
     rb_vm_t *vm = GET_VM();
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
 
-    if (feature_provided((rb_namespace_t *)ns, name, 0))
+    if (feature_provided((rb_box_t *)box, name, 0))
         return;
 
     inits_table = vm->static_ext_inits;
@@ -1658,7 +1657,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     VALUE path;
     char *ext;
     VALUE fname_str = rb_str_new_cstr(fname);
-    const rb_namespace_t *ns = rb_loading_namespace();
+    const rb_box_t *box = rb_loading_box();
 
     resolved = rb_resolve_feature_path((VALUE)NULL, fname_str);
     if (NIL_P(resolved)) {
@@ -1666,7 +1665,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
         if (!ext || !IS_SOEXT(ext)) {
             rb_str_cat_cstr(fname_str, ".so");
         }
-        if (rb_feature_p(ns, fname, 0, FALSE, FALSE, 0)) {
+        if (rb_feature_p(box, fname, 0, FALSE, FALSE, 0)) {
             return dln_symbol(NULL, symbol);
         }
         return NULL;
@@ -1675,7 +1674,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
         return NULL;
     }
     path = rb_ary_entry(resolved, 1);
-    handle = rb_hash_lookup(ns->ruby_dln_libmap, path);
+    handle = rb_hash_lookup(box->ruby_dln_libmap, path);
     if (NIL_P(handle)) {
         return NULL;
     }
@@ -1689,14 +1688,14 @@ Init_load(void)
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
     rb_define_hooked_variable(var_load_path, 0, load_path_getter, rb_gvar_readonly_setter);
-    rb_gvar_namespace_ready(var_load_path);
+    rb_gvar_box_ready(var_load_path);
     rb_alias_variable(rb_intern_const("$-I"), id_load_path);
     rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
 
     rb_define_virtual_variable("$\"", get_LOADED_FEATURES, 0);
-    rb_gvar_namespace_ready("$\"");
+    rb_gvar_box_ready("$\"");
     rb_define_virtual_variable("$LOADED_FEATURES", get_LOADED_FEATURES, 0); // TODO: rb_alias_variable ?
-    rb_gvar_namespace_ready("$LOADED_FEATURES");
+    rb_gvar_box_ready("$LOADED_FEATURES");
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

@@ -177,7 +177,7 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
-void rb_set_namespaced_class_shape_id(VALUE obj, shape_id_t shape_id);
+void rb_set_boxed_class_shape_id(VALUE obj, shape_id_t shape_id);
 
 static inline void
 RB_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
@@ -185,7 +185,7 @@ RB_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        rb_set_namespaced_class_shape_id(obj, shape_id);
+        rb_set_boxed_class_shape_id(obj, shape_id);
         break;
       default:
         RBASIC_SET_SHAPE_ID(obj, shape_id);

@@ -389,7 +389,7 @@ dln_open(const char *file)
 # endif
 
     /* Load file */
-    int mode = rb_namespace_available() ? RTLD_LAZY|RTLD_LOCAL : RTLD_LAZY|RTLD_GLOBAL;
+    int mode = rb_box_available() ? RTLD_LAZY|RTLD_LOCAL : RTLD_LAZY|RTLD_GLOBAL;
     handle = dlopen(file, mode);
     if (handle == NULL) {
         error = dln_strerror();

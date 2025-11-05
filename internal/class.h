@@ -10,7 +10,7 @@
  */
 #include "id.h"
 #include "id_table.h"           /* for struct rb_id_table */
-#include "internal/box.h"       /* for rb_current_namespace */
+#include "internal/box.h"
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
 #include "internal/variable.h"  /* for rb_class_ivar_set */
@@ -27,37 +27,37 @@
 # undef RCLASS_SUPER
 #endif
 
-struct rb_ns_subclasses {
+struct rb_box_subclasses {
     rb_atomic_t refcount;
     struct st_table *tbl;
 };
-typedef struct rb_ns_subclasses rb_ns_subclasses_t;
+typedef struct rb_box_subclasses rb_box_subclasses_t;
 
 static inline rb_atomic_t
-rb_ns_subclasses_ref_count(rb_ns_subclasses_t *ns_sub)
+rb_box_subclasses_ref_count(rb_box_subclasses_t *box_sub)
 {
-    return ATOMIC_LOAD_RELAXED(ns_sub->refcount);
+    return ATOMIC_LOAD_RELAXED(box_sub->refcount);
 }
 
-static inline rb_ns_subclasses_t *
-rb_ns_subclasses_ref_inc(rb_ns_subclasses_t *ns_sub)
+static inline rb_box_subclasses_t *
+rb_box_subclasses_ref_inc(rb_box_subclasses_t *box_sub)
 {
-    RUBY_ATOMIC_FETCH_ADD(ns_sub->refcount, 1);
-    return ns_sub;
+    RUBY_ATOMIC_FETCH_ADD(box_sub->refcount, 1);
+    return box_sub;
 }
 
 static inline void
-rb_ns_subclasses_ref_dec(rb_ns_subclasses_t *ns_sub)
+rb_box_subclasses_ref_dec(rb_box_subclasses_t *box_sub)
 {
-    rb_atomic_t was = RUBY_ATOMIC_FETCH_SUB(ns_sub->refcount, 1);
+    rb_atomic_t was = RUBY_ATOMIC_FETCH_SUB(box_sub->refcount, 1);
     if (was == 1) {
-        st_free_table(ns_sub->tbl);
-        xfree(ns_sub);
+        st_free_table(box_sub->tbl);
+        xfree(box_sub);
     }
 }
 
 struct rb_subclass_anchor {
-    rb_ns_subclasses_t *ns_subclasses;
+    rb_box_subclasses_t *box_subclasses;
     struct rb_subclass_entry *head;
 };
 typedef struct rb_subclass_anchor rb_subclass_anchor_t;
@@ -77,7 +77,7 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
     struct rb_id_table *m_tbl;
@@ -92,19 +92,19 @@ struct rb_classext_struct {
      */
     struct rb_subclass_anchor *subclasses;
     /**
-     * The `ns_super_subclasses` points the `ns_subclasses` struct to retreive the subclasses
-     * of the super class in a specific namespace.
+     * The `box_super_subclasses` points the `box_subclasses` struct to retreive the subclasses
+     * of the super class in a specific box.
      * In compaction GCs, collecting a classext should trigger the deletion of a rb_subclass_entry
      * from the super's subclasses. But it may be prevented by the read barrier.
      * Fetching the super's subclasses for a ns is to avoid the read barrier in that process.
      */
-    rb_ns_subclasses_t *ns_super_subclasses;
+    rb_box_subclasses_t *box_super_subclasses;
     /**
-     * In the case that this is an `ICLASS`, `ns_module_subclasses` points to the link
+     * In the case that this is an `ICLASS`, `box_module_subclasses` points to the link
      * in the module's `subclasses` list that indicates that the klass has been
      * included. Hopefully that makes sense.
      */
-    rb_ns_subclasses_t *ns_module_subclasses;
+    rb_box_subclasses_t *box_module_subclasses;
 
     const VALUE origin_;
     const VALUE refined_class;
@@ -138,7 +138,7 @@ struct RClass {
     struct RBasic basic;
     VALUE object_id;
     /*
-     * If ns_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
+     * If box_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
      * For the check whether writable or not, check flag RCLASS_PRIME_CLASSEXT_WRITABLE
      */
 };
@@ -154,9 +154,9 @@ struct RClass_and_rb_classext_t {
 STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 4 * RVALUE_SIZE);
 #endif
 
-struct RClass_namespaceable {
+struct RClass_boxable {
     struct RClass_and_rb_classext_t base;
-    st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
+    st_table *box_classext_tbl; // box_object -> (rb_classext_t *)
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -170,13 +170,13 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 #define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
 
-static inline rb_classext_t * RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns);
+static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);
-static inline rb_classext_t * RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns);
+static inline rb_classext_t * RCLASS_EXT_WRITABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 
 // Raw accessor
-#define RCLASSEXT_NS(ext) (ext->ns)
+#define RCLASSEXT_BOX(ext) (ext->box)
 #define RCLASSEXT_SUPER(ext) (ext->super)
 #define RCLASSEXT_FIELDS(ext) (ext->fields_obj ? ROBJECT_FIELDS(ext->fields_obj) : NULL)
 #define RCLASSEXT_FIELDS_OBJ(ext) (ext->fields_obj)
@@ -188,8 +188,8 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_SUPERCLASS_DEPTH(ext) (ext->superclass_depth)
 #define RCLASSEXT_SUPERCLASSES(ext) (ext->superclasses)
 #define RCLASSEXT_SUBCLASSES(ext) (ext->subclasses)
-#define RCLASSEXT_NS_SUPER_SUBCLASSES(ext) (ext->ns_super_subclasses)
-#define RCLASSEXT_NS_MODULE_SUBCLASSES(ext) (ext->ns_module_subclasses)
+#define RCLASSEXT_BOX_SUPER_SUBCLASSES(ext) (ext->box_super_subclasses)
+#define RCLASSEXT_BOX_MODULE_SUBCLASSES(ext) (ext->box_module_subclasses)
 #define RCLASSEXT_ORIGIN(ext) (ext->origin_)
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
@@ -206,7 +206,7 @@ static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE o
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
 
 /* Prime classext entry accessor for very specific reason */
-#define RCLASS_PRIME_NS(c) (RCLASS_EXT_PRIME(c)->ns)
+#define RCLASS_PRIME_BOX(c) (RCLASS_EXT_PRIME(c)->box)
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
 #define RCLASS_PRIME_FIELDS_OBJ(c) (RCLASS_EXT_PRIME(c)->fields_obj)
@@ -218,7 +218,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT_PRIME(c)->callable_m_tbl != tbl)
 #define RCLASS_CC_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT_PRIME(c)->cc_tbl != tbl)
 
-// Read accessor, regarding namespaces
+// Read accessor, regarding box
 #define RCLASS_SUPER(c) (RCLASS_EXT_READABLE(c)->super)
 #define RCLASS_M_TBL(c) (RCLASS_EXT_READABLE(c)->m_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT_READABLE(c)->const_tbl)
@@ -240,12 +240,12 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_PRIME(c)->superclasses)
 #define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_PRIME(c)->superclasses_with_self)
 
-// namespaces don't make changes on these refined_class/attached_object/includer
+// Ruby Box doesn't make changes on these refined_class/attached_object/includer
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
 
-// max IV count and variation count are just hints, so they don't need to be per-namespace
+// max IV count and variation count are just hints, so they don't need to be per-box
 #define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
 #define RCLASS_VARIATION_COUNT(ext) (RCLASS_EXT_PRIME(ext)->variation_count)
 
@@ -268,8 +268,8 @@ static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
-static inline void RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
-static inline void RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
+static inline void RCLASS_WRITE_BOX_SUPER_SUBCLASSES(VALUE klass, rb_box_subclasses_t *box_subclasses);
+static inline void RCLASS_WRITE_BOX_MODULE_SUBCLASSES(VALUE klass, rb_box_subclasses_t *box_subclasses);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline void RCLASS_WRITE_ORIGIN(VALUE klass, VALUE origin);
@@ -293,14 +293,14 @@ static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool per
 #define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
 #define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
-#define RCLASS_NAMESPACEABLE FL_USER4
+#define RCLASS_BOXABLE FL_USER4
 
 static inline st_table *
 RCLASS_CLASSEXT_TBL(VALUE klass)
 {
-    if (FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE)) {
-        struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
-        return ns_klass->ns_classext_tbl;
+    if (FL_TEST_RAW(klass, RCLASS_BOXABLE)) {
+        struct RClass_boxable *box_klass = (struct RClass_boxable *)klass;
+        return box_klass->box_classext_tbl;
     }
     return NULL;
 }
@@ -308,25 +308,25 @@ RCLASS_CLASSEXT_TBL(VALUE klass)
 static inline void
 RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 {
-    RUBY_ASSERT(FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
-    struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
-    ns_klass->ns_classext_tbl = tbl;
+    RUBY_ASSERT(FL_TEST_RAW(klass, RCLASS_BOXABLE));
+    struct RClass_boxable *box_klass = (struct RClass_boxable *)klass;
+    box_klass->box_classext_tbl = tbl;
 }
 
 /* class.c */
-rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
+rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box);
 void rb_class_ensure_writable(VALUE obj);
 
-void rb_class_set_namespace_classext(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext);
+void rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext);
 
 static inline int
-RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
+RCLASS_SET_BOX_CLASSEXT(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
 {
     int first_set = 0;
     st_table *tbl = RCLASS_CLASSEXT_TBL(obj);
-    VM_ASSERT(NAMESPACE_USER_P(ns)); // non-prime classext is only for user namespace, with ns_object
-    VM_ASSERT(ns->ns_object);
-    VM_ASSERT(RCLASSEXT_NS(ext) == ns);
+    VM_ASSERT(BOX_USER_P(box)); // non-prime classext is only for user box, with box_object
+    VM_ASSERT(box->box_object);
+    VM_ASSERT(RCLASSEXT_BOX(ext) == box);
     if (!tbl) {
         tbl = st_init_numtable_with_size(1);
         RCLASS_SET_CLASSEXT_TBL(obj, tbl);
@@ -335,28 +335,28 @@ RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t
         first_set = 1;
     }
 
-    rb_class_set_namespace_classext(obj, ns, ext);
+    rb_class_set_box_classext(obj, box, ext);
 
     return first_set;
 }
 
-#define VM_ASSERT_NAMESPACEABLE_TYPE(klass) \
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS), "%s is not namespaceable type", rb_type_str(BUILTIN_TYPE(klass)))
+#define VM_ASSERT_BOXABLE_TYPE(klass) \
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS), "%s is not boxable type", rb_type_str(BUILTIN_TYPE(klass)))
 
 static inline bool
 RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE klass)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
-    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
+    VM_ASSERT_BOXABLE_TYPE(klass);
     // if the lookup table exists, then it means the prime classext is NOT directly readable.
-    return !FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE) || RCLASS_CLASSEXT_TBL(klass) == NULL;
+    return !FL_TEST_RAW(klass, RCLASS_BOXABLE) || RCLASS_CLASSEXT_TBL(klass) == NULL;
 }
 
 static inline bool
 RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
-    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
+    VM_ASSERT_BOXABLE_TYPE(klass);
     return FL_TEST(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
@@ -364,7 +364,7 @@ static inline void
 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
-    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
+    VM_ASSERT_BOXABLE_TYPE(klass);
     if (writable) {
         FL_SET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
@@ -374,12 +374,12 @@ RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
 }
 
 static inline rb_classext_t *
-RCLASS_EXT_TABLE_LOOKUP_INTERNAL(VALUE obj, const rb_namespace_t *ns)
+RCLASS_EXT_TABLE_LOOKUP_INTERNAL(VALUE obj, const rb_box_t *box)
 {
     st_data_t classext_ptr;
     st_table *classext_tbl = RCLASS_CLASSEXT_TBL(obj);
     if (classext_tbl) {
-        if (rb_st_lookup(classext_tbl, (st_data_t)ns->ns_object, &classext_ptr)) {
+        if (rb_st_lookup(classext_tbl, (st_data_t)box->box_object, &classext_ptr)) {
             return (rb_classext_t *)classext_ptr;
         }
     }
@@ -387,9 +387,9 @@ RCLASS_EXT_TABLE_LOOKUP_INTERNAL(VALUE obj, const rb_namespace_t *ns)
 }
 
 static inline rb_classext_t *
-RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
+RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 {
-    rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
+    rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, box);
     if (ext)
         return ext;
     // Classext for the ns not found. Refer the prime one instead.
@@ -397,46 +397,46 @@ RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
 }
 
 static inline rb_classext_t *
-RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
+RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (NAMESPACE_ROOT_P(ns)
+    if (BOX_ROOT_P(box)
         || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
+    return RCLASS_EXT_READABLE_LOOKUP(obj, box);
 }
 
 static inline rb_classext_t *
 RCLASS_EXT_READABLE(VALUE obj)
 {
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     if (RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    // delay determining the current namespace to optimize for unmodified classes
-    ns = rb_current_namespace();
-    if (NAMESPACE_ROOT_P(ns)) {
+    // delay determining the current box to optimize for unmodified classes
+    box = rb_current_box();
+    if (BOX_ROOT_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
+    return RCLASS_EXT_READABLE_LOOKUP(obj, box);
 }
 
 static inline rb_classext_t *
-RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
+RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 {
     rb_classext_t *ext;
     int first_set = 0;
 
-    ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
+    ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, box);
     if (ext)
         return ext;
 
     RB_VM_LOCKING() {
         // re-check the classext is not created to avoid the multi-thread race
-        ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
+        ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, box);
         if (!ext) {
-            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, ns);
-            first_set = RCLASS_SET_NAMESPACE_CLASSEXT(obj, ns, ext);
+            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, box);
+            first_set = RCLASS_SET_BOX_CLASSEXT(obj, box, ext);
             if (first_set) {
                 // TODO: are there any case that a class/module become non-writable after its birthtime?
                 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
@@ -447,28 +447,28 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
 }
 
 static inline rb_classext_t *
-RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
+RCLASS_EXT_WRITABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (NAMESPACE_ROOT_P(ns)
+    if (BOX_ROOT_P(box)
         || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
+    return RCLASS_EXT_WRITABLE_LOOKUP(obj, box);
 }
 
 static inline rb_classext_t *
 RCLASS_EXT_WRITABLE(VALUE obj)
 {
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
     if (LIKELY(RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj))) {
         return RCLASS_EXT_PRIME(obj);
     }
-    // delay determining the current namespace to optimize for unmodified classes
-    ns = rb_current_namespace();
-    if (NAMESPACE_ROOT_P(ns)) {
+    // delay determining the current box to optimize for unmodified classes
+    box = rb_current_box();
+    if (BOX_ROOT_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
+    return RCLASS_EXT_WRITABLE_LOOKUP(obj, box);
 }
 
 static inline void
@@ -485,7 +485,7 @@ RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer)
 }
 
 /* class.c */
-typedef void rb_class_classext_foreach_callback_func(rb_classext_t *classext, bool is_prime, VALUE namespace, void *arg);
+typedef void rb_class_classext_foreach_callback_func(rb_classext_t *classext, bool is_prime, VALUE box_value, void *arg);
 void rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg);
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
@@ -739,21 +739,21 @@ RCLASS_SET_SUBCLASSES(VALUE klass, struct rb_subclass_anchor *anchor)
 }
 
 static inline void
-RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses)
+RCLASS_WRITE_BOX_SUPER_SUBCLASSES(VALUE klass, rb_box_subclasses_t *box_subclasses)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    if (RCLASSEXT_NS_SUPER_SUBCLASSES(ext))
-        rb_ns_subclasses_ref_dec(RCLASSEXT_NS_SUPER_SUBCLASSES(ext));
-    RCLASSEXT_NS_SUPER_SUBCLASSES(ext) = rb_ns_subclasses_ref_inc(ns_subclasses);
+    if (RCLASSEXT_BOX_SUPER_SUBCLASSES(ext))
+        rb_box_subclasses_ref_dec(RCLASSEXT_BOX_SUPER_SUBCLASSES(ext));
+    RCLASSEXT_BOX_SUPER_SUBCLASSES(ext) = rb_box_subclasses_ref_inc(box_subclasses);
 }
 
 static inline void
-RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses)
+RCLASS_WRITE_BOX_MODULE_SUBCLASSES(VALUE klass, rb_box_subclasses_t *box_subclasses)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    if (RCLASSEXT_NS_MODULE_SUBCLASSES(ext))
-        rb_ns_subclasses_ref_dec(RCLASSEXT_NS_MODULE_SUBCLASSES(ext));
-    RCLASSEXT_NS_MODULE_SUBCLASSES(ext) = rb_ns_subclasses_ref_inc(ns_subclasses);
+    if (RCLASSEXT_BOX_MODULE_SUBCLASSES(ext))
+        rb_box_subclasses_ref_dec(RCLASSEXT_BOX_MODULE_SUBCLASSES(ext));
+    RCLASSEXT_BOX_MODULE_SUBCLASSES(ext) = rb_box_subclasses_ref_inc(box_subclasses);
 }
 
 static inline void
