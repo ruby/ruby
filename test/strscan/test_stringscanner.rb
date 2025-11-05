@@ -875,7 +875,7 @@ module StringScannerTests
     assert_equal({}, s.named_captures)
     assert_equal("te", s.scan(/../))
     assert_equal(nil, s.scan(/\d/))
-    assert_raise(ScanError) { s.unscan }
+    assert_raise(StringScanner::Error) { s.unscan }
   end
 
   def test_rest
