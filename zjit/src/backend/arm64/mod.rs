@@ -1298,7 +1298,8 @@ impl Assembler {
                     match dest.rm_num_bits() {
                         64 | 32 => stur(cb, src, dest.into()),
                         16 => sturh(cb, src, dest.into()),
-                        num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
+                        8 => sturb(cb, src, dest.into()),
+                        num_bits => panic!("unexpected dest num_bits: {} (src: {:?}, dest: {:?})", num_bits, src, dest),
                     }
                 },
                 Insn::Load { opnd, out } |
@@ -1675,6 +1676,7 @@ mod tests {
     static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     fn setup_asm() -> (Assembler, CodeBlock) {
+        crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         (Assembler::new(), CodeBlock::new_dummy())
     }
 
@@ -2601,8 +2603,21 @@ mod tests {
     }
 
     #[test]
+    fn test_store_spilled_byte() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.store(Opnd::mem(8, C_RET_OPND, 0), Opnd::mem(8, C_RET_OPND, 8));
+        asm.compile_with_num_regs(&mut cb, 0); // spill every VReg
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: ldurb w16, [x0, #8]
+        0x4: sturb w16, [x0]
+        ");
+        assert_snapshot!(cb.hexdump(), @"1080403810000038");
+    }
+
+    #[test]
     fn test_ccall_resolve_parallel_moves_no_cycle() {
-        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         asm.ccall(0 as _, vec![
@@ -2620,7 +2635,6 @@ mod tests {
 
     #[test]
     fn test_ccall_resolve_parallel_moves_single_cycle() {
-        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // x0 and x1 form a cycle
@@ -2643,7 +2657,6 @@ mod tests {
 
     #[test]
     fn test_ccall_resolve_parallel_moves_two_cycles() {
-        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // x0 and x1 form a cycle, and x2 and rcx form another cycle
@@ -2670,7 +2683,6 @@ mod tests {
 
     #[test]
     fn test_ccall_resolve_parallel_moves_large_cycle() {
-        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // x0, x1, and x2 form a cycle
