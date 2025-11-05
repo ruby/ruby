@@ -2191,6 +2191,13 @@ strscan_named_captures(VALUE self)
    ======================================================================= */
 
 /*
+ * Document-class: StringScanner::Error
+ *
+ * The error class for StringScanner.
+ * See StringScanner#unscan.
+ */
+
+/*
  * Document-class: StringScanner
  *
  * :markup: markdown
