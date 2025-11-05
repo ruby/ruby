@@ -434,7 +434,7 @@ strio_false(VALUE self)
 }
 
 /*
- * Returns +nil+.  Just for compatibility to IO.
+ * Returns +nil+; for compatibility with IO.
  */
 static VALUE
 strio_nil(VALUE self)
