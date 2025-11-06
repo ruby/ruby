@@ -3919,6 +3919,9 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
             }
+            Insn::UnboxFixnum { val } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
+            }
             _ => Ok(()),
         }
     }
