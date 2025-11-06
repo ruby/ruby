@@ -1179,6 +1179,7 @@ module Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1673,16 +1674,30 @@ module Net   #:nodoc:
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
       begin
-        s = begin
-          # Use built-in timeout in TCPSocket.open if available
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
-        rescue ArgumentError => e
-          raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
-          # Fallback to Timeout.timeout if TCPSocket.open does not support open_timeout
-          Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-            TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-          }
-        end
+        s =
+          case @tcpsocket_supports_open_timeout
+          when nil, true
+            begin
+              # Use built-in timeout in TCPSocket.open if available
+              sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+              @tcpsocket_supports_open_timeout = true
+              sock
+            rescue ArgumentError => e
+              raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
+              @tcpsocket_supports_open_timeout = false
+
+              # Fallback to Timeout.timeout if TCPSocket.open does not support open_timeout
+              Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+                TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+              }
+            end
+          when false
+            # The current Ruby is known to not support TCPSocket(open_timeout:).
+            # Directly fall back to Timeout.timeout to avoid performance penalty incured by rescue.
+            Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+              TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+            }
+          end
       rescue => e
         e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) # for compatibility with previous versions
         raise e, "Failed to open TCP connection to " +
