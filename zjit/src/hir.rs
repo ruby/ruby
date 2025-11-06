@@ -3789,7 +3789,16 @@ impl Function {
 
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.rpo() {
+            // Create the block with instructions.
             let block = &self.blocks[block_id.0];
+            let block_ptr = ptr_map.map_id(block_id.0 as u64);
+            let (block_successors, block_predecessors) = self.compute_successors_and_predecessors();
+            let predecessors = block_predecessors.get(&block_id)
+                .cloned()
+                .unwrap_or_default();
+            let successors = block_successors.get(&block_id)
+                .cloned()
+                .unwrap_or_default();
             let mut instructions = Vec::new();
 
             // Get parameter instructions.
@@ -3854,17 +3863,6 @@ impl Function {
                     )
                 );
             }
-
-            // Create the block with instructions.
-            let block_ptr = ptr_map.map_id(block_id.0 as u64);
-
-            let (block_successors, block_predecessors) = self.compute_successors_and_predecessors();
-            let predecessors = block_predecessors.get(&block_id)
-                .cloned()
-                .unwrap_or_default();
-            let successors = block_successors.get(&block_id)
-                .cloned()
-                .unwrap_or_default();
 
             hir_blocks.push(Self::make_iongraph_block(
                 block_ptr as u64,
