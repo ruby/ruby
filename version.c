@@ -12,6 +12,7 @@
 #include "internal/cmdlineopt.h"
 #include "internal/parse.h"
 #include "internal/gc.h"
+#include "ruby/internal/globals.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -112,6 +113,12 @@ define_ruby_const(VALUE mod, const char *name, VALUE value, bool toplevel)
 #define rb_define_const(mod, name, value) \
     define_ruby_const(mod, (mod == mRuby ? "RUBY_" name : name), value, (mod == mRuby))
 
+void
+Init_Ruby_module(void)
+{
+    rb_define_module("Ruby");
+}
+
 /*! Defines platform-depended Ruby-level constants */
 void
 Init_version(void)
@@ -123,7 +130,7 @@ Init_version(void)
      * The constants defined here are aliased in the toplevel with
      * +RUBY_+ prefix.
      */
-    VALUE mRuby = rb_define_module("Ruby");
+    VALUE mRuby = rb_path2class("Ruby");
 
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
     VALUE version = MKSTR(version);
