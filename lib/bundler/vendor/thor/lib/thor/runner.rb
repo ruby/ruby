@@ -2,7 +2,7 @@ require_relative "../thor"
 require_relative "group"
 
 require "digest/sha2"
-require "pathname"
+require "pathname" unless defined?(Pathname)
 
 class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
   map "-T" => :list, "-i" => :install, "-u" => :update, "-v" => :version

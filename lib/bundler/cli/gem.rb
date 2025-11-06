@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "pathname"
-
 module Bundler
   class CLI
     Bundler.require_thor_actions
