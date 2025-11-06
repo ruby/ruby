@@ -665,6 +665,8 @@ pub enum Insn {
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
     /// `DEFINED_YIELD`
     IsBlockGiven,
+    /// Test the bit at index of val, a Fixnum.
+    /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
 
     /// Get a global variable named `id`
@@ -3839,6 +3841,9 @@ impl Function {
             => {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
+            }
+            Insn::FixnumBitCheck { val, .. } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
             }
             Insn::ObjToString { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::AnyToString { val, str, .. } => {
