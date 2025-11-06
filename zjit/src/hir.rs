@@ -3806,8 +3806,7 @@ impl Function {
                 let param_id = self.union_find.borrow().find_const(*param_id);
                 let insn_type = self.type_of(param_id);
 
-                let type_str = if self.blocks[block_id.0].params.is_empty()
-                    || insn_type.is_subtype(types::Empty) {
+                let type_str = if insn_type.is_subtype(types::Empty) {
                     String::new()
                 } else {
                     format!("{}", insn_type.print(&ptr_map))
