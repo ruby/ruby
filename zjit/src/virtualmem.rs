@@ -258,11 +258,11 @@ impl<A: Allocator> VirtualMemory<A> {
         Ok(())
     }
 
-    /// Return true if zjit_alloc_bytes() + code_region_size is < memory_limit_bytes
-    pub fn has_remaining_bytes(&self) -> bool {
+    /// Return true if write_byte() can allocate a new page
+    pub fn can_allocate(&self) -> bool {
         let memory_usage_bytes = self.mapped_region_bytes + zjit_alloc_bytes();
         let memory_limit_bytes = self.memory_limit_bytes.unwrap_or(self.region_size_bytes);
-        memory_usage_bytes < memory_limit_bytes
+        memory_usage_bytes + self.page_size_bytes < memory_limit_bytes
     }
 
     /// Make all the code in the region executable. Call this at the end of a write session.

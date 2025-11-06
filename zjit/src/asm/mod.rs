@@ -208,10 +208,10 @@ impl CodeBlock {
         self.dropped_bytes
     }
 
-    /// Set false to dropped_bytes if the current zjit_alloc_bytes() + code_region_size
-    /// is below --zjit-mem-size.
-    pub fn update_remaining_bytes(&mut self) {
-        if self.mem_block.borrow().has_remaining_bytes() {
+    /// Set dropped_bytes to false if the current zjit_alloc_bytes() + code_region_size
+    /// + page_size is below --zjit-mem-size.
+    pub fn update_dropped_bytes(&mut self) {
+        if self.mem_block.borrow().can_allocate() {
             self.dropped_bytes = false;
         }
     }

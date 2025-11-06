@@ -1756,7 +1756,7 @@ impl Assembler
             // To avoid failing future compilation by cb.has_dropped_bytes(), attempt to reset dropped_bytes with
             // the current zjit_alloc_bytes() which may be decreased after self is dropped in compile_with_regs().
             if *err == CompileError::OutOfMemory && !had_dropped_bytes {
-                cb.update_remaining_bytes();
+                cb.update_dropped_bytes();
             }
         });
 
