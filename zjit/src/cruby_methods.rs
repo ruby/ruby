@@ -347,8 +347,12 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let value = fun.coerce_to(block, value, types::Fixnum, state);
 
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-
-        let len = fun.push_insn(block, hir::Insn::StringBytesize { recv, state });
+        let len = fun.push_insn(block, hir::Insn::LoadField {
+            recv,
+            id: ID!(len),
+            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            return_type: types::CInt64,
+        });
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
