@@ -186,6 +186,10 @@ jobs:
 
       - run: make install
 
+      # setup/directories set MAKEFLAGS=-j4 for macOS, which randomly fails sqlite3.gem builds
+      - name: Unset MAKEFLAGS
+        run: echo "MAKEFLAGS=" >> "$GITHUB_ENV"
+
       - name: Checkout ruby-bench
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
