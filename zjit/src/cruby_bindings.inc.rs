@@ -571,11 +571,6 @@ pub struct rb_captured_block__bindgen_ty_1 {
     pub val: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: u64,
 }
-pub const block_handler_type_iseq: rb_block_handler_type = 0;
-pub const block_handler_type_ifunc: rb_block_handler_type = 1;
-pub const block_handler_type_symbol: rb_block_handler_type = 2;
-pub const block_handler_type_proc: rb_block_handler_type = 3;
-pub type rb_block_handler_type = u32;
 pub const block_type_iseq: rb_block_type = 0;
 pub const block_type_ifunc: rb_block_type = 1;
 pub const block_type_symbol: rb_block_type = 2;
@@ -1339,8 +1334,7 @@ unsafe extern "C" {
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
-    pub fn rb_vm_get_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
-    pub fn rb_vm_block_handler_type(block_handler: VALUE) -> rb_block_handler_type;
+    pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

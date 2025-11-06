@@ -45,7 +45,7 @@ impl Profiler {
     }
 
     fn peek_at_block_handler(&self) -> VALUE {
-        unsafe { rb_vm_get_block_handler(self.cfp) }
+        unsafe { rb_vm_get_untagged_block_handler(self.cfp) }
     }
 }
 
