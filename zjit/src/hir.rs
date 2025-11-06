@@ -3751,7 +3751,9 @@ impl Function {
     /// Generate an iongraph JSON pass representation for this function.
     pub fn to_iongraph_pass(&self, pass_name: &str) -> Json {
         let mut ptr_map = PtrPrintMap::identity();
-        ptr_map.map_ptrs = true;
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
 
         let mut mir_blocks = Vec::new();
 
