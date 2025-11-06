@@ -3715,9 +3715,6 @@ impl Function {
                 }
             }
 
-            // Store successors for this block.
-            block_successors.insert(block_id, successors.clone());
-
             // Update predecessors for successor blocks.
             for &succ_id in &successors {
                 block_predecessors
@@ -3725,6 +3722,9 @@ impl Function {
                     .or_default()
                     .push(block_id.0 as u64);
             }
+
+            // Store successors for this block.
+            block_successors.insert(block_id, successors);
         }
 
         (block_successors, block_predecessors)
