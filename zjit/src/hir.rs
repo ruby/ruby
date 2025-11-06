@@ -4421,9 +4421,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let summary = TypeDistributionSummary::new(&self_type_distribution);
                             if summary.is_monomorphic() {
                                 let obj = summary.bucket(0).class();
-                                if unsafe { RB_TYPE_P(obj, RUBY_T_IMEMO) && rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
                                     fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_iseq));
-                                } else if unsafe { RB_TYPE_P(obj, RUBY_T_IMEMO) && rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 } {
+                                } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 } {
                                     fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_ifunc));
                                 } else {
                                     fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_other));
