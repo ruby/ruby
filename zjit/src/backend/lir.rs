@@ -1750,7 +1750,15 @@ impl Assembler
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
-        let ret = self.compile_with_regs(cb, alloc_regs);
+        let had_dropped_bytes = cb.has_dropped_bytes();
+        let ret = self.compile_with_regs(cb, alloc_regs).inspect_err(|err| {
+            // If we use too much memory to compile the Assembler, it would set cb.dropped_bytes = true.
+            // To avoid failing future compilation by cb.has_dropped_bytes(), attempt to reset dropped_bytes with
+            // the current zjit_alloc_bytes() which may be decreased after self is dropped in compile_with_regs().
+            if *err == CompileError::OutOfMemory && !had_dropped_bytes {
+                cb.update_dropped_bytes();
+            }
+        });
 
         #[cfg(feature = "disasm")]
         if get_option!(dump_disasm) {

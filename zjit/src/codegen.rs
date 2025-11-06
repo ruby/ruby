@@ -220,6 +220,11 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
 
 /// Compile an ISEQ into machine code
 fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>, payload: &mut IseqPayload) -> Result<IseqCodePtrs, CompileError> {
+    // If we ran out of code region, we shouldn't attempt to generate new code.
+    if cb.has_dropped_bytes() {
+        return Err(CompileError::OutOfMemory);
+    }
+
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
