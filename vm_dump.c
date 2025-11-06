@@ -1377,7 +1377,7 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 bool
 rb_vm_bugreport(const void *ctx, FILE *errout)
 {
-    const char *ns_env = getenv("RUBY_BUGREPORT_NAMESPACE_ENV");
+    const char *box_env = getenv("RUBY_BUGREPORT_BOX_ENV");
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
         char buf[0x100];
@@ -1421,7 +1421,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
-        if (ns_env) {
+        if (box_env) {
             rb_vmdebug_box_env_dump_raw(ec, ec->cfp, errout);
         }
         rb_backtrace_print_as_bugreport(errout);

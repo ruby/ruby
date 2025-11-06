@@ -990,7 +990,7 @@ rb_class_new(VALUE super)
         RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     }
 
-    RUBY_ASSERT(getenv("RUBY_NAMESPACE") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
+    RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
 
     return klass;
 }
