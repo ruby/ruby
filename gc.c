@@ -3317,7 +3317,15 @@ rb_gc_obj_optimal_size(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
-        return rb_ary_size_as_embedded(obj);
+        {
+            size_t size = rb_ary_size_as_embedded(obj);
+            if (rb_gc_size_allocatable_p(size)) {
+                return size;
+            }
+            else {
+                return sizeof(struct RArray);
+            }
+        }
 
       case T_OBJECT:
         if (rb_shape_obj_too_complex_p(obj)) {
@@ -3328,7 +3336,15 @@ rb_gc_obj_optimal_size(VALUE obj)
         }
 
       case T_STRING:
-        return rb_str_size_as_embedded(obj);
+        {
+            size_t size = rb_str_size_as_embedded(obj);
+            if (rb_gc_size_allocatable_p(size)) {
+                return size;
+            }
+            else {
+                return sizeof(struct RString);
+            }
+        }
 
       case T_HASH:
         return sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));

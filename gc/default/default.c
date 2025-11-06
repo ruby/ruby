@@ -5484,10 +5484,9 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_heap_t *src_pool, VALUE 
         return src_pool;
     }
 
-    size_t idx = 0;
-    if (rb_gc_impl_size_allocatable_p(obj_size)) {
-        idx = heap_idx_for_size(obj_size);
-    }
+    GC_ASSERT(rb_gc_impl_size_allocatable_p(obj_size));
+
+    size_t idx = heap_idx_for_size(obj_size);
 
     return &heaps[idx];
 }
