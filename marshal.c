@@ -1184,7 +1184,7 @@ io_needed(void)
  * * anonymous Class/Module.
  * * objects which are related to system (ex: Dir, File::Stat, IO, File, Socket
  *   and so on)
- * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
+ * * an instance of MatchData, Method, UnboundMethod, Proc, Thread,
  *   ThreadGroup, Continuation
  * * objects which define singleton methods
  */
