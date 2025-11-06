@@ -331,8 +331,6 @@ pub enum CompileError {
     IseqStackTooLarge,
     ExceptionHandler,
     OutOfMemory,
-    RegisterSpillOnAlloc,
-    RegisterSpillOnCCall,
     ParseError(ParseError),
     JitToJitOptional,
 }
@@ -347,8 +345,6 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqStackTooLarge     => compile_error_iseq_stack_too_large,
         ExceptionHandler      => compile_error_exception_handler,
         OutOfMemory           => compile_error_out_of_memory,
-        RegisterSpillOnAlloc  => compile_error_register_spill_on_alloc,
-        RegisterSpillOnCCall  => compile_error_register_spill_on_ccall,
         JitToJitOptional      => compile_error_jit_to_jit_optional,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
