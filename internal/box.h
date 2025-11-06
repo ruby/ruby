@@ -40,7 +40,7 @@ struct rb_box_struct {
 };
 typedef struct rb_box_struct rb_box_t;
 
-#define BOX_OBJ_P(obj) (rb_obj_class(obj) == rb_cNamespace)
+#define BOX_OBJ_P(obj) (rb_obj_class(obj) == rb_cBox)
 
 #define BOX_ROOT_P(box) (box && !box->is_user)
 #define BOX_USER_P(box) (box && box->is_user)
