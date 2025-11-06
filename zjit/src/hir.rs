@@ -6,7 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -3687,23 +3687,248 @@ impl Function {
         }
     }
 
+    /// Compute successor blocks and predecessor blocks to be used in Iongraph formulation.
+    fn compute_successors_and_predecessors(
+        &self,
+    ) -> (HashMap<BlockId, Vec<u64>>, HashMap<BlockId, Vec<u64>>) {
+        let mut block_successors: HashMap<BlockId, Vec<u64>> = HashMap::new();
+        let mut block_predecessors: HashMap<BlockId, Vec<u64>> = HashMap::new();
+
+        for block_id in self.rpo() {
+            let block = &self.blocks[block_id.0];
+            let mut successors = Vec::new();
+            let uf = self.union_find.borrow();
+
+            // Since ZJIT uses extended basic blocks, one must check all instructions
+            // for their ability to jump to another basic block, rather than just
+            // the instructions at the end of a given basic block.
+            for insn_id in &block.insns {
+                let insn_id = uf.find_const(*insn_id);
+                let insn = self.find(insn_id);
+                match insn {
+                    Insn::Jump(ref target)
+                    | Insn::IfTrue { ref target, .. }
+                    | Insn::IfFalse { ref target, .. } => {
+                        successors.push(target.target.0 as u64);
+                    }
+                    _ => {}
+                }
+            }
+
+            // Store successors for this block.
+            block_successors.insert(block_id, successors.clone());
+
+            // Update predecessors for successor blocks.
+            for &succ_id in &successors {
+                block_predecessors
+                    .entry(BlockId(succ_id as usize))
+                    .or_default()
+                    .push(block_id.0 as u64);
+            }
+        }
+
+        (block_successors, block_predecessors)
+    }
+
+    /// Helper function to make an Iongraph JSON "instruction".
+    /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
+    /// in the future.
+    fn make_iongraph_instr(ptr: u64, id: usize, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
+        Json::object()
+            .insert("ptr", ptr)
+            .insert("id", id)
+            .insert("opcode", opcode)
+            .insert("attributes", Json::empty_array())
+            .insert("inputs", Json::Array(inputs))
+            .insert("uses", Json::empty_array())
+            .insert("memInputs", Json::empty_array())
+            .insert("type", ty)
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "block".
+    /// `attributes` is specific to Spidermonkey, so it is left empty..
+    fn make_iongraph_block(ptr: u64, id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>) -> Json {
+        Json::object()
+            .insert("ptr", ptr)
+            .insert("id", id)
+            .insert("loopDepth", 0)
+            .insert("attributes", Json::empty_array())
+            .insert("predecessors", Json::array(predecessors))
+            .insert("successors", Json::array(successors))
+            .insert("instructions", Json::array(instructions))
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "function".
+    /// Note that `lir` is unpopulated right now as ZJIT doesn't use its functionality.
+    fn make_iongraph_function(pass_name: &str, mir_blocks: Vec<Json>) -> Json {
+        Json::object()
+            .insert("name", pass_name)
+            .insert("mir", Json::object()
+                .insert("blocks", Json::array(mir_blocks))
+                .build()
+            )
+            .insert("lir", Json::object()
+                .insert("blocks", Json::empty_array())
+                .build()
+            )
+            .build()
+    }
+
+    /// Generate an iongraph JSON pass representation for this function.
+    pub fn to_iongraph_pass(&self, pass_name: &str) -> Json {
+        let mut ptr_map = PtrPrintMap::identity();
+        ptr_map.map_ptrs = true;
+
+        let mut mir_blocks = Vec::new();
+
+        // Push each block from the iteration in reverse post order to `mir_blocks`.
+        for block_id in self.rpo() {
+            let block = &self.blocks[block_id.0];
+            let mut instructions = Vec::new();
+
+            // Get parameter instructions.
+            for (idx, param_id) in block.params.iter().enumerate() {
+                let param_id = self.union_find.borrow().find_const(*param_id);
+                let insn_type = self.type_of(param_id);
+
+                let type_str = if self.blocks[block_id.0].params.is_empty()
+                    || insn_type.is_subtype(types::Empty) {
+                    String::new()
+                } else {
+                    format!("{}", insn_type.print(&ptr_map))
+                };
+
+                instructions.push(
+                    Self::make_iongraph_instr(
+                        ptr_map.map_id(idx as u64) as u64,
+                        param_id.0,
+                        Vec::new(),
+                        &format!("Parameter {}", idx),
+                        &type_str
+                    )
+                );
+            }
+
+            // Get body instructions.
+            for insn_id in &block.insns {
+                let insn_id = self.union_find.borrow().find_const(*insn_id);
+                let insn = self.find(insn_id);
+
+                // Snapshots are not serialized, so skip them.
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+
+                // Instructions with no output or an empty type should have an empty type field.
+                let type_str = if insn.has_output() {
+                    let insn_type = self.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        String::new()
+                    } else {
+                        insn_type.print(&ptr_map).to_string()
+                    }
+                } else {
+                    String::new()
+                };
+
+                let opcode = insn.print(&ptr_map).to_string();
+
+                // Traverse the worklist to get inputs for a given instruction.
+                let mut inputs = VecDeque::new();
+                self.worklist_traverse_single_insn(&self.find(insn_id), &mut inputs);
+                let inputs: Vec<Json> = inputs.into_iter().map(|x| x.0.into()).collect();
+
+                instructions.push(
+                    Self::make_iongraph_instr(
+                        ptr_map.map_id(insn_id.0 as u64) as u64,
+                        insn_id.0,
+                        inputs,
+                        &opcode,
+                        &type_str
+                    )
+                );
+            }
+
+            // Create the block with instructions.
+            let block_ptr = ptr_map.map_id(block_id.0 as u64);
+
+            let (block_successors, block_predecessors) = self.compute_successors_and_predecessors();
+            let predecessors = block_predecessors.get(&block_id)
+                .cloned()
+                .unwrap_or_default();
+            let successors = block_successors.get(&block_id)
+                .cloned()
+                .unwrap_or_default();
+
+            mir_blocks.push(Self::make_iongraph_block(
+                block_ptr as u64,
+                block_id.0 as u64,
+                predecessors,
+                successors,
+                instructions
+            ));
+        }
+
+        Self::make_iongraph_function(pass_name, mir_blocks)
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
+        let mut passes: Vec<Json> = Vec::new();
+
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Unoptimized"));
+        }
+
         // Function is assumed to have types inferred already
         self.type_specialize();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Type specialize"));
+        }
+
         self.inline();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Inline"));
+        }
+
         self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Optimize GetIVar"));
+        }
+
         self.optimize_c_calls();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Optimize C calls"));
+        }
+
         self.fold_constants();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Fold constants"));
+        }
+
         self.clean_cfg();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Clean CFG"));
+        }
+
         self.eliminate_dead_code();
         #[cfg(debug_assertions)] self.assert_validates();
+        if get_option!(dump_hir_iongraph) {
+            passes.push(self.to_iongraph_pass("Eliminate dead code"));
+        }
+
+        if get_option!(dump_hir_iongraph) {
+            let iseq_name = iseq_get_location(self.iseq, 0);
+            self.dump_iongraph(&iseq_name, passes);
+        }
     }
 
     /// Dump HIR passed to codegen if specified by options.
@@ -3722,6 +3947,22 @@ impl Function {
             let mut file = OpenOptions::new().append(true).open(filename).unwrap();
             writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
         }
+    }
+
+    pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
+        use std::io::Write;
+        let mut path = std::path::PathBuf::from(format!("/tmp/zjit-iongraph-{}", std::process::id()));
+        std::fs::create_dir_all(&path).expect("Unable to create directory.");
+        let filename = format!("func_{function_name}.json");
+        path.push(filename);
+        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+
+        let j = Json::object()
+            .insert("name", function_name)
+            .insert("passes", passes)
+            .build();
+
+        writeln!(file, "{}", j).unwrap();
     }
 
     /// Validates the following:
