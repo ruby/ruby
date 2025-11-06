@@ -169,7 +169,7 @@ typedef int clockid_t;
 #define pipe(p)			rb_w32_pipe(p)
 #define open			rb_w32_uopen
 #define close(h)		rb_w32_close(h)
-#define fclose(f)		rb_w32_fclose(f)
+#define fclose(f)		rb_w32__fclose(f)
 #define read(f, b, s) rb_w32_read(f, b, s)
 #define write(f, b, s) rb_w32_write(f, b, s)
 #define pread(f, b, s, o) rb_w32_pread(f, b, s, o)
@@ -737,7 +737,7 @@ int  rb_w32_sleep(unsigned long msec);
 int  rb_w32_uopen(const char *, int, ...);
 int  rb_w32_wopen(const WCHAR *, int, ...);
 int  rb_w32_close(int);
-int  rb_w32_fclose(FILE*);
+int  rb_w32__fclose(FILE*); /* extra underscore prevents overriding libc's fclose */
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);

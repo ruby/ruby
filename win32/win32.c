@@ -6618,7 +6618,7 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 
 /* License: Ruby's */
 int
-rb_w32_fclose(FILE *fp)
+rb_w32__fclose(FILE *fp)
 {
     int fd = fileno(fp);
     SOCKET sock = TO_SOCKET(fd);
