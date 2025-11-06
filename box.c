@@ -20,12 +20,12 @@
 
 #include <stdio.h>
 
-VALUE rb_cNamespace = 0;
-VALUE rb_cNamespaceEntry = 0;
-VALUE rb_mNamespaceLoader = 0;
+VALUE rb_cBox = 0;
+VALUE rb_cBoxEntry = 0;
+VALUE rb_mBoxLoader = 0;
 
 static rb_box_t root_box_data = {
-    /* Initialize values lazily in Init_namespace() */
+    /* Initialize values lazily in Init_Box() */
     (VALUE)NULL, 0,
     (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL,
     (struct st_table *)NULL, (struct st_table *)NULL, (VALUE)NULL, (VALUE)NULL,
@@ -332,7 +332,7 @@ box_initialize(VALUE box_value)
         rb_raise(rb_eRuntimeError, "Namespace is disabled. Set RUBY_NAMESPACE=1 environment variable to use Namespace.");
     }
 
-    entry = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespaceEntry);
+    entry = rb_class_new_instance_pass_kw(0, NULL, rb_cBoxEntry);
     box = get_box_struct_internal(entry);
 
     box->box_object = box_value;
@@ -750,14 +750,14 @@ initialize_root_box(void)
     if (rb_box_available()) {
         CONST_ID(id_box_entry, "__box_entry__");
 
-        root_box = rb_obj_alloc(rb_cNamespace);
+        root_box = rb_obj_alloc(rb_cBox);
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_box, true);
         RCLASS_SET_CONST_TBL(root_box, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
 
         root->box_id = box_generate_id();
         root->box_object = root_box;
 
-        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_root_box_data_type, root);
+        entry = TypedData_Wrap_Struct(rb_cBoxEntry, &rb_root_box_data_type, root);
         rb_ivar_set(root_box, id_box_entry, entry);
     }
     else {
@@ -800,14 +800,14 @@ rb_initialize_main_box(void)
         box_experimental_warned = 1;
     }
 
-    main_box_value = rb_class_new_instance(0, NULL, rb_cNamespace);
+    main_box_value = rb_class_new_instance(0, NULL, rb_cBox);
     VM_ASSERT(BOX_OBJ_P(main_box_value));
     box = rb_get_box_t(main_box_value);
     box->box_object = main_box_value;
     box->is_user = true;
     box->is_optional = false;
 
-    rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_box_value);
+    rb_const_set(rb_cBox, rb_intern("MAIN"), main_box_value);
 
     vm->main_box = main_box = box;
 
@@ -853,8 +853,8 @@ rb_box_loading_func(int argc, VALUE *argv, VALUE _self)
 static void
 box_define_loader_method(const char *name)
 {
-    rb_define_private_method(rb_mNamespaceLoader, name, rb_box_loading_func, -1);
-    rb_define_singleton_method(rb_mNamespaceLoader, name, rb_box_loading_func, -1);
+    rb_define_private_method(rb_mBoxLoader, name, rb_box_loading_func, -1);
+    rb_define_singleton_method(rb_mBoxLoader, name, rb_box_loading_func, -1);
 }
 
 void
@@ -1057,42 +1057,44 @@ Init_Box(void)
     tmp_dir = system_tmpdir();
     tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
-    rb_cNamespace = rb_define_class("Namespace", rb_cModule);
-    rb_define_method(rb_cNamespace, "initialize", box_initialize, 0);
+    VALUE mRuby = rb_path2class("Ruby");
+
+    rb_cBox = rb_define_class_under(mRuby, "Box", rb_cModule);
+    rb_define_method(rb_cBox, "initialize", box_initialize, 0);
 
     /* :nodoc: */
-    rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
-    rb_define_alloc_func(rb_cNamespaceEntry, rb_box_entry_alloc);
+    rb_cBoxEntry = rb_define_class_under(rb_cBox, "Entry", rb_cObject);
+    rb_define_alloc_func(rb_cBoxEntry, rb_box_entry_alloc);
 
     initialize_root_box();
 
     /* :nodoc: */
-    rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
+    rb_mBoxLoader = rb_define_module_under(rb_cBox, "Loader");
     box_define_loader_method("require");
     box_define_loader_method("require_relative");
     box_define_loader_method("load");
 
     if (rb_box_available()) {
-        rb_include_module(rb_cObject, rb_mNamespaceLoader);
+        rb_include_module(rb_cObject, rb_mBoxLoader);
 
-        rb_define_singleton_method(rb_cNamespace, "root", rb_box_s_root, 0);
-        rb_define_singleton_method(rb_cNamespace, "main", rb_box_s_main, 0);
-        rb_define_method(rb_cNamespace, "root?", rb_box_root_p, 0);
-        rb_define_method(rb_cNamespace, "main?", rb_box_main_p, 0);
+        rb_define_singleton_method(rb_cBox, "root", rb_box_s_root, 0);
+        rb_define_singleton_method(rb_cBox, "main", rb_box_s_main, 0);
+        rb_define_method(rb_cBox, "root?", rb_box_root_p, 0);
+        rb_define_method(rb_cBox, "main?", rb_box_main_p, 0);
 
 #if RUBY_DEBUG
         rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
 #endif
     }
 
-    rb_define_singleton_method(rb_cNamespace, "enabled?", rb_box_s_getenabled, 0);
-    rb_define_singleton_method(rb_cNamespace, "current", rb_box_s_current, 0);
+    rb_define_singleton_method(rb_cBox, "enabled?", rb_box_s_getenabled, 0);
+    rb_define_singleton_method(rb_cBox, "current", rb_box_s_current, 0);
 
-    rb_define_method(rb_cNamespace, "load_path", rb_box_load_path, 0);
-    rb_define_method(rb_cNamespace, "load", rb_box_load, -1);
-    rb_define_method(rb_cNamespace, "require", rb_box_require, 1);
-    rb_define_method(rb_cNamespace, "require_relative", rb_box_require_relative, 1);
-    rb_define_method(rb_cNamespace, "eval", rb_box_eval, 1);
+    rb_define_method(rb_cBox, "load_path", rb_box_load_path, 0);
+    rb_define_method(rb_cBox, "load", rb_box_load, -1);
+    rb_define_method(rb_cBox, "require", rb_box_require, 1);
+    rb_define_method(rb_cBox, "require_relative", rb_box_require_relative, 1);
+    rb_define_method(rb_cBox, "eval", rb_box_eval, 1);
 
-    rb_define_method(rb_cNamespace, "inspect", rb_box_inspect, 0);
+    rb_define_method(rb_cBox, "inspect", rb_box_inspect, 0);
 }
