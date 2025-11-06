@@ -342,7 +342,6 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index, value] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
-        // Guard types as fixnum
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let value = fun.coerce_to(block, value, types::Fixnum, state);
 
@@ -358,6 +357,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
         let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
         let _ = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
+        // String#setbyte returns the fixnum provided as its `value` argument back to the caller.
         Some(value)
     } else {
         None
