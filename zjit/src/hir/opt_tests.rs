@@ -225,7 +225,6 @@ mod hir_opt_tests {
           v40:Fixnum[0] = Const Value(0)
           v18:Fixnum[0] = Const Value(0)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v36:Fixnum = GuardType v9, Fixnum
           v41:Fixnum[0] = Const Value(0)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
           v42:Fixnum[0] = Const Value(0)
@@ -912,8 +911,7 @@ mod hir_opt_tests {
           v24:BasicObject = SendWithoutBlockDirect v23, :foo (0x1038)
           PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Object@0x1000)
-          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v28:BasicObject = SendWithoutBlockDirect v27, :bar (0x1038)
+          v28:BasicObject = SendWithoutBlockDirect v23, :bar (0x1038)
           CheckInterrupts
           Return v28
         ");
@@ -4053,7 +4051,6 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Object@0x1000)
-          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v30
@@ -4665,6 +4662,69 @@ mod hir_opt_tests {
           v26:BasicObject = LoadField v25, :@foo@0x1039
           CheckInterrupts
           Return v26
+        ");
+    }
+
+    #[test]
+    fn test_lvn() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize
+                @foo = 42
+              end
+            end
+
+            O = C.new
+            def test(o)
+              sum = 0
+              sum += o.foo
+              sum += o.foo
+              sum += o.foo
+              sum
+            end
+            test O
+            test O
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v16:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v56:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v76:HeapObject[class_exact:C] = GuardShape v56, 0x1038
+          v77:BasicObject = LoadField v76, :@foo@0x1039
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v59:Fixnum = GuardType v77, Fixnum
+          v60:Fixnum = FixnumAdd v16, v59
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v80:BasicObject = LoadField v76, :@foo@0x1039
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v66:Fixnum = GuardType v80, Fixnum
+          v67:Fixnum = FixnumAdd v60, v66
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v83:BasicObject = LoadField v76, :@foo@0x1039
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v73:Fixnum = GuardType v83, Fixnum
+          v74:Fixnum = FixnumAdd v67, v73
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v74
         ");
     }
 
