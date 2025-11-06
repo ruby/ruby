@@ -3923,6 +3923,11 @@ impl Function {
             Insn::StringGetbyteFixnum { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
+            },
+            Insn::StringSetbyteFixnum { string, index, value } => {
+                self.assert_subtype(insn_id, string, types::String)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)?;
+                self.assert_subtype(insn_id, value, types::Fixnum)
             }
             _ => Ok(()),
         }

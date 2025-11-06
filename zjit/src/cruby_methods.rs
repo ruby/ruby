@@ -346,13 +346,12 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let value = fun.coerce_to(block, value, types::Fixnum, state);
 
-        let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-        let value = fun.push_insn(block, hir::Insn::UnboxFixnum { val: value });
+        let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
 
         let len = fun.push_insn(block, hir::Insn::StringBytesize { recv, state });
-        let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: len, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
-        let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
         let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
         let result = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
         Some(result)

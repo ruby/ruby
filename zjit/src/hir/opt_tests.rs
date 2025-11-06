@@ -5828,16 +5828,15 @@ mod hir_opt_tests {
           v30:Fixnum = GuardType v14, Fixnum
           v31:Fixnum = GuardType v15, Fixnum
           v32:CInt64 = UnboxFixnum v30
-          v33:CInt64 = UnboxFixnum v31
-          v34:CInt64 = StringBytesize v29
-          v35:CInt64 = GuardLess v32, v34
-          v36:CInt64[0] = Const CInt64(0)
-          v37:CInt64 = GuardGreaterEq v35, v36
-          v38:StringExact = GuardNotFrozen v29
-          v39:Fixnum = StringSetbyteFixnum v38, v37, v33
+          v33:CInt64 = StringBytesize v29
+          v34:CInt64 = GuardLess v32, v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:StringExact = GuardNotFrozen v29
+          v38:Fixnum = StringSetbyteFixnum v37, v30, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v39
+          Return v38
         ");
     }
 
