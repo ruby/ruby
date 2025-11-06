@@ -73,7 +73,8 @@ rb_zjit_add_frame(VALUE hash, VALUE frame)
 }
 
 long
-rb_zjit_string_bytesize(VALUE s) {
+rb_zjit_string_bytesize(VALUE s)
+{
     return RSTRING_LEN(s);
 }
 

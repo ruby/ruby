@@ -5836,7 +5836,7 @@ mod hir_opt_tests {
           v38:Fixnum = StringSetbyteFixnum v37, v30, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v38
+          Return v31
         ");
     }
 
