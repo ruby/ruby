@@ -2163,7 +2163,8 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     })
 }
 
-/// Generate a trampoline that is used when a
+/// Generate a trampoline that is used when a function stub is called.
+/// See [gen_function_stub] for how it's used.
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm_comment!(asm, "function_stub_hit trampoline");
