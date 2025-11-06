@@ -78,7 +78,7 @@ const rb_box_t *
 rb_current_box(void)
 {
     /*
-     * If RUBY_NAMESPACE is not set, the root box is the only available one.
+     * If RUBY_BOX is not set, the root box is the only available one.
      *
      * Until the main_box is not initialized, the root box is
      * the only valid box.
@@ -329,7 +329,7 @@ box_initialize(VALUE box_value)
     CONST_ID(id_box_entry, "__box_entry__");
 
     if (!rb_box_available()) {
-        rb_raise(rb_eRuntimeError, "Namespace is disabled. Set RUBY_NAMESPACE=1 environment variable to use Namespace.");
+        rb_raise(rb_eRuntimeError, "Ruby Box is disabled. Set RUBY_BOX=1 environment variable to use Ruby::Box.");
     }
 
     entry = rb_class_new_instance_pass_kw(0, NULL, rb_cBoxEntry);
@@ -866,7 +866,7 @@ Init_root_box(void)
 void
 Init_enable_box(void)
 {
-    const char *env = getenv("RUBY_NAMESPACE");
+    const char *env = getenv("RUBY_BOX");
     if (env && strlen(env) == 1 && env[0] == '1') {
         ruby_box_enabled = true;
     }
