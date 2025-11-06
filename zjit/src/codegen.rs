@@ -348,6 +348,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         &Insn::Const { val: Const::Value(val) } => gen_const_value(val),
         &Insn::Const { val: Const::CPtr(val) } => gen_const_cptr(val),
+        &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
@@ -1071,6 +1072,10 @@ fn gen_const_value(val: VALUE) -> lir::Opnd {
 /// Compile Const::CPtr
 fn gen_const_cptr(val: *const u8) -> lir::Opnd {
     Opnd::const_ptr(val)
+}
+
+fn gen_const_long(val: i64) -> lir::Opnd {
+    Opnd::Imm(val)
 }
 
 /// Compile a basic block argument
