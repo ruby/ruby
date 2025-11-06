@@ -224,7 +224,7 @@ p Foo::Bar
     Kernel.module_eval do
       alias old_require require
     end
-    Namespace.module_eval do
+    Ruby::Box.module_eval do
       alias old_require require
     end
     called_with = []
@@ -232,7 +232,7 @@ p Foo::Bar
       called_with << path
       old_require path
     end
-    Namespace.send :define_method, :require do |path|
+    Ruby::Box.send :define_method, :require do |path|
       called_with << path
       old_require path
     end
@@ -243,7 +243,7 @@ p Foo::Bar
       alias require old_require
       undef old_require
     end
-    Namespace.module_eval do
+    Ruby::Box.module_eval do
       undef require
       alias require old_require
       undef old_require

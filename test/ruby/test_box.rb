@@ -2,41 +2,48 @@
 
 require 'test/unit'
 
-class TestNamespace < Test::Unit::TestCase
+class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNINGS = [
-    "warning: Namespace is experimental, and the behavior may change in the future!",
-    "See doc/namespace.md for known issues, etc."
+    "warning: Ruby::Box is experimental, and the behavior may change in the future!",
+    "See doc/box.md for known issues, etc."
   ].join("\n")
-  ENV_ENABLE_NAMESPACE = {'RUBY_NAMESPACE' => '1'}
+  ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
   def setup
-    @n = Namespace.new if Namespace.enabled?
+    @n = nil
+    @dir = __dir__
   end
 
   def teardown
     @n = nil
   end
 
-  def test_namespace_availability
-    env_has_RUBY_NAMESPACE = (ENV['RUBY_NAMESPACE'].to_i == 1)
-    assert_equal env_has_RUBY_NAMESPACE, Namespace.enabled?
+  def test_box_availability_in_default
+    assert_separately([], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      assert_nil ENV['RUBY_BOX']
+      assert !Ruby::Box.enabled?
+    end;
   end
 
-  def test_current_namespace
-    pend unless Namespace.enabled?
+  def test_box_availability_when_enabled
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      assert '1', ENV['RUBY_BOX']
+      assert Ruby::Box.enabled?
+    end;
+  end
 
-    main = Namespace.current
-    assert main.inspect.include?("main")
-
-    @n.require_relative('namespace/current')
-
-    assert_equal @n, @n::CurrentNamespace.in_require
-    assert_equal @n, @n::CurrentNamespace.in_method_call
-    assert_equal main, Namespace.current
+  def test_current_box_in_main
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      assert_equal Ruby::Box.main, Ruby::Box.current
+      assert Ruby::Box.main.main?
+    end;
   end
 
   def test_require_rb_separately
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
@@ -55,7 +62,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_relative_rb_separately
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
@@ -74,7 +81,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_separately
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
@@ -92,8 +99,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NameError) { NS_B }
   end
 
-  def test_namespace_in_namespace
-    pend unless Namespace.enabled?
+  def test_box_in_box
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS1 }
     assert_raise(NameError) { NS_A }
@@ -115,7 +122,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_rb_2versions
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS_A }
 
@@ -136,14 +143,14 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_raising_errors_in_require
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_raise(RuntimeError, "Yay!") { @n.require(File.join(__dir__, 'namespace', 'raise')) }
     assert Namespace.current.inspect.include?("main")
   end
 
-  def test_autoload_in_namespace
-    pend unless Namespace.enabled?
+  def test_autoload_in_box
+    pend unless Ruby::Box.enabled?
 
     assert_raise(NameError) { NS_A }
 
@@ -160,8 +167,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NameError) { NS_B }
   end
 
-  def test_continuous_top_level_method_in_a_namespace
-    pend unless Namespace.enabled?
+  def test_continuous_top_level_method_in_a_box
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/define_toplevel')
     @n.require_relative('namespace/call_toplevel')
@@ -169,18 +176,18 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NameError) { foo }
   end
 
-  def test_top_level_methods_in_namespace
-    pend # TODO: fix loading/current namespace detection
-    pend unless Namespace.enabled?
-    @n.require_relative('namespace/top_level')
+  def test_top_level_methods_in_box
+    pend # TODO: fix loading/current box detection
+    pend unless Ruby::Box.enabled?
+    @n.require_relative('box/top_level')
     assert_equal "yay!", @n::Foo.foo
     assert_raise(NameError) { yaaay }
     assert_equal "foo", @n::Bar.bar
     assert_raise_with_message(RuntimeError, "boooo") { @n::Baz.baz }
   end
 
-  def test_proc_defined_in_namespace_refers_module_in_namespace
-    pend unless Namespace.enabled?
+  def test_proc_defined_in_box_refers_module_in_box
+    pend unless Ruby::Box.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
@@ -202,7 +209,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_defined_globally_refers_global_module
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
@@ -227,7 +234,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_instance_variable
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/instance_variables')
 
@@ -246,8 +253,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_equal [], String.instance_variables
   end
 
-  def test_methods_added_in_namespace_are_invisible_globally
-    pend unless Namespace.enabled?
+  def test_methods_added_in_box_are_invisible_globally
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/string_ext')
 
@@ -256,8 +263,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NoMethodError){ String.new.yay }
   end
 
-  def test_continuous_method_definitions_in_a_namespace
-    pend unless Namespace.enabled?
+  def test_continuous_method_definitions_in_a_box
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/string_ext')
     assert_equal "yay", @n::Bar.yay
@@ -268,8 +275,8 @@ class TestNamespace < Test::Unit::TestCase
     @n.require_relative('namespace/string_ext_calling')
   end
 
-  def test_methods_added_in_namespace_later_than_caller_code
-    pend unless Namespace.enabled?
+  def test_methods_added_in_box_later_than_caller_code
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/string_ext_caller')
     @n.require_relative('namespace/string_ext')
@@ -278,8 +285,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_equal "yay", @n::Foo.yay
   end
 
-  def test_method_added_in_namespace_are_available_on_eval
-    pend unless Namespace.enabled?
+  def test_method_added_in_box_are_available_on_eval
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/string_ext')
     @n.require_relative('namespace/string_ext_eval_caller')
@@ -287,8 +294,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_equal "yay", @n::Baz.yay
   end
 
-  def test_method_added_in_namespace_are_available_on_eval_with_binding
-    pend unless Namespace.enabled?
+  def test_method_added_in_box_are_available_on_eval_with_binding
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/string_ext')
     @n.require_relative('namespace/string_ext_eval_caller')
@@ -297,7 +304,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_methods_and_constants_added_by_include
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/open_class_with_include')
 
@@ -317,13 +324,13 @@ module ProcLookupTestA
   end
 end
 
-class TestNamespace < Test::Unit::TestCase
+class TestBox < Test::Unit::TestCase
   def make_proc_from_block(&b)
     b
   end
 
   def test_proc_from_main_works_with_global_definitions
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/procs')
 
@@ -358,8 +365,8 @@ class TestNamespace < Test::Unit::TestCase
     end
   end
 
-  def test_proc_from_namespace_works_with_definitions_in_namespace
-    pend unless Namespace.enabled?
+  def test_proc_from_box_works_with_definitions_in_box
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/procs')
 
@@ -379,7 +386,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_class_module_singleton_methods
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     @n.require_relative('namespace/singleton_methods')
 
@@ -397,8 +404,8 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NoMethodError) { Hash.http_200 }
   end
 
-  def test_add_constants_in_namespace
-    pend unless Namespace.enabled?
+  def test_add_constants_in_box
+    pend unless Ruby::Box.enabled?
 
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
@@ -479,7 +486,7 @@ class TestNamespace < Test::Unit::TestCase
     default_l = $-0
     default_f = $,
 
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert_equal "\n", $-0 # equal to $/, line splitter
     assert_equal nil, $,   # field splitter
@@ -517,7 +524,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_path_and_loaded_features
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     assert $LOAD_PATH.respond_to?(:resolve_feature_path)
 
@@ -539,7 +546,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_basic
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Test basic evaluation
     result = @n.eval("1 + 1")
@@ -551,7 +558,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_with_constants
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Define a constant in the namespace via eval
     @n.eval("TEST_CONST = 42")
@@ -562,7 +569,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_with_classes
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Define a class in the namespace via eval
     @n.eval("class TestClass; def hello; 'from namespace'; end; end")
@@ -576,7 +583,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_isolation
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Create another namespace
     n2 = Namespace.new
@@ -594,7 +601,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_with_variables
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Test local variable access (should work within the eval context)
     result = @n.eval("x = 10; y = 20; x + y")
@@ -602,7 +609,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_eval_error_handling
-    pend unless Namespace.enabled?
+    pend unless Ruby::Box.enabled?
 
     # Test syntax error
     assert_raise(SyntaxError) { @n.eval("1 +") }
@@ -620,10 +627,10 @@ class TestNamespace < Test::Unit::TestCase
     end
   end
 
-  # Tests which run always (w/o RUBY_NAMESPACE=1 globally)
+  # Tests which run always (w/o RUBY_BOX=1 globally)
 
   def test_prelude_gems_and_loaded_features
-    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -646,7 +653,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_prelude_gems_and_loaded_features_with_disable_gems
-    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -668,23 +675,23 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_root_and_main_methods
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      pend unless Namespace.respond_to?(:root) and Namespace.respond_to?(:main) # for RUBY_DEBUG > 0
+      pend unless Ruby::Box.respond_to?(:root) and Ruby::Box.respond_to?(:main) # for RUBY_DEBUG > 0
 
-      assert Namespace.root.respond_to?(:root?)
-      assert Namespace.main.respond_to?(:main?)
+      assert Ruby::Box.root.respond_to?(:root?)
+      assert Ruby::Box.main.respond_to?(:main?)
 
-      assert Namespace.root.root?
-      assert Namespace.main.main?
-      assert_equal Namespace.main, Namespace.current
+      assert Ruby::Box.root.root?
+      assert Ruby::Box.main.main?
+      assert_equal Ruby::Box.main, Ruby::Box.current
 
       $a = 1
       $LOADED_FEATURES.push("/tmp/foobar")
 
-      assert_equal 2, Namespace.root.eval('$a = 2; $a')
-      assert !Namespace.root.eval('$LOADED_FEATURES.push("/tmp/barbaz"); $LOADED_FEATURES.include?("/tmp/foobar")')
-      assert "FooClass", Namespace.root.eval('class FooClass; end; Object.const_get(:FooClass).to_s')
+      assert_equal 2, Ruby::Box.root.eval('$a = 2; $a')
+      assert !Ruby::Box.root.eval('$LOADED_FEATURES.push("/tmp/barbaz"); $LOADED_FEATURES.include?("/tmp/foobar")')
+      assert "FooClass", Ruby::Box.root.eval('class FooClass; end; Object.const_get(:FooClass).to_s')
 
       assert_equal 1, $a
       assert !$LOADED_FEATURES.include?("/tmp/barbaz")
@@ -696,30 +703,30 @@ class TestNamespace < Test::Unit::TestCase
     File.unlink(*Dir.glob(pat, base: tmp).map {|so| "#{tmp}/#{so}"})
   end
 
-  def test_basic_namespace_detections
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+  def test_basic_box_detections
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      ns = Namespace.new
+      ns = Ruby::Box.new
       $gvar1 = 'bar'
       code = <<~EOC
-      NS1 = Namespace.current
+      NS1 = Ruby::Box.current
       $gvar1 = 'foo'
 
       def toplevel = $gvar1
 
       class Foo
-        NS2 = Namespace.current
+        NS2 = Ruby::Box.current
         NS2_proc = ->(){ NS2 }
-        NS3_proc = ->(){ Namespace.current }
+        NS3_proc = ->(){ Ruby::Box.current }
 
-        def ns4 = Namespace.current
+        def ns4 = Ruby::Box.current
         def self.ns5 = NS2
-        def self.ns6 = Namespace.current
-        def self.ns6_proc = ->(){ Namespace.current }
+        def self.ns6 = Ruby::Box.current
+        def self.ns6_proc = ->(){ Ruby::Box.current }
         def self.ns7
           res = []
           [1,2].chunk{ it.even? }.each do |bool, members|
-            res << Namespace.current.object_id.to_s + ":" + bool.to_s + ":" + members.map(&:to_s).join(",")
+            res << Ruby::Box.current.object_id.to_s + ":" + bool.to_s + ":" + members.map(&:to_s).join(",")
           end
           res
         end
@@ -733,15 +740,15 @@ class TestNamespace < Test::Unit::TestCase
       FOO_NAME = Foo.name
 
       module Kernel
-        def foo_namespace = Namespace.current
-        module_function :foo_namespace
+        def foo_box = Ruby::Box.current
+        module_function :foo_box
       end
 
       NS_X = Foo.new.ns4
-      NS_Y = foo_namespace
+      NS_Y = foo_box
       EOC
       ns.eval(code)
-      outer = Namespace.current
+      outer = Ruby::Box.current
       assert_equal ns, ns::NS1 # on TOP frame
       assert_equal ns, ns::Foo::NS2 # on CLASS frame
       assert_equal ns, ns::Foo::NS2_proc.call # proc -> a const on CLASS
@@ -754,8 +761,8 @@ class TestNamespace < Test::Unit::TestCase
       # a block after CFUNC/IFUNC in a method -> the current
       assert_equal ["#{ns.object_id}:false:1", "#{ns.object_id}:true:2"], ns::Foo.ns7
 
-      assert_equal outer, ns::Foo.yield_block{ Namespace.current } # method yields
-      assert_equal outer, ns::Foo.call_block{ Namespace.current }  # method calls a block
+      assert_equal outer, ns::Foo.yield_block{ Ruby::Box.current } # method yields
+      assert_equal outer, ns::Foo.call_block{ Ruby::Box.current }  # method calls a block
 
       assert_equal 'foo', ns::Foo.gvar1 # method refers gvar
       assert_equal 'bar', $gvar1        # gvar value out of the ns
@@ -769,9 +776,9 @@ class TestNamespace < Test::Unit::TestCase
     end;
   end
 
-  def test_loading_extension_libs_in_main_namespace
+  def test_loading_extension_libs_in_main_box
     pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       require "prism"
       require "optparse"
