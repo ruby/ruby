@@ -1686,6 +1686,12 @@ vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
     return vm_getivar(obj, id, iseq, ic, NULL, FALSE, Qnil);
 }
 
+VALUE
+rb_vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
+{
+    return vm_getinstancevariable(iseq, obj, id, ic);
+}
+
 static inline void
 vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {

@@ -3175,7 +3175,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v12:BasicObject = GetIvar v6, :@foo
+          v12:BasicObject = GetInstanceVariable v6, :@foo
           CheckInterrupts
           Return v12
         ");
@@ -4636,6 +4636,79 @@ mod hir_opt_tests {
     fn test_optimize_getivar_embedded() {
         eval("
             class C
+              def initialize
+                @foo = 42
+              end
+              def foo = @foo
+            end
+
+            O = C.new
+            O.foo
+            O.foo
+            TEST = C.instance_method(:foo)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn foo@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v18:HeapBasicObject = GuardType v6, HeapBasicObject
+          v19:HeapBasicObject = GuardShape v18, 0x1000
+          v20:BasicObject = LoadField v19, :@foo@0x1001
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_extended() {
+        eval(r#"
+            class C
+              attr_reader :foo
+              def initialize
+                1000.times do |i|
+                  instance_variable_set("@v#{i}", i)
+                end
+                @foo = 42
+              end
+              def foo = @foo
+            end
+
+            O = C.new
+            O.foo
+            O.foo
+            TEST = C.instance_method(:foo)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v18:HeapBasicObject = GuardType v6, HeapBasicObject
+          v19:HeapBasicObject = GuardShape v18, 0x1000
+          v20:CPtr = LoadField v19, :_as_heap@0x1001
+          v21:BasicObject = LoadField v20, :@foo@0x1002
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_optimize_attr_reader_getivar_embedded() {
+        eval("
+            class C
               attr_reader :foo
               def initialize
                 @foo = 42
@@ -4669,7 +4742,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_extended() {
+    fn test_optimize_attr_reader_getivar_extended() {
         eval(r#"
             class C
               attr_reader :foo
