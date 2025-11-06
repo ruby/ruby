@@ -3762,11 +3762,11 @@ impl Function {
 
     /// Helper function to make an Iongraph JSON "function".
     /// Note that `lir` is unpopulated right now as ZJIT doesn't use its functionality.
-    fn make_iongraph_function(pass_name: &str, mir_blocks: Vec<Json>) -> Json {
+    fn make_iongraph_function(pass_name: &str, hir_blocks: Vec<Json>) -> Json {
         Json::object()
             .insert("name", pass_name)
             .insert("mir", Json::object()
-                .insert("blocks", Json::array(mir_blocks))
+                .insert("blocks", Json::array(hir_blocks))
                 .build()
             )
             .insert("lir", Json::object()
@@ -3783,9 +3783,9 @@ impl Function {
             ptr_map.map_ptrs = true;
         }
 
-        let mut mir_blocks = Vec::new();
+        let mut hir_blocks = Vec::new();
 
-        // Push each block from the iteration in reverse post order to `mir_blocks`.
+        // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.rpo() {
             let block = &self.blocks[block_id.0];
             let mut instructions = Vec::new();
@@ -3864,7 +3864,7 @@ impl Function {
                 .cloned()
                 .unwrap_or_default();
 
-            mir_blocks.push(Self::make_iongraph_block(
+            hir_blocks.push(Self::make_iongraph_block(
                 block_ptr as u64,
                 block_id.0 as u64,
                 predecessors,
@@ -3873,7 +3873,7 @@ impl Function {
             ));
         }
 
-        Self::make_iongraph_function(pass_name, mir_blocks)
+        Self::make_iongraph_function(pass_name, hir_blocks)
     }
 
     /// Run all the optimization passes we have.
