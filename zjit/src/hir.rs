@@ -3937,7 +3937,6 @@ impl Function {
             .insert("name", function_name)
             .insert("passes", passes)
             .build();
-
         writeln!(file, "{}", j).unwrap();
     }
 
