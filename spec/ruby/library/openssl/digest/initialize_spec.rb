@@ -23,18 +23,14 @@ describe "OpenSSL::Digest#initialize" do
       OpenSSL::Digest.new("sha512").name.should ==  "SHA512"
     end
 
-    it "throws an error when called with an unknown digest" do
-      -> { OpenSSL::Digest.new("wd40") }.should raise_error(RuntimeError, /Unsupported digest algorithm \(wd40\)/)
+    version_is OpenSSL::VERSION, "4.0.0" do
+      it "throws an error when called with an unknown digest" do
+        -> { OpenSSL::Digest.new("wd40") }.should raise_error(OpenSSL::Digest::DigestError, /wd40/)
+      end
     end
 
     it "cannot be called with a symbol" do
-      -> { OpenSSL::Digest.new(:SHA1) }.should raise_error(TypeError, /wrong argument type Symbol/)
-    end
-
-    it "does not call #to_str on the argument" do
-      name = mock("digest name")
-      name.should_not_receive(:to_str)
-      -> { OpenSSL::Digest.new(name) }.should raise_error(TypeError, /wrong argument type/)
+      -> { OpenSSL::Digest.new(:SHA1) }.should raise_error(TypeError)
     end
   end
 
@@ -62,7 +58,7 @@ describe "OpenSSL::Digest#initialize" do
   end
 
   it "cannot be called with a digest class" do
-    -> { OpenSSL::Digest.new(OpenSSL::Digest::SHA1) }.should raise_error(TypeError, /wrong argument type Class/)
+    -> { OpenSSL::Digest.new(OpenSSL::Digest::SHA1) }.should raise_error(TypeError)
   end
 
   context "when called without an initial String argument" do

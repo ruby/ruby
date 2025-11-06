@@ -107,21 +107,15 @@ describe "OpenSSL::KDF.pbkdf2_hmac" do
   it "raises a TypeError when hash is neither a String nor an OpenSSL::Digest" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: Object.new)
-    }.should raise_error(TypeError, "wrong argument type Object (expected OpenSSL/Digest)")
+    }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError when hash is neither a String nor an OpenSSL::Digest, it does not try to call #to_str" do
-    hash = mock("hash")
-    hash.should_not_receive(:to_str)
-    -> {
-      OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: hash)
-    }.should raise_error(TypeError, "wrong argument type MockObject (expected OpenSSL/Digest)")
-  end
-
-  it "raises a RuntimeError for unknown digest algorithms" do
-    -> {
-      OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: "wd40")
-    }.should raise_error(RuntimeError, /Unsupported digest algorithm \(wd40\)/)
+  version_is OpenSSL::VERSION, "4.0.0" do
+    it "raises a OpenSSL::Digest::DigestError for unknown digest algorithms" do
+      -> {
+        OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: "wd40")
+      }.should raise_error(OpenSSL::Digest::DigestError, /wd40/)
+    end
   end
 
   it "treats salt as a required keyword" do
