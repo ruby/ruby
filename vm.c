@@ -3445,7 +3445,7 @@ size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 static enum rb_id_table_iterator_result
 vm_memsize_constant_cache_i(ID id, VALUE ics, void *size)
 {
-    *((size_t *) size) += rb_st_memsize((st_table *) ics);
+    *((size_t *) size) += rb_set_memsize((set_table *) ics);
     return ID_TABLE_CONTINUE;
 }
 
