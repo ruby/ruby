@@ -1,45 +1,42 @@
-# Namespace - Ruby's in-process separation of Classes and Modules
+# Ruby Box - Ruby's in-process separation of Classes and Modules
 
-Namespace is designed to provide separated spaces in a Ruby process, to isolate applications and libraries.
+Ruby Box is designed to provide separated spaces in a Ruby process, to isolate applications and libraries.
 
 ## Known issues
 
-* Experimental warning is shown when ruby starts with `RUBY_NAMESPACE=1` (specify `-W:no-experimental` option to hide it)
+* Experimental warning is shown when ruby starts with `RUBY_BOX=1` (specify `-W:no-experimental` option to hide it)
 * `bundle install` may fail
 * `require 'active_support'` may fail
 * A wrong current namespace detection happens sometimes in the root namespace
 
 ## TODOs
 
-* Identify the CI failure cause and restore temporarily skipped tests (mmtk, test/ruby/test_allocation on i686)
-* Reconstruct current/loading namespace management based on control frames
 * Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
-* Delete per-namespace extension files (.so) lazily or process exit
-* Collect rb_classext_t entries for a namespace when the namespace is collected
-* Allocate an rb_namespace_t entry as the root namespace at first, then construct the contents and wrap it as rb_cNamespace instance later (to eliminate root/builtin two namespaces situation)
-* Assign its own TOPLEVEL_BINDING in namespaces
-* Fix `warn` in namespaces to refer `$VERBOSE` in the namespace
-* Make an internal data container `Namespace::Entry` invisible
+* Delete per-box extension files (.so) lazily or process exit
+* Collect `rb_classext_t` entries for a box when GC collects the box
+* Assign its own TOPLEVEL_BINDING in boxes
+* Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
+* Make an internal data container `Ruby::Box::Entry` invisible
 * More test cases about `$LOAD_PATH` and `$LOADED_FEATURES`
 * Return classpath and nesting without the namespace prefix in the namespace itself [#21316](https://bugs.ruby-lang.org/issues/21316), [#21318](https://bugs.ruby-lang.org/issues/21318)
 
 ## How to use
 
-### Enabling namespace
+### Enabling Ruby Box
 
-First, an environment variable should be set at the ruby process bootup: `RUBY_NAMESPACE=1`.
-The only valid value is `1` to enable namespace. Other values (or unset `RUBY_NAMESPACE`) means disabling namespace. And setting the value after Ruby program starts doesn't work.
+First, an environment variable should be set at the ruby process bootup: `RUBY_BOX=1`.
+The only valid value is `1` to enable namespace. Other values (or unset `RUBY_BOX`) means disabling namespace. And setting the value after Ruby program starts doesn't work.
 
-### Using namespace
+### Using Ruby Box
 
-`Namespace` class is the entrypoint of namespaces.
+`Ruby::Box` class is the entrypoint of Ruby Box.
 
 ```ruby
-ns = Namespace.new
-ns.require('something') # or require_relative, load
+box = Ruby::Box.new
+box.require('something') # or require_relative, load
 ```
 
-The required file (either .rb or .so/.dll/.bundle) is loaded in the namespace (`ns` here). The required/loaded files from `something` will be loaded in the namespace recursively.
+The required file (either .rb or .so/.dll/.bundle) is loaded in the box (`box` here). The required/loaded files from `something` will be loaded in the box recursively.
 
 ```ruby
 # something.rb
@@ -52,7 +49,7 @@ class Something
 end
 ```
 
-Classes/modules, those methods and constants defined in the namespace can be accessed via `ns` object.
+Classes/modules, those methods and constants defined in the box can be accessed via `ns` object.
 
 ```ruby
 p ns::Something.x  # 1
@@ -60,50 +57,48 @@ p ns::Something.x  # 1
 X = 2
 p X                # 2
 p ::X              # 2
-p ns::Something.x  # 1
-p ns::X            # 1
+p box::Something.x  # 1
+p box::X            # 1
 ```
 
-Instance methods defined in the namespace also run with definitions in the namespace.
+Instance methods defined in the box also run with definitions in the box.
 
 ```ruby
-s = ns::Something.new
+s = box::Something.new
 
 p s.x  # 1
 ```
 
 ## Specifications
 
-### Namespace types
+### Ruby Box types
 
-There are two namespace types:
+There are two box types:
 
-* Root namespace
-* User namespace
+* Root box
+* User boxes
 
-There is the root namespace, just a single namespace in a Ruby process. Ruby bootstrap runs in the root namespace, and all builtin classes/modules are defined in the root namespace. (See "Builtin classes and modules".)
+There is the root box, just a single box in a Ruby process. Ruby bootstrap runs in the root box, and all builtin classes/modules are defined in the root box. (See "Builtin classes and modules".)
 
-User namespaces are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" namespace, which is a user namespace automatically created at the end of Ruby's bootstrap, copied from the root namespace.
+User boxes are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" box, which is a user namespace automatically created at the end of Ruby's bootstrap, copied from the root box.
 
-When `Namespace.new` is called, an "optional" namespace (a user, non-main namespace) is created, copied from the root namespace. All user namespaces are flat, copied from the root namespace.
+When `Ruby::Box.new` is called, an "optional" box (a user, non-main box) is created, copied from the root box. All user boxes are flat, copied from the root box.
 
-### Namespace class and instances
+### Ruby Box class and instances
 
-`Namespace` is a top level class, as a subclass of `Module`, and `Namespace` instances are a kind of `Module`.
+`Ruby::Box` is a class, as a subclass of `Module`. `Ruby::Box` instances are a kind of `Module`.
 
-### Classes and modules defined in namespace
+### Classes and modules defined in boxes
 
-The classes and modules, newly defined in a namespace `ns`, are defined under `ns`. For example, if a class `A` is defined in `ns`, it is actually defined as `ns::A`.
+The classes and modules, newly defined in a box `box`, are accessible via `box`. For example, if a class `A` is defined in `box`, it is accessible as `box::A` from outside of the box.
 
-In the namespace `ns`, `ns::A` can be referred to as `A` (and `::A`). From outside of `ns`, it can be referred to as `ns::A`.
+In the box `box`, `A` can be referred to as `A` (and `::A`).
 
-The main namespace is exceptional. Top level classes and modules defined in the main namespace are just top level classes and modules.
+### Built-in classes and modules reopened in boxes
 
-### Classes and modules reopened in namespace
+In boxes, builtin classes/modules are visible and can be reopened. Those classes/modules can be reopened using `class` or `module` clauses, and class/module definitions can be changed.
 
-In namespaces, builtin classes/modules are visible and can be reopened. Those classes/modules can be reopened using `class` or `module` clauses, and class/module definitions can be changed.
-
-The changed definitions are visible only in the namespace. In other namespaces, builtin classes/modules and those instances work without changed definitions.
+The changed definitions are visible only in the box. In other boxes, builtin classes/modules and those instances work without changed definitions.
 
 ```ruby
 # in foo.rb
@@ -126,21 +121,20 @@ Foo.foo.blank? #=> false
 "foo".blank?   #=> false
 
 # in main.rb
-ns = Namespace.new
-ns.require('foo')
+box = Ruby::Box.new
+box.require('foo')
 
-Foo.foo_is_blank? #=> false   (#blank? called in ns)
+box::Foo.foo_is_blank? #=> false   (#blank? called in box)
 
-Foo.foo.blank?    # NoMethodError
-"foo".blank?      # NoMethodError
+"foo".blank?          # NoMethodError
 String::BLANK_PATTERN # NameError
 ```
 
-The main namespace and `ns` are different namespaces, so monkey patches in main are also invisible in `ns`.
+The main box and `box` are different boxes, so monkey patches in main are also invisible in `box`.
 
 ### Builtin classes and modules
 
-In the namespace context, "builtin" classes and modules are classes and modules:
+In the box context, "builtin" classes and modules are classes and modules:
 
 * Accessible without any `require` calls in user scripts
 * Defined before any user program start running
@@ -148,11 +142,11 @@ In the namespace context, "builtin" classes and modules are classes and modules:
 
 Hereafter, "builtin classes and modules" will be referred to as just "builtin classes".
 
-### Builtin classes referred via namespace objects
+### Builtin classes referred via box objects
 
-Builtin classes in a namespace `ns` can be referred from other namespace. For example, `ns::String` is a valid reference, and `String` and `ns::String` are identical (`String == ns::String`, `String.object_id == ns::String.object_id`).
+Builtin classes in a box `box` can be referred from other boxes. For example, `box::String` is a valid reference, and `String` and `box::String` are identical (`String == box::String`, `String.object_id == box::String.object_id`).
 
-`ns::String`-like reference returns just a `String` in the current namespace, so its definition is `String` in the namespace, not in `ns`.
+`box::String`-like reference returns just a `String` in the current box, so its definition is `String` in the box, not in `box`.
 
 ```ruby
 # foo.rb
@@ -161,15 +155,15 @@ class String
 end
 
 # main.rb
-ns = Namespace.new
-ns.require('foo')
+box = Ruby::Box.new
+box.require('foo')
 
-ns::String.foo  # NoMethodError
+box::String.foo  # NoMethodError
 ```
 
 ### Class instance variables, class variables, constants
 
-Builtin classes can have different sets of class instance variables, class variables and constants between namespaces.
+Builtin classes can have different sets of class instance variables, class variables and constants between boxes.
 
 ```ruby
 # foo.rb
@@ -184,8 +178,8 @@ Array.class_variable_get(:@@v)   #=> "_foo_"
 Array.const_get(:V)              #=> "FOO"
 
 # main.rb
-ns = Namespace.new
-ns.require('foo')
+box = Ruby::Box.new
+box.require('foo')
 
 Array.instance_variable_get(:@v) #=> nil
 Array.class_variable_get(:@@v)   # NameError
@@ -194,7 +188,7 @@ Array.const_get(:V)              # NameError
 
 ### Global variables
 
-In namespaces, changes on global variables are also isolated in the namespace. Changes on global variables in a namespace are visible/applied only in the namespace.
+In boxes, changes on global variables are also isolated in the boxes. Changes on global variables in a box are visible/applied only in the box.
 
 ```ruby
 # foo.rb
@@ -207,8 +201,8 @@ puts "This appears: '#{$foo}'"
 p $foo      #=> nil
 p $VERBOSE  #=> false
 
-ns = Namespace.new
-ns.require('foo')  # "This appears: 'foo'"
+box = Ruby::Box.new
+box.require('foo')  # "This appears: 'foo'"
 
 p $foo      #=> nil
 p $VERBOSE  #=> false
@@ -216,7 +210,7 @@ p $VERBOSE  #=> false
 
 ### Top level constants
 
-Usually, top level constants are defined as constants of `Object`. In namespaces, top level constants are constants of `Object` in the namespace. And the namespace object `ns`'s constants are strictly equal to constants of `Object`.
+Usually, top level constants are defined as constants of `Object`. In boxes, top level constants are constants of `Object` in the box. And the box object `box`'s constants are strictly equal to constants of `Object`.
 
 ```ruby
 # foo.rb
@@ -226,10 +220,10 @@ FOO         #=> 100
 Object::FOO #=> 100
 
 # main.rb
-ns = Namespace.new
-ns.require('foo')
+box = Ruby::Box.new
+box.require('foo')
 
-ns::FOO      #=> 100
+box::FOO      #=> 100
 
 FOO          # NameError
 Object::FOO  # NameError
@@ -237,7 +231,7 @@ Object::FOO  # NameError
 
 ### Top level methods
 
-Top level methods are private instance methods of `Object`, in each namespace.
+Top level methods are private instance methods of `Object`, in each box.
 
 ```ruby
 # foo.rb
@@ -251,115 +245,74 @@ Foo.say #=> "foo"
 yay     #=> "foo"
 
 # main.rb
-ns = Namespace.new
-ns.require('foo')
+box = Ruby::Box.new
+box.require('foo')
 
-ns.Foo.say  #=> "foo"
+box.Foo.say  #=> "foo"
 
 yay  # NoMethodError
 ```
 
-There is no way to expose top level methods in namespaces to another namespace.
-(See "Expose top level methods as a method of the namespace object" in "Discussions" section below)
+There is no way to expose top level methods in boxes to others.
+(See "Expose top level methods as a method of the box object" in "Discussions" section below)
 
-### Namespace scopes
+### Ruby Box scopes
 
-Namespace works in file scope. One `.rb` file runs in a single namespace.
+Ruby Box works in file scope. One `.rb` file runs in a single box.
 
-Once a file is loaded in a namespace `ns`, all methods/procs defined/created in the file run in `ns`.
+Once a file is loaded in a box `box`, all methods/procs defined/created in the file run in `box`.
 
 ## Implementation details
 
-#### Object Shapes
-
-Once builtin classes are copied and modified in namespaces, its instance variable management fallbacks from Object Shapes to a traditional iv table (st_table) because RClass stores the shape in its `flags`, not in `rb_classext_t`.
-
-#### Size of RClass and rb_classext_t
-
-Namespace requires to move some fields from RClass to `rb_classext_t`, then the size of RClass and `rb_classext_t` is now larger than `4 * RVALUE_SIZE`. It's against the expectation of [Variable Width Allocation](https://rubykaigi.org/2021-takeout/presentations/peterzhu2118.html).
-
-Now the `STATIC_ASSERT` to check the size is commented-out. (See "Minimize the size of RClass and rb_classext_t" in "Discussion" section below)
-
 #### ISeq inline method/constant cache
 
-As described above in "Namespace scopes", an ".rb" file runs in a namespace. So method/constant resolution will be done in a namespace consistently.
+As described above in "Ruby Box scopes", an ".rb" file runs in a box. So method/constant resolution will be done in a box consistently.
 
-That means ISeq inline caches work well even with namespaces. Otherwise, it's a bug.
+That means ISeq inline caches work well even with boxes. Otherwise, it's a bug.
 
 #### Method call global cache (gccct)
 
-`rb_funcall()` C function refers to the global cc cache table (gccct), and the cache key is calculated with the current namespace.
+`rb_funcall()` C function refers to the global cc cache table (gccct), and the cache key is calculated with the current box.
 
-So, `rb_funcall()` calls have a performance penalty when namespace is enabled.
+So, `rb_funcall()` calls have a performance penalty when Ruby Box is enabled.
 
-#### Current namespace and loading namespace
+#### Current box and loading box
 
-The current namespace is the namespace that the executing code is in. `Namespace.current` returns the current namespace object.
+The current box is the box that the executing code is in. `Ruby::Box.current` returns the current box object.
 
-The loading namespace is an internally managed namespace to determine the namespace to load newly required/loaded files. For example, `ns` is the loading namespace when `ns.require("foo")` is called.
+The loading box is an internally managed box to determine the box to load newly required/loaded files. For example, `box` is the loading box when `box.require("foo")` is called.
 
 ## Discussions
 
-#### Namespace#inspect
-
-Currently, `Namespace#inspect` returns values like `"#<Namespace:0x00000001083a5660>"`. This results in the very redundant and poorly visible classpath outside the namespace.
-
-```ruby
-# foo.rb
-class C; end
-
-# main.rb
-ns = Namespace.new
-ns.require('foo')
-
-p ns::C # "#<Namespace:0x00000001083a5660>::C"
-```
-
-And currently, if a namespace is assigned to a constant `NS1`, the classpath output will be `NS1::C`. But the namespace object can be brought to another namespace and the constant `NS1` in the namespace is something different. So the constant-based classpath for namespace is not safe basically.
-
-So we should find a better format to show namespaces. Options are:
-
-* `NS1::C` (only when this namespace is created and assigned to NS1 in the current namespace)
-* `#<Namespace:user:1083a5660>::C` (with namespace type and without preceding 0)
-* or something else
-
-#### Namespace#eval
-
-Testing namespace features needs to create files to be loaded in namespaces. It's not easy nor casual.
-
-If `Namespace` class has an instance method `#eval` to evaluate code in the namespace, it can be helpful.
-
 #### More builtin methods written in Ruby
 
-If namespace is enabled by default, builtin methods can be written in Ruby because it can't be overridden by users' monkey patches. Builtin Ruby methods can be JIT-ed, and it could bring performance reward.
+If Ruby Box is enabled by default, builtin methods can be written in Ruby because it can't be overridden by users' monkey patches. Builtin Ruby methods can be JIT-ed, and it could bring performance reward.
 
 #### Monkey patching methods called by builtin methods
 
-Builtin methods sometimes call other builtin methods. For example, `Hash#map` calls `Hash#each` to retrieve entries to be mapped. Without namespace, Ruby users can overwrite `Hash#each` and expect the behavior change of `Hash#map` as a result.
+Builtin methods sometimes call other builtin methods. For example, `Hash#map` calls `Hash#each` to retrieve entries to be mapped. Without Ruby Box, Ruby users can overwrite `Hash#each` and expect the behavior change of `Hash#map` as a result.
 
-But with namespaces, `Hash#map` runs in the root namespace. Ruby users can define `Hash#each` only in user namespaces, so users cannot change `Hash#map`'s behavior in this case. To achieve it, users should override both`Hash#map` and `Hash#each` (or only `Hash#map`).
+But with boxes, `Hash#map` runs in the root box. Ruby users can define `Hash#each` only in user boxes, so users cannot change `Hash#map`'s behavior in this case. To achieve it, users should override both`Hash#map` and `Hash#each` (or only `Hash#map`).
 
 It is a breaking change.
 
-It's an option to change the behavior of methods in the root namespace to refer to definitions in user namespaces. But if we do so, that means we can't proceed with "More builtin methods written in Ruby".
+Users can define methods using `Ruby::Box.root.eval(...)`, but it's clearly not ideal API.
 
-#### Context of \$LOAD\_PATH and \$LOADED\_FEATURES
+#### Context of `$LOAD_PATH` and `$LOADED_FEATURES`
 
-Global variables `$LOAD_PATH` and `$LOADED_FEATURES` control `require` method behaviors. So those namespaces are determined by the loading namespace instead of the current namespace.
+Global variables `$LOAD_PATH` and `$LOADED_FEATURES` control `require` method behaviors. So those variables are determined by the loading box instead of the current box.
 
 This could potentially conflict with the user's expectations. We should find the solution.
 
-#### Expose top level methods as a method of the namespace object
+#### Expose top level methods as a method of the box object
 
-Currently, top level methods in namespaces are not accessible from outside of the namespace. But there might be a use case to call other namespace's top level methods.
+Currently, top level methods in boxes are not accessible from outside of the box. But there might be a use case to call other box's top level methods.
 
-#### Split root and builtin namespace
+#### Split root and builtin box
 
-NOTE: "builtin" namespace is a different one from the "builtin" namespace in the current implementation
+Currently, the single "root" box is the source of classext CoW. And also, the "root" box can load additional files after starting main script evaluation by calling methods which contain lines like `require "openssl"`.
 
-Currently, the single "root" namespace is the source of classext CoW. And also, the "root" namespace can load additional files after starting main script evaluation by calling methods which contain lines like `require "openssl"`.
-
-That means, user namespaces can have different sets of definitions according to when it is created.
+That means, user boxes can have different sets of definitions according to when it is created.
 
 ```
 [root]
@@ -368,51 +321,32 @@ That means, user namespaces can have different sets of definitions according to 
  |
  |(require "openssl" called in root)
  |
- |----[ns1] having OpenSSL
+ |----[box1] having OpenSSL
  |
  |(remove_const called for OpenSSL in root)
  |
- |----[ns2] without OpenSSL
+ |----[box2] without OpenSSL
 ```
 
-This could cause unexpected behavior differences between user namespaces. It should NOT be a problem because user scripts which refer to `OpenSSL` should call `require "openssl"` by themselves.
-But in the worst case, a script (without `require "openssl"`) runs well in `ns1`, but doesn't run in `ns2`. This situation looks like a "random failure" to users.
+This could cause unexpected behavior differences between user boxes. It should NOT be a problem because user scripts which refer to `OpenSSL` should call `require "openssl"` by themselves.
+But in the worst case, a script (without `require "openssl"`) runs well in `box1`, but doesn't run in `box2`. This situation looks like a "random failure" to users.
 
-An option possible to prevent this situation is to have "root" and "builtin" namespaces.
+An option possible to prevent this situation is to have "root" and "builtin" boxes.
 
 * root
-  * The namespace for the Ruby process bootstrap, then the source of CoW
-  * After starting the main namespace, no code runs in this namespace
+  * The box for the Ruby process bootstrap, then the source of CoW
+  * After starting the main box, no code runs in this box
 * builtin
-  * The namespace copied from the root namespace at the same time with "main"
-  * Methods and procs defined in the "root" namespace run in this namespace
-  * Classes and modules required will be loaded in this namespace
+  * The box copied from the root box at the same time with "main"
+  * Methods and procs defined in the "root" box run in this box
+  * Classes and modules required will be loaded in this box
 
-This design realizes a consistent source of namespace CoW.
+This design realizes a consistent source of box CoW.
 
-#### Separate cc_tbl and callable_m_tbl, cvc_tbl for less classext CoW
+#### Separate `cc_tbl` and `callable_m_tbl`, `cvc_tbl` for less classext CoW
 
 The fields of `rb_classext_t` contains several cache(-like) data, `cc_tbl`(callcache table), `callable_m_tbl`(table of resolved complemented methods) and `cvc_tbl`(class variable cache table).
 
 The classext CoW is triggered when the contents of `rb_classext_t` are changed, including `cc_tbl`, `callable_m_tbl`, and `cvc_tbl`. But those three tables are changed by just calling methods or referring class variables. So, currently, classext CoW is triggered much more times than the original expectation.
 
 If we can move those three tables outside of `rb_classext_t`, the number of copied `rb_classext_t` will be much less than the current implementation.
-
-#### Object Shapes per namespace
-
-Now the classext CoW requires RClass and `rb_classext_t` to fallback its instance variable management from Object Shapes to the traditional `st_table`. It may have a performance penalty.
-
-If we can apply Object Shapes on `rb_classext_t` instead of `RClass`, per-namespace classext can have its own shapes, and it may be able to avoid the performance penalty.
-
-#### Minimize the size of RClass and rb_classext_t
-
-As described in "Size of RClass and rb_classext_t" section above, the size of RClass and `rb_classext_t` is currently larger than `4 * RVALUE_SIZE` (`20 * VALUE_SIZE`). Now the size is `23 * VALUE_SIZE + 7 bits`.
-
-The fields possibly removed from `rb_classext_t` are:
-
-* `cc_tbl`, `callable_m_tbl`, `cvc_tbl` (See the section "Separate cc_tbl and callable_m_tbl, cvc_tbl for less classext CoW" above)
-* `ns_super_subclasses`, `module_super_subclasses`
-  * `RCLASSEXT_SUBCLASSES(RCLASS_EXT_PRIME(RCLASSEXT_SUPER(klass)))->ns_subclasses` can replace it
-  * These fields are used only in GC, how's the actual performance benefit?
-
-If we can move or remove those fields, the size satisfies the assertion (`<= 4 * RVALUE_SIZE`).
