@@ -3842,9 +3842,6 @@ impl Function {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
             }
-            Insn::FixnumBitCheck { val, .. } => {
-                self.assert_subtype(insn_id, val, types::Fixnum)
-            }
             Insn::ObjToString { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::AnyToString { val, str, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)?;
