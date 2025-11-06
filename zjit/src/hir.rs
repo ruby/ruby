@@ -567,22 +567,27 @@ impl std::fmt::Display for SideExitReason {
 /// Represents whether we know the receiver's class statically at compile-time,
 /// have profiled type information, or know nothing about it.
 pub enum ReceiverTypeResolution {
-    /// The receiver's class is statically known at JIT compile-time (no guard needed)
-    StaticallyKnown { class: VALUE },
-    /// The receiver has a monomorphic profile (single type observed, guard needed)
-    Monomorphic { class: VALUE, profiled_type: ProfiledType },
-    /// The receiver has a skewed polymorphic profile (dominant type with some other types, guard needed)
-    SkewedPolymorphic { class: VALUE, profiled_type: ProfiledType },
-    /// The receiver is polymorphic (multiple types, none dominant)
-    Polymorphic,
     /// No profile information available for the receiver
     NoProfile,
+    /// The receiver has a monomorphic profile (single type observed, guard needed)
+    Monomorphic { class: VALUE, profiled_type: ProfiledType },
+    /// The receiver is polymorphic (multiple types, none dominant)
+    Polymorphic,
+    /// The receiver has a skewed polymorphic profile (dominant type with some other types, guard needed)
+    SkewedPolymorphic { class: VALUE, profiled_type: ProfiledType },
+    /// More than N types seen with no clear winner
+    Megamorphic,
+    /// Megamorphic, but with a significant skew towards one type
+    SkewedMegamorphic { class: VALUE, profiled_type: ProfiledType },
+    /// The receiver's class is statically known at JIT compile-time (no guard needed)
+    StaticallyKnown { class: VALUE },
 }
 
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
 #[derive(Debug, Clone, Copy)]
 pub enum SendFallbackReason {
     SendWithoutBlockPolymorphic,
+    SendWithoutBlockMegamorphic,
     SendWithoutBlockNoProfiles,
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
@@ -590,6 +595,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
+    SendMegamorphic,
     SendNoProfiles,
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
@@ -2158,6 +2164,8 @@ impl Function {
     /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
     /// - `Monomorphic`/`SkewedPolymorphic` if we have usable profile data
     /// - `Polymorphic` if the receiver has multiple types
+    /// - `Megamorphic`/`SkewedMegamorphic` if the receiver has too many types to optimize
+    ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
     fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: usize) -> ReceiverTypeResolution {
         if let Some(class) = recv_type.runtime_exact_ruby_class() {
@@ -2185,8 +2193,16 @@ impl Function {
                         class: profiled_type.class(),
                         profiled_type,
                     };
+                } else if entry_type_summary.is_skewed_megamorphic() {
+                    let profiled_type = entry_type_summary.bucket(0);
+                    return ReceiverTypeResolution::SkewedMegamorphic {
+                        class: profiled_type.class(),
+                        profiled_type,
+                    };
                 } else if entry_type_summary.is_polymorphic() {
                     return ReceiverTypeResolution::Polymorphic;
+                } else if entry_type_summary.is_megamorphic() {
+                    return ReceiverTypeResolution::Megamorphic;
                 }
             }
         }
@@ -2342,6 +2358,14 @@ impl Function {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                             ReceiverTypeResolution::Monomorphic { class, profiled_type }
                             | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                            ReceiverTypeResolution::SkewedMegamorphic { .. }
+                            | ReceiverTypeResolution::Megamorphic => {
+                                if get_option!(stats) {
+                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockMegamorphic);
+                                }
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
                             ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
                                     self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic);
@@ -2535,6 +2559,14 @@ impl Function {
                             ReceiverTypeResolution::StaticallyKnown { class } => class,
                             ReceiverTypeResolution::Monomorphic { class, .. }
                             | ReceiverTypeResolution::SkewedPolymorphic { class, .. } => class,
+                            ReceiverTypeResolution::SkewedMegamorphic { .. }
+                            | ReceiverTypeResolution::Megamorphic => {
+                                if get_option!(stats) {
+                                    self.set_dynamic_send_reason(insn_id, SendMegamorphic);
+                                }
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
                             ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
                                     self.set_dynamic_send_reason(insn_id, SendPolymorphic);
@@ -2815,7 +2847,7 @@ impl Function {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                 ReceiverTypeResolution::Monomorphic { class, profiled_type }
                 | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
-                ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::NoProfile => return Err(()),
+                ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
             // Do method lookup
@@ -2920,7 +2952,7 @@ impl Function {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                 ReceiverTypeResolution::Monomorphic { class, profiled_type }
                 | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
-                ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::NoProfile => return Err(()),
+                ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
             // Do method lookup
