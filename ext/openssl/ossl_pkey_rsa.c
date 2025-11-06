@@ -493,7 +493,7 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
       case 1:
 	return Qtrue;
       default:
-        ossl_raise(eRSAError, "EVP_DigestVerifyFinal");
+        ossl_raise(ePKeyError, "EVP_DigestVerifyFinal");
     }
 
   err:
