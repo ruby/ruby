@@ -28,29 +28,29 @@
 #endif
 
 struct rb_ns_subclasses {
-    long refcount;
+    rb_atomic_t refcount;
     struct st_table *tbl;
 };
 typedef struct rb_ns_subclasses rb_ns_subclasses_t;
 
-static inline long
+static inline rb_atomic_t
 rb_ns_subclasses_ref_count(rb_ns_subclasses_t *ns_sub)
 {
-    return ns_sub->refcount;
+    return ATOMIC_LOAD_RELAXED(ns_sub->refcount);
 }
 
 static inline rb_ns_subclasses_t *
 rb_ns_subclasses_ref_inc(rb_ns_subclasses_t *ns_sub)
 {
-    ns_sub->refcount++;
+    RUBY_ATOMIC_FETCH_ADD(ns_sub->refcount, 1);
     return ns_sub;
 }
 
 static inline void
 rb_ns_subclasses_ref_dec(rb_ns_subclasses_t *ns_sub)
 {
-    ns_sub->refcount--;
-    if (ns_sub->refcount == 0) {
+    rb_atomic_t was = RUBY_ATOMIC_FETCH_SUB(ns_sub->refcount, 1);
+    if (was == 1) {
         st_free_table(ns_sub->tbl);
         xfree(ns_sub);
     }

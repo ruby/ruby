@@ -690,7 +690,7 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
     }
     VM_ASSERT(
         rb_ns_subclasses_ref_count(anchor->ns_subclasses) > 0,
-        "ns_subclasses refcount (%p) %ld", anchor->ns_subclasses, rb_ns_subclasses_ref_count(anchor->ns_subclasses));
+        "ns_subclasses refcount (%p) %d", anchor->ns_subclasses, rb_ns_subclasses_ref_count(anchor->ns_subclasses));
     st_delete(tbl, &ns_id, NULL);
     rb_ns_subclasses_ref_dec(anchor->ns_subclasses);
     xfree(anchor);
