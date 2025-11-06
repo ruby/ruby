@@ -7387,14 +7387,13 @@ fn gen_send_bmethod(
     let capture = unsafe { proc_block.as_.captured.as_ref() };
     let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-    let ractor_serial = unsafe { rb_yjit_cme_ractor_serial(cme) };
-    //println!("{}", ractor_serial);
-
-    // if current ractor is same as defined cme ractor, then guard based on the id
-    asm_comment!(asm, "guard current ractor {}", ractor_serial);
-    let current_ractor_serial = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_RACTOR_ID));
-    asm.cmp(current_ractor_serial, Opnd::UImm(ractor_serial));
-    asm.jne(Target::side_exit(Counter::send_bmethod_ractor));
+    if !procv.shareable_p() {
+        let ractor_serial = unsafe { rb_yjit_cme_ractor_serial(cme) };
+        asm_comment!(asm, "guard current ractor == {}", ractor_serial);
+        let current_ractor_serial = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_RACTOR_ID));
+        asm.cmp(current_ractor_serial, Opnd::UImm(ractor_serial));
+        asm.jne(Target::side_exit(Counter::send_bmethod_ractor));
+    }
 
     // Passing a block to a block needs logic different from passing
     // a block to a method and sometimes requires allocation. Bail for now.
