@@ -52,6 +52,7 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(load);
+    CALL(Ruby_module);
     CALL(Box);
     CALL(Proc);
     CALL(Binding);
