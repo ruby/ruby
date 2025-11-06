@@ -463,7 +463,7 @@ module Spec
           FileUtils.mv bundler_path, options[:path]
         end
       ensure
-        build_path.rmtree
+        FileUtils.rm_rf build_path
       end
     end
 

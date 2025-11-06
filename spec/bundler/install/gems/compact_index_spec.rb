@@ -698,7 +698,7 @@ RSpec.describe "compact index api" do
 
         bundle :install, artifice: "compact_index_forbidden"
       ensure
-        home(".gemrc").rmtree
+        FileUtils.rm_rf home(".gemrc")
       end
     end
   end

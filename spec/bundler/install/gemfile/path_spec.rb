@@ -454,7 +454,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
   it "handles directories in bin/" do
     build_lib "foo"
-    lib_path("foo-1.0").join("foo.gemspec").rmtree
+    FileUtils.rm_rf lib_path("foo-1.0").join("foo.gemspec")
     lib_path("foo-1.0").join("bin/performance").mkpath
 
     install_gemfile <<-G

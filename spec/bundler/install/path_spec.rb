@@ -35,7 +35,7 @@ RSpec.describe "bundle install" do
       bundle :install, dir: dir
       expect(out).to include("installed into `./vendor/bundle`")
 
-      dir.rmtree
+      FileUtils.rm_rf dir
     end
 
     it "prints a message to let the user know where gems where installed" do
@@ -181,7 +181,7 @@ RSpec.describe "bundle install" do
       expect(vendored_gems("extensions")).to be_directory
       expect(the_bundle).to include_gems "very_simple_binary 1.0", source: "remote1"
 
-      vendored_gems("extensions").rmtree
+      FileUtils.rm_rf vendored_gems("extensions")
 
       run "require 'very_simple_binary_c'", raise_on_error: false
       expect(err).to include("Bundler::GemNotFound")

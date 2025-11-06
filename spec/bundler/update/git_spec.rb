@@ -199,7 +199,7 @@ RSpec.describe "bundle update" do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      lib_path("foo-1.0").join(".git").rmtree
+      FileUtils.rm_rf lib_path("foo-1.0").join(".git")
 
       bundle :update, all: true, raise_on_error: false
       expect(err).to include(lib_path("foo-1.0").to_s).
