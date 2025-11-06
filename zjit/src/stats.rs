@@ -168,6 +168,7 @@ make_counters! {
     dynamic_send {
         // send_fallback_: Fallback reasons for send-ish instructions
         send_fallback_send_without_block_polymorphic,
+        send_fallback_send_without_block_megamorphic,
         send_fallback_send_without_block_no_profiles,
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
@@ -175,6 +176,7 @@ make_counters! {
         send_fallback_send_without_block_not_optimized_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
+        send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_ccall_with_frame_too_many_args,
@@ -428,6 +430,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::stats::Counter::*;
     match reason {
         SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
+        SendWithoutBlockMegamorphic               => send_fallback_send_without_block_megamorphic,
         SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
@@ -436,6 +439,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
                                                   => send_fallback_send_without_block_not_optimized_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
+        SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
