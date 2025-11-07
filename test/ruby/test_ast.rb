@@ -1734,6 +1734,20 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_qcall_locations
+      node = ast_parse("v&.to_i")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 1, 1, 3], [1, 3, 1, 7], nil, nil])
+
+      node = ast_parse("v&.to_i()")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 1, 1, 3], [1, 3, 1, 7], [1, 7, 1, 8], [1, 8, 1, 9]])
+
+      node = ast_parse("v&.to_i(10)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 1, 1, 3], [1, 3, 1, 7], [1, 7, 1, 8], [1, 10, 1, 11]])
+
+      node = ast_parse("v&.to_i 10")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 1, 1, 3], [1, 3, 1, 7], nil, nil])
+    end
+
     private
     def ast_parse(src, **options)
       begin
