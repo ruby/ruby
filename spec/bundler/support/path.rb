@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "pathname" unless defined?(Pathname)
 require "rbconfig"
 
 require_relative "env"
