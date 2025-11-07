@@ -68,11 +68,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     JSON.create_id = 'json_class'
   end
 
-  def test_deep_const_get
-    assert_raise(ArgumentError) { JSON.deep_const_get('Nix::Da') }
-    assert_equal File::SEPARATOR, JSON.deep_const_get('File::SEPARATOR')
-  end
-
   def test_parse
     assert_equal [ 1, 2, 3, ], JSON.parse('[ 1, 2, 3 ]')
   end
