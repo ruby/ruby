@@ -11,7 +11,7 @@ module Bundler
   end
 
   class CurrentRuby
-    ALL_RUBY_VERSIONS = (18..27).to_a.concat((30..35).to_a).freeze
+    ALL_RUBY_VERSIONS = [*18..27, *30..34, *40].freeze
     KNOWN_MINOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.reverse.join(".") }.freeze
     KNOWN_MAJOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.last.to_s }.uniq.freeze
     PLATFORM_MAP = {
