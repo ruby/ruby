@@ -192,7 +192,7 @@ The following default gems are updated.
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.3.3
-* json 2.15.2
+* json 2.16.0
 * net-http 0.7.0
 * openssl 4.0.0.pre
 * optparse 0.8.0
