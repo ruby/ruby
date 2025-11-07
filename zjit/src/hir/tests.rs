@@ -3273,4 +3273,99 @@ pub mod hir_build_tests {
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }
-}
+
+    #[test]
+    fn test_checkkeyword_tests_fixnum_bit() {
+        eval(r#"
+            def test(kw: 1 + 1) = kw
+        "#);
+        assert_contains_opcode("test", YARVINSN_checkkeyword);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          v14:BasicObject = GetLocal l0, EP@3
+          v15:BoolExact = FixnumBitCheck v14, 0
+          CheckInterrupts
+          v18:CBool = Test v15
+          IfTrue v18, bb3(v10, v11, v12)
+          v20:Fixnum[1] = Const Value(1)
+          v21:Fixnum[1] = Const Value(1)
+          v25:BasicObject = SendWithoutBlock v20, :+, v21
+          PatchPoint NoEPEscape(test)
+          Jump bb3(v10, v25, v12)
+        bb3(v29:BasicObject, v30:BasicObject, v31:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_checkkeyword_too_many_keywords_causes_side_exit() {
+        eval(r#"
+            def test(k1: k1, k2: k2, k3: k3, k4: k4, k5: k5,
+            k6: k6, k7: k7, k8: k8, k9: k9, k10: k10, k11: k11,
+            k12: k12, k13: k13, k14: k14, k15: k15, k16: k16,
+            k17: k17, k18: k18, k19: k19, k20: k20, k21: k21,
+            k22: k22, k23: k23, k24: k24, k25: k25, k26: k26,
+            k27: k27, k28: k28, k29: k29, k30: k30, k31: k31,
+            k32: k32, k33: k33) = k1
+        "#);
+        assert_contains_opcode("test", YARVINSN_checkkeyword);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@37
+          v3:BasicObject = GetLocal l0, SP@36
+          v4:BasicObject = GetLocal l0, SP@35
+          v5:BasicObject = GetLocal l0, SP@34
+          v6:BasicObject = GetLocal l0, SP@33
+          v7:BasicObject = GetLocal l0, SP@32
+          v8:BasicObject = GetLocal l0, SP@31
+          v9:BasicObject = GetLocal l0, SP@30
+          v10:BasicObject = GetLocal l0, SP@29
+          v11:BasicObject = GetLocal l0, SP@28
+          v12:BasicObject = GetLocal l0, SP@27
+          v13:BasicObject = GetLocal l0, SP@26
+          v14:BasicObject = GetLocal l0, SP@25
+          v15:BasicObject = GetLocal l0, SP@24
+          v16:BasicObject = GetLocal l0, SP@23
+          v17:BasicObject = GetLocal l0, SP@22
+          v18:BasicObject = GetLocal l0, SP@21
+          v19:BasicObject = GetLocal l0, SP@20
+          v20:BasicObject = GetLocal l0, SP@19
+          v21:BasicObject = GetLocal l0, SP@18
+          v22:BasicObject = GetLocal l0, SP@17
+          v23:BasicObject = GetLocal l0, SP@16
+          v24:BasicObject = GetLocal l0, SP@15
+          v25:BasicObject = GetLocal l0, SP@14
+          v26:BasicObject = GetLocal l0, SP@13
+          v27:BasicObject = GetLocal l0, SP@12
+          v28:BasicObject = GetLocal l0, SP@11
+          v29:BasicObject = GetLocal l0, SP@10
+          v30:BasicObject = GetLocal l0, SP@9
+          v31:BasicObject = GetLocal l0, SP@8
+          v32:BasicObject = GetLocal l0, SP@7
+          v33:BasicObject = GetLocal l0, SP@6
+          v34:BasicObject = GetLocal l0, SP@5
+          v35:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v33, v34, v35)
+        bb1(v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:BasicObject, v43:BasicObject, v44:BasicObject, v45:BasicObject, v46:BasicObject, v47:BasicObject, v48:BasicObject, v49:BasicObject, v50:BasicObject, v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject, v55:BasicObject, v56:BasicObject, v57:BasicObject, v58:BasicObject, v59:BasicObject, v60:BasicObject, v61:BasicObject, v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject, v69:BasicObject, v70:BasicObject, v71:BasicObject, v72:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72)
+        bb2(v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject):
+          SideExit TooManyKeywordParameters
+        ");
+    }
+ }
