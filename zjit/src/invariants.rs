@@ -2,7 +2,8 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::payload::IseqPayload;
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -367,7 +368,7 @@ pub fn track_no_trace_point_assumption(patch_point_ptr: CodePtr, side_exit_ptr: 
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_tracing_invalidate_all() {
-    use crate::gc::{get_or_create_iseq_payload, IseqStatus};
+    use crate::payload::{get_or_create_iseq_payload, IseqStatus};
     use crate::cruby::{for_each_iseq, rb_iseq_reset_jit_func};
 
     if !zjit_enabled_p() {
