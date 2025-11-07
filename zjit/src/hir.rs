@@ -3874,45 +3874,34 @@ impl Function {
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
+        let should_dump = get_option!(dump_hir_iongraph);
 
-        macro_rules! assert_and_save_pass {
-            ($name:literal) => {
+        macro_rules! run_pass {
+            ($name:ident) => {
+                self.$name();
                 #[cfg(debug_assertions)] self.assert_validates();
-                if get_option!(dump_hir_iongraph) {
+                if should_dump {
                     passes.push(
-                        self.to_iongraph_pass($name)
+                        self.to_iongraph_pass(stringify!($name))
                     );
                 }
             }
         }
 
-        if get_option!(dump_hir_iongraph) {
+        if should_dump {
             passes.push(self.to_iongraph_pass("Unoptimized"));
         }
 
         // Function is assumed to have types inferred already
-        self.type_specialize();
-        assert_and_save_pass!("Type specialize");
+        run_pass!(type_specialize);
+        run_pass!(inline);
+        run_pass!(optimize_getivar);
+        run_pass!(optimize_c_calls);
+        run_pass!(fold_constants);
+        run_pass!(clean_cfg);
+        run_pass!(eliminate_dead_code);
 
-        self.inline();
-        assert_and_save_pass!("Inlining");
-
-        self.optimize_getivar();
-        assert_and_save_pass!("Optimize GetIVar");
-
-        self.optimize_c_calls();
-        assert_and_save_pass!("Optimize C calls");
-
-        self.fold_constants();
-        assert_and_save_pass!("Fold constants");
-
-        self.clean_cfg();
-        assert_and_save_pass!("Clean CFG");
-
-        self.eliminate_dead_code();
-        assert_and_save_pass!("Eliminate dead code");
-
-        if get_option!(dump_hir_iongraph) {
+        if should_dump {
             let iseq_name = iseq_get_location(self.iseq, 0);
             self.dump_iongraph(&iseq_name, passes);
         }
