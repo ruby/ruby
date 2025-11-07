@@ -3704,11 +3704,11 @@ impl Function {
             // the instructions at the end of a given basic block.
             for insn_id in &block.insns {
                 let insn_id = uf.find_const(*insn_id);
-                let insn = self.find(insn_id);
+                let insn = &self.insns[insn_id.0];
                 match insn {
-                    Insn::Jump(ref target)
-                    | Insn::IfTrue { ref target, .. }
-                    | Insn::IfFalse { ref target, .. } => {
+                    &Insn::Jump(ref target)
+                    | &Insn::IfTrue { ref target, .. }
+                    | &Insn::IfFalse { ref target, .. } => {
                         successors.push(target.target.0 as u64);
                     }
                     _ => {}
