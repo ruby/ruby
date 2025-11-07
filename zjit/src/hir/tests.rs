@@ -3313,17 +3313,17 @@ pub mod hir_build_tests {
     #[test]
     fn test_checkkeyword_too_many_keywords_sideexit() {
         eval(r#"
-            def test(k1: 1, k2: 2, k3: 3, k4: 4, k5: 5,
-            k6: 6, k7: 7, k8: 8, k9: 9, k10: 10, k11: 11,
-            k12: 12, k13: 13, k14: 14, k15: 15, k16: 16,
-            k17: 17, k18: 18, k19: 19, k20: 20, k21: 21,
-            k22: 22, k23: 23, k24: 24, k25: 25, k26: 26,
-            k27: 27, k28: 28, k29: 29, k30: 30, k31: 31,
-            k32: 32, k33: 33) = kw
+            def test(k1: k1, k2: k2, k3: k3, k4: k4, k5: k5,
+            k6: k6, k7: k7, k8: k8, k9: k9, k10: k10, k11: k11,
+            k12: k12, k13: k13, k14: k14, k15: k15, k16: k16,
+            k17: k17, k18: k18, k19: k19, k20: k20, k21: k21,
+            k22: k22, k23: k23, k24: k24, k25: k25, k26: k26,
+            k27: k27, k28: k28, k29: k29, k30: k30, k31: k31,
+            k32: k32, k33: k33) = k1
         "#);
         // assert_contains_opcode("test", YARVINSN_checkkeyword);
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:8:
+        fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -3366,9 +3366,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72)
         bb2(v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject):
-          v113:BasicObject = SendWithoutBlock v74, :kw
-          CheckInterrupts
-          Return v113
+          SideExit TooManyKeywordParameters
         ");
     }
  }
