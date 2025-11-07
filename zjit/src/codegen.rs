@@ -2328,6 +2328,7 @@ fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> 
 }
 
 fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, value: Opnd) -> Opnd {
+    // rb_str_setbyte is not leaf, but we guard types and index ranges in HIR
     asm_ccall!(asm, rb_str_setbyte, string, index, value)
 }
 
