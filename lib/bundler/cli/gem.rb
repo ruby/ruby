@@ -24,7 +24,7 @@ module Bundler
       thor.destination_root = nil
 
       @name = @gem_name
-      @target = SharedHelpers.pwd.join(gem_name)
+      @target = Pathname.new(SharedHelpers.pwd).join(gem_name)
 
       @extension = options[:ext]
 
@@ -276,7 +276,7 @@ module Bundler
     private
 
     def resolve_name(name)
-      SharedHelpers.pwd.join(name).basename.to_s
+      Pathname.new(SharedHelpers.pwd).join(name).basename.to_s
     end
 
     def ask_and_set(key, prompt, explanation)

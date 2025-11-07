@@ -55,7 +55,7 @@ module Bundler
 
     def pwd
       Bundler.rubygems.ext_lock.synchronize do
-        Pathname.pwd
+        Dir.pwd
       end
     end
 
