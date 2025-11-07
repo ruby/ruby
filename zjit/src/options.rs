@@ -70,7 +70,7 @@ pub struct Options {
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
-    /// Dump High-level IR in Iongraph JSON format after optimization
+    /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-/tmp/zjit-iongraph-{$PID}
     pub dump_hir_iongraph: bool,
 
     /// Dump low-level IR
