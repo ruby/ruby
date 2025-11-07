@@ -3792,13 +3792,9 @@ impl Function {
             // Create the block with instructions.
             let block = &self.blocks[block_id.0];
             let block_ptr = ptr_map.map_id(block_id.0 as u64);
-            let (block_successors, block_predecessors) = self.compute_successors_and_predecessors();
-            let predecessors = block_predecessors.get(&block_id)
-                .cloned()
-                .unwrap_or_default();
-            let successors = block_successors.get(&block_id)
-                .cloned()
-                .unwrap_or_default();
+            let (mut block_successors, mut block_predecessors) = self.compute_successors_and_predecessors();
+            let predecessors = block_predecessors.remove(&block_id).unwrap_or_default();
+            let successors = block_successors.remove(&block_id).unwrap_or_default();
             let mut instructions = Vec::new();
 
             // Get parameter instructions.
