@@ -548,13 +548,17 @@ matz: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
 matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
 matz: MINOR := $(word 2,$(subst ., ,$(NEW)))
-matz: .WAIT bump_news
+matz: $(DOT_WAIT) bump_news
+bump_news$(DOT_WAIT): up
+bump_headers$(DOT_WAIT): bump_news
 else
 matz: MINOR := $(shell expr $(MINOR) + 1)
-matz: .WAIT reset_news
+matz: $(DOT_WAIT) reset_news
+flush_news$(DOT_WAIT): up
+bump_headers$(DOT_WAIT): reset_news
 endif
 
-matz: .WAIT bump_headers
+matz: $(DOT_WAIT) bump_headers
 matz: override NEW := $(MAJOR).$(MINOR).0
 matz: files := include/ruby/version.h include/ruby/internal/abi.h
 matz: message := Development of $(NEW) started.

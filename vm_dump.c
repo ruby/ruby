@@ -134,7 +134,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
@@ -355,7 +355,7 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
