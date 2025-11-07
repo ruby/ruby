@@ -3274,7 +3274,6 @@ pub mod hir_build_tests {
         ");
     }
 
-
     #[test]
     fn test_checkkeyword_tests_fixnum_bit() {
         eval(r#"
