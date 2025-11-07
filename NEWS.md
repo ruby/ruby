@@ -1,4 +1,4 @@
-# NEWS for Ruby 3.5.0
+# NEWS for Ruby 4.0.0
 
 This document is a list of user-visible feature changes
 since the **3.4.0** release, except for bug fixes.

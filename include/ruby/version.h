@@ -61,13 +61,13 @@
  * doesn't mean a total rewrite.  Practically  when it comes to API versioning,
  * major and minor version changes are equally catastrophic.
  */
-#define RUBY_API_VERSION_MAJOR 3
+#define RUBY_API_VERSION_MAJOR 4
 
 /**
  * Minor  version.   As of  writing  this  version changes  annually.   Greater
  * version doesn't mean "better"; they just mean years passed.
  */
-#define RUBY_API_VERSION_MINOR 5
+#define RUBY_API_VERSION_MINOR 0
 
 /**
  * Teeny version.  This digit  is kind of reserved these days.   Kept 0 for the
