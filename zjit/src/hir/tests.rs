@@ -3310,7 +3310,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_checkkeyword_too_many_keywords_sideexit() {
+    fn test_checkkeyword_too_many_keywords_causes_side_exit() {
         eval(r#"
             def test(k1: k1, k2: k2, k3: k3, k4: k4, k5: k5,
             k6: k6, k7: k7, k8: k8, k9: k9, k10: k10, k11: k11,
