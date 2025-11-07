@@ -3845,7 +3845,7 @@ impl Function {
 
                 // Traverse the worklist to get inputs for a given instruction.
                 let mut inputs = VecDeque::new();
-                self.worklist_traverse_single_insn(&self.find(insn_id), &mut inputs);
+                self.worklist_traverse_single_insn(&insn, &mut inputs);
                 let inputs: Vec<Json> = inputs.into_iter().map(|x| x.0.into()).collect();
 
                 instructions.push(
