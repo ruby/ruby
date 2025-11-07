@@ -38,8 +38,8 @@ module Prism
       "3.3-3.3/return_in_sclass.txt",
 
       # Leaving these out until they are supported by parse.y.
-      "3.5/leading_logical.txt",
-      "3.5/endless_methods_command_call.txt",
+      "4.0/leading_logical.txt",
+      "4.0/endless_methods_command_call.txt",
       "command_method_call_2.txt"
     ]
 

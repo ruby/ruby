@@ -10,6 +10,7 @@ module Prism
     autoload :Parser33, "prism/translation/parser33"
     autoload :Parser34, "prism/translation/parser34"
     autoload :Parser35, "prism/translation/parser35"
+    autoload :Parser40, "prism/translation/parser40"
     autoload :Ripper, "prism/translation/ripper"
     autoload :RubyParser, "prism/translation/ruby_parser"
   end

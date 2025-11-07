@@ -230,7 +230,7 @@ module Prism
     end
 
     # All versions that prism can parse
-    SYNTAX_VERSIONS = %w[3.3 3.4 3.5 4.0]
+    SYNTAX_VERSIONS = %w[3.3 3.4 4.0]
 
     # Returns an array of ruby versions that a given filepath should test against:
     # test.txt         # => all available versions
@@ -256,6 +256,7 @@ module Prism
 
     if RUBY_VERSION >= "3.3.0"
       def test_all_syntax_versions_present
+        return if RUBY_VERSION.start_with?("3.5") # TODO: Remove once ruby-dev becomes 4.0
         assert_include(SYNTAX_VERSIONS, current_major_minor)
       end
     end

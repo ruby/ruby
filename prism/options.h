@@ -91,11 +91,11 @@ typedef enum {
     /** The vendored version of prism in CRuby 3.4.x. */
     PM_OPTIONS_VERSION_CRUBY_3_4 = 2,
 
-    /** The vendored version of prism in CRuby 3.5.x. */
+    /** The vendored version of prism in CRuby 4.0.x. */
     PM_OPTIONS_VERSION_CRUBY_3_5 = 3,
 
     /** The vendored version of prism in CRuby 4.0.x. */
-    PM_OPTIONS_VERSION_CRUBY_4_0 = 4,
+    PM_OPTIONS_VERSION_CRUBY_4_0 = 3,
 
     /** The current version of prism. */
     PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_0

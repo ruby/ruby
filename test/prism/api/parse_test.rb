@@ -119,6 +119,9 @@ module Prism
       assert Prism.parse_success?("1 + 1", version: "3.5")
       assert Prism.parse_success?("1 + 1", version: "3.5.0")
 
+      assert Prism.parse_success?("1 + 1", version: "4.0")
+      assert Prism.parse_success?("1 + 1", version: "4.0.0")
+
       assert Prism.parse_success?("1 + 1", version: "latest")
 
       # Test edge case
