@@ -4081,6 +4081,26 @@ assert_equal '1', %q{
   bar { }
 }
 
+# unshareable bmethod call through Method#to_proc#call
+assert_equal '1000', %q{
+  define_method(:bmethod) do
+    self
+  end
+
+  Ractor.new do
+    errors = 0
+    1000.times do
+      p = method(:bmethod).to_proc
+      begin
+        p.call
+      rescue RuntimeError
+        errors += 1
+      end
+    end
+    errors
+  end.value
+}
+
 # test for return stub lifetime issue
 assert_equal '1', %q{
   def foo(n)
