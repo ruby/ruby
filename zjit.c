@@ -72,12 +72,6 @@ rb_zjit_add_frame(VALUE hash, VALUE frame)
     }
 }
 
-long
-rb_zjit_string_bytesize(VALUE s)
-{
-    return RSTRING_LEN(s);
-}
-
 // Parses the ZjitExitLocations raw_samples and line_samples collected by
 // rb_zjit_record_exit_stack and turns them into 3 hashes (raw, lines, and frames) to
 // be used by RubyVM::ZJIT.exit_locations. zjit_raw_samples represents the raw frames information
