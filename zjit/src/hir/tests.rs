@@ -3276,7 +3276,7 @@ pub mod hir_build_tests {
 
 
     #[test]
-    fn test_checkkeyword_specialization() {
+    fn test_checkkeyword_tests_fixnum_bit() {
         eval(r#"
             def test(kw: 1 + 1) = kw
         "#);
