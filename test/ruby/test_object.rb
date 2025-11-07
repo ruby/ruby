@@ -339,6 +339,9 @@ class TestObject < Test::Unit::TestCase
       'T_CLASS,T_MODULE' => Class.new(Object),
       'generic ivar' => '',
     }.each do |desc, o|
+      if o.is_a?(Class) && !main_ractor?
+        next
+      end
       e = assert_raise(NameError, "#{desc} iv removal raises before set") do
         o.remove_instance_variable(:@foo)
       end
@@ -373,14 +376,14 @@ class TestObject < Test::Unit::TestCase
     o1.instance_variable_set(:@a, 0)
     o1.instance_variable_set(:@b, 1)
     o1.instance_variable_set(:@c, 2)
-    refute_includes ObjectSpace.dump(o1), '"embedded":true'
+    refute_includes ObjectSpace.dump(o1), '"embedded":true' if main_ractor?
     o1.remove_instance_variable(:@foo)
-    assert_includes ObjectSpace.dump(o1), '"embedded":true'
+    assert_includes ObjectSpace.dump(o1), '"embedded":true' if main_ractor?
 
     o2.instance_variable_set(:@a, 0)
     o2.instance_variable_set(:@b, 1)
     o2.instance_variable_set(:@c, 2)
-    assert_includes ObjectSpace.dump(o2), '"embedded":true'
+    assert_includes ObjectSpace.dump(o2), '"embedded":true' if main_ractor?
 
     assert_equal(0, o1.a)
     assert_equal(1, o1.b)
@@ -1056,7 +1059,7 @@ class TestObject < Test::Unit::TestCase
     assert_not_initialize_copy {Enumerator::Yielder.new {}}
     assert_not_initialize_copy {File.stat(__FILE__)}
     assert_not_initialize_copy {open(__FILE__)}.each(&:close)
-    assert_not_initialize_copy {ARGF.class.new}
+    assert_not_initialize_copy {ARGF.class.new} if main_ractor?
     assert_not_initialize_copy {Random.new}
     assert_not_initialize_copy {//}
     assert_not_initialize_copy {/.*/.match("foo")}

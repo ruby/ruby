@@ -26,7 +26,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 4, c
   end
 
-  C_Setup = -> do
+  C_Setup = Ractor.make_shareable(proc do
     remove_const :C if defined? ::TestRubyPrimitive::C
     remove_const :A if defined? ::TestRubyPrimitive::A
 
@@ -46,7 +46,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     (1..2).map {
       A::B::C::Const
     }
-  end
+  end)
 
   def test_constant
     C_Setup.call
@@ -119,7 +119,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     }
   end
 
-  def test_constatant_cache4
+  def test_constant_cache4
     assert_equal 8, $test_ruby_primitive_constant_cache4
   end
 
@@ -224,19 +224,6 @@ class TestRubyPrimitive < Test::Unit::TestCase
     @iv += 2
     assert_equal 4, @iv
 
-    # init @@cv
-    @@cv = nil
-
-    @@cv ||= 1
-    assert_equal 1, @@cv
-    @@cv &&= 2
-    assert_equal 2, @@cv
-    @@cv ||= 99
-    assert_equal 2, @@cv
-
-    $gv = 3
-    $gv += 4
-    assert_equal 7, $gv
 
     obj = A10.new
     obj.a = 9
@@ -263,6 +250,22 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal [0, 1, :foo, 3, 4], a
     a[*[1,3]] &&= [:bar]
     assert_equal [0, :bar, 4], a
+  end
+
+  def test_opassign_ractor_unsafe
+    # init @@cv
+    @@cv = nil
+
+    @@cv ||= 1
+    assert_equal 1, @@cv
+    @@cv &&= 2
+    assert_equal 2, @@cv
+    @@cv ||= 99
+    assert_equal 2, @@cv
+
+    $gv = 3
+    $gv += 4
+    assert_equal 7, $gv
   end
 
   def test_opassign_and_or

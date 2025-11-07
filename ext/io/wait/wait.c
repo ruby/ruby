@@ -419,7 +419,7 @@ void
 Init_wait(void)
 {
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-    RB_EXT_RACTOR_SAFE(true);
+    rb_ext_ractor_safe(true);
 #endif
 
     rb_define_method(rb_cIO, "nread", io_nread, 0);

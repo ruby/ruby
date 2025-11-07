@@ -220,7 +220,11 @@ class TestSyntax < Test::Unit::TestCase
       m = m.tr_s('()', ' ').strip if n3 == 'do'
       name = "test_#{n3}_block_after_blockcall_#{n1}_#{n2}_arg"
       code = "#{blockcall}#{c}#{m} #{b}"
-      define_method(name) {assert_valid_syntax(code, bug6115)}
+      class_eval <<-RUBY
+        def #{name}
+          assert_valid_syntax(#{code.inspect}, #{bug6115.inspect})
+        end
+      RUBY
     end
   end
 
@@ -314,8 +318,8 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2), bug5989)
     EnvUtil.under_gc_stress do
       eval("def o.m(k: 0) k end")
-    end
-    assert_equal(42, o.m(k: 42), '[ruby-core:45744]')
+      assert_equal(42, o.m(k: 42), '[ruby-core:45744]')
+    end unless multiple_ractors?
     bug7922 = '[ruby-core:52744] [Bug #7922]'
     def o.bug7922(**) end
     assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
@@ -684,14 +688,17 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_duplicated_rest_kw
-    assert_syntax_error("def foo(*a, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised {def foo(*_, _: 1) end}
+    unless multiple_ractors?
+      assert_syntax_error("def foo(*a, a: 1) end", /duplicated argument name/)
+      assert_nothing_raised {def foo(*_, _: 1) end}
+      defined_foo = true
+    end
     (obj = Object.new).instance_eval("def foo(*_, x: 42, _: 1) x end")
     assert_equal(42, obj.foo(42))
     assert_equal(42, obj.foo(2, _: 0))
     assert_equal(2, obj.foo(x: 2, _: 0))
   ensure
-    self.class.remove_method(:foo)
+    self.class.remove_method(:foo) if defined_foo
   end
 
   def test_duplicated_opt_kw
@@ -837,7 +844,7 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
-  Bug7559 = '[ruby-dev:46737]'
+  Bug7559 = '[ruby-dev:46737]'.freeze
 
   def test_lineno_command_call_quote
     expected = __LINE__ + 1

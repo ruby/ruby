@@ -3,11 +3,11 @@
 require 'test/unit'
 
 class TestNamespace < Test::Unit::TestCase
-  EXPERIMENTAL_WARNINGS = [
+  EXPERIMENTAL_WARNINGS = Ractor.make_shareable([
     "warning: Namespace is experimental, and the behavior may change in the future!",
     "See doc/namespace.md for known issues, etc."
-  ].join("\n")
-  ENV_ENABLE_NAMESPACE = {'RUBY_NAMESPACE' => '1'}
+  ].join("\n"))
+  ENV_ENABLE_NAMESPACE = Ractor.make_shareable({'RUBY_NAMESPACE' => '1'})
 
   def setup
     @n = Namespace.new if Namespace.enabled?
