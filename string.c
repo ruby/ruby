@@ -612,6 +612,10 @@ rb_gc_free_fstring(VALUE obj)
 {
     ASSERT_vm_locking_with_barrier();
 
+    RUBY_ASSERT(FL_TEST(obj, RSTRING_FSTR));
+    RUBY_ASSERT(OBJ_FROZEN(obj));
+    RUBY_ASSERT(!FL_TEST(obj, STR_SHARED));
+
     rb_concurrent_set_delete_by_identity(fstring_table_obj, obj);
 
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
@@ -1554,7 +1558,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
      * allocated. If the string is shared then the shared root must be
      * embedded, so we want to create a copy. If the string is a shared root
      * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
