@@ -662,6 +662,7 @@ pub enum Insn {
     BoxBool { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
+    UnboxFixnum { val: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -868,8 +869,6 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
-
-    UnboxFixnum { val: InsnId },
 }
 
 impl Insn {
@@ -1080,6 +1079,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
+            Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1254,7 +1254,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
-            Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
         }
     }
 }
@@ -1727,6 +1726,7 @@ impl Function {
             &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
             &BoxBool { val } => BoxBool { val: find!(val) },
             &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
+            &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -1855,7 +1855,6 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
-            &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
         }
     }
 
@@ -1925,6 +1924,7 @@ impl Function {
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
+            Insn::UnboxFixnum { .. } => types::CInt64,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -2001,7 +2001,6 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
-            Insn::UnboxFixnum { .. } => types::CInt64,
         }
     }
 
@@ -3831,6 +3830,7 @@ impl Function {
             }
             Insn::BoxBool { val } => self.assert_subtype(insn_id, val, types::CBool),
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
+            Insn::UnboxFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
             Insn::SetGlobal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GetIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
             Insn::SetIvar { self_val, val, .. } => {
@@ -3918,9 +3918,6 @@ impl Function {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
-            }
-            Insn::UnboxFixnum { val } => {
-                self.assert_subtype(insn_id, val, types::Fixnum)
             }
             _ => Ok(()),
         }
