@@ -3,7 +3,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, gc::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
+use crate::{cruby::*, payload::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
 use crate::stats::with_time_stat;
