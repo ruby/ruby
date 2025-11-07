@@ -114,6 +114,7 @@ macro_rules! make_counters {
 make_counters! {
     // Default counters that are available without --zjit-stats
     default {
+        patch_point_count,
         compiled_iseq_count,
         failed_iseq_count,
 
@@ -301,6 +302,12 @@ make_counters! {
 pub fn incr_counter_by(counter: Counter, amount: u64) {
     let ptr = counter_ptr(counter);
     unsafe { *ptr += amount; }
+}
+
+/// Decrease a counter by a specified amount
+pub fn decr_counter_by(counter: Counter, amount: u64) {
+    let ptr = counter_ptr(counter);
+    unsafe { *ptr -= amount; }
 }
 
 /// Increment a counter by its identifier
