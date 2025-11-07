@@ -138,7 +138,11 @@ end
 
 class Exports::Cygwin < Exports
   def self.nm
-    @@nm ||= RbConfig::CONFIG["NM"]
+    @@nm ||=
+      begin
+        require 'shellwords'
+        RbConfig::CONFIG["NM"].shellsplit
+      end
   end
 
   def exports(*)
@@ -146,7 +150,9 @@ class Exports::Cygwin < Exports
   end
 
   def each_line(objs, &block)
-    IO.foreach("|#{self.class.nm} --extern-only --defined-only #{objs.join(' ')}", &block)
+    IO.popen([*self.class.nm, *%w[--extern-only --defined-only], *objs]) do |f|
+      f.each(&block)
+    end
   end
 
   def each_export(objs)
