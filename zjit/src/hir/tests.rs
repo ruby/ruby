@@ -3321,7 +3321,7 @@ pub mod hir_build_tests {
             k27: k27, k28: k28, k29: k29, k30: k30, k31: k31,
             k32: k32, k33: k33) = k1
         "#);
-        // assert_contains_opcode("test", YARVINSN_checkkeyword);
+        assert_contains_opcode("test", YARVINSN_checkkeyword);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0():
