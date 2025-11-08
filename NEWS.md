@@ -314,8 +314,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 * ZJIT
     * Add an experimental method-based JIT compiler.
       Use `--enable-zjit` on `configure` to enable the `--zjit` support.
-    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
-      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
+    * As of Ruby 4.0.0-preview1, ZJIT is not yet ready for speeding up most benchmarks.
+      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 4.0 release.
 * RJIT
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
