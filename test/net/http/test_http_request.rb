@@ -89,5 +89,40 @@ class HTTPRequestTest < Test::Unit::TestCase
                          'Bug #7831 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
+  def test_deconstruct_keys
+    uri = URI('https://example.com/api/users')
+    req = Net::HTTP::Post.new(uri)
+    req.body = 'test data'
+    req['content-type'] = 'application/json'
+
+    keys = req.deconstruct_keys(nil)
+    assert_equal 'POST', keys[:method]
+    assert_equal '/api/users', keys[:path]
+    assert_equal uri, keys[:uri]
+    assert_equal 'test data', keys[:body]
+    assert_equal 'application/json', keys[:content_type]
+  end
+
+  def test_deconstruct_keys_with_specific_keys
+    req = Net::HTTP::Get.new('/test')
+
+    keys = req.deconstruct_keys([:method, :path])
+    assert_equal({method: 'GET', path: '/test'}, keys)
+  end
+
+  def test_pattern_matching
+    uri = URI('https://example.com/api/users')
+    req = Net::HTTP::Post.new(uri)
+
+    matched = case req
+    in method: 'POST', path: %r{^/api/}
+      true
+    else
+      false
+    end
+
+    assert_equal true, matched
+  end
+
 end
 

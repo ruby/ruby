@@ -9,6 +9,8 @@
 # :include: doc/net-http/examples.rdoc
 #
 class Net::HTTPGenericRequest
+  # Valid keys for pattern matching via #deconstruct_keys.
+  PATTERN_MATCHING_KEYS = %i[method path uri body content_type].freeze
 
   include Net::HTTPHeader
 
@@ -206,6 +208,24 @@ class Net::HTTPGenericRequest
     @body_stream = input
     @body_data = nil
     input
+  end
+
+  # Returns a hash of request attributes for pattern matching.
+  #
+  # Valid keys are: +:method+, +:path+, +:uri+, +:body+, +:content_type+
+  #
+  # Example:
+  #
+  #   case request
+  #   in method: 'POST', path: %r{^/api/}
+  #     handle_api_request(request)
+  #   in method: 'GET', path: '/'
+  #     handle_root
+  #   end
+  #
+  def deconstruct_keys(keys)
+    valid_keys = keys ? PATTERN_MATCHING_KEYS & keys : PATTERN_MATCHING_KEYS
+    valid_keys.to_h { |key| [key, public_send(key)] }
   end
 
   def set_body_internal(str)   #:nodoc: internal use only
