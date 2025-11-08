@@ -226,6 +226,38 @@ class TestGemVersion < Gem::TestCase
     assert_version_equal v("2"), v.bump
   end
 
+  def test_deconstruct
+    version = v("3.2.1")
+    major, minor, patch = version.deconstruct
+    assert_equal 3, major
+    assert_equal 2, minor
+    assert_equal 1, patch
+  end
+
+  def test_deconstruct_keys
+    version = v("3.2.1")
+    assert_equal({major: 3, minor: 2, patch: 1}, version.deconstruct_keys(nil))
+  end
+
+  def test_pattern_matching_array
+    case v("3.2.1")
+    in [major, minor, patch]
+      assert_equal 3, major
+      assert_equal 2, minor
+      assert_equal 1, patch
+    else
+      flunk "Array pattern did not match"
+    end
+  end
+
+  def test_pattern_matching_hash
+    result = case v("3.2.1")
+    in major: 3.., minor: 2.. then "matched"
+    else "no match"
+    end
+    assert_equal "matched", result
+  end
+
   # Asserts that +version+ is a prerelease.
 
   def assert_prerelease(version)
