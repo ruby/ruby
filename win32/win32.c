@@ -6570,6 +6570,24 @@ w32_wopen(const WCHAR *file, int oflag, int pmode)
 }
 
 /* License: Ruby's */
+HANDLE
+rb_w32_wopen_to_delete(const WCHAR *wfile)
+{
+    DWORD access = DELETE;
+    DWORD share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+    DWORD flags = FNOINHERIT | 0;
+    DWORD create = OPEN_EXISTING;
+    DWORD attr = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE;
+    SECURITY_ATTRIBUTES sec = {
+        .nLength = sizeof(sec),
+        .lpSecurityDescriptor = NULL,
+        .bInheritHandle = FALSE,
+    };
+
+    return CreateFileW(wfile, access, share, &sec, create, attr, NULL);
+}
+
+/* License: Ruby's */
 int
 rb_w32_fclose(FILE *fp)
 {
