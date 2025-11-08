@@ -1203,11 +1203,15 @@ load_ext(VALUE path, VALUE fname)
 {
     VALUE loaded = path;
     const rb_box_t *box = rb_loading_box();
+    VALUE cleanup = 0;
     if (BOX_USER_P(box)) {
-        loaded = rb_box_local_extension(box->box_object, fname, path);
+        loaded = rb_box_local_extension(box->box_object, fname, path, &cleanup);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
+    if (cleanup) {
+        rb_box_cleanup_local_extension(cleanup);
+    }
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);
     return (VALUE)handle;
