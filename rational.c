@@ -2469,7 +2469,7 @@ string_to_r_strict(VALUE self, int raise)
  * call-seq:
  *    str.to_r -> rational
  *
- * Returns the result of interpreting leading characters in +self+ as a numeric literal:
+ * Returns the result of interpreting leading characters in +self+ as a rational value:
  *
  *   '123'.to_r       # => (123/1)   # Integer literal.
  *   '300/2'.to_r     # => (150/1)   # Rational literal.
