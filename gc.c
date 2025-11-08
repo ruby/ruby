@@ -1245,6 +1245,8 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
         if (FL_TEST(obj, RSTRING_FSTR)) {
+            RUBY_ASSERT(!FL_TEST(obj, STR_SHARED));
+
             st_data_t fstr = (st_data_t)obj;
             st_delete(rb_vm_fstring_table(), &fstr, NULL);
             RB_DEBUG_COUNTER_INC(obj_str_fstr);

@@ -3438,6 +3438,15 @@ CODE
     assert_equal(false, str.frozen?)
   end
 
+  def test_uminus_no_embed_gc
+    pad = "a"*2048
+    ("aa".."zz").each do |c|
+      fstr = -(c + pad).freeze
+      File.open(IO::NULL, "w").write(fstr)
+    end
+    GC.start
+  end
+
   def test_ord
     assert_equal(97, S("a").ord)
     assert_equal(97, S("abc").ord)
