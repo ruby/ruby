@@ -509,7 +509,7 @@ copy_ext_file_error(char *message, size_t size)
 }
 #else
 static const char *
-copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_path, char *dst_path)
+copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *src_path, const char *dst_path)
 {
     switch (copy_retvalue) {
       case 1:
@@ -532,7 +532,7 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_pat
 #endif
 
 static int
-copy_ext_file(char *src_path, char *dst_path)
+copy_ext_file(const char *src_path, const char *dst_path)
 {
 #if defined(_WIN32)
     int rvalue;
@@ -664,7 +664,7 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
     int copy_error, wrote;
-    char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
+    const char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
     rb_box_t *box = rb_get_box_t(box_value);
 
     fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
