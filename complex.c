@@ -2229,28 +2229,156 @@ string_to_c_strict(VALUE self, int raise)
  * call-seq:
  *   to_c -> complex
  *
- * Returns +self+ interpreted as a Complex object;
- * leading whitespace and trailing garbage are ignored:
+ * Returns a Complex object:
+ * parses the leading substring of +self+
+ * to extract two numeric values that become the coordinates of the complex object.
  *
- *   '9'.to_c                 # => (9+0i)
- *   '2.5'.to_c               # => (2.5+0i)
- *   '2.5/1'.to_c             # => ((5/2)+0i)
- *   '-3/2'.to_c              # => ((-3/2)+0i)
- *   '-i'.to_c                # => (0-1i)
- *   '45i'.to_c               # => (0+45i)
- *   '3-4i'.to_c              # => (3-4i)
- *   '-4e2-4e-2i'.to_c        # => (-400.0-0.04i)
- *   '-0.0-0.0i'.to_c         # => (-0.0-0.0i)
- *   '1/2+3/4i'.to_c          # => ((1/2)+(3/4)*i)
- *   '1.0@0'.to_c             # => (1+0.0i)
+ * The substring is interpreted as containing
+ * either rectangular coordinates (real and imaginary parts)
+ * or polar coordinates (magnitude and angle parts),
+ * depending on an included or implied "separator" character:
+ *
+ * - <tt>'+'</tt>, <tt>'-'</tt>, or no separator: rectangular coordinates.
+ * - <tt>'@'</tt>: polar coordinates.
+ *
+ * <b>In Brief</b>
+ *
+ * In these examples, we use method Complex#rect to display rectangular coordinates,
+ * and method Complex#polar to display polar coordinates.
+ *
+ *   # Rectangular coordinates.
+ *
+ *   # Real-only: no separator; imaginary part is zero.
+ *   '9'.to_c.rect         # => [9, 0]         # Integer.
+ *   '-9'.to_c.rect        # => [-9, 0]        # Integer (negative).
+ *   '2.5'.to_c.rect       # => [2.5, 0]       # Float.
+ *   '1.23e-14'.to_c.rect  # => [1.23e-14, 0]  # Float with exponent.
+ *   '2.5/1'.to_c.rect     # => [(5/2), 0]     # Rational.
+ *
+ *   # Some things are ignored.
+ *   'foo1'.to_c.rect      # => [0, 0]         # Unparsed entire substring.
+ *   '1foo'.to_c.rect      # => [1, 0]         # Unparsed trailing substring.
+ *   ' 1 '.to_c.rect       # => [1, 0]         # Leading and trailing whitespace.
+ *   *
+ *   # Imaginary only: trailing 'i' required; real part is zero.
+ *   '9i'.to_c.rect        # => [0, 9]
+ *   '-9i'.to_c.rect       # => [0, -9]
+ *   '2.5i'.to_c.rect      # => [0, 2.5]
+ *   '1.23e-14i'.to_c.rect # => [0, 1.23e-14]
+ *   '2.5/1i'.to_c.rect    # => [0, (5/2)]
+ *
+ *   # Real and imaginary; '+' or '-' separator; trailing 'i' required.
+ *   '2+3i'.to_c.rect      # => [2, 3]
+ *   '-2-3i'.to_c.rect     # => [-2, -3]
+ *   '2.5+3i'.to_c.rect    # => [2.5, 3]
+ *   '2.5+3/2i'.to_c.rect  # => [2.5, (3/2)]
+ *
+ *   # Polar coordinates; '@' separator; magnitude required.
+ *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
+ *   '1.0@'.to_c.polar              # => [1.0, 0.0]
+ *   "1.0@#{Math::PI}".to_c.polar   # => [1.0, 3.141592653589793]
+ *   "1.0@#{Math::PI/2}".to_c.polar # => [1.0, 1.5707963267948966]
+ *
+ * <b>Parsed Values</b>
+ *
+ * The parsing may be thought of as searching for numeric literals
+ * embedded in the substring.
+ *
+ * This section shows how the method parses numeric values from leading substrings.
+ * The examples show real-only or imaginary-only parsing;
+ * the parsing is the same for each part.
+ *
+ *   '1foo'.to_c # => (1+0i)      # Ignores trailing unparsed characters.
+ *   ' 1 '.to_c  # => (1+0i)      # Ignores leading and trailing whitespace.
+ *   'x1'.to_c   # => (0+0i)      # Finds no leading numeric.
+ *
+ *   # Integer literal embedded in the substring.
+ *   '1'.to_c       # => (1+0i)
+ *   '-1'.to_c      # => (-1+0i)
+ *   '1i'.to_c      # => (0+1i)
+ *
+ *   # Integer literals that don't work.
+ *   '0b100'.to_c   # => (0+0i)   # Not parsed as binary.
+ *   '0o100'.to_c   # => (0+0i)   # Not parsed as octal.
+ *   '0d100'.to_c   # => (0+0i)   # Not parsed as decimal.
+ *   '0x100'.to_c   # => (0+0i)   # Not parsed as hexadecimal.
+ *   '010'.to_c     # => (10+0i)  # Not parsed as octal.
+ *
+ *   # Float literals:
+ *   '3.14'.to_c    # => (3.14+0i)
+ *   '3.14i'.to_c   # => (0+3.14i)
+ *   '1.23e4'.to_c  # => (12300.0+0i)
+ *   '1.23e+4'.to_c # => (12300.0+0i)
+ *   '1.23e-4'.to_c # => (0.000123+0i)
+ *
+ *   # Rational literals:
+ *   '1/2'.to_c     # => ((1/2)+0i)
+ *   '-1/2'.to_c    # => ((-1/2)+0i)
+ *   '1/2r'.to_c    # => ((1/2)+0i)
+ *   '-1/2r'.to_c   # => ((-1/2)+0i)
+ *
+ * <b>Rectangular Coordinates</b>
+ *
+ * With separator <tt>'+'</tt> or <tt>'-'</tt>,
+ * or with no separator,
+ * interprets the values as rectangular coordinates: real and imaginary.
+ *
+ * With no separator, assigns a single value to either the real or the imaginary part:
+ *
+ *   ''.to_c  # => (0+0i)  # Defaults to zero.
+ *  '1'.to_c  # => (1+0i)  # Real (no trailing 'i').
+ *  '1i'.to_c # => (0+1i)  # Imaginary (trailing 'i').
+ *  'i'.to_c  # => (0+1i)  # Special case (imaginary 1).
+ *
+ * With separator <tt>'+'</tt>, both parts positive (or zero):
+ *
+ *   # Without trailing 'i'.
+ *   '+'.to_c    # => (0+0i)  # No values: defaults to zero.
+ *   '+1'.to_c   # => (1+0i)  # Value after '+': real only.
+ *   '1+'.to_c   # => (1+0i)  # Value before '+': real only.
+ *   '2+1'.to_c  # => (2+0i)  # Values before and after '+': real and imaginary.
+ *   # With trailing 'i'.
+ *   '+1i'.to_c  # => (0+1i)  # Value after '+': imaginary only.
+ *   '2+i'.to_c  # => (2+1i)  # Value before '+': real and imaginary 1.
+ *   '2+1i'.to_c # => (2+1i)  # Values before and after '+': real and imaginary.
+ *
+ * With separator <tt>'-'</tt>, negative imaginary part:
+ *
+ *   # Without trailing 'i'.
+ *   '-'.to_c    # => (0+0i)   # No values: defaults to zero.
+ *   '-1'.to_c   # => (-1+0i)  # Value after '-': negative real, zero imaginary.
+ *   '1-'.to_c   # => (1+0i)   # Value before '-': positive real, zero imaginary.
+ *   '2-1'.to_c  # => (2+0i)   # Values before and after '-': positive real, zero imaginary.
+ *   # With trailing 'i'.
+ *   '-1i'.to_c  # => (0-1i)   # Value after '-': negative real, zero imaginary.
+ *   '2-i'.to_c  # => (2-1i)   # Value before '-': positive real, negative imaginary.
+ *   '2-1i'.to_c # => (2-1i)   # Values before and after '-': positive real, negative imaginary.
+ *
+ * Note that the suffixed character <tt>'i'</tt>
+ * may instead be one of <tt>'I'</tt>, <tt>'j'</tt>, or <tt>'J'</tt>,
+ * with the same effect.
+ *
+ * <b>Polar Coordinates</b>
+ *
+ * With separator <tt>'@'</tt>)
+ * interprets the values as polar coordinates: magnitude and angle.
+ *
+ *   '2@'.to_c.polar  # => [2, 0.0]    # Value before '@': magnitude only.
+ *    # Values before and after '@': magnitude and angle.
+ *   '2@1'.to_c.polar # => [2.0, 1.0]
  *   "1.0@#{Math::PI/2}".to_c # => (0.0+1i)
  *   "1.0@#{Math::PI}".to_c   # => (-1+0.0i)
+ *   # Magnitude not given: defaults to zero.
+ *   '@'.to_c.polar   # => [0, 0.0]
+ *   '@1'.to_c.polar  # => [0, 0.0]
  *
- * Returns \Complex zero if the string cannot be converted:
+ *   '1.0@0'.to_c             # => (1+0.0i)
  *
- *   'ruby'.to_c        # => (0+0i)
+ * Note that in all cases, the suffixed character <tt>'i'</tt>
+ * may instead be one of <tt>'I'</tt>, <tt>'j'</tt>, <tt>'J'</tt>,
+ * with the same effect.
  *
- * See Kernel#Complex.
+ * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 static VALUE
 string_to_c(VALUE self)
