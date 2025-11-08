@@ -590,13 +590,6 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
     }
 }
 
-void
-rb_class_remove_subclass_head(VALUE klass)
-{
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    rb_class_classext_free_subclasses(ext, klass, false);
-}
-
 static struct rb_subclass_entry *
 class_get_subclasses_for_ns(struct st_table *tbl, VALUE box_id)
 {
@@ -664,18 +657,6 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 }
 
 void
-rb_class_remove_from_module_subclasses(VALUE klass)
-{
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    rb_box_subclasses_t *box_subclasses = RCLASSEXT_BOX_MODULE_SUBCLASSES(ext);
-
-    if (!box_subclasses) return;
-    remove_class_from_subclasses(box_subclasses->tbl, box_subclasses_tbl_key(RCLASSEXT_BOX(ext)), klass);
-    rb_box_subclasses_ref_dec(box_subclasses);
-    RCLASSEXT_BOX_MODULE_SUBCLASSES(ext) = 0;
-}
-
-void
 rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacing)
 {
     rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
@@ -728,24 +709,6 @@ static void
 class_detach_subclasses(VALUE klass, VALUE arg)
 {
     rb_class_remove_from_super_subclasses(klass);
-}
-
-void
-rb_class_detach_subclasses(VALUE klass)
-{
-    rb_class_foreach_subclass(klass, class_detach_subclasses, Qnil);
-}
-
-static void
-class_detach_module_subclasses(VALUE klass, VALUE arg)
-{
-    rb_class_remove_from_module_subclasses(klass);
-}
-
-void
-rb_class_detach_module_subclasses(VALUE klass)
-{
-    rb_class_foreach_subclass(klass, class_detach_module_subclasses, Qnil);
 }
 
 static void

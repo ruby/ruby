@@ -488,15 +488,9 @@ RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer)
 typedef void rb_class_classext_foreach_callback_func(rb_classext_t *classext, bool is_prime, VALUE box_value, void *arg);
 void rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg);
 void rb_class_subclass_add(VALUE super, VALUE klass);
-void rb_class_remove_from_super_subclasses(VALUE);
-void rb_class_remove_from_module_subclasses(VALUE);
 void rb_class_classext_free_subclasses(rb_classext_t *, VALUE, bool);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
-void rb_class_detach_subclasses(VALUE);
-void rb_class_detach_module_subclasses(VALUE);
 void rb_class_update_superclasses(VALUE);
-size_t rb_class_superclasses_memsize(VALUE);
-void rb_class_remove_subclass_head(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
