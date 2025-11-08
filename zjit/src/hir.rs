@@ -471,6 +471,8 @@ pub enum SideExitReason {
     GuardShape(ShapeId),
     GuardBitEquals(Const),
     GuardNotFrozen,
+    GuardLess,
+    GuardGreaterEq,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -600,6 +602,7 @@ pub enum Insn {
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyteFixnum { string: InsnId, index: InsnId },
+    StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
@@ -659,6 +662,7 @@ pub enum Insn {
     BoxBool { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
+    UnboxFixnum { val: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -844,6 +848,10 @@ pub enum Insn {
     GuardBlockParamProxy { level: u32, state: InsnId },
     /// Side-exit if val is frozen.
     GuardNotFrozen { val: InsnId, state: InsnId },
+    /// Side-exit if left is not greater than or equal to right (both operands are C long).
+    GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
+    /// Side-exit if left is not less than right (both operands are C long).
+    GuardLess { left: InsnId, right: InsnId, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1036,6 +1044,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringGetbyteFixnum { string, index, .. } => {
                 write!(f, "StringGetbyteFixnum {string}, {index}")
             }
+            Insn::StringSetbyteFixnum { string, index, value, .. } => {
+                write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
+            }
             Insn::StringAppend { recv, other, .. } => {
                 write!(f, "StringAppend {recv}, {other}")
             }
@@ -1068,6 +1079,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
+            Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1148,6 +1160,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::GuardNotFrozen { val, .. } => write!(f, "GuardNotFrozen {val}"),
+            Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
+            Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -1702,6 +1716,7 @@ impl Function {
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
+            &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
@@ -1711,6 +1726,7 @@ impl Function {
             &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
             &BoxBool { val } => BoxBool { val: find!(val) },
             &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
+            &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -1720,6 +1736,8 @@ impl Function {
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
             &GuardNotFrozen { val, state } => GuardNotFrozen { val: find!(val), state },
+            &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
+            &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1906,10 +1924,12 @@ impl Function {
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
+            Insn::UnboxFixnum { .. } => types::CInt64,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
+            Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
@@ -1932,6 +1952,8 @@ impl Function {
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::GuardNotFrozen { val, .. } => self.type_of(*val),
+            Insn::GuardLess { left, .. } => self.type_of(*left),
+            Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
@@ -3284,6 +3306,11 @@ impl Function {
                 worklist.push_back(string);
                 worklist.push_back(index);
             }
+            &Insn::StringSetbyteFixnum { string, index, value } => {
+                worklist.push_back(string);
+                worklist.push_back(index);
+                worklist.push_back(value);
+            }
             &Insn::StringAppend { recv, other, state } => {
                 worklist.push_back(recv);
                 worklist.push_back(other);
@@ -3314,6 +3341,16 @@ impl Function {
             | &Insn::ToNewArray { val, state }
             | &Insn::BoxFixnum { val, state } => {
                 worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            &Insn::GuardGreaterEq { left, right, state } => {
+                worklist.push_back(left);
+                worklist.push_back(right);
+                worklist.push_back(state);
+            }
+            &Insn::GuardLess { left, right, state } => {
+                worklist.push_back(left);
+                worklist.push_back(right);
                 worklist.push_back(state);
             }
             Insn::Snapshot { state } => {
@@ -3430,6 +3467,7 @@ impl Function {
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
+            &Insn::UnboxFixnum { val } => worklist.push_back(val),
         }
     }
 
@@ -3792,6 +3830,7 @@ impl Function {
             }
             Insn::BoxBool { val } => self.assert_subtype(insn_id, val, types::CBool),
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
+            Insn::UnboxFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
             Insn::SetGlobal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GetIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
             Insn::SetIvar { self_val, val, .. } => {
@@ -3867,9 +3906,18 @@ impl Function {
             }
             Insn::GuardShape { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GuardNotFrozen { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::GuardLess { left, right, .. } | Insn::GuardGreaterEq { left, right, .. } => {
+                self.assert_subtype(insn_id, left, types::CInt64)?;
+                self.assert_subtype(insn_id, right, types::CInt64)
+            },
             Insn::StringGetbyteFixnum { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
+            },
+            Insn::StringSetbyteFixnum { string, index, value } => {
+                self.assert_subtype(insn_id, string, types::String)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)?;
+                self.assert_subtype(insn_id, value, types::Fixnum)
             }
             _ => Ok(()),
         }

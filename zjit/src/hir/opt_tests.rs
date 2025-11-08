@@ -5802,6 +5802,116 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_setbyte_fixnum() {
+        eval(r#"
+            def test(s, idx, val)
+                s.setbyte(idx, val)
+            end
+            test("foo", 0, 127)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:BasicObject = GetLocal l0, SP@5
+          v4:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, setbyte@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v29:StringExact = GuardType v13, StringExact
+          v30:Fixnum = GuardType v14, Fixnum
+          v31:Fixnum = GuardType v15, Fixnum
+          v32:CInt64 = UnboxFixnum v30
+          v33:CInt64 = LoadField v29, :len@0x1038
+          v34:CInt64 = GuardLess v32, v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:StringExact = GuardNotFrozen v29
+          v38:Fixnum = StringSetbyteFixnum v37, v30, v31
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_subclass_setbyte_fixnum() {
+        eval(r#"
+            class MyString < String
+            end
+            def test(s, idx, val)
+                s.setbyte(idx, val)
+            end
+            test(MyString.new('foo'), 0, 127)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:BasicObject = GetLocal l0, SP@5
+          v4:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(MyString@0x1000, setbyte@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(MyString@0x1000)
+          v29:StringSubclass[class_exact:MyString] = GuardType v13, StringSubclass[class_exact:MyString]
+          v30:Fixnum = GuardType v14, Fixnum
+          v31:Fixnum = GuardType v15, Fixnum
+          v32:CInt64 = UnboxFixnum v30
+          v33:CInt64 = LoadField v29, :len@0x1038
+          v34:CInt64 = GuardLess v32, v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:StringSubclass[class_exact:MyString] = GuardNotFrozen v29
+          v38:Fixnum = StringSetbyteFixnum v37, v30, v31
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_string_setbyte_non_fixnum() {
+        eval(r#"
+            def test(s, idx, val)
+                s.setbyte(idx, val)
+            end
+            test("foo", 0, 3.14)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:BasicObject = GetLocal l0, SP@5
+          v4:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, setbyte@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v29:StringExact = GuardType v13, StringExact
+          v30:BasicObject = CCallWithFrame setbyte@0x1038, v29, v14, v15
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn test_specialize_string_empty() {
         eval(r#"
             def test(s)
