@@ -89,14 +89,14 @@ module UnicodeNormalize  # :nodoc:
     chars.each_with_index do |char, i|
       ccc = CLASS_TABLE[char]
       if ccc == 0
-        unordered.sort!.each { result << chars[it % n] }
+        unordered.sort!.each {|i| result << chars[i % n] }
         unordered.clear
         result << char
       else
         unordered << ccc * n + i
       end
     end
-    unordered.sort!.each { result << chars[it % n] }
+    unordered.sort!.each {|i| result << chars[i % n] }
     result
   end
 
