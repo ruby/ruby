@@ -133,6 +133,9 @@
 # there is a protocol error.
 #
 class Net::HTTPResponse
+  # Valid keys for pattern matching via #deconstruct_keys.
+  PATTERN_MATCHING_KEYS = %i[code message http_version body content_type].freeze
+
   class << self
     # true if the response has a body.
     def body_permitted?
@@ -407,6 +410,31 @@ class Net::HTTPResponse
   end
 
   alias entity body   #:nodoc: obsolete
+
+  # Returns a hash of response attributes for pattern matching.
+  #
+  # Valid keys are: +:code+, +:message+, +:http_version+, +:body+, +:content_type+
+  #
+  # Example:
+  #
+  #   response = Net::HTTP.get_response(uri)
+  #   case response
+  #   in code: '200', content_type: /json/
+  #     JSON.parse(response.body)
+  #   in code: '404'
+  #     handle_not_found
+  #   end
+  #
+  def deconstruct_keys(keys)
+    valid_keys = keys ? PATTERN_MATCHING_KEYS & keys : PATTERN_MATCHING_KEYS
+    valid_keys.to_h do |key|
+      value = case key
+      when :body then @body
+      else public_send(key)
+      end
+      [key, value]
+    end
+  end
 
   private
 
