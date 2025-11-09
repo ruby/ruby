@@ -61,6 +61,7 @@ module SyncDefaultGems
     ])
   end
 
+  # Note: tool/auto_review_pr.rb also depends on this constant.
   REPOSITORIES = {
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
