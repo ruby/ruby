@@ -53,11 +53,12 @@ jobs:
           ./configure --disable-install-doc
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
-      - name: Extract bundled gems
-        run: |
-          make ruby -j5
-          make extract-gems
-        shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
+      # This fails with: tool/outdate-bundled-gems.rb:3:in 'Kernel#require': cannot load such file -- rubygems (LoadError)
+      #- name: Extract bundled gems
+      #  run: |
+      #    make ruby -j5
+      #    make extract-gems
+      #  shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: make all
         timeout-minutes: 30
