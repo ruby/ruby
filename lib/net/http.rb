@@ -1825,6 +1825,8 @@ module Net   #:nodoc:
       }
     end
 
+    # :startdoc:
+
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
       def proxy_class?
@@ -1948,6 +1950,7 @@ module Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
