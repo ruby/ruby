@@ -34,6 +34,7 @@ require 'rbconfig'
 
 class Resolv
 
+  # The version string
   VERSION = "0.6.3"
 
   ##
@@ -185,6 +186,7 @@ class Resolv
       rescue LoadError
       end
     end
+    # The default file name for host names
     DefaultFileName = hosts || '/etc/hosts'
 
     ##
@@ -522,6 +524,8 @@ class Resolv
         extract_resources(reply, reply_name, typeclass, &proc)
       }
     end
+
+    # :stopdoc:
 
     def fetch_resource(name, typeclass)
       lazy_initialize
@@ -2923,14 +2927,20 @@ class Resolv
 
   class IPv4
 
-    ##
-    # Regular expression IPv4 addresses must match.
-
     Regex256 = /0
                |1(?:[0-9][0-9]?)?
                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
-               |[3-9][0-9]?/x
+               |[3-9][0-9]?/x # :nodoc:
+
+    ##
+    # Regular expression IPv4 addresses must match.
     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+
+    ##
+    # Creates a new IPv4 address from +arg+ which may be:
+    #
+    # IPv4:: returns +arg+.
+    # String:: +arg+ must match the IPv4::Regex constant
 
     def self.create(arg)
       case arg
@@ -3247,6 +3257,8 @@ class Resolv
 
     class Size
 
+      # Regular expression LOC size must match.
+
       Regex = /^(\d+\.*\d*)[m]$/
 
       ##
@@ -3272,6 +3284,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(scalar)
         @scalar = scalar
       end
@@ -3309,6 +3322,8 @@ class Resolv
 
     class Coord
 
+      # Regular expression LOC Coord must match.
+
       Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
 
       ##
@@ -3338,6 +3353,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(coordinates,orientation)
         unless coordinates.kind_of?(String)
           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
@@ -3400,6 +3416,8 @@ class Resolv
 
     class Alt
 
+      # Regular expression LOC Alt must match.
+
       Regex = /^([+-]*\d+\.*\d*)[m]$/
 
       ##
@@ -3425,6 +3443,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(altitude)
         @altitude = altitude
       end
