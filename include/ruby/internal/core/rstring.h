@@ -415,7 +415,9 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
-    char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
 
     if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
@@ -441,14 +443,17 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
-    struct RString buf = rbimpl_rstring_getmem(str);
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
+    long len = RSTRING_LEN(str);
 
-    if (RUBY_DEBUG && RB_UNLIKELY(! buf.as.heap.ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(!ptr)) {
         /* Ditto. */
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
-    return &buf.as.heap.ptr[buf.len];
+    return &ptr[len];
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -480,9 +485,10 @@ RSTRING_LENINT(VALUE str)
 #ifdef HAVE_STMT_AND_DECL_IN_EXPR
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
     __extension__ ({ \
-        struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
-        (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.len; \
+        (ptrvar) = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ? \
+            RSTRING(str)->as.heap.ptr : \
+            RSTRING(str)->as.embed.ary; \
+        (lenvar) = RSTRING_LEN(str); \
     })
 #else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
