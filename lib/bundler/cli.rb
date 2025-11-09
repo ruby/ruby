@@ -234,6 +234,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
+    method_option "no-lock", type: :boolean, banner: "Don't create a lockfile."
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache (removed)."
     method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
