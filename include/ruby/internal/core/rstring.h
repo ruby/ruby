@@ -447,17 +447,7 @@ RSTRING_LENINT(VALUE str)
  * @param  ptrvar  Variable where its contents is stored.
  * @param  lenvar  Variable where its length is stored.
  */
-#ifdef HAVE_STMT_AND_DECL_IN_EXPR
-# define RSTRING_GETMEM(str, ptrvar, lenvar) \
-    __extension__ ({ \
-        (ptrvar) = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ? \
-            RSTRING(str)->as.heap.ptr : \
-            RSTRING(str)->as.embed.ary; \
-        (lenvar) = RSTRING_LEN(str); \
-    })
-#else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
     ((ptrvar) = RSTRING_PTR(str),           \
      (lenvar) = RSTRING_LEN(str))
-#endif /* HAVE_STMT_AND_DECL_IN_EXPR */
 #endif /* RBIMPL_RSTRING_H */
