@@ -29,7 +29,6 @@
 # - Net::HTTP#get: sends +GET+ request, returns response object.
 #
 class Net::HTTP::Get < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'GET'
   REQUEST_HAS_BODY  = false
   RESPONSE_HAS_BODY = true
@@ -61,7 +60,6 @@ end
 # - Net::HTTP#head: sends +HEAD+ request, returns response object.
 #
 class Net::HTTP::Head < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'HEAD'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = false
@@ -97,7 +95,6 @@ end
 # - Net::HTTP#post: sends +POST+ request, returns response object.
 #
 class Net::HTTP::Post < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'POST'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -133,7 +130,6 @@ end
 # - Net::HTTP#put: sends +PUT+ request, returns response object.
 #
 class Net::HTTP::Put < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'PUT'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -166,7 +162,6 @@ end
 # - Net::HTTP#delete: sends +DELETE+ request, returns response object.
 #
 class Net::HTTP::Delete < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'DELETE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -198,7 +193,6 @@ end
 # - Net::HTTP#options: sends +OPTIONS+ request, returns response object.
 #
 class Net::HTTP::Options < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'OPTIONS'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -230,7 +224,6 @@ end
 # - Net::HTTP#trace: sends +TRACE+ request, returns response object.
 #
 class Net::HTTP::Trace < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'TRACE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -265,7 +258,6 @@ end
 # - Net::HTTP#patch: sends +PATCH+ request, returns response object.
 #
 class Net::HTTP::Patch < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'PATCH'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -293,7 +285,6 @@ end
 # - Net::HTTP#propfind: sends +PROPFIND+ request, returns response object.
 #
 class Net::HTTP::Propfind < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'PROPFIND'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -317,7 +308,6 @@ end
 # - Net::HTTP#proppatch: sends +PROPPATCH+ request, returns response object.
 #
 class Net::HTTP::Proppatch < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'PROPPATCH'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -341,7 +331,6 @@ end
 # - Net::HTTP#mkcol: sends +MKCOL+ request, returns response object.
 #
 class Net::HTTP::Mkcol < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'MKCOL'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -365,7 +354,6 @@ end
 # - Net::HTTP#copy: sends +COPY+ request, returns response object.
 #
 class Net::HTTP::Copy < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'COPY'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -389,7 +377,6 @@ end
 # - Net::HTTP#move: sends +MOVE+ request, returns response object.
 #
 class Net::HTTP::Move < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'MOVE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -413,7 +400,6 @@ end
 # - Net::HTTP#lock: sends +LOCK+ request, returns response object.
 #
 class Net::HTTP::Lock < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'LOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -437,8 +423,8 @@ end
 # - Net::HTTP#unlock: sends +UNLOCK+ request, returns response object.
 #
 class Net::HTTP::Unlock < Net::HTTPRequest
-  # :stopdoc:
   METHOD = 'UNLOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end
+
