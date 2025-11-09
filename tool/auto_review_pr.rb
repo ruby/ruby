@@ -35,7 +35,7 @@ class AutoReviewPR
 
   COMMENT_USER = 'github-actions[bot]'
   COMMENT_PREFIX = 'The following files are maintained in the following upstream repositories:'
-  COMMENT_SUFFIX = 'Please file a pull request to the above instead. Thank you.'
+  COMMENT_SUFFIX = 'Please file a pull request to the above instead. Thank you!'
 
   def initialize(client)
     @client = client
