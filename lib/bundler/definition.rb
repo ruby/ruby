@@ -10,6 +10,8 @@ module Bundler
       attr_accessor :no_lock
     end
 
+    attr_writer :lockfile
+
     attr_reader(
       :dependencies,
       :locked_checksums,
@@ -380,7 +382,7 @@ module Bundler
     end
 
     def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock || file.nil?
+      return if Definition.no_lock || !lockfile || file.nil?
 
       contents = to_lock
 

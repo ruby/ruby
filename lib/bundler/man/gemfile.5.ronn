@@ -556,3 +556,20 @@ bundler uses the following priority order:
      If multiple global sources are specified, they will be prioritized from
      last to first, but this is deprecated since Bundler 1.13, so Bundler prints
      a warning and will abort with an error in the future.
+
+## LOCKFILE
+
+By default, Bundler will create a lockfile by adding `.lock` to the end of the
+Gemfile name. To change this, use the `lockfile` method:
+
+    lockfile "/path/to/lockfile.lock"
+
+This is useful when you want to use different lockfiles per ruby version or
+platform.
+
+To avoid writing a lock file, use `false` as the argument:
+
+    lockfile false
+
+This is useful for library development and other situations where the code is
+expected to work with a range of dependency versions.

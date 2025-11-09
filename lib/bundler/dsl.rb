@@ -9,8 +9,9 @@ module Bundler
 
     def self.evaluate(gemfile, lockfile, unlock)
       builder = new
+      builder.lockfile(lockfile)
       builder.eval_gemfile(gemfile)
-      builder.to_definition(lockfile, unlock)
+      builder.to_definition(builder.lockfile_path, unlock)
     end
 
     VALID_PLATFORMS = Bundler::CurrentRuby::PLATFORM_MAP.keys.freeze
@@ -38,6 +39,7 @@ module Bundler
       @gemspecs             = []
       @gemfile              = nil
       @gemfiles             = []
+      @lockfile             = nil
       add_git_sources
     end
 
@@ -99,6 +101,15 @@ module Bundler
       normalize_options(name, version, options)
 
       add_dependency(name, version, options)
+    end
+
+    # For usage in Dsl.evaluate, since lockfile is used as part of the Gemfile.
+    def lockfile_path
+      @lockfile
+    end
+
+    def lockfile(file)
+      @lockfile = file
     end
 
     def source(source, *args, &blk)
@@ -175,6 +186,7 @@ module Bundler
 
     def to_definition(lockfile, unlock)
       check_primary_source_safety
+      lockfile = @lockfile unless @lockfile.nil?
       Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
     end
 

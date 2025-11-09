@@ -469,4 +469,21 @@ For implicit gems (dependencies of explicit gems), any source, git, or path repo
 .IP "3." 4
 If neither of the above conditions are met, the global source will be used\. If multiple global sources are specified, they will be prioritized from last to first, but this is deprecated since Bundler 1\.13, so Bundler prints a warning and will abort with an error in the future\.
 .IP "" 0
-
+.SH "LOCKFILE"
+By default, Bundler will create a lockfile by adding \fB\.lock\fR to the end of the Gemfile name\. To change this, use the \fBlockfile\fR method:
+.IP "" 4
+.nf
+lockfile "/path/to/lockfile\.lock"
+.fi
+.IP "" 0
+.P
+This is useful when you want to use different lockfiles per ruby version or platform\.
+.P
+To avoid writing a lock file, use \fBfalse\fR as the argument:
+.IP "" 4
+.nf
+lockfile false
+.fi
+.IP "" 0
+.P
+This is useful for library development and other situations where the code is expected to work with a range of dependency versions\.
