@@ -1729,7 +1729,11 @@ rb_define_finalizer(VALUE obj, VALUE block)
 void
 rb_objspace_call_finalizer(void)
 {
-    rb_gc_impl_shutdown_call_finalizer(rb_gc_get_objspace());
+    RB_VM_LOCK_ENTER();
+    {
+        rb_gc_impl_shutdown_call_finalizer(rb_gc_get_objspace());
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
