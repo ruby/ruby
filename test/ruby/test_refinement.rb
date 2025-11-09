@@ -2712,6 +2712,18 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_refined_module_method
+    m = Module.new {
+      x = Module.new {def qux;end}
+      refine(x) {def qux;end}
+      break x
+    }
+    extend m
+    meth = method(:qux)
+    assert_equal m, meth.owner
+    assert_equal :qux, meth.name
+  end
+
   private
 
   def eval_using(mod, s)

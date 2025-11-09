@@ -2005,7 +2005,12 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         tmp_me = me->def->body.refined.orig_me;
         if (tmp_me) {
-            if (defined_class_ptr) *defined_class_ptr = tmp_me->defined_class;
+            if (!tmp_me->defined_class) {
+                VM_ASSERT_TYPE(tmp_me->owner, T_MODULE);
+            }
+            else if (defined_class_ptr) {
+                *defined_class_ptr = tmp_me->defined_class;
+            }
             return tmp_me;
         }
 
