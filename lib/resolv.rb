@@ -174,21 +174,18 @@ class Resolv
 
   class ResolvTimeout < Timeout::Error; end
 
-  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
-  private_constant :WINDOWS
-
   ##
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if WINDOWS
+    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+        hosts = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
     end
-    DefaultFileName ||= '/etc/hosts'
+    DefaultFileName = hosts || '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -1022,8 +1019,7 @@ class Resolv
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
           Config.parse_resolv_conf(filename)
-        elsif WINDOWS
-          require 'win32/resolv' unless defined?(Win32::Resolv)
+        elsif defined?(Win32::Resolv)
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
