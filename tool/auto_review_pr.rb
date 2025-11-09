@@ -42,8 +42,6 @@ class AutoReviewPR
   end
 
   def review(pr_number)
-    comment_body = "Please file a pull request to ruby/foo instead."
-
     # Fetch the list of files changed by the PR
     changed_files = @client.get("/repos/#{REPO}/pulls/#{pr_number}/files").map { it.fetch(:filename) }
 
