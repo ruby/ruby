@@ -624,15 +624,20 @@ html: PHONY main srcs-doc
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
+RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
+	-x ^lib/bundler -x ^lib/rubygems \
+	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
+
 rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) .
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
 undocumented: PHONY main srcs-doc
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) . | \
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
-	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | sort
+	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | \
+	sort -t: -k1,1 -k2n,2
 
 RDOCBENCHOUT=/tmp/rdocbench
 
