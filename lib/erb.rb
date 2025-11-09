@@ -29,6 +29,7 @@
 # - The string input to ERB.new
 # - The string input to executable erb.
 #
+# This is a test change of documentation
 
 require 'erb/version'
 require 'erb/compiler'
