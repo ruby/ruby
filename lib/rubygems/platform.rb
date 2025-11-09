@@ -146,6 +146,12 @@ class Gem::Platform
     to_a.compact.join(@cpu.nil? ? "" : "-")
   end
 
+  alias_method :deconstruct, :to_a
+
+  def deconstruct_keys(keys)
+    { cpu: @cpu, os: @os, version: @version }
+  end
+
   ##
   # Is +other+ equal to this platform?  Two platforms are equal if they have
   # the same CPU, OS and version.

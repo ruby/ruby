@@ -683,4 +683,38 @@ class TestGemPlatform < Gem::TestCase
   def refute_local_match(name)
     refute_match Gem::Platform.local, name
   end
+
+  def test_deconstruct
+    platform = Gem::Platform.new("x86_64-linux")
+    assert_equal ["x86_64", "linux", nil], platform.deconstruct
+  end
+
+  def test_deconstruct_keys
+    platform = Gem::Platform.new("x86_64-darwin-20")
+    assert_equal({ cpu: "x86_64", os: "darwin", version: "20" }, platform.deconstruct_keys(nil))
+  end
+
+  def test_pattern_matching_array
+    platform = Gem::Platform.new("arm64-darwin-21")
+    result =
+      case platform
+      in ["arm64", "darwin", version]
+        version
+      else
+        "no match"
+      end
+    assert_equal "21", result
+  end
+
+  def test_pattern_matching_hash
+    platform = Gem::Platform.new("x86_64-linux")
+    result =
+      case platform
+      in cpu: "x86_64", os: "linux"
+        "matched"
+      else
+        "no match"
+      end
+    assert_equal "matched", result
+  end
 end
