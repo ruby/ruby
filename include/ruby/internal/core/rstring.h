@@ -369,41 +369,6 @@ RSTRING_LEN(VALUE str)
     return RSTRING(str)->len;
 }
 
-RBIMPL_WARNING_PUSH()
-#if RBIMPL_COMPILER_IS(Intel)
-RBIMPL_WARNING_IGNORED(413)
-#endif
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- *
- * "Expands" an embedded  string into an ordinal one.  This  is a function that
- * returns aggregated type.   The returned struct always  has its `as.heap.len`
- * an `as.heap.ptr` fields set appropriately.
- *
- * This is an implementation detail that 3rd parties should never bother.
- */
-static inline struct RString
-rbimpl_rstring_getmem(VALUE str)
-{
-    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-
-    if (RB_FL_ANY_RAW(str, RSTRING_NOEMBED)) {
-        return *RSTRING(str);
-    }
-    else {
-        /* Expecting compilers to optimize this on-stack struct away. */
-        struct RString retval = {RBASIC_INIT};
-        retval.len = RSTRING_LEN(str);
-        retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
-        return retval;
-    }
-}
-
-RBIMPL_WARNING_POP()
-
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * Queries the contents pointer of the string.
