@@ -3735,7 +3735,8 @@ impl Function {
     /// in the future.
     fn make_iongraph_instr(id: usize, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
         Json::object()
-            .insert("ptr", id)
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", id + 0x1000)
             .insert("id", id)
             .insert("opcode", opcode)
             .insert("attributes", Json::empty_array())
@@ -3752,7 +3753,8 @@ impl Function {
     /// todo(aidenfoxivey): Calculate attributes
     fn make_iongraph_block(ptr: u64, id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>) -> Json {
         Json::object()
-            .insert("ptr", ptr)
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", ptr + 0x1000)
             .insert("id", id)
             .insert("loopDepth", 0)
             .insert("attributes", Json::empty_array())
