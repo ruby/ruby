@@ -339,6 +339,8 @@ eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
+        # power_assert 3 requires ruby 3.1 or later
+        args << "-W:no-experimental" if RUBY_VERSION < "3.1."
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
 
         if sanitizers&.lsan_enabled?
