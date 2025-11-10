@@ -2136,41 +2136,41 @@ impl Function {
         }
     }
 
-    /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
-    /// index, if it is known. This historical type record is not a guarantee and must be checked
-    /// with a GuardType or similar.
+    /// Return the profiled type of the HIR instruction at the given ISEQ instruction
+    /// index, if it is known to be monomorphic or skewed polymorphic. This historical type
+    /// record is not a guarantee and must be checked with a GuardType or similar.
     fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
-        let profiles = self.profiles.as_ref()?;
-        let entries = profiles.types.get(&iseq_insn_idx)?;
-        let insn = self.chase_insn(insn);
-        for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == insn {
-                if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
-                    return Some(entry_type_summary.bucket(0));
-                } else {
-                    return None;
-                }
-            }
+        match self.resolve_receiver_type_from_profile(insn, iseq_insn_idx) {
+            ReceiverTypeResolution::Monomorphic { profiled_type }
+            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => Some(profiled_type),
+            _ => None,
         }
-        None
     }
 
     /// Resolve the receiver type for method dispatch optimization.
     ///
     /// Takes the receiver's Type, receiver HIR instruction, and ISEQ instruction index.
-    /// Performs a single iteration through profile data to determine the receiver type.
+    /// First checks if the receiver's class is statically known, otherwise consults profile data.
     ///
     /// Returns:
     /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
+    /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
+    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: usize) -> ReceiverTypeResolution {
+        if let Some(class) = recv_type.runtime_exact_ruby_class() {
+            return ReceiverTypeResolution::StaticallyKnown { class };
+        }
+        self.resolve_receiver_type_from_profile(recv, insn_idx)
+    }
+
+    /// Resolve the receiver type for method dispatch optimization from profile data.
+    ///
+    /// Returns:
     /// - `Monomorphic`/`SkewedPolymorphic` if we have usable profile data
     /// - `Polymorphic` if the receiver has multiple types
     /// - `Megamorphic`/`SkewedMegamorphic` if the receiver has too many types to optimize
     ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
-    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: usize) -> ReceiverTypeResolution {
-        if let Some(class) = recv_type.runtime_exact_ruby_class() {
-            return ReceiverTypeResolution::StaticallyKnown { class };
-        }
+    fn resolve_receiver_type_from_profile(&self, recv: InsnId, insn_idx: usize) -> ReceiverTypeResolution {
         let Some(profiles) = self.profiles.as_ref() else {
             return ReceiverTypeResolution::NoProfile;
         };
@@ -2508,7 +2508,7 @@ impl Function {
                                 }
                                 // Get the profiled type to check if the fields is embedded or heap allocated.
                                 let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
-                                    // No (monomorphic) profile info
+                                    // No (monomorphic/skewed polymorphic) profile info
                                     self.push_insn_id(block, insn_id); continue;
                                 };
                                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2761,7 +2761,7 @@ impl Function {
                     Insn::GetIvar { self_val, id, state } => {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic) profile info
+                            // No (monomorphic/skewed polymorphic) profile info
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
