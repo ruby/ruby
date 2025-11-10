@@ -584,7 +584,7 @@ jit_exec(rb_execution_context_t *ec)
     return Qundef;
 }
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 // Generate JIT code that supports the following kind of ISEQ entry:
 //   * The first ISEQ pushed by vm_exec_handle_exception. The frame would
 //     point to a location specified by a catch table, and it doesn't have
