@@ -703,6 +703,8 @@ pub enum Insn {
     //NewObject?
     /// Get an instance variable `id` from `self_val`
     GetIvar { self_val: InsnId, id: ID, state: InsnId },
+    /// Get `self_val`'s instance variable `id` using the interpreter inline cache
+    GetInstanceVariable { self_val: InsnId, id: ID, ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val`
     SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val` using the interpreter inline cache
@@ -1232,6 +1234,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
+            Insn::GetInstanceVariable { self_val, id, .. } => write!(f, "GetInstanceVariable {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
@@ -1864,6 +1867,7 @@ impl Function {
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &GetInstanceVariable { self_val, id, ic, state } => GetInstanceVariable { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetInstanceVariable { self_val, id, ic, val, state } => SetInstanceVariable { self_val: find!(self_val), id, ic, val: find!(val), state },
@@ -2008,6 +2012,7 @@ impl Function {
             Insn::DupArrayInclude { .. } => types::BoolExact,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::GetInstanceVariable { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
@@ -2767,7 +2772,8 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, state } => {
+                    Insn::GetIvar { self_val, id, state }
+                    | Insn::GetInstanceVariable { self_val, id, state, .. } => {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic) profile info
@@ -3500,7 +3506,9 @@ impl Function {
                 worklist.push_back(state)
             }
             Insn::CCall { args, .. } => worklist.extend(args),
-            &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
+            &Insn::GetIvar { self_val, state, .. }
+            | &Insn::GetInstanceVariable { self_val, state, .. }
+            | &Insn::DefinedIvar { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
             }
@@ -5231,12 +5239,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
-                    // ic is in arg 1
+                    let ic = get_arg(pc, 1).as_ptr();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
                     // TODO: We only really need this if self_val is a class/module
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
-                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, state: exit_id });
+                    let result = fun.push_insn(block, Insn::GetInstanceVariable { self_val: self_param, id, ic, state: exit_id });
                     state.stack_push(result);
                 }
                 YARVINSN_setinstancevariable => {

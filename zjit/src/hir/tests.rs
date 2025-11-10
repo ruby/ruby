@@ -2160,7 +2160,7 @@ pub mod hir_build_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v12:BasicObject = GetIvar v6, :@foo
+          v12:BasicObject = GetInstanceVariable v6, :@foo
           CheckInterrupts
           Return v12
         ");
@@ -2674,11 +2674,11 @@ pub mod hir_build_tests {
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
           PatchPoint SingleRactorMode
-          v21:BasicObject = GetIvar v12, :@a
+          v21:BasicObject = GetInstanceVariable v12, :@a
           PatchPoint SingleRactorMode
-          v24:BasicObject = GetIvar v12, :@b
+          v24:BasicObject = GetInstanceVariable v12, :@b
           PatchPoint SingleRactorMode
-          v27:BasicObject = GetIvar v12, :@c
+          v27:BasicObject = GetInstanceVariable v12, :@c
           PatchPoint NoEPEscape(reverse_odd)
           v33:ArrayExact = NewArray v21, v24, v27
           CheckInterrupts
@@ -2702,13 +2702,13 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
           PatchPoint SingleRactorMode
-          v24:BasicObject = GetIvar v14, :@a
+          v24:BasicObject = GetInstanceVariable v14, :@a
           PatchPoint SingleRactorMode
-          v27:BasicObject = GetIvar v14, :@b
+          v27:BasicObject = GetInstanceVariable v14, :@b
           PatchPoint SingleRactorMode
-          v30:BasicObject = GetIvar v14, :@c
+          v30:BasicObject = GetInstanceVariable v14, :@c
           PatchPoint SingleRactorMode
-          v33:BasicObject = GetIvar v14, :@d
+          v33:BasicObject = GetInstanceVariable v14, :@d
           PatchPoint NoEPEscape(reverse_even)
           v39:ArrayExact = NewArray v24, v27, v30, v33
           CheckInterrupts

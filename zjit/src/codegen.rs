@@ -429,6 +429,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_ccall_variadic(jit, asm, *cfunc, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
+        Insn::GetInstanceVariable { self_val, id, ic, state: _ } => gen_get_instance_variable(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
@@ -867,6 +868,13 @@ fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
     asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
 }
 
+/// Emit an instance variable load using the interpreter inline cache
+fn gen_get_instance_variable(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_constant_cache) -> Opnd {
+    gen_incr_counter(asm, Counter::dynamic_getivar_count);
+    let iseq = Opnd::Value(jit.iseq.into());
+    asm_ccall!(asm, rb_vm_getinstancevariable, iseq, recv, id.0.into(), Opnd::const_ptr(ic))
+}
+
 /// Emit an uncached instance variable store
 fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd, state: &FrameState) {
     gen_incr_counter(asm, Counter::dynamic_setivar_count);
@@ -875,7 +883,7 @@ fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, val:
     asm_ccall!(asm, rb_ivar_set, recv, id.0.into(), val);
 }
 
-/// Emit an uncached instance variable store using the interpreter inline cache
+/// Emit an instance variable store using the interpreter inline cache
 fn gen_set_instance_variable(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_constant_cache, val: Opnd, state: &FrameState) {
     gen_incr_counter(asm, Counter::dynamic_setivar_count);
     // Setting an ivar can raise FrozenError, so we need proper frame state for exception handling.
