@@ -1473,7 +1473,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         ruby_verbose = Qtrue;
     }
     else if (strcmp("jit", s) == 0) {
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
         FEATURE_SET(opt->features, FEATURE_BIT(jit));
 #else
         rb_warn("Ruby was built without JIT support");
