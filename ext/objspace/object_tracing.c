@@ -203,6 +203,8 @@ allocation_info_tracer_compact_update_object_table_i(st_data_t key, st_data_t va
     st_table *table = (st_table *)data;
 
     if (!rb_gc_pointer_to_heap_p(key)) {
+        struct allocation_info *info = (struct allocation_info *)value;
+        xfree(info);
         return ST_DELETE;
     }
 
