@@ -2774,6 +2774,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "phase", rb_complex_arg, 0);
     rb_define_method(rb_cComplex, "rectangular", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "rect", nucomp_rect, 0);
+    rb_define_method(rb_cComplex, "deconstruct", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "polar", nucomp_polar, 0);
     rb_define_method(rb_cComplex, "conjugate", rb_complex_conjugate, 0);
     rb_define_method(rb_cComplex, "conj", rb_complex_conjugate, 0);
