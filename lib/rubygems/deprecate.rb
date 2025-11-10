@@ -4,10 +4,10 @@ module Gem
   ##
   # Provides 3 methods for declaring when something is going away.
   #
-  # +deprecate(name, repl, year, month)+:
+  # <tt>deprecate(name, repl, year, month)</tt>:
   #     Indicate something may be removed on/after a certain date.
   #
-  # +rubygems_deprecate(name, replacement=:none)+:
+  # <tt>rubygems_deprecate(name, replacement=:none)</tt>:
   #     Indicate something will be removed in the next major RubyGems version,
   #     and (optionally) a replacement for it.
   #
