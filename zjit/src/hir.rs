@@ -456,8 +456,8 @@ impl PtrPrintMap {
 
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
-    UnknownNewarraySend(vm_opt_newarray_send_type),
-    UnknownDuparraySend(u64),
+    UnhandledNewarraySend(vm_opt_newarray_send_type),
+    UnhandledDuparraySend(u64),
     UnknownSpecialVariable(u64),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
@@ -547,13 +547,13 @@ impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             SideExitReason::UnhandledYARVInsn(opcode) => write!(f, "UnhandledYARVInsn({})", insn_name(*opcode as usize)),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MAX) => write!(f, "UnknownNewarraySend(MAX)"),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MIN) => write!(f, "UnknownNewarraySend(MIN)"),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_HASH) => write!(f, "UnknownNewarraySend(HASH)"),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnknownNewarraySend(PACK)"),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
-            SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
-            SideExitReason::UnknownDuparraySend(method_id) => write!(f, "UnknownDuparraySend({})", method_id),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_MAX) => write!(f, "UnhandledNewarraySend(MAX)"),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_MIN) => write!(f, "UnhandledNewarraySend(MIN)"),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_HASH) => write!(f, "UnhandledNewarraySend(HASH)"),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnhandledNewarraySend(PACK)"),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnhandledNewarraySend(PACK_BUFFER)"),
+            SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnhandledNewarraySend(INCLUDE_P)"),
+            SideExitReason::UnhandledDuparraySend(method_id) => write!(f, "UnhandledDuparraySend({})", method_id),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
@@ -4658,7 +4658,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         },
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
-                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownNewarraySend(method) });
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledNewarraySend(method) });
                             break;  // End the block
                         },
                     };
@@ -4686,7 +4686,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let bop = match method_id {
                         x if x == ID!(include_p).0 => BOP_INCLUDE_P,
                         _ => {
-                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownDuparraySend(method_id) });
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledDuparraySend(method_id) });
                             break;
                         },
                     };
