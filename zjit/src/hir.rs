@@ -3733,9 +3733,9 @@ impl Function {
     /// Helper function to make an Iongraph JSON "instruction".
     /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
     /// in the future.
-    fn make_iongraph_instr(ptr: u64, id: usize, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
+    fn make_iongraph_instr(id: usize, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
         Json::object()
-            .insert("ptr", ptr)
+            .insert("ptr", id)
             .insert("id", id)
             .insert("opcode", opcode)
             .insert("attributes", Json::empty_array())
@@ -3810,7 +3810,6 @@ impl Function {
 
                 instructions.push(
                     Self::make_iongraph_instr(
-                        ptr_map.map_id(idx as u64) as u64,
                         param_id.0,
                         Vec::new(),
                         &format!("Parameter {}", idx),
@@ -3850,7 +3849,6 @@ impl Function {
 
                 instructions.push(
                     Self::make_iongraph_instr(
-                        ptr_map.map_id(insn_id.0 as u64) as u64,
                         insn_id.0,
                         inputs,
                         &opcode,
