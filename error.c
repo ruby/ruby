@@ -1763,6 +1763,28 @@ exc_message(VALUE exc)
 
 /*
  * call-seq:
+ *   deconstruct -> array
+ *
+ * Returns the #message as a single-element Array.
+ *
+ * Example:
+ *
+ *   e = Exception.new('something bad happened')
+ *   e.deconstruct                              # => ["something bad happened"]
+ *   e in Exception('something bad happened')   # => true
+ *   e in Exception(/good/)                     # => false
+ */
+
+static VALUE
+exc_deconstruct(VALUE self)
+{
+    VALUE message = rb_check_funcall(self, id_message, 0, 0);
+
+    return rb_ary_new_from_args(1, message);
+}
+
+/*
+ * call-seq:
  *   detailed_message(highlight: false, **kwargs) -> string
  *
  * Returns the message string with enhancements:
@@ -3633,6 +3655,7 @@ Init_Exception(void)
     rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
+    rb_define_method(rb_eException, "deconstruct", exc_deconstruct, 0);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "==", exc_equal, 1);
