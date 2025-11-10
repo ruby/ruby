@@ -919,9 +919,21 @@ impl Insn {
         InsnPrinter { inner: self.clone(), ptr_map }
     }
 
+    pub fn has_effects(&self) -> bool {
+        match self {
+            Insn::PatchPoint { .. } => false,
+            Insn::FixnumAdd  { .. } => false,
+            Insn::GuardType  { .. } => false,
+            Insn::GuardShape { .. } => false,
+            Insn::Snapshot { .. } => false,
+            Insn::LoadField { .. } => false,
+            _ => true,
+        }
+    }
+
     /// Return true if the instruction needs to be kept around. For example, if the instruction
     /// might have a side effect, or if the instruction may raise an exception.
-    fn has_effects(&self) -> bool {
+    fn is_not_elidable(&self) -> bool {
         match self {
             Insn::Const { .. } => false,
             Insn::Param => false,
@@ -3554,7 +3566,7 @@ impl Function {
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
                 let insn = &self.insns[insn_id.0];
-                if insn.has_effects() {
+                if insn.is_not_elidable() {
                     worklist.push_back(*insn_id);
                 }
             }
@@ -3682,6 +3694,43 @@ impl Function {
         }
     }
 
+    fn lvn(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut type_guards: Vec<(InsnId, Type, InsnId)> = vec![];
+            let mut shape_guards: Vec<(InsnId, ShapeId, InsnId)> = vec![];
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } => {
+                        if let Some(&prev) = type_guards
+                                    .iter()
+                                    .find(|&(id, ty, _)| self.union_find.borrow().find_const(*id) == val && ty.is_subtype(guard_type))
+                                    .map(|(_, _, prev)| prev) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        type_guards.push((val, guard_type, insn_id));
+                    }
+                    Insn::GuardShape { val, shape, .. } => {
+                        if let Some(&prev) = shape_guards
+                                    .iter()
+                                    .find(|&(id, sh, _)| self.union_find.borrow().find_const(*id) == val && *sh == shape)
+                                    .map(|(_, _, prev)| prev) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        shape_guards.push((val, shape, insn_id));
+                    }
+                    insn if insn.has_effects() => {
+                        shape_guards.clear();
+                    }
+                    _ => {}
+                }
+                self.push_insn_id(block, insn_id);
+            }
+        }
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
@@ -3694,6 +3743,8 @@ impl Function {
         self.optimize_c_calls();
         #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
+        #[cfg(debug_assertions)] self.assert_validates();
+        self.lvn();
         #[cfg(debug_assertions)] self.assert_validates();
         self.clean_cfg();
         #[cfg(debug_assertions)] self.assert_validates();
