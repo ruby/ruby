@@ -1792,7 +1792,7 @@ io_buffer_resize(VALUE self, VALUE size)
 }
 
 /*
- * call-seq: <=>(other) -> true or false
+ * call-seq: <=>(other) -> integer
  *
  * Buffers are compared by size and exact contents of the memory they are
  * referencing using +memcmp+.
@@ -1815,6 +1815,36 @@ rb_io_buffer_compare(VALUE self, VALUE other)
     }
 
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
+}
+
+/*
+ * call-seq: ==(other) -> true or false
+ *
+ * Buffers are compared by size and exact contents of the memory they are
+ * referencing using +memcmp+.
+ */
+static VALUE
+rb_io_buffer_equals(VALUE self, VALUE other)
+{
+    const void *ptr1, *ptr2;
+    size_t size1, size2;
+
+    if (self == other) {
+        return Qtrue;
+    }
+
+    rb_io_buffer_get_bytes_for_reading(self, &ptr1, &size1);
+    rb_io_buffer_get_bytes_for_reading(other, &ptr2, &size2);
+
+    if (size1 < size2) {
+        return Qfalse;
+    }
+
+    if (size1 > size2) {
+        return Qfalse;
+    }
+
+    return RBOOL(memcmp(ptr1, ptr2, size1) == 0);
 }
 
 static void
@@ -3810,6 +3840,7 @@ Init_IO_Buffer(void)
     // Manipulation:
     rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
+    rb_define_method(rb_cIOBuffer, "==", rb_io_buffer_equals, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
     rb_define_method(rb_cIOBuffer, "free", rb_io_buffer_free, 0);
