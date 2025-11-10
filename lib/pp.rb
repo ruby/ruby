@@ -174,7 +174,7 @@ class PP < PrettyPrint
       Thread.current[:__recursive_key__][:inspect].delete id
     end
 
-    private def guard_inspect(object)
+    private def guard_inspect(object) # :nodoc:
       recursive_state = Thread.current[:__recursive_key__]
 
       if recursive_state&.key?(:inspect)
@@ -277,7 +277,7 @@ class PP < PrettyPrint
         kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
-    EMPTY_KWHASH = if RUBY_VERSION >= "3.0"
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0" # :nodoc:
       {}.freeze
     end
     private_constant :EMPTY_KWHASH
