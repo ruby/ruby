@@ -114,6 +114,7 @@ macro_rules! make_counters {
 make_counters! {
     // Default counters that are available without --zjit-stats
     default {
+        patch_point_count,
         compiled_iseq_count,
         failed_iseq_count,
 
@@ -146,6 +147,8 @@ make_counters! {
         exit_guard_int_equals_failure,
         exit_guard_shape_failure,
         exit_guard_not_frozen_failure,
+        exit_guard_less_failure,
+        exit_guard_greater_eq_failure,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
@@ -166,6 +169,7 @@ make_counters! {
     dynamic_send {
         // send_fallback_: Fallback reasons for send-ish instructions
         send_fallback_send_without_block_polymorphic,
+        send_fallback_send_without_block_megamorphic,
         send_fallback_send_without_block_no_profiles,
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
@@ -173,6 +177,7 @@ make_counters! {
         send_fallback_send_without_block_not_optimized_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
+        send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_ccall_with_frame_too_many_args,
@@ -181,7 +186,7 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
-        send_fallback_not_optimized_instruction,
+        send_fallback_uncategorized,
     }
 
     // Optimized send counters that are summed as optimized_send_count
@@ -303,6 +308,12 @@ pub fn incr_counter_by(counter: Counter, amount: u64) {
     unsafe { *ptr += amount; }
 }
 
+/// Decrease a counter by a specified amount
+pub fn decr_counter_by(counter: Counter, amount: u64) {
+    let ptr = counter_ptr(counter);
+    unsafe { *ptr -= amount; }
+}
+
 /// Increment a counter by its identifier
 macro_rules! incr_counter {
     ($counter_name:ident) => {
@@ -390,6 +401,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardBitEquals(_)             => exit_guard_bit_equals_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
         GuardNotFrozen                => exit_guard_not_frozen_failure,
+        GuardLess                     => exit_guard_less_failure,
+        GuardGreaterEq                => exit_guard_greater_eq_failure,
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
@@ -424,6 +437,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::stats::Counter::*;
     match reason {
         SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
+        SendWithoutBlockMegamorphic               => send_fallback_send_without_block_megamorphic,
         SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
@@ -432,13 +446,14 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
                                                   => send_fallback_send_without_block_not_optimized_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
+        SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
-        NotOptimizedInstruction(_)                => send_fallback_not_optimized_instruction,
+        Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
 
@@ -606,11 +621,11 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     set_stat_usize!(hash, "optimized_send_count", optimized_send_count);
     set_stat_usize!(hash, "send_count", dynamic_send_count + optimized_send_count);
 
-    // Set send fallback counters for NotOptimizedInstruction
+    // Set send fallback counters for Uncategorized
     let send_fallback_counters = ZJITState::get_send_fallback_counters();
     for (op_idx, count) in send_fallback_counters.iter().enumerate().take(VM_INSTRUCTION_SIZE as usize) {
         let op_name = insn_name(op_idx);
-        let key_string = "not_optimized_yarv_insn_".to_owned() + &op_name;
+        let key_string = "uncategorized_fallback_yarv_insn_".to_owned() + &op_name;
         set_stat_usize!(hash, &key_string, *count);
     }
 

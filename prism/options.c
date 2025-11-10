@@ -88,12 +88,7 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
             return true;
         }
 
-        if (strncmp(version, "3.5", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_5;
-            return true;
-        }
-
-        if (strncmp(version, "4.0", 3) == 0) {
+        if (strncmp(version, "3.5", 3) == 0 || strncmp(version, "4.0", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
@@ -101,23 +96,18 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         return false;
     }
 
-    if (length >= 4) {
-        if (strncmp(version, "3.3.", 4) == 0 && is_number(version + 4, length - 4)) {
+    if (length >= 4 && is_number(version + 4, length - 4)) {
+        if (strncmp(version, "3.3.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
-        if (strncmp(version, "3.4.", 4) == 0 && is_number(version + 4, length - 4)) {
+        if (strncmp(version, "3.4.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
-        if (strncmp(version, "3.5.", 4) == 0 && is_number(version + 4, length - 4)) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_5;
-            return true;
-        }
-
-        if (strncmp(version, "4.0.", 4) == 0 && is_number(version + 4, length - 4)) {
+        if (strncmp(version, "3.5.", 4) == 0 || strncmp(version, "4.0.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }

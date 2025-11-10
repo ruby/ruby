@@ -19,6 +19,7 @@ rescue LoadError
   # A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope
   # Rails will not monkey-patch ERB::Escape#html_escape.
   module ERB::Escape
+    # :stopdoc:
     def html_escape(s)
       CGI.escapeHTML(s.to_s)
     end

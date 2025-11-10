@@ -10864,11 +10864,11 @@ parser_lex(pm_parser_t *parser) {
                             }
 
 
-                            // If we are parsing as CRuby 3.5 or later and we
+                            // If we are parsing as CRuby 4.0 or later and we
                             // hit a '&&' or a '||' then we will lex the ignored
                             // newline.
                             if (
-                                (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) &&
+                                (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) &&
                                 following && (
                                     (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '&') ||
                                     (peek_at(parser, following) == '|' && peek_at(parser, following + 1) == '|') ||
@@ -10915,7 +10915,7 @@ parser_lex(pm_parser_t *parser) {
                             LEX(PM_TOKEN_AMPERSAND_DOT);
                         }
 
-                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) {
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
                             // If we hit an && then we are in a logical chain
                             // and we need to return the logical operator.
                             if (peek_at(parser, next_content) == '&' && peek_at(parser, next_content + 1) == '&') {
@@ -19625,7 +19625,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 statements = (pm_node_t *) pm_statements_node_create(parser);
 
                 bool allow_command_call;
-                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) {
+                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
                     allow_command_call = accepts_command_call;
                 } else {
                     // Allow `def foo = puts "Hello"` but not `private def foo = puts "Hello"`

@@ -56,7 +56,7 @@ jobs:
 
       - name: Push
         run: |
-          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git pull --rebase origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
         if: ${{ steps.sync.outputs.update }}
 

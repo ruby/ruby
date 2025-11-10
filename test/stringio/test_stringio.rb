@@ -996,7 +996,7 @@ class TestStringIO < Test::Unit::TestCase
     intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
     return if intptr_max > StringIO::MAX_LENGTH
     limit = intptr_max - 0x10
-    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-W0 -rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
       ary = []

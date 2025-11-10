@@ -1179,6 +1179,7 @@ module Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1321,6 +1322,9 @@ module Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets wheter the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
@@ -1632,6 +1636,21 @@ module Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1654,14 +1673,36 @@ module Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
-        end
-      }
+      begin
+        s =
+          case @tcpsocket_supports_open_timeout
+          when nil, true
+            begin
+              # Use built-in timeout in TCPSocket.open if available
+              sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+              @tcpsocket_supports_open_timeout = true
+              sock
+            rescue ArgumentError => e
+              raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
+              @tcpsocket_supports_open_timeout = false
+
+              # Fallback to Timeout.timeout if TCPSocket.open does not support open_timeout
+              Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+                TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+              }
+            end
+          when false
+            # The current Ruby is known to not support TCPSocket(open_timeout:).
+            # Directly fall back to Timeout.timeout to avoid performance penalty incured by rescue.
+            Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+              TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+            }
+          end
+      rescue => e
+        e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) # for compatibility with previous versions
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1758,20 +1799,6 @@ module Net   #:nodoc:
     end
     private :on_connect
 
-    # Finishes the \HTTP session:
-    #
-    #   http = Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
-
     def do_finish
       @started = false
       @socket.close if @socket
@@ -1820,6 +1847,8 @@ module Net   #:nodoc:
         @proxy_use_ssl = p_use_ssl
       }
     end
+
+    # :startdoc:
 
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
@@ -1915,6 +1944,7 @@ module Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
       require 'cgi/escape'
@@ -1943,6 +1973,7 @@ module Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2396,6 +2427,8 @@ module Net   #:nodoc:
       }
       res
     end
+
+    # :stopdoc:
 
     IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
 

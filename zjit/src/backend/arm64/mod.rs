@@ -2,6 +2,7 @@ use std::mem::take;
 
 use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
+use crate::codegen::split_patch_point;
 use crate::cruby::*;
 use crate::backend::lir::*;
 use crate::options::asm_dump;
@@ -826,6 +827,14 @@ impl Assembler {
                     *opnds = vec![];
                     asm.push_insn(insn);
                 }
+                // For compile_exits, support splitting simple return values here
+                Insn::CRet(opnd) => {
+                    match opnd {
+                        Opnd::Reg(C_RET_REG) => {},
+                        _ => asm.load_into(C_RET_OPND, *opnd),
+                    }
+                    asm.cret(C_RET_OPND);
+                }
                 Insn::Lea { opnd, out } => {
                     *opnd = split_only_stack_membase(asm, *opnd, SCRATCH0_OPND, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
@@ -893,6 +902,9 @@ impl Assembler {
                             _ => asm.mov(dst, src),
                         }
                     }
+                }
+                &mut Insn::PatchPoint { ref target, invariant, payload } => {
+                    split_patch_point(asm, target, invariant, payload);
                 }
                 _ => {
                     asm.push_insn(insn);
@@ -1514,7 +1526,7 @@ impl Assembler {
                 Insn::Jonz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), false, target.clone());
                 },
-                Insn::PatchPoint(_) |
+                Insn::PatchPoint { .. } => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
                 Insn::PadPatchPoint => {
                     // If patch points are too close to each other or the end of the block, fill nop instructions
                     if let Some(last_patch_pos) = last_patch_pos {
@@ -1694,7 +1706,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, pc: 0 as _, stack: vec![], locals: vec![], label: None };
+        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: Opnd::const_ptr(0 as *const u8), stack: vec![], locals: vec![] } };
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
 

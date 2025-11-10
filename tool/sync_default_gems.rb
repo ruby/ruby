@@ -61,6 +61,7 @@ module SyncDefaultGems
     ])
   end
 
+  # Note: tool/auto_review_pr.rb also depends on this constant.
   REPOSITORIES = {
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
@@ -291,6 +292,20 @@ module SyncDefaultGems
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
   }.transform_keys(&:to_s)
+
+  class << Repository
+    def find_upstream(file)
+      REPOSITORIES.find do |repo_name, repository|
+        if repository.mappings.any? {|_src, dst| file.start_with?(dst) }
+          break repo_name
+        end
+      end
+    end
+
+    def group(files)
+      files.group_by {|file| find_upstream(file)}
+    end
+  end
 
   # Allow synchronizing commits up to this FETCH_DEPTH. We've historically merged PRs
   # with about 250 commits to ruby/ruby, so we use this depth for ruby/ruby in general.

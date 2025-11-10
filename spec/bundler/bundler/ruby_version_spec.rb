@@ -100,7 +100,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
     describe "#to_s" do
       it "should return info string with the ruby version, patchlevel, engine, and engine version" do
-        expect(subject.to_s).to eq("ruby 2.0.0p645 (jruby 2.0.1)")
+        expect(subject.to_s).to eq("ruby 2.0.0 (jruby 2.0.1)")
       end
 
       context "no patchlevel" do
@@ -115,7 +115,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         let(:engine) { "ruby" }
 
         it "should return info string with the ruby version and patchlevel" do
-          expect(subject.to_s).to eq("ruby 2.0.0p645")
+          expect(subject.to_s).to eq("ruby 2.0.0")
         end
       end
 
@@ -145,12 +145,6 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
       context "the versions do not match" do
         let(:other_version) { "1.21.6" }
-
-        it_behaves_like "two ruby versions are not equal"
-      end
-
-      context "the patchlevels do not match" do
-        let(:other_patchlevel) { "21" }
 
         it_behaves_like "two ruby versions are not equal"
       end

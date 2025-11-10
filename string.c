@@ -612,6 +612,10 @@ rb_gc_free_fstring(VALUE obj)
 {
     ASSERT_vm_locking_with_barrier();
 
+    RUBY_ASSERT(FL_TEST(obj, RSTRING_FSTR));
+    RUBY_ASSERT(OBJ_FROZEN(obj));
+    RUBY_ASSERT(!FL_TEST(obj, STR_SHARED));
+
     rb_concurrent_set_delete_by_identity(fstring_table_obj, obj);
 
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
@@ -1554,7 +1558,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
      * allocated. If the string is shared then the shared root must be
      * embedded, so we want to create a copy. If the string is a shared root
      * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -7023,12 +7027,13 @@ rb_str_include(VALUE str, VALUE arg)
  *    to_i(base = 10) -> integer
  *
  *  Returns the result of interpreting leading characters in +self+
- *  as an integer in the given +base+ (which must be in (0, 2..36)):
+ *  as an integer in the given +base+;
+ *  +base+ must be either +0+ or in range <tt>(2..36)</tt>:
  *
  *    '123456'.to_i     # => 123456
  *    '123def'.to_i(16) # => 1195503
  *
- *  With +base+ zero, string +object+ may contain leading characters
+ *  With +base+ zero given, string +object+ may contain leading characters
  *  to specify the actual base:
  *
  *    '123def'.to_i(0)   # => 123
@@ -7048,6 +7053,7 @@ rb_str_include(VALUE str, VALUE arg)
  *    'abcdef'.to_i # => 0
  *    '2'.to_i(2)   # => 0
  *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE

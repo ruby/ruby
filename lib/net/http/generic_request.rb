@@ -264,6 +264,8 @@ class Net::HTTPGenericRequest
 
   private
 
+  # :stopdoc:
+
   class Chunker #:nodoc:
     def initialize(sock)
       @sock = sock

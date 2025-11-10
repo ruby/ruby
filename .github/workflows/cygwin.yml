@@ -53,13 +53,20 @@ jobs:
           ./configure --disable-install-doc
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
-      - name: Extract bundled gems
-        run: |
-          make ruby -j5
-          make extract-gems
-        shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
+      # This fails with: tool/outdate-bundled-gems.rb:3:in 'Kernel#require': cannot load such file -- rubygems (LoadError)
+      #- name: Extract bundled gems
+      #  run: |
+      #    make ruby -j5
+      #    make extract-gems
+      #  shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: make all
         timeout-minutes: 30
         run: make -j4 V=1
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
+
+      - uses: ./.github/actions/slack
+        with:
+          label: Cygwin
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}

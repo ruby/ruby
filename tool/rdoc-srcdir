@@ -17,7 +17,7 @@ options.title = options.title.sub(/Ruby \K.*version/) {
     .sort # "MAJOR" < "MINOR", fortunately
     .to_h.values.join(".")
 }
-options.parse ARGV
+options.parse ARGV + ["#{invoked}/rbconfig.rb"]
 
 options.singleton_class.define_method(:finish) do
   super()

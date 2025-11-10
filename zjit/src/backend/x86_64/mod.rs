@@ -2,6 +2,7 @@ use std::mem::{self, take};
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
+use crate::codegen::split_patch_point;
 use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
@@ -628,6 +629,9 @@ impl Assembler {
                     };
                     asm.store(dest, src);
                 }
+                &mut Insn::PatchPoint { ref target, invariant, payload } => {
+                    split_patch_point(asm, target, invariant, payload);
+                }
                 _ => {
                     asm.push_insn(insn);
                 }
@@ -989,7 +993,7 @@ impl Assembler {
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
-                Insn::PatchPoint(_) |
+                Insn::PatchPoint { .. } => unreachable!("PatchPoint should have been lowered to PadPatchPoint in x86_scratch_split"),
                 Insn::PadPatchPoint => {
                     // If patch points are too close to each other or the end of the block, fill nop instructions
                     if let Some(last_patch_pos) = last_patch_pos {
@@ -1127,7 +1131,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, pc: 0 as _, stack: vec![], locals: vec![], label: None };
+        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: Opnd::const_ptr(0 as *const u8), stack: vec![], locals: vec![] } };
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
 

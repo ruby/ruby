@@ -676,14 +676,14 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
     rb_box_subclasses_ref_dec(anchor->box_subclasses);
     xfree(anchor);
 
-    if (!replacing && RCLASSEXT_BOX_SUPER_SUBCLASSES(ext)) {
+    if (RCLASSEXT_BOX_SUPER_SUBCLASSES(ext)) {
         rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
-        remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        if (!replacing) remove_class_from_subclasses(box_sub->tbl, box_id, klass);
         rb_box_subclasses_ref_dec(box_sub);
     }
-    if (!replacing && RCLASSEXT_BOX_MODULE_SUBCLASSES(ext)) {
+    if (RCLASSEXT_BOX_MODULE_SUBCLASSES(ext)) {
         rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_MODULE_SUBCLASSES(ext);
-        remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        if (!replacing) remove_class_from_subclasses(box_sub->tbl, box_id, klass);
         rb_box_subclasses_ref_dec(box_sub);
     }
 }

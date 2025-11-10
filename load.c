@@ -1207,7 +1207,10 @@ load_ext(VALUE path, VALUE fname)
         loaded = rb_box_local_extension(box->box_object, fname, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
-    return (VALUE)dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
+    void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
+    RB_GC_GUARD(loaded);
+    RB_GC_GUARD(fname);
+    return (VALUE)handle;
 }
 
 static VALUE

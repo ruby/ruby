@@ -162,7 +162,7 @@ class << RubyVM::ZJIT
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'not_optimized_yarv_insn_', prompt: 'not optimized instructions', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
 
@@ -191,6 +191,7 @@ class << RubyVM::ZJIT
       :dynamic_getivar_count,
       :dynamic_setivar_count,
 
+      :patch_point_count,
       :compiled_iseq_count,
       :failed_iseq_count,
 

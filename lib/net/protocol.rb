@@ -57,6 +57,7 @@ module Net # :nodoc:
   end
 
 
+  # :stopdoc:
   class ProtocolError          < StandardError; end
   class ProtoSyntaxError       < ProtocolError; end
   class ProtoFatalError        < ProtocolError; end
@@ -66,6 +67,7 @@ module Net # :nodoc:
   class ProtoCommandError      < ProtocolError; end
   class ProtoRetriableError    < ProtocolError; end
   ProtocRetryError = ProtoRetriableError
+  # :startdoc:
 
   ##
   # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
@@ -78,6 +80,7 @@ module Net # :nodoc:
   # response cannot be read within the read_timeout.
 
   class ReadTimeout < Timeout::Error
+    # :stopdoc:
     def initialize(io = nil)
       @io = io
     end
@@ -97,6 +100,7 @@ module Net # :nodoc:
   # response cannot be written within the write_timeout.  Not raised on Windows.
 
   class WriteTimeout < Timeout::Error
+    # :stopdoc:
     def initialize(io = nil)
       @io = io
     end
@@ -484,6 +488,7 @@ module Net # :nodoc:
   # The writer adapter class
   #
   class WriteAdapter
+    # :stopdoc:
     def initialize(writer)
       @writer = writer
     end

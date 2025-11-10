@@ -1022,16 +1022,20 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         gc_run_finalizers(objspace);
     }
 
-    struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
-    for (size_t i = 0; i < registered_candidates.len; i++) {
-        VALUE obj = (VALUE)registered_candidates.ptr[i];
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
+        struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
+        for (size_t i = 0; i < registered_candidates.len; i++) {
+            VALUE obj = (VALUE)registered_candidates.ptr[i];
 
-        if (rb_gc_shutdown_call_finalizer_p(obj)) {
-            rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            if (rb_gc_shutdown_call_finalizer_p(obj)) {
+                rb_gc_obj_free(objspace_ptr, obj);
+                RBASIC(obj)->flags = 0;
+            }
         }
+        mmtk_free_raw_vec_of_obj_ref(registered_candidates);
     }
-    mmtk_free_raw_vec_of_obj_ref(registered_candidates);
+    RB_GC_VM_UNLOCK(lev);
 
     gc_run_finalizers(objspace);
 }
@@ -1258,12 +1262,6 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
 
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
-}
-
-bool
-rb_gc_impl_checking_shareable(void *ptr)
-{
-    return false;
 }
 
 // GC Identification

@@ -411,6 +411,13 @@ object_allocations_reporter(FILE *out, void *ptr)
     fprintf(out, "== object_allocations_reporter: END\n");
 }
 
+/*
+ * call-seq: trace_object_allocations_debug_start
+ *
+ * Starts tracing object allocations for GC debugging.
+ * If you encounter the BUG "... is T_NONE" (and so on) on your
+ * application, please try this method at the beginning of your app.
+ */
 static VALUE
 trace_object_allocations_debug_start(VALUE self)
 {

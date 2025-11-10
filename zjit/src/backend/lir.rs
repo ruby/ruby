@@ -6,9 +6,10 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
-use crate::hir::SideExitReason;
+use crate::hir::{Invariant, SideExitReason};
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
+use crate::payload::IseqPayload;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -25,7 +26,7 @@ pub use crate::backend::current::{
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum MemBase
 {
     /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
@@ -37,7 +38,7 @@ pub enum MemBase
 }
 
 // Memory location
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Mem
 {
     // Base register number or instruction index
@@ -87,7 +88,7 @@ impl fmt::Debug for Mem {
 }
 
 /// Operand to an IR instruction
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Opnd
 {
     None,               // For insns with no output
@@ -298,6 +299,14 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// Context for a side exit. If `SideExit` matches, it reuses the same code.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct SideExit {
+    pub pc: Opnd,
+    pub stack: Vec<Opnd>,
+    pub locals: Vec<Opnd>,
+}
+
 /// Branch target (something that we can jump to)
 /// for branch instructions
 #[derive(Clone, Debug)]
@@ -309,13 +318,10 @@ pub enum Target
     Label(Label),
     /// Side exit to the interpreter
     SideExit {
-        pc: *const VALUE,
-        stack: Vec<Opnd>,
-        locals: Vec<Opnd>,
-        /// We use this to enrich asm comments.
+        /// Context used for compiling the side exit
+        exit: SideExit,
+        /// We use this to increment exit counters
         reason: SideExitReason,
-        /// Some if the side exit should write this label. We use it for patch points.
-        label: Option<Label>,
     },
 }
 
@@ -525,7 +531,7 @@ pub enum Insn {
     Or { left: Opnd, right: Opnd, out: Opnd },
 
     /// Patch point that will be rewritten to a jump to a side exit on invalidation.
-    PatchPoint(Target),
+    PatchPoint { target: Target, invariant: Invariant, payload: *mut IseqPayload },
 
     /// Make sure the last PatchPoint has enough space to insert a jump.
     /// We insert this instruction at the end of each block so that the jump
@@ -590,7 +596,7 @@ impl Insn {
             Insn::Jonz(_, target) |
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint(target) => {
+            Insn::PatchPoint { target, .. } => {
                 Some(target)
             }
             _ => None,
@@ -652,7 +658,7 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PatchPoint(_) => "PatchPoint",
+            Insn::PatchPoint { .. } => "PatchPoint",
             Insn::PadPatchPoint => "PadPatchPoint",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
@@ -750,7 +756,7 @@ impl Insn {
             Insn::Jonz(_, target) |
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint(target) => Some(target),
+            Insn::PatchPoint { target, .. } => Some(target),
             _ => None
         }
     }
@@ -797,8 +803,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jz(target) |
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint(target) => {
-                if let Target::SideExit { stack, locals, .. } = target {
+            Insn::PatchPoint { target, .. } => {
+                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
                     let stack_idx = self.idx;
                     if stack_idx < stack.len() {
                         let opnd = &stack[stack_idx];
@@ -823,7 +829,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
                     let stack_idx = self.idx - 1;
                     if stack_idx < stack.len() {
                         let opnd = &stack[stack_idx];
@@ -966,8 +972,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jz(target) |
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint(target) => {
-                if let Target::SideExit { stack, locals, .. } = target {
+            Insn::PatchPoint { target, .. } => {
+                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
                     let stack_idx = self.idx;
                     if stack_idx < stack.len() {
                         let opnd = &mut stack[stack_idx];
@@ -992,7 +998,7 @@ impl<'a> InsnOpndMutIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
                     let stack_idx = self.idx - 1;
                     if stack_idx < stack.len() {
                         let opnd = &mut stack[stack_idx];
@@ -1779,10 +1785,41 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     pub fn compile_exits(&mut self) {
+        /// Compile the main side-exit code. This function takes only SideExit so
+        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+            let SideExit { pc, stack, locals } = exit;
+
+            asm_comment!(asm, "save cfp->pc");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
+
+            asm_comment!(asm, "save cfp->sp");
+            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+
+            if !stack.is_empty() {
+                asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
+                for (idx, &opnd) in stack.iter().enumerate() {
+                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                }
+            }
+
+            if !locals.is_empty() {
+                asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
+                for (idx, &opnd) in locals.iter().enumerate() {
+                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                }
+            }
+
+            asm_comment!(asm, "exit to the interpreter");
+            asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
+            asm.cret(Opnd::UImm(Qundef.as_u64()));
+        }
+
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
             opnds.iter().map(|opnd| format!("{opnd}")).collect::<Vec<_>>().join(delimiter)
         }
 
+        // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
         for (idx, insn) in self.insns.iter().enumerate() {
             if let Some(target @ Target::SideExit { .. }) = insn.target() {
@@ -1790,71 +1827,66 @@ impl Assembler
             }
         }
 
+        // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
+        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.
-            if let Target::SideExit { pc, stack, locals, reason, label } = target {
-                asm_comment!(self, "Exit: {reason}");
-                let side_exit_label = if let Some(label) = label {
-                    Target::Label(label)
-                } else {
-                    self.new_label("side_exit")
-                };
-                self.write_label(side_exit_label.clone());
+            if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
+                // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
+                let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
+                    TraceExits::All => true,
+                    TraceExits::Counter(counter) if counter == side_exit_counter(reason) => true,
+                    _ => false,
+                }).unwrap_or(false);
 
-                // Restore the PC and the stack for regular side exits. We don't do this for
-                // side exits right after JIT-to-JIT calls, which restore them before the call.
-                asm_comment!(self, "write stack slots: {}", join_opnds(&stack, ", "));
-                for (idx, &opnd) in stack.iter().enumerate() {
-                    self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
-                }
+                // If enabled, instrument exits first, and then jump to a shared exit.
+                let counted_exit = if get_option!(stats) || should_record_exit {
+                    let counted_exit = self.new_label("counted_exit");
+                    self.write_label(counted_exit.clone());
+                    asm_comment!(self, "Counted Exit: {reason}");
 
-                asm_comment!(self, "write locals: {}", join_opnds(&locals, ", "));
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
-                }
+                    if get_option!(stats) {
+                        asm_comment!(self, "increment a side exit counter");
+                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
 
-                asm_comment!(self, "save cfp->pc");
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
-
-                asm_comment!(self, "save cfp->sp");
-                self.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
-
-                // Using C_RET_OPND as an additional scratch register, which is no longer used
-                if get_option!(stats) {
-                    asm_comment!(self, "increment a side exit counter");
-                    self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
-
-                    if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
-                        asm_comment!(self, "increment an unhandled YARV insn counter");
-                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)), 1.into());
+                        if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
+                            asm_comment!(self, "increment an unhandled YARV insn counter");
+                            self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)), 1.into());
+                        }
                     }
-                }
-
-                if get_option!(trace_side_exits).is_some() {
-                    // Get the corresponding `Counter` for the current `SideExitReason`.
-                    let side_exit_counter = side_exit_counter(reason);
-
-                    // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
-                    let should_record_exit = get_option!(trace_side_exits)
-                        .map(|trace| match trace {
-                            TraceExits::All => true,
-                            TraceExits::Counter(counter) if counter == side_exit_counter => true,
-                            _ => false,
-                        })
-                        .unwrap_or(false);
 
                     if should_record_exit {
-                        asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(pc as *const u8));
+                        // Preserve caller-saved registers that may be used in the shared exit.
+                        self.cpush_all();
+                        asm_ccall!(self, rb_zjit_record_exit_stack, pc);
+                        self.cpop_all();
                     }
-                }
 
-                asm_comment!(self, "exit to the interpreter");
-                self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
-                self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
-                self.cret(C_RET_OPND);
+                    // If the side exit has already been compiled, jump to it.
+                    // Otherwise, let it fall through and compile the exit next.
+                    if let Some(&exit_label) = compiled_exits.get(&exit) {
+                        self.jmp(Target::Label(exit_label));
+                    }
+                    Some(counted_exit)
+                } else {
+                    None
+                };
 
-                *self.insns[idx].target_mut().unwrap() = side_exit_label;
+                // Compile the shared side exit if not compiled yet
+                let compiled_exit = if let Some(&compiled_exit) = compiled_exits.get(&exit) {
+                    Target::Label(compiled_exit)
+                } else {
+                    let new_exit = self.new_label("side_exit");
+                    self.write_label(new_exit.clone());
+                    asm_comment!(self, "Exit: {pc}");
+                    compile_exit(self, &exit);
+                    compiled_exits.insert(exit, new_exit.unwrap_label());
+                    new_exit
+                };
+
+                *self.insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
         }
     }
@@ -2268,8 +2300,8 @@ impl Assembler {
         out
     }
 
-    pub fn patch_point(&mut self, target: Target) {
-        self.push_insn(Insn::PatchPoint(target));
+    pub fn patch_point(&mut self, target: Target, invariant: Invariant, payload: *mut IseqPayload) {
+        self.push_insn(Insn::PatchPoint { target, invariant, payload });
     }
 
     pub fn pad_patch_point(&mut self) {
