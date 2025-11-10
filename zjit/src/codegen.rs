@@ -7,7 +7,6 @@ use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
 
-use crate::asm::Label;
 use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
@@ -19,7 +18,7 @@ use crate::state::ZJITState;
 use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
+use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
@@ -701,15 +700,26 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) {
     let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
-    let label = asm.new_label("patch_point").unwrap_label();
     let invariant = *invariant;
+    let exit = build_side_exit(jit, state);
 
-    // Compile a side exit. Fill nop instructions if the last patch point is too close.
-    asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label)));
+    // Let compile_exits compile a side exit. Let scratch_split lower it with split_patch_point.
+    asm.patch_point(Target::SideExit { exit, reason: PatchPoint(invariant) }, invariant, payload_ptr);
+}
+
+/// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
+/// It's called at scratch_split so that we can use the Label after side-exit deduplication in compile_exits.
+pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invariant, payload_ptr: *mut IseqPayload) {
+    let Target::Label(exit_label) = *target else {
+        unreachable!("PatchPoint's target should have been lowered to Target::Label by compile_exits: {target:?}");
+    };
+
+    // Fill nop instructions if the last patch point is too close.
+    asm.pad_patch_point();
 
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {
-        let side_exit_ptr = cb.resolve_label(label);
+        let side_exit_ptr = cb.resolve_label(exit_label);
         match invariant {
             Invariant::BOPRedefined { klass, bop } => {
                 track_bop_assumption(klass, bop, code_ptr, side_exit_ptr, payload_ptr);
@@ -2038,13 +2048,14 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     Ok(function)
 }
 
-/// Build a Target::SideExit for non-PatchPoint instructions
+/// Build a Target::SideExit
 fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Target {
-    build_side_exit(jit, state, reason, None)
+    let exit = build_side_exit(jit, state);
+    Target::SideExit { exit, reason }
 }
 
-/// Build a Target::SideExit out of a FrameState
-fn build_side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Target {
+/// Build a side-exit context
+fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));
@@ -2055,12 +2066,10 @@ fn build_side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason, l
         locals.push(jit.get_opnd(insn_id));
     }
 
-    Target::SideExit {
-        pc: state.pc,
+    SideExit{
+        pc: Opnd::const_ptr(state.pc),
         stack,
         locals,
-        reason,
-        label,
     }
 }
 

@@ -16,7 +16,7 @@ pub mod x86_64;
 pub mod arm64;
 
 /// Index to a label created by cb.new_label()
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Label(pub usize);
 
 /// The object that knows how to encode the branch instruction.
