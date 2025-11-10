@@ -91,8 +91,10 @@ end
 
 module OpenURI
 
+  # The version string
   VERSION = "0.5.0"
 
+  # The default options
   Options = {
     :proxy => true,
     :proxy_http_basic_authentication => true,
@@ -394,24 +396,28 @@ module OpenURI
     end
   end
 
+  # Raised on HTTP session failure
   class HTTPError < StandardError
-    def initialize(message, io)
+    def initialize(message, io) # :nodoc:
       super(message)
       @io = io
     end
+    # StringIO having the received data
     attr_reader :io
   end
 
   # Raised on redirection,
   # only occurs when +redirect+ option for HTTP is +false+.
   class HTTPRedirect < HTTPError
-    def initialize(message, io, uri)
+    def initialize(message, io, uri) # :nodoc:
       super(message, io)
       @uri = uri
     end
+    # URI to redirect
     attr_reader :uri
   end
 
+  # Raised on too many redirection,
   class TooManyRedirects < HTTPError
   end
 
