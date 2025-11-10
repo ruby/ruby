@@ -3250,7 +3250,7 @@ class Resolv
 
   end
 
-  module LOC
+  module LOC # :nodoc:
 
     ##
     # A Resolv::LOC::Size
