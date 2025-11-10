@@ -1007,6 +1007,7 @@ class Socket < BasicSocket
       @rpipe, @wpipe = IO.pipe
       @results = []
       @mutex = Mutex.new
+      @closed = false
     end
 
     def notifier
@@ -1015,8 +1016,10 @@ class Socket < BasicSocket
 
     def add(family, result)
       @mutex.synchronize do
-        @results.push [family, result]
-        @wpipe.putc HOSTNAME_RESOLUTION_QUEUE_UPDATED
+        unless @closed
+          @results.push [family, result]
+          @wpipe.putc HOSTNAME_RESOLUTION_QUEUE_UPDATED
+        end
       end
     end
 
@@ -1026,8 +1029,10 @@ class Socket < BasicSocket
       res = nil
 
       @mutex.synchronize do
-        @rpipe.getbyte
-        res = @results.shift
+        unless @closed
+          @rpipe.getbyte
+          res = @results.shift
+        end
       end
 
       @taken_count += 1
@@ -1036,8 +1041,13 @@ class Socket < BasicSocket
     end
 
     def close
-      @rpipe.close
-      @wpipe.close
+      @mutex.synchronize do
+        unless @closed
+          @rpipe.close
+          @wpipe.close
+          @closed = true
+        end
+      end
     end
   end
   private_constant :HostnameResolutionResult
