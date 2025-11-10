@@ -570,15 +570,15 @@ pub enum ReceiverTypeResolution {
     /// No profile information available for the receiver
     NoProfile,
     /// The receiver has a monomorphic profile (single type observed, guard needed)
-    Monomorphic { class: VALUE, profiled_type: ProfiledType },
+    Monomorphic { profiled_type: ProfiledType },
     /// The receiver is polymorphic (multiple types, none dominant)
     Polymorphic,
     /// The receiver has a skewed polymorphic profile (dominant type with some other types, guard needed)
-    SkewedPolymorphic { class: VALUE, profiled_type: ProfiledType },
+    SkewedPolymorphic { profiled_type: ProfiledType },
     /// More than N types seen with no clear winner
     Megamorphic,
     /// Megamorphic, but with a significant skew towards one type
-    SkewedMegamorphic { class: VALUE, profiled_type: ProfiledType },
+    SkewedMegamorphic { profiled_type: ProfiledType },
     /// The receiver's class is statically known at JIT compile-time (no guard needed)
     StaticallyKnown { class: VALUE },
 }
@@ -2183,22 +2183,13 @@ impl Function {
             if self.union_find.borrow().find_const(*entry_insn) == recv {
                 if entry_type_summary.is_monomorphic() {
                     let profiled_type = entry_type_summary.bucket(0);
-                    return ReceiverTypeResolution::Monomorphic {
-                        class: profiled_type.class(),
-                        profiled_type,
-                    };
+                    return ReceiverTypeResolution::Monomorphic { profiled_type };
                 } else if entry_type_summary.is_skewed_polymorphic() {
                     let profiled_type = entry_type_summary.bucket(0);
-                    return ReceiverTypeResolution::SkewedPolymorphic {
-                        class: profiled_type.class(),
-                        profiled_type,
-                    };
+                    return ReceiverTypeResolution::SkewedPolymorphic { profiled_type };
                 } else if entry_type_summary.is_skewed_megamorphic() {
                     let profiled_type = entry_type_summary.bucket(0);
-                    return ReceiverTypeResolution::SkewedMegamorphic {
-                        class: profiled_type.class(),
-                        profiled_type,
-                    };
+                    return ReceiverTypeResolution::SkewedMegamorphic { profiled_type };
                 } else if entry_type_summary.is_polymorphic() {
                     return ReceiverTypeResolution::Polymorphic;
                 } else if entry_type_summary.is_megamorphic() {
@@ -2356,8 +2347,8 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                            ReceiverTypeResolution::Monomorphic { class, profiled_type }
-                            | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                            ReceiverTypeResolution::Monomorphic { profiled_type }
+                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
                                 if get_option!(stats) {
@@ -2557,8 +2548,8 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let klass = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
                             ReceiverTypeResolution::StaticallyKnown { class } => class,
-                            ReceiverTypeResolution::Monomorphic { class, .. }
-                            | ReceiverTypeResolution::SkewedPolymorphic { class, .. } => class,
+                            ReceiverTypeResolution::Monomorphic { profiled_type }
+                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => profiled_type.class(),
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
                                 if get_option!(stats) {
@@ -2845,8 +2836,8 @@ impl Function {
             let iseq_insn_idx = fun.frame_state(state).insn_idx;
             let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                ReceiverTypeResolution::Monomorphic { class, profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                ReceiverTypeResolution::Monomorphic { profiled_type }
+                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type} => (profiled_type.class(), Some(profiled_type)),
                 ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
@@ -2950,8 +2941,8 @@ impl Function {
             let iseq_insn_idx = fun.frame_state(state).insn_idx;
             let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                ReceiverTypeResolution::Monomorphic { class, profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                ReceiverTypeResolution::Monomorphic { profiled_type }
+                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                 ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
