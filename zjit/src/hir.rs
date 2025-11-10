@@ -607,7 +607,7 @@ pub enum SendFallbackReason {
     ComplexArgPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
-    NotOptimizedInstruction(ruby_vminsn_type),
+    Uncategorized(ruby_vminsn_type),
 }
 
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
@@ -4971,7 +4971,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze => {
@@ -5071,7 +5071,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -5089,7 +5089,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
@@ -5119,7 +5119,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
@@ -5146,7 +5146,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
-                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -5173,7 +5173,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
-                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
                 }
                 YARVINSN_getglobal => {
