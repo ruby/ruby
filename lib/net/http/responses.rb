@@ -4,6 +4,7 @@
 
 module Net
 
+  # Unknown HTTP response
   class HTTPUnknownResponse < HTTPResponse
     # :stopdoc:
     HAS_BODY = true
