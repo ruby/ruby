@@ -186,7 +186,7 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
-        send_fallback_not_optimized_instruction,
+        send_fallback_uncategorized,
     }
 
     // Optimized send counters that are summed as optimized_send_count
@@ -453,7 +453,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
-        NotOptimizedInstruction(_)                => send_fallback_not_optimized_instruction,
+        Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
 
@@ -621,11 +621,11 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     set_stat_usize!(hash, "optimized_send_count", optimized_send_count);
     set_stat_usize!(hash, "send_count", dynamic_send_count + optimized_send_count);
 
-    // Set send fallback counters for NotOptimizedInstruction
+    // Set send fallback counters for Uncategorized
     let send_fallback_counters = ZJITState::get_send_fallback_counters();
     for (op_idx, count) in send_fallback_counters.iter().enumerate().take(VM_INSTRUCTION_SIZE as usize) {
         let op_name = insn_name(op_idx);
-        let key_string = "not_optimized_yarv_insn_".to_owned() + &op_name;
+        let key_string = "uncategorized_fallback_yarv_insn_".to_owned() + &op_name;
         set_stat_usize!(hash, &key_string, *count);
     }
 

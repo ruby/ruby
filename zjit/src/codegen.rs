@@ -1828,7 +1828,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 
     use SendFallbackReason::*;
     match reason {
-        NotOptimizedInstruction(opcode) => {
+        Uncategorized(opcode) => {
             gen_incr_counter_ptr(asm, send_fallback_counter_ptr_for_opcode(opcode));
         }
         SendWithoutBlockNotOptimizedMethodType(method_type) => {
