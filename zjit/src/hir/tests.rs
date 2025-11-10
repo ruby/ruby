@@ -3425,3 +3425,235 @@ pub mod hir_build_tests {
         ");
     }
  }
+
+
+ #[cfg(test)]
+ mod dom_tests {
+     use super::*;
+     use insta::assert_snapshot;
+
+     fn edge(target: BlockId) -> BranchEdge {
+         BranchEdge { target, args: vec![] }
+     }
+
+     fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
+         for (i, _) in function.blocks.iter().enumerate() {
+             // Ensure that each dominating set contains the block itself.
+             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+         }
+     }
+
+     #[test]
+     fn test_linked_list() {
+         let mut function = Function::new(std::ptr::null());
+
+         let bb0 = function.entry_block;
+         let bb1 = function.new_block(0);
+         let bb2 = function.new_block(0);
+         let bb3 = function.new_block(0);
+
+         function.push_insn(bb0, Insn::Jump(edge(bb1)));
+         function.push_insn(bb1, Insn::Jump(edge(bb2)));
+         function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+         function.push_insn(bb3, Insn::Return { val: retval });
+
+         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+         fn <manual>:
+         bb0():
+           Jump bb1()
+         bb1():
+           Jump bb2()
+         bb2():
+           Jump bb3()
+         bb3():
+           v3:Any = Const CBool(true)
+           Return v3
+         ");
+
+
+         let dominators = Dominators::new(&function);
+         assert_dominators_contains_self(&function, &dominators);
+         assert!(dominators.dominators(bb0).eq([bb0].iter()));
+         assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+         assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+         assert!(dominators.dominators(bb3).eq([bb0, bb1, bb2, bb3].iter()));
+     }
+
+     #[test]
+     fn test_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val, target: edge(bb1)});
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb2()
+        bb1():
+          Jump bb3()
+        bb2():
+          Jump bb3()
+        bb3():
+          v5:Any = Const CBool(true)
+          Return v5
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb3].iter()));
+     }
+
+    #[test]
+    fn test_complex_cfg() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+        let bb6 = function.new_block(0);
+        let bb7 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        let v0 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb1, Insn::IfTrue { val: v0, target: edge(bb2)});
+        function.push_insn(bb1, Insn::Jump(edge(bb4)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let v1 = function.push_insn(bb3, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb3, Insn::IfTrue { val: v1, target: edge(bb5)});
+        function.push_insn(bb3, Insn::Jump(edge(bb7)));
+
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        function.push_insn(bb5, Insn::Jump(edge(bb6)));
+
+        function.push_insn(bb6, Insn::Jump(edge(bb7)));
+
+        let retval = function.push_insn(bb7, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb7, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          v1:Any = Const Value(false)
+          IfTrue v1, bb2()
+          Jump bb4()
+        bb2():
+          Jump bb3()
+        bb3():
+          v5:Any = Const Value(false)
+          IfTrue v5, bb5()
+          Jump bb7()
+        bb4():
+          Jump bb5()
+        bb5():
+          Jump bb6()
+        bb6():
+          Jump bb7()
+        bb7():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb1, bb2, bb3].iter()));
+        assert!(dominators.dominators(bb4).eq([bb0, bb1, bb4].iter()));
+        assert!(dominators.dominators(bb5).eq([bb0, bb1, bb5].iter()));
+        assert!(dominators.dominators(bb6).eq([bb0, bb1, bb5, bb6].iter()));
+        assert!(dominators.dominators(bb7).eq([bb0, bb1, bb7].iter()));
+    }
+
+    #[test]
+    fn test_back_edges() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+
+        let v0 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: v0, target: edge(bb1)});
+        function.push_insn(bb0, Insn::Jump(edge(bb4)));
+
+        let v1 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb1, Insn::IfTrue { val: v1, target: edge(bb2)});
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        let v2 = function.push_insn(bb5, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb5, Insn::IfTrue { val: v2, target: edge(bb3)});
+        function.push_insn(bb5, Insn::Jump(edge(bb4)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb4()
+        bb1():
+          v3:Any = Const Value(false)
+          IfTrue v3, bb2()
+          Jump bb3()
+        bb2():
+          Jump bb3()
+        bb4():
+          Jump bb5()
+        bb5():
+          v8:Any = Const Value(false)
+          IfTrue v8, bb3()
+          Jump bb4()
+        bb3():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb3].iter()));
+        assert!(dominators.dominators(bb4).eq([bb0, bb4].iter()));
+        assert!(dominators.dominators(bb5).eq([bb0, bb4, bb5].iter()));
+    }
+ }

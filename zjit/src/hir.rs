@@ -39,7 +39,7 @@ impl std::fmt::Display for InsnId {
 }
 
 /// The index of a [`Block`], which effectively acts like a pointer.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
 impl From<BlockId> for usize {
@@ -3690,9 +3690,9 @@ impl Function {
     /// Compute successor blocks and predecessor blocks to be used in Iongraph formulation.
     fn compute_successors_and_predecessors(
         &self,
-    ) -> (HashMap<BlockId, Vec<u64>>, HashMap<BlockId, Vec<u64>>) {
-        let mut block_successors: HashMap<BlockId, Vec<u64>> = HashMap::new();
-        let mut block_predecessors: HashMap<BlockId, Vec<u64>> = HashMap::new();
+    ) -> (HashMap<BlockId, Vec<BlockId>>, HashMap<BlockId, Vec<BlockId>>) {
+        let mut block_successors: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let mut block_predecessors: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
 
         for block_id in self.rpo() {
             let block = &self.blocks[block_id.0];
@@ -3709,7 +3709,7 @@ impl Function {
                     &Insn::Jump(ref target)
                     | &Insn::IfTrue { ref target, .. }
                     | &Insn::IfFalse { ref target, .. } => {
-                        successors.push(target.target.0 as u64);
+                        successors.push(target.target);
                     }
                     _ => {}
                 }
@@ -3718,9 +3718,9 @@ impl Function {
             // Update predecessors for successor blocks.
             for &succ_id in &successors {
                 block_predecessors
-                    .entry(BlockId(succ_id as usize))
+                    .entry(succ_id)
                     .or_default()
-                    .push(block_id.0 as u64);
+                    .push(block_id);
             }
 
             // Store successors for this block.
@@ -3862,8 +3862,8 @@ impl Function {
             hir_blocks.push(Self::make_iongraph_block(
                 block_ptr as u64,
                 block_id.0 as u64,
-                predecessors,
-                successors,
+                predecessors.into_iter().map(|x| x.0 as u64).collect(),
+                successors.into_iter().map(|x| x.0 as u64).collect(),
                 instructions
             ));
         }
@@ -4304,7 +4304,13 @@ impl Function {
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
-        let iseq_name = iseq_get_location(fun.iseq, 0);
+        // In tests, there may not be an iseq to get location from.
+        let iseq_name = if fun.iseq.is_null() {
+            String::from("<manual>")
+        } else {
+            iseq_get_location(fun.iseq, 0)
+        };
+
         // In tests, strip the line number for builtin ISEQs to make tests stable across line changes
         let iseq_name = if cfg!(test) && iseq_name.contains("@<internal:") {
             iseq_name[..iseq_name.rfind(':').unwrap()].to_string()
@@ -5774,6 +5780,81 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         }
     }
     (self_param, entry_state)
+}
+
+struct Dominators<'a> {
+    f: &'a Function,
+    dominators: Vec<Vec<BlockId>>,
+}
+
+impl<'a> Dominators<'a> {
+    pub fn new(f: &'a Function) -> Self {
+        let (_, mut predecessors) = f.compute_successors_and_predecessors();
+        Self::with_predecessors(f, &mut predecessors)
+    }
+
+    pub fn with_predecessors(f: &'a Function, predecessors: &mut HashMap<BlockId, Vec<BlockId>>) -> Self {
+        let block_ids = f.rpo();
+        let mut dominators = vec![vec![]; block_ids.len()];
+
+        if !block_ids.is_empty() {
+            dominators[f.entry_block.0] = vec![f.entry_block];
+        }
+
+        // Setup the initial dominator sets.
+        for block_id in &block_ids {
+            if *block_id != f.entry_block {
+                dominators[block_id.0] = block_ids.clone();
+            }
+        }
+
+        // Compute dominators for each node.
+        let mut changed = true;
+        while changed {
+            changed = false;
+
+            for block_id in &block_ids {
+                if *block_id == f.entry_block {
+                    continue;
+                }
+
+                let block_preds  = &predecessors[block_id];
+                if block_preds.is_empty() {
+                    continue;
+                }
+
+                let mut new_doms = dominators[block_preds[0].0].clone();
+
+                for pred_id in &block_preds[1..] {
+                    let pred_doms = &dominators[pred_id.0];
+                    let pred_doms_set: HashSet<_> = pred_doms.iter().cloned().collect();
+                    // Intersect sets.
+                    new_doms.retain(|d| pred_doms_set.contains(d))
+                }
+
+                new_doms.push(*block_id);
+
+                new_doms.sort_unstable();
+                new_doms.dedup();
+
+                if dominators[block_id.0] != new_doms {
+                    dominators[block_id.0] = new_doms;
+                    changed = true;
+                }
+            }
+        }
+
+        Self { f, dominators }
+    }
+
+
+    pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.dominators[left.0].contains(&right)
+    }
+
+    pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
+        self.dominators[block.0].iter()
+    }
 }
 
 #[cfg(test)]
