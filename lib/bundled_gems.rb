@@ -1,5 +1,10 @@
 # -*- frozen-string-literal: true -*-
 
+# :stopdoc:
+module Gem
+end
+# :startdoc:
+
 module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
     "racc" => "3.3.0",
