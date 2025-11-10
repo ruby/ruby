@@ -4769,7 +4769,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // In this case, we side exit to the interpreter.
                     // TODO(Jacob): Replace the magic number 32 with a named constant. (Can be completed after PR 15039)
                     if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= 32} {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot {state: exit_state});
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyKeywordParameters });
                         break;
                     }
