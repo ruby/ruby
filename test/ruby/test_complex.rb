@@ -1293,4 +1293,9 @@ class Complex_Test < Test::Unit::TestCase
       Complex.polar(1, obj)
     end
   end
+
+  def test_deconstruct
+    assert_equal(Complex(3, 1).deconstruct, [3, 1])
+    assert_equal(Complex(1, -5).deconstruct, [1, -5])
+  end
 end
