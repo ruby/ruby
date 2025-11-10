@@ -2244,7 +2244,9 @@ Init_stringio(void)
     rb_define_method(StringIO, "set_encoding_by_bom", strio_set_encoding_by_bom, 0);
 
     {
+	/* :stopdoc: */
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
+	/* :startdoc: */
 	rb_define_method(mReadable, "readchar", strio_readchar, 0);
 	rb_define_method(mReadable, "readbyte", strio_readbyte, 0);
 	rb_define_method(mReadable, "readline", strio_readline, -1);
@@ -2254,7 +2256,9 @@ Init_stringio(void)
 	rb_include_module(StringIO, mReadable);
     }
     {
+	/* :stopdoc: */
 	VALUE mWritable = rb_define_module_under(rb_cIO, "generic_writable");
+	/* :startdoc: */
 	rb_define_method(mWritable, "<<", strio_addstr, 1);
 	rb_define_method(mWritable, "print", strio_print, -1);
 	rb_define_method(mWritable, "printf", strio_printf, -1);
