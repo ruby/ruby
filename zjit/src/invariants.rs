@@ -2,10 +2,10 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cast::IntoU64, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, stats::{decr_counter_by, incr_counter}, virtualmem::CodePtr};
 use crate::payload::IseqPayload;
 use crate::stats::with_time_stat;
-use crate::stats::Counter::invalidation_time_ns;
+use crate::stats::Counter::{invalidation_time_ns, patch_point_count};
 use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
@@ -34,6 +34,23 @@ struct PatchPoint {
     side_exit_ptr: CodePtr,
     /// Raw pointer to the ISEQ payload
     payload_ptr: *mut IseqPayload,
+}
+
+impl PatchPoint {
+    /// PatchPointer constructor, which also increments `patch_point_count`
+    fn new(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) -> PatchPoint {
+        incr_counter!(patch_point_count);
+        Self {
+            patch_point_ptr,
+            side_exit_ptr,
+            payload_ptr,
+        }
+    }
+
+    /// Decrease `patch_point_count` by the size of a given `HashSet<PatchPoint>`
+    fn decr_counter(patch_points: HashSet<PatchPoint>) {
+        decr_counter_by(patch_point_count, patch_points.len().as_u64());
+    }
 }
 
 /// Used to track all of the various block references that contain assumptions
@@ -83,17 +100,17 @@ impl Invariants {
         // generated code referencing the ISEQ are unreachable. We mark the ISEQs baked into
         // generated code.
         self.ep_escape_iseqs.remove(&iseq);
-        self.no_ep_escape_iseq_patch_points.remove(&iseq);
+        self.no_ep_escape_iseq_patch_points.remove(&iseq).map(PatchPoint::decr_counter);
     }
 
     /// Forget a CME when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_cme(&mut self, cme: *const rb_callable_method_entry_t) {
-        self.cme_patch_points.remove(&cme);
+        self.cme_patch_points.remove(&cme).map(PatchPoint::decr_counter);
     }
 
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
-        self.no_singleton_class_patch_points.remove(&klass);
+        self.no_singleton_class_patch_points.remove(&klass).map(PatchPoint::decr_counter);
     }
 
     /// Update ISEQ references in Invariants::ep_escape_iseqs
@@ -198,11 +215,11 @@ pub fn track_no_ep_escape_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint {
+    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
@@ -219,11 +236,11 @@ pub fn track_bop_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint {
+    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Track a patch point for a callable method entry (CME).
@@ -234,11 +251,11 @@ pub fn track_cme_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint {
+    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Track a patch point for each constant name in a constant path assumption.
@@ -257,11 +274,11 @@ pub fn track_stable_constant_names_assumption(
             break;
         }
 
-        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint {
+        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint::new(
             patch_point_ptr,
             side_exit_ptr,
             payload_ptr,
-        });
+        ));
 
         idx += 1;
     }
@@ -275,11 +292,11 @@ pub fn track_no_singleton_class_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint {
+    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
@@ -330,11 +347,11 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 /// Track the JIT code that assumes that the interpreter is running with only one ractor
 pub fn track_single_ractor_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
     let invariants = ZJITState::get_invariants();
-    invariants.single_ractor_patch_points.insert(PatchPoint {
+    invariants.single_ractor_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Callback for when Ruby is about to spawn a ractor. In that case we need to
@@ -359,11 +376,11 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
 
 pub fn track_no_trace_point_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_trace_point_patch_points.insert(PatchPoint {
+    invariants.no_trace_point_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 #[unsafe(no_mangle)]
