@@ -46,7 +46,7 @@ class AutoReviewPR
     changed_files = @client.get("/repos/#{REPO}/pulls/#{pr_number}/files").map { it.fetch(:filename) }
 
     # Build a Hash: { upstream_repo => files, ... }
-    upstream_repos = changed_files.group_by { |file| find_upstream_repo(file) }
+    upstream_repos = SyncDefaultGems::Repository.group(changed_files)
     upstream_repos.delete(nil) # exclude no-upstream files
     upstream_repos.delete('prism') if changed_files.include?('prism_compile.c') # allow prism changes in this case
     if upstream_repos.empty?
@@ -69,17 +69,6 @@ class AutoReviewPR
   end
 
   private
-
-  def find_upstream_repo(file)
-    SyncDefaultGems::REPOSITORIES.each do |repo_name, repository|
-      repository.mappings.each do |_src, dst|
-        if file.start_with?(dst)
-          return repo_name
-        end
-      end
-    end
-    nil
-  end
 
   # upstream_repos: { upstream_repo => files, ... }
   def format_comment(upstream_repos)
