@@ -629,6 +629,8 @@ rb_sys_fail_on_write(rb_io_t *fptr)
 static void
 io_unread(rb_io_t *fptr, bool discard_rbuf)
 {
+    int offset;
+    rb_off_t unread_len;
     rb_off_t r, pos;
     ssize_t read_size;
     long i;
@@ -642,9 +644,20 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
         return;
     }
 
+    offset = fptr->rbuf.off;
+    unread_len = fptr->rbuf.len;
+    if (fptr->rbuf.off < fptr->rbuf.off_unget) {
+        offset = fptr->rbuf.off_unget;
+        unread_len -= fptr->rbuf.off_unget - fptr->rbuf.off;
+        if (unread_len == 0) {
+            if (!discard_rbuf) return;
+            goto end;
+        }
+    }
+
     errno = 0;
     if (!rb_w32_fd_is_text(fptr->fd)) {
-        r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+        r = lseek(fptr->fd, -unread_len, SEEK_CUR);
         if (r < 0 && errno) {
             if (errno == ESPIPE)
                 fptr->mode |= FMODE_DUPLEX;
@@ -662,35 +675,35 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
     }
 
     /* add extra offset for removed '\r' in rbuf */
-    extra_max = (long)(pos - fptr->rbuf.len);
-    p = fptr->rbuf.ptr + fptr->rbuf.off;
+    extra_max = (long)(pos - unread_len);
+    p = fptr->rbuf.ptr + offset;
 
     /* if the end of rbuf is '\r', rbuf doesn't have '\r' within rbuf.len */
     if (*(fptr->rbuf.ptr + fptr->rbuf.capa - 1) == '\r') {
         newlines++;
     }
 
-    for (i = 0; i < fptr->rbuf.len; i++) {
+    for (i = 0; i < unread_len; i++) {
         if (*p == '\n') newlines++;
         if (extra_max == newlines) break;
         p++;
     }
 
-    buf = ALLOC_N(char, fptr->rbuf.len + newlines);
+    buf = ALLOC_N(char, unread_len + newlines);
     while (newlines >= 0) {
-        r = lseek(fptr->fd, pos - fptr->rbuf.len - newlines, SEEK_SET);
+        r = lseek(fptr->fd, pos - unread_len - newlines, SEEK_SET);
         if (newlines == 0) break;
         if (r < 0) {
             newlines--;
             continue;
         }
-        read_size = _read(fptr->fd, buf, fptr->rbuf.len + newlines);
+        read_size = _read(fptr->fd, buf, unread_len + newlines);
         if (read_size < 0) {
             int e = errno;
             free(buf);
             rb_syserr_fail_path(e, fptr->pathv);
         }
-        if (read_size == fptr->rbuf.len) {
+        if (read_size == unread_len) {
             lseek(fptr->fd, r, SEEK_SET);
             break;
         }
@@ -702,6 +715,7 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
   end:
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
+    fptr->rbuf.off_unget = 0;
     clear_codeconv(fptr);
     return;
 }
@@ -919,20 +933,32 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
 static void
 io_unread(rb_io_t *fptr, bool discard_rbuf)
 {
+    rb_off_t unread_len;
     rb_off_t r;
     rb_io_check_closed(fptr);
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
-    /* xxx: target position may be negative if buffer is filled by ungetc */
+    unread_len = fptr->rbuf.len;
+    if (fptr->rbuf.off < fptr->rbuf.off_unget) {
+        unread_len -= fptr->rbuf.off_unget - fptr->rbuf.off;
+        if (unread_len == 0) {
+            if (!discard_rbuf) return;
+            goto end;
+        }
+    }
+
+    /* xxx: target position may be negative if buffer is filled by ungetbyte */
     errno = 0;
-    r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+    r = lseek(fptr->fd, -unread_len, SEEK_CUR);
     if (r < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
         if (!discard_rbuf) return;
     }
+  end:
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
+    fptr->rbuf.off_unget = 0;
     clear_codeconv(fptr);
     return;
 }
@@ -941,14 +967,18 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
 static rb_encoding *io_input_encoding(rb_io_t *fptr);
 
 static void
-io_ungetbyte(VALUE str, rb_io_t *fptr)
+io_ungetbyte(VALUE str, rb_io_t *fptr, bool move_pos)
 {
     long len = RSTRING_LEN(str);
 
+    if (move_pos && fptr->rbuf.off < fptr->rbuf.off_unget) {
+        rb_raise(rb_eIOError, "ungetbyte failed because of the remaining data from ungetc in the buffer");
+    }
     if (fptr->rbuf.ptr == NULL) {
         const int min_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.off = 0;
         fptr->rbuf.len = 0;
+        fptr->rbuf.off_unget = 0;
 #if SIZEOF_LONG > SIZEOF_INT
         if (len > INT_MAX)
             rb_raise(rb_eIOError, "ungetbyte failed");
@@ -963,10 +993,17 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
         rb_raise(rb_eIOError, "ungetbyte failed");
     }
     if (fptr->rbuf.off < len) {
-        MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.capa-fptr->rbuf.len,
-                fptr->rbuf.ptr+fptr->rbuf.off,
+        int new_offset = fptr->rbuf.capa - fptr->rbuf.len;
+        MEMMOVE(fptr->rbuf.ptr + new_offset,
+                fptr->rbuf.ptr + fptr->rbuf.off,
                 char, fptr->rbuf.len);
-        fptr->rbuf.off = fptr->rbuf.capa-fptr->rbuf.len;
+        if (fptr->rbuf.off_unget != 0) {
+            fptr->rbuf.off_unget += new_offset - fptr->rbuf.off;
+        }
+        fptr->rbuf.off = new_offset;
+    }
+    if (!move_pos && fptr->rbuf.off_unget < fptr->rbuf.off) {
+        fptr->rbuf.off_unget = fptr->rbuf.off;
     }
     fptr->rbuf.off-=(int)len;
     fptr->rbuf.len+=(int)len;
@@ -2434,7 +2471,12 @@ rb_io_tell(VALUE io)
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
-    pos -= fptr->rbuf.len;
+    if (fptr->rbuf.off < fptr->rbuf.off_unget) {
+        pos -= fptr->rbuf.len - (fptr->rbuf.off_unget - fptr->rbuf.off);
+    }
+    else {
+        pos -= fptr->rbuf.len;
+    }
     return OFFT2NUM(pos);
 }
 
@@ -2626,6 +2668,7 @@ io_fillbuf(rb_io_t *fptr)
     if (fptr->rbuf.ptr == NULL) {
         fptr->rbuf.off = 0;
         fptr->rbuf.len = 0;
+        fptr->rbuf.off_unget = 0;
         fptr->rbuf.capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
 #ifdef _WIN32
@@ -2650,6 +2693,7 @@ io_fillbuf(rb_io_t *fptr)
         }
         if (r > 0) rb_io_check_closed(fptr);
         fptr->rbuf.off = 0;
+        fptr->rbuf.off_unget = 0;
         fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0)
             return -1; /* EOF */
@@ -5194,7 +5238,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
       default:
         StringValue(b);
     }
-    io_ungetbyte(b, fptr);
+    io_ungetbyte(b, fptr, true);
     return Qnil;
 }
 
@@ -5278,7 +5322,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     }
     else {
         NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
-        io_ungetbyte(c, fptr);
+        io_ungetbyte(c, fptr, false);
     }
     return Qnil;
 }
@@ -8491,7 +8535,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         if (io_fflush(fptr) < 0)
             rb_sys_fail_on_write(fptr);
     }
-    fptr->rbuf.off = fptr->rbuf.len = 0;
+    fptr->rbuf.off = fptr->rbuf.len = fptr->rbuf.off_unget = 0;
 
     if (fptr->stdio_file) {
         int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
@@ -9406,6 +9450,7 @@ rb_io_buffer_init(struct rb_io_internal_buffer *buf)
     buf->off = 0;
     buf->len = 0;
     buf->capa = 0;
+    buf->off_unget = 0;
 }
 
 static inline rb_io_t *
