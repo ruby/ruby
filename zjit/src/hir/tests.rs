@@ -1925,7 +1925,7 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnknownNewarraySend(MIN)
+          SideExit UnhandledNewarraySend(MIN)
         ");
     }
 
@@ -1957,7 +1957,7 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnknownNewarraySend(HASH)
+          SideExit UnhandledNewarraySend(HASH)
         ");
     }
 
@@ -1991,7 +1991,7 @@ pub mod hir_build_tests {
           v25:BasicObject = SendWithoutBlock v15, :+, v16
           v31:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v32:StringExact = StringCopy v31
-          SideExit UnknownNewarraySend(PACK)
+          SideExit UnhandledNewarraySend(PACK)
         ");
     }
 

@@ -128,8 +128,12 @@ make_counters! {
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
-        exit_unknown_newarray_send,
-        exit_unknown_duparray_send,
+        exit_unhandled_newarray_send_min,
+        exit_unhandled_newarray_send_hash,
+        exit_unhandled_newarray_send_pack,
+        exit_unhandled_newarray_send_pack_buffer,
+        exit_unhandled_newarray_send_unknown,
+        exit_unhandled_duparray_send,
         exit_unhandled_tailcall,
         exit_unhandled_splat,
         exit_unhandled_kwarg,
@@ -217,6 +221,13 @@ make_counters! {
     compile_error_validation_duplicate_instruction,
     compile_error_validation_type_check_failure,
     compile_error_validation_misc_validation_error,
+
+    // unhandled_hir_insn_: Unhandled HIR instructions
+    unhandled_hir_insn_array_max,
+    unhandled_hir_insn_fixnum_div,
+    unhandled_hir_insn_throw,
+    unhandled_hir_insn_invokebuiltin,
+    unhandled_hir_insn_unknown,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
@@ -377,14 +388,32 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     }
 }
 
+pub fn exit_counter_for_unhandled_hir_insn(insn: &crate::hir::Insn) -> Counter {
+    use crate::hir::Insn::*;
+    use crate::stats::Counter::*;
+    match insn {
+        ArrayMax { .. }      => unhandled_hir_insn_array_max,
+        FixnumDiv { .. }     => unhandled_hir_insn_fixnum_div,
+        Throw { .. }         => unhandled_hir_insn_throw,
+        InvokeBuiltin { .. } => unhandled_hir_insn_invokebuiltin,
+        _                    => unhandled_hir_insn_unknown,
+    }
+}
+
 pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
     use crate::hir::SideExitReason::*;
     use crate::hir::CallType::*;
     use crate::hir::Invariant;
     use crate::stats::Counter::*;
     match reason {
-        UnknownNewarraySend(_)        => exit_unknown_newarray_send,
-        UnknownDuparraySend(_)        => exit_unknown_duparray_send,
+        UnhandledNewarraySend(send_type) => match send_type {
+            VM_OPT_NEWARRAY_SEND_MIN  => exit_unhandled_newarray_send_min,
+            VM_OPT_NEWARRAY_SEND_HASH => exit_unhandled_newarray_send_hash,
+            VM_OPT_NEWARRAY_SEND_PACK => exit_unhandled_newarray_send_pack,
+            VM_OPT_NEWARRAY_SEND_PACK_BUFFER => exit_unhandled_newarray_send_pack_buffer,
+            _                         => exit_unhandled_newarray_send_unknown,
+        }
+        UnhandledDuparraySend(_)      => exit_unhandled_duparray_send,
         UnhandledCallType(Tailcall)   => exit_unhandled_tailcall,
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
