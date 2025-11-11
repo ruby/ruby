@@ -5832,10 +5832,11 @@ impl<'a> Dominators<'a> {
                     new_doms.retain(|d| pred_doms_set.contains(d))
                 }
 
-                new_doms.push(*block_id);
-
-                new_doms.sort_unstable();
-                new_doms.dedup();
+                // Insert sorted into `new_doms`
+                match new_doms.binary_search(block_id) {
+                    Ok(_) => {}
+                    Err(pos) => new_doms.insert(pos, *block_id)
+                }
 
                 if dominators[block_id.0] != new_doms {
                     dominators[block_id.0] = new_doms;
