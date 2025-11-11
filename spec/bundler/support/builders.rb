@@ -425,13 +425,11 @@ module Spec
     end
 
     class BundlerBuilder
-      SPEC = Gem::Specification.load(Spec::Path.relative_gemspec)
-
       def initialize(context, name, version)
         raise "can only build bundler" unless name == "bundler"
 
         @context = context
-        @spec = SPEC.dup
+        @spec = Spec::Path.loaded_gemspec.dup
         @spec.version = version || Bundler::VERSION
       end
 
