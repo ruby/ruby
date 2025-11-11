@@ -1835,7 +1835,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         SendWithoutBlockNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_without_block_fallback_counter_for_method_type(method_type));
         }
-        SendWithoutBlockNotOptimizedOptimizedMethodType(method_type) => {
+        SendWithoutBlockNotOptimizedMethodTypeOptimized(method_type) => {
             gen_incr_counter(asm, send_without_block_fallback_counter_for_optimized_method_type(method_type));
         }
         SendNotOptimizedMethodType(method_type) => {

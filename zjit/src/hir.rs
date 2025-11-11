@@ -592,7 +592,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
-    SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType),
+    SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
     SendMegamorphic,
@@ -2534,7 +2534,7 @@ impl Function {
                                 };
                                 self.make_equal_to(insn_id, replacement);
                             } else {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
                                 self.push_insn_id(block, insn_id); continue;
                             }
                         } else {
