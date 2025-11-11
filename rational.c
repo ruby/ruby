@@ -2475,9 +2475,15 @@ string_to_r_strict(VALUE self, int raise)
  *   '300/2'.to_r     # => (150/1)   # Rational literal.
  *   '-9.2'.to_r      # => (-46/5)   # Float literal.
  *   '-9.2e2'.to_r    # => (-920/1)  # Float literal.
- *   ' 2 '.to_r       # => (2/1)     # Ignores leading and trailing whitespace.
- *   '21-Jun-09'.to_r # => (21/1)    # Ignores non-numeric characters ('-' and following).
- *   'BWV 1079'.to_r  # => (0/1)     # Returns zero if no leading numeric characters.
+ *
+ * Ignores leading and trailing whitespace, and trailing non-numeric characters:
+ *
+ *   ' 2 '.to_r       # => (2/1)
+ *   '21-Jun-09'.to_r # => (21/1)
+ *
+ * Returns \Rational zero if there are no leading numeric characters.
+ *
+ *   'BWV 1079'.to_r  # => (0/1)
  *
  * NOTE: <tt>'0.3'.to_r</tt> is equivalent to <tt>3/10r</tt>,
  * but is different from <tt>0.3.to_r</tt>:
