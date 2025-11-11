@@ -573,3 +573,13 @@ To avoid writing a lock file, use `false` as the argument:
 
 This is useful for library development and other situations where the code is
 expected to work with a range of dependency versions.
+
+### LOCKFILE PRECEDENCE
+
+When determining path to the lockfile or whether to create a lockfile, the
+following precedence is used:
+
+1. The `bundle install` `--no-lock` option (which disables lockfile creation).
+2. The `lockfile` method in the Gemfile.
+3. The `BUNDLE_LOCKFILE` environment variable.
+4. The default behavior of adding `.lock` to the end of the Gemfile name.

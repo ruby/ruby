@@ -65,9 +65,12 @@ module Gem::BundlerVersionFinder
 
     return unless gemfile
 
-    lockfile = case gemfile
-               when "gems.rb" then "gems.locked"
-               else "#{gemfile}.lock"
+    lockfile = ENV["BUNDLE_LOCKFILE"]
+    lockfile = nil if lockfile&.empty?
+
+    lockfile ||= case gemfile
+                 when "gems.rb" then "gems.locked"
+                 else "#{gemfile}.lock"
     end
 
     return unless File.file?(lockfile)
