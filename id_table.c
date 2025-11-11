@@ -353,7 +353,7 @@ const rb_data_type_t rb_managed_id_table_type = {
     .wrap_struct_name = "VM/managed_id_table",
     .function = {
         .dmark = NULL, // Nothing to mark
-        .dfree = (RUBY_DATA_FUNC)managed_id_table_free,
+        .dfree = managed_id_table_free,
         .dsize = managed_id_table_memsize,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
