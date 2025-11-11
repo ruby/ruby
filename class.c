@@ -671,7 +671,7 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
     }
     VM_ASSERT(
         rb_box_subclasses_ref_count(anchor->box_subclasses) > 0,
-        "box_subclasses refcount (%p) %d", anchor->box_subclasses, rb_box_subclasses_ref_count(anchor->box_subclasses));
+        "box_subclasses refcount (%lp) %d", anchor->box_subclasses, rb_box_subclasses_ref_count(anchor->box_subclasses));
     st_delete(tbl, &box_id, NULL);
     rb_box_subclasses_ref_dec(anchor->box_subclasses);
     xfree(anchor);

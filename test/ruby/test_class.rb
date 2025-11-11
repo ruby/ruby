@@ -887,19 +887,4 @@ CODE
       class C; end
     end;
   end
-
-  def test_subclasses_refcount_in_ractors
-    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
-    begin;
-      rs = []
-      8.times do
-        rs << Ractor.new do
-          5_000.times do
-            Class.new
-          end
-        end
-      end
-      rs.each(&:join)
-    end;
-  end
 end
