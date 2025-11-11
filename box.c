@@ -537,7 +537,7 @@ enum copy_error_type {
 };
 
 static const char *
-copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *src_path, const char *dst_path)
+copy_ext_file_error(char *message, size_t size, int copy_retvalue)
 {
 #ifdef _WIN32
     int error = GetLastError();
@@ -557,25 +557,25 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *s
 #else
     switch (copy_retvalue) {
       case COPY_ERROR_SRC_OPEN:
-        snprintf(message, size, "can't open the extension path: %s", src_path);
+        strlcpy(message, "can't open the extension path", size);
         break;
       case COPY_ERROR_DST_OPEN:
-        snprintf(message, size, "can't open the file to write: %s", dst_path);
+        strlcpy(message, "can't open the file to write", size);
         break;
       case COPY_ERROR_SRC_READ:
-        snprintf(message, size, "failed to read the extension path: %s", src_path);
+        strlcpy(message, "failed to read the extension path", size);
         break;
       case COPY_ERROR_DST_WRITE:
-        snprintf(message, size, "failed to write the extension path: %s", dst_path);
+        strlcpy(message, "failed to write the extension path", size);
         break;
       case COPY_ERROR_SRC_STAT:
-        snprintf(message, size, "failed to stat the extension path to copy permissions: %s", src_path);
+        strlcpy(message, "failed to stat the extension path to copy permissions", size);
         break;
       case COPY_ERROR_DST_CHMOD:
-        snprintf(message, size, "failed to set permissions to the copied extension path: %s", dst_path);
+        strlcpy(message, "failed to set permissions to the copied extension path", size);
         break;
       case COPY_ERROR_SYSERR:
-        snprintf(message, size, "failed to copy the extension: %s", strerror(errno));
+        strlcpy(message, strerror(errno), size);
         break;
       case COPY_ERROR_NONE: /* shouldn't be called */
       default:
@@ -742,8 +742,8 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
     enum copy_error_type copy_error = copy_ext_file(src_path, ext_path);
     if (copy_error) {
         char message[1024];
-        copy_ext_file_error(message, sizeof(message), copy_error, src_path, ext_path);
-        rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
+        copy_ext_file_error(message, sizeof(message), copy_error);
+        rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %"PRIsVALUE"): %s", ext_path, path, message);
     }
     // TODO: register the path to be clean-uped
     return rb_str_new_cstr(ext_path);
