@@ -4153,6 +4153,13 @@ impl FrameState {
         state.locals.clear();
         state
     }
+
+    /// Return itself without stack. Used by leaf calls with GC to reset SP to the base pointer.
+    pub fn without_stack(&self) -> Self {
+        let mut state = self.clone();
+        state.stack.clear();
+        state
+    }
 }
 
 /// Print adaptor for [`FrameState`]. See [`PtrPrintMap`].
