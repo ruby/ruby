@@ -5850,7 +5850,7 @@ impl<'a> Dominators<'a> {
 
 
     pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
-        self.dominators[left.0].contains(&right)
+        self.dominators(left).any(|&b| b == right)
     }
 
     pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
