@@ -5827,9 +5827,8 @@ impl<'a> Dominators<'a> {
 
                 for pred_id in &block_preds[1..] {
                     let pred_doms = &dominators[pred_id.0];
-                    let pred_doms_set: HashSet<_> = pred_doms.iter().cloned().collect();
-                    // Intersect sets.
-                    new_doms.retain(|d| pred_doms_set.contains(d))
+                    // Only keep a dominator in `new_doms` if it is also found in pred_doms
+                    new_doms.retain(|d| pred_doms.contains(d));
                 }
 
                 // Insert sorted into `new_doms`
