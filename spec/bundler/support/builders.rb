@@ -425,8 +425,7 @@ module Spec
     end
 
     class BundlerBuilder
-      SPEC_FILE = File.join File.dirname(__FILE__), "..", "..", "bundler.gemspec"
-      SPEC = Gem::Specification.load(SPEC_FILE)
+      SPEC = Gem::Specification.load(Spec::Path.relative_gemspec)
 
       def initialize(context, name, version)
         raise "can only build bundler" unless name == "bundler"
