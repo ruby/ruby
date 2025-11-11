@@ -1468,7 +1468,7 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
       MethodDefLocationSupported ?
    "|   def wrong_number_of_arguments_test(x, y)
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1494,7 +1494,7 @@ missing keyword: :kw3 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1515,7 +1515,7 @@ missing keywords: :kw2, :kw3 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1536,7 +1536,7 @@ unknown keyword: :kw4 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1557,7 +1557,7 @@ unknown keywords: :kw4, :kw5 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1587,7 +1587,7 @@ wrong number of arguments (given 1, expected 3) (ArgumentError)
       MethodDefLocationSupported ?
    "|   def wrong_number_of_arguments_test2(
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1609,7 +1609,7 @@ wrong number of arguments (given 1, expected 0) (ArgumentError)
       MethodDefLocationSupported ?
    "|     v = -> {}
               ^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1631,7 +1631,7 @@ wrong number of arguments (given 1, expected 0) (ArgumentError)
       MethodDefLocationSupported ?
    "|     v = lambda { }
                      ^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1657,7 +1657,7 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
       MethodDefLocationSupported ?
    "|   define_method :define_method_test do |x, y|
                                           ^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
