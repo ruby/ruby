@@ -2935,7 +2935,10 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
  *
  *  Terminates +thr+ and schedules another thread to be run, returning
  *  the terminated Thread.  If this is the main thread, or the last
- *  thread, exits the process.
+ *  thread, exits the process. Note that the caller does not wait for
+ *  the thread to terminate if the receiver is different from the currently
+ *  running thread. The termination is asynchronous, and the thread can still
+ *  run a small amount of ruby code before exiting.
  */
 
 VALUE
