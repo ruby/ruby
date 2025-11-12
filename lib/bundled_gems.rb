@@ -21,16 +21,16 @@ module Gem::BUNDLED_GEMS # :nodoc:
     "resolv-replace" => "3.4.0",
     "rinda" => "3.4.0",
     "syslog" => "3.4.0",
-    "ostruct" => "3.5.0",
-    "pstore" => "3.5.0",
-    "rdoc" => "3.5.0",
-    "win32ole" => "3.5.0",
-    "fiddle" => "3.5.0",
-    "logger" => "3.5.0",
-    "benchmark" => "3.5.0",
-    "irb" => "3.5.0",
-    "reline" => "3.5.0",
-    # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
+    "ostruct" => "4.0.0",
+    "pstore" => "4.0.0",
+    "rdoc" => "4.0.0",
+    "win32ole" => "4.0.0",
+    "fiddle" => "4.0.0",
+    "logger" => "4.0.0",
+    "benchmark" => "4.0.0",
+    "irb" => "4.0.0",
+    "reline" => "4.0.0",
+    # "readline" => "4.0.0", # This is wrapper for reline. We don't warn for this.
   }.freeze
 
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
