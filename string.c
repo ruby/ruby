@@ -8641,17 +8641,15 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *  Arguments +selector+ and +replacements+ must be valid character selectors
  *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
- *  and may use any of its valid forms, including negation, ranges, and escaping:
+ *  and may use any of its valid forms, including negation, ranges, and escapes:
  *
- *    # Negation.
- *    'hello'.tr('^aeiou', '-') # => "-e--o"
- *    # Ranges.
- *    'ibm'.tr('b-z', 'a-z') # => "hal"
- *    # Escapes.
+ *    'hello'.tr('^aeiou', '-')       # => "-e--o"     # Negation.
+ *    'ibm'.tr('b-z', 'a-z')          # => "hal"       # Range.
  *    'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
  *    'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
  *    'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
  *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
