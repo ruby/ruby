@@ -206,7 +206,7 @@ The following default gems are updated.
 * prism 1.6.0
 * psych 5.2.6
 * resolv 0.6.3
-* stringio 3.1.8.dev
+* stringio 3.1.9.dev
 * strscan 3.1.6.dev
 * timeout 0.4.4
 * uri 1.1.1
