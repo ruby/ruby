@@ -2543,7 +2543,7 @@ rb_throw_obj(VALUE tag, VALUE value)
 void
 rb_throw(const char *tag, VALUE val)
 {
-    rb_throw_obj(rb_sym_intern_ascii_cstr(tag), val);
+    rb_throw_obj(rb_intern_ascii_cstr_sym(tag), val);
 }
 
 static VALUE
@@ -2613,7 +2613,7 @@ rb_f_catch(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 {
-    VALUE vtag = tag ? rb_sym_intern_ascii_cstr(tag) : rb_obj_alloc(rb_cObject);
+    VALUE vtag = tag ? rb_intern_ascii_cstr_sym(tag) : rb_obj_alloc(rb_cObject);
     return rb_catch_obj(vtag, func, data);
 }
 

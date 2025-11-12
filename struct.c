@@ -415,7 +415,7 @@ struct_make_members_list(va_list ar)
     VALUE ary, list = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(list);
     while ((mem = va_arg(ar, char*)) != 0) {
-        VALUE sym = rb_sym_intern_ascii_cstr(mem);
+        VALUE sym = rb_intern_ascii_cstr_sym(mem);
         if (RTEST(rb_hash_has_key(list, sym))) {
             rb_raise(rb_eArgError, "duplicate member: %s", mem);
         }

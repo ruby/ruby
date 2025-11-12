@@ -873,6 +873,18 @@ rb_intern_str(VALUE str)
     return SYM2ID(sym);
 }
 
+static VALUE
+rb_intern2_ascii_cstr_sym(const char *ptr, long len)
+{
+    return rb_id2sym(rb_intern3(ptr, len, rb_usascii_encoding()));
+}
+
+VALUE
+rb_intern_ascii_cstr_sym(const char *ptr)
+{
+    return rb_intern2_ascii_cstr_sym(ptr, strlen(ptr));
+}
+
 bool
 rb_obj_is_symbol_table(VALUE obj)
 {
@@ -1246,13 +1258,10 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     return Qnil;
 }
 
-#undef rb_sym_intern_ascii_cstr
 #ifdef __clang__
 NOINLINE(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
 #else
 FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
-FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, long len));
-FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
 #endif
 
 VALUE
@@ -1261,18 +1270,6 @@ rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
     struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
     return rb_str_intern(name);
-}
-
-VALUE
-rb_sym_intern_ascii(const char *ptr, long len)
-{
-    return rb_sym_intern(ptr, len, rb_usascii_encoding());
-}
-
-VALUE
-rb_sym_intern_ascii_cstr(const char *ptr)
-{
-    return rb_sym_intern_ascii(ptr, strlen(ptr));
 }
 
 VALUE

@@ -12,16 +12,11 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "internal/compilers.h" /* for __has_builtin */
 
-#ifdef rb_sym_intern_ascii_cstr
-# undef rb_sym_intern_ascii_cstr
-#endif
-
 /* symbol.c */
 void rb_sym_global_symbols_mark_and_move(void);
 VALUE rb_to_symbol_type(VALUE obj);
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
-VALUE rb_sym_intern_ascii(const char *ptr, long len);
-VALUE rb_sym_intern_ascii_cstr(const char *ptr);
+VALUE rb_intern_ascii_cstr_sym(const char *ptr);
 int rb_is_const_name(VALUE name);
 int rb_is_class_name(VALUE name);
 int rb_is_instance_name(VALUE name);
@@ -35,12 +30,5 @@ void rb_sym_global_symbol_table_foreach_weak_reference(int (*callback)(VALUE *ke
 void rb_gc_free_dsymbol(VALUE);
 int rb_static_id_valid_p(ID id);
 void rb_free_global_symbol_table(void);
-
-#if __has_builtin(__builtin_constant_p)
-#define rb_sym_intern_ascii_cstr(ptr) \
-    (__builtin_constant_p(ptr) ? \
-        rb_sym_intern_ascii((ptr), (long)strlen(ptr)) : \
-        rb_sym_intern_ascii_cstr(ptr))
-#endif
 
 #endif /* INTERNAL_SYMBOL_H */

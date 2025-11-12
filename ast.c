@@ -296,7 +296,7 @@ ast_node_type(rb_execution_context_t *ec, VALUE self)
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
+    return rb_intern_ascii_cstr_sym(node_type_to_str(data->node));
 }
 
 static VALUE

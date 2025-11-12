@@ -1063,7 +1063,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_uclass(obj, rb_cHash, arg);
             if (rb_hash_compare_by_id_p(obj)) {
                 w_byte(TYPE_UCLASS, arg);
-                w_symbol(rb_sym_intern_ascii_cstr("Hash"), arg);
+                w_symbol(rb_intern_ascii_cstr_sym("Hash"), arg);
             }
             if (NIL_P(RHASH_IFNONE(obj))) {
                 w_byte(TYPE_HASH, arg);

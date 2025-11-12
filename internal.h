@@ -62,7 +62,7 @@
 #define rb_fstring_cstr(...) rb_nonexistent_symbol(__VA_ARGS__)
 
 /* internal/symbol.h */
-#define rb_sym_intern_ascii_cstr(...) rb_nonexistent_symbol(__VA_ARGS__)
+#define rb_intern_ascii_cstr_sym(...) rb_nonexistent_symbol(__VA_ARGS__)
 
 /* internal/vm.h */
 #define rb_funcallv(...) rb_nonexistent_symbol(__VA_ARGS__)
