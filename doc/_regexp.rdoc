@@ -39,7 +39,7 @@ A regexp may be used:
   most such methods accept an argument that may be either a string
   or the (much more powerful) regexp.
 
-  See {Regexp Methods}[rdoc-ref:regexp/methods.rdoc].
+  See {Regexp Methods}[rdoc-ref:language/regexp/methods.rdoc].
 
 == \Regexp Objects
 
@@ -821,7 +821,7 @@ Or by using <tt>\P</tt> (uppercase +P+):
   /\P{Alpha}/.match('1') # => #<MatchData "1">
   /\P{Alpha}/.match('a') # => nil
 
-See {Unicode Properties}[rdoc-ref:regexp/unicode_properties.rdoc]
+See {Unicode Properties}[rdoc-ref:language/regexp/unicode_properties.rdoc]
 for regexps based on the numerous properties.
 
 Some commonly-used properties correspond to POSIX bracket expressions:
