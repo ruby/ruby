@@ -12,6 +12,7 @@ gem "parallel", "~> 1.19"
 gem "rspec-core", "~> 3.12"
 gem "rspec-expectations", "~> 3.12"
 gem "rspec-mocks", "~> 3.12"
+gem "rubygems-generate_index", "~> 1.1"
 
 group :doc do
   gem "ronn-ng", "~> 0.10.1", platform: :ruby

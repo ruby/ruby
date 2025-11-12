@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    compact_index (0.15.0)
     diff-lcs (1.6.1)
     kramdown (2.5.1)
       rexml (>= 3.3.9)
@@ -54,6 +55,8 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.2)
+    rubygems-generate_index (1.1.3)
+      compact_index (~> 0.15.0)
     test-unit (3.6.7)
       power_assert
     turbo_tests (2.2.5)
@@ -83,10 +86,12 @@ DEPENDENCIES
   rspec-core (~> 3.12)
   rspec-expectations (~> 3.12)
   rspec-mocks (~> 3.12)
+  rubygems-generate_index (~> 1.1)
   test-unit (~> 3.0)
   turbo_tests (~> 2.2.3)
 
 CHECKSUMS
+  compact_index (0.15.0) sha256=5c6c404afca8928a7d9f4dde9524f6e1610db17e675330803055db282da84a8b
   diff-lcs (1.6.1) sha256=12a5a83f3e37a8e2f4427268e305914d5f1879f22b4e73bb1a09f76a3dd86cd4
   kramdown (2.5.1) sha256=87bbb6abd9d3cebe4fc1f33e367c392b4500e6f8fa19dd61c0972cf4afe7368c
   kramdown-parser-gfm (1.1.0) sha256=fb39745516427d2988543bf01fc4cf0ab1149476382393e0e9c48592f6581729
@@ -115,6 +120,7 @@ CHECKSUMS
   rspec-expectations (3.13.3) sha256=0e6b5af59b900147698ea0ff80456c4f2e69cac4394fbd392fbd1ca561f66c58
   rspec-mocks (3.13.2) sha256=2327335def0e1665325a9b617e3af9ae20272741d80ac550336309a7c59abdef
   rspec-support (3.13.2) sha256=cea3a2463fd9b84b9dcc9685efd80ea701aa8f7b3decb3b3ce795ed67737dbec
+  rubygems-generate_index (1.1.3) sha256=3571424322666598e9586a906485e1543b617f87644913eaf137d986a3393f5c
   test-unit (3.6.7) sha256=c342bb9f7334ea84a361b43c20b063f405c0bf3c7dbe3ff38f61a91661d29221
   turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
 
