@@ -7097,10 +7097,12 @@ rb_str_to_f(VALUE str)
 
 /*
  *  call-seq:
- *    to_s -> self or string
+ *    to_s -> self or new_string
  *
  *  Returns +self+ if +self+ is a +String+,
  *  or +self+ converted to a +String+ if +self+ is a subclass of +String+.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
