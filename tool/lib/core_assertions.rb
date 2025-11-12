@@ -394,7 +394,11 @@ eom
         shim_value = "class Ractor; alias value take; end" unless Ractor.method_defined?(:value)
         shim_join = "class Ractor; alias join take; end" unless Ractor.method_defined?(:join)
 
-        require = "require #{require.inspect}" if require
+        if require
+          require = [require] unless require.is_a?(Array)
+          require = require.map {|r| "require #{r.inspect}"}.join("\n")
+        end
+
         if require_relative
           dir = File.dirname(caller_locations[0,1][0].absolute_path)
           full_path = File.expand_path(require_relative, dir)
