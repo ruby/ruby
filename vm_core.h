@@ -45,8 +45,6 @@
 #define VMDEBUG 3
 #endif
 
-#include "ruby/internal/config.h"
-
 #include <stddef.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -316,6 +314,8 @@ struct rb_calling_info {
 #ifndef VM_ARGC_STACK_MAX
 #define VM_ARGC_STACK_MAX 128
 #endif
+
+#define VM_KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
 
 # define CALLING_ARGC(calling) ((calling)->heap_argv ? RARRAY_LENINT((calling)->heap_argv) : (calling)->argc)
 
