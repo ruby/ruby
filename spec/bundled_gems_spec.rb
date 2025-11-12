@@ -77,7 +77,7 @@ RSpec.describe "bundled_gems.rb" do
 
     expect(err).to include(/csv was loaded from (.*) from Ruby 3.4.0/)
     expect(err).to include(/-e:8/)
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/-e:11/)
   end
 
@@ -97,7 +97,7 @@ RSpec.describe "bundled_gems.rb" do
       require "active_support/all"
     RUBY
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
@@ -129,7 +129,7 @@ RSpec.describe "bundled_gems.rb" do
       require "fiddle/import"
     RUBY
 
-    expect(err).to include(/fiddle\/import is found in fiddle, which will no longer be part of the default gems starting from Ruby 3\.5\.0/)
+    expect(err).to include(/fiddle\/import is found in fiddle, which will no longer be part of the default gems starting from Ruby 4\.0\.0/)
     expect(err).to include(/-e:7/)
   end
 
@@ -142,7 +142,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/script\.rb:1/)
   end
 
@@ -159,7 +159,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ./script.rb"
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/script\.rb:2/)
   end
 
@@ -167,7 +167,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby -rostruct -e ''"
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
   end
 
   it "Show warning when warn is not the standard one in the current scope" do
@@ -190,7 +190,7 @@ RSpec.describe "bundled_gems.rb" do
       My.my
     RUBY
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/-e:12/)
   end
 
@@ -232,7 +232,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::LIBDIR + 'ostruct'
     RUBY
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap.rb:14: warning: ...
   end
@@ -252,7 +252,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::ARCHDIR + "fiddle"
     RUBY
 
-    expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/fiddle was loaded from (.*) from Ruby 4.0.0/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap_rubyarchdir_gem.rb:14: warning: ...
   end
@@ -282,7 +282,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem.loaded_specs["childprocess"].full_gem_path + '/lib/childprocess'
     RUBY
 
-    expect(err).to include(/logger was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/logger was loaded from (.*) from Ruby 4.0.0/)
     # TODO: We should assert caller location like below:
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
@@ -301,7 +301,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 4.0.0/)
     expect(err).to include(/script\.rb:6/)
   end
 
@@ -348,7 +348,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby -rirb -e ''"
 
-    expect(err).to include(/irb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to_not include(/reline was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/irb was loaded from (.*) from Ruby 4.0.0/)
+    expect(err).to_not include(/reline was loaded from (.*) from Ruby 4.0.0/)
   end
 end
