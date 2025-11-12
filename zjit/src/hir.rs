@@ -3687,49 +3687,6 @@ impl Function {
         }
     }
 
-    /// Compute successor blocks and predecessor blocks to be used in Iongraph formulation.
-    fn compute_successors_and_predecessors(
-        &self,
-    ) -> (HashMap<BlockId, Vec<BlockId>>, HashMap<BlockId, Vec<BlockId>>) {
-        let mut block_successors: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
-        let mut block_predecessors: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
-
-        for block_id in self.rpo() {
-            let block = &self.blocks[block_id.0];
-            let mut successors = Vec::new();
-            let uf = self.union_find.borrow();
-
-            // Since ZJIT uses extended basic blocks, one must check all instructions
-            // for their ability to jump to another basic block, rather than just
-            // the instructions at the end of a given basic block.
-            for insn_id in &block.insns {
-                let insn_id = uf.find_const(*insn_id);
-                let insn = &self.insns[insn_id.0];
-                match insn {
-                    &Insn::Jump(ref target)
-                    | &Insn::IfTrue { ref target, .. }
-                    | &Insn::IfFalse { ref target, .. } => {
-                        successors.push(target.target);
-                    }
-                    _ => {}
-                }
-            }
-
-            // Update predecessors for successor blocks.
-            for &succ_id in &successors {
-                block_predecessors
-                    .entry(succ_id)
-                    .or_default()
-                    .push(block_id);
-            }
-
-            // Store successors for this block.
-            block_successors.insert(block_id, successors);
-        }
-
-        (block_successors, block_predecessors)
-    }
-
     /// Helper function to make an Iongraph JSON "instruction".
     /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
     /// in the future.
@@ -3749,15 +3706,14 @@ impl Function {
 
     /// Helper function to make an Iongraph JSON "block".
     /// `attributes` is specific to Spidermonkey, so it is left empty.
-    /// todo(aidenfoxivey): Calculate loopDepth
     /// todo(aidenfoxivey): Calculate attributes
-    fn make_iongraph_block(ptr: u64, id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>) -> Json {
+    fn make_iongraph_block(id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
         Json::object()
             // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
-            .insert("ptr", ptr + 0x1000)
+            .insert("ptr", id + 0x1000)
             .insert("id", id)
-            .insert("loopDepth", 0)
-            .insert("attributes", Json::empty_array())
+            .insert("loopDepth", loop_depth)
+            .insert("attributes", Json::array(attributes))
             .insert("predecessors", Json::array(predecessors))
             .insert("successors", Json::array(successors))
             .insert("instructions", Json::array(instructions))
@@ -3788,15 +3744,16 @@ impl Function {
         }
 
         let mut hir_blocks = Vec::new();
-        let (mut block_successors, mut block_predecessors) = self.compute_successors_and_predecessors();
+        let cfi = ControlFlowInfo::new(self);
+        let dominators = Dominators::new(self);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
 
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.rpo() {
             // Create the block with instructions.
             let block = &self.blocks[block_id.0];
-            let block_ptr = ptr_map.map_id(block_id.0 as u64);
-            let predecessors = block_predecessors.remove(&block_id).unwrap_or_default();
-            let successors = block_successors.remove(&block_id).unwrap_or_default();
+            let predecessors = cfi.predecessors(block_id);
+            let successors = cfi.successors(block_id);
             let mut instructions = Vec::new();
 
             // Get parameter instructions.
@@ -3859,16 +3816,36 @@ impl Function {
                 );
             }
 
+            let mut attributes = vec![];
+            if loop_info.is_back_edge_source(block_id) {
+                attributes.push("backedge");
+            }
+            if loop_info.is_loop_header(block_id) {
+                attributes.push("loopheader");
+            }
+            let loop_depth = loop_info.loop_depth(block_id);
+
             hir_blocks.push(Self::make_iongraph_block(
-                block_ptr as u64,
                 block_id.0 as u64,
-                predecessors.into_iter().map(|x| x.0 as u64).collect(),
-                successors.into_iter().map(|x| x.0 as u64).collect(),
-                instructions
+                predecessors.map(|x| x.0 as u64).collect(),
+                successors.map(|x| x.0 as u64).collect(),
+                instructions,
+                attributes,
+                loop_depth,
             ));
         }
 
         Self::make_iongraph_function(pass_name, hir_blocks)
+    }
+
+    fn is_backedge(cfi: &ControlFlowInfo, block: BlockId, dom: &Dominators) -> bool {
+        cfi.successors(block)
+            .any(|&successor| dom.is_dominated_by(block, successor))
+    }
+
+    fn is_loop_header(cfi: &ControlFlowInfo, block: BlockId, dom: &Dominators) -> bool {
+        cfi.predecessors(block)
+            .any(|&predecessor| dom.is_dominated_by(predecessor, block))
     }
 
     /// Run all the optimization passes we have.
@@ -5782,18 +5759,18 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     (self_param, entry_state)
 }
 
-struct Dominators<'a> {
+pub struct Dominators<'a> {
     f: &'a Function,
     dominators: Vec<Vec<BlockId>>,
 }
 
 impl<'a> Dominators<'a> {
     pub fn new(f: &'a Function) -> Self {
-        let (_, mut predecessors) = f.compute_successors_and_predecessors();
-        Self::with_predecessors(f, &mut predecessors)
+        let mut cfi = ControlFlowInfo::new(f);
+        Self::with_cfi(f, &mut cfi)
     }
 
-    pub fn with_predecessors(f: &'a Function, predecessors: &mut HashMap<BlockId, Vec<BlockId>>) -> Self {
+    pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
         let block_ids = f.rpo();
         let mut dominators = vec![vec![]; block_ids.len()];
 
@@ -5818,7 +5795,7 @@ impl<'a> Dominators<'a> {
                     continue;
                 }
 
-                let block_preds  = &predecessors[block_id];
+                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).copied().collect();
                 if block_preds.is_empty() {
                     continue;
                 }
@@ -5854,6 +5831,160 @@ impl<'a> Dominators<'a> {
 
     pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
         self.dominators[block.0].iter()
+    }
+}
+
+pub struct ControlFlowInfo<'a> {
+    function: &'a Function,
+    successor_map: HashMap<BlockId, Vec<BlockId>>,
+    predecessor_map: HashMap<BlockId, Vec<BlockId>>,
+}
+
+impl<'a> ControlFlowInfo<'a> {
+    pub fn new(function: &'a Function) -> Self {
+        let mut successor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let uf = function.union_find.borrow();
+
+        for block_id in function.rpo() {
+            let block = &function.blocks[block_id.0];
+
+            // Since ZJIT uses extended basic blocks, one must check all instructions
+            // for their ability to jump to another basic block, rather than just
+            // the instructions at the end of a given basic block.
+            let successors: Vec<BlockId> = block
+                .insns
+                .iter()
+                .map(|&insn_id| uf.find_const(insn_id))
+                .filter_map(|insn_id| {
+                    Self::extract_jump_target(&function.insns[insn_id.0])
+                })
+                .collect();
+
+            // Update predecessors for successor blocks.
+            for &succ_id in &successors {
+                predecessor_map
+                    .entry(succ_id)
+                    .or_default()
+                    .push(block_id);
+            }
+
+            // Store successors for this block.
+            successor_map.insert(block_id, successors);
+        }
+
+        Self {
+            function,
+            successor_map,
+            predecessor_map,
+        }
+    }
+
+    pub fn succeeds(&self, left: BlockId, right: BlockId) -> bool {
+        self.successor_map.get(&left).is_some_and(|set| set.contains(&right))
+    }
+
+    pub fn precedes(&self, left: BlockId, right: BlockId) -> bool {
+        self.predecessor_map.get(&left).is_some_and(|set| set.contains(&right))
+    }
+
+    pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = &BlockId> {
+        self.predecessor_map.get(&block).into_iter().flatten()
+    }
+
+    pub fn successors(&self, block: BlockId) -> impl Iterator<Item = &BlockId> {
+        self.successor_map.get(&block).into_iter().flatten()
+    }
+
+    /// Helper function to extract the target of a jump instruction.
+    fn extract_jump_target(insn: &Insn) -> Option<BlockId> {
+        match insn {
+            Insn::Jump(target)
+            | Insn::IfTrue { target, .. }
+            | Insn::IfFalse { target, .. } => Some(target.target),
+            _ => None,
+        }
+    }
+}
+
+pub struct LoopInfo<'a> {
+    cfi: &'a ControlFlowInfo<'a>,
+    dominators: &'a Dominators<'a>,
+    loop_depths: HashMap<BlockId, u32>,
+    loop_headers: HashSet<BlockId>,
+    back_edge_sources: HashSet<BlockId>,
+}
+
+impl<'a> LoopInfo<'a> {
+    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
+        let mut loop_headers: HashSet<BlockId> = HashSet::new();
+        let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
+        let mut back_edge_sources: HashSet<BlockId> = HashSet::new();
+
+        for block in cfi.function.rpo() {
+            loop_depths.insert(block, 0);
+        }
+
+        // Collect loop headers.
+        for block in cfi.function.rpo() {
+            // Initialize the loop depths.
+            for &predecessor in cfi.predecessors(block) {
+                if dominators.is_dominated_by(predecessor, block) {
+                    // Found a loop header, so then identify the natural loop.
+                    loop_headers.insert(block);
+                    back_edge_sources.insert(predecessor);
+                    let loop_blocks = Self::find_natural_loop(cfi, block, predecessor);
+                    // Increment the loop depth.
+                    for &loop_block in &loop_blocks {
+                        *loop_depths.get_mut(&loop_block).unwrap() += 1;
+                    }
+                }
+            }
+        }
+
+        Self {
+            cfi,
+            dominators,
+            loop_depths,
+            loop_headers,
+            back_edge_sources,
+        }
+    }
+
+    fn find_natural_loop(
+        cfi: &ControlFlowInfo,
+        header: BlockId,
+        back_edge_source: BlockId,
+    ) -> HashSet<BlockId> {
+        let mut loop_blocks = HashSet::new();
+        let mut stack = vec![back_edge_source];
+
+        loop_blocks.insert(header);
+        loop_blocks.insert(back_edge_source);
+
+        while let Some(block) = stack.pop() {
+            for &pred in cfi.predecessors(block) {
+                // Pushes to stack only if `pred` wasn't already in `loop_blocks`.
+                if loop_blocks.insert(pred) {
+                    stack.push(pred)
+                }
+            }
+        }
+
+        loop_blocks
+    }
+
+    pub fn loop_depth(&self, block: BlockId) -> u32 {
+        self.loop_depths.get(&block).copied().unwrap_or(0)
+    }
+
+    pub fn is_back_edge_source(&self, block: BlockId) -> bool {
+        self.back_edge_sources.contains(&block)
+    }
+
+
+    pub fn is_loop_header(&self, block: BlockId) -> bool {
+        self.loop_headers.contains(&block)
     }
 }
 
