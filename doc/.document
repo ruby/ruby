@@ -7,6 +7,6 @@ syntax
 optparse
 date
 rdoc
-regexp
-yjit
+jit_compilers
+security
 ruby
