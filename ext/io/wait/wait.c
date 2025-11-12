@@ -11,19 +11,11 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "ruby/io.h"
-
-
 /*
- * IO wait methods
+ * IO wait methods are built in ruby now, just for backward compatibility.
  */
 
 void
 Init_wait(void)
 {
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-    RB_EXT_RACTOR_SAFE(true);
-#endif
-
 }
