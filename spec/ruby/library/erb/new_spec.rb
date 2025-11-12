@@ -139,7 +139,7 @@ END
     ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 
-  version_is ERB::VERSION, ""..."5.1.3" do # TODO: bump 5.1.3 to 6.0.0 once released
+  version_is ERB.const_get(:VERSION, false), ""..."5.1.3" do # TODO: bump 5.1.3 to 6.0.0 once released
     describe "warning about arguments" do
       it "warns when passed safe_level and later arguments" do
         -> {
