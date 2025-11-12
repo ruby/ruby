@@ -8,7 +8,7 @@ module Bundler
       autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Ask for X gems per API request
-      API_REQUEST_SIZE = 50
+      API_REQUEST_SIZE = 100
 
       attr_accessor :remotes
 
