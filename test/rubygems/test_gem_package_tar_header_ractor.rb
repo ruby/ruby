@@ -1,5 +1,11 @@
 # frozen_string_literal: true
+
 require_relative "package/tar_test_case"
+
+unless Gem::Package::TarTestCase.instance_methods.include?(:assert_ractor)
+  require "core_assertions"
+  Gem::Package::TarTestCase.include Test::Unit::CoreAssertions
+end
 
 class TestGemPackageTarHeaderRactor < Gem::Package::TarTestCase
   ASSERT_HEADERS_EQUAL = <<~RUBY
