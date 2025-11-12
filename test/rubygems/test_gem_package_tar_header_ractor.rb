@@ -71,10 +71,12 @@ class TestGemPackageTarHeaderRactor < Gem::Package::TarTestCase
     }
 
     tar_header = Gem::Package::TarHeader.new header
+    # Move this require to arguments of assert_ractor after Ruby 4.0 or updating core_assertions.rb at Ruby 3.4.
+    require "stringio"
   RUBY
 
   def test_decode_in_ractor
-    assert_ractor(ASSERT_HEADERS_EQUAL + SETUP + <<~RUBY, require: ["rubygems/package", "stringio"])
+    assert_ractor(ASSERT_HEADERS_EQUAL + SETUP + <<~RUBY, require: "rubygems/package")
       new_header = Ractor.new(tar_header.to_s) do |str|
         Gem::Package::TarHeader.from StringIO.new str
       end.value
@@ -84,7 +86,7 @@ class TestGemPackageTarHeaderRactor < Gem::Package::TarTestCase
   end
 
   def test_encode_in_ractor
-    assert_ractor(ASSERT_HEADERS_EQUAL + SETUP + <<~RUBY, require: ["rubygems/package", "stringio"])
+    assert_ractor(ASSERT_HEADERS_EQUAL + SETUP + <<~RUBY, require: "rubygems/package")
       header_bytes = tar_header.to_s
 
       new_header_bytes = Ractor.new(header_bytes) do |str|
