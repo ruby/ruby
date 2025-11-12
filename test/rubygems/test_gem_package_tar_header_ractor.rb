@@ -73,6 +73,8 @@ class TestGemPackageTarHeaderRactor < Gem::Package::TarTestCase
     tar_header = Gem::Package::TarHeader.new header
     # Move this require to arguments of assert_ractor after Ruby 4.0 or updating core_assertions.rb at Ruby 3.4.
     require "stringio"
+    # Remove this after Ruby 4.0 or updating core_assertions.rb at Ruby 3.4.
+    class Ractor; alias value take; end
   RUBY
 
   def test_decode_in_ractor
