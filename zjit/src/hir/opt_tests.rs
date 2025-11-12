@@ -2841,6 +2841,56 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_specialize_call_to_iseq_with_param_kw() {
+        eval("
+            def foo(int: 1) = int + 1
+            def test = foo
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          IncrCounter complex_arg_pass_param_kw
+          v11:BasicObject = SendWithoutBlock v6, :foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_param_kwrest() {
+        eval("
+            def foo(**kwargs) = kwargs.keys
+            def test = foo
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          IncrCounter complex_arg_pass_param_kwrest
+          v11:BasicObject = SendWithoutBlock v6, :foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn dont_replace_get_constant_path_with_empty_ic() {
         eval("
             def test = Kernel
