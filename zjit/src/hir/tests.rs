@@ -3656,4 +3656,40 @@ pub mod hir_build_tests {
         assert!(dominators.dominators(bb4).eq([bb0, bb4].iter()));
         assert!(dominators.dominators(bb5).eq([bb0, bb4, bb5].iter()));
     }
+
+    #[test]
+    fn test_multiple_entry_blocks() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        function.jit_entry_blocks.push(bb1);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb2()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const CBool(true)
+          Return v2
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+
+        assert!(dominators.dominators(bb1).eq([bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb2].iter()));
+
+        assert!(!dominators.is_dominated_by(bb1, bb2));
+    }
  }

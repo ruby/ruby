@@ -5774,13 +5774,14 @@ impl<'a> Dominators<'a> {
         let block_ids = f.rpo();
         let mut dominators = vec![vec![]; block_ids.len()];
 
-        if !block_ids.is_empty() {
-            dominators[f.entry_block.0] = vec![f.entry_block];
+        // Set up entry blocks.
+        for entry_block in &f.entry_blocks() {
+            dominators[entry_block.0] = vec![*entry_block];
         }
 
         // Setup the initial dominator sets.
         for block_id in &block_ids {
-            if *block_id != f.entry_block {
+            if !f.entry_blocks().contains(block_id) {
                 dominators[block_id.0] = block_ids.clone();
             }
         }
