@@ -1,4 +1,4 @@
-_VERSION = "0.3.6"
+_VERSION = "0.4.0.dev"
 
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
