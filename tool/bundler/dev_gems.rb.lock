@@ -59,6 +59,8 @@ GEM
       compact_index (~> 0.15.0)
     test-unit (3.6.7)
       power_assert
+    test-unit-ruby-core (1.0.13)
+      test-unit
     turbo_tests (2.2.5)
       parallel_tests (>= 3.3.0, < 5)
       rspec (>= 3.10)
@@ -88,6 +90,7 @@ DEPENDENCIES
   rspec-mocks (~> 3.12)
   rubygems-generate_index (~> 1.1)
   test-unit (~> 3.0)
+  test-unit-ruby-core
   turbo_tests (~> 2.2.3)
 
 CHECKSUMS
@@ -122,6 +125,7 @@ CHECKSUMS
   rspec-support (3.13.2) sha256=cea3a2463fd9b84b9dcc9685efd80ea701aa8f7b3decb3b3ce795ed67737dbec
   rubygems-generate_index (1.1.3) sha256=3571424322666598e9586a906485e1543b617f87644913eaf137d986a3393f5c
   test-unit (3.6.7) sha256=c342bb9f7334ea84a361b43c20b063f405c0bf3c7dbe3ff38f61a91661d29221
+  test-unit-ruby-core (1.0.13) sha256=0c08e61b3b97060028a47d8fc4827de077fdbfc26ef80b4afd9035b9e15ecc5b
   turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
 
 BUNDLED WITH

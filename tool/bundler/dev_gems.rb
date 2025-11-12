@@ -3,6 +3,7 @@
 source "https://rubygems.org"
 
 gem "test-unit", "~> 3.0"
+gem "test-unit-ruby-core"
 gem "rake", "~> 13.1"
 gem "rb_sys"
 
