@@ -778,9 +778,6 @@ require 'erb/util'
 # [template processor]: https://en.wikipedia.org/wiki/Template_processor
 #
 class ERB
-  Revision = '$Date::                           $' # :nodoc: #'
-  deprecate_constant :Revision
-
   # :markup: markdown
   #
   # :call-seq:
