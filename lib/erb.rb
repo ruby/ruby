@@ -827,27 +827,6 @@ class ERB
   #
   # It's good practice to choose a variable name that begins with an underscore: `'_'`.
   #
-  # <b>Backward Compatibility</b>
-  #
-  # The calling sequence given above -- which is the one you should use --
-  # is a simplified version of the complete formal calling sequence,
-  # which is:
-  #
-  # ```
-  # ERB.new(template,
-  # safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN,
-  # trim_mode: nil, eoutvar: '_erbout')
-  # ```
-  #
-  # The second, third, and fourth positional arguments (those in the second line above) are deprecated;
-  # this method issues warnings if they are given.
-  #
-  # However, their values, if given, are handled thus:
-  #
-  # - `safe_level`: ignored.
-  # - `legacy_trim_mode`: overrides keyword argument `trim_mode`.
-  # - `legacy_eoutvar`: overrides keyword argument `eoutvar`.
-  #
   # [blank line control]: rdoc-ref:ERB@Suppressing+Unwanted+Blank+Lines
   # [combine trim modes]: rdoc-ref:ERB@Combining+Trim+Modes
   # [newline control]: rdoc-ref:ERB@Suppressing+Unwanted+Newlines
@@ -864,12 +843,6 @@ class ERB
 
   # :markup: markdown
   #
-  # Placeholder constant; used as default value for certain method arguments.
-  NOT_GIVEN = defined?(Ractor) ? Ractor.make_shareable(Object.new) : Object.new
-  private_constant :NOT_GIVEN
-
-  # :markup: markdown
-  #
   # :call-seq:
   #   make_compiler -> erb_compiler
   #
@@ -881,7 +854,6 @@ class ERB
   # # => #<ERB::Compiler:0x000001cff9467678 @insert_cmd="print", @percent=false, @post_cmd=[], @pre_cmd=[], @put_cmd="print", @trim_mode=nil>
   # ```
   #
-
   def make_compiler(trim_mode)
     ERB::Compiler.new(trim_mode)
   end
@@ -1197,7 +1169,6 @@ class ERB
   # </body>
   # </html>
   # ```
-  #
   #
   def def_class(superklass=Object, methodname='result')
     cls = Class.new(superklass)
