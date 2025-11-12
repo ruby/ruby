@@ -10,6 +10,7 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
+require 'date'
 require 'yaml'
 require 'json'
 require File.expand_path("../lib/vcs", __FILE__)
@@ -641,7 +642,7 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
   key = basename[/\A(.*)\.(?:tar|zip)/, 1]
   info[key] ||= Hash.new{|h,k|h[k]={}}
   info[key]['version'] = version if version
-  info[key]['date'] = release_date.strftime('%Y-%m-%d')
+  info[key]['date'] = release_date.to_date
   if version
     info[key]['post'] = "/en/news/#{release_date.strftime('%Y/%m/%d')}/ruby-#{version.tr('.', '-')}-released/"
     info[key]['url'][extname] = "https://cache.ruby-lang.org/pub/ruby/#{version[/\A\d+\.\d+/]}/#{basename}"
