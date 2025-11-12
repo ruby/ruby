@@ -139,17 +139,19 @@ END
     ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 
-  describe "warning about arguments" do
-    it "warns when passed safe_level and later arguments" do
-      -> {
-        ERB.new(@eruby_str, nil, '%')
-      }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
-    end
+  version_is ERB::VERSION, ""..."5.1.3" do # TODO: bump 5.1.3 to 6.0.0 once released
+    describe "warning about arguments" do
+      it "warns when passed safe_level and later arguments" do
+        -> {
+          ERB.new(@eruby_str, nil, '%')
+        }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      end
 
-    it "does not warn when passed arguments as keyword argument" do
-      -> {
-        ERB.new(@eruby_str, trim_mode: '%')
-      }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      it "does not warn when passed arguments as keyword argument" do
+        -> {
+          ERB.new(@eruby_str, trim_mode: '%')
+        }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      end
     end
   end
 end
