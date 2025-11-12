@@ -1234,7 +1234,7 @@ no_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
     return 0;
 }
 
-// Documented in doc/globals.md
+// Documented in doc/language/globals.md
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
