@@ -139,7 +139,7 @@ END
     ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 
-  version_is ERB.const_get(:VERSION, false), ""..."6.0.0"
+  version_is ERB.const_get(:VERSION, false), ""..."6.0.0" do
     describe "warning about arguments" do
       it "warns when passed safe_level and later arguments" do
         -> {
