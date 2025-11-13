@@ -146,6 +146,7 @@ Older versions may not support all of these.
 - <tt>\p{Bassa_Vah}</tt>, <tt>\p{Bass}</tt>
 - <tt>\p{Batak}</tt>, <tt>\p{Batk}</tt>
 - <tt>\p{Bengali}</tt>, <tt>\p{Beng}</tt>
+- <tt>\p{Beria_Erfe}</tt>, <tt>\p{Berf}</tt>
 - <tt>\p{Bhaiksuki}</tt>, <tt>\p{Bhks}</tt>
 - <tt>\p{Bopomofo}</tt>, <tt>\p{Bopo}</tt>
 - <tt>\p{Brahmi}</tt>, <tt>\p{Brah}</tt>
@@ -270,6 +271,7 @@ Older versions may not support all of these.
 - <tt>\p{Sharada}</tt>, <tt>\p{Shrd}</tt>
 - <tt>\p{Shavian}</tt>, <tt>\p{Shaw}</tt>
 - <tt>\p{Siddham}</tt>, <tt>\p{Sidd}</tt>
+- <tt>\p{Sidetic}</tt>, <tt>\p{Sidt}</tt>
 - <tt>\p{SignWriting}</tt>, <tt>\p{Sgnw}</tt>
 - <tt>\p{Sinhala}</tt>, <tt>\p{Sinh}</tt>
 - <tt>\p{Sogdian}</tt>, <tt>\p{Sogd}</tt>
@@ -284,6 +286,7 @@ Older versions may not support all of these.
 - <tt>\p{Tai_Le}</tt>, <tt>\p{Tale}</tt>
 - <tt>\p{Tai_Tham}</tt>, <tt>\p{Lana}</tt>
 - <tt>\p{Tai_Viet}</tt>, <tt>\p{Tavt}</tt>
+- <tt>\p{Tai_Yo}</tt>, <tt>\p{Tayo}</tt>
 - <tt>\p{Takri}</tt>, <tt>\p{Takr}</tt>
 - <tt>\p{Tamil}</tt>, <tt>\p{Taml}</tt>
 - <tt>\p{Tangsa}</tt>, <tt>\p{Tnsa}</tt>
@@ -295,6 +298,7 @@ Older versions may not support all of these.
 - <tt>\p{Tifinagh}</tt>, <tt>\p{Tfng}</tt>
 - <tt>\p{Tirhuta}</tt>, <tt>\p{Tirh}</tt>
 - <tt>\p{Todhri}</tt>, <tt>\p{Todr}</tt>
+- <tt>\p{Tolong_Siki}</tt>, <tt>\p{Tols}</tt>
 - <tt>\p{Toto}</tt>
 - <tt>\p{Tulu_Tigalari}</tt>, <tt>\p{Tutg}</tt>
 - <tt>\p{Ugaritic}</tt>, <tt>\p{Ugar}</tt>
@@ -336,6 +340,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Bassa_Vah}</tt>
 - <tt>\p{In_Batak}</tt>
 - <tt>\p{In_Bengali}</tt>
+- <tt>\p{In_Beria_Erfe}</tt>
 - <tt>\p{In_Bhaiksuki}</tt>
 - <tt>\p{In_Block_Elements}</tt>
 - <tt>\p{In_Bopomofo}</tt>
@@ -363,6 +368,7 @@ Older versions may not support all of these.
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_G}</tt>
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_H}</tt>
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_I}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_J}</tt>
 - <tt>\p{In_Carian}</tt>
 - <tt>\p{In_Caucasian_Albanian}</tt>
 - <tt>\p{In_Chakma}</tt>
@@ -516,6 +522,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Miscellaneous_Mathematical_Symbols_A}</tt>
 - <tt>\p{In_Miscellaneous_Mathematical_Symbols_B}</tt>
 - <tt>\p{In_Miscellaneous_Symbols}</tt>
+- <tt>\p{In_Miscellaneous_Symbols_Supplement}</tt>
 - <tt>\p{In_Miscellaneous_Symbols_and_Arrows}</tt>
 - <tt>\p{In_Miscellaneous_Symbols_and_Pictographs}</tt>
 - <tt>\p{In_Miscellaneous_Technical}</tt>
@@ -575,9 +582,11 @@ Older versions may not support all of these.
 - <tt>\p{In_Samaritan}</tt>
 - <tt>\p{In_Saurashtra}</tt>
 - <tt>\p{In_Sharada}</tt>
+- <tt>\p{In_Sharada_Supplement}</tt>
 - <tt>\p{In_Shavian}</tt>
 - <tt>\p{In_Shorthand_Format_Controls}</tt>
 - <tt>\p{In_Siddham}</tt>
+- <tt>\p{In_Sidetic}</tt>
 - <tt>\p{In_Sinhala}</tt>
 - <tt>\p{In_Sinhala_Archaic_Numbers}</tt>
 - <tt>\p{In_Small_Form_Variants}</tt>
@@ -613,12 +622,14 @@ Older versions may not support all of these.
 - <tt>\p{In_Tai_Tham}</tt>
 - <tt>\p{In_Tai_Viet}</tt>
 - <tt>\p{In_Tai_Xuan_Jing_Symbols}</tt>
+- <tt>\p{In_Tai_Yo}</tt>
 - <tt>\p{In_Takri}</tt>
 - <tt>\p{In_Tamil}</tt>
 - <tt>\p{In_Tamil_Supplement}</tt>
 - <tt>\p{In_Tangsa}</tt>
 - <tt>\p{In_Tangut}</tt>
 - <tt>\p{In_Tangut_Components}</tt>
+- <tt>\p{In_Tangut_Components_Supplement}</tt>
 - <tt>\p{In_Tangut_Supplement}</tt>
 - <tt>\p{In_Telugu}</tt>
 - <tt>\p{In_Thaana}</tt>
@@ -627,6 +638,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Tifinagh}</tt>
 - <tt>\p{In_Tirhuta}</tt>
 - <tt>\p{In_Todhri}</tt>
+- <tt>\p{In_Tolong_Siki}</tt>
 - <tt>\p{In_Toto}</tt>
 - <tt>\p{In_Transport_and_Map_Symbols}</tt>
 - <tt>\p{In_Tulu_Tigalari}</tt>
@@ -685,6 +697,7 @@ Older versions may not support all of these.
 - <tt>\p{Age_15_0}</tt>
 - <tt>\p{Age_15_1}</tt>
 - <tt>\p{Age_16_0}</tt>
+- <tt>\p{Age_17_0}</tt>
 - <tt>\p{Age_1_1}</tt>
 - <tt>\p{Age_2_0}</tt>
 - <tt>\p{Age_2_1}</tt>
