@@ -1309,10 +1309,18 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc);
 static rb_statements_node_t *rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_nil_node_t *rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_true_node_t *rb_new_node_true_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_false_node_t *rb_new_node_false_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_self_node_t *rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
 #define NEW_RB_NIL(loc) rb_new_node_nil_new(p,loc)
+#define NEW_RB_TRUE(loc) rb_new_node_true_new(p,loc)
+#define NEW_RB_FALSE(loc) rb_new_node_false_new(p,loc)
+#define NEW_RB_SELF(loc) rb_new_node_self_new(p,loc)
+#define NEW_RB_CALL(r,m,a,loc) rb_new_node_call_new(p,r,m,a,loc)
 
 
 enum internal_node_type {
@@ -12587,6 +12595,49 @@ rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc)
     return n;
 }
 
+static rb_true_node_t *
+rb_new_node_true_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_nil_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_TRUE_NODE, rb_true_node_t, loc);
+    return n;
+}
+
+static rb_false_node_t *
+rb_new_node_false_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_false_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_FALSE_NODE, rb_false_node_t, loc);
+    return n;
+}
+
+static rb_self_node_t *
+rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_self_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SELF_NODE, rb_self_node_t, loc);
+    return n;
+}
+
+static rb_call_node_t *
+rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+{
+    rb_call_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CALL_NODE, rb_self_node_t, loc);
+    n->receiver = receiver;
+    n->name = name;
+    n->arguments = arguments;
+    return n;
+}
+
+static rb_call_node_t *
+rb_new_node_opcall_new(struct parser_params *p, rb_node_t *receiver, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+{
+    return rb_new_node_call_new(p, receiver, name, arguments, loc);
+}
+
+static rb_call_node_t *
+rb_new_node_fcall_new(struct parser_params *p, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+{
+    return rb_new_node_call_new(p, NULL, name, arguments, loc);
+}
+
 #ifndef RIPPER
 static enum node_type
 nodetype(NODE *node)			/* for debug */
@@ -13177,14 +13228,13 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
     NODE *node;
     switch (id) {
       case keyword_self:
-        return NEW_SELF(loc);
+        return NEW_RB_SELF(loc);
       case keyword_nil:
-        // return NEW_NIL(loc);
         return NEW_RB_NIL(loc);
       case keyword_true:
-        return NEW_TRUE(loc);
+        return NEW_RB_TRUE(loc);
       case keyword_false:
-        return NEW_FALSE(loc);
+        return NEW_RB_FALSE(loc);
       case keyword__FILE__:
         {
             VALUE file = p->ruby_sourcefile_string;

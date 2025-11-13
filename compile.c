@@ -11271,13 +11271,33 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       // ... more nodes
+      case RB_SELF_NODE: {
+        // self
+        // ^^^^
+        if (!popped) {
+            ADD_INSN(ret, node, putself);
+        }
+        break;
+      }
       case RB_NIL_NODE: {
         // nil
         // ^^^
         if (!popped) {
             ADD_INSN(ret, node, putnil);
         }
-        break;        
+        break;
+      }
+      case RB_TRUE_NODE: {
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, Qtrue);
+        }
+        break;
+      }
+      case RB_FALSE_NODE: {
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, Qfalse);
+        }
+        break;
       }
 
       // NODE
