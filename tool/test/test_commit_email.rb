@@ -15,7 +15,7 @@ class TestCommitEmail < Test::Unit::TestCase
       git('config', 'user.email', 'johan@example.com')
       env = {
         'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z',
-        'GIT_CONFIG_GLOBAL' => IO::NULL,
+        'GIT_CONFIG_GLOBAL' => @ruby + "/gitconfig",
         'TZ' => 'UTC',
       }
       git('commit', '--allow-empty', '-m', 'New repository initialized by cvs2svn.', env:)
