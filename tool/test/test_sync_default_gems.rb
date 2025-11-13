@@ -346,5 +346,20 @@ module Test_SyncDefaultGems
       assert_equal("[ruby/#@target] Merge commit", subject, out)
       assert_includes(body, "Commit in branch", out)
     end
+
+    def test_no_upstream_file
+      group = SyncDefaultGems::Repository.group(%w[
+          lib/un.rb
+          lib/unicode_normalize/normalize.rb
+          lib/unicode_normalize/tables.rb
+          lib/net/https.rb
+      ])
+      expected = {
+        "un" => %w[lib/un.rb],
+        "net-http" => %w[lib/net/https.rb],
+        nil => %w[lib/unicode_normalize/normalize.rb lib/unicode_normalize/tables.rb],
+      }
+      assert_equal(expected, group)
+    end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 end
