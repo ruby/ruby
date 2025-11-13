@@ -1436,7 +1436,7 @@ fn gen_array_include(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
     // The elements are at the bottom of the virtual stack, followed by the target.
@@ -1450,7 +1450,7 @@ fn gen_array_include(
     asm_ccall!(
         asm,
         rb_vm_opt_newarray_include_p,
-        EC, num.into(), elements_ptr, target
+        EC, array_len.into(), elements_ptr, target
     )
 }
 
