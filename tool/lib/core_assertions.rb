@@ -391,7 +391,6 @@ eom
       # Run Ractor-related test without influencing the main test suite
       def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
         omit unless defined?(Ractor)
-        omit if windows?
 
         # https://bugs.ruby-lang.org/issues/21262
         shim_value = "class Ractor; alias value take; end" unless Ractor.method_defined?(:value)
