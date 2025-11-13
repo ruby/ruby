@@ -640,7 +640,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
             if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
                 rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
             }
-            pthread_detach(threads[i]);
         }
 
         if (NIL_P(resolv_timeout)) {
