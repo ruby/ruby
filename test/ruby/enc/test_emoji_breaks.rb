@@ -53,7 +53,7 @@ class TestEmojiBreaks < Test::Unit::TestCase
   EMOJI_DATA_FILES  = %w[emoji-sequences emoji-test emoji-zwj-sequences].map do |basename|
     BreakFile.new(basename, EMOJI_DATA_PATH, EMOJI_VERSION)
   end
-  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, UNICODE_VERSION)
+  UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, EMOJI_VERSION)
   EMOJI_DATA_FILES << UNICODE_DATA_FILE
 
   def self.data_files_available?

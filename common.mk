@@ -1720,7 +1720,7 @@ UNICODE_UCD_EMOJI_DOWNLOAD = \
 UNICODE_EMOJI_DOWNLOAD = \
 	$(UNICODE_DOWNLOADER) \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
-	    -p emoji/$(UNICODE_EMOJI_VERSION)
+	    -p $(UNICODE_VERSION)/emoji
 
 update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
