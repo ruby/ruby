@@ -7628,17 +7628,9 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
 
 /*
  *  call-seq:
- *    undump -> string
+ *    undump -> new_string
  *
- *  Returns an unescaped version of +self+:
- *
- *    s_orig = "\f\x00\xff\\\""    # => "\f\u0000\xFF\\\""
- *    s_dumped = s_orig.dump       # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *    s_undumped = s_dumped.undump # => "\f\u0000\xFF\\\""
- *    s_undumped == s_orig         # => true
- *
- *  Related: String#dump (inverse of String#undump).
- *
+ *  See String#dump.
  */
 
 static VALUE

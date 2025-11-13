@@ -1,52 +1,88 @@
-Returns a printable version of +self+, enclosed in double-quotes:
+For an ordinary string, this method, +String#dump+,
+returns a printable ASCII-only version of +self+, enclosed in double-quotes.
 
-  'hello'.dump     # => "\"hello\""
+For a dumped string, method String#undump is the inverse of +String#dump+;
+it returns a "restored" version of +self+,
+where all the dumping changes have been undone.
 
-Certain special characters are rendered with escapes:
+In the simplest case, the dumped string contains the original string,
+enclosed in double-quotes;
+this example is done in +irb+ (interactive Ruby):
 
-  '"'.dump  # => "\"\\\"\""
-  '\\'.dump # => "\"\\\\\""
+  s = 'hello'   # => "hello"
+  s.dump        # => "\"hello\""
+  s.dump.undump # => "hello"
 
-Non-printing characters are rendered with escapes:
+Keep in mind that in the second line above:
 
-  s = ''
-  s << 7   # Alarm (bell).
-  s << 8   # Back space.
-  s << 9   # Horizontal tab.
-  s << 10  # Line feed.
-  s << 11  # Vertical tab.
-  s << 12  # Form feed.
-  s << 13  # Carriage return.
-  s        # => "\a\b\t\n\v\f\r"
-  s.dump   # => "\"\\a\\b\\t\\n\\v\\f\\r\""
+- The outer double-quotes are put on by +irb+,
+  and _are_ _not_ part of the output of #dump.
+- The inner double-quotes _are_ part of the output of +dump+,
+  and are escaped by +irb+ because they are within the outer double-quotes.
 
-If +self+ is encoded in UTF-8 and contains Unicode characters, renders Unicode
-characters in Unicode escape sequence:
+To avoid confusion, we'll use this helper method to omit the outer double-quotes:
 
-  'тест'.dump     # => "\"\\u0442\\u0435\\u0441\\u0442\""
-  'こんにちは'.dump # => "\"\\u3053\\u3093\\u306B\\u3061\\u306F\""
+  def dump(s)
+    $stdout.write '  String:    '; puts s
+    $stdout.write '  Dumped:    '; puts s.dump
+    $stdout.write '  Undumped:  '; puts s.dump.undump
+  end
 
-If the encoding of +self+ is not ASCII-compatible (i.e., +self.encoding.ascii_compatible?+
-returns +false+), renders all ASCII-compatible bytes as ASCII characters and all
-other bytes as hexadecimal. Appends <tt>.dup.force_encoding(\"encoding\")</tt>, where
-<tt><encoding></tt> is +self.encoding.name+:
+so that for string <tt>'hello'</tt>, we'll see:
 
-  s = 'hello'
-  s.encoding                # => #<Encoding:UTF-8>
-  s.dump                    # => "\"hello\""
-  s.encode('utf-16').dump   # => "\"\\xFE\\xFF\\x00h\\x00e\\x00l\\x00l\\x00o\".dup.force_encoding(\"UTF-16\")"
-  s.encode('utf-16le').dump # => "\"h\\x00e\\x00l\\x00l\\x00o\\x00\".dup.force_encoding(\"UTF-16LE\")"
+  dump('hello')
+    String:    hello
+    Dumped:    "hello"
+    Undumped:  hello
 
-  s = 'тест'
-  s.encoding                # => #<Encoding:UTF-8>
-  s.dump                    # => "\"\\u0442\\u0435\\u0441\\u0442\""
-  s.encode('utf-16').dump   # => "\"\\xFE\\xFF\\x04B\\x045\\x04A\\x04B\".dup.force_encoding(\"UTF-16\")"
-  s.encode('utf-16le').dump # => "\"B\\x045\\x04A\\x04B\\x04\".dup.force_encoding(\"UTF-16LE\")"
+In a dump, certain special characters are escaped:
 
-  s = 'こんにちは'
-  s.encoding                # => #<Encoding:UTF-8>
-  s.dump                    # => "\"\\u3053\\u3093\\u306B\\u3061\\u306F\""
-  s.encode('utf-16').dump   # => "\"\\xFE\\xFF0S0\\x930k0a0o\".dup.force_encoding(\"UTF-16\")"
-  s.encode('utf-16le').dump # => "\"S0\\x930k0a0o0\".dup.force_encoding(\"UTF-16LE\")"
+  dump('"')
+    String:    "
+    Dumped:    "\""
+    Undumped:  "
+  dump('\\')
+    String:    \
+    Dumped:    "\\"
+    Undumped:  \
 
-Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
+In a dump, unprintable characters are replaced by printable ones
+(\String and Undumped are omitted here, because they are all whitespace):
+
+   s = ''
+  (7..13).each {|i| s << i }
+  # => 7..13
+  dump(s)
+    Dumped:    "\a\b\t\n\v\f\r"
+
+If +self+ is encoded in UTF-8 and contains Unicode characters,
+each Unicode character is dumped as a Unicode escape sequence:
+
+  dump('тест')
+    String:    тест
+    Dumped:    "\u0442\u0435\u0441\u0442"
+    Undumped:  тест
+  dump('こんにちは')
+    String:    こんにちは
+    Dumped:    "\u3053\u3093\u306B\u3061\u306F"
+    Undumped:  こんにちは
+
+If the encoding of +self+ is not ASCII-compatible
+(i.e., if <tt>self.encoding.ascii_compatible?</tt> returns +false+),
+each ASCII-compatible byte is dumped as an ASCII character,
+and all other bytes are dumped as hexadecimal;
+also appends <tt>.dup.force_encoding(\"encoding\")</tt>,
+where <tt><encoding></tt> is <tt>self.encoding.name</tt>:
+
+  dump('hello'.encode('utf-16'))
+    String:    hello
+    Dumped:    "\xFE\xFF\x00h\x00e\x00l\x00l\x00o".dup.force_encoding("UTF-16")
+    Undumped:  hello
+  dump('тест'.encode('utf-16'))
+    String:    тест
+    Dumped:    "\xFE\xFF\x04B\x045\x04A\x04B".dup.force_encoding("UTF-16")
+    Undumped:  тест
+  dump('こんにちは'.encode('utf-16'))
+    String:    こんにちは
+    Dumped:    "\xFE\xFF0S0\x930k0a0o".dup.force_encoding("UTF-16")
+    Undumped:  こんにちは
