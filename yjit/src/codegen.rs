@@ -6168,7 +6168,7 @@ fn jit_rb_str_dup(
 
     jit_prepare_call_with_gc(jit, asm);
 
-    let recv_opnd = asm.stack_pop(1);
+    let recv_opnd = asm.stack_opnd(0);
     let recv_opnd = asm.load(recv_opnd);
 
     let shape_id_offset = unsafe { rb_shape_id_offset() };
@@ -6177,8 +6177,10 @@ fn jit_rb_str_dup(
     asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
 
     // Call rb_str_dup
-    let stack_ret = asm.stack_push(Type::CString);
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+
+    asm.stack_pop(1);
+    let stack_ret = asm.stack_push(Type::CString);
     asm.mov(stack_ret, ret_opnd);
 
     true
