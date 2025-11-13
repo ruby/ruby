@@ -58,4 +58,4 @@ class TestGemPackageTarHeaderRactor < Gem::Package::TarTestCase
       assert_headers_equal header_bytes, new_header_bytes
     RUBY
   end
-end
+end unless RUBY_PLATFORM =~ /mingw|mswin/
