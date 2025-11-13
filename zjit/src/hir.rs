@@ -3838,16 +3838,6 @@ impl Function {
         Self::make_iongraph_function(pass_name, hir_blocks)
     }
 
-    fn is_backedge(cfi: &ControlFlowInfo, block: BlockId, dom: &Dominators) -> bool {
-        cfi.successors(block)
-            .any(|&successor| dom.is_dominated_by(block, successor))
-    }
-
-    fn is_loop_header(cfi: &ControlFlowInfo, block: BlockId, dom: &Dominators) -> bool {
-        cfi.predecessors(block)
-            .any(|&predecessor| dom.is_dominated_by(predecessor, block))
-    }
-
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
