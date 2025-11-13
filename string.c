@@ -8964,16 +8964,21 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *    tr_s(selector, replacements) -> string
+ *    tr_s(selector, replacements) -> new_string
  *
- *  Like String#tr, but also squeezes the modified portions of the translated string;
- *  returns a new string (translated and squeezed).
+ *  Like String#tr, except:
+ *
+ *  - Also squeezes the modified portions of the translated string;
+ *    see String#squeeze.
+ *  - Returns the translated and squeezed string.
+ *
+ *  Examples:
  *
  *    'hello'.tr_s('l', 'r')   #=> "hero"
  *    'hello'.tr_s('el', '-')  #=> "h-o"
  *    'hello'.tr_s('el', 'hx') #=> "hhxo"
  *
- *  Related: String#squeeze.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
