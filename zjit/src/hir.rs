@@ -3856,7 +3856,7 @@ impl Function {
         }
 
         if should_dump {
-            passes.push(self.to_iongraph_pass("Unoptimized"));
+            passes.push(self.to_iongraph_pass("unoptimized"));
         }
 
         // Function is assumed to have types inferred already
