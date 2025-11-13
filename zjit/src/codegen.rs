@@ -276,8 +276,52 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
         }
 
         // Compile all instructions
+        let mut spilled_locals = vec![];
+        // let mut spilled_stack = vec![];
+        let mut last_frame_state = None;
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
+            if let Insn::Snapshot { ref state } = insn {
+                // let map = crate::hir::PtrPrintMap::identity();
+                // let printer = state.print(&map);
+                // eprintln!("{printer}");
+                last_frame_state = Some(state.clone());
+            }
+            if insn.has_effects() && !matches!(insn, Insn::EntryPoint { .. } | Insn::Jump(..) | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::IncrCounter { .. } | Insn::IncrCounterPtr { .. } | Insn::Snapshot { .. } | Insn::SideExit { .. } | Insn::PatchPoint { .. } | Insn::SetLocal { .. }) {
+                if last_frame_state.is_none() {
+                    panic!("Insn with effects without preceding Snapshot: {insn_id} {insn}");
+                }
+                let locals = &last_frame_state.as_ref().unwrap().locals;
+                // let stack = &last_frame_state.as_ref().unwrap().stack;
+                // if stack.len() > spilled_stack.len() {
+                //     spilled_stack.resize(stack.len(), None);
+                // } else if stack.len() < spilled_stack.len() {
+                //     for i in stack.len()..spilled_stack.len() {
+                //         spilled_stack[i] = None;
+                //     }
+                // }
+                // for (i, slot) in stack.iter().enumerate() {
+                //     if spilled_stack[i] == Some(*slot) {
+                //         continue;
+                //     }
+                //     spill_stack_slot(&mut jit, &mut asm, i, *slot);
+                //     spilled_stack[i] = Some(*slot);
+                // }
+                if locals.len() > spilled_locals.len() {
+                    spilled_locals.resize(locals.len(), None);
+                } else if locals.len() < spilled_locals.len() {
+                    for i in locals.len()..spilled_locals.len() {
+                        spilled_locals[i] = None;
+                    }
+                }
+                for (i, local) in locals.iter().enumerate() {
+                    if spilled_locals[i] == Some(*local) {
+                        continue;
+                    }
+                    spill_local(&mut jit, &mut asm, i, *local);
+                    spilled_locals[i] = Some(*local);
+                }
+            }
             if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
                 debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
                 gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
@@ -1897,14 +1941,23 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     asm.mov(cfp_sp, sp_addr);
 }
 
+fn spill_local(jit: &JITState, asm: &mut Assembler, local_idx: usize, insn_id: InsnId) {
+    asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, local_idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+}
+
 /// Spill locals onto the stack.
 fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
+    return;
     // TODO: Avoid spilling locals that have been spilled before and not changed.
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+        spill_local(jit, asm, idx, insn_id);
     }
+}
+
+fn spill_stack_slot(jit: &JITState, asm: &mut Assembler, idx: usize, insn_id: InsnId) {
+    asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
 }
 
 /// Spill the virtual stack onto the stack.
@@ -1914,7 +1967,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_stack_count);
     asm_comment!(asm, "spill stack");
     for (idx, &insn_id) in state.stack().enumerate() {
-        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+        spill_stack_slot(jit, asm, idx, insn_id);
     }
 }
 
