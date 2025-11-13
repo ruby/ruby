@@ -24,6 +24,26 @@ use SendFallbackReason::*;
 pub(crate) mod tests;
 mod opt_tests;
 
+#[allow(unused_macros)]
+macro_rules! hir_comment {
+    ($func:expr, $block:expr, $($arg:tt)*) => {
+        // If a diagnostic dump is requested, enrich it with HIR comments. Otherwise, avoid
+        // allocating comment strings or adding comment instructions that nobody can observe.
+        let enable_comment = $crate::options::get_option_ref!(dump_hir_init).is_some() ||
+            $crate::options::get_option_ref!(dump_hir_opt).is_some() ||
+            $crate::options::get_option_ref!(dump_hir_graphviz).is_some() ||
+            $crate::options::get_option!(dump_hir_iongraph) ||
+            $crate::options::get_option_ref!(dump_lir).is_some() ||
+            $crate::options::get_option_ref!(dump_disasm).is_some();
+        if enable_comment {
+            $func.push_comment($block, format!($($arg)*));
+        }
+    };
+}
+
+#[allow(unused_imports)]
+pub(crate) use hir_comment;
+
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
@@ -829,6 +849,9 @@ impl From<ID> for FieldName {
 /// helps with editing.
 #[derive(Debug, Clone)]
 pub enum Insn {
+    /// Comment that can be inserted into HIR for diagnostics.
+    Comment { message: String },
+
     Const { val: Const },
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param,
@@ -1192,7 +1215,8 @@ pub enum Insn {
 macro_rules! for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident) => {
         match $self {
-            Insn::Const { .. }
+            Insn::Comment { .. }
+            | Insn::Const { .. }
             | Insn::Param
             | Insn::LoadArg { .. }
             | Insn::Entries { .. }
@@ -1501,7 +1525,8 @@ impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
         match self {
-            Insn::Jump(_)
+            Insn::Comment { .. }
+            | Insn::Jump(_)
             | Insn::Entries { .. }
             | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -1561,6 +1586,7 @@ impl Insn {
     fn effects_of(&self) -> Effect {
         const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
         match &self {
+            Insn::Comment { .. } => effects::Empty,
             Insn::Const { .. } => effects::Empty,
             Insn::Param { .. } => effects::Empty,
             Insn::LoadArg { .. } => effects::Empty,
@@ -1745,6 +1771,12 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
+        // Comments intentionally have no semantic effect, but they are diagnostics that should
+        // survive DCE so optimized HIR dumps retain the information callers inserted.
+        if matches!(self, Insn::Comment { .. }) {
+            return false;
+        }
+
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
@@ -1813,6 +1845,7 @@ static REGEXP_FLAGS: &[(u32, &str)] = &[
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.inner {
+            Insn::Comment { message } => write!(f, "# {message}"),
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param => { write!(f, "Param") }
             Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{id}@{idx}") }
@@ -2695,6 +2728,10 @@ impl Function {
         id
     }
 
+    pub fn push_comment(&mut self, block: BlockId, message: String) -> InsnId {
+        self.push_insn(block, Insn::Comment { message })
+    }
+
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
         self.blocks[block.0].insns.push(insn_id);
@@ -2887,6 +2924,7 @@ impl Function {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
+            | Insn::Comment { .. }
             | Insn::CondBranch { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
@@ -5952,6 +5990,7 @@ impl Function {
         match insn {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
+            | Insn::Comment { .. }
             | Insn::Param
             | Insn::LoadArg { .. }
             | Insn::PutSpecialObject { .. }

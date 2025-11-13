@@ -2414,6 +2414,24 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_do_not_eliminate_comment() {
+        let mut function = Function::new(std::ptr::null());
+        let block = function.entry_block;
+
+        let comment = function.push_comment(block, "diagnostic".to_string());
+        let dead_const = function.push_insn(block, Insn::Const { val: Const::CBool(false) });
+        let return_val = function.push_insn(block, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(block, Insn::Return { val: return_val });
+        function.seal_entries();
+
+        function.eliminate_dead_code();
+
+        let insns = &function.blocks[block.0].insns;
+        assert!(insns.contains(&comment));
+        assert!(!insns.contains(&dead_const));
+    }
+
+    #[test]
     fn test_eliminate_new_array() {
         eval("
             def test()
