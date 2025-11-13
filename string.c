@@ -8946,10 +8946,12 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    tr_s!(selector, replacements) -> self or nil
  *
- *  Like String#tr_s, but modifies +self+ in place.
- *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *  Like String#tr_s, except:
  *
- *  Related: String#squeeze!.
+ *  - Modifies +self+ in place (not a copy of +self+).
+ *  - Returns +self+ if any changes were made, +nil+ otherwise.
+ *
+ *  Related: {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
