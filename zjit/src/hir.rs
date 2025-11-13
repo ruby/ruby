@@ -3894,17 +3894,15 @@ impl Function {
 
     pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
         use std::io::Write;
-        let mut path = std::path::PathBuf::from(format!("/tmp/zjit-iongraph-{}", std::process::id()));
-        std::fs::create_dir_all(&path).expect("Unable to create directory.");
-        let filename = format!("func_{function_name}.json");
-        path.push(filename);
-        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
-
-        let j = Json::object()
+        let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
+        std::fs::create_dir_all(&dir).expect("Unable to create directory.");
+        let path = format!("{dir}/func_{function_name}.json");
+        let mut file = std::fs::File::create(path).unwrap();
+        let json = Json::object()
             .insert("name", function_name)
             .insert("passes", passes)
             .build();
-        writeln!(file, "{}", j).unwrap();
+        writeln!(file, "{}", json).unwrap();
     }
 
     /// Validates the following:
