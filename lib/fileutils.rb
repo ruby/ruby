@@ -2442,12 +2442,6 @@ module FileUtils
       end
     end
 
-    if File::ALT_SEPARATOR
-      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)"
-    else
-      DIRECTORY_TERM = "(?=/|\\z)"
-    end
-
     def descendant_directory?(descendant, ascendant)
       if File::FNM_SYSCASE.nonzero?
         File.expand_path(File.dirname(descendant)).casecmp(File.expand_path(ascendant)) == 0
