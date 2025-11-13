@@ -134,8 +134,8 @@ Note: We're only listing outstanding class updates.
 
 * String
 
-    * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
-      [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
+    * Update Unicode to Version 17.0.0 and Emoji Version 17.0.
+      [[Feature #19908]][[Feature #20724]][[Feature #21275]] (also applies to Regexp)
 
 * Thread
 
