@@ -256,7 +256,7 @@ impl Assembler {
                     if mem_disp_fits_bits(mem.disp) {
                         opnd
                     } else {
-                        let base = asm.lea(opnd);
+                        let base = asm.lea(Opnd::Mem(Mem { num_bits: 64, ..mem }));
                         Opnd::mem(mem.num_bits, base, 0)
                     }
                 },
@@ -2734,5 +2734,47 @@ mod tests {
         0x14: ldur x0, [x29, #-8]
         ");
         assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8eff97fd3af831ff8a0835ff8");
+    }
+
+    #[test]
+    fn test_split_load16_mem_mem_with_large_displacement() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let _ = asm.load(Opnd::mem(16, C_RET_OPND, 512));
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: add x0, x0, #0x200
+        0x4: ldurh w0, [x0]
+        ");
+        assert_snapshot!(cb.hexdump(), @"0000089100004078");
+    }
+
+    #[test]
+    fn test_split_load32_mem_mem_with_large_displacement() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let _ = asm.load(Opnd::mem(32, C_RET_OPND, 512));
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: add x0, x0, #0x200
+        0x4: ldur w0, [x0]
+        ");
+        assert_snapshot!(cb.hexdump(), @"00000891000040b8");
+    }
+
+    #[test]
+    fn test_split_load64_mem_mem_with_large_displacement() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let _ = asm.load(Opnd::mem(64, C_RET_OPND, 512));
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: add x0, x0, #0x200
+        0x4: ldur x0, [x0]
+        ");
+        assert_snapshot!(cb.hexdump(), @"00000891000040f8");
     }
 }
