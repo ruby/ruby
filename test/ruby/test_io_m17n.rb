@@ -2806,4 +2806,14 @@ EOT
       flunk failure.join("\n---\n")
     end
   end
+
+  def test_each_codepoint_with_encoding_conversion
+    assert_equal(
+      ["3042", "3044", "3046"],
+      open(File::NULL, "rt") do |f|
+        f.ungetc("\u{3042}\u{3044}\u{3046}")
+        f.each_codepoint.map { |c| c.to_s(16) }
+      end
+    )
+  end
 end
