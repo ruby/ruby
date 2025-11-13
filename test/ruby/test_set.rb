@@ -939,6 +939,30 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_same set, set.to_set
     assert_not_same set, set.to_set { |o| o }
   end
+
+  class MyEnum
+    include Enumerable
+
+    def initialize(array)
+      @array = array
+    end
+
+    def each(&block)
+      @array.each(&block)
+    end
+
+    def size
+      raise "should not be called"
+    end
+  end
+
+  def test_to_set_not_calling_size
+    enum = MyEnum.new([1,2,3])
+
+    set = assert_nothing_raised { enum.to_set }
+    assert(set.is_a?(Set))
+    assert_equal(Set[1,2,3], set)
+  end
 end
 
 class TC_Set_Builtin < Test::Unit::TestCase
