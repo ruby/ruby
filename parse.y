@@ -5224,10 +5224,7 @@ block_call	: command do_block
                     {
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
-                    /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
-                        if ($5) {
-                        /*% ripper: method_add_block!($:$, $:5) %*/
-                        }
+                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | block_call call_op2 operation2 command_args do_block
                     {
