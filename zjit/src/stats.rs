@@ -114,7 +114,6 @@ macro_rules! make_counters {
 make_counters! {
     // Default counters that are available without --zjit-stats
     default {
-        patch_point_count,
         compiled_iseq_count,
         failed_iseq_count,
 

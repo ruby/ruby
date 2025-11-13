@@ -192,7 +192,6 @@ class << RubyVM::ZJIT
       :dynamic_getivar_count,
       :dynamic_setivar_count,
 
-      :patch_point_count,
       :compiled_iseq_count,
       :failed_iseq_count,
 

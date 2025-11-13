@@ -2,10 +2,10 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{Assembler, asm_comment}, cast::IntoU64, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, stats::{decr_counter_by, incr_counter}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
 use crate::payload::IseqPayload;
 use crate::stats::with_time_stat;
-use crate::stats::Counter::{invalidation_time_ns, patch_point_count};
+use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
@@ -37,19 +37,13 @@ struct PatchPoint {
 }
 
 impl PatchPoint {
-    /// PatchPointer constructor, which also increments `patch_point_count`
+    /// PatchPointer constructor
     fn new(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) -> PatchPoint {
-        incr_counter!(patch_point_count);
         Self {
             patch_point_ptr,
             side_exit_ptr,
             payload_ptr,
         }
-    }
-
-    /// Decrease `patch_point_count` by the size of a given `HashSet<PatchPoint>`
-    fn decr_counter(patch_points: HashSet<PatchPoint>) {
-        decr_counter_by(patch_point_count, patch_points.len().as_u64());
     }
 }
 
@@ -100,17 +94,17 @@ impl Invariants {
         // generated code referencing the ISEQ are unreachable. We mark the ISEQs baked into
         // generated code.
         self.ep_escape_iseqs.remove(&iseq);
-        self.no_ep_escape_iseq_patch_points.remove(&iseq).map(PatchPoint::decr_counter);
+        self.no_ep_escape_iseq_patch_points.remove(&iseq);
     }
 
     /// Forget a CME when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_cme(&mut self, cme: *const rb_callable_method_entry_t) {
-        self.cme_patch_points.remove(&cme).map(PatchPoint::decr_counter);
+        self.cme_patch_points.remove(&cme);
     }
 
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
-        self.no_singleton_class_patch_points.remove(&klass).map(PatchPoint::decr_counter);
+        self.no_singleton_class_patch_points.remove(&klass);
     }
 
     /// Update ISEQ references in Invariants::ep_escape_iseqs
