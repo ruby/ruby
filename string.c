@@ -8603,9 +8603,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
  *  call-seq:
  *    tr!(selector, replacements) -> self or nil
  *
- *  Like String#tr, but modifies +self+ in place.
- *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *  Like String#tr, except:
  *
+ *  - Performs substitutions in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any modifications were made, +nil+ otherwise.
+ *
+ *  Related: {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
