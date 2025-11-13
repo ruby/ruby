@@ -287,7 +287,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
                 // eprintln!("{printer}");
                 last_frame_state = Some(state.clone());
             }
-            if insn.has_effects() && !matches!(insn, Insn::EntryPoint { .. } | Insn::Jump(..) | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::IncrCounter { .. } | Insn::IncrCounterPtr { .. } | Insn::Snapshot { .. } | Insn::SideExit { .. } | Insn::PatchPoint { .. } | Insn::SetLocal { .. }) {
+            if insn.has_effects() && !matches!(insn, Insn::EntryPoint { .. } | Insn::Jump(..) | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::IncrCounter { .. } | Insn::IncrCounterPtr { .. } | Insn::Snapshot { .. } | Insn::SideExit { .. } | Insn::PatchPoint { .. } | Insn::SetLocal { .. }| Insn::PutSpecialObject { .. }) {
                 if last_frame_state.is_none() {
                     panic!("Insn with effects without preceding Snapshot: {insn_id} {insn}");
                 }
