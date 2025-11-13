@@ -31,6 +31,7 @@
 
 #include "addr2line.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/gc.h"
 #include "internal/variable.h"
 #include "internal/vm.h"

@@ -43,6 +43,7 @@
 #include "dln.h"
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/cmdlineopt.h"
 #include "internal/cont.h"
 #include "internal/error.h"

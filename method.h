@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/imemo.h"
 #include "internal/compilers.h"
 #include "internal/static_assert.h"
