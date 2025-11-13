@@ -5482,3 +5482,14 @@ assert_equal 'false', %{
 
   RESULT.any?
 }
+
+# throw and String#dup with GC stress
+assert_equal 'foo', %{
+  GC.stress = true
+
+  def foo
+    1.times { return "foo".dup }
+  end
+
+  10.times.map { foo.dup }.last
+}
