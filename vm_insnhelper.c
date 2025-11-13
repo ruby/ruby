@@ -6350,15 +6350,15 @@ rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE 
 }
 
 static VALUE
-vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) > 0) {
@@ -6369,26 +6369,26 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_max(ec, num, ptr);
+    return vm_opt_newarray_max(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MIN, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) < 0) {
@@ -6399,63 +6399,63 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_min(ec, num, ptr);
+    return vm_opt_newarray_min(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     // If Array#hash is _not_ monkeypatched, use the optimized call
     if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
-        return rb_ary_hash_values(num, ptr);
+        return rb_ary_hash_values(array_len, ptr);
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_hash(ec, num, ptr);
+    return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
 VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
-vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ary_includes(ary, target);
     }
     else {
         VALUE args[1] = {target};
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
-    return vm_opt_newarray_include_p(ec, num, ptr, target);
+    return vm_opt_newarray_include_p(ec, array_len, ptr, target);
 }
 
 static VALUE
-vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
     else {
@@ -6473,20 +6473,20 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALU
             argc++;
         }
 
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idPack, argc, args, kw_splat);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idPack, argc, args, kw_splat);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, buffer);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
 VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt)
+rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, Qundef);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
 }
 
 #undef id_cmp
