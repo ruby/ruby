@@ -257,7 +257,7 @@ impl Assembler {
                         opnd
                     } else {
                         let base = asm.lea(opnd);
-                        Opnd::mem(64, base, 0)
+                        Opnd::mem(mem.num_bits, base, 0)
                     }
                 },
                 _ => unreachable!("Can only split memory addresses.")
