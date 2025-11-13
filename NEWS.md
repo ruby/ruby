@@ -199,7 +199,7 @@ The following default gems are updated.
 * io-nonblock 0.3.2
 * io-wait 0.4.0.dev
 * json 2.16.0
-* net-http 0.7.0
+* net-http 0.8.0
 * openssl 4.0.0.pre
 * optparse 0.8.0
 * pp 0.6.3
