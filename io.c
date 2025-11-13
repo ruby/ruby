@@ -8584,7 +8584,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
  *  Formats and writes +objects+ to the stream.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/sprintf_format_specs.rdoc].
  *
  */
 
@@ -8605,7 +8605,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  *    io.write(sprintf(format_string, *objects))
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/sprintf_format_specs.rdoc].
  *
  *  With the single argument +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to $stdout:
