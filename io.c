@@ -3156,8 +3156,6 @@ io_enc_str(VALUE str, rb_io_t *fptr)
     return str;
 }
 
-static rb_encoding *io_read_encoding(rb_io_t *fptr);
-
 static void
 make_readconv(rb_io_t *fptr, int size)
 {
@@ -4900,7 +4898,7 @@ static VALUE
 rb_io_each_codepoint(VALUE io)
 {
     rb_io_t *fptr;
-    rb_encoding *enc, *read_enc;
+    rb_encoding *enc;
     unsigned int c;
     int r, n;
 
@@ -4909,20 +4907,17 @@ rb_io_each_codepoint(VALUE io)
     rb_io_check_char_readable(fptr);
 
     READ_CHECK(fptr);
+    enc = io_read_encoding(fptr);
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
         r = 1;		/* no invalid char yet */
         for (;;) {
             make_readconv(fptr, 0);
-            read_enc = io_read_encoding(fptr);
             for (;;) {
                 if (fptr->cbuf.len) {
-                    if (read_enc)
-                        r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
-                                                  fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                                  read_enc);
-                    else
-                        r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
+                    r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
+                                              fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
+                                              enc);
                     if (!MBCLEN_NEEDMORE_P(r))
                         break;
                     if (fptr->cbuf.len == fptr->cbuf.capa) {
@@ -4932,25 +4927,18 @@ rb_io_each_codepoint(VALUE io)
                 if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
                     if (!MBCLEN_CHARFOUND_P(r)) {
-                        enc = read_enc;
                         goto invalid;
                     }
                     return io;
                 }
             }
             if (MBCLEN_INVALID_P(r)) {
-                enc = read_enc;
                 goto invalid;
             }
             n = MBCLEN_CHARFOUND_LEN(r);
-            if (read_enc) {
-                c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
-                                     fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                     read_enc);
-            }
-            else {
-                c = (unsigned char)fptr->cbuf.ptr[fptr->cbuf.off];
-            }
+            c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
+                                 fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
+                                 enc);
             fptr->cbuf.off += n;
             fptr->cbuf.len -= n;
             rb_yield(UINT2NUM(c));
@@ -4958,7 +4946,6 @@ rb_io_each_codepoint(VALUE io)
         }
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
-    enc = io_input_encoding(fptr);
     while (io_fillbuf(fptr) >= 0) {
         r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off,
                                   fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
