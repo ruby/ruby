@@ -184,7 +184,7 @@ cause build failures.
 ## Building on Windows
 
 The documentation for building on Windows can be found in [the separated
-file](../windows.md).
+file](../distribution/windows.md).
 
 ## More details
 

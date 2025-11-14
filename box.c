@@ -796,7 +796,7 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/box.md for known issues, etc.");
+                         "See doc/language/ruby_box_isolation.md for known issues, etc.");
         box_experimental_warned = 1;
     }
 
@@ -1049,7 +1049,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  Ruby::Box is designed to provide separated spaces in a Ruby
  *  process, to isolate applications and libraries.
- *  See {Ruby::Box}[rdoc-ref:box.md].
+ *  See {Ruby::Box}[rdoc-ref:language/ruby_box_isolation.md].
  */
 void
 Init_Box(void)
