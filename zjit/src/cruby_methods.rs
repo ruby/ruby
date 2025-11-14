@@ -226,6 +226,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
+    annotate!(rb_cInteger, "==", inline_integer_eq);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
@@ -418,6 +419,29 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
         return Some(result);
     }
     None
+}
+
+fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+        // If the basic operation is already redefined, we cannot optimize it.
+        return None;
+    }
+    if fun.likely_a(left, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
+        if bop == BOP_NEQ {
+            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
+            fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
+        }
+        // Rely on the MethodRedefined PatchPoint for other bops.
+        let left = fun.coerce_to(block, left, types::Fixnum, state);
+        let right = fun.coerce_to(block, right, types::Fixnum, state);
+        return Some(fun.push_insn(block, f(left, right)));
+    }
+    None
+}
+
+fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
