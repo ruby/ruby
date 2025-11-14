@@ -2740,7 +2740,7 @@ mod tests {
     fn test_split_load16_mem_mem_with_large_displacement() {
         let (mut asm, mut cb) = setup_asm();
 
-        let _ = asm.load(Opnd::mem(16, C_RET_OPND, 512));
+        let _ = asm.load(Opnd::mem(16, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
         assert_disasm_snapshot!(cb.disasm(), @r"
@@ -2754,7 +2754,7 @@ mod tests {
     fn test_split_load32_mem_mem_with_large_displacement() {
         let (mut asm, mut cb) = setup_asm();
 
-        let _ = asm.load(Opnd::mem(32, C_RET_OPND, 512));
+        let _ = asm.load(Opnd::mem(32, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
         assert_disasm_snapshot!(cb.disasm(), @r"
@@ -2768,7 +2768,7 @@ mod tests {
     fn test_split_load64_mem_mem_with_large_displacement() {
         let (mut asm, mut cb) = setup_asm();
 
-        let _ = asm.load(Opnd::mem(64, C_RET_OPND, 512));
+        let _ = asm.load(Opnd::mem(64, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
         assert_disasm_snapshot!(cb.disasm(), @r"
