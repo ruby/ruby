@@ -118,7 +118,7 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" \
             SPECOPTS="$SPECOPTS" \
-            TESTOPTS="$TESTOPTS"
+            TESTOPTS="$RUBY_TESTOPTS $TESTOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
