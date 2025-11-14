@@ -80,7 +80,7 @@ class Time
     #
     # You must require 'time' to use this method.
     #
-    def zone_offset(zone, year=self.now.year)
+    def zone_offset(zone, year=nil)
       off = nil
       zone = zone.upcase
       if /\A([+-])(\d\d)(:?)(\d\d)(?:\3(\d\d))?\z/ =~ zone
@@ -89,10 +89,13 @@ class Time
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
-      elsif ((t = self.local(year, 1, 1)).zone.upcase == zone rescue false)
-        off = t.utc_offset
-      elsif ((t = self.local(year, 7, 1)).zone.upcase == zone rescue false)
-        off = t.utc_offset
+      else
+        year ||= self.now.year
+        if ((t = self.local(year, 1, 1)).zone.upcase == zone rescue false)
+          off = t.utc_offset
+        elsif ((t = self.local(year, 7, 1)).zone.upcase == zone rescue false)
+          off = t.utc_offset
+        end
       end
       off
     end
