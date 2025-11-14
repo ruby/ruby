@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
-
 ##
 # This module contains various utility methods as module methods.
 
@@ -54,26 +52,6 @@ module Gem::Util
 
   def self.popen(*command)
     IO.popen command, &:read
-  end
-
-  ##
-  # Invokes system, but silences all output.
-
-  def self.silent_system(*command)
-    opt = { out: IO::NULL, err: [:child, :out] }
-    if Hash === command.last
-      opt.update(command.last)
-      cmds = command[0...-1]
-    else
-      cmds = command.dup
-    end
-    system(*(cmds << opt))
-  end
-
-  class << self
-    extend Gem::Deprecate
-
-    rubygems_deprecate :silent_system
   end
 
   ##
