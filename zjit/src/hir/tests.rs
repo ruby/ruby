@@ -1957,7 +1957,15 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnhandledNewarraySend(HASH)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 26)
+          v32:Fixnum = ArrayHash v15, v16
+          PatchPoint NoEPEscape(test)
+          v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v40:ArrayExact = ArrayDup v39
+          v42:BasicObject = SendWithoutBlock v14, :puts, v40
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
         ");
     }
 
