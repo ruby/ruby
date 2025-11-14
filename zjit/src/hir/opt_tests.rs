@@ -4635,12 +4635,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
-          v25:Fixnum = GuardType v11, Fixnum
-          v26:Fixnum = GuardType v12, Fixnum
-          v27:Fixnum = FixnumOr v25, v26
+          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:Fixnum = FixnumOr v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
