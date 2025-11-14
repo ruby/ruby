@@ -2249,33 +2249,10 @@ impl Function {
         if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_forwarding)); }
     }
 
-    fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
-        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
-            // If the basic operation is already redefined, we cannot optimize it.
-            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockBopRedefined);
-            self.push_insn_id(block, orig_insn_id);
-            return;
-        }
-        if self.likely_a(left, types::Fixnum, state) && self.likely_a(right, types::Fixnum, state) {
-            if bop == BOP_NEQ {
-                // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
-            }
-            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state });
-            let left = self.coerce_to(block, left, types::Fixnum, state);
-            let right = self.coerce_to(block, right, types::Fixnum, state);
-            let result = self.push_insn(block, f(left, right));
-            self.make_equal_to(orig_insn_id, result);
-            self.insn_types[result.0] = self.infer_type(result);
-        } else {
-            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockOperandsNotFixnum);
-            self.push_insn_id(block, orig_insn_id);
-        }
-    }
-
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
             // If the basic operation is already redefined, we cannot optimize it.
+            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockBopRedefined);
             self.push_insn_id(block, orig_insn_id);
             return;
         }
