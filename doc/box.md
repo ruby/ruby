@@ -49,14 +49,12 @@ class Something
 end
 ```
 
-Classes/modules, those methods and constants defined in the box can be accessed via `ns` object.
+Classes/modules, those methods and constants defined in the box can be accessed via `box` object.
 
 ```ruby
-p ns::Something.x  # 1
-
 X = 2
-p X                # 2
-p ::X              # 2
+p X                 # 2
+p ::X               # 2
 p box::Something.x  # 1
 p box::X            # 1
 ```
