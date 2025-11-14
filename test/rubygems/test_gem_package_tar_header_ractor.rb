@@ -2,7 +2,7 @@
 
 require_relative "package/tar_test_case"
 
-unless Gem::Package::TarTestCase.instance_methods.include?(:assert_ractor)
+unless Gem::Package::TarTestCase.method_defined?(:assert_ractor)
   require "core_assertions"
   Gem::Package::TarTestCase.include Test::Unit::CoreAssertions
 end
