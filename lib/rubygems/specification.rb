@@ -736,14 +736,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :autorequire # :nodoc:
 
   ##
-  # Sets the default executable for this gem.
-  #
-  # Deprecated: You must now specify the executable name to  Gem.bin_path.
-
-  attr_writer :default_executable
-  rubygems_deprecate :default_executable=
-
-  ##
   # Allows deinstallation of gems with legacy platforms.
 
   attr_writer :original_platform # :nodoc:
@@ -1715,24 +1707,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The default executable for this gem.
-  #
-  # Deprecated: The name of the gem is assumed to be the name of the
-  # executable now.  See Gem.bin_path.
-
-  def default_executable # :nodoc:
-    if defined?(@default_executable) && @default_executable
-      result = @default_executable
-    elsif @executables && @executables.size == 1
-      result = Array(@executables).first
-    else
-      result = nil
-    end
-    result
-  end
-  rubygems_deprecate :default_executable
-
-  ##
   # The default value for specification attribute +name+
 
   def default_value(name)
@@ -2429,7 +2403,6 @@ class Gem::Specification < Gem::BasicSpecification
       :specification_version,
       :version,
       :has_rdoc,
-      :default_executable,
       :metadata,
       :signing_key,
     ]
