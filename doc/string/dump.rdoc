@@ -23,9 +23,9 @@ Keep in mind that in the second line above:
 To avoid confusion, we'll use this helper method to omit the outer double-quotes:
 
   def dump(s)
-    $stdout.write '  String:    '; puts s
-    $stdout.write '  Dumped:    '; puts s.dump
-    $stdout.write '  Undumped:  '; puts s.dump.undump
+    print "  String:   ", s, "\n"
+    print "  Dumped:   ", s.dump, "\n"
+    print "  Undumped: ", s.dump.undump, "\n"
   end
 
 so that for string <tt>'hello'</tt>, we'll see:
