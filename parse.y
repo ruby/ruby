@@ -3296,6 +3296,9 @@ allow_exits	: {$$ = allow_block_exit(p);};
 
 k_END		: keyword_END lex_ctxt
                     {
+                        if (p->ctxt.in_def) {
+                            rb_warn0("END in method; use at_exit");
+                        }
                         $$ = $2;
                         p->ctxt.in_rescue = before_rescue;
                     /*% ripper: $:2 %*/
@@ -3380,9 +3383,6 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     }
                 | k_END[k_end] allow_exits[allow] '{'[lbrace] compstmt(stmts)[body] '}'[rbrace]
                     {
-                        if (p->ctxt.in_def) {
-                            rb_warn0("END in method; use at_exit");
-                        }
                         restore_block_exit(p, $allow);
                         p->ctxt = $k_end;
                         {
