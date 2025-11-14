@@ -4072,3 +4072,114 @@ mod loop_info_tests {
         assert!(!loop_info.is_loop_header(bb5));
     }
  }
+
+#[cfg(test)]
+mod iongraph_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    fn edge(target: BlockId) -> BranchEdge {
+        BranchEdge { target, args: vec![] }
+    }
+
+    #[test]
+    fn test_simple_function() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let retval = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::Return { val: retval });
+
+        let json = function.to_iongraph_pass("simple");
+        assert_snapshot!(json.to_string(), @r#"{"name":"simple", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_two_blocks() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb1, Insn::Return { val: retval });
+
+        let json = function.to_iongraph_pass("two_blocks");
+        assert_snapshot!(json.to_string(), @r#"{"name":"two_blocks", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb1()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4097, "id":1, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4098, "id":2, "opcode":"Return v1", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_multiple_instructions() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let val1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let val2 = function.push_insn(bb0, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb0, Insn::Return { val: val1 });
+
+        let json = function.to_iongraph_pass("multiple_instructions");
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_instructions", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4098, "id":2, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_conditional_branch() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+
+        let retval1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb0, Insn::Return { val: retval1 });
+
+        let retval2 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval2 });
+
+        let json = function.to_iongraph_pass("conditional_branch");
+        assert_snapshot!(json.to_string(), @r#"{"name":"conditional_branch", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"IfTrue v0, bb1()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}, {"ptr":4098, "id":2, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4099, "id":3, "opcode":"Return v2", "attributes":[], "inputs":[2], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4100, "id":4, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4101, "id":5, "opcode":"Return v4", "attributes":[], "inputs":[4], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_loop_structure() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let json = function.to_iongraph_pass("loop_structure");
+        assert_snapshot!(json.to_string(), @r#"{"name":"loop_structure", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[2], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}, {"ptr":4097, "id":1, "opcode":"Const Value(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}]}, {"ptr":4098, "id":2, "loopDepth":1, "attributes":["loopheader"], "predecessors":[0, 1], "successors":[1], "instructions":[{"ptr":4098, "id":2, "opcode":"IfTrue v1, bb1()", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}, {"ptr":4099, "id":3, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4100, "id":4, "opcode":"Return v3", "attributes":[], "inputs":[3], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":1, "attributes":["backedge"], "predecessors":[2], "successors":[2], "instructions":[{"ptr":4101, "id":5, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_multiple_successors() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let retval1 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval1 });
+
+        let retval2 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb2, Insn::Return { val: retval2 });
+
+        let json = function.to_iongraph_pass("multiple_successors");
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_successors", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1, 2], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"IfTrue v0, bb1()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}, {"ptr":4098, "id":2, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4099, "id":3, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4100, "id":4, "opcode":"Return v3", "attributes":[], "inputs":[3], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4101, "id":5, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4102, "id":6, "opcode":"Return v5", "attributes":[], "inputs":[5], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+ }
