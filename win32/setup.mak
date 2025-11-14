@@ -33,8 +33,13 @@ i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 
+-prologue-: -utf-8-
 -prologue-: -basic-vars-
 -generic-: -osname-
+
+-utf-8-:
+	@$(CC) -utf-8 -c -Tc <<"Checking UTF-8 option"
+<<
 
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
