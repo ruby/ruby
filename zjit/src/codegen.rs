@@ -384,6 +384,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::TooManyArgsForLir),
+        // Give up SendWithoutBlockDirect for 5+ args (plus 1 arg for keyword bits) since asm.ccall() doesn't support it.
+        Insn::SendWithoutBlockDirect { cd, state, args, iseq, .. } if args.len() + 2 > C_ARG_OPNDS.len() && unsafe { rb_get_iseq_flags_has_kw(*iseq) } => // +1 for self +1 for keyword bits
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::TooManyArgsForLir),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1337,6 +1340,20 @@ fn gen_send_without_block_direct(
         specval,
     });
 
+    // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
+    // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
+    // which optional keyword arguments need their defaults evaluated.
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        let bits_start = unsafe { (*keyword).bits_start } as usize;
+        // Currently we only support required keywords, so all bits are 0 (all keywords specified).
+        // TODO: When supporting optional keywords, calculate actual unspecified_bits here.
+        let unspecified_bits = VALUE::fixnum_from_usize(0);
+        let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
+        asm_comment!(asm, "write keyword bits to callee frame");
+        asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
+    }
+
     asm_comment!(asm, "switch to new SP register");
     let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
@@ -1351,13 +1368,23 @@ fn gen_send_without_block_direct(
     let mut c_args = vec![recv];
     c_args.extend(&args);
 
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        // Currently we only get to this point if all the accepted keyword args are required.
+        let unspecified_bits = 0;
+        // For each optional keyword that isn't passed we would `unspecified_bits |= (0x01 << idx)`.
+        c_args.push(VALUE::fixnum_from_usize(unspecified_bits).into());
+    }
+
     let params = unsafe { iseq.params() };
     let num_optionals_passed = if params.flags.has_opt() != 0 {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = params.lead_num as u32;
         let opt_num = params.opt_num as u32;
-        assert!(args.len() as u32 <= lead_num + opt_num);
-        let num_optionals_passed = args.len() as u32 - lead_num;
+        let keyword = params.keyword;
+        let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } } as u32;
+        let req_num = lead_num + kw_req_num;
+        assert!(args.len() as u32 <= req_num + opt_num);
+        let num_optionals_passed = args.len() as u32 - req_num;
         num_optionals_passed
     } else {
         0

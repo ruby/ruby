@@ -2761,10 +2761,10 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_kw() {
+    fn specialize_call_to_iseq_with_multiple_required_kw() {
         eval("
-            def foo(a:) = 1
-            def test = foo(a: 1)
+            def foo(a:, b:) = [a, b]
+            def test = foo(a: 1, b: 2)
             test
             test
         ");
@@ -2779,7 +2779,162 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_caller_kwarg
+          v13:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_required_kw_reorder() {
+        eval("
+            def foo(a:, b:, c:) = [a, b, c]
+            def test = foo(c: 3, a: 1, b: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          v13:Fixnum[1] = Const Value(1)
+          v15:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v24:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v25:BasicObject = SendWithoutBlockDirect v24, :foo (0x1038), v13, v15, v11
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_positional_and_required_kw_reorder() {
+        eval("
+            def foo(x, a:, b:) = [x, a, b]
+            def test = foo(0, b: 2, a: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[0] = Const Value(0)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v24:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v25:BasicObject = SendWithoutBlockDirect v24, :foo (0x1038), v11, v15, v13
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_with_positional_and_optional_kw() {
+        eval("
+            def foo(x, a: 1) = [x, a]
+            def test = foo(0, a: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[0] = Const Value(0)
+          v13:Fixnum[2] = Const Value(2)
+          IncrCounter complex_arg_pass_param_kw_opt
+          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn specialize_call_with_pos_optional_and_req_kw() {
+        eval("
+            def foo(r, x = 2, a:, b:) = [x, a]
+            def test = [foo(1, a: 3, b: 4), foo(1, 2, b: 4, a: 3)] # with and without the optional, change kw order
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[3] = Const Value(3)
+          v15:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v37:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v38:BasicObject = SendWithoutBlockDirect v37, :foo (0x1038), v11, v13, v15
+          v20:Fixnum[1] = Const Value(1)
+          v22:Fixnum[2] = Const Value(2)
+          v24:Fixnum[4] = Const Value(4)
+          v26:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v41:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v42:BasicObject = SendWithoutBlockDirect v41, :foo (0x1038), v20, v22, v26, v24
+          v30:ArrayExact = NewArray v38, v42
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_send_call_to_iseq_with_optional_kw() {
+        eval("
+            def foo(a: 1) = a
+            def test = foo(a: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[2] = Const Value(2)
+          IncrCounter complex_arg_pass_param_kw_opt
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2805,7 +2960,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_caller_kwarg
+          IncrCounter complex_arg_pass_param_kwrest
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2813,7 +2968,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_param_kw() {
+    fn dont_specialize_call_to_iseq_with_optional_param_kw() {
         eval("
             def foo(int: 1) = int + 1
             def test = foo
@@ -2830,7 +2985,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kw_opt
           v11:BasicObject = SendWithoutBlock v6, :foo
           CheckInterrupts
           Return v11
@@ -2882,7 +3037,6 @@ mod hir_opt_tests {
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v11
           v14:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_caller_kwarg
           v16:BasicObject = SendWithoutBlock v6, :sprintf, v12, v14
           CheckInterrupts
           Return v16
@@ -3180,8 +3334,8 @@ mod hir_opt_tests {
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter complex_arg_pass_param_kw
           IncrCounter complex_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_kw_opt
           v20:BasicObject = SendWithoutBlock v46, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -9028,9 +9182,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_rest
-          IncrCounter complex_arg_pass_param_kw
-          IncrCounter complex_arg_pass_param_kwrest
           IncrCounter complex_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_kwrest
+          IncrCounter complex_arg_pass_param_kw_opt
           v13:BasicObject = SendWithoutBlock v6, :fancy, v11
           CheckInterrupts
           Return v13
