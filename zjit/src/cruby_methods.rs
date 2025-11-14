@@ -232,6 +232,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "*", inline_integer_mult);
     annotate!(rb_cInteger, "/", inline_integer_div);
     annotate!(rb_cInteger, "%", inline_integer_mod);
+    annotate!(rb_cInteger, "&", inline_integer_and);
     annotate!(rb_cInteger, ">", inline_integer_gt);
     annotate!(rb_cInteger, ">=", inline_integer_ge);
     annotate!(rb_cInteger, "<", inline_integer_lt);
@@ -476,6 +477,11 @@ fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMod { left, right, state }, BOP_MOD, recv, other, state)
+}
+
+fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAnd { left, right, }, BOP_AND, recv, other, state)
 }
 
 fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
