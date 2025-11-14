@@ -20,6 +20,14 @@ use SendFallbackReason::*;
 mod tests;
 mod opt_tests;
 
+macro_rules! hir_comment {
+    ($func:expr, $block:expr, $($arg:tt)*) => {
+        $func.push_comment($block, format!($($arg)*))
+    };
+}
+
+pub(crate) use hir_comment;
+
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
@@ -895,6 +903,9 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
+
+    /// Debugging comment that can be inserted into HIR for diagnostics
+    Comment { message: String },
 }
 
 impl Insn {
@@ -906,7 +917,8 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::SetInstanceVariable { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::SetInstanceVariable { .. }
+            | Insn::Comment { .. } => false,
             _ => true,
         }
     }
@@ -968,6 +980,7 @@ impl Insn {
             Insn::StringGetbyteFixnum { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
+            Insn::Comment { .. } => true,
             _ => true,
         }
     }
@@ -1280,6 +1293,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::Comment { message } => write!(f, "# {message}"),
         }
     }
 }
@@ -1615,6 +1629,10 @@ impl Function {
         id
     }
 
+    pub fn push_comment(&mut self, block: BlockId, message: String) -> InsnId {
+        self.push_insn(block, Insn::Comment { message })
+    }
+
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
         self.blocks[block.0].insns.push(insn_id);
@@ -1724,7 +1742,8 @@ impl Function {
                     | LoadPC
                     | LoadSelf
                     | IncrCounterPtr {..}
-                    | IncrCounter(_)) => result.clone(),
+                    | IncrCounter(_)
+                    | Comment {..}) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -1925,7 +1944,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::SetInstanceVariable { .. } =>
+            | Insn::SetInstanceVariable { .. } | Insn::Comment { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -3301,7 +3320,8 @@ impl Function {
             | &Insn::PutSpecialObject { .. }
             | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
-            | &Insn::IncrCounterPtr { .. } =>
+            | &Insn::IncrCounterPtr { .. }
+            | &Insn::Comment { .. } =>
                 {}
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
@@ -5361,6 +5381,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 /// Compile an entry_block for the interpreter
 fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32]) {
     let entry_block = fun.entry_block;
+    if false { hir_comment!(fun, entry_block, "entry block {:?}", entry_block); }
     fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 
     // Prepare entry_state with basic block params
