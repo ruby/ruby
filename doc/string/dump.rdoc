@@ -7,7 +7,7 @@ where all the dumping changes have been undone.
 
 In the simplest case, the dumped string contains the original string,
 enclosed in double-quotes;
-this example is done in +irb+ (interactive Ruby):
+this example is done in +irb+ (interactive Ruby), which uses method `inspect` to render the results:
 
   s = 'hello'   # => "hello"
   s.dump        # => "\"hello\""
@@ -15,10 +15,10 @@ this example is done in +irb+ (interactive Ruby):
 
 Keep in mind that in the second line above:
 
-- The outer double-quotes are put on by +irb+,
+- The outer double-quotes are put on by +inspect+,
   and _are_ _not_ part of the output of #dump.
 - The inner double-quotes _are_ part of the output of +dump+,
-  and are escaped by +irb+ because they are within the outer double-quotes.
+  and are escaped by +inspect+ because they are within the outer double-quotes.
 
 To avoid confusion, we'll use this helper method to omit the outer double-quotes:
 
