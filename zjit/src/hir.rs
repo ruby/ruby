@@ -231,6 +231,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     BOP_FREEZE => write!(f, "BOP_FREEZE")?,
                     BOP_UMINUS => write!(f, "BOP_UMINUS")?,
                     BOP_MAX    => write!(f, "BOP_MAX")?,
+                    BOP_HASH   => write!(f, "BOP_HASH")?,
                     BOP_AREF   => write!(f, "BOP_AREF")?,
                     _ => write!(f, "{bop}")?,
                 }
@@ -650,6 +651,7 @@ pub enum Insn {
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
+    ArrayHash { elements: Vec<InsnId>, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
@@ -1033,6 +1035,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
+                let mut prefix = " ";
+                for element in elements {
+                    write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
+            Insn::ArrayHash { elements, .. } => {
+                write!(f, "ArrayHash")?;
                 let mut prefix = " ";
                 for element in elements {
                     write!(f, "{prefix}{element}")?;
@@ -1887,6 +1898,7 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
+            &ArrayHash { ref elements, state } => ArrayHash { elements: find_vec!(elements), state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, ic, state } => GetIvar { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
@@ -2032,6 +2044,7 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
             Insn::DupArrayInclude { .. } => types::BoolExact,
+            Insn::ArrayHash { .. } => types::Fixnum,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
@@ -3346,6 +3359,7 @@ impl Function {
                 worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
+            | &Insn::ArrayHash { ref elements, state }
             | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
@@ -4102,6 +4116,7 @@ impl Function {
             | Insn::InvokeBuiltin { ref args, .. }
             | Insn::InvokeBlock { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
+            | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -4908,6 +4923,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let elements = state.stack_pop_n(count)?;
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_HASH => (BOP_HASH, Insn::ArrayHash { elements, state: exit_id }),
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = elements[elements.len() - 1];
                             let array_elements = elements[..elements.len() - 1].to_vec();

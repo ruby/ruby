@@ -2013,7 +2013,49 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnhandledNewarraySend(HASH)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH)
+          v32:Fixnum = ArrayHash v15, v16
+          PatchPoint NoEPEscape(test)
+          v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v40:ArrayExact = ArrayDup v39
+          v42:BasicObject = SendWithoutBlock v14, :puts, v40
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_hash_redefined() {
+        eval("
+            Array.class_eval { def hash = 42 }
+
+            def test(a,b)
+              sum = a+b
+              result = [a,b].hash
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH))
         ");
     }
 
