@@ -3273,10 +3273,10 @@ keep_dig:
                 if (!mlo) goto nomem;
             }
             else {
-                mlo = multadd(mlo, 10, 0);
-                if (!mlo) goto nomem;
                 mhi = multadd(mhi, 10, 0);
                 if (!mhi) goto nomem;
+                mlo = multadd(mlo, 10, 0);
+                if (!mlo) goto nomem;
             }
         }
     }
