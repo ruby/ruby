@@ -234,6 +234,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "%", inline_integer_mod);
     annotate!(rb_cInteger, ">", inline_integer_gt);
     annotate!(rb_cInteger, "<", inline_integer_lt);
+    annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
@@ -484,6 +485,11 @@ fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
+}
+
+fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
