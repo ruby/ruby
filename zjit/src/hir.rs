@@ -597,6 +597,8 @@ pub enum SendFallbackReason {
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
+    SendCfuncVariadic,
+    SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
@@ -2844,10 +2846,12 @@ impl Function {
             // Do method lookup
             let cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
+                fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
             // Filter for C methods
+            // TODO(max): Handle VM_METHOD_TYPE_ALIAS
             let def_type = unsafe { get_cme_def_type(cme) };
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
@@ -2911,10 +2915,12 @@ impl Function {
                 // Variadic method
                 -1 => {
                     // func(int argc, VALUE *argv, VALUE recv)
+                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncVariadic);
                     Err(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
+                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
                     Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
@@ -2949,6 +2955,7 @@ impl Function {
             // Do method lookup
             let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
+                fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
