@@ -2319,8 +2319,6 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(modulo) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, recv, args[0], state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(lt) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, recv, args[0], state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(le) && args.len() == 1 =>
