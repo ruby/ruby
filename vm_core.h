@@ -1036,6 +1036,7 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
+    rb_serial_t ractor_id;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;
@@ -1079,6 +1080,7 @@ struct rb_execution_context_struct {
         void *asan_fake_stack_handle;
 #endif
     } machine;
+
 };
 
 #ifndef rb_execution_context_t
@@ -2044,6 +2046,13 @@ rb_ec_ractor_ptr(const rb_execution_context_t *ec)
     else {
         return NULL;
     }
+}
+
+static inline rb_serial_t
+rb_ec_ractor_id(const rb_execution_context_t *ec)
+{
+    VM_ASSERT(ec->ractor_id == rb_ractor_id(rb_ec_ractor_ptr(ec)));
+    return ec->ractor_id;
 }
 
 static inline rb_vm_t *
