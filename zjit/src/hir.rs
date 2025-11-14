@@ -2319,8 +2319,6 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(plus) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, args[0], state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minus) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, args[0], state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(mult) && args.len() == 1 =>
@@ -3019,6 +3017,10 @@ impl Function {
                         fun.blocks[block.0].insns.extend(insns);
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
                         fun.make_equal_to(send_insn_id, replacement);
+                        if fun.type_of(replacement).bit_equal(types::Any) {
+                            // Not set yet; infer type
+                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                        }
                         fun.remove_block(tmp_block);
                         return Ok(());
                     }
@@ -3092,6 +3094,10 @@ impl Function {
                             fun.blocks[block.0].insns.extend(insns);
                             fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
                             fun.make_equal_to(send_insn_id, replacement);
+                            if fun.type_of(replacement).bit_equal(types::Any) {
+                                // Not set yet; infer type
+                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                            }
                             fun.remove_block(tmp_block);
                             return Ok(());
                         }
