@@ -179,6 +179,8 @@ make_counters! {
         send_fallback_send_without_block_not_optimized_method_type,
         send_fallback_send_without_block_not_optimized_method_type_optimized,
         send_fallback_send_without_block_direct_too_many_args,
+        send_fallback_send_without_block_bop_redefined,
+        send_fallback_send_without_block_operands_not_fixnum,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
@@ -189,6 +191,8 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
+        send_fallback_send_cfunc_variadic,
+        send_fallback_send_cfunc_array_variadic,
         send_fallback_uncategorized,
     }
 
@@ -473,9 +477,13 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_without_block_not_optimized_method_type_optimized,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
+        SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
+        SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
+        SendCfuncVariadic                         => send_fallback_send_cfunc_variadic,
+        SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
