@@ -1468,7 +1468,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 
     use Counter::*;
     if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(complex_arg_pass_param_opt) }
+    if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
     if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
     if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
     if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
@@ -1511,7 +1511,8 @@ pub struct Function {
     blocks: Vec<Block>,
     /// Entry block for the interpreter
     entry_block: BlockId,
-    /// Entry block for JIT-to-JIT calls
+    /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
+    /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
 }
@@ -2070,9 +2071,8 @@ impl Function {
         for jit_entry_block in self.jit_entry_blocks.iter() {
             let entry_params = self.blocks[jit_entry_block.0].params.iter();
             let param_types = self.param_types.iter();
-            assert_eq!(
-                entry_params.len(),
-                param_types.len(),
+            assert!(
+                param_types.len() >= entry_params.len(),
                 "param types should be initialized before type inference",
             );
             for (param, param_type) in std::iter::zip(entry_params, param_types) {
@@ -4296,7 +4296,8 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 }
 
 /// List of insn_idx that starts a JIT entry block
-fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+    // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     if opt_num > 0 {
         let mut result = vec![];
@@ -4306,10 +4307,6 @@ fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
             result.push(insn_idx);
         }
-
-        // Deduplicate entries with HashSet since opt_table may have duplicated entries, e.g. proc { |a=a| a }
-        result.sort();
-        result.dedup();
         result
     } else {
         vec![0]
@@ -4375,7 +4372,6 @@ pub enum ParseError {
     StackUnderflow(FrameState),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
-    FailedOptionalArguments,
     NotAllowed,
 }
 
@@ -4456,28 +4452,45 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
     let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq, &jit_entry_insns);
+
+    // Make all empty basic blocks. The ordering of the BBs matters as it is taken as a schedule
+    // in the backend without a scheduling pass. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
+    // Make blocks for optionals first, and put them right next to their JIT entrypoint
+    for insn_idx in jit_entry_insns.iter().copied() {
+        let jit_entry_block = fun.new_block(insn_idx);
+        fun.jit_entry_blocks.push(jit_entry_block);
+        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+    }
+    // Make blocks for the rest of the jump targets
     for insn_idx in jump_targets {
-        // Prepend a JIT entry block if it's a jit_entry_insn.
-        // compile_entry_block() assumes that a JIT entry block jumps to the next block.
-        if jit_entry_insns.contains(&insn_idx) {
-            let jit_entry_block = fun.new_block(insn_idx);
-            fun.jit_entry_blocks.push(jit_entry_block);
-        }
-        insn_idx_to_block.insert(insn_idx, fun.new_block(insn_idx));
+        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+    }
+    // Done, drop `mut`.
+    let insn_idx_to_block = insn_idx_to_block;
+
+    // Compile an entry_block for the interpreter
+    compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+
+    // Compile all JIT-to-JIT entry blocks
+    for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+        let target_block = insn_idx_to_block.get(insn_idx)
+            .copied()
+            .expect("we make a block for each jump target and \
+                     each entry in the ISEQ opt_table is a jump target");
+        compile_jit_entry_block(&mut fun, jit_entry_idx, target_block);
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
     let ep_escaped = iseq_escapes_ep(iseq);
 
-    // Compile an entry_block for the interpreter
-    compile_entry_block(&mut fun, &jit_entry_insns);
-
-    // Iteratively fill out basic blocks using a queue
+    // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    queue.push_back((FrameState::new(iseq), insn_idx_to_block[&0], /*insn_idx=*/0, /*local_inval=*/false));
+    for &insn_idx in jit_entry_insns.iter() {
+        queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+    }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
@@ -4487,16 +4500,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         if visited.contains(&block) { continue; }
         visited.insert(block);
 
-        // Compile a JIT entry to the block if it's a jit_entry_insn
-        if let Some(block_idx) = jit_entry_insns.iter().position(|&idx| idx == insn_idx) {
-            compile_jit_entry_block(&mut fun, block_idx, block);
-        }
-
         // Load basic block params first
         let self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = FrameState::new(iseq);
-            let local_size = if insn_idx == 0 { num_locals(iseq) } else { incoming_state.locals.len() };
+            let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
@@ -5348,14 +5356,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
-    // Bail out if there's a JIT entry block whose target block was not compiled
-    // due to an unsupported instruction in the middle of the ISEQ.
-    for jit_entry_block in fun.jit_entry_blocks.iter() {
-        if fun.blocks[jit_entry_block.0].insns.is_empty() {
-            return Err(ParseError::FailedOptionalArguments);
-        }
-    }
-
     fun.set_param_types();
     fun.infer_types();
 
@@ -5375,44 +5375,46 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Compile an entry_block for the interpreter
-fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32]) {
+fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_block: &HashMap<u32, BlockId>) {
     let entry_block = fun.entry_block;
-    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
-
-    // Prepare entry_state with basic block params
-    let (self_param, entry_state) = compile_entry_state(fun, entry_block);
-
-    // Jump to target blocks
+    let (self_param, entry_state) = compile_entry_state(fun);
     let mut pc: Option<InsnId> = None;
-    let &last_entry_insn = jit_entry_insns.last().unwrap();
-    for (jit_entry_block_idx, &jit_entry_insn) in jit_entry_insns.iter().enumerate() {
-        let jit_entry_block = fun.jit_entry_blocks[jit_entry_block_idx];
-        let target_block = BlockId(jit_entry_block.0 + 1); // jit_entry_block precedes the jump target block
+    let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
 
-        if jit_entry_insn == last_entry_insn {
-            // If it's the last possible entry, jump to the target_block without checking PC
-            fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
-        } else {
-            // Otherwise, jump to the target_block only if PC matches.
-            let pc = pc.unwrap_or_else(|| {
-                let insn_id = fun.push_insn(entry_block, Insn::LoadPC);
-                pc = Some(insn_id);
-                insn_id
-            });
-            let expected_pc = fun.push_insn(entry_block, Insn::Const {
-                val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
-            });
-            let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
-            fun.push_insn(entry_block, Insn::IfTrue {
-                val: test_id,
-                target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
-            });
+    // Check-and-jump for each missing optional PC
+    for &jit_entry_insn in jit_entry_insns.iter() {
+        if jit_entry_insn == all_opts_passed_insn_idx {
+            continue;
         }
+        let target_block = insn_idx_to_block.get(&jit_entry_insn)
+            .copied()
+            .expect("we make a block for each jump target and \
+                     each entry in the ISEQ opt_table is a jump target");
+        // Load PC once at the start of the block, shared among all cases
+        let pc = *pc.get_or_insert_with(|| fun.push_insn(entry_block, Insn::LoadPC));
+        let expected_pc = fun.push_insn(entry_block, Insn::Const {
+            val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
+        });
+        let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
+        fun.push_insn(entry_block, Insn::IfTrue {
+            val: test_id,
+            target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
+        });
     }
+
+    // Terminate the block with a jump to the block with all optionals passed
+    let target_block = insn_idx_to_block.get(&all_opts_passed_insn_idx)
+        .copied()
+        .expect("we make a block for each jump target and \
+                 each entry in the ISEQ opt_table is a jump target");
+    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }
 
 /// Compile initial locals for an entry_block for the interpreter
-fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
+fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
+    let entry_block = fun.entry_block;
+    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
+
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
     let rest_param_idx = iseq_rest_param_idx(iseq);
@@ -5438,21 +5440,27 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
     fun.push_insn(jit_entry_block, Insn::EntryPoint { jit_entry_idx: Some(jit_entry_idx) });
 
     // Prepare entry_state with basic block params
-    let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block);
+    let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block, jit_entry_idx);
 
     // Jump to target_block
     fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }
 
 /// Compile params and initial locals for a jit_entry_block
-fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (InsnId, FrameState) {
+fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_entry_idx: usize) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
+    let opt_num: usize = unsafe { get_iseq_body_param_opt_num(iseq) }.try_into().expect("iseq param opt_num >= 0");
+    let lead_num: usize = unsafe { get_iseq_body_param_lead_num(iseq) }.try_into().expect("iseq param lead_num >= 0");
+    let passed_opt_num = jit_entry_idx;
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
-        if local_idx < param_size {
+        if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
+            // Omitted optionals are locals, so they start as nils before their code run
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+        } else if local_idx < param_size {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));

@@ -215,7 +215,6 @@ make_counters! {
     compile_error_register_spill_on_alloc,
     compile_error_parse_stack_underflow,
     compile_error_parse_malformed_iseq,
-    compile_error_parse_failed_optional_arguments,
     compile_error_parse_not_allowed,
     compile_error_validation_block_has_no_terminator,
     compile_error_validation_terminator_not_at_end,
@@ -279,7 +278,7 @@ make_counters! {
 
     // Unsupported parameter features
     complex_arg_pass_param_rest,
-    complex_arg_pass_param_opt,
+    complex_arg_pass_param_post,
     complex_arg_pass_param_kw,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
@@ -359,7 +358,6 @@ pub enum CompileError {
     ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
-    JitToJitOptional,
 }
 
 /// Return a raw pointer to the exit counter for a given CompileError
@@ -372,11 +370,9 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqStackTooLarge     => compile_error_iseq_stack_too_large,
         ExceptionHandler      => compile_error_exception_handler,
         OutOfMemory           => compile_error_out_of_memory,
-        JitToJitOptional      => compile_error_jit_to_jit_optional,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
-            FailedOptionalArguments => compile_error_parse_failed_optional_arguments,
             NotAllowed              => compile_error_parse_not_allowed,
             Validation(validation) => match validation {
                 BlockHasNoTerminator(_)       => compile_error_validation_block_has_no_terminator,

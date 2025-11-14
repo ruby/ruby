@@ -940,6 +940,87 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_send_direct_no_optionals_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_direct_one_optional_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo 3
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_direct_all_optionals_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo 3, 4
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          v13:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_optimize_variadic_ccall() {
         eval("
             def test
@@ -2589,10 +2670,12 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_param_opt
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
           CheckInterrupts
-          Return v13
+          Return v21
         ");
     }
 
@@ -2674,6 +2757,31 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_rest
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_post_param_iseq() {
+        eval("
+            def foo(opt=80, post) = post
+            def test = foo(10)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          IncrCounter complex_arg_pass_param_post
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2986,7 +3094,6 @@ mod hir_opt_tests {
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter complex_arg_pass_param_opt
           IncrCounter complex_arg_pass_param_kw
           IncrCounter complex_arg_pass_param_block
           v20:BasicObject = SendWithoutBlock v46, :initialize
@@ -6203,7 +6310,6 @@ mod hir_opt_tests {
           v12:Fixnum[3] = Const Value(3)
           v14:Fixnum[3] = Const Value(3)
           v16:Fixnum[3] = Const Value(3)
-          IncrCounter complex_arg_pass_param_opt
           v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16
           CheckInterrupts
           Return v18
@@ -6227,7 +6333,6 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
-          IncrCounter complex_arg_pass_param_opt
           v12:BasicObject = SendWithoutBlock v10, :foo
           CheckInterrupts
           Return v12
