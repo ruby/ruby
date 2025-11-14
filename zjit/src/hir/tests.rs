@@ -3693,3 +3693,382 @@ pub mod hir_build_tests {
         assert!(!dominators.is_dominated_by(bb1, bb2));
     }
  }
+
+#[cfg(test)]
+mod loop_info_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    fn edge(target: BlockId) -> BranchEdge {
+        BranchEdge { target, args: vec![] }
+    }
+
+    #[test]
+    fn test_loop_depth() {
+        // ┌─────┐
+        // │ bb0 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐      ┌─────┐
+        // │ bb2 ◄──────┼ bb1 ◄─┐
+        // └──┬──┘      └─────┘ │
+        //    └─────────────────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb2()
+          v1:Any = Const Value(false)
+        bb2():
+          IfTrue v1, bb1()
+          v3:Any = Const CBool(true)
+          Return v3
+        bb1():
+          Jump bb2()
+        ");
+
+        assert!(loop_info.is_loop_header(bb2));
+        assert!(loop_info.is_back_edge_source(bb1));
+        assert_eq!(loop_info.loop_depth(bb1), 1);
+    }
+
+    #[test]
+    fn test_nested_loops() {
+        // ┌─────┐
+        // │ bb0 ◄─────┐
+        // └──┬──┘     │
+        //    │        │
+        // ┌──▼──┐     │
+        // │ bb1 ◄───┐ │
+        // └──┬──┘   │ │
+        //    │      │ │
+        // ┌──▼──┐   │ │
+        // │ bb2 ┼───┘ │
+        // └──┬──┘     │
+        //    │        │
+        // ┌──▼──┐     │
+        // │ bb3 ┼─────┘
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb4 │
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let cond = function.push_insn(bb3, Insn::Const { val: Const::Value(Qtrue) });
+        let _ = function.push_insn(bb3, Insn::IfTrue { val: cond, target: edge(bb0) });
+        function.push_insn(bb3, Insn::Jump(edge(bb4)));
+
+        let retval = function.push_insn(bb4, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb4, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const Value(false)
+          IfTrue v2, bb1()
+          Jump bb3()
+        bb3():
+          v5:Any = Const Value(true)
+          IfTrue v5, bb0()
+          Jump bb4()
+        bb4():
+          v8:Any = Const CBool(true)
+          Return v8
+        ");
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 2);
+        assert_eq!(loop_info.loop_depth(bb3), 1);
+        assert_eq!(loop_info.loop_depth(bb4), 0);
+
+        assert!(loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb3));
+    }
+
+    #[test]
+    fn test_complex_loops() {
+        //        ┌─────┐
+        // ┌──────► bb0 │
+        // │      └──┬──┘
+        // │    ┌────┴────┐
+        // │ ┌──▼──┐   ┌──▼──┐
+        // │ │ bb1 ◄─┐ │ bb3 ◄─┐
+        // │ └──┬──┘ │ └──┬──┘ │
+        // │    │    │    │    │
+        // │ ┌──▼──┐ │ ┌──▼──┐ │
+        // │ │ bb2 ┼─┘ │ bb4 ┼─┘
+        // │ └──┬──┘   └──┬──┘
+        // │    └────┬────┘
+        // │      ┌──▼──┐
+        // └──────┼ bb5 │
+        //        └──┬──┘
+        //           │
+        //        ┌──▼──┐
+        //        │ bb6 │
+        //        └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+        let bb6 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb0, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb2, Insn::Jump(edge(bb5)));
+
+        function.push_insn(bb3, Insn::Jump(edge(bb4)));
+
+        let _ = function.push_insn(bb4, Insn::IfTrue { val: cond, target: edge(bb3) });
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        let _ = function.push_insn(bb5, Insn::IfTrue { val: cond, target: edge(bb0) });
+        function.push_insn(bb5, Insn::Jump(edge(bb6)));
+
+        let retval = function.push_insn(bb6, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb6, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb3()
+        bb1():
+          Jump bb2()
+        bb2():
+          IfTrue v0, bb1()
+          Jump bb5()
+        bb3():
+          Jump bb4()
+        bb4():
+          IfTrue v0, bb3()
+          Jump bb5()
+        bb5():
+          IfTrue v0, bb0()
+          Jump bb6()
+        bb6():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+        assert!(!loop_info.is_loop_header(bb2));
+        assert!(loop_info.is_loop_header(bb3));
+        assert!(!loop_info.is_loop_header(bb5));
+        assert!(!loop_info.is_loop_header(bb4));
+        assert!(!loop_info.is_loop_header(bb6));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 2);
+        assert_eq!(loop_info.loop_depth(bb3), 2);
+        assert_eq!(loop_info.loop_depth(bb4), 2);
+        assert_eq!(loop_info.loop_depth(bb5), 1);
+        assert_eq!(loop_info.loop_depth(bb6), 0);
+
+        assert!(loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb4));
+        assert!(loop_info.is_back_edge_source(bb5));
+    }
+
+    #[test]
+    fn linked_list_non_loop() {
+        // ┌─────┐
+        // │ bb0 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb1 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb2 │
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const CBool(true)
+          Return v2
+        ");
+
+        assert!(!loop_info.is_loop_header(bb0));
+        assert!(!loop_info.is_loop_header(bb1));
+        assert!(!loop_info.is_loop_header(bb2));
+
+        assert!(!loop_info.is_back_edge_source(bb0));
+        assert!(!loop_info.is_back_edge_source(bb1));
+        assert!(!loop_info.is_back_edge_source(bb2));
+
+        assert_eq!(loop_info.loop_depth(bb0), 0);
+        assert_eq!(loop_info.loop_depth(bb1), 0);
+        assert_eq!(loop_info.loop_depth(bb2), 0);
+    }
+
+    #[test]
+    fn triple_nested_loop() {
+        // ┌─────┐
+        // │ bb0 ◄──┐
+        // └──┬──┘  │
+        //    │     │
+        // ┌──▼──┐  │
+        // │ bb1 ◄─┐│
+        // └──┬──┘ ││
+        //    │    ││
+        // ┌──▼──┐ ││
+        // │ bb2 ◄┐││
+        // └──┬──┘│││
+        //    │   │││
+        // ┌──▼──┐│││
+        // │ bb3 ┼┘││
+        // └──┬──┘ ││
+        //    │    ││
+        // ┌──▼──┐ ││
+        // │ bb4 ┼─┘│
+        // └──┬──┘  │
+        //    │     │
+        // ┌──▼──┐  │
+        // │ bb5 ┼──┘
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let _ = function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        let _ = function.push_insn(bb3, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb3, Insn::IfTrue {val: cond, target: edge(bb2)});
+        let _ = function.push_insn(bb4, Insn::Jump(edge(bb5)));
+        let _ = function.push_insn(bb4, Insn::IfTrue {val: cond, target: edge(bb1)});
+        let _ = function.push_insn(bb5, Insn::IfTrue {val: cond, target: edge(bb0)});
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          Jump bb3()
+        bb3():
+          Jump bb4()
+          IfTrue v0, bb2()
+        bb4():
+          Jump bb5()
+          IfTrue v0, bb1()
+        bb5():
+          IfTrue v0, bb0()
+        ");
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert!(!loop_info.is_back_edge_source(bb0));
+        assert!(!loop_info.is_back_edge_source(bb1));
+        assert!(!loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb3));
+        assert!(loop_info.is_back_edge_source(bb4));
+        assert!(loop_info.is_back_edge_source(bb5));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 3);
+        assert_eq!(loop_info.loop_depth(bb3), 3);
+        assert_eq!(loop_info.loop_depth(bb4), 2);
+        assert_eq!(loop_info.loop_depth(bb5), 1);
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+        assert!(loop_info.is_loop_header(bb2));
+        assert!(!loop_info.is_loop_header(bb3));
+        assert!(!loop_info.is_loop_header(bb4));
+        assert!(!loop_info.is_loop_header(bb5));
+    }
+ }
