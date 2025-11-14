@@ -1308,7 +1308,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@authors,                   array[12]
     spec.instance_variable_set :@description,               array[13]
     spec.instance_variable_set :@homepage,                  array[14]
-    spec.instance_variable_set :@has_rdoc,                  array[15]
+    # offset due to has_rdoc removal
     spec.instance_variable_set :@licenses,                  array[17]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
@@ -1885,29 +1885,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Deprecated and ignored, defaults to true.
-  #
-  # Formerly used to indicate this gem was RDoc-capable.
-
-  def has_rdoc # :nodoc:
-    true
-  end
-  rubygems_deprecate :has_rdoc
-
-  ##
-  # Deprecated and ignored.
-  #
-  # Formerly used to indicate this gem was RDoc-capable.
-
-  def has_rdoc=(ignored) # :nodoc:
-    @has_rdoc = true
-  end
-  rubygems_deprecate :has_rdoc=
-
-  alias_method :has_rdoc?, :has_rdoc # :nodoc:
-  rubygems_deprecate :has_rdoc?
-
-  ##
   # True if this gem has files in test_files
 
   def has_unit_tests? # :nodoc:
@@ -2399,7 +2376,6 @@ class Gem::Specification < Gem::BasicSpecification
       :required_rubygems_version,
       :specification_version,
       :version,
-      :has_rdoc,
       :metadata,
       :signing_key,
     ]

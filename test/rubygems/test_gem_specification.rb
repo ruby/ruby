@@ -33,7 +33,6 @@ has_rdoc: true
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}
-  s.has_rdoc = true
   s.summary = %q{A Hash which automatically computes keys.}
   s.files = [%q{lib/keyedlist.rb}]
   s.require_paths = [%q{lib}]
