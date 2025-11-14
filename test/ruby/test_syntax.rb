@@ -1894,6 +1894,15 @@ eom
     assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
   end
 
+  def test_command_as_the_only_argument_with_paren
+    bug21168 = '[Bug #21168]'
+    assert_valid_syntax('foo(bar baz do end)', bug21168)
+    assert_valid_syntax('foo[bar baz do end]', bug21168)
+    assert_valid_syntax('foo[bar baz do end] = 1', bug21168)
+    assert_valid_syntax('foo[bar baz do end] += 1', bug21168)
+    assert_valid_syntax('a, foo[bar baz do end] = 1, 2', bug21168)
+  end
+
   def test_numbered_parameter
     assert_valid_syntax('proc {_1}')
     assert_equal(3, eval('[1,2].then {_1+_2}'))
