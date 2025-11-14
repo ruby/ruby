@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -593,7 +593,6 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
-    SendWithoutBlockDirectTooManyArgs,
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
     SendPolymorphic,
@@ -604,8 +603,11 @@ pub enum SendFallbackReason {
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
+    TooManyArgsForLir,
     /// The Proc object for a BMETHOD is not defined by an ISEQ. (See `enum rb_block_type`.)
     BmethodNonIseqProc,
+    /// Caller supplies too few or too many arguments than what the callee's parameters expects.
+    ArgcParamMismatch,
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
     ComplexArgPass,
@@ -1457,7 +1459,7 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, send_insn: InsnId, args: &[InsnId]) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1471,6 +1473,24 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
     if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
     if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
+
+    if !can_send {
+        function.set_dynamic_send_reason(send_insn, ComplexArgPass);
+        return false;
+    }
+
+    // Check argument count against callee's parameters. Note that correctness for this calculation
+    // relies on rejecting features above.
+    let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    can_send = c_int::try_from(args.len())
+        .as_ref()
+        .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
+        .unwrap_or(false);
+    if !can_send {
+        function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+        return false
+    }
 
     can_send
 }
@@ -2358,8 +2378,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2384,8 +2403,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now

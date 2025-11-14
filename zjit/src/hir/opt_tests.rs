@@ -6184,6 +6184,57 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dont_optimize_when_passing_too_many_args() {
+        eval(r#"
+            public def foo(lead, opt=raise) = opt
+            def test = 0.foo(3, 3, 3)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[0] = Const Value(0)
+          v12:Fixnum[3] = Const Value(3)
+          v14:Fixnum[3] = Const Value(3)
+          v16:Fixnum[3] = Const Value(3)
+          IncrCounter complex_arg_pass_param_opt
+          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_when_passing_too_few_args() {
+        eval(r#"
+            public def foo(lead, opt=raise) = opt
+            def test = 0.foo
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[0] = Const Value(0)
+          IncrCounter complex_arg_pass_param_opt
+          v12:BasicObject = SendWithoutBlock v10, :foo
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
     fn test_dont_inline_integer_succ_with_args() {
         eval("
             def test = 4.succ 1
