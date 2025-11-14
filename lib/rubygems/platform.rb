@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
-
 ##
 # Available list of platforms for targeting Gem installations.
 #
@@ -19,15 +17,6 @@ class Gem::Platform
       arch = "#{arch}_60" if /mswin(?:32|64)$/.match?(arch)
       new(arch)
     end
-  end
-
-  def self.match(platform)
-    match_platforms?(platform, Gem.platforms)
-  end
-
-  class << self
-    extend Gem::Deprecate
-    rubygems_deprecate :match, "Gem::Platform.match_spec? or match_gem?"
   end
 
   def self.match_platforms?(platform, platforms)

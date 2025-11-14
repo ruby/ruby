@@ -11,15 +11,6 @@ class TestGemPlatform < Gem::TestCase
     assert_equal Gem::Platform.new(%w[x86 darwin 8]), Gem::Platform.local
   end
 
-  def test_self_match
-    Gem::Deprecate.skip_during do
-      assert Gem::Platform.match(nil), "nil == ruby"
-      assert Gem::Platform.match(Gem::Platform.local), "exact match"
-      assert Gem::Platform.match(Gem::Platform.local.to_s), "=~ match"
-      assert Gem::Platform.match(Gem::Platform::RUBY), "ruby"
-    end
-  end
-
   def test_self_match_gem?
     assert Gem::Platform.match_gem?(nil, "json"), "nil == ruby"
     assert Gem::Platform.match_gem?(Gem::Platform.local, "json"), "exact match"
@@ -500,15 +491,6 @@ class TestGemPlatform < Gem::TestCase
     assert_equal 1, result.scan(/@cpu=/).size
     assert_equal 1, result.scan(/@os=/).size
     assert_equal 1, result.scan(/@version=/).size
-  end
-
-  def test_gem_platform_match_with_string_argument
-    util_set_arch "x86_64-linux-musl"
-
-    Gem::Deprecate.skip_during do
-      assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
-      assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
-    end
   end
 
   def test_constants
