@@ -179,6 +179,8 @@ make_counters! {
         send_fallback_send_without_block_not_optimized_method_type,
         send_fallback_send_without_block_not_optimized_method_type_optimized,
         send_fallback_send_without_block_direct_too_many_args,
+        send_fallback_send_without_block_bop_redefined,
+        send_fallback_send_without_block_operands_not_fixnum,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
@@ -475,6 +477,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_without_block_not_optimized_method_type_optimized,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
+        SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
+        SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,

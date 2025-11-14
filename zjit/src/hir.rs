@@ -594,6 +594,8 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
+    SendWithoutBlockBopRedefined,
+    SendWithoutBlockOperandsNotFixnum,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
@@ -2250,6 +2252,7 @@ impl Function {
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
             // If the basic operation is already redefined, we cannot optimize it.
+            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockBopRedefined);
             self.push_insn_id(block, orig_insn_id);
             return;
         }
@@ -2265,6 +2268,7 @@ impl Function {
             self.make_equal_to(orig_insn_id, result);
             self.insn_types[result.0] = self.infer_type(result);
         } else {
+            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockOperandsNotFixnum);
             self.push_insn_id(block, orig_insn_id);
         }
     }
