@@ -4174,6 +4174,11 @@ paren_args	: '(' opt_call_args rparen
                         /*% ripper: arg_paren!($:2) %*/
                         }
                     }
+                | '(' value_expr(block_command) rparen
+                    {
+                        $$ = NEW_LIST($2, &@2);
+                    /*% ripper: arg_paren!(args_add!(args_new!, $:2)) %*/
+                    }
                 ;
 
 opt_paren_args	: none
