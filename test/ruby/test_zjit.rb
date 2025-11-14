@@ -617,6 +617,15 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwarg_with_too_many_args_to_c_call
+    assert_compiles '"a b c d {kwargs: :e}"', %q{
+      def test(a:, b:, c:, d:, e:) = sprintf("%s %s %s %s %s", a, b, c, d, kwargs: e)
+      def entry = test(e: :e, d: :d, c: :c, a: :a, b: :b)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_kwrest
     assert_compiles '{a: 3}', %q{
       def test(**kwargs) = kwargs
@@ -630,6 +639,15 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '[1, 3]', %q{
       def test(a, c:) = [a, c]
       def entry = test(1, c: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq
+    assert_compiles '[[1, 2, 3], [-1, -2, -3]]', %q{
+      def test(a, b = 2, c:) = [a, b, c]
+      def entry = [test(1, c: 3), test(-1, -2, c: -3)] # specify all, change kw order
       entry
       entry
     }, call_threshold: 2
