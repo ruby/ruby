@@ -147,6 +147,37 @@ class Gem::Platform
   end
 
   ##
+  # Deconstructs the platform into an array for pattern matching.
+  # Returns [cpu, os, version].
+  #
+  #   Gem::Platform.new("x86_64-linux").deconstruct  #=> ["x86_64", "linux", nil]
+  #
+  # This enables array pattern matching:
+  #
+  #   case Gem::Platform.new("arm64-darwin-21")
+  #   in ["arm64", "darwin", version]
+  #     # version => "21"
+  #   end
+  alias_method :deconstruct, :to_a
+
+  ##
+  # Deconstructs the platform into a hash for pattern matching.
+  # Returns a hash with keys +:cpu+, +:os+, and +:version+.
+  #
+  #   Gem::Platform.new("x86_64-darwin-20").deconstruct_keys(nil)
+  #   #=> { cpu: "x86_64", os: "darwin", version: "20" }
+  #
+  # This enables hash pattern matching:
+  #
+  #   case Gem::Platform.new("x86_64-linux")
+  #   in cpu: "x86_64", os: "linux"
+  #     # Matches Linux on x86_64
+  #   end
+  def deconstruct_keys(keys)
+    { cpu: @cpu, os: @os, version: @version }
+  end
+
+  ##
   # Is +other+ equal to this platform?  Two platforms are equal if they have
   # the same CPU, OS and version.
 

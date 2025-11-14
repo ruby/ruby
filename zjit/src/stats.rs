@@ -114,7 +114,6 @@ macro_rules! make_counters {
 make_counters! {
     // Default counters that are available without --zjit-stats
     default {
-        patch_point_count,
         compiled_iseq_count,
         failed_iseq_count,
 
@@ -178,7 +177,7 @@ make_counters! {
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
-        send_fallback_send_without_block_not_optimized_optimized_method_type,
+        send_fallback_send_without_block_not_optimized_method_type_optimized,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
@@ -471,8 +470,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
-        SendWithoutBlockNotOptimizedOptimizedMethodType(_)
-                                                  => send_fallback_send_without_block_not_optimized_optimized_method_type,
+        SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
+                                                  => send_fallback_send_without_block_not_optimized_method_type_optimized,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,

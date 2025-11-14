@@ -61,7 +61,10 @@ module SyncDefaultGems
     ])
   end
 
-  # Note: tool/auto_review_pr.rb also depends on this constant.
+  # Note: tool/auto_review_pr.rb also depends on these constants.
+  NO_UPSTREAM = [
+    "lib/unicode_normalize",    # not to match with "lib/un"
+  ]
   REPOSITORIES = {
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
@@ -295,6 +298,7 @@ module SyncDefaultGems
 
   class << Repository
     def find_upstream(file)
+      return if NO_UPSTREAM.any? {|dst| file.start_with?(dst) }
       REPOSITORIES.find do |repo_name, repository|
         if repository.mappings.any? {|_src, dst| file.start_with?(dst) }
           break repo_name

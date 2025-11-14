@@ -1835,7 +1835,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         SendWithoutBlockNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_without_block_fallback_counter_for_method_type(method_type));
         }
-        SendWithoutBlockNotOptimizedOptimizedMethodType(method_type) => {
+        SendWithoutBlockNotOptimizedMethodTypeOptimized(method_type) => {
             gen_incr_counter(asm, send_without_block_fallback_counter_for_optimized_method_type(method_type));
         }
         SendNotOptimizedMethodType(method_type) => {
@@ -1851,6 +1851,8 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 ///
 /// Unlike YJIT, we don't need to save the stack slots to protect them from GC
 /// because the backend spills all live registers onto the C stack on CCall.
+/// However, to avoid marking uninitialized stack slots, this also updates SP,
+/// which may have cfp->sp for a past frame or a past non-leaf call.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool) {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
@@ -1859,13 +1861,27 @@ fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool)
     asm_comment!(asm, "save PC to CFP");
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
 
+    gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());
     }
 }
 
 fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
-    gen_prepare_call_with_gc(asm, state, true);
+    // In gen_prepare_call_with_gc(), we update cfp->sp for leaf calls too.
+    //
+    // Here, cfp->sp may be pointing to either of the following:
+    //   1. cfp->sp for a past frame, which gen_push_frame() skips to initialize
+    //   2. cfp->sp set by gen_prepare_non_leaf_call() for the current frame
+    //
+    // When (1), to avoid marking dead objects, we need to set cfp->sp for the current frame.
+    // When (2), setting cfp->sp at gen_push_frame() and not updating cfp->sp here could lead to
+    // keeping objects longer than it should, so we set cfp->sp at every call of this function.
+    //
+    // We use state.without_stack() to pass stack_size=0 to gen_save_sp() because we don't write
+    // VM stack slots on leaf calls, which leaves those stack slots uninitialized. ZJIT keeps
+    // live objects on the C stack, so they are protected from GC properly.
+    gen_prepare_call_with_gc(asm, &state.without_stack(), true);
 }
 
 /// Save the current SP on the CFP
@@ -1907,11 +1923,11 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Lazily materialize caller frames when needed
     // Save PC for backtraces and allocation tracing
+    // and SP to avoid marking uninitialized stack slots
     gen_prepare_call_with_gc(asm, state, false);
 
-    // Save SP and spill the virtual stack in case it raises an exception
+    // Spill the virtual stack in case it raises an exception
     // and the interpreter uses the stack for handling the exception
-    gen_save_sp(asm, state.stack().len());
     gen_spill_stack(jit, asm, state);
 
     // Spill locals in case the method looks at caller Bindings
@@ -1958,8 +1974,8 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     asm_comment!(asm, "push callee control frame");
 
     if let Some(iseq) = frame.iseq {
-        // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
-        // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
+        // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits, non-leaf calls, or calls with GC
+        // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits, non-leaf calls, or calls with GC
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
     } else {
         // C frames don't have a PC and ISEQ in normal operation.

@@ -4,9 +4,6 @@ require 'test/unit'
 require 'timeout'
 require 'socket'
 
-# For `IO#ready?` and `IO#nread`:
-require 'io/wait'
-
 class TestIOWait < Test::Unit::TestCase
 
   def setup
@@ -20,33 +17,6 @@ class TestIOWait < Test::Unit::TestCase
   def teardown
     @r.close unless @r.closed?
     @w.close unless @w.closed?
-  end
-
-  def test_nread
-    assert_equal 0, @r.nread
-    @w.syswrite "."
-    sleep 0.1
-    assert_equal 1, @r.nread
-  end
-
-  def test_nread_buffered
-    @w.syswrite ".\n!"
-    assert_equal ".\n", @r.gets
-    assert_equal 1, @r.nread
-  end
-
-  def test_ready?
-    omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
-    assert_not_predicate @r, :ready?, "shouldn't ready, but ready"
-    @w.syswrite "."
-    sleep 0.1
-    assert_predicate @r, :ready?, "should ready, but not"
-  end
-
-  def test_buffered_ready?
-    @w.syswrite ".\n!"
-    assert_equal ".\n", @r.gets
-    assert_predicate @r, :ready?
   end
 
   def test_wait

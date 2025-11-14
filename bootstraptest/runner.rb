@@ -298,7 +298,7 @@ End
     if defined?(RUBY_DESCRIPTION)
       puts "Driver is #{RUBY_DESCRIPTION}"
     elsif defined?(RUBY_PATCHLEVEL)
-      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{RUBY_PLATFORM}) [#{RUBY_PLATFORM}]"
+      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{RUBY_PATCHLEVEL}) [#{RUBY_PLATFORM}]"
     else
       puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
     end

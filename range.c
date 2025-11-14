@@ -1019,6 +1019,15 @@ range_to_a(VALUE range)
 }
 
 static VALUE
+range_to_set(int argc, VALUE *argv, VALUE range)
+{
+    if (NIL_P(RANGE_END(range))) {
+        rb_raise(rb_eRangeError, "cannot convert endless range to a set");
+    }
+    return rb_call_super(argc, argv);
+}
+
+static VALUE
 range_enum_size(VALUE range, VALUE args, VALUE eobj)
 {
     return range_size(range);
@@ -2845,6 +2854,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
+    rb_define_method(rb_cRange, "to_set", range_to_set, -1);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

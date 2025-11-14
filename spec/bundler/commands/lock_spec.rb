@@ -46,7 +46,7 @@ RSpec.describe "bundle lock" do
         weakling
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -95,7 +95,7 @@ RSpec.describe "bundle lock" do
         weakling
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -294,7 +294,7 @@ RSpec.describe "bundle lock" do
         foo
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
     expect(out).to match(/Writing lockfile to.+CustomGemfile\.lock/)
     expect(read_lockfile("CustomGemfile.lock")).to eq(lockfile)
@@ -339,7 +339,7 @@ RSpec.describe "bundle lock" do
         warning
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock --update foo --lockfile=lock"
@@ -399,7 +399,7 @@ RSpec.describe "bundle lock" do
         weakling
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     expect(out).to match(/Writing lockfile to.+lock/)
@@ -453,7 +453,7 @@ RSpec.describe "bundle lock" do
         weakling
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile lockfile_with_outdated_rails_and_rake
@@ -510,7 +510,7 @@ RSpec.describe "bundle lock" do
         tapioca
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock --update tapioca --verbose"
@@ -576,7 +576,7 @@ RSpec.describe "bundle lock" do
         tapioca
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock --update tapioca"
@@ -649,7 +649,7 @@ RSpec.describe "bundle lock" do
         rake
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock --update rake --verbose"
@@ -806,7 +806,7 @@ RSpec.describe "bundle lock" do
           sequel
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -832,14 +832,14 @@ RSpec.describe "bundle lock" do
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
     bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
-    expect(lockfile).to end_with("BUNDLED WITH\n   55\n")
+    expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
 
     update_repo4 do
       build_gem "bundler", "99"
     end
 
     bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
-    expect(lockfile).to end_with("BUNDLED WITH\n   99\n")
+    expect(lockfile).to end_with("BUNDLED WITH\n  99\n")
   end
 
   it "supports adding new platforms when there's no previous lockfile" do
@@ -894,7 +894,7 @@ RSpec.describe "bundle lock" do
           foo
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --add-platform java"
@@ -914,7 +914,7 @@ RSpec.describe "bundle lock" do
           foo
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1010,7 +1010,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     checksums.delete("nokogiri", Gem::Platform::RUBY)
@@ -1032,7 +1032,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1109,7 +1109,7 @@ RSpec.describe "bundle lock" do
         mixlib-shellout
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     bundle "config set --local force_ruby_platform true"
@@ -1141,7 +1141,7 @@ RSpec.describe "bundle lock" do
         mixlib-shellout
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1178,7 +1178,7 @@ RSpec.describe "bundle lock" do
         libv8
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     simulate_platform("x86_64-darwin-19") { bundle "lock --update" }
@@ -1225,7 +1225,7 @@ RSpec.describe "bundle lock" do
         libv8
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1265,7 +1265,7 @@ RSpec.describe "bundle lock" do
         libv8
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     previous_lockfile = lockfile
@@ -1318,7 +1318,7 @@ RSpec.describe "bundle lock" do
         raygun-apm
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock --add-platform x86_64-linux"
@@ -1352,7 +1352,7 @@ RSpec.describe "bundle lock" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-linux" do
@@ -1374,7 +1374,7 @@ RSpec.describe "bundle lock" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1404,7 +1404,7 @@ RSpec.describe "bundle lock" do
         sorbet-static
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-linux" do
@@ -1446,7 +1446,7 @@ RSpec.describe "bundle lock" do
         our_private_gem
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
@@ -1510,7 +1510,7 @@ RSpec.describe "bundle lock" do
           weakling
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       expect(read_lockfile).to eq(expected_lockfile)
@@ -1564,7 +1564,7 @@ RSpec.describe "bundle lock" do
           weakling
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       expect(read_lockfile).to eq(expected_lockfile)
@@ -1618,7 +1618,7 @@ RSpec.describe "bundle lock" do
           debug
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "arm64-darwin-22" do
@@ -1641,7 +1641,7 @@ RSpec.describe "bundle lock" do
           debug
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1699,7 +1699,7 @@ RSpec.describe "bundle lock" do
           foo
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1802,7 +1802,7 @@ RSpec.describe "bundle lock" do
         ransack (= 3.1.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     expected_error = <<~ERR.strip
@@ -1944,7 +1944,7 @@ RSpec.describe "bundle lock" do
         nogokiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-linux" do
@@ -1971,7 +1971,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2004,7 +2004,7 @@ RSpec.describe "bundle lock" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-linux" do
@@ -2031,7 +2031,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2064,7 +2064,7 @@ RSpec.describe "bundle lock" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-linux" do
@@ -2093,7 +2093,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2133,7 +2133,7 @@ RSpec.describe "bundle lock" do
         nokogiri
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2170,7 +2170,7 @@ RSpec.describe "bundle lock" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2210,7 +2210,7 @@ RSpec.describe "bundle lock" do
         warning
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2228,7 +2228,7 @@ RSpec.describe "bundle lock" do
         warning
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile(<<~G)
@@ -2261,7 +2261,7 @@ RSpec.describe "bundle lock" do
         warning (18.0.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2342,7 +2342,7 @@ RSpec.describe "bundle lock" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2372,7 +2372,7 @@ RSpec.describe "bundle lock" do
             foo!
           #{checksums}
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
 
@@ -2407,7 +2407,7 @@ RSpec.describe "bundle lock" do
             foo!
           #{checksums}
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
     end
@@ -2462,7 +2462,7 @@ RSpec.describe "bundle lock" do
           govuk_app_config
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2498,7 +2498,7 @@ RSpec.describe "bundle lock" do
           govuk_app_config
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -2534,7 +2534,7 @@ RSpec.describe "bundle lock" do
           ffi
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2558,7 +2558,7 @@ RSpec.describe "bundle lock" do
           ffi
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -2580,7 +2580,7 @@ RSpec.describe "bundle lock" do
           irb
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2629,7 +2629,7 @@ RSpec.describe "bundle lock" do
             irb
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
 
@@ -2660,7 +2660,7 @@ RSpec.describe "bundle lock" do
           irb
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2709,7 +2709,7 @@ RSpec.describe "bundle lock" do
             irb
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
 
@@ -2737,7 +2737,7 @@ RSpec.describe "bundle lock" do
             irb
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
 
@@ -2765,7 +2765,7 @@ RSpec.describe "bundle lock" do
             irb
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
 
@@ -2795,7 +2795,7 @@ RSpec.describe "bundle lock" do
           sorbet-static
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

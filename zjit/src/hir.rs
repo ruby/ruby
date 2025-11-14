@@ -592,7 +592,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
-    SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType),
+    SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
     SendMegamorphic,
@@ -2534,7 +2534,7 @@ impl Function {
                                 };
                                 self.make_equal_to(insn_id, replacement);
                             } else {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
                                 self.push_insn_id(block, insn_id); continue;
                             }
                         } else {
@@ -4151,6 +4151,13 @@ impl FrameState {
     fn without_locals(&self) -> Self {
         let mut state = self.clone();
         state.locals.clear();
+        state
+    }
+
+    /// Return itself without stack. Used by leaf calls with GC to reset SP to the base pointer.
+    pub fn without_stack(&self) -> Self {
+        let mut state = self.clone();
+        state.stack.clear();
         state
     }
 }

@@ -3165,8 +3165,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_regression_cfp_sp_set_correctly_before_leaf_gc_call
-    omit 'reproduction for known, unresolved ZJIT bug'
-
     assert_compiles ':ok', %q{
       def check(l, r)
         return 1 unless l

@@ -563,6 +563,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+    xfree(ccs);
     return ID_TABLE_DELETE;
 }
 

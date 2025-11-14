@@ -440,7 +440,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             nokogiri
           #{checksums}
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
 
         bundle "install --verbose", artifice: "compact_index"
@@ -867,7 +867,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           ruport (= 1.7.0.3)!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -925,7 +925,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           ruport (= 1.7.0.3)!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -970,7 +970,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           pdf-writer (= 1.1.8)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1038,7 +1038,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           foo!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

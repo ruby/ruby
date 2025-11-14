@@ -18,7 +18,7 @@ net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.9.5   https://github.com/ruby/rbs
+rbs                 3.9.5   https://github.com/ruby/rbs       22451ecbe262326176eb3915b64366712930685c # waiting for https://github.com/ruby/rbs/pull/2706
 typeprof            0.31.0  https://github.com/ruby/typeprof
 debug               1.11.0  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
@@ -42,6 +42,6 @@ logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.15.1  https://github.com/ruby/rdoc
 win32ole            1.9.2   https://github.com/ruby/win32ole
 irb                 1.15.3  https://github.com/ruby/irb
-reline              0.6.2   https://github.com/ruby/reline
+reline              0.6.3   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle

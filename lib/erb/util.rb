@@ -2,8 +2,8 @@
 
 # Load CGI.escapeHTML and CGI.escapeURIComponent.
 # CRuby:
-#   cgi.gem v0.1.0+ (Ruby 2.7-3.4) and Ruby 3.5+ stdlib have 'cgi/escape' and CGI.escapeHTML.
-#   cgi.gem v0.3.3+ (Ruby 3.2-3.4) and Ruby 3.5+ stdlib have CGI.escapeURIComponent.
+#   cgi.gem v0.1.0+ (Ruby 2.7-3.4) and Ruby 4.0+ stdlib have 'cgi/escape' and CGI.escapeHTML.
+#   cgi.gem v0.3.3+ (Ruby 3.2-3.4) and Ruby 4.0+ stdlib have CGI.escapeURIComponent.
 # JRuby: cgi.gem has a Java extension 'cgi/escape'.
 # TruffleRuby: lib/truffle/cgi/escape.rb requires 'cgi/util'.
 require 'cgi/escape'

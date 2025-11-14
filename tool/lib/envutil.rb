@@ -104,9 +104,11 @@ module EnvUtil
     else
       return unless dpid
       [[timeout, :TERM], [reprieve, :KILL]].find do |t, sig|
-        return EnvUtil.timeout(t) {Process.wait(dpid)}
-      rescue Timeout::Error
-        Process.kill(sig, dpid)
+        begin
+          return EnvUtil.timeout(t) {Process.wait(dpid)}
+        rescue Timeout::Error
+          Process.kill(sig, dpid)
+        end
       end
       true
     end
