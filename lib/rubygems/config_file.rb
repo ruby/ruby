@@ -345,7 +345,7 @@ if you believe they were disclosed to a third party.
     require "fileutils"
     FileUtils.mkdir_p(dirname)
 
-    permissions = 0o600 & (~File.umask)
+    permissions = 0o600 & ~File.umask
     File.open(credentials_path, "w", permissions) do |f|
       f.write self.class.dump_with_rubygems_yaml(config)
     end

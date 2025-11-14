@@ -158,7 +158,7 @@ class Gem::Commands::CertCommand < Gem::Command
     cert = Gem::Security.create_cert_email(
       email,
       key,
-      (Gem::Security::ONE_DAY * expiration_length_days)
+      Gem::Security::ONE_DAY * expiration_length_days
     )
 
     Gem::Security.write cert, "gem-public_cert.pem"
