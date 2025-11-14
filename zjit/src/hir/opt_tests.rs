@@ -198,10 +198,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[6] = Const Value(6)
           v12:Fixnum[7] = Const Value(7)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v22:Fixnum[42] = Const Value(42)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v24:Fixnum[42] = Const Value(42)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -225,18 +226,20 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[0] = Const Value(0)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v32:Fixnum = GuardType v9, Fixnum
-          v41:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v33:Fixnum = GuardType v9, Fixnum
+          v45:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
           v20:Fixnum[0] = Const Value(0)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v35:Fixnum = GuardType v9, Fixnum
-          v42:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v43:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v38:Fixnum = GuardType v9, Fixnum
+          v46:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
+          v47:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v43
+          Return v47
         ");
     }
 
@@ -1754,9 +1757,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
