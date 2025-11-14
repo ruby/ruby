@@ -37,7 +37,6 @@ require "rbconfig"
 # items you may add to a specification.
 
 class Gem::Specification < Gem::BasicSpecification
-
   # REFACTOR: Consider breaking out this version stuff into a separate
   # module. There's enough special stuff around it that it may justify
   # a separate class.

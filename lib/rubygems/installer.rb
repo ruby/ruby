@@ -26,7 +26,6 @@ require_relative "user_interaction"
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
-
   ##
   # Paths where env(1) might live.  Some systems are broken and have it in
   # /bin
