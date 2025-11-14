@@ -1049,6 +1049,26 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_duparray_send], call_threshold: 1
   end
 
+  def test_opt_newarray_send_hash
+    assert_compiles 'Integer', %q{
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20).class
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_hash_redefinition
+    assert_compiles '42', %q{
+      Array.class_eval { def hash = 42 }
+
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20)
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}
