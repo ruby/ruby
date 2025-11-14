@@ -1090,9 +1090,6 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                             void_node = NULL;
                             break;
                         }
-                        if (void_node == NULL) {
-                            void_node = vn;
-                        }
                     }
 
                     if (cast->else_clause != NULL) {
