@@ -2082,6 +2082,99 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 }
 
 /*
+ * call-seq:
+ *   find(if_none_proc = nil) {|element| ... } -> object or nil
+ *   find(if_none_proc = nil) -> enumerator
+ *
+ * Returns the first element for which the block returns a truthy value.
+ *
+ * With a block given, calls the block with successive elements of the array;
+ * returns the first element for which the block returns a truthy value:
+ *
+ *   (0..9).find {|element| element > 2}                # => 3
+ *
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   (0..9).find(proc {false}) {|element| element > 12} # => false
+ *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
+ *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
+ *
+ * With no block given, returns an Enumerator.
+ *
+ */
+
+static VALUE
+rb_ary_find(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE if_none;
+    long idx;
+
+    RETURN_ENUMERATOR(ary, argc, argv);
+    if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+
+    for (idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        VALUE elem = RARRAY_AREF(ary, idx);
+        if (RTEST(rb_yield(elem))) {
+            return elem;
+        }
+    }
+
+    if (!NIL_P(if_none)) {
+        return rb_funcallv(if_none, idCall, 0, 0);
+    }
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   rfind(if_none_proc = nil) {|element| ... } -> object or nil
+ *   rfind(if_none_proc = nil) -> enumerator
+ *
+ * Returns the last element for which the block returns a truthy value.
+ *
+ * With a block given, calls the block with successive elements of the array in
+ * reverse order; returns the last element for which the block returns a truthy
+ * value:
+ *
+ *   (0..9).rfind {|element| element < 5}                # => 4
+ *
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   (0..9).rfind(proc {false}) {|element| element < -2} # => false
+ *   {foo: 0, bar: 1, baz: 2}.rfind {|key, value| key.start_with?('b') }            # => [:baz, 2]
+ *   {foo: 0, bar: 1, baz: 2}.rfind(proc {[]}) {|key, value| key.start_with?('c') } # => []
+ *
+ * With no block given, returns an Enumerator.
+ *
+ */
+
+static VALUE
+rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE if_none;
+    long len, idx;
+
+    RETURN_ENUMERATOR(ary, argc, argv);
+    if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+
+    idx = RARRAY_LEN(ary);
+    while (idx--) {
+        VALUE elem = RARRAY_AREF(ary, idx);
+        if (RTEST(rb_yield(elem))) {
+            return elem;
+        }
+
+        len = RARRAY_LEN(ary);
+        idx = (idx >= len) ? len : idx;
+    }
+
+    if (!NIL_P(if_none)) {
+        return rb_funcallv(if_none, idCall, 0, 0);
+    }
+    return Qnil;
+}
+
+/*
  *  call-seq:
  *    find_index(object) -> integer or nil
  *    find_index {|element| ... } -> integer or nil
@@ -8802,6 +8895,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_method(rb_cArray, "size", rb_ary_length, 0);
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
+    rb_define_method(rb_cArray, "find", rb_ary_find, -1);
+    rb_define_method(rb_cArray, "rfind", rb_ary_rfind, -1);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
