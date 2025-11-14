@@ -981,7 +981,6 @@ zone_str(const char *zone)
 {
     const char *p;
     int ascii_only = 1;
-    VALUE str;
     size_t len;
 
     if (zone == NULL) {
@@ -997,18 +996,18 @@ zone_str(const char *zone)
     }
     len = p - zone;
     if (ascii_only) {
-        str = rb_usascii_str_new(zone, len);
+        return rb_enc_interned_str(zone, len, rb_usascii_encoding());
     }
     else {
 #ifdef _WIN32
-        str = rb_utf8_str_new(zone, len);
+        VALUE str = rb_utf8_str_new(zone, len);
         /* until we move to UTF-8 on Windows completely */
         str = rb_str_export_locale(str);
+        return rb_fstring(str);
 #else
-        str = rb_enc_str_new(zone, len, rb_locale_encoding());
+        return rb_enc_interned_str(zone, len, rb_locale_encoding());
 #endif
     }
-    return rb_fstring(str);
 }
 
 static void
