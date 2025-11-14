@@ -457,7 +457,9 @@ module Spec
         Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @spec.version.to_s)
 
         Dir.chdir build_path do
-          Gem::Package.build(@spec)
+          Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+            Gem::Package.build(@spec)
+          end
         end
 
         if block_given?
