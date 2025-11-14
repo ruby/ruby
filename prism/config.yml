@@ -2628,11 +2628,18 @@ nodes:
       - name: block
         type: node?
         kind: BlockNode
+        comment: |
+          All other arguments are forwarded as normal, except the original block is replaced with the new block.
     comment: |
-      Represents the use of the `super` keyword without parentheses or arguments.
+      Represents the use of the `super` keyword without parentheses or arguments, but which might have a block.
 
           super
           ^^^^^
+
+          super { 123 }
+          ^^^^^^^^^^^^^
+
+      If it has any other arguments, it would be a `SuperNode` instead.
   - name: GlobalVariableAndWriteNode
     fields:
       - name: name
@@ -4508,6 +4515,7 @@ nodes:
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: "Can be only `nil` when there are empty parentheses, like `super()`."
       - name: rparen_loc
         type: location?
       - name: block
@@ -4523,6 +4531,8 @@ nodes:
 
           super foo, bar
           ^^^^^^^^^^^^^^
+
+      If no arguments are provided (except for a block), it would be a `ForwardingSuperNode` instead.
   - name: SymbolNode
     flags: SymbolFlags
     fields:
