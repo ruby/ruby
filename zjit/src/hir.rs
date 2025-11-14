@@ -1485,8 +1485,6 @@ pub struct Function {
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
 
-    // TODO: get method name and source location from the ISEQ
-
     insns: Vec<Insn>,
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
