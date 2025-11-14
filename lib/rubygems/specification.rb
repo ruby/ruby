@@ -7,7 +7,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "deprecate"
 require_relative "basic_specification"
 require_relative "stub_specification"
 require_relative "platform"
@@ -38,7 +37,6 @@ require "rbconfig"
 # items you may add to a specification.
 
 class Gem::Specification < Gem::BasicSpecification
-  extend Gem::Deprecate
 
   # REFACTOR: Consider breaking out this version stuff into a separate
   # module. There's enough special stuff around it that it may justify
@@ -2539,21 +2537,6 @@ class Gem::Specification < Gem::BasicSpecification
   def validate_for_resolution
     Gem::SpecificationPolicy.new(self).validate_for_resolution
   end
-
-  def validate_metadata
-    Gem::SpecificationPolicy.new(self).validate_metadata
-  end
-  rubygems_deprecate :validate_metadata
-
-  def validate_dependencies
-    Gem::SpecificationPolicy.new(self).validate_dependencies
-  end
-  rubygems_deprecate :validate_dependencies
-
-  def validate_permissions
-    Gem::SpecificationPolicy.new(self).validate_permissions
-  end
-  rubygems_deprecate :validate_permissions
 
   ##
   # Set the version to +version+.
