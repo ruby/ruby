@@ -463,6 +463,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
+        Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -1399,6 +1400,33 @@ fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
     asm_ccall!(asm, rb_jit_array_len, array)
 }
 
+/// Compile opt_newarray_hash - create a hash from array elements
+fn gen_opt_newarray_hash(
+    jit: &JITState,
+    asm: &mut Assembler,
+    elements: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    // `Array#hash` will hash the elements of the array.
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+
+    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
+    // Get a pointer to the first element on the Ruby stack.
+    let stack_bottom = state.stack().len() - elements.len();
+    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+
+    unsafe extern "C" {
+        fn rb_vm_opt_newarray_hash(ec: EcPtr, array_len: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    asm.ccall(
+        rb_vm_opt_newarray_hash as *const u8,
+        vec![EC, (array_len as u32).into(), elements_ptr],
+    )
+}
+
 fn gen_array_include(
     jit: &JITState,
     asm: &mut Assembler,
@@ -1408,7 +1436,7 @@ fn gen_array_include(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
     // The elements are at the bottom of the virtual stack, followed by the target.
@@ -1421,7 +1449,7 @@ fn gen_array_include(
     }
     asm.ccall(
         rb_vm_opt_newarray_include_p as *const u8,
-        vec![EC, num.into(), elements_ptr, target],
+        vec![EC, array_len.into(), elements_ptr, target],
     )
 }
 
