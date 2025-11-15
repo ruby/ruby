@@ -1843,10 +1843,10 @@ strio_syswrite_nonblock(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.length -> integer
- *   strio.size   -> integer
+ *   size -> integer
  *
- * Returns the size of the buffer string.
+ * :include: stringio/size.rdoc
+ *
  */
 static VALUE
 strio_size(VALUE self)
