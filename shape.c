@@ -356,12 +356,16 @@ shape_frozen_p(shape_id_t shape_id)
 void
 rb_shape_each_shape_id(each_shape_callback callback, void *data)
 {
-    rb_shape_t *start = rb_shape_get_root_shape();
-    rb_shape_t *cursor = start;
-    rb_shape_t *end = RSHAPE(rb_shapes_count());
-    while (cursor < end) {
-        callback((shape_id_t)(cursor - start), data);
-        cursor += 1;
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
+
+        rb_shape_t *start = rb_shape_get_root_shape();
+        rb_shape_t *cursor = start;
+        rb_shape_t *end = RSHAPE(rb_shapes_count());
+        while (cursor < end) {
+            callback((shape_id_t)(cursor - start), data);
+            cursor += 1;
+        }
     }
 }
 
