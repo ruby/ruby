@@ -4630,7 +4630,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_specialize_basicobject_not_to_ccall() {
+    fn test_specialize_basicobject_not_truthy() {
         eval("
             def test(a) = !a
 
@@ -4650,10 +4650,104 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BoolExact = CCall !@0x1038, v23
           CheckInterrupts
-          Return v25
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basicobject_not_false() {
+        eval("
+            def test(a) = !a
+
+            test(false)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(FalseClass@0x1000, !@0x1008, cme:0x1010)
+          v22:FalseClass = GuardType v9, FalseClass
+          v23:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basicobject_not_nil() {
+        eval("
+            def test(a) = !a
+
+            test(nil)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1000, !@0x1008, cme:0x1010)
+          v22:NilClass = GuardType v9, NilClass
+          v23:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basicobject_not_falsy() {
+        eval("
+            def test(a) = !(if a then false else nil end)
+
+            # TODO(max): Make this not GuardType NilClass and instead just reason
+            # statically
+            test(false)
+            test(true)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          v15:CBool = Test v9
+          IfFalse v15, bb3(v8, v9)
+          v18:FalseClass = Const Value(false)
+          CheckInterrupts
+          Jump bb4(v8, v9, v18)
+        bb3(v22:BasicObject, v23:BasicObject):
+          v26:NilClass = Const Value(nil)
+          Jump bb4(v22, v23, v26)
+        bb4(v28:BasicObject, v29:BasicObject, v30:NilClass|FalseClass):
+          PatchPoint MethodRedefined(NilClass@0x1000, !@0x1008, cme:0x1010)
+          v41:NilClass = GuardType v30, NilClass
+          v42:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v42
         ");
     }
 
