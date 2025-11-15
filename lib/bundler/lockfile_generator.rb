@@ -95,7 +95,7 @@ module Bundler
           out << "  #{key}: #{val}\n"
         end
       when String
-        out << "   #{value}\n"
+        out << "  #{value}\n"
       else
         raise ArgumentError, "#{value.inspect} can't be serialized in a lockfile"
       end

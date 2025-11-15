@@ -318,6 +318,8 @@ struct lex_context {
     BITFIELD(enum rb_parser_shareability, shareable_constant_value, 2);
     BITFIELD(enum rescue_context, in_rescue, 2);
     unsigned int cant_return: 1;
+    unsigned int in_alt_pattern: 1;
+    unsigned int capture_in_pattern: 1;
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
@@ -3473,6 +3475,8 @@ expr		: command_call
                         pop_pktbl(p, $p_pktbl);
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
+                        p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
+                        p->ctxt.capture_in_pattern = $ctxt.capture_in_pattern;
                         $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body, &NULL_LOC, &NULL_LOC, &@2), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
@@ -3486,6 +3490,8 @@ expr		: command_call
                         pop_pktbl(p, $p_pktbl);
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
+                        p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
+                        p->ctxt.capture_in_pattern = $ctxt.capture_in_pattern;
                         $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body, &@keyword_in, &NULL_LOC, &NULL_LOC), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
@@ -5224,10 +5230,7 @@ block_call	: command do_block
                     {
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
-                    /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
-                        if ($5) {
-                        /*% ripper: method_add_block!($:$, $:5) %*/
-                        }
+                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | block_call call_op2 operation2 command_args do_block
                     {
@@ -5392,6 +5395,8 @@ p_in_kwarg	:   {
                         SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
                         p->command_start = FALSE;
                         p->ctxt.in_kwarg = 1;
+                        p->ctxt.in_alt_pattern = 0;
+                        p->ctxt.capture_in_pattern = 0;
                     }
                 ;
 
@@ -5402,6 +5407,8 @@ p_case_body	: keyword_in
                         pop_pktbl(p, $p_pktbl);
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
+                        p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
+                        p->ctxt.capture_in_pattern = $ctxt.capture_in_pattern;
                     }
                   compstmt(stmts)
                   p_cases[cases]
@@ -5461,6 +5468,11 @@ p_top_expr_body	: p_expr
                 ;
 
 p_expr		: p_as
+                    {
+                        p->ctxt.in_alt_pattern = 0;
+                        p->ctxt.capture_in_pattern = 0;
+                        $$ = $1;
+                    }
                 ;
 
 p_as		: p_expr tASSOC p_variable
@@ -5473,10 +5485,17 @@ p_as		: p_expr tASSOC p_variable
                 | p_alt
                 ;
 
-p_alt		: p_alt '|' p_expr_basic
+p_alt		: p_alt[left] '|'[alt]
                     {
-                        $$ = NEW_OR($1, $3, &@$, &@2);
-                    /*% ripper: binary!($:1, ID2VAL(idOr), $:3) %*/
+                        p->ctxt.in_alt_pattern = 1;
+                    }
+                  p_expr_basic[right]
+                    {
+                        if (p->ctxt.capture_in_pattern) {
+                            yyerror1(&@alt, "alternative pattern after variable capture");
+                        }
+                        $$ = NEW_OR($left, $right, &@$, &@alt);
+                    /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
                 | p_expr_basic
                 ;
@@ -14700,7 +14719,11 @@ error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *
     if (st_is_member(p->pvtbl, id)) {
         yyerror1(loc, "duplicated variable name");
     }
+    else if (p->ctxt.in_alt_pattern && id) {
+        yyerror1(loc, "variable capture in alternative pattern");
+    }
     else {
+        p->ctxt.capture_in_pattern = 1;
         st_insert(p->pvtbl, (st_data_t)id, 0);
     }
 }

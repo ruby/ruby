@@ -21,7 +21,7 @@ gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 16.0.0
+UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -1720,7 +1720,7 @@ UNICODE_UCD_EMOJI_DOWNLOAD = \
 UNICODE_EMOJI_DOWNLOAD = \
 	$(UNICODE_DOWNLOADER) \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
-	    -p emoji/$(UNICODE_EMOJI_VERSION)
+	    -p $(UNICODE_VERSION)/emoji
 
 update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...

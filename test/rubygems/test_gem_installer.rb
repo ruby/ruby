@@ -2279,19 +2279,6 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_equal "#!1 #{bin_env} 2 #{Gem.ruby} -ws 3 executable", shebang
   end
 
-  def test_unpack
-    installer = util_setup_installer
-
-    dest = File.join @gemhome, "gems", @spec.full_name
-
-    Gem::Deprecate.skip_during do
-      installer.unpack dest
-    end
-
-    assert_path_exist File.join dest, "lib", "code.rb"
-    assert_path_exist File.join dest, "bin", "executable"
-  end
-
   def test_write_build_info_file
     installer = setup_base_installer
 

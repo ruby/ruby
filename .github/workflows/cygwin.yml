@@ -45,7 +45,7 @@ jobs:
       - name: Setup Cygwin
         uses: cygwin/cygwin-install-action@master
         with:
-          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel
+          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems
 
       - name: configure
         run: |
@@ -53,12 +53,11 @@ jobs:
           ./configure --disable-install-doc
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
-      # This fails with: tool/outdate-bundled-gems.rb:3:in 'Kernel#require': cannot load such file -- rubygems (LoadError)
-      #- name: Extract bundled gems
-      #  run: |
-      #    make ruby -j5
-      #    make extract-gems
-      #  shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
+      - name: Extract bundled gems
+        run: |
+          make ruby -j5
+          make extract-gems
+        shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: make all
         timeout-minutes: 30

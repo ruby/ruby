@@ -4900,7 +4900,7 @@ static VALUE
 rb_io_each_codepoint(VALUE io)
 {
     rb_io_t *fptr;
-    rb_encoding *enc;
+    rb_encoding *enc, *read_enc;
     unsigned int c;
     int r, n;
 
@@ -4914,12 +4914,13 @@ rb_io_each_codepoint(VALUE io)
         r = 1;		/* no invalid char yet */
         for (;;) {
             make_readconv(fptr, 0);
+            read_enc = io_read_encoding(fptr);
             for (;;) {
                 if (fptr->cbuf.len) {
-                    if (fptr->encs.enc)
+                    if (read_enc)
                         r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
                                                   fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                                  fptr->encs.enc);
+                                                  read_enc);
                     else
                         r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
                     if (!MBCLEN_NEEDMORE_P(r))
@@ -4931,21 +4932,21 @@ rb_io_each_codepoint(VALUE io)
                 if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
                     if (!MBCLEN_CHARFOUND_P(r)) {
-                        enc = fptr->encs.enc;
+                        enc = read_enc;
                         goto invalid;
                     }
                     return io;
                 }
             }
             if (MBCLEN_INVALID_P(r)) {
-                enc = fptr->encs.enc;
+                enc = read_enc;
                 goto invalid;
             }
             n = MBCLEN_CHARFOUND_LEN(r);
-            if (fptr->encs.enc) {
+            if (read_enc) {
                 c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
                                      fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                     fptr->encs.enc);
+                                     read_enc);
             }
             else {
                 c = (unsigned char)fptr->cbuf.ptr[fptr->cbuf.off];

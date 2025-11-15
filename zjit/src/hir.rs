@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -593,15 +593,21 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
-    SendWithoutBlockDirectTooManyArgs,
+    SendWithoutBlockBopRedefined,
+    SendWithoutBlockOperandsNotFixnum,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
+    SendCfuncVariadic,
+    SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
+    TooManyArgsForLir,
     /// The Proc object for a BMETHOD is not defined by an ISEQ. (See `enum rb_block_type`.)
     BmethodNonIseqProc,
+    /// Caller supplies too few or too many arguments than what the callee's parameters expects.
+    ArgcParamMismatch,
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
     ComplexArgPass,
@@ -1453,7 +1459,7 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, send_insn: InsnId, args: &[InsnId]) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1462,11 +1468,29 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 
     use Counter::*;
     if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(complex_arg_pass_param_opt) }
+    if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
     if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
     if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
     if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
     if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
+
+    if !can_send {
+        function.set_dynamic_send_reason(send_insn, ComplexArgPass);
+        return false;
+    }
+
+    // Check argument count against callee's parameters. Note that correctness for this calculation
+    // relies on rejecting features above.
+    let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    can_send = c_int::try_from(args.len())
+        .as_ref()
+        .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
+        .unwrap_or(false);
+    if !can_send {
+        function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+        return false
+    }
 
     can_send
 }
@@ -1481,15 +1505,14 @@ pub struct Function {
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
 
-    // TODO: get method name and source location from the ISEQ
-
     insns: Vec<Insn>,
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
     /// Entry block for the interpreter
     entry_block: BlockId,
-    /// Entry block for JIT-to-JIT calls
+    /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
+    /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
 }
@@ -2048,9 +2071,8 @@ impl Function {
         for jit_entry_block in self.jit_entry_blocks.iter() {
             let entry_params = self.blocks[jit_entry_block.0].params.iter();
             let param_types = self.param_types.iter();
-            assert_eq!(
-                entry_params.len(),
-                param_types.len(),
+            assert!(
+                param_types.len() >= entry_params.len(),
                 "param types should be initialized before type inference",
             );
             for (param, param_type) in std::iter::zip(entry_params, param_types) {
@@ -2245,31 +2267,10 @@ impl Function {
         if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_forwarding)); }
     }
 
-    fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
-        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
-            // If the basic operation is already redefined, we cannot optimize it.
-            self.push_insn_id(block, orig_insn_id);
-            return;
-        }
-        if self.likely_a(left, types::Fixnum, state) && self.likely_a(right, types::Fixnum, state) {
-            if bop == BOP_NEQ {
-                // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
-            }
-            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state });
-            let left = self.coerce_to(block, left, types::Fixnum, state);
-            let right = self.coerce_to(block, right, types::Fixnum, state);
-            let result = self.push_insn(block, f(left, right));
-            self.make_equal_to(orig_insn_id, result);
-            self.insn_types[result.0] = self.infer_type(result);
-        } else {
-            self.push_insn_id(block, orig_insn_id);
-        }
-    }
-
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
             // If the basic operation is already redefined, we cannot optimize it.
+            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockBopRedefined);
             self.push_insn_id(block, orig_insn_id);
             return;
         }
@@ -2313,32 +2314,6 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(plus) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minus) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(mult) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(div) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(modulo) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(eq) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(neq) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(lt) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(le) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(gt) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(ge) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(and) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, recv, args[0], state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(or) && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, recv, args[0], state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
@@ -2403,8 +2378,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2429,8 +2403,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
@@ -2844,10 +2817,12 @@ impl Function {
             // Do method lookup
             let cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
+                fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
             // Filter for C methods
+            // TODO(max): Handle VM_METHOD_TYPE_ALIAS
             let def_type = unsafe { get_cme_def_type(cme) };
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
@@ -2911,10 +2886,12 @@ impl Function {
                 // Variadic method
                 -1 => {
                     // func(int argc, VALUE *argv, VALUE recv)
+                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncVariadic);
                     Err(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
+                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
                     Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
@@ -2949,6 +2926,7 @@ impl Function {
             // Do method lookup
             let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
+                fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
@@ -3010,6 +2988,10 @@ impl Function {
                         fun.blocks[block.0].insns.extend(insns);
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
                         fun.make_equal_to(send_insn_id, replacement);
+                        if fun.type_of(replacement).bit_equal(types::Any) {
+                            // Not set yet; infer type
+                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                        }
                         fun.remove_block(tmp_block);
                         return Ok(());
                     }
@@ -3083,6 +3065,10 @@ impl Function {
                             fun.blocks[block.0].insns.extend(insns);
                             fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
                             fun.make_equal_to(send_insn_id, replacement);
+                            if fun.type_of(replacement).bit_equal(types::Any) {
+                                // Not set yet; infer type
+                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                            }
                             fun.remove_block(tmp_block);
                             return Ok(());
                         }
@@ -4310,7 +4296,8 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 }
 
 /// List of insn_idx that starts a JIT entry block
-fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+    // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     if opt_num > 0 {
         let mut result = vec![];
@@ -4320,10 +4307,6 @@ fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
             result.push(insn_idx);
         }
-
-        // Deduplicate entries with HashSet since opt_table may have duplicated entries, e.g. proc { |a=a| a }
-        result.sort();
-        result.dedup();
         result
     } else {
         vec![0]
@@ -4389,7 +4372,6 @@ pub enum ParseError {
     StackUnderflow(FrameState),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
-    FailedOptionalArguments,
     NotAllowed,
 }
 
@@ -4470,28 +4452,45 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
     let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq, &jit_entry_insns);
+
+    // Make all empty basic blocks. The ordering of the BBs matters as it is taken as a schedule
+    // in the backend without a scheduling pass. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
+    // Make blocks for optionals first, and put them right next to their JIT entrypoint
+    for insn_idx in jit_entry_insns.iter().copied() {
+        let jit_entry_block = fun.new_block(insn_idx);
+        fun.jit_entry_blocks.push(jit_entry_block);
+        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+    }
+    // Make blocks for the rest of the jump targets
     for insn_idx in jump_targets {
-        // Prepend a JIT entry block if it's a jit_entry_insn.
-        // compile_entry_block() assumes that a JIT entry block jumps to the next block.
-        if jit_entry_insns.contains(&insn_idx) {
-            let jit_entry_block = fun.new_block(insn_idx);
-            fun.jit_entry_blocks.push(jit_entry_block);
-        }
-        insn_idx_to_block.insert(insn_idx, fun.new_block(insn_idx));
+        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+    }
+    // Done, drop `mut`.
+    let insn_idx_to_block = insn_idx_to_block;
+
+    // Compile an entry_block for the interpreter
+    compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+
+    // Compile all JIT-to-JIT entry blocks
+    for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+        let target_block = insn_idx_to_block.get(insn_idx)
+            .copied()
+            .expect("we make a block for each jump target and \
+                     each entry in the ISEQ opt_table is a jump target");
+        compile_jit_entry_block(&mut fun, jit_entry_idx, target_block);
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
     let ep_escaped = iseq_escapes_ep(iseq);
 
-    // Compile an entry_block for the interpreter
-    compile_entry_block(&mut fun, &jit_entry_insns);
-
-    // Iteratively fill out basic blocks using a queue
+    // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    queue.push_back((FrameState::new(iseq), insn_idx_to_block[&0], /*insn_idx=*/0, /*local_inval=*/false));
+    for &insn_idx in jit_entry_insns.iter() {
+        queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+    }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
@@ -4501,16 +4500,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         if visited.contains(&block) { continue; }
         visited.insert(block);
 
-        // Compile a JIT entry to the block if it's a jit_entry_insn
-        if let Some(block_idx) = jit_entry_insns.iter().position(|&idx| idx == insn_idx) {
-            compile_jit_entry_block(&mut fun, block_idx, block);
-        }
-
         // Load basic block params first
         let self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = FrameState::new(iseq);
-            let local_size = if insn_idx == 0 { num_locals(iseq) } else { incoming_state.locals.len() };
+            let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
@@ -5362,14 +5356,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
-    // Bail out if there's a JIT entry block whose target block was not compiled
-    // due to an unsupported instruction in the middle of the ISEQ.
-    for jit_entry_block in fun.jit_entry_blocks.iter() {
-        if fun.blocks[jit_entry_block.0].insns.is_empty() {
-            return Err(ParseError::FailedOptionalArguments);
-        }
-    }
-
     fun.set_param_types();
     fun.infer_types();
 
@@ -5389,44 +5375,46 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Compile an entry_block for the interpreter
-fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32]) {
+fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_block: &HashMap<u32, BlockId>) {
     let entry_block = fun.entry_block;
-    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
-
-    // Prepare entry_state with basic block params
-    let (self_param, entry_state) = compile_entry_state(fun, entry_block);
-
-    // Jump to target blocks
+    let (self_param, entry_state) = compile_entry_state(fun);
     let mut pc: Option<InsnId> = None;
-    let &last_entry_insn = jit_entry_insns.last().unwrap();
-    for (jit_entry_block_idx, &jit_entry_insn) in jit_entry_insns.iter().enumerate() {
-        let jit_entry_block = fun.jit_entry_blocks[jit_entry_block_idx];
-        let target_block = BlockId(jit_entry_block.0 + 1); // jit_entry_block precedes the jump target block
+    let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
 
-        if jit_entry_insn == last_entry_insn {
-            // If it's the last possible entry, jump to the target_block without checking PC
-            fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
-        } else {
-            // Otherwise, jump to the target_block only if PC matches.
-            let pc = pc.unwrap_or_else(|| {
-                let insn_id = fun.push_insn(entry_block, Insn::LoadPC);
-                pc = Some(insn_id);
-                insn_id
-            });
-            let expected_pc = fun.push_insn(entry_block, Insn::Const {
-                val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
-            });
-            let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
-            fun.push_insn(entry_block, Insn::IfTrue {
-                val: test_id,
-                target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
-            });
+    // Check-and-jump for each missing optional PC
+    for &jit_entry_insn in jit_entry_insns.iter() {
+        if jit_entry_insn == all_opts_passed_insn_idx {
+            continue;
         }
+        let target_block = insn_idx_to_block.get(&jit_entry_insn)
+            .copied()
+            .expect("we make a block for each jump target and \
+                     each entry in the ISEQ opt_table is a jump target");
+        // Load PC once at the start of the block, shared among all cases
+        let pc = *pc.get_or_insert_with(|| fun.push_insn(entry_block, Insn::LoadPC));
+        let expected_pc = fun.push_insn(entry_block, Insn::Const {
+            val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
+        });
+        let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
+        fun.push_insn(entry_block, Insn::IfTrue {
+            val: test_id,
+            target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
+        });
     }
+
+    // Terminate the block with a jump to the block with all optionals passed
+    let target_block = insn_idx_to_block.get(&all_opts_passed_insn_idx)
+        .copied()
+        .expect("we make a block for each jump target and \
+                 each entry in the ISEQ opt_table is a jump target");
+    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }
 
 /// Compile initial locals for an entry_block for the interpreter
-fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
+fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
+    let entry_block = fun.entry_block;
+    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
+
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
     let rest_param_idx = iseq_rest_param_idx(iseq);
@@ -5452,21 +5440,27 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
     fun.push_insn(jit_entry_block, Insn::EntryPoint { jit_entry_idx: Some(jit_entry_idx) });
 
     // Prepare entry_state with basic block params
-    let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block);
+    let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block, jit_entry_idx);
 
     // Jump to target_block
     fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }
 
 /// Compile params and initial locals for a jit_entry_block
-fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (InsnId, FrameState) {
+fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_entry_idx: usize) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
+    let opt_num: usize = unsafe { get_iseq_body_param_opt_num(iseq) }.try_into().expect("iseq param opt_num >= 0");
+    let lead_num: usize = unsafe { get_iseq_body_param_lead_num(iseq) }.try_into().expect("iseq param lead_num >= 0");
+    let passed_opt_num = jit_entry_idx;
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
-        if local_idx < param_size {
+        if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
+            // Omitted optionals are locals, so they start as nils before their code run
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+        } else if local_idx < param_size {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
@@ -5889,13 +5883,15 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">v25:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = FixnumOr v25, v26&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = FixnumOr v26, v27&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v29">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">Return v27&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">Return v28&nbsp;</TD></TR>
         </TABLE>>];
         }
         "#);

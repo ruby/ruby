@@ -485,7 +485,7 @@ RSpec.describe "bundle outdated" do
           zeitwerk
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "outdated zeitwerk", raise_on_error: false
@@ -1297,7 +1297,7 @@ RSpec.describe "bundle outdated" do
           nokogiri
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       gemfile <<-G
@@ -1351,7 +1351,7 @@ RSpec.describe "bundle outdated" do
           mini_portile2
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

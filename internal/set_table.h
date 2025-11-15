@@ -1,7 +1,7 @@
 #ifndef INTERNAL_SET_TABLE_H
 #define INTERNAL_SET_TABLE_H
 
-#include "include/ruby/st.h"
+#include "ruby/st.h"
 
 struct set_table_entry;
 

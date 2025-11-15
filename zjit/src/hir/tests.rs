@@ -133,15 +133,16 @@ pub mod hir_build_tests {
           v5:CBool = IsBitEqual v3, v4
           IfTrue v5, bb2(v1, v2)
           Jump bb4(v1, v2)
-        bb1(v9:BasicObject, v10:BasicObject):
+        bb1(v9:BasicObject):
           EntryPoint JIT(0)
+          v10:NilClass = Const Value(nil)
           Jump bb2(v9, v10)
-        bb2(v12:BasicObject, v13:BasicObject):
-          v16:Fixnum[1] = Const Value(1)
-          Jump bb4(v12, v16)
-        bb3(v20:BasicObject, v21:BasicObject):
+        bb2(v16:BasicObject, v17:BasicObject):
+          v20:Fixnum[1] = Const Value(1)
+          Jump bb4(v16, v20)
+        bb3(v13:BasicObject, v14:BasicObject):
           EntryPoint JIT(1)
-          Jump bb4(v20, v21)
+          Jump bb4(v13, v14)
         bb4(v23:BasicObject, v24:BasicObject):
           v28:Fixnum[123] = Const Value(123)
           CheckInterrupts
@@ -806,17 +807,18 @@ pub mod hir_build_tests {
           v6:CBool = IsBitEqual v4, v5
           IfTrue v6, bb2(v1, v2, v3)
           Jump bb4(v1, v2, v3)
-        bb1(v10:BasicObject, v11:BasicObject):
+        bb1(v10:BasicObject):
           EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v10, v11, v12)
-        bb2(v14:BasicObject, v15:BasicObject, v16:NilClass):
-          v20:Fixnum[1] = Const Value(1)
-          Jump bb4(v14, v20, v20)
-        bb3(v26:BasicObject, v27:BasicObject):
+        bb2(v19:BasicObject, v20:BasicObject, v21:NilClass):
+          v25:Fixnum[1] = Const Value(1)
+          Jump bb4(v19, v25, v25)
+        bb3(v15:BasicObject, v16:BasicObject):
           EntryPoint JIT(1)
-          v28:NilClass = Const Value(nil)
-          Jump bb4(v26, v27, v28)
+          v17:NilClass = Const Value(nil)
+          Jump bb4(v15, v16, v17)
         bb4(v30:BasicObject, v31:BasicObject, v32:NilClass|Fixnum):
           v38:ArrayExact = NewArray v31, v32
           CheckInterrupts
@@ -831,7 +833,34 @@ pub mod hir_build_tests {
             TracePoint.new(:line) {}.enable
             test
         ");
-        assert_compile_fails("test", ParseError::FailedOptionalArguments);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:NilClass = Const Value(nil)
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v6:CBool = IsBitEqual v4, v5
+          IfTrue v6, bb2(v1, v2, v3)
+          Jump bb4(v1, v2, v3)
+        bb1(v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v10, v11, v12)
+        bb2(v19:BasicObject, v20:BasicObject, v21:NilClass):
+          SideExit UnhandledYARVInsn(trace_putobject_INT2FIX_1_)
+        bb3(v15:BasicObject, v16:BasicObject):
+          EntryPoint JIT(1)
+          v17:NilClass = Const Value(nil)
+          Jump bb4(v15, v16, v17)
+        bb4(v26:BasicObject, v27:BasicObject, v28:NilClass):
+          v34:ArrayExact = NewArray v27, v28
+          CheckInterrupts
+          Return v34
+        ");
     }
 
     #[test]
@@ -839,7 +868,30 @@ pub mod hir_build_tests {
         eval("
             def test(a = (def foo = nil)) = a
         ");
-        assert_compile_fails("test", ParseError::FailedOptionalArguments);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          v3:CPtr = LoadPC
+          v4:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v5:CBool = IsBitEqual v3, v4
+          IfTrue v5, bb2(v1, v2)
+          Jump bb4(v1, v2)
+        bb1(v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v9, v10)
+        bb2(v16:BasicObject, v17:BasicObject):
+          SideExit UnhandledYARVInsn(definemethod)
+        bb3(v13:BasicObject, v14:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb4(v13, v14)
+        bb4(v22:BasicObject, v23:BasicObject):
+          CheckInterrupts
+          Return v23
+        ");
     }
 
     #[test]
@@ -854,12 +906,16 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1(v5:BasicObject):
           EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
+        bb3(v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb2(v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject):
           CheckInterrupts
-          Return v9
+          Return v13
         ");
     }
 

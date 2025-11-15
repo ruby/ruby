@@ -74,6 +74,18 @@ class HTTPRequestTest < Test::Unit::TestCase
     assert_equal "/foo", req.path
     assert_equal "example.com", req['Host']
 
+    req = Net::HTTP::Get.new(URI("https://203.0.113.1/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "203.0.113.1", req['Host']
+
+    req = Net::HTTP::Get.new(URI("https://203.0.113.1:8000/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "203.0.113.1:8000", req['Host']
+
+    req = Net::HTTP::Get.new(URI("https://[2001:db8::1]:8000/foo"))
+    assert_equal "/foo", req.path
+    assert_equal "[2001:db8::1]:8000", req['Host']
+
     assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("urn:ietf:rfc:7231")) }
     assert_raise(ArgumentError){ Net::HTTP::Get.new(URI("http://")) }
   end
@@ -89,5 +101,25 @@ class HTTPRequestTest < Test::Unit::TestCase
                          'Bug #7831 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
-end
+  def test_update_uri
+    req = Net::HTTP::Get.new(URI.parse("http://203.0.113.1"))
+    req.update_uri("test", 8080, false)
+    assert_equal "203.0.113.1", req.uri.host
+    assert_equal 8080, req.uri.port
 
+    req = Net::HTTP::Get.new(URI.parse("http://203.0.113.1:2020"))
+    req.update_uri("test", 8080, false)
+    assert_equal "203.0.113.1", req.uri.host
+    assert_equal 8080, req.uri.port
+
+    req = Net::HTTP::Get.new(URI.parse("http://[2001:db8::1]"))
+    req.update_uri("test", 8080, false)
+    assert_equal "[2001:db8::1]", req.uri.host
+    assert_equal 8080, req.uri.port
+
+    req = Net::HTTP::Get.new(URI.parse("http://[2001:db8::1]:2020"))
+    req.update_uri("test", 8080, false)
+    assert_equal "[2001:db8::1]", req.uri.host
+    assert_equal 8080, req.uri.port
+  end
+end

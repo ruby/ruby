@@ -109,13 +109,15 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v29:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v33:Fixnum[3] = Const Value(3)
+          IncrCounter inline_cfunc_optimized_send_count
           v17:Fixnum[3] = Const Value(3)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v30:Fixnum[6] = Const Value(6)
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v34:Fixnum[6] = Const Value(6)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v34
         ");
     }
 
@@ -138,13 +140,15 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           v12:Fixnum[3] = Const Value(3)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-          v29:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
+          v33:Fixnum[2] = Const Value(2)
+          IncrCounter inline_cfunc_optimized_send_count
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-          v30:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
+          v34:Fixnum[1] = Const Value(1)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v34
         ");
     }
 
@@ -167,10 +171,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
           v12:Fixnum[1073741825] = Const Value(1073741825)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-          v22:Fixnum[-1073741825] = Const Value(-1073741825)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
+          v24:Fixnum[-1073741825] = Const Value(-1073741825)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -193,10 +198,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[6] = Const Value(6)
           v12:Fixnum[7] = Const Value(7)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v22:Fixnum[42] = Const Value(42)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v24:Fixnum[42] = Const Value(42)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -220,17 +226,20 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[0] = Const Value(0)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v32:Fixnum = GuardType v9, Fixnum
-          v39:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v33:Fixnum = GuardType v9, Fixnum
+          v45:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
           v20:Fixnum[0] = Const Value(0)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v35:Fixnum = GuardType v9, Fixnum
-          v40:Fixnum[0] = Const Value(0)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v41:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v38:Fixnum = GuardType v9, Fixnum
+          v46:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
+          v47:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v41
+          Return v47
         ");
     }
 
@@ -257,8 +266,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-          v38:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v40:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -289,13 +299,15 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-          v51:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
+          v55:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-          v53:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
+          v57:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -326,8 +338,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-          v38:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, >@0x1008, cme:0x1010)
+          v40:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -358,13 +371,15 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-          v51:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
+          v55:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-          v53:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
+          v57:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -395,8 +410,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v38:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
+          v40:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v31:Fixnum[4] = Const Value(4)
           CheckInterrupts
@@ -427,8 +443,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v38:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
+          v40:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -459,9 +476,10 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-          v39:TrueClass = Const Value(true)
+          v41:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -492,9 +510,10 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-          v39:FalseClass = Const Value(false)
+          v41:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v31:Fixnum[4] = Const Value(4)
           CheckInterrupts
@@ -568,11 +587,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:Fixnum = FixnumAdd v23, v14
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:Fixnum = FixnumAdd v24, v14
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -920,6 +940,87 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_send_direct_no_optionals_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_direct_one_optional_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo 3
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_direct_all_optionals_passed() {
+        eval("
+            def foo(a=1, b=2) = a + b
+            def test = foo 3, 4
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          v13:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_optimize_variadic_ccall() {
         eval("
             def test
@@ -971,9 +1072,12 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :+, v12
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v25:Fixnum = GuardType v11, Fixnum
+          IncrCounter inline_iseq_optimized_send_count
+          v28:Fixnum[100] = Const Value(100)
           CheckInterrupts
-          Return v19
+          Return v28
         ");
     }
 
@@ -995,12 +1099,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v25:Fixnum = GuardType v11, Fixnum
-          v26:Fixnum = GuardType v12, Fixnum
-          v27:Fixnum = FixnumAdd v25, v26
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:Fixnum = FixnumAdd v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -1022,11 +1127,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:Fixnum = FixnumAdd v23, v14
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:Fixnum = FixnumAdd v24, v14
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -1048,11 +1154,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:Fixnum = FixnumAdd v13, v23
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:Fixnum = FixnumAdd v13, v24
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -1074,12 +1181,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-          v25:Fixnum = GuardType v11, Fixnum
-          v26:Fixnum = GuardType v12, Fixnum
-          v27:BoolExact = FixnumLt v25, v26
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:BoolExact = FixnumLt v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -1101,11 +1209,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:BoolExact = FixnumLt v23, v14
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:BoolExact = FixnumLt v24, v14
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -1127,11 +1236,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:BoolExact = FixnumLt v13, v23
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:BoolExact = FixnumLt v13, v24
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -1674,9 +1784,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1704,9 +1815,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1734,9 +1846,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1764,10 +1877,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
-          v31:Fixnum = FixnumDiv v29, v30
+          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          v32:Fixnum = FixnumDiv v30, v31
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1795,10 +1909,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
-          v31:Fixnum = FixnumMod v29, v30
+          PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          v32:Fixnum = FixnumMod v30, v31
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1826,9 +1941,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1856,9 +1972,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1886,9 +2003,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, >@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1916,9 +2034,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1946,9 +2065,10 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v29:Fixnum = GuardType v11, Fixnum
-          v30:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
+          v30:Fixnum = GuardType v11, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -1976,10 +2096,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           v30:Fixnum = GuardType v11, Fixnum
-          v31:Fixnum = GuardType v12, Fixnum
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v32:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23
@@ -2549,10 +2670,12 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_param_opt
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
           CheckInterrupts
-          Return v13
+          Return v21
         ");
     }
 
@@ -2634,6 +2757,31 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_rest
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_post_param_iseq() {
+        eval("
+            def foo(opt=80, post) = post
+            def test = foo(10)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          IncrCounter complex_arg_pass_param_post
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2996,7 +3144,6 @@ mod hir_opt_tests {
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter complex_arg_pass_param_opt
           IncrCounter complex_arg_pass_param_kw
           IncrCounter complex_arg_pass_param_block
           v20:BasicObject = SendWithoutBlock v46, :initialize
@@ -4616,12 +4763,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
-          v25:Fixnum = GuardType v11, Fixnum
-          v26:Fixnum = GuardType v12, Fixnum
-          v27:Fixnum = FixnumAnd v25, v26
+          PatchPoint MethodRedefined(Integer@0x1000, &@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:Fixnum = FixnumAnd v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -4644,12 +4792,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
-          v25:Fixnum = GuardType v11, Fixnum
-          v26:Fixnum = GuardType v12, Fixnum
-          v27:Fixnum = FixnumOr v25, v26
+          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:Fixnum = FixnumOr v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -6188,6 +6337,55 @@ mod hir_opt_tests {
           v28:BasicObject = CCallWithFrame <<@0x1038, v27, v12
           CheckInterrupts
           Return v28
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_when_passing_too_many_args() {
+        eval(r#"
+            public def foo(lead, opt=raise) = opt
+            def test = 0.foo(3, 3, 3)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[0] = Const Value(0)
+          v12:Fixnum[3] = Const Value(3)
+          v14:Fixnum[3] = Const Value(3)
+          v16:Fixnum[3] = Const Value(3)
+          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_when_passing_too_few_args() {
+        eval(r#"
+            public def foo(lead, opt=raise) = opt
+            def test = 0.foo
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[0] = Const Value(0)
+          v12:BasicObject = SendWithoutBlock v10, :foo
+          CheckInterrupts
+          Return v12
         ");
     }
 

@@ -109,7 +109,7 @@ RSpec.describe "bundle install with explicit source paths" do
         demo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle :install, dir: lib_path("demo")
@@ -346,7 +346,7 @@ RSpec.describe "bundle install with explicit source paths" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile lockfile_path, original_lockfile
@@ -661,7 +661,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       build_lib "foo", "1.0", path: lib_path("foo") do |s|
@@ -689,7 +689,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       expect(the_bundle).to include_gems "myrack 0.9.1"
@@ -728,7 +728,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       build_lib "foo", "1.0", path: lib_path("foo") do |s|
@@ -761,7 +761,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       expect(the_bundle).to include_gems "myrack 0.9.1"
@@ -789,7 +789,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock"
@@ -815,7 +815,7 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
   end
@@ -860,7 +860,7 @@ RSpec.describe "bundle install with explicit source paths" do
           nokogiri!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

@@ -226,6 +226,18 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
+    annotate!(rb_cInteger, "==", inline_integer_eq);
+    annotate!(rb_cInteger, "+", inline_integer_plus);
+    annotate!(rb_cInteger, "-", inline_integer_minus);
+    annotate!(rb_cInteger, "*", inline_integer_mult);
+    annotate!(rb_cInteger, "/", inline_integer_div);
+    annotate!(rb_cInteger, "%", inline_integer_mod);
+    annotate!(rb_cInteger, "&", inline_integer_and);
+    annotate!(rb_cInteger, "|", inline_integer_or);
+    annotate!(rb_cInteger, ">", inline_integer_gt);
+    annotate!(rb_cInteger, ">=", inline_integer_ge);
+    annotate!(rb_cInteger, "<", inline_integer_lt);
+    annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
@@ -420,6 +432,84 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
+fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+        // If the basic operation is already redefined, we cannot optimize it.
+        return None;
+    }
+    if fun.likely_a(left, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
+        if bop == BOP_NEQ {
+            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
+            fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
+        }
+        // Rely on the MethodRedefined PatchPoint for other bops.
+        let left = fun.coerce_to(block, left, types::Fixnum, state);
+        let right = fun.coerce_to(block, right, types::Fixnum, state);
+        return Some(fun.push_insn(block, f(left, right)));
+    }
+    None
+}
+
+fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
+}
+
+fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
+}
+
+fn inline_integer_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
+}
+
+fn inline_integer_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
+}
+
+fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
+}
+
+fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMod { left, right, state }, BOP_MOD, recv, other, state)
+}
+
+fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAnd { left, right, }, BOP_AND, recv, other, state)
+}
+
+fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
+}
+
+fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGt { left, right }, BOP_GT, recv, other, state)
+}
+
+fn inline_integer_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGe { left, right }, BOP_GE, recv, other, state)
+}
+
+fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
+}
+
+fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
+}
+
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
@@ -429,6 +519,10 @@ fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hi
 
 fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
+    let result = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state);
+    if result.is_some() {
+        return result;
+    }
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
         return None;

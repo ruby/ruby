@@ -334,7 +334,7 @@ RSpec.describe "bundle update" do
           myrack
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
   end

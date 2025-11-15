@@ -11,11 +11,11 @@
 
 **********************************************************************/
 
+#include "ruby.h"		/* abi_version */
+
 /*
  * IO wait methods are built in ruby now, just for backward compatibility.
  */
-
-#include "ruby.h"
 
 void
 Init_wait(void)

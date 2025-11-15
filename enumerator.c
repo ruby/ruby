@@ -3333,6 +3333,24 @@ enumerator_plus(VALUE obj, VALUE eobj)
 }
 
 /*
+ * call-seq:
+ *   e.to_set -> set
+ *
+ * Returns a set generated from this enumerator.
+ *
+ *   e = Enumerator.new { |y| y << 1 << 1 << 2 << 3 << 5 }
+ *   e.to_set #=> #<Set: {1, 2, 3, 5}>
+ */
+static VALUE enumerator_to_set(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE size = rb_funcall(obj, id_size, 0);
+    if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
+        rb_raise(rb_eArgError, "cannot convert an infinite enumerator to a set");
+    }
+    return rb_call_super(argc, argv);
+}
+
+/*
  * Document-class: Enumerator::Product
  *
  * Enumerator::Product generates a Cartesian product of any number of
@@ -4488,6 +4506,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
     rb_define_method(rb_cEnumerator, "size", enumerator_size, 0);
+    rb_define_method(rb_cEnumerator, "to_set", enumerator_to_set, -1);
     rb_define_method(rb_cEnumerator, "+", enumerator_plus, 1);
     rb_define_method(rb_mEnumerable, "chain", enum_chain, -1);
 
