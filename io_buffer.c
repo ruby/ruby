@@ -569,7 +569,7 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
  *    buffer.get_string(0, 1)
  *    # => "t"
  *    string
- *    # => "best"
+ *    # => "test"
  *
  *    buffer.resize(100)
  *    # in `resize': Cannot resize external buffer! (IO::Buffer::AccessError)
@@ -673,12 +673,12 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *
  *  By default, the buffer would be immutable (read only); to create a writable
  *  mapping, you need to open a file in read-write mode, and explicitly pass
- *  +flags+ argument without IO::Buffer::IMMUTABLE.
+ *  +flags+ argument without IO::Buffer::READONLY.
  *
  *    File.write('test.txt', 'test')
  *
  *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::READONLY)
- *    # => #<IO::Buffer 0x00000001014a0000+4 MAPPED READONLY>
+ *    # => #<IO::Buffer 0x00000001014a0000+4 EXTERNAL MAPPED FILE SHARED READONLY>
  *
  *    buffer.readonly?   # => true
  *
@@ -3684,9 +3684,9 @@ io_buffer_not_inplace(VALUE self)
  *
  *    File.write('test.txt', 'test data')
  *    # => 9
- *    buffer = IO::Buffer.map(File.open('test.txt'))
+ *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::READONLY)
  *    # =>
- *    # #<IO::Buffer 0x00007f3f0768c000+9 MAPPED IMMUTABLE>
+ *    # #<IO::Buffer 0x00007f3f0768c000+9 EXTERNAL MAPPED FILE SHARED READONLY>
  *    # ...
  *    buffer.get_string(5, 2) # read 2 bytes, starting from offset 5
  *    # => "da"
