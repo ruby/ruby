@@ -945,7 +945,6 @@ pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_is
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
-pub const ARGS_KW_SPECIFIED_BITS_MAX: jit_bindgen_constants = 31;
 pub type jit_bindgen_constants = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
