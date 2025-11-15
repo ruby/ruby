@@ -154,11 +154,20 @@ class TestGemVersion < Gem::TestCase
     assert_equal(-1, v("5.a") <=> v("5.0.0.rc2"))
     assert_equal(1, v("5.x") <=> v("5.0.0.rc2"))
 
-    assert_equal(0, v("1.9.3")  <=> "1.9.3")
-    assert_equal(1, v("1.9.3")  <=> "1.9.2.99")
-    assert_equal(-1, v("1.9.3") <=> "1.9.3.1")
+    [
+      [0, "1.9.3"],
+      [1, "1.9.2.99"],
+      [-1, "1.9.3.1"],
+      [nil, "whatever"],
+    ].each do |cmp, string_ver|
+      expected = "comparing version objects with strings is deprecated and will be removed\n"
 
-    assert_nil v("1.0") <=> "whatever"
+      actual_stdout, actual_stderr = capture_output do
+        assert_equal(cmp, v("1.9.3") <=> string_ver)
+      end
+      assert_empty actual_stdout
+      assert_equal expected, actual_stderr
+    end
   end
 
   def test_approximate_recommendation
