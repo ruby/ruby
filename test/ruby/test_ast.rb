@@ -1607,6 +1607,14 @@ dummy
       assert_locations(node.children[-1].children[-1].locations, [[1, 4, 1, 15], [1, 8, 1, 9], [1, 9, 1, 10], [1, 11, 1, 13]])
     end
 
+    def test_op_cdecl_locations
+      node = ast_parse("::A += 117")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 4, 1, 6]])
+
+      node = ast_parse("A::B += 117")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 5, 1, 7]])
+    end
+
     def test_postexe_locations
       node = ast_parse("END {  }")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 3], [1, 4, 1, 5], [1, 7, 1, 8]])
