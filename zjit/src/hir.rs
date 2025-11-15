@@ -4760,7 +4760,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // This can only happen in iseqs taking more than 32 keywords.
                     // In this case, we side exit to the interpreter.
                     // TODO(Jacob): Replace the magic number 32 with a named constant. (Can be completed after PR 15039)
-                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= 32} {
+                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap()} {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyKeywordParameters });
                         break;
                     }
