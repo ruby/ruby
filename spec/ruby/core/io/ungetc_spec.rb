@@ -81,20 +81,40 @@ describe "IO#ungetc" do
     }
   end
 
-  it "adjusts the stream position" do
-    @io.pos.should == 0
+  ruby_version_is ""..."4.0" do
+    it "adjusts the stream position" do
+      @io.pos.should == 0
 
-    # read one char
-    c = @io.getc
-    @io.pos.should == 1
-    @io.ungetc(c)
-    @io.pos.should == 0
+      # read one char
+      c = @io.getc
+      @io.pos.should == 1
+      @io.ungetc(c)
+      @io.pos.should == 0
 
-    # read all
-    @io.read
-    pos = @io.pos
-    @io.ungetc(98)
-    @io.pos.should == pos - 1
+      # read all
+      @io.read
+      pos = @io.pos
+      @io.ungetc(98)
+      @io.pos.should == pos - 1
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "leaves the stream position" do
+      @io.pos.should == 0
+
+      # read one char
+      c = @io.getc
+      @io.pos.should == 1
+      @io.ungetc(c)
+      @io.pos.should == 1
+
+      # read all
+      @io.read
+      pos = @io.pos
+      @io.ungetc(98)
+      @io.pos.should == pos
+    end
   end
 
   it "makes subsequent unbuffered operations to raise IOError" do
