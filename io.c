@@ -541,7 +541,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #endif
 
 static int io_fflush(rb_io_t *);
-static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
+static rb_io_t *flush_before_seek(rb_io_t *fptr);
 static void clear_codeconv(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
@@ -624,10 +624,10 @@ rb_sys_fail_on_write(rb_io_t *fptr)
 } while(0)
 
 /*
- * IO unread with taking care of removed '\r' in text mode.
+ * search an unread offset of the source stream.
  */
-static void
-io_unread(rb_io_t *fptr, bool discard_rbuf)
+static ssize_t
+pos_adjustment(rb_io_t *fptr)
 {
     rb_off_t r, pos;
     ssize_t read_size;
@@ -637,32 +637,27 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
     char *p;
     char *buf;
 
-    rb_io_check_closed(fptr);
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
-        return;
+        return 0;
+    }
+    if (!rb_w32_fd_is_text(fptr->fd)) {
+        return -fptr->rbuf.len;
     }
 
     errno = 0;
-    if (!rb_w32_fd_is_text(fptr->fd)) {
-        r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
-        if (r < 0 && errno) {
-            if (errno == ESPIPE)
-                fptr->mode |= FMODE_DUPLEX;
-            if (!discard_rbuf) return;
-        }
-
-        goto end;
-    }
-
-    pos = lseek(fptr->fd, 0, SEEK_CUR);
+    r = pos = lseek(fptr->fd, 0, SEEK_CUR);
     if (pos < 0 && errno) {
-        if (errno == ESPIPE)
+        if (errno == ESPIPE) {
             fptr->mode |= FMODE_DUPLEX;
-        if (!discard_rbuf) goto end;
+        }
+        errno = 0;
+        return 0;
     }
 
     /* add extra offset for removed '\r' in rbuf */
-    extra_max = (long)(pos - fptr->rbuf.len);
+    extra_max =  fptr->rbuf.len;
+    if (extra_max > pos - fptr->rbuf.len)
+        extra_max = (long)(pos - fptr->rbuf.len);
     p = fptr->rbuf.ptr + fptr->rbuf.off;
 
     /* if the end of rbuf is '\r', rbuf doesn't have '\r' within rbuf.len */
@@ -691,7 +686,6 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
             rb_syserr_fail_path(e, fptr->pathv);
         }
         if (read_size == fptr->rbuf.len) {
-            lseek(fptr->fd, r, SEEK_SET);
             break;
         }
         else {
@@ -699,11 +693,74 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
         }
     }
     free(buf);
-  end:
+    lseek(fptr->fd, pos, SEEK_SET);
+    errno = 0;
+    return r - pos;
+}
+
+/*
+ * IO unread with taking care of removed '\r' in text mode.
+ */
+static void
+io_unread(rb_io_t *fptr)
+{
+    rb_off_t r, pos;
+    ssize_t unread_offset;
+
+    rb_io_check_closed(fptr);
+    if (fptr->mode & FMODE_DUPLEX)
+        return;
+    if (fptr->rbuf.len == 0) {
+        goto clear_buffer_and_return;
+    }
+
+    errno = 0;
+    if (!rb_w32_fd_is_text(fptr->fd)) {
+        r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+        if (r < 0 && errno) {
+            if (errno == ESPIPE) {
+                fptr->mode |= FMODE_DUPLEX;
+                return;
+            }
+            else {
+                pos = lseek(fptr->fd, 0, SEEK_CUR);
+                if (pos - fptr->rbuf.len < 0) {
+                    r = lseek(fptr->fd, 0, SEEK_SET);
+                    if (r >= 0) {
+                        goto clear_buffer_and_return;
+                    }
+                }
+                return;
+            }
+        }
+        goto clear_buffer_and_return;
+    }
+
+    unread_offset = pos_adjustment(fptr);
+    pos = lseek(fptr->fd, 0, SEEK_CUR);
+    if (pos < 0 && errno) {
+        if (errno == ESPIPE) {
+            fptr->mode |= FMODE_DUPLEX;
+        }
+        return;
+    }
+    if (unread_offset == 0) {
+        goto clear_buffer_and_return;
+    }
+
+    if (0 <= pos + unread_offset) {
+        r = lseek(fptr->fd, pos + unread_offset, SEEK_SET);
+    }
+    else {
+        r = lseek(fptr->fd, 0, SEEK_SET);
+    }
+    if (r < 0 && errno) {
+        return;
+    }
+  clear_buffer_and_return:
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
     clear_codeconv(fptr);
-    return;
 }
 
 /*
@@ -721,7 +778,7 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
         return setmode(fptr->fd, O_BINARY);
     }
-    flush_before_seek(fptr, false);
+    flush_before_seek(fptr);
     return setmode(fptr->fd, O_BINARY);
 }
 #define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
@@ -916,25 +973,44 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
 }
 
 #if !RUBY_CRLF_ENVIRONMENT
-static void
-io_unread(rb_io_t *fptr, bool discard_rbuf)
+static ssize_t
+pos_adjustment(rb_io_t *fptr)
 {
-    rb_off_t r;
+    return -fptr->rbuf.len;
+}
+
+static void
+io_unread(rb_io_t *fptr)
+{
+    rb_off_t r, pos;
     rb_io_check_closed(fptr);
-    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX)
+    if (fptr->mode & FMODE_DUPLEX)
         return;
+    if (fptr->rbuf.len == 0) {
+        goto clear_buffer_and_return;
+    }
     /* xxx: target position may be negative if buffer is filled by ungetc */
     errno = 0;
-    r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+    r = lseek(fptr->fd, pos_adjustment(fptr), SEEK_CUR);
     if (r < 0 && errno) {
-        if (errno == ESPIPE)
+        if (errno == ESPIPE) {
             fptr->mode |= FMODE_DUPLEX;
-        if (!discard_rbuf) return;
+        }
+        else {
+            pos = lseek(fptr->fd, 0, SEEK_CUR);
+            if (pos - fptr->rbuf.len < 0) {
+                r = lseek(fptr->fd, 0, SEEK_SET);
+                if (r >= 0) {
+                    goto clear_buffer_and_return;
+                }
+            }
+        }
+        return;
     }
+  clear_buffer_and_return:
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
     clear_codeconv(fptr);
-    return;
 }
 #endif
 
@@ -974,17 +1050,58 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 }
 
 static rb_io_t *
-flush_before_seek(rb_io_t *fptr, bool discard_rbuf)
+flush_before_seek(rb_io_t *fptr)
 {
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
-    io_unread(fptr, discard_rbuf);
+    io_unread(fptr);
     errno = 0;
     return fptr;
 }
 
-#define io_seek(fptr, ofs, whence) (errno = 0, lseek(flush_before_seek(fptr, true)->fd, (ofs), (whence)))
-#define io_tell(fptr) lseek(flush_before_seek(fptr, false)->fd, 0, SEEK_CUR)
+/*
+ *  Change file position and flush the read buffer if succeeded.
+ */
+static rb_off_t
+io_seek(rb_io_t *fptr, rb_off_t ofs, int whence)
+{
+    rb_off_t pos;
+
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail_on_write(fptr);
+    errno = 0;
+    if (whence == SEEK_CUR) {
+        pos = lseek(fptr->fd, ofs + pos_adjustment(fptr), SEEK_CUR);
+    }
+    else {
+        pos = lseek(fptr->fd, ofs, whence);
+    }
+    if (pos < 0 && errno) {
+        return pos;
+    }
+    fptr->rbuf.off = 0;
+    fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
+    return pos;
+}
+
+/*
+ *  Tell file position without flushing the read buffer.
+ */
+static rb_off_t
+io_tell(rb_io_t *fptr)
+{
+    rb_off_t pos;
+
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail_on_write(fptr);
+    errno = 0;
+    pos = lseek(fptr->fd, 0, SEEK_CUR);
+    if (pos < 0 && errno) {
+        return pos;
+    }
+    return pos + pos_adjustment(fptr);
+}
 
 #ifndef SEEK_CUR
 # define SEEK_SET 0
@@ -1052,7 +1169,7 @@ rb_io_check_writable(rb_io_t *fptr)
         rb_raise(rb_eIOError, "not opened for writing");
     }
     if (fptr->rbuf.len) {
-        io_unread(fptr, true);
+        io_unread(fptr);
     }
 }
 
@@ -2385,7 +2502,7 @@ rb_io_flush_raw(VALUE io, int sync)
             rb_sys_fail_on_write(fptr);
     }
     if (fptr->mode & FMODE_READABLE) {
-        io_unread(fptr, true);
+        io_unread(fptr);
     }
 
     return io;
@@ -2434,7 +2551,6 @@ rb_io_tell(VALUE io)
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
-    pos -= fptr->rbuf.len;
     return OFFT2NUM(pos);
 }
 
@@ -8332,9 +8448,10 @@ io_reopen(VALUE io, VALUE nfile)
             rb_sys_fail_on_write(fptr);
     }
     else {
-        flush_before_seek(fptr, true);
+        flush_before_seek(fptr);
     }
     if (orig->mode & FMODE_READABLE) {
+        io_unread(orig);
         pos = io_tell(orig);
     }
     if (orig->mode & FMODE_WRITABLE) {
