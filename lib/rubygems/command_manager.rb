@@ -58,7 +58,6 @@ class Gem::CommandManager
     :owner,
     :pristine,
     :push,
-    :query,
     :rdoc,
     :rebuild,
     :search,

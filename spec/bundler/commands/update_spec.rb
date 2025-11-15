@@ -313,7 +313,7 @@ RSpec.describe "bundle update" do
           country_select
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       previous_lockfile = lockfile
@@ -374,7 +374,7 @@ RSpec.describe "bundle update" do
           quickbooks-ruby
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "update --conservative --verbose"
@@ -435,7 +435,7 @@ RSpec.describe "bundle update" do
           sneakers
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "update --verbose"
@@ -480,7 +480,7 @@ RSpec.describe "bundle update" do
           solargraph (~> 0.56.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --update solargraph"
@@ -544,7 +544,7 @@ RSpec.describe "bundle update" do
           sidekiq (~> 6.5)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       lockfile original_lockfile
@@ -656,7 +656,7 @@ RSpec.describe "bundle update" do
           activesupport (~> 6.0.0)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "update activesupport"
@@ -708,7 +708,7 @@ RSpec.describe "bundle update" do
             myrack-obama
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
 
         bundle "install"
@@ -1037,7 +1037,7 @@ RSpec.describe "bundle update" do
           request_store
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1074,7 +1074,7 @@ RSpec.describe "bundle update" do
           request_store
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1321,7 +1321,7 @@ RSpec.describe "bundle update --ruby" do
        DEPENDENCIES
        #{checksums_section_when_enabled}
        BUNDLED WITH
-          #{Bundler::VERSION}
+         #{Bundler::VERSION}
       L
     end
   end
@@ -1353,10 +1353,10 @@ RSpec.describe "bundle update --ruby" do
         DEPENDENCIES
         #{checksums_section_when_enabled}
         RUBY VERSION
-           #{Bundler::RubyVersion.system}
+          #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1398,7 +1398,7 @@ RSpec.describe "bundle update --ruby" do
           ruby 2.1.4p222
 
        BUNDLED WITH
-          #{Bundler::VERSION}
+         #{Bundler::VERSION}
       L
 
       gemfile <<-G
@@ -1423,10 +1423,10 @@ RSpec.describe "bundle update --ruby" do
        CHECKSUMS
 
        RUBY VERSION
-          #{Bundler::RubyVersion.system}
+         #{Bundler::RubyVersion.system}
 
        BUNDLED WITH
-          #{Bundler::VERSION}
+         #{Bundler::VERSION}
       L
     end
   end
@@ -1460,7 +1460,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
@@ -1480,7 +1480,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     expect(the_bundle).to include_gem "myrack 1.0"
@@ -1518,7 +1518,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     expect(the_bundle).to include_gem "myrack 1.0"
@@ -1563,7 +1563,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
       #{checksums}
       BUNDLED WITH
-         999.0.0
+        999.0.0
     L
 
     expect(the_bundle).to include_gems "bundler 999.0.0"
@@ -1645,7 +1645,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
       #{checksums}
       BUNDLED WITH
-         9.9.9
+        9.9.9
     L
 
     expect(the_bundle).to include_gems "bundler 9.9.9"
@@ -1720,7 +1720,7 @@ RSpec.describe "bundle update --bundler" do
           myrack
         #{checksums}
         BUNDLED WITH
-           9.0.0.dev
+          9.0.0.dev
       L
 
     expect(out).to include("Using bundler 9.0.0.dev")
@@ -1760,7 +1760,7 @@ RSpec.describe "bundle update --bundler" do
           myrack
         #{checksums}
         BUNDLED WITH
-           9.0.0
+          9.0.0
       L
 
     expect(out).to include("Using bundler 9.0.0")
@@ -1953,7 +1953,7 @@ RSpec.describe "bundle update conservative" do
         CHECKSUMS
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2014,7 +2014,7 @@ RSpec.describe "bundle update conservative" do
           shared_owner_b
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -2068,7 +2068,7 @@ RSpec.describe "bundle update conservative" do
           nokogiri (>= 1.16.4)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

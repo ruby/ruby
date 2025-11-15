@@ -339,6 +339,8 @@ eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
+        # power_assert 3 requires ruby 3.1 or later
+        args << "-W:no-experimental" if RUBY_VERSION < "3.1."
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
 
         if sanitizers&.lsan_enabled?
@@ -388,13 +390,17 @@ eom
 
       # Run Ractor-related test without influencing the main test suite
       def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
-        return unless defined?(Ractor)
+        omit unless defined?(Ractor)
 
         # https://bugs.ruby-lang.org/issues/21262
         shim_value = "class Ractor; alias value take; end" unless Ractor.method_defined?(:value)
         shim_join = "class Ractor; alias join take; end" unless Ractor.method_defined?(:join)
 
-        require = "require #{require.inspect}" if require
+        if require
+          require = [require] unless require.is_a?(Array)
+          require = require.map {|r| "require #{r.inspect}"}.join("\n")
+        end
+
         if require_relative
           dir = File.dirname(caller_locations[0,1][0].absolute_path)
           full_path = File.expand_path(require_relative, dir)

@@ -8,7 +8,6 @@
 
 require_relative "installer_uninstaller_utils"
 require_relative "exceptions"
-require_relative "deprecate"
 require_relative "package"
 require_relative "ext"
 require_relative "user_interaction"
@@ -27,8 +26,6 @@ require_relative "user_interaction"
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
-  extend Gem::Deprecate
-
   ##
   # Paths where env(1) might live.  Some systems are broken and have it in
   # /bin
@@ -380,15 +377,6 @@ class Gem::Installer
     return false if @only_install_dir
     !dependency.matching_specs.empty?
   end
-
-  ##
-  # Unpacks the gem into the given directory.
-
-  def unpack(directory)
-    @gem_dir = directory
-    extract_files
-  end
-  rubygems_deprecate :unpack
 
   ##
   # The location of the spec file that is installed.

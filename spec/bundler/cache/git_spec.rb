@@ -418,7 +418,7 @@ RSpec.describe "bundle cache with git" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     # Simulate an old incorrect situation where vendor/cache would be the install location of git gems

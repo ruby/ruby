@@ -33,7 +33,6 @@ has_rdoc: true
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}
-  s.has_rdoc = true
   s.summary = %q{A Hash which automatically computes keys.}
   s.files = [%q{lib/keyedlist.rb}]
   s.require_paths = [%q{lib}]
@@ -2216,9 +2215,9 @@ dependencies: []
     s1 = util_spec "a", "1"
     s2 = util_spec "b", "1"
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spaceship_platform
@@ -2227,18 +2226,18 @@ dependencies: []
       s.platform = Gem::Platform.new "x86-my_platform1"
     end
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spaceship_version
     s1 = util_spec "a", "1"
     s2 = util_spec "a", "2"
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spec_file

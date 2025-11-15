@@ -192,13 +192,7 @@ module Spec
       # command is expired too. So give `gem install` commands a bit more time.
       options[:timeout] = 120
 
-      allowed_warning = options.delete(:allowed_warning)
-
-      output = sys_exec("#{Path.gem_bin} #{command}", options)
-      stderr = last_command.stderr
-
-      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr, allowed_warning)
-      output
+      sys_exec("#{Path.gem_bin} #{command}", options)
     end
 
     def sys_exec(cmd, options = {}, &block)
@@ -536,14 +530,6 @@ module Spec
     end
 
     private
-
-    def allowed_rubygems_warning?(text, extra_allowed_warning)
-      allowed_warnings = ["open-ended", "is a symlink", "rake based", "expected RubyGems version"]
-      allowed_warnings << extra_allowed_warning if extra_allowed_warning
-      allowed_warnings.any? do |warning|
-        text.include?(warning)
-      end
-    end
 
     def match_source(contents)
       match = /source ["']?(?<source>http[^"']+)["']?/.match(contents)

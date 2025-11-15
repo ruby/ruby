@@ -38,6 +38,8 @@ struct objspace {
     size_t start_the_world_count;
 
     struct rb_gc_vm_context vm_context;
+
+    unsigned int fork_hook_vm_lock_lev;
 };
 
 struct MMTk_ractor_cache {
@@ -1045,13 +1047,21 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
+    struct objspace *objspace = objspace_ptr;
+
+    objspace->fork_hook_vm_lock_lev = RB_GC_VM_LOCK();
+
     mmtk_before_fork();
 }
 
 void
 rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 {
+    struct objspace *objspace = objspace_ptr;
+
     mmtk_after_fork(rb_gc_get_ractor_newobj_cache());
+
+    RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
 }
 
 // Statistics

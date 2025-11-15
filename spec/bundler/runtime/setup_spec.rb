@@ -1261,7 +1261,7 @@ end
       lock += <<~L
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       lock
@@ -1656,7 +1656,7 @@ end
         DEPENDENCIES
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

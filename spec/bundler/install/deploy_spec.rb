@@ -251,7 +251,7 @@ RSpec.describe "install in deployment or frozen mode" do
           bar
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false, artifice: "compact_index"

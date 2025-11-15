@@ -157,7 +157,7 @@ RSpec.describe "bundle install" do
           test!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       # If GH#6743 is present, the first `bundle install` will change the

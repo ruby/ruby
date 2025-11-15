@@ -217,8 +217,10 @@ errors:
   - PARAMETER_UNEXPECTED_FWD
   - PARAMETER_UNEXPECTED_NO_KW
   - PARAMETER_WILD_LOOSE_COMMA
+  - PATTERN_ALTERNATIVE_AFTER_CAPTURE
   - PATTERN_ARRAY_MULTIPLE_RESTS
   - PATTERN_CAPTURE_DUPLICATE
+  - PATTERN_CAPTURE_IN_ALTERNATIVE
   - PATTERN_EXPRESSION_AFTER_BRACKET
   - PATTERN_EXPRESSION_AFTER_COMMA
   - PATTERN_EXPRESSION_AFTER_HROCKET
@@ -280,6 +282,7 @@ errors:
   - UNEXPECTED_INDEX_KEYWORDS
   - UNEXPECTED_LABEL
   - UNEXPECTED_MULTI_WRITE
+  - UNEXPECTED_PARAMETER_DEFAULT_VALUE
   - UNEXPECTED_RANGE_OPERATOR
   - UNEXPECTED_SAFE_NAVIGATION
   - UNEXPECTED_TOKEN_CLOSE_CONTEXT
@@ -356,6 +359,8 @@ tokens:
     comment: "a newline character outside of other tokens"
   - name: PARENTHESIS_RIGHT
     comment: ")"
+  - name: PIPE
+    comment: "|"
   - name: SEMICOLON
     comment: ";"
   # Tokens from here on are not used for lookup, and can be in any order.
@@ -589,8 +594,6 @@ tokens:
     comment: "%I"
   - name: PERCENT_UPPER_W
     comment: "%W"
-  - name: PIPE
-    comment: "|"
   - name: PIPE_EQUAL
     comment: "|="
   - name: PIPE_PIPE

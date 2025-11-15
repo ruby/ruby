@@ -498,9 +498,45 @@ class TestZJIT < Test::Unit::TestCase
   def test_send_kwarg
     assert_runs '[1, 2]', %q{
       def test(a:, b:) = [a, b]
-      def entry = test(a: 1, b: 2)
+      def entry = test(b: 2, a: 1) # change order
       entry
     }
+  end
+
+  def test_send_kwarg_optional
+    assert_compiles '[1, 2]', %q{
+      def test(a: 1, b: 2) = [a, b]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_required_and_optional
+    assert_compiles '[3, 2]', %q{
+      def test(a:, b: 2) = [a, b]
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_to_hash
+    assert_compiles '{a: 3}', %q{
+      def test(hash) = hash
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwrest
+    assert_compiles '{a: 3}', %q{
+      def test(**kwargs) = kwargs
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
   end
 
   def test_send_ccall_variadic_with_different_receiver_classes

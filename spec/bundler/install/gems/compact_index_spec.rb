@@ -905,7 +905,7 @@ RSpec.describe "compact index api" do
         DEPENDENCIES
         #{checksums_section}
         BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
       L
     end
 

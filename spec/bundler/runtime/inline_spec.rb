@@ -380,7 +380,7 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     script <<-RUBY
@@ -414,7 +414,7 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     script <<-RUBY

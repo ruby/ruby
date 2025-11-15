@@ -59,7 +59,7 @@ RSpec.describe "bundle install with git sources" do
           foo (1.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "config set frozen true"
@@ -1638,7 +1638,7 @@ In Gemfile:
           rake!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       with_path_as("") do

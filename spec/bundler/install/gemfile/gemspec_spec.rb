@@ -380,7 +380,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -483,7 +483,7 @@ RSpec.describe "bundle install from an existing gemspec" do
                 foo!
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -524,7 +524,7 @@ RSpec.describe "bundle install from an existing gemspec" do
                 platform_specific
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -569,7 +569,7 @@ RSpec.describe "bundle install from an existing gemspec" do
                 indirect_platform_specific
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -657,7 +657,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           chef!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       lockfile initial_lockfile
@@ -720,7 +720,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           jruby-openssl
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       gemspec = tmp("activeadmin/activeadmin.gemspec")

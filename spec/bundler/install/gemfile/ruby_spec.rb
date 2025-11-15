@@ -86,7 +86,7 @@ RSpec.describe "ruby requirement" do
          ruby 2.1.4
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)

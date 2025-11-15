@@ -122,6 +122,7 @@ jobs:
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
+          EXCLUDES: '../src/test/.excludes-zjit'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'

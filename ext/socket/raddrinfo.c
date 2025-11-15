@@ -496,13 +496,49 @@ int
 raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
+    int saved_errno;
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    pthread_attr_t attr;
+    pthread_attr_t *attr_p = &attr;
+    int err;
+    int init_retries = 0;
+    int init_retries_max = 3;
+retry_attr_init:
+    if ((err = pthread_attr_init(attr_p)) != 0) {
+        if (err == ENOMEM && init_retries < init_retries_max) {
+            init_retries++;
+            rb_gc();
+            goto retry_attr_init;
+        }
+        return err;
+    }
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+        saved_errno = errno;
+        pthread_attr_destroy(attr_p);
+        errno = saved_errno;
+        return err; // EINVAL - shouldn't happen
+    }
+#else
+    pthread_attr_t *attr_p = NULL;
+#endif
     do {
         // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
         //
         // https://bugs.openjdk.org/browse/JDK-8268605
         // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, 0, start_routine, arg);
+        ret = pthread_create(th, attr_p, start_routine, arg);
     } while (ret == EAGAIN && limit-- > 0);
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    saved_errno = errno;
+    pthread_attr_destroy(attr_p);
+    if (ret != 0) {
+        errno = saved_errno;
+    }
+#else
+    if (ret == 0) {
+        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
+    }
+#endif
     return ret;
 }
 
@@ -534,7 +570,6 @@ start:
         errno = err;
         return EAI_SYSTEM;
     }
-    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -770,7 +805,6 @@ start:
         errno = err;
         return EAI_SYSTEM;
     }
-    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 

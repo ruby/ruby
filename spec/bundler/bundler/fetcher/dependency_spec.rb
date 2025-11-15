@@ -212,7 +212,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
     let(:dep_api_uri)       { double(:dep_api_uri) }
     let(:unmarshalled_gems) { double(:unmarshalled_gems) }
     let(:fetch_response)    { double(:fetch_response, body: double(:body)) }
-    let(:rubygems_limit)    { 50 }
+    let(:rubygems_limit)    { 100 }
 
     before { allow(subject).to receive(:dependency_api_uri).with(gem_names).and_return(dep_api_uri) }
 
