@@ -7630,7 +7630,9 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
  *  call-seq:
  *    undump -> new_string
  *
- *  See String#dump.
+ *  Inverse of String#dump; returns a copy of +self+ with changes of the kinds made by String#dump "undone."
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE

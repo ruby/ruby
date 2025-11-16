@@ -322,8 +322,7 @@
 # _Substitution_
 #
 # - #dump: Returns a printable version of +self+, enclosed in double-quotes.
-# - #undump: Returns a copy of +self+ with all <tt>\xNN</tt> notations replaced by <tt>\uNNNN</tt> notations
-#   and all escaped characters unescaped.
+# - #undump: Inverse of #dump; returns a copy of +self+ with changes of the kinds made by #dump "undone."
 # - #sub: Returns a copy of +self+ with the first substring matching a given pattern
 #   replaced with a given replacement string.
 # - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
