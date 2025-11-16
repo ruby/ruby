@@ -16947,11 +16947,6 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 #define PM_PARSE_PATTERN_TOP 1
 #define PM_PARSE_PATTERN_MULTI 2
 
-typedef struct {
-    bool in_alternative_pattern;
-    bool capture_in_pattern;
-} pm_pattern_capturing_t;
-
 static pm_node_t *
 parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
@@ -16961,16 +16956,13 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
  * an error to the parser.
  */
 static void
-parse_pattern_capture(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_constant_id_t capture, const pm_location_t *location, pm_pattern_capturing_t *capturing) {
+parse_pattern_capture(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_constant_id_t capture, const pm_location_t *location) {
     // Skip this capture if it starts with an underscore.
     if (*location->start == '_') return;
 
     if (pm_constant_id_list_includes(captures, capture)) {
         pm_parser_err(parser, location->start, location->end, PM_ERR_PATTERN_CAPTURE_DUPLICATE);
-    } else if (capturing->in_alternative_pattern && parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) {
-        pm_parser_err(parser, location->start, location->end, PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
     } else {
-        capturing->capture_in_pattern = true;
         pm_constant_id_list_append(captures, capture);
     }
 }
@@ -17099,7 +17091,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
  * Parse a rest pattern.
  */
 static pm_splat_node_t *
-parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_pattern_capturing_t *capturing) {
+parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
     assert(parser->previous.type == PM_TOKEN_USTAR);
     pm_token_t operator = parser->previous;
     pm_node_t *name = NULL;
@@ -17116,7 +17108,7 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_patt
             pm_parser_local_add(parser, constant_id, identifier.start, identifier.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&identifier), capturing);
+        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&identifier));
         name = (pm_node_t *) pm_local_variable_target_node_create(
             parser,
             &PM_LOCATION_TOKEN_VALUE(&identifier),
@@ -17133,7 +17125,7 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_patt
  * Parse a keyword rest node.
  */
 static pm_node_t *
-parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_pattern_capturing_t *capturing) {
+parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
     assert(parser->current.type == PM_TOKEN_USTAR_STAR);
     parser_lex(parser);
 
@@ -17152,7 +17144,7 @@ parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures,
             pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous), capturing);
+        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
         value = (pm_node_t *) pm_local_variable_target_node_create(
             parser,
             &PM_LOCATION_TOKEN_VALUE(&parser->previous),
@@ -17196,7 +17188,7 @@ pm_slice_is_valid_local(const pm_parser_t *parser, const uint8_t *start, const u
  * value. This will use an implicit local variable target.
  */
 static pm_node_t *
-parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_symbol_node_t *key, pm_pattern_capturing_t *capturing) {
+parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_symbol_node_t *key) {
     const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
 
     pm_constant_id_t constant_id = pm_parser_constant_id_location(parser, value_loc->start, value_loc->end);
@@ -17216,7 +17208,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *ca
         pm_parser_local_add(parser, constant_id, value_loc->start, value_loc->end, 0);
     }
 
-    parse_pattern_capture(parser, captures, constant_id, value_loc, capturing);
+    parse_pattern_capture(parser, captures, constant_id, value_loc);
     pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
         parser,
         value_loc,
@@ -17242,7 +17234,7 @@ parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_
  * Parse a hash pattern.
  */
 static pm_hash_pattern_node_t *
-parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, pm_pattern_capturing_t *capturing, uint16_t depth) {
+parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, uint16_t depth) {
     pm_node_list_t assocs = { 0 };
     pm_static_literals_t keys = { 0 };
     pm_node_t *rest = NULL;
@@ -17260,7 +17252,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 if (match8(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
                     // Otherwise, we will create an implicit local variable
                     // target for the value.
-                    value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) first_node, capturing);
+                    value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) first_node);
                 } else {
                     // Here we have a value for the first assoc in the list, so
                     // we will parse it now.
@@ -17304,7 +17296,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
         }
 
         if (match1(parser, PM_TOKEN_USTAR_STAR)) {
-            pm_node_t *assoc = parse_pattern_keyword_rest(parser, captures, capturing);
+            pm_node_t *assoc = parse_pattern_keyword_rest(parser, captures);
 
             if (rest == NULL) {
                 rest = assoc;
@@ -17332,7 +17324,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             pm_node_t *value = NULL;
 
             if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-                value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key, capturing);
+                value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
             } else {
                 value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY, (uint16_t) (depth + 1));
             }
@@ -17359,7 +17351,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
  * Parse a pattern expression primitive.
  */
 static pm_node_t *
-parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_pattern_capturing_t *capturing, pm_diagnostic_id_t diag_id, uint16_t depth) {
+parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
     switch (parser->current.type) {
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
@@ -17371,7 +17363,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                 pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
             }
 
-            parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous), capturing);
+            parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
             return (pm_node_t *) pm_local_variable_target_node_create(
                 parser,
                 &PM_LOCATION_TOKEN_VALUE(&parser->previous),
@@ -17455,7 +17447,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                         first_node = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
                         break;
                     case PM_TOKEN_USTAR_STAR:
-                        first_node = parse_pattern_keyword_rest(parser, captures, capturing);
+                        first_node = parse_pattern_keyword_rest(parser, captures);
                         break;
                     case PM_TOKEN_STRING_BEGIN:
                         first_node = parse_expression(parser, PM_BINDING_POWER_MAX, false, true, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
@@ -17469,7 +17461,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                     }
                 }
 
-                node = parse_pattern_hash(parser, captures, first_node, capturing, (uint16_t) (depth + 1));
+                node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
 
                 accept1(parser, PM_TOKEN_NEWLINE);
                 expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE);
@@ -17630,6 +17622,26 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
     }
 }
 
+static bool
+parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_LOCAL_VARIABLE_TARGET_NODE:
+            pm_parser_err((pm_parser_t *) data, node->location.start, node->location.end, PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
+            return false;
+        default:
+            return true;
+    }
+}
+
+/**
+ * When we get here, we know that we already have a syntax error, because we
+ * know we have captured a variable and that we are in an alternation.
+ */
+static void
+parse_pattern_alternation_error(pm_parser_t *parser, const pm_node_t *node) {
+    pm_visit_node(node, parse_pattern_alternation_error_each, parser);
+}
+
 /**
  * Parse any number of primitives joined by alternation and ended optionally by
  * assignment.
@@ -17637,16 +17649,11 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 static pm_node_t *
 parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, pm_diagnostic_id_t diag_id, uint16_t depth) {
     pm_node_t *node = first_node;
-    pm_pattern_capturing_t capturing = { false, false };
+    bool alternation = false;
 
-    while ((node == NULL) || accept1(parser, PM_TOKEN_PIPE)) {
-        pm_token_t operator = parser->previous;
-
-        if (node) {
-            if (capturing.capture_in_pattern) {
-                pm_parser_err(parser, operator.start, operator.end, PM_ERR_PATTERN_ALTERNATIVE_AFTER_CAPTURE);
-            }
-            capturing.in_alternative_pattern = true;
+    while ((node == NULL) || (alternation = accept1(parser, PM_TOKEN_PIPE))) {
+        if (alternation && !PM_NODE_TYPE_P(node, PM_ALTERNATION_PATTERN_NODE) && captures->size) {
+            parse_pattern_alternation_error(parser, node);
         }
 
         switch (parser->current.type) {
@@ -17659,10 +17666,13 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
             case PM_TOKEN_UDOT_DOT:
             case PM_TOKEN_UDOT_DOT_DOT:
             case PM_CASE_PRIMITIVE: {
-                if (node == NULL) {
-                    node = parse_pattern_primitive(parser, captures, &capturing, diag_id, (uint16_t) (depth + 1));
+                if (!alternation) {
+                    node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
                 } else {
-                    pm_node_t *right = parse_pattern_primitive(parser, captures, &capturing, PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE, (uint16_t) (depth + 1));
+                    pm_token_t operator = parser->previous;
+                    pm_node_t *right = parse_pattern_primitive(parser, captures, PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE, (uint16_t) (depth + 1));
+
+                    if (captures->size) parse_pattern_alternation_error(parser, right);
                     node = (pm_node_t *) pm_alternation_pattern_node_create(parser, node, right, &operator);
                 }
 
@@ -17670,6 +17680,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
             }
             case PM_TOKEN_PARENTHESIS_LEFT:
             case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
+                pm_token_t operator = parser->previous;
                 pm_token_t opening = parser->current;
                 parser_lex(parser);
 
@@ -17678,9 +17689,10 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
                 pm_node_t *right = (pm_node_t *) pm_parentheses_node_create(parser, &opening, body, &parser->previous, 0);
 
-                if (node == NULL) {
+                if (!alternation) {
                     node = right;
                 } else {
+                    if (captures->size) parse_pattern_alternation_error(parser, right);
                     node = (pm_node_t *) pm_alternation_pattern_node_create(parser, node, right, &operator);
                 }
 
@@ -17690,10 +17702,11 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 pm_parser_err_current(parser, diag_id);
                 pm_node_t *right = (pm_node_t *) pm_missing_node_create(parser, parser->current.start, parser->current.end);
 
-                if (node == NULL) {
+                if (!alternation) {
                     node = right;
                 } else {
-                    node = (pm_node_t *) pm_alternation_pattern_node_create(parser, node, right, &operator);
+                    if (captures->size) parse_pattern_alternation_error(parser, right);
+                    node = (pm_node_t *) pm_alternation_pattern_node_create(parser, node, right, &parser->previous);
                 }
 
                 break;
@@ -17714,7 +17727,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
             pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous), &capturing);
+        parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
         pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
             parser,
             &PM_LOCATION_TOKEN_VALUE(&parser->previous),
@@ -17737,13 +17750,12 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
     bool leading_rest = false;
     bool trailing_rest = false;
-    pm_pattern_capturing_t capturing = { false, false };
 
     switch (parser->current.type) {
         case PM_TOKEN_LABEL: {
             parser_lex(parser);
             pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
-            node = (pm_node_t *) parse_pattern_hash(parser, captures, key, &capturing, (uint16_t) (depth + 1));
+            node = (pm_node_t *) parse_pattern_hash(parser, captures, key, (uint16_t) (depth + 1));
 
             if (!(flags & PM_PARSE_PATTERN_TOP)) {
                 pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
@@ -17752,8 +17764,8 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             return node;
         }
         case PM_TOKEN_USTAR_STAR: {
-            node = parse_pattern_keyword_rest(parser, captures, &capturing);
-            node = (pm_node_t *) parse_pattern_hash(parser, captures, node, &capturing, (uint16_t) (depth + 1));
+            node = parse_pattern_keyword_rest(parser, captures);
+            node = (pm_node_t *) parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1));
 
             if (!(flags & PM_PARSE_PATTERN_TOP)) {
                 pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
@@ -17764,10 +17776,10 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         case PM_TOKEN_STRING_BEGIN: {
             // We need special handling for string beginnings because they could
             // be dynamic symbols leading to hash patterns.
-            node = parse_pattern_primitive(parser, captures, &capturing, diag_id, (uint16_t) (depth + 1));
+            node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
 
             if (pm_symbol_node_label_p(node)) {
-                node = (pm_node_t *) parse_pattern_hash(parser, captures, node, &capturing, (uint16_t) (depth + 1));
+                node = (pm_node_t *) parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1));
 
                 if (!(flags & PM_PARSE_PATTERN_TOP)) {
                     pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
@@ -17782,7 +17794,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         case PM_TOKEN_USTAR: {
             if (flags & (PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI)) {
                 parser_lex(parser);
-                node = (pm_node_t *) parse_pattern_rest(parser, captures, &capturing);
+                node = (pm_node_t *) parse_pattern_rest(parser, captures);
                 leading_rest = true;
                 break;
             }
@@ -17796,7 +17808,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
     // If we got a dynamic label symbol, then we need to treat it like the
     // beginning of a hash pattern.
     if (pm_symbol_node_label_p(node)) {
-        return (pm_node_t *) parse_pattern_hash(parser, captures, node, &capturing, (uint16_t) (depth + 1));
+        return (pm_node_t *) parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1));
     }
 
     if ((flags & PM_PARSE_PATTERN_MULTI) && match1(parser, PM_TOKEN_COMMA)) {
@@ -17817,7 +17829,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             }
 
             if (accept1(parser, PM_TOKEN_USTAR)) {
-                node = (pm_node_t *) parse_pattern_rest(parser, captures, &capturing);
+                node = (pm_node_t *) parse_pattern_rest(parser, captures);
 
                 // If we have already parsed a splat pattern, then this is an
                 // error. We will continue to parse the rest of the patterns,

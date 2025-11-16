@@ -208,14 +208,37 @@ class TestPatternMatching < Test::Unit::TestCase
       case 0
       in a | 0
       end
-    }, [], /alternative pattern after variable capture/,
+    }, [], /alternative pattern/,
     success: false)
 
     assert_in_out_err(['-c'], %q{
       case 0
       in 0 | a
       end
-    }, [], /variable capture in alternative pattern/,
+    }, [], /alternative pattern/,
+    success: false)
+  end
+
+  def test_alternative_pattern_nested
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [a] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in { a: b } | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [{ a: [{ b: [{ c: }] }] }] | 1
+      end
+    }, [], /alternative pattern/,
     success: false)
   end
 
