@@ -11976,8 +11976,9 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 /*  call-seq:
  *   unicode_normalized?(form = :nfc) -> true or false
  *
- *  Returns +true+ if +self+ is in the given +form+ of Unicode normalization,
- *  +false+ otherwise.
+ *  Returns whether +self+ is in the given +form+ of Unicode normalization;
+ *  see String#unicode_normalize.
+ *
  *  The +form+ must be one of +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
  *
  *  Examples:
@@ -11991,10 +11992,9 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
  *  Raises an exception if +self+ is not in a Unicode encoding:
  *
  *    s = "\xE0".force_encoding(Encoding::ISO_8859_1)
- *    s.unicode_normalized? # Raises Encoding::CompatibilityError.
+ *    s.unicode_normalized? # Raises Encoding::CompatibilityError
  *
- *  Related: String#unicode_normalize, String#unicode_normalize!.
- *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 static VALUE
 rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
