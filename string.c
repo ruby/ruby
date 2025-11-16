@@ -11962,9 +11962,9 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
  *    unicode_normalize!(form = :nfc) -> self
  *
  *  Like String#unicode_normalize, except that the normalization
- *  is performed on +self+.
+ *  is performed on +self+ (not on a copy of +self+).
  *
- *  Related String#unicode_normalized?.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 static VALUE
