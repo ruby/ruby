@@ -272,7 +272,7 @@ class << RubyVM::ZJIT
 
   def print_counters_with_prefix(buf:, stats:, prefix:, prompt:, limit: nil)
     counters = stats.select { |key, value| key.start_with?(prefix) && value > 0 }
-    return if stats.empty?
+    return if counters.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
     key_pad = counters.keys.map(&:size).max
