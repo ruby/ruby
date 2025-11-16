@@ -171,9 +171,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    nil_versions_are_discouraged! if version.nil?
-
-    ANCHORED_VERSION_PATTERN.match?(version.to_s)
+    version.nil? || ANCHORED_VERSION_PATTERN.match?(version.to_s)
   end
 
   ##
@@ -182,15 +180,10 @@ class Gem::Version
   #
   #   ver1 = Version.create('1.3.17')   # -> (Version object)
   #   ver2 = Version.create(ver1)       # -> (ver1)
-  #   ver3 = Version.create(nil)        # -> nil
 
   def self.create(input)
     if self === input # check yourself before you wreck yourself
       input
-    elsif input.nil?
-      nil_versions_are_discouraged!
-
-      nil
     else
       new input
     end
@@ -206,14 +199,6 @@ class Gem::Version
     @@all[version] ||= super
   end
 
-  def self.nil_versions_are_discouraged!
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4"
-    end
-  end
-
-  private_class_method :nil_versions_are_discouraged!
-
   ##
   # Constructs a Version from the +version+ string.  A version string is a
   # series of digits or ASCII letters separated by dots.
@@ -224,7 +209,7 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version.is_a?(String) && /\A\s*\Z/.match?(version)
+    version = 0 if version.nil? || (version.is_a?(String) && /\A\s*\Z/.match?(version))
 
     @version = version.to_s
 

@@ -7,6 +7,11 @@ class TestGemVersion < Gem::TestCase
   class V < ::Gem::Version
   end
 
+  def test_nil_is_zero
+    zero = Gem::Version.create nil
+    assert_equal Gem::Version.create(0), zero
+  end
+
   def test_bump
     assert_bumped_version_equal "5.3", "5.2.4"
   end
@@ -35,13 +40,6 @@ class TestGemVersion < Gem::TestCase
 
     assert_same real, Gem::Version.create(real)
 
-    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
-    actual_stdout, actual_stderr = capture_output do
-      assert_nil Gem::Version.create(nil)
-    end
-    assert_empty actual_stdout
-    assert_equal(expected, actual_stderr)
-
     assert_equal v("5.1"), Gem::Version.create("5.1")
 
     ver = "1.1"
@@ -51,13 +49,7 @@ class TestGemVersion < Gem::TestCase
   def test_class_correct
     assert_equal true,  Gem::Version.correct?("5.1")
     assert_equal false, Gem::Version.correct?("an incorrect version")
-
-    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
-    actual_stdout, actual_stderr = capture_output do
-      Gem::Version.correct?(nil)
-    end
-    assert_empty actual_stdout
-    assert_equal(expected, actual_stderr)
+    assert_equal true, Gem::Version.correct?(nil)
   end
 
   def test_class_new_subclass
