@@ -82,6 +82,7 @@ class Gem::RemoteFetcher
     @proxy = proxy
     @pools = {}
     @pool_lock = Thread::Mutex.new
+    @pool_size = 1
     @cert_files = Gem::Request.get_cert_files
 
     @headers = headers
@@ -338,7 +339,7 @@ class Gem::RemoteFetcher
 
   def pools_for(proxy)
     @pool_lock.synchronize do
-      @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
+      @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files, @pool_size
     end
   end
 end
