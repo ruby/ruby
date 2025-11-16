@@ -11926,34 +11926,8 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  call-seq:
  *    unicode_normalize(form = :nfc) -> string
  *
- *  Returns a copy of +self+ with
- *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
+ *  :include: doc/string/unicode_normalize.rdoc
  *
- *  Argument +form+ must be one of the following symbols
- *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
- *
- *  - +:nfc+: Canonical decomposition, followed by canonical composition.
- *  - +:nfd+: Canonical decomposition.
- *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
- *  - +:nfkd+: Compatibility decomposition.
- *
- *  The encoding of +self+ must be one of:
- *
- *  - Encoding::UTF_8
- *  - Encoding::UTF_16BE
- *  - Encoding::UTF_16LE
- *  - Encoding::UTF_32BE
- *  - Encoding::UTF_32LE
- *  - Encoding::GB18030
- *  - Encoding::UCS_2BE
- *  - Encoding::UCS_4BE
- *
- *  Examples:
- *
- *    "a\u0300".unicode_normalize      # => "a"
- *    "\u00E0".unicode_normalize(:nfd) # => "a "
- *
- *  Related: String#unicode_normalize!, String#unicode_normalized?.
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
