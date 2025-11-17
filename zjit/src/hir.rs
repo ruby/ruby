@@ -5760,7 +5760,7 @@ impl<'a> Dominators<'a> {
 
     pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
         let block_ids = f.rpo();
-        let mut dominators = vec![vec![]; block_ids.len()];
+        let mut dominators = vec![vec![]; f.blocks.len()];
 
         // Set up entry blocks.
         for entry_block in &f.entry_blocks() {
