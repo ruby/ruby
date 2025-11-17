@@ -7304,14 +7304,19 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
                 errno = lasterrno;
                 return sret;
             }
-            if (last_filled > size)
-                last_filled = size;
+            if (size < last_filled) {
+                // This suggests _read() does filling buffer more than once.
+                // Known crt does not do this.
+                // In this state, the address where the last byte read
+                // cannot be determined. If an EOF is encountered,
+                // the file position cannot be corrected.
+                errno = lasterrno;
+                return sret;
+            }
             for (i = sret; i < last_filled; i++) {
                 if (((char *)buf)[i] == 0x1A) {
                     // EOF character found and set the file position
-                    // To be conservative, take post_pos as the base point.
-                    _lseeki64(fd, post_pos - (last_filled - i), SEEK_SET);
-                    //_lseeki64(fd, pre_pos + i, SEEK_SET);
+                    _lseeki64(fd, pre_pos + i, SEEK_SET);
                     errno = lasterrno;
                     return sret;
                 }
