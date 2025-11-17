@@ -5971,7 +5971,6 @@ impl<'a> LoopInfo<'a> {
         self.back_edge_sources.contains(&block)
     }
 
-
     pub fn is_loop_header(&self, block: BlockId) -> bool {
         self.loop_headers.contains(&block)
     }
