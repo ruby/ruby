@@ -7,6 +7,8 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
+  # Blocks that are called when YJIT is enabled
+  @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
@@ -20,6 +22,18 @@ class << RubyVM::ZJIT
   # Check if ZJIT is enabled
   def enabled?
     Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
+  end
+
+  # Enable ZJIT compilation.
+  def enable
+    return false if enabled?
+
+    if Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
+      warn("Only one JIT can be enabled at the same time.")
+      return false
+    end
+
+    Primitive.rb_zjit_enable
   end
 
   # Check if `--zjit-trace-exits` is used
@@ -233,6 +247,17 @@ class << RubyVM::ZJIT
 
   # :stopdoc:
   private
+
+  # Register a block to be called when ZJIT is enabled
+  def add_jit_hook(hook)
+    @jit_hooks << hook
+  end
+
+  # Run ZJIT hooks registered by `#with_jit`
+  def call_jit_hooks
+    @jit_hooks.each(&:call)
+    @jit_hooks.clear
+  end
 
   def print_counters(keys, buf:, stats:, right_align: false, base: nil)
     key_pad = keys.map { |key| key.to_s.sub(/_time_ns\z/, '_time').size }.max + 1
