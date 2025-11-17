@@ -3430,9 +3430,59 @@ pub mod hir_build_tests {
  #[cfg(test)]
  mod control_flow_info_tests {
      use super::*;
-     use insta::assert_snapshot;
- }
 
+     fn edge(target: BlockId) -> BranchEdge {
+         BranchEdge { target, args: vec![] }
+     }
+
+     #[test]
+     fn test_linked_list() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+
+        assert!(cfi.precedes(bb2, bb1));
+        assert!(cfi.succeeds(bb1, bb2));
+        assert!(cfi.predecessors(bb3).eq(&[bb2]));
+     }
+
+     #[test]
+     fn test_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb2)});
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+
+        assert!(cfi.precedes(bb3, bb2));
+        assert!(cfi.precedes(bb3, bb1));
+        assert!(!cfi.precedes(bb3, bb0));
+     }
+ }
 
  /// Test dominator set computations.
  #[cfg(test)]
@@ -3479,7 +3529,6 @@ pub mod hir_build_tests {
            v3:Any = Const CBool(true)
            Return v3
          ");
-
 
          let dominators = Dominators::new(&function);
          assert_dominators_contains_self(&function, &dominators);
