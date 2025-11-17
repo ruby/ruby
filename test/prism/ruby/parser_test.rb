@@ -172,7 +172,6 @@ module Prism
     if RUBY_VERSION >= "3.3"
       def test_current_parser_for_current_ruby
         major, minor = current_major_minor.split(".")
-        return if major == "3" && minor == "5" # TODO: Remove once ruby-dev becomes 4.0
         # Let's just hope there never is a Ruby 3.10 or similar
         expected = major.to_i * 10 + minor.to_i
         assert_equal(expected, Translation::ParserCurrent.new.version)

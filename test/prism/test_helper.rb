@@ -256,7 +256,6 @@ module Prism
 
     if RUBY_VERSION >= "3.3.0"
       def test_all_syntax_versions_present
-        return if RUBY_VERSION.start_with?("3.5") # TODO: Remove once ruby-dev becomes 4.0
         assert_include(SYNTAX_VERSIONS, current_major_minor)
       end
     end
