@@ -8,7 +8,6 @@
 
 require_relative "../rubygems"
 require_relative "command_manager"
-require_relative "deprecate"
 
 ##
 # Run an instance of the gem program.
