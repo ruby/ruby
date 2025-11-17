@@ -5,6 +5,7 @@
 //
 // Code specific to YJIT and ZJIT should go to yjit.c and zjit.c respectively.
 
+#include "internal.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
@@ -22,7 +23,7 @@ enum jit_bindgen_constants {
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 
     // Field offsets for the RString struct
-    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
+    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
 };
 
 // Manually bound in rust since this is out-of-range of `int`,
