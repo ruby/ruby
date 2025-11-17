@@ -65,11 +65,17 @@ eom
     elsif y != 0
       prev_tag = "v#{x}_#{y-1}_0"
       prev_ver = "#{x}.#{y-1}.0"
-    elsif x == 3 && y == 0 && z == 0
-      prev_tag = "v2_7_0"
-      prev_ver = "2.7.0"
-    else
-      raise "unexpected version for prev_ver '#{version}'"
+    else # y == 0 && z == 0
+      case x
+      when 3
+        prev_tag = "v2_7_0"
+        prev_ver = "2.7.0"
+      when 4
+        prev_tag = "v3_4_0"
+        prev_ver = "3.4.0"
+      else
+        raise "it doesn't know what is the previous version of '#{version}'"
+      end
     end
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
