@@ -1,11 +1,11 @@
 //! Runtime state of ZJIT.
 
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
-use crate::options::get_option;
+use crate::options::{get_option, rb_zjit_prepare_options};
 use crate::stats::{Counters, InsnCounters, SideExitLocations};
 use crate::virtualmem::CodePtr;
 use std::collections::HashMap;
@@ -63,12 +63,42 @@ pub struct ZJITState {
     exit_locations: Option<SideExitLocations>,
 }
 
+/// Tracks the initialization progress
+enum InitializationState {
+    Uninitialized,
+
+    /// At boot time, rb_zjit_init will be called regardless of whether
+    /// ZJIT is enabled, in this phase we initialize any states that must
+    /// be captured at during boot.
+    Initialized(cruby_methods::Annotations),
+
+    /// When ZJIT is enabled, either during boot with `--zjit`, or lazily
+    /// at a later time with `RubyVM::ZJIT.enable`, we perform the rest
+    /// of the initialization steps and produce the `ZJITState` instance.
+    Enabled(ZJITState),
+
+    /// Indicates that ZJITState::init has panicked. Should never be
+    /// encountered in practice since we abort immediately when that
+    /// happens.
+    Panicked,
+}
+
 /// Private singleton instance of the codegen globals
-static mut ZJIT_STATE: Option<ZJITState> = None;
+static mut ZJIT_STATE: InitializationState = InitializationState::Uninitialized;
 
 impl ZJITState {
     /// Initialize the ZJIT globals. Return the address of the JIT entry trampoline.
     pub fn init() -> *const u8 {
+        use InitializationState::*;
+
+        let initialization_state = unsafe {
+            std::mem::replace(&mut ZJIT_STATE, Panicked)
+        };
+
+        let Initialized(method_annotations) = initialization_state else {
+            panic!("rb_zjit_init was never called");
+        };
+
         let mut cb = {
             use crate::options::*;
             use crate::virtualmem::*;
@@ -99,7 +129,7 @@ impl ZJITState {
             send_fallback_counters: [0; VM_INSTRUCTION_SIZE as usize],
             invariants: Invariants::default(),
             assert_compiles: false,
-            method_annotations: cruby_methods::init(),
+            method_annotations,
             exit_trampoline,
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
@@ -107,7 +137,7 @@ impl ZJITState {
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             exit_locations,
         };
-        unsafe { ZJIT_STATE = Some(zjit_state); }
+        unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
         // With --zjit-stats, use a different trampoline on function stub exits
         // to count exit_compilation_failure. Note that the trampoline code depends
@@ -123,12 +153,16 @@ impl ZJITState {
 
     /// Return true if zjit_state has been initialized
     pub fn has_instance() -> bool {
-        unsafe { ZJIT_STATE.as_mut().is_some() }
+        matches!(unsafe { &ZJIT_STATE }, InitializationState::Enabled(_))
     }
 
     /// Get a mutable reference to the codegen globals instance
     fn get_instance() -> &'static mut ZJITState {
-        unsafe { ZJIT_STATE.as_mut().unwrap() }
+        if let InitializationState::Enabled(instance) = unsafe { &mut ZJIT_STATE } {
+            instance
+        } else {
+            panic!("ZJITState::get_instance called when ZJIT is not enabled")
+        }
     }
 
     /// Get a mutable reference to the inline code block
@@ -249,14 +283,39 @@ impl ZJITState {
     }
 }
 
-/// Initialize ZJIT
+/// Initialize ZJIT at boot. This is called even if ZJIT is disabled.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_init() {
+pub extern "C" fn rb_zjit_init(zjit_enabled: bool) {
+    use InitializationState::*;
+
+    debug_assert!(
+        matches!(unsafe { &ZJIT_STATE }, Uninitialized),
+        "rb_zjit_init should only be called once during boot",
+    );
+
+    // Initialize IDs and method annotations.
+    // cruby_methods::init() must be called at boot,
+    // as cmes could have been re-defined after boot.
+    cruby::ids::init();
+
+    let method_annotations = cruby_methods::init();
+
+    unsafe { ZJIT_STATE = Initialized(method_annotations); }
+
+    // If --zjit, enable ZJIT immediately
+    if zjit_enabled {
+        zjit_enable();
+    }
+}
+
+/// Enable ZJIT compilation.
+fn zjit_enable() {
+    // TODO: call RubyVM::ZJIT::call_jit_hooks here
+
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
         // Initialize ZJIT states
-        cruby::ids::init();
         let zjit_entry = ZJITState::init();
 
         // Install a panic hook for ZJIT
@@ -271,9 +330,31 @@ pub extern "C" fn rb_zjit_init() {
     });
 
     if result.is_err() {
-        println!("ZJIT: zjit_init() panicked. Aborting.");
+        println!("ZJIT: zjit_enable() panicked. Aborting.");
         std::process::abort();
     }
+}
+
+/// Enable ZJIT compilation, returning Qtrue if ZJIT was previously disabled
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_enable(_ec: EcPtr, _self: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || {
+        // Options would not have been initialized during boot if no flags were specified
+        rb_zjit_prepare_options();
+
+        // Initialize and enable ZJIT
+        zjit_enable();
+
+        // Add "+ZJIT" to RUBY_DESCRIPTION
+        unsafe {
+            unsafe extern "C" {
+                fn ruby_set_zjit_description();
+            }
+            ruby_set_zjit_description();
+        }
+
+        Qtrue
+    })
 }
 
 /// Assert that any future ZJIT compilation will return a function pointer (not fail to compile)

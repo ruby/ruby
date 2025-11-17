@@ -277,6 +277,15 @@ ruby_set_yjit_description(void)
 }
 
 void
+ruby_set_zjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(ZJIT_DESCRIPTION);
+}
+
+void
 ruby_show_version(void)
 {
     puts(rb_dynamic_description);
