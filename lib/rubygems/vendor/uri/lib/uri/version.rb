@@ -1,6 +1,6 @@
 module Gem::URI
   # :stopdoc:
-  VERSION_CODE = '010004'.freeze
-  VERSION = VERSION_CODE.scan(/../).collect{|n| n.to_i}.join('.').freeze
+  VERSION = '1.1.1'.freeze
+  VERSION_CODE = VERSION.split('.').map{|s| s.rjust(2, '0')}.join.freeze
   # :startdoc:
 end

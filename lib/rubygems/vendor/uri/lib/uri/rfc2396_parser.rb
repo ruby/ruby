@@ -67,7 +67,7 @@ module Gem::URI
     #
     # == Synopsis
     #
-    #   Gem::URI::Parser.new([opts])
+    #   Gem::URI::RFC2396_Parser.new([opts])
     #
     # == Args
     #
@@ -86,7 +86,7 @@ module Gem::URI
     #
     # == Examples
     #
-    #   p = Gem::URI::Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
+    #   p = Gem::URI::RFC2396_Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
     #   u = p.parse("http://example.jp/%uABCD") #=> #<Gem::URI::HTTP http://example.jp/%uABCD>
     #   Gem::URI.parse(u.to_s) #=> raises Gem::URI::InvalidURIError
     #
@@ -108,12 +108,12 @@ module Gem::URI
 
     # The Hash of patterns.
     #
-    # See also Gem::URI::Parser.initialize_pattern.
+    # See also #initialize_pattern.
     attr_reader :pattern
 
     # The Hash of Regexp.
     #
-    # See also Gem::URI::Parser.initialize_regexp.
+    # See also #initialize_regexp.
     attr_reader :regexp
 
     # Returns a split Gem::URI against +regexp[:ABS_URI]+.
@@ -202,8 +202,7 @@ module Gem::URI
     #
     # == Usage
     #
-    #   p = Gem::URI::Parser.new
-    #   p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #   Gem::URI::RFC2396_PARSER.parse("ldap://ldap.example.com/dc=example?user=john")
     #   #=> #<Gem::URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
@@ -244,7 +243,7 @@ module Gem::URI
     # If no +block+ given, then returns the result,
     # else it calls +block+ for each element in result.
     #
-    # See also Gem::URI::Parser.make_regexp.
+    # See also #make_regexp.
     #
     def extract(str, schemes = nil)
       if block_given?
@@ -263,7 +262,7 @@ module Gem::URI
       unless schemes
         @regexp[:ABS_URI_REF]
       else
-        /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+        /(?=(?i:#{Regexp.union(*schemes).source}):)#{@pattern[:X_ABS_URI]}/x
       end
     end
 
@@ -524,6 +523,8 @@ module Gem::URI
       ret
     end
 
+    # Returns +uri+ as-is if it is Gem::URI, or convert it to Gem::URI if it is
+    # a String.
     def convert_to_uri(uri)
       if uri.is_a?(Gem::URI::Generic)
         uri
