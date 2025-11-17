@@ -8,6 +8,8 @@ class TestCommitEmail < Test::Unit::TestCase
   STDIN_DELIMITER = "---\n"
 
   def setup
+    omit 'git command is not available' unless system('git', '--version', out: File::NULL, err: File::NULL)
+
     @ruby = Dir.mktmpdir
     Dir.chdir(@ruby) do
       git('init', '--initial-branch=master')
