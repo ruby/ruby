@@ -296,15 +296,6 @@ static void rvalue_stack_eagerly_release(VALUE handle)
     }
 }
 
-
-#ifndef HAVE_STRNLEN
-static size_t strnlen(const char *s, size_t maxlen)
-{
-    char *p;
-    return ((p = memchr(s, '\0', maxlen)) ? p - s : maxlen);
-}
-#endif
-
 static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 {
     int len = 1;
