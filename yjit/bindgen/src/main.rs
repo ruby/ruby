@@ -155,6 +155,7 @@ fn main() {
         .opaque_type("rb_callcache.*")
         .allowlist_type("rb_callinfo")
         .allowlist_var("VM_ENV_DATA_INDEX_ME_CREF")
+        .allowlist_var("VM_KW_SPECIFIED_BITS_MAX")
         .allowlist_var("rb_block_param_proxy")
         .allowlist_function("rb_range_new")
         .allowlist_function("rb_intern")
