@@ -3426,7 +3426,15 @@ pub mod hir_build_tests {
     }
  }
 
+ /// Test successor and predecessor set computations.
+ #[cfg(test)]
+ mod control_flow_info_tests {
+     use super::*;
+     use insta::assert_snapshot;
+ }
 
+
+ /// Test dominator set computations.
  #[cfg(test)]
  mod dom_tests {
      use super::*;
@@ -3694,6 +3702,7 @@ pub mod hir_build_tests {
     }
  }
 
+ /// Test loop information computation.
 #[cfg(test)]
 mod loop_info_tests {
     use super::*;
@@ -4073,6 +4082,7 @@ mod loop_info_tests {
     }
  }
 
+/// Test dumping to iongraph format.
 #[cfg(test)]
 mod iongraph_tests {
     use super::*;
