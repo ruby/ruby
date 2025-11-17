@@ -302,6 +302,7 @@ struct rb_callcache {
 #define VM_CALLCACHE_REFINEMENT IMEMO_FL_USER3
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER4
 #define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER5
+#define VM_CALLCACHE_INVALID_SUPER IMEMO_FL_USER6
 
 enum vm_cc_type {
     cc_type_normal, // chained from ccs
@@ -344,8 +345,6 @@ vm_cc_new(VALUE klass,
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-
     switch (type) {
       case cc_type_normal:
         break;
@@ -358,8 +357,13 @@ vm_cc_new(VALUE klass,
         break;
     }
 
-    if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
-        vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+    if (cme) {
+        if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
+            vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+        }
+    }
+    else {
+        *(VALUE *)&cc->flags |= VM_CALLCACHE_INVALID_SUPER;
     }
 
     RB_DEBUG_COUNTER_INC(cc_new);
@@ -406,6 +410,14 @@ vm_cc_markable(const struct rb_callcache *cc)
 }
 
 static inline bool
+vm_cc_invalid_super(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    // Set when calling super and there is no superclass.
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_INVALID_SUPER);
+}
+
+static inline bool
 vm_cc_valid(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
@@ -418,10 +430,11 @@ static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
     VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
+              vm_cc_invalid_super(cc) ||
               cc->cme_ != NULL);
 
     return cc->cme_;
@@ -432,7 +445,7 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
     VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
