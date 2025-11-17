@@ -102,14 +102,14 @@ module Gem::Net   #:nodoc:
   #
   # == URIs
   #
-  # On the internet, a URI
+  # On the internet, a Gem::URI
   # ({Universal Resource Identifier}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier])
   # is a string that identifies a particular resource.
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
-  # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
+  # see {Gem::URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem/URI/Generic.html] object
-  # represents an internet URI.
+  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem::URI/Generic.html] object
+  # represents an internet Gem::URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
   #
@@ -144,7 +144,7 @@ module Gem::Net   #:nodoc:
   #
   # === Queries
   #
-  # A host-specific query adds name/value pairs to the URI:
+  # A host-specific query adds name/value pairs to the Gem::URI:
   #
   #   _uri = uri.dup
   #   params = {userId: 1, completed: false}
@@ -154,7 +154,7 @@ module Gem::Net   #:nodoc:
   #
   # === Fragments
   #
-  # A {URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
+  # A {Gem::URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
   # in \Gem::Net::HTTP;
   # the same data is returned, regardless of whether a fragment is included.
   #
@@ -327,9 +327,9 @@ module Gem::Net   #:nodoc:
   #     res = http.request(req)
   #   end
   #
-  # Or if you simply want to make a GET request, you may pass in a URI
+  # Or if you simply want to make a GET request, you may pass in a Gem::URI
   # object that has an \HTTPS URL. \Gem::Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' :URI scheme:
+  # verification if the Gem::URI object has a 'https' Gem::URI scheme:
   #
   #   uri # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com/>
   #   Gem::Net::HTTP.get(uri)
@@ -374,7 +374,7 @@ module Gem::Net   #:nodoc:
   #
   # When environment variable <tt>'http_proxy'</tt>
   # is set to a \Gem::URI string,
-  # the returned +http+ will have the server at that URI as its proxy;
+  # the returned +http+ will have the server at that Gem::URI as its proxy;
   # note that the \Gem::URI string must have a protocol
   # such as <tt>'http'</tt> or <tt>'https'</tt>:
   #
@@ -724,7 +724,7 @@ module Gem::Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.6.0"
+    VERSION = "0.8.0"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -790,7 +790,7 @@ module Gem::Net   #:nodoc:
     #     "completed": false
     #   }
     #
-    # With URI object +uri+ and optional hash argument +headers+:
+    # With Gem::URI object +uri+ and optional hash argument +headers+:
     #
     #   uri = Gem::URI('https://jsonplaceholder.typicode.com/todos/1')
     #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
@@ -863,7 +863,7 @@ module Gem::Net   #:nodoc:
 
     # Posts data to a host; returns a Gem::Net::HTTPResponse object.
     #
-    # Argument +url+ must be a URI;
+    # Argument +url+ must be a Gem::URI;
     # argument +data+ must be a hash:
     #
     #   _uri = uri.dup
@@ -1179,6 +1179,7 @@ module Gem::Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1321,6 +1322,9 @@ module Gem::Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets wheter the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
@@ -1529,7 +1533,7 @@ module Gem::Net   #:nodoc:
       :verify_hostname,
     ] # :nodoc:
 
-    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym } # :nodoc:
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
@@ -1632,6 +1636,21 @@ module Gem::Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1654,14 +1673,36 @@ module Gem::Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
-        end
-      }
+      begin
+        s =
+          case @tcpsocket_supports_open_timeout
+          when nil, true
+            begin
+              # Use built-in timeout in TCPSocket.open if available
+              sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+              @tcpsocket_supports_open_timeout = true
+              sock
+            rescue ArgumentError => e
+              raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
+              @tcpsocket_supports_open_timeout = false
+
+              # Fallback to Gem::Timeout.timeout if TCPSocket.open does not support open_timeout
+              Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+                TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+              }
+            end
+          when false
+            # The current Ruby is known to not support TCPSocket(open_timeout:).
+            # Directly fall back to Gem::Timeout.timeout to avoid performance penalty incured by rescue.
+            Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+              TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+            }
+          end
+      rescue => e
+        e = Gem::Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) # for compatibility with previous versions
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1758,20 +1799,6 @@ module Gem::Net   #:nodoc:
     end
     private :on_connect
 
-    # Finishes the \HTTP session:
-    #
-    #   http = Gem::Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
-
     def do_finish
       @started = false
       @socket.close if @socket
@@ -1821,6 +1848,8 @@ module Gem::Net   #:nodoc:
       }
     end
 
+    # :startdoc:
+
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
       def proxy_class?
@@ -1860,7 +1889,7 @@ module Gem::Net   #:nodoc:
       @proxy_from_env
     end
 
-    # The proxy URI determined from the environment for this connection.
+    # The proxy Gem::URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
       return if @proxy_uri == false
       @proxy_uri ||= Gem::URI::HTTP.new(
@@ -1915,6 +1944,7 @@ module Gem::Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
       require 'cgi/escape'
@@ -1943,6 +1973,7 @@ module Gem::Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2397,6 +2428,8 @@ module Gem::Net   #:nodoc:
       res
     end
 
+    # :stopdoc:
+
     IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
 
     def transport_request(req)
@@ -2554,7 +2587,7 @@ module Gem::Net   #:nodoc:
     alias_method :D, :debug
   end
 
-  # for backward compatibility until Ruby 3.5
+  # for backward compatibility until Ruby 4.0
   # https://bugs.ruby-lang.org/issues/20900
   # https://github.com/bblimke/webmock/pull/1081
   HTTPSession = HTTP

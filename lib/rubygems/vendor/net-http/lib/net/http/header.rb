@@ -179,7 +179,9 @@
 # - #each_value: Passes each string field value to the block.
 #
 module Gem::Net::HTTPHeader
+  # The maximum length of HTTP header keys.
   MAX_KEY_LENGTH = 1024
+  # The maximum length of HTTP header values.
   MAX_FIELD_LENGTH = 65536
 
   def initialize_http_header(initheader) #:nodoc:
@@ -267,6 +269,7 @@ module Gem::Net::HTTPHeader
     end
   end
 
+  # :stopdoc:
   private def set_field(key, val)
     case val
     when Enumerable
@@ -294,6 +297,7 @@ module Gem::Net::HTTPHeader
       ary.push val
     end
   end
+  # :startdoc:
 
   # Returns the array field value for the given +key+,
   # or +nil+ if there is no such field;
@@ -490,7 +494,7 @@ module Gem::Net::HTTPHeader
 
   alias canonical_each each_capitalized
 
-  def capitalize(name)
+  def capitalize(name)  # :nodoc:
     name.to_s.split('-'.freeze).map {|s| s.capitalize }.join('-'.freeze)
   end
   private :capitalize
@@ -957,12 +961,12 @@ module Gem::Net::HTTPHeader
     @header['proxy-authorization'] = [basic_encode(account, password)]
   end
 
-  def basic_encode(account, password)
+  def basic_encode(account, password)   # :nodoc:
     'Basic ' + ["#{account}:#{password}"].pack('m0')
   end
   private :basic_encode
 
-# Returns whether the HTTP session is to be closed.
+  # Returns whether the HTTP session is to be closed.
   def connection_close?
     token = /(?:\A|,)\s*close\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}
@@ -970,7 +974,7 @@ module Gem::Net::HTTPHeader
     false
   end
 
-# Returns whether the HTTP session is to be kept alive.
+  # Returns whether the HTTP session is to be kept alive.
   def connection_keep_alive?
     token = /(?:\A|,)\s*keep-alive\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}
