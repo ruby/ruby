@@ -2123,7 +2123,7 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v33:BoolExact = ArrayInclude v15, v16 | v16
           PatchPoint NoEPEscape(test)
           v40:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2154,7 +2154,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v15:BoolExact = DupArrayInclude VALUE(0x1000) | v9
           CheckInterrupts
           Return v15
@@ -2186,7 +2186,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33))
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
 
