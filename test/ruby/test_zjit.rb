@@ -555,12 +555,22 @@ class TestZJIT < Test::Unit::TestCase
       def test(a:, b:) = [a, b]
       def entry = test(b: 2, a: 1) # change order
       entry
-    }
+      entry
+    }, call_threshold: 2
   end
 
   def test_send_kwarg_optional
     assert_compiles '[1, 2]', %q{
       def test(a: 1, b: 2) = [a, b]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_too_many
+    assert_compiles '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10) = [a, b, c, d, e, f, g, h, i, j]
       def entry = test
       entry
       entry
@@ -585,10 +595,73 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwarg_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s) = s.each_line(chomp: true).to_a
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_and_block_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s)
+        a = []
+        s.each_line(chomp: true) { |l| a << l }
+        a
+      end
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_kwrest
     assert_compiles '{a: 3}', %q{
       def test(**kwargs) = kwargs
       def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_kwreq
+    assert_compiles '[1, 3]', %q{
+      def test(a, c:) = [a, c]
+      def entry = test(1, c: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq_kwopt
+    assert_compiles '[[1, 2, 3, 4], [-1, -2, -3, -4]]', %q{
+      def test(a, b = 2, c:, d: 4) = [a, b, c, d]
+      def entry = [test(1, c: 3), test(-1, -2, d: -4, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_unexpected_keyword
+    assert_compiles ':error', %q{
+      def test(a: 1) = a*2
+      def entry
+        test(z: 2)
+      rescue ArgumentError
+        :error
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_all_arg_types
+    assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
+      def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
+      def entry = test(:req, :post, d: :kwr) {}
       entry
       entry
     }, call_threshold: 2
