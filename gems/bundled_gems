@@ -6,7 +6,7 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest            5.26.1  https://github.com/minitest/minitest
+minitest            5.26.2  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
 rake                13.3.1  https://github.com/ruby/rake
 test-unit           3.7.1   https://github.com/test-unit/test-unit
