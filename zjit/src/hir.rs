@@ -3828,33 +3828,132 @@ impl Function {
         let insn_id = self.union_find.borrow().find_const(insn_id);
         let insn = self.find(insn_id);
         match insn {
-            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
-            Insn::StringAppend { recv, other, .. } => {
-                self.assert_subtype(insn_id, recv, types::StringExact)?;
-                self.assert_subtype(insn_id, other, types::String)
+            // Instructions with no InsnId operands (except state) or nothing to assert
+            Insn::Const { .. }
+            | Insn::Param
+            | Insn::PutSpecialObject { .. }
+            | Insn::LoadField { .. }
+            | Insn::GetConstantPath { .. }
+            | Insn::IsBlockGiven
+            | Insn::GetGlobal { .. }
+            | Insn::LoadPC
+            | Insn::LoadSelf
+            | Insn::Snapshot { .. }
+            | Insn::Jump { .. }
+            | Insn::EntryPoint { .. }
+            | Insn::GuardBlockParamProxy { .. }
+            | Insn::PatchPoint { .. }
+            | Insn::SideExit { .. }
+            | Insn::IncrCounter { .. }
+            | Insn::IncrCounterPtr { .. }
+            | Insn::CheckInterrupts { .. }
+            | Insn::CCall { .. }
+            | Insn::GetClassVar { .. }
+            | Insn::GetSpecialNumber { .. }
+            | Insn::GetSpecialSymbol { .. }
+            | Insn::GetLocal { .. } => {
+                Ok(())
+            }
+            // Instructions with 1 Ruby object operand
+            Insn::Test { val }
+            | Insn::IsNil { val }
+            | Insn::IsMethodCfunc { val, .. }
+            | Insn::GuardShape { val, .. }
+            | Insn::GuardNotFrozen { val, .. }
+            | Insn::SetGlobal { val, .. }
+            | Insn::SetLocal { val, .. }
+            | Insn::SetClassVar { val, .. }
+            | Insn::Return { val }
+            | Insn::Throw { val, .. }
+            | Insn::ObjToString { val, .. }
+            | Insn::GuardType { val, .. }
+            | Insn::GuardTypeNot { val, .. }
+            | Insn::ToArray { val, .. }
+            | Insn::ToNewArray { val, .. }
+            | Insn::Defined { v: val, .. }
+            | Insn::ObjectAlloc { val, .. }
+            | Insn::DupArrayInclude { target: val, .. }
+            | Insn::GetIvar { self_val: val, .. }
+            | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
+            | Insn::DefinedIvar { self_val: val, .. } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            // Instructions with 2 Ruby object operands
+            Insn::SetIvar { self_val: left, val: right, .. }
+            | Insn::SetInstanceVariable { self_val: left, val: right, .. }
+            | Insn::NewRange { low: left, high: right, .. }
+            | Insn::AnyToString { val: left, str: right, .. } => {
+                self.assert_subtype(insn_id, left, types::BasicObject)?;
+                self.assert_subtype(insn_id, right, types::BasicObject)
+            }
+            // Instructions with recv and a Vec of Ruby objects
+            Insn::SendWithoutBlock { recv, ref args, .. }
+            | Insn::SendWithoutBlockDirect { recv, ref args, .. }
+            | Insn::Send { recv, ref args, .. }
+            | Insn::SendForward { recv, ref args, .. }
+            | Insn::InvokeSuper { recv, ref args, .. }
+            | Insn::CCallVariadic { recv, ref args, .. }
+            | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
+                self.assert_subtype(insn_id, recv, types::BasicObject)?;
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            // Instructions with a Vec of Ruby objects
+            Insn::CCallWithFrame { ref args, .. }
+            | Insn::InvokeBuiltin { ref args, .. }
+            | Insn::InvokeBlock { ref args, .. }
+            | Insn::NewArray { elements: ref args, .. }
+            | Insn::ArrayMax { elements: ref args, .. } => {
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
             }
             Insn::NewHash { ref elements, .. } => {
                 if elements.len() % 2 != 0 {
                     return Err(ValidationError::MiscValidationError(insn_id, "NewHash elements length is not even".to_string()));
                 }
+                for &element in elements {
+                    self.assert_subtype(insn_id, element, types::BasicObject)?;
+                }
                 Ok(())
             }
-            Insn::NewRangeFixnum { low, high, .. } => {
-                self.assert_subtype(insn_id, low, types::Fixnum)?;
-                self.assert_subtype(insn_id, high, types::Fixnum)
+            Insn::StringConcat { ref strings, .. }
+            | Insn::ToRegexp { values: ref strings, .. } => {
+                for &string in strings {
+                    self.assert_subtype(insn_id, string, types::String)?;
+                }
+                Ok(())
             }
+            // Instructions with String operands
+            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringAppend { recv, other, .. } => {
+                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, other, types::String)
+            }
+            // Instructions with Array operands
+            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
             Insn::ArrayExtend { left, right, .. } => {
                 // TODO(max): Do left and right need to be ArrayExact?
                 self.assert_subtype(insn_id, left, types::Array)?;
                 self.assert_subtype(insn_id, right, types::Array)
             }
-            Insn::ArrayPush { array, .. } => self.assert_subtype(insn_id, array, types::Array),
-            Insn::ArrayPop { array, .. } => self.assert_subtype(insn_id, array, types::Array),
-            Insn::ArrayLength { array, .. } => self.assert_subtype(insn_id, array, types::Array),
+            Insn::ArrayPush { array, .. }
+            | Insn::ArrayPop { array, .. }
+            | Insn::ArrayLength { array, .. } => {
+                self.assert_subtype(insn_id, array, types::Array)
+            }
+            Insn::ArrayArefFixnum { array, index } => {
+                self.assert_subtype(insn_id, array, types::Array)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
+            }
+            // Instructions with Hash operands
             Insn::HashAref { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
+            // Other
             Insn::ObjectAllocClass { class, .. } => {
                 let has_leaf_allocator = unsafe { rb_zjit_class_has_default_allocator(class) } || class_has_leaf_allocator(class);
                 if !has_leaf_allocator {
@@ -3862,9 +3961,6 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::Test { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IsNil { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IsMethodCfunc { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
                 if self.is_a(left, types::CInt) && self.is_a(right, types::CInt) {
@@ -3878,41 +3974,15 @@ impl Function {
                     return Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()));
                 }
             }
-            Insn::BoxBool { val } => self.assert_subtype(insn_id, val, types::CBool),
+            Insn::BoxBool { val }
+            | Insn::IfTrue { val, .. }
+            | Insn::IfFalse { val, .. } => {
+                self.assert_subtype(insn_id, val, types::CBool)
+            }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
-            Insn::UnboxFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
-            Insn::SetGlobal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GetIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::SetIvar { self_val, val, .. } => {
-                self.assert_subtype(insn_id, self_val, types::BasicObject)?;
-                self.assert_subtype(insn_id, val, types::BasicObject)
+            Insn::UnboxFixnum { val } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
             }
-            Insn::DefinedIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::SetLocal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::SetClassVar { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IfTrue { val, .. } | Insn::IfFalse { val, .. } => self.assert_subtype(insn_id, val, types::CBool),
-            Insn::SendWithoutBlock { recv, ref args, .. }
-            | Insn::SendWithoutBlockDirect { recv, ref args, .. }
-            | Insn::Send { recv, ref args, .. }
-            | Insn::SendForward { recv, ref args, .. }
-            | Insn::InvokeSuper { recv, ref args, .. }
-            | Insn::CCallVariadic { recv, ref args, .. } => {
-                self.assert_subtype(insn_id, recv, types::BasicObject)?;
-                for &arg in args {
-                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
-                }
-                Ok(())
-            }
-            Insn::CCallWithFrame { ref args, .. }
-            | Insn::InvokeBuiltin { ref args, .. }
-            | Insn::InvokeBlock { ref args, .. } => {
-                for &arg in args {
-                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
-                }
-                Ok(())
-            }
-            Insn::Return { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::Throw { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::FixnumAdd { left, right, .. }
             | Insn::FixnumSub { left, right, .. }
             | Insn::FixnumMult { left, right, .. }
@@ -3927,17 +3997,11 @@ impl Function {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::NewRangeFixnum { low: left, high: right, .. }
             => {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
             }
-            Insn::ObjToString { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::AnyToString { val, str, .. } => {
-                self.assert_subtype(insn_id, val, types::BasicObject)?;
-                self.assert_subtype(insn_id, str, types::BasicObject)
-            }
-            Insn::GuardType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardTypeNot { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GuardBitEquals { val, expected, .. } => {
                 match expected {
                     Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
@@ -3954,9 +4018,8 @@ impl Function {
                     Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
                 }
             }
-            Insn::GuardShape { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardNotFrozen { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardLess { left, right, .. } | Insn::GuardGreaterEq { left, right, .. } => {
+            Insn::GuardLess { left, right, .. }
+            | Insn::GuardGreaterEq { left, right, .. } => {
                 self.assert_subtype(insn_id, left, types::CInt64)?;
                 self.assert_subtype(insn_id, right, types::CInt64)
             },
@@ -3969,7 +4032,6 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
             }
-            _ => Ok(()),
         }
     }
 
