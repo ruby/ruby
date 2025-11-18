@@ -39,3 +39,9 @@ def foo = bar 1
 !foo 1 or !bar 2
 
 not !foo 1
+
+foo(bar baz, key => value)
+
+foo(bar baz, KEY => value)
+
+foo(bar baz, :key => value)
