@@ -9335,13 +9335,6 @@ fn gen_send_general(
                             return None;
                         }
 
-                        // Optimize for single ractor mode and avoid runtime check for
-                        // "defined with an un-shareable Proc in a different Ractor"
-                        if !assume_single_ractor_mode(jit, asm) {
-                            gen_counter_incr(jit, asm, Counter::send_call_multi_ractor);
-                            return None;
-                        }
-
                         // If this is a .send call we need to adjust the stack
                         if flags & VM_CALL_OPT_SEND != 0 {
                             handle_opt_send_shift_stack(asm, argc);
