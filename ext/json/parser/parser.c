@@ -336,7 +336,6 @@ typedef struct JSON_ParserStruct {
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
-    bool parsing_name;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
