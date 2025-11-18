@@ -1575,8 +1575,8 @@ after_exec(void)
 static void
 before_fork_ruby(void)
 {
-    rb_gc_before_fork();
     before_exec();
+    rb_gc_before_fork();
 }
 
 static void
