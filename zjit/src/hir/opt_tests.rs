@@ -2863,6 +2863,70 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_optimize_ccall_with_kwarg() {
+        eval("
+            def test = sprintf('%s', a: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v11
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter complex_arg_pass_caller_kwarg
+          v16:BasicObject = SendWithoutBlock v6, :sprintf, v12, v14
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn dont_optimize_ccall_with_block_and_kwarg() {
+        eval("
+            def test(s)
+              a = []
+              s.each_line(chomp: true) { |l| a << l }
+              a
+            end
+            test %(a\nb\nc)
+            test %()
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v16:ArrayExact = NewArray
+          SetLocal :a, l0, EP@3, v16
+          v22:TrueClass = Const Value(true)
+          IncrCounter complex_arg_pass_caller_kwarg
+          v24:BasicObject = Send v11, 0x1000, :each_line, v22
+          v25:BasicObject = GetLocal :s, l0, EP@4
+          v26:BasicObject = GetLocal :a, l0, EP@3
+          v30:BasicObject = GetLocal :a, l0, EP@3
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn dont_replace_get_constant_path_with_empty_ic() {
         eval("
             def test = Kernel
