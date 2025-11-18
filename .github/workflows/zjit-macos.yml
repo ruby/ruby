@@ -68,7 +68,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -172,7 +172,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
       - uses: ./.github/actions/setup/macos
 
@@ -192,7 +192,7 @@ jobs:
         run: echo "MAKEFLAGS=" >> "$GITHUB_ENV"
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: ruby/ruby-bench
           path: ruby-bench
