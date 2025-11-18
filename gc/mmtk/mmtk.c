@@ -1050,6 +1050,7 @@ rb_gc_impl_before_fork(void *objspace_ptr)
     struct objspace *objspace = objspace_ptr;
 
     objspace->fork_hook_vm_lock_lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
 
     mmtk_before_fork();
 }
