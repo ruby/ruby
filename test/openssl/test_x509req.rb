@@ -42,6 +42,11 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     assert_equal(@dn.to_der, req.subject.to_der)
   end
 
+  def test_signature_algorithm
+    req = issue_csr(0, @dn, @rsa1, "SHA256")
+    assert_equal("sha256WithRSAEncryption", req.signature_algorithm) # ln
+  end
+
   def create_ext_req(exts)
     ef = OpenSSL::X509::ExtensionFactory.new
     exts = exts.collect{|e| ef.create_extension(*e) }

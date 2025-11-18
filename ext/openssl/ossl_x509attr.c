@@ -164,29 +164,18 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
 
 /*
  * call-seq:
- *    attr.oid => string
+ *    attr.oid -> string
+ *
+ * Returns the OID of the attribute. Returns the short name or the dotted
+ * decimal notation.
  */
 static VALUE
 ossl_x509attr_get_oid(VALUE self)
 {
     X509_ATTRIBUTE *attr;
-    ASN1_OBJECT *oid;
-    BIO *out;
-    VALUE ret;
-    int nid;
 
     GetX509Attr(self, attr);
-    oid = X509_ATTRIBUTE_get0_object(attr);
-    if ((nid = OBJ_obj2nid(oid)) != NID_undef)
-	ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-	if (!(out = BIO_new(BIO_s_mem())))
-	    ossl_raise(eX509AttrError, NULL);
-	i2a_ASN1_OBJECT(out, oid);
-	ret = ossl_membio2str(out);
-    }
-
-    return ret;
+    return ossl_asn1obj_to_string(X509_ATTRIBUTE_get0_object(attr));
 }
 
 /*

@@ -341,34 +341,22 @@ static VALUE
 ossl_x509name_to_a(VALUE self)
 {
     X509_NAME *name;
-    X509_NAME_ENTRY *entry;
-    int i,entries,nid;
-    char long_name[512];
-    const char *short_name;
-    VALUE ary, vname, ret;
-    ASN1_STRING *value;
+    int entries;
+    VALUE ret;
 
     GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
     ret = rb_ary_new_capa(entries);
-    for (i=0; i<entries; i++) {
-	if (!(entry = X509_NAME_get_entry(name, i))) {
-	    ossl_raise(eX509NameError, NULL);
-	}
-	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name),
-			     X509_NAME_ENTRY_get_object(entry))) {
-	    ossl_raise(eX509NameError, NULL);
-	}
-	nid = OBJ_ln2nid(long_name);
-	if (nid == NID_undef) {
-	    vname = rb_str_new2((const char *) &long_name);
-	} else {
-	    short_name = OBJ_nid2sn(nid);
-	    vname = rb_str_new2(short_name); /*do not free*/
-	}
-	value = X509_NAME_ENTRY_get_data(entry);
-	ary = rb_ary_new3(3, vname, asn1str_to_str(value), INT2NUM(value->type));
-	rb_ary_push(ret, ary);
+    for (int i = 0; i < entries; i++) {
+        const X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
+        if (!entry)
+            ossl_raise(eX509NameError, "X509_NAME_get_entry");
+        const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
+        VALUE vname = ossl_asn1obj_to_string(obj);
+        const ASN1_STRING *data = X509_NAME_ENTRY_get_data(entry);
+        VALUE vdata = asn1str_to_str(data);
+        VALUE type = INT2NUM(ASN1_STRING_type(data));
+        rb_ary_push(ret, rb_ary_new_from_args(3, vname, vdata, type));
     }
     return ret;
 }

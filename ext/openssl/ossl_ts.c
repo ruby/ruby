@@ -139,27 +139,6 @@ obj_to_asn1obj_i(VALUE obj)
 }
 
 static VALUE
-get_asn1obj(const ASN1_OBJECT *obj)
-{
-    BIO *out;
-    VALUE ret;
-    int nid;
-    if ((nid = OBJ_obj2nid(obj)) != NID_undef)
-        ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-        if (!(out = BIO_new(BIO_s_mem())))
-            ossl_raise(eTimestampError, "BIO_new(BIO_s_mem())");
-        if (i2a_ASN1_OBJECT(out, obj) <= 0) {
-            BIO_free(out);
-            ossl_raise(eTimestampError, "i2a_ASN1_OBJECT");
-        }
-        ret = ossl_membio2str(out);
-    }
-
-    return ret;
-}
-
-static VALUE
 ossl_ts_req_alloc(VALUE klass)
 {
     TS_REQ *req;
@@ -229,7 +208,7 @@ ossl_ts_req_get_algorithm(VALUE self)
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
     X509_ALGOR_get0(&obj, NULL, NULL, algor);
-    return get_asn1obj(obj);
+    return ossl_asn1obj_to_string(obj);
 }
 
 /*
@@ -358,7 +337,7 @@ ossl_ts_req_get_policy_id(VALUE self)
     GetTSRequest(self, req);
     if (!TS_REQ_get_policy_id(req))
         return Qnil;
-    return get_asn1obj(TS_REQ_get_policy_id(req));
+    return ossl_asn1obj_to_string(TS_REQ_get_policy_id(req));
 }
 
 /*
@@ -948,7 +927,7 @@ ossl_ts_token_info_get_policy_id(VALUE self)
     TS_TST_INFO *info;
 
     GetTSTokenInfo(self, info);
-    return get_asn1obj(TS_TST_INFO_get_policy_id(info));
+    return ossl_asn1obj_to_string(TS_TST_INFO_get_policy_id(info));
 }
 
 /*
@@ -976,7 +955,7 @@ ossl_ts_token_info_get_algorithm(VALUE self)
     mi = TS_TST_INFO_get_msg_imprint(info);
     algo = TS_MSG_IMPRINT_get_algo(mi);
     X509_ALGOR_get0(&obj, NULL, NULL, algo);
-    return get_asn1obj(obj);
+    return ossl_asn1obj_to_string(obj);
 }
 
 /*

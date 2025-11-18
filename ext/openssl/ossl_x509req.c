@@ -255,27 +255,26 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
     return subject;
 }
 
+/*
+ * call-seq:
+ *    req.signature_algorithm -> string
+ *
+ * Returns the signature algorithm used to sign this request.
+ *
+ * Returns the long name of the signature algorithm, or the dotted decimal
+ * notation if \OpenSSL does not define a long name for it.
+ */
 static VALUE
 ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
     const X509_ALGOR *alg;
     const ASN1_OBJECT *obj;
-    BIO *out;
 
     GetX509Req(self, req);
-
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
-    }
     X509_REQ_get0_signature(req, NULL, &alg);
     X509_ALGOR_get0(&obj, NULL, NULL, alg);
-    if (!i2a_ASN1_OBJECT(out, obj)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
-    }
-
-    return ossl_membio2str(out);
+    return ossl_asn1obj_to_string_long_name(obj);
 }
 
 static VALUE

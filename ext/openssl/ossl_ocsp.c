@@ -1591,19 +1591,10 @@ ossl_ocspcid_get_hash_algorithm(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OBJECT *oid;
-    BIO *out;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, &oid, NULL, NULL, id);
-
-    if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eOCSPError, "BIO_new");
-
-    if (!i2a_ASN1_OBJECT(out, oid)) {
-	BIO_free(out);
-	ossl_raise(eOCSPError, "i2a_ASN1_OBJECT");
-    }
-    return ossl_membio2str(out);
+    return ossl_asn1obj_to_string_long_name(oid);
 }
 
 /*
