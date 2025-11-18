@@ -1240,8 +1240,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         else {
             F_MSG(rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
-        LAST_NODE;
         F_NODE(post_args, RNODE_ARYPTN, "post arguments");
+        F_LOC(opening_loc, RNODE_ARYPTN);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_ARYPTN);
         return;
 
       case NODE_FNDPTN:
