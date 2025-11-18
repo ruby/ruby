@@ -415,7 +415,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
-        Insn::GuardNotFrozen { val, state } => gen_guard_not_frozen(jit, asm, opnd!(val), &function.frame_state(*state)),
+        Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
@@ -645,12 +645,12 @@ fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, 
     asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
 }
 
-fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
-    let ret = asm_ccall!(asm, rb_obj_frozen_p, val);
+fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
+    let ret = asm_ccall!(asm, rb_obj_frozen_p, recv);
     asm_comment!(asm, "side-exit if rb_obj_frozen_p returns Qtrue");
     asm.cmp(ret, Qtrue.into());
     asm.je(side_exit(jit, state, GuardNotFrozen));
-    val
+    recv
 }
 
 fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {

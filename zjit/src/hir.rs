@@ -879,7 +879,7 @@ pub enum Insn {
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
     /// Side-exit if val is frozen.
-    GuardNotFrozen { val: InsnId, state: InsnId },
+    GuardNotFrozen { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -1191,7 +1191,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
-            Insn::GuardNotFrozen { val, .. } => write!(f, "GuardNotFrozen {val}"),
+            Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
@@ -1786,7 +1786,7 @@ impl Function {
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
-            &GuardNotFrozen { val, state } => GuardNotFrozen { val: find!(val), state },
+            &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
@@ -2004,7 +2004,7 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { val, .. } => self.type_of(*val),
+            Insn::GuardNotFrozen { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -2513,7 +2513,7 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::GuardNotFrozen { val: recv, state });
+                                        self.push_insn(block, Insn::GuardNotFrozen { recv, state });
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
@@ -3402,7 +3402,7 @@ impl Function {
             | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
-            | &Insn::GuardNotFrozen { val, state }
+            | &Insn::GuardNotFrozen { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -3882,7 +3882,7 @@ impl Function {
             | Insn::IsNil { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::GuardShape { val, .. }
-            | Insn::GuardNotFrozen { val, .. }
+            | Insn::GuardNotFrozen { recv: val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }

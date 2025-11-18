@@ -306,7 +306,7 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
-    let arr = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
+    let arr = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: arr, state }))
 }
 
@@ -367,7 +367,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
-        let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
+        let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
         let _ = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
         // String#setbyte returns the fixnum provided as its `value` argument back to the caller.
         Some(value)
