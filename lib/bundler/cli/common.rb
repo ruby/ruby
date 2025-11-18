@@ -99,7 +99,7 @@ module Bundler
       if alternate_names.include?(missing_gem_name.downcase)
         message += "\nDid you mean '#{missing_gem_name.downcase}'?"
       elsif defined?(DidYouMean::SpellChecker)
-        suggestions = DidYouMean::SpellChecker.new(:dictionary => alternate_names).correct(missing_gem_name)
+        suggestions = DidYouMean::SpellChecker.new(dictionary: alternate_names).correct(missing_gem_name)
         message += "\nDid you mean #{word_list(suggestions)}?" unless suggestions.empty?
       end
       message
@@ -137,8 +137,6 @@ module Bundler
       clean &&= !Bundler.use_system_gems?
       clean
     end
-
-  protected
 
     def self.word_list(words)
       if words.empty?
