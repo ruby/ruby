@@ -2084,6 +2084,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx_proc = -> ctx {
       # Unset values set by start_server
       ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.sigalgs = "rsa_pss_rsae_sha256:mldsa65"
       ctx.add_certificate(mldsa_cert, mldsa)
       ctx.add_certificate(rsa_cert, rsa)
     }
