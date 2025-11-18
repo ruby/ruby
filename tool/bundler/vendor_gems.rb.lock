@@ -22,12 +22,19 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
+<<<<<<< HEAD
     connection_pool (2.4.1)
     fileutils (1.7.3)
 <<<<<<< HEAD
 =======
     net-http (0.8.0)
       uri (>= 0.11.1)
+=======
+    connection_pool (2.5.4)
+    fileutils (1.8.0)
+    net-http (0.7.0)
+      uri
+>>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
     net-http-persistent (4.0.6)
       connection_pool (~> 2.2, >= 2.2.4)
 >>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
@@ -54,10 +61,14 @@ DEPENDENCIES
   fileutils (= 1.7.3)
   molinillo!
 <<<<<<< HEAD
+<<<<<<< HEAD
   net-http!
   net-http-persistent!
 =======
   net-http (= 0.8.0)
+=======
+  net-http (= 0.7.0)
+>>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
   net-http-persistent (= 4.0.6)
 >>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
   net-protocol (= 0.2.2)
@@ -75,10 +86,14 @@ CHECKSUMS
   fileutils (1.7.3) sha256=57271e854b694a87755d76f836f5c57b2c9538ebbaf4b2154bb66addf15eb5da
   molinillo (0.8.0)
 <<<<<<< HEAD
+<<<<<<< HEAD
   net-http (0.6.0)
   net-http-persistent (4.0.6)
 =======
   net-http (0.8.0) sha256=df42c47ce9f9e95ad32a317c97c12f945bc1af365288837ea4ff259876ecb46d
+=======
+  net-http (0.7.0) sha256=4db7d9f558f8ffd4dcf832d0aefd02320c569c7d4f857def49e585069673a425
+>>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
   net-http-persistent (4.0.6) sha256=2abb3a04438edf6cb9e0e7e505969605f709eda3e3c5211beadd621a2c84dd5d
 >>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
   net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8

@@ -4,9 +4,7 @@
 
 module Gem::Net
 
-  # Unknown HTTP response
   class HTTPUnknownResponse < HTTPResponse
-    # :stopdoc:
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPError                  #
   end
@@ -21,7 +19,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#1xx_informational_response].
   #
   class HTTPInformation < HTTPResponse
-    # :stopdoc:
     HAS_BODY = false
     EXCEPTION_TYPE = HTTPError                  #
   end
@@ -37,7 +34,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_success].
   #
   class HTTPSuccess < HTTPResponse
-    # :stopdoc:
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPError                  #
   end
@@ -53,7 +49,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_redirection].
   #
   class HTTPRedirection < HTTPResponse
-    # :stopdoc:
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPRetriableError         #
   end
@@ -68,7 +63,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_client_errors].
   #
   class HTTPClientError < HTTPResponse
-    # :stopdoc:
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPClientException        #
   end
@@ -83,7 +77,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#5xx_server_errors].
   #
   class HTTPServerError < HTTPResponse
-    # :stopdoc:
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPFatalError             #
   end
@@ -101,7 +94,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#100].
   #
   class HTTPContinue < HTTPInformation
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -119,7 +111,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#101].
   #
   class HTTPSwitchProtocol < HTTPInformation
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -136,7 +127,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#102].
   #
   class HTTPProcessing < HTTPInformation
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -155,7 +145,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#103].
   #
   class HTTPEarlyHints < HTTPInformation
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -173,7 +162,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#200].
   #
   class HTTPOK < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -191,7 +179,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#201].
   #
   class HTTPCreated < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -209,7 +196,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#202].
   #
   class HTTPAccepted < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -229,7 +215,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#203].
   #
   class HTTPNonAuthoritativeInformation < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -247,7 +232,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#204].
   #
   class HTTPNoContent < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -266,7 +250,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#205].
   #
   class HTTPResetContent < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -285,7 +268,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#206].
   #
   class HTTPPartialContent < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -303,7 +285,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#207].
   #
   class HTTPMultiStatus < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -323,7 +304,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#208].
   #
   class HTTPAlreadyReported < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -341,7 +321,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#226].
   #
   class HTTPIMUsed < HTTPSuccess
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -359,7 +338,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#300].
   #
   class HTTPMultipleChoices < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPMultipleChoice = HTTPMultipleChoices
@@ -378,7 +356,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#301].
   #
   class HTTPMovedPermanently < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -396,7 +373,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#302].
   #
   class HTTPFound < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPMovedTemporarily = HTTPFound
@@ -414,7 +390,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#303].
   #
   class HTTPSeeOther < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -432,7 +407,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#304].
   #
   class HTTPNotModified < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -449,7 +423,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#305].
   #
   class HTTPUseProxy < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = false
   end
 
@@ -467,7 +440,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#307].
   #
   class HTTPTemporaryRedirect < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -484,7 +456,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#308].
   #
   class HTTPPermanentRedirect < HTTPRedirection
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -501,7 +472,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#400].
   #
   class HTTPBadRequest < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -518,7 +488,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#401].
   #
   class HTTPUnauthorized < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -535,7 +504,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#402].
   #
   class HTTPPaymentRequired < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -553,7 +521,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#403].
   #
   class HTTPForbidden < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -570,7 +537,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#404].
   #
   class HTTPNotFound < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -587,7 +553,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#405].
   #
   class HTTPMethodNotAllowed < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -605,7 +570,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#406].
   #
   class HTTPNotAcceptable < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -622,7 +586,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#407].
   #
   class HTTPProxyAuthenticationRequired < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -639,7 +602,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#408].
   #
   class HTTPRequestTimeout < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPRequestTimeOut = HTTPRequestTimeout
@@ -657,7 +619,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#409].
   #
   class HTTPConflict < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -675,7 +636,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#410].
   #
   class HTTPGone < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -693,7 +653,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#411].
   #
   class HTTPLengthRequired < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -711,7 +670,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#412].
   #
   class HTTPPreconditionFailed < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -728,7 +686,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#413].
   #
   class HTTPPayloadTooLarge < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPRequestEntityTooLarge = HTTPPayloadTooLarge
@@ -746,7 +703,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#414].
   #
   class HTTPURITooLong < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPRequestURITooLong = HTTPURITooLong
@@ -765,7 +721,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#415].
   #
   class HTTPUnsupportedMediaType < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -782,7 +737,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#416].
   #
   class HTTPRangeNotSatisfiable < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPRequestedRangeNotSatisfiable = HTTPRangeNotSatisfiable
@@ -800,7 +754,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#417].
   #
   class HTTPExpectationFailed < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -821,7 +774,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#421].
   #
   class HTTPMisdirectedRequest < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -838,7 +790,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#422].
   #
   class HTTPUnprocessableEntity < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -854,7 +805,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#423].
   #
   class HTTPLocked < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -871,7 +821,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#424].
   #
   class HTTPFailedDependency < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -891,7 +840,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#426].
   #
   class HTTPUpgradeRequired < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -908,7 +856,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#428].
   #
   class HTTPPreconditionRequired < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -925,7 +872,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#429].
   #
   class HTTPTooManyRequests < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -943,7 +889,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#431].
   #
   class HTTPRequestHeaderFieldsTooLarge < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -961,7 +906,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#451].
   #
   class HTTPUnavailableForLegalReasons < HTTPClientError
-    # :stopdoc:
     HAS_BODY = true
   end
   # 444 No Response - Nginx
@@ -982,7 +926,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#500].
   #
   class HTTPInternalServerError < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1000,7 +943,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#501].
   #
   class HTTPNotImplemented < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1018,7 +960,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#502].
   #
   class HTTPBadGateway < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1036,7 +977,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#503].
   #
   class HTTPServiceUnavailable < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1054,7 +994,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#504].
   #
   class HTTPGatewayTimeout < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
   HTTPGatewayTimeOut = HTTPGatewayTimeout
@@ -1072,7 +1011,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#505].
   #
   class HTTPVersionNotSupported < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1089,7 +1027,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#506].
   #
   class HTTPVariantAlsoNegotiates < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1106,7 +1043,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#507].
   #
   class HTTPInsufficientStorage < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1123,7 +1059,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#508].
   #
   class HTTPLoopDetected < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
   # 509 Bandwidth Limit Exceeded - Apache bw/limited extension
@@ -1141,7 +1076,6 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#510].
   #
   class HTTPNotExtended < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
@@ -1158,14 +1092,12 @@ module Gem::Net
   # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#511].
   #
   class HTTPNetworkAuthenticationRequired < HTTPServerError
-    # :stopdoc:
     HAS_BODY = true
   end
 
 end
 
 class Gem::Net::HTTPResponse
-  # :stopdoc:
   CODE_CLASS_TO_OBJ = {
     '1' => Gem::Net::HTTPInformation,
     '2' => Gem::Net::HTTPSuccess,

@@ -19,13 +19,16 @@ class Gem::Net::HTTPGenericRequest
 
     if Gem::URI === uri_or_path then
       raise ArgumentError, "not an HTTP Gem::URI" unless Gem::URI::HTTP === uri_or_path
-      hostname = uri_or_path.host
+      hostname = uri_or_path.hostname
       raise ArgumentError, "no host component for Gem::URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
+      host = @uri.hostname.dup
+      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
+      host = nil
       raise ArgumentError, "no HTTP request path given" unless uri_or_path
       raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
       @path = uri_or_path.dup
@@ -48,7 +51,7 @@ class Gem::Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= @uri.authority if @uri
+    self['Host'] ||= host if host
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -242,7 +245,7 @@ class Gem::Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host = Gem::URI.parse("//#{host}").host # Remove a port component from the existing Host header
+      host.sub!(/:.*/m, '')
     elsif host = @uri.host
     else
      host = addr
@@ -260,8 +263,6 @@ class Gem::Net::HTTPGenericRequest
   end
 
   private
-
-  # :stopdoc:
 
   class Chunker #:nodoc:
     def initialize(sock)
