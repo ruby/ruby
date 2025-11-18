@@ -820,6 +820,13 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal [], JSON.parse("[\n#{' ' * (8 + 8 + 4 + 3)}]")
   end
 
+  def test_frozen
+    parser_config = JSON::Parser::Config.new({}).freeze
+    assert_raise FrozenError do
+      parser_config.send(:initialize, {})
+    end
+  end
+
   private
 
   def assert_equal_float(expected, actual, delta = 1e-2)

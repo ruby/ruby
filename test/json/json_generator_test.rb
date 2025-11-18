@@ -901,4 +901,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
     assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
   end
+
+  def test_frozen
+    state = JSON::State.new.freeze
+    assert_raise(FrozenError) do
+      state.configure(max_nesting: 1)
+    end
+    setters = state.methods.grep(/\w=$/)
+    assert_not_empty setters
+    setters.each do |setter|
+      assert_raise(FrozenError) do
+        state.send(setter, 1)
+      end
+    end
+  end
 end

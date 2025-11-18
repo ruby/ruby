@@ -1630,6 +1630,7 @@ static VALUE string_config(VALUE config)
  */
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->indent, string_config(indent));
     return Qnil;
@@ -1655,6 +1656,7 @@ static VALUE cState_space(VALUE self)
  */
 static VALUE cState_space_set(VALUE self, VALUE space)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->space, string_config(space));
     return Qnil;
@@ -1678,6 +1680,7 @@ static VALUE cState_space_before(VALUE self)
  */
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->space_before, string_config(space_before));
     return Qnil;
@@ -1703,6 +1706,7 @@ static VALUE cState_object_nl(VALUE self)
  */
 static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->object_nl, string_config(object_nl));
     return Qnil;
@@ -1726,6 +1730,7 @@ static VALUE cState_array_nl(VALUE self)
  */
 static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->array_nl, string_config(array_nl));
     return Qnil;
@@ -1749,6 +1754,7 @@ static VALUE cState_as_json(VALUE self)
  */
 static VALUE cState_as_json_set(VALUE self, VALUE as_json)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->as_json, rb_convert_type(as_json, T_DATA, "Proc", "to_proc"));
     return Qnil;
@@ -1791,6 +1797,7 @@ static long long_config(VALUE num)
  */
 static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->max_nesting = long_config(depth);
     return Qnil;
@@ -1816,6 +1823,7 @@ static VALUE cState_script_safe(VALUE self)
  */
 static VALUE cState_script_safe_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->script_safe = RTEST(enable);
     return Qnil;
@@ -1847,6 +1855,7 @@ static VALUE cState_strict(VALUE self)
  */
 static VALUE cState_strict_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->strict = RTEST(enable);
     return Qnil;
@@ -1871,6 +1880,7 @@ static VALUE cState_allow_nan_p(VALUE self)
  */
 static VALUE cState_allow_nan_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->allow_nan = RTEST(enable);
     return Qnil;
@@ -1895,6 +1905,7 @@ static VALUE cState_ascii_only_p(VALUE self)
  */
 static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->ascii_only = RTEST(enable);
     return Qnil;
@@ -1932,6 +1943,7 @@ static VALUE cState_depth(VALUE self)
  */
 static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->depth = long_config(depth);
     return Qnil;
@@ -1965,6 +1977,7 @@ static void buffer_initial_length_set(JSON_Generator_State *state, VALUE buffer_
  */
 static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     buffer_initial_length_set(state, buffer_initial_length);
     return Qnil;
@@ -2031,6 +2044,7 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
 
 static VALUE cState_configure(VALUE self, VALUE opts)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     configure_state(state, self, opts);
     return self;
