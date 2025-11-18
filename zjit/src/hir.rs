@@ -2503,6 +2503,10 @@ impl Function {
                                     // true of the converse.
                                     //
                                     // No need for a GuardShape.
+                                    if let OptimizedMethodType::StructAset = opt_type {
+                                        recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
+                                    }
+
                                     let (target, offset) = if is_embedded {
                                         let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
                                         (recv, offset)
@@ -2513,7 +2517,6 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::GuardNotFrozen { recv, state });
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
