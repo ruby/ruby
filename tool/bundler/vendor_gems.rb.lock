@@ -19,25 +19,19 @@ GIT
   specs:
     pub_grub (0.5.0)
 
+GIT
+  remote: https://github.com/ruby/net-http.git
+  revision: d8fd39c589279b1aaec85a7c8de9b3e199c72efe
+  ref: d8fd39c589279b1aaec85a7c8de9b3e199c72efe
+  specs:
+    net-http (0.6.0)
+      uri
+
 GEM
   remote: https://rubygems.org/
   specs:
-<<<<<<< HEAD
-    connection_pool (2.4.1)
-    fileutils (1.7.3)
-<<<<<<< HEAD
-=======
-    net-http (0.8.0)
-      uri (>= 0.11.1)
-=======
     connection_pool (2.5.4)
-    fileutils (1.8.0)
-    net-http (0.7.0)
-      uri
->>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
-    net-http-persistent (4.0.6)
-      connection_pool (~> 2.2, >= 2.2.4)
->>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
+    fileutils (1.7.3)
     net-protocol (0.2.2)
       timeout
     optparse (0.6.0)
@@ -60,17 +54,8 @@ PLATFORMS
 DEPENDENCIES
   fileutils (= 1.7.3)
   molinillo!
-<<<<<<< HEAD
-<<<<<<< HEAD
   net-http!
   net-http-persistent!
-=======
-  net-http (= 0.8.0)
-=======
-  net-http (= 0.7.0)
->>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
-  net-http-persistent (= 4.0.6)
->>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
   net-protocol (= 0.2.2)
   optparse (= 0.6.0)
   pub_grub!
@@ -82,20 +67,11 @@ DEPENDENCIES
   uri (= 1.0.4)
 
 CHECKSUMS
-  connection_pool (2.4.1) sha256=0f40cf997091f1f04ff66da67eabd61a9fe0d4928b9a3645228532512fab62f4
+  connection_pool (2.5.4) sha256=e9e1922327416091f3f6542f5f4446c2a20745276b9aa796dd0bb2fd0ea1e70a
   fileutils (1.7.3) sha256=57271e854b694a87755d76f836f5c57b2c9538ebbaf4b2154bb66addf15eb5da
   molinillo (0.8.0)
-<<<<<<< HEAD
-<<<<<<< HEAD
   net-http (0.6.0)
   net-http-persistent (4.0.6)
-=======
-  net-http (0.8.0) sha256=df42c47ce9f9e95ad32a317c97c12f945bc1af365288837ea4ff259876ecb46d
-=======
-  net-http (0.7.0) sha256=4db7d9f558f8ffd4dcf832d0aefd02320c569c7d4f857def49e585069673a425
->>>>>>> 198b10c12d6 (Downgrade net-http 0.7.0 because JRuby is not working)
-  net-http-persistent (4.0.6) sha256=2abb3a04438edf6cb9e0e7e505969605f709eda3e3c5211beadd621a2c84dd5d
->>>>>>> 7e6ce7be57a (Use released version of net-http-0.8.0)
   net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8
   optparse (0.6.0) sha256=25e90469c1cd44048a89dc01c1dde9d5f0bdf717851055fb18237780779b068c
   pub_grub (0.5.0)
@@ -107,4 +83,4 @@ CHECKSUMS
   uri (1.0.4) sha256=34485d137c079f8753a0ca1d883841a7ba2e5fae556e3c30c2aab0dde616344b
 
 BUNDLED WITH
-   4.0.0.dev
+  4.0.0.dev
