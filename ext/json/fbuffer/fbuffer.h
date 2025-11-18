@@ -14,7 +14,7 @@ typedef struct FBufferStruct {
     unsigned long initial_length;
     unsigned long len;
     unsigned long capa;
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     unsigned long requested;
 #endif
     char *ptr;
@@ -45,14 +45,14 @@ static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *
         fb->ptr = stack_buffer;
         fb->capa = stack_buffer_size;
     }
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     fb->requested = 0;
 #endif
 }
 
 static inline void fbuffer_consumed(FBuffer *fb, unsigned long consumed)
 {
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     if (consumed > fb->requested) {
         rb_bug("fbuffer: Out of bound write");
     }
@@ -122,7 +122,7 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
 
 static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     fb->requested = requested;
 #endif
 
@@ -148,7 +148,7 @@ static inline void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long
 /* Appends a character into a buffer. The buffer needs to have sufficient capacity, via fbuffer_inc_capa(...). */
 static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 {
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     if (fb->requested < 1) {
         rb_bug("fbuffer: unreserved write");
     }
@@ -174,7 +174,7 @@ static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
 
     fbuffer_inc_capa(fb, repeat * len);
     while (repeat) {
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
         fb->requested = len;
 #endif
         fbuffer_append_reserved(fb, newstr, len);

@@ -6,7 +6,7 @@ if RUBY_ENGINE == 'truffleruby'
 else
   append_cflags("-std=c99")
   $defs << "-DJSON_GENERATOR"
-  $defs << "-DJSON_DEBUG" if ENV["JSON_DEBUG"]
+  $defs << "-DJSON_DEBUG" if ENV.fetch("JSON_DEBUG", "0") != "0"
 
   if enable_config('generator-use-simd', default=!ENV["JSON_DISABLE_SIMD"])
     load __dir__ + "/../simd/conf.rb"

@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
 #include <assert.h>
 #endif
 
@@ -472,7 +472,7 @@ static int fpconv_dtoa(double d, char dest[28])
     int ndigits = grisu2(d, digits, &K);
 
     str_len += emit_digits(digits, ndigits, dest + str_len, K, neg);
-#ifdef JSON_DEBUG
+#if JSON_DEBUG
     assert(str_len <= 32);
 #endif
 
