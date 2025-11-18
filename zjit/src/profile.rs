@@ -361,3 +361,17 @@ impl IseqProfile {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::cruby::*;
+
+    #[test]
+    fn can_profile_block_handler() {
+        with_rubyvm(|| eval("
+            def foo = yield
+            foo rescue 0
+            foo rescue 0
+        "));
+    }
+}
