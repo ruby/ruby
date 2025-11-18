@@ -1485,8 +1485,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
-    // Check argument count against callee's parameters. Note that correctness for this calculation
-    // relies on rejecting features above.
+    // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
     let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     can_send = c_int::try_from(args.len())
@@ -4542,8 +4541,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let jit_entry_insns = jit_entry_insns(iseq);
     let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq, &jit_entry_insns);
 
-    // Make all empty basic blocks. The ordering of the BBs matters as it is taken as a schedule
-    // in the backend without a scheduling pass. TODO: Higher quality scheduling during lowering.
+    // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
+    // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
