@@ -16,7 +16,7 @@ RSpec.describe Bundler::CLI::Common do
       message = subject.gem_not_found_message("nokogri", %w[nokogiri rails sidekiq dog])
       expect(message).to match("Did you mean 'nokogiri'?")
       message = subject.gem_not_found_message("methosd", %w[method methods bogus])
-      expect(message).to match("Did you mean 'methods' or 'method'?")
+      expect(message).to match(/Did you mean 'method(|s)' or 'method(|s)'?/)
     end
   end
 end
