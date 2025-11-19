@@ -1,6 +1,6 @@
 require_relative 'spec_helper'
 
-ruby_version_is "3.5" do
+ruby_version_is "4.0" do
   load_extension("set")
 
   describe "C-API Set function" do

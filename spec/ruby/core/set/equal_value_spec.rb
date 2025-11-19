@@ -24,7 +24,7 @@ describe "Set#==" do
     set1.should == set2
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     context "when comparing to a Set-like object" do
       it "returns true when a Set and a Set-like object contain the same elements" do
         Set[1, 2, 3].should == SetSpecs::SetLike.new([1, 2, 3])

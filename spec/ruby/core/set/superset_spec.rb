@@ -32,7 +32,7 @@ describe "Set#superset?" do
     -> { Set[].superset?(Object.new) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     context "when comparing to a Set-like object" do
       it "returns true if passed a Set-like object that self is a superset of" do
         Set[1, 2, 3, 4].superset?(SetSpecs::SetLike.new([1, 2, 3])).should be_true

@@ -106,7 +106,7 @@ describe "Invoking a method" do
     specs.yield_now(&o).should == :from_to_proc
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "raises TypeError if 'to_proc' doesn't return a Proc" do
       o = LangSendSpecs::RawToProc.new(42)
 

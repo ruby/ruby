@@ -7,13 +7,13 @@ describe :set_inspect, shared: true do
     Set[:a, "b", Set[?c]].send(@method).should be_kind_of(String)
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "does include the elements of the set" do
       Set["1"].send(@method).should == 'Set["1"]'
     end
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "does include the elements of the set" do
       Set["1"].send(@method).should == '#<Set: {"1"}>'
     end
@@ -23,7 +23,7 @@ describe :set_inspect, shared: true do
     Set["1", "2"].send(@method).should include('", "')
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "correctly handles cyclic-references" do
       set1 = Set[]
       set2 = Set[set1]
@@ -33,7 +33,7 @@ describe :set_inspect, shared: true do
     end
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "correctly handles cyclic-references" do
       set1 = Set[]
       set2 = Set[set1]

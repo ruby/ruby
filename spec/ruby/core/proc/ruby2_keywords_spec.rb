@@ -54,7 +54,7 @@ describe "Proc#ruby2_keywords" do
     }.should complain(/Skipping set of ruby2_keywords flag for/)
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "prints warning when a proc accepts post arguments" do
       f = -> *a, b { }
 

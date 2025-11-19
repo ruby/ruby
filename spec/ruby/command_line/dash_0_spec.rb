@@ -5,7 +5,7 @@ describe "The -0 command line option" do
     ruby_exe("puts $/, $-0", options: "-072").should == ":\n:\n"
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "sets $/ and $-0 as a frozen string" do
       ruby_exe("puts $/.frozen?, $-0.frozen?", options: "-072").should == "true\ntrue\n"
     end

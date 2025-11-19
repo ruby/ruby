@@ -17,7 +17,7 @@ describe "Kernel#require" do
   end
 
   provided = %w[complex enumerator fiber rational thread ruby2_keywords]
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     provided << "set"
     provided << "pathname"
   end
@@ -33,7 +33,7 @@ describe "Kernel#require" do
     features.sort.should == provided.sort
 
     requires = provided
-    ruby_version_is "3.5" do
+    ruby_version_is "4.0" do
       requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
     end
 
