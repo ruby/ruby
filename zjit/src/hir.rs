@@ -5773,7 +5773,24 @@ impl<'a> Dominators<'a> {
         let block_ids = f.rpo();
         let mut dominators = vec![vec![]; f.blocks.len()];
 
+        // Compute dominators for each node using fixed point iteration.
+        // Approach can be found in Figure 1 of:
+        // https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
+        //
+        // Initially we set:
+        //
+        // dom(entry) = {entry} for each entry block
+        // dom(b != entry) = {all nodes}
+        //
+        // Iteratively, apply:
+        //
+        // dom(b) = {b} union intersect(dom(p) for p in predecessors(b))
+        //
+        // When we've run the algorithm and the dominator set no longer changes
+        // between iterations, then we have found the dominator sets.
+
         // Set up entry blocks.
+        // Entry blocks are only dominated by themselves.
         for entry_block in &f.entry_blocks() {
             dominators[entry_block.0] = vec![*entry_block];
         }
@@ -5781,11 +5798,11 @@ impl<'a> Dominators<'a> {
         // Setup the initial dominator sets.
         for block_id in &block_ids {
             if !f.entry_blocks().contains(block_id) {
+                // Non entry blocks are initially dominated by all other blocks.
                 dominators[block_id.0] = block_ids.clone();
             }
         }
 
-        // Compute dominators for each node.
         let mut changed = true;
         while changed {
             changed = false;
@@ -5795,6 +5812,7 @@ impl<'a> Dominators<'a> {
                     continue;
                 }
 
+                // Get all predecessors for a given block.
                 let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
                 if block_preds.is_empty() {
                     continue;
@@ -5802,18 +5820,21 @@ impl<'a> Dominators<'a> {
 
                 let mut new_doms = dominators[block_preds[0].0].clone();
 
+                // Compute the intersection of predecessor dominator sets into `new_doms`.
                 for pred_id in &block_preds[1..] {
                     let pred_doms = &dominators[pred_id.0];
                     // Only keep a dominator in `new_doms` if it is also found in pred_doms
                     new_doms.retain(|d| pred_doms.contains(d));
                 }
 
-                // Insert sorted into `new_doms`
+                // Insert sorted into `new_doms`.
                 match new_doms.binary_search(block_id) {
                     Ok(_) => {}
                     Err(pos) => new_doms.insert(pos, *block_id)
                 }
 
+                // If we have computed a new dominator set, then we can update
+                // the dominators and mark that we need another iteration.
                 if dominators[block_id.0] != new_doms {
                     dominators[block_id.0] = new_doms;
                     changed = true;
