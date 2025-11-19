@@ -104,6 +104,7 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
+#[allow(unnecessary_transmutes)] // https://github.com/rust-lang/rust-bindgen/issues/2807
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
@@ -244,14 +245,6 @@ pub fn insn_len(opcode: usize) -> u32 {
     unsafe {
         rb_insn_len(VALUE(opcode)).try_into().unwrap()
     }
-}
-
-/// Opaque iseq type for opaque iseq pointers from vm_core.h
-/// See: <https://doc.rust-lang.org/nomicon/ffi.html#representing-opaque-structs>
-#[repr(C)]
-pub struct rb_iseq_t {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
 /// An object handle similar to VALUE in the C code. Our methods assume
