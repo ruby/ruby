@@ -689,6 +689,13 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         set_stat_usize!(hash, &key_string, **counter);
     }
 
+    // Set ccall counters
+    let ccall = ZJITState::get_ccall_counter_pointers();
+    for (signature, counter) in ccall.iter() {
+        let key_string = format!("ccall_{}", signature);
+        set_stat_usize!(hash, &key_string, **counter);
+    }
+
     hash
 }
 
