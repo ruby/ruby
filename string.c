@@ -5463,33 +5463,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    upto(other_string, exclusive = false) {|string| ... } -> self
  *    upto(other_string, exclusive = false) -> new_enumerator
  *
- *  With a block given, calls the block with each +String+ value
- *  returned by successive calls to String#succ;
- *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
- *  the sequence terminates when value +other_string+ is reached;
- *  returns +self+:
- *
- *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
- *
- *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
- *
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5
- *
- *  If +other_string+ would not be reached, does not call the block:
- *
- *    '25'.upto('5') {|s| fail s }
- *    'aa'.upto('a') {|s| fail s }
- *
- *  With no block given, returns a new Enumerator:
- *
- *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+ *  :include: doc/string/upto.rdoc
  *
  */
 
