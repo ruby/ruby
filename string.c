@@ -7959,19 +7959,12 @@ upcase_single(VALUE str)
  *  call-seq:
  *    upcase!(mapping) -> self or nil
  *
- *  Upcases the characters in +self+;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#upcase, except that:
  *
- *    s = 'Hello World!' # => "Hello World!"
- *    s.upcase!          # => "HELLO WORLD!"
- *    s                  # => "HELLO WORLD!"
- *    s.upcase!          # => nil
+ *  - Changes character casings in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase, String#downcase, String#downcase!.
- *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
