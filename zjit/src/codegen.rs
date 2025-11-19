@@ -1293,10 +1293,11 @@ fn gen_send_without_block_direct(
     let mut c_args = vec![recv];
     c_args.extend(&args);
 
-    let num_optionals_passed = if unsafe { get_iseq_flags_has_opt(iseq) } {
+    let params = unsafe { iseq.params() };
+    let num_optionals_passed = if params.flags.has_opt() != 0 {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) } as u32;
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) } as u32;
+        let lead_num = params.lead_num as u32;
+        let opt_num = params.opt_num as u32;
         assert!(args.len() as u32 <= lead_num + opt_num);
         let num_optionals_passed = args.len() as u32 - lead_num;
         num_optionals_passed
@@ -2212,7 +2213,7 @@ c_callable! {
 
                     // Fill nils to uninitialized (non-argument) locals
                     let local_size = get_iseq_body_local_table_size(iseq).to_usize();
-                    let num_params = get_iseq_body_param_size(iseq).to_usize();
+                    let num_params = iseq.params().size.to_usize();
                     let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
                     slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
                 }
