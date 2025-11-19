@@ -6668,7 +6668,7 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, ^@0x1008, cme:0x1010)
           v25:TrueClass = GuardType v11, TrueClass
-          v26:BasicObject = CCallWithFrame ^@0x1038, v25, v12
+          v26:BasicObject = CCallWithFrame TrueClass#^@0x1038, v25, v12
           CheckInterrupts
           Return v26
         ");
