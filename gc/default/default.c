@@ -7592,6 +7592,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 
 enum gc_stat_heap_sym {
     gc_stat_heap_sym_slot_size,
+    gc_stat_heap_sym_heap_live_slots,
     gc_stat_heap_sym_heap_eden_pages,
     gc_stat_heap_sym_heap_eden_slots,
     gc_stat_heap_sym_total_allocated_pages,
@@ -7610,6 +7611,7 @@ setup_gc_stat_heap_symbols(void)
     if (gc_stat_heap_symbols[0] == 0) {
 #define S(s) gc_stat_heap_symbols[gc_stat_heap_sym_##s] = ID2SYM(rb_intern_const(#s))
         S(slot_size);
+        S(heap_live_slots);
         S(heap_eden_pages);
         S(heap_eden_slots);
         S(total_allocated_pages);
@@ -7631,6 +7633,7 @@ stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
         rb_hash_aset(hash, gc_stat_heap_symbols[gc_stat_heap_sym_##name], SIZET2NUM(attr));
 
     SET(slot_size, heap->slot_size);
+    SET(heap_live_slots, heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count);
     SET(heap_eden_pages, heap->total_pages);
     SET(heap_eden_slots, heap->total_slots);
     SET(total_allocated_pages, heap->total_allocated_pages);
