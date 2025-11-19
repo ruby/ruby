@@ -20,6 +20,9 @@ RSpec.describe "The library itself" do
   end
 
   def check_for_tab_characters(filename)
+    # Because Go uses hard tabs
+    return if filename.end_with?(".go.tt")
+
     failing_lines = []
     each_line(filename) do |line, number|
       failing_lines << number + 1 if line.include?("\t")

@@ -11,7 +11,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
-    EXTENSIONS = ["c", "rust"].freeze
+    EXTENSIONS = ["c", "rust", "go"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",

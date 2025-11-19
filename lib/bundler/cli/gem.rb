@@ -13,6 +13,8 @@ module Bundler
       "test-unit" => "3.0",
     }.freeze
 
+    DEFAULT_GITHUB_USERNAME = "[USERNAME]"
+
     attr_reader :options, :gem_name, :thor, :name, :target, :extension
 
     def initialize(options, gem_name, thor)
@@ -72,7 +74,7 @@ module Bundler
         bundle: options[:bundle],
         bundler_version: bundler_dependency_version,
         git: use_git,
-        github_username: github_username.empty? ? "[USERNAME]" : github_username,
+        github_username: github_username.empty? ? DEFAULT_GITHUB_USERNAME : github_username,
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
@@ -229,6 +231,18 @@ module Bundler
           "ext/newgem/extconf-rust.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/src/lib.rs.tt" => "ext/#{name}/src/lib.rs",
         )
+      end
+
+      if extension == "go"
+        templates.merge!(
+          "ext/newgem/go.mod.tt" => "ext/#{name}/go.mod",
+          "ext/newgem/extconf-go.rb.tt" => "ext/#{name}/extconf.rb",
+          "ext/newgem/newgem.h.tt" => "ext/#{name}/#{underscored_name}.h",
+          "ext/newgem/newgem.go.tt" => "ext/#{name}/#{underscored_name}.go",
+          "ext/newgem/newgem-go.c.tt" => "ext/#{name}/#{underscored_name}.c",
+        )
+
+        config[:go_module_username] = config[:github_username] == DEFAULT_GITHUB_USERNAME ? "username" : config[:github_username]
       end
 
       if target.exist? && !target.directory?

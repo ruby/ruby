@@ -31,6 +31,13 @@ RSpec.describe "bundle gem" do
     matched[:ignored]&.split(" ")
   end
 
+  def installed_go?
+    sys_exec("go version", raise_on_error: true)
+    true
+  rescue StandardError
+    false
+  end
+
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
@@ -1746,6 +1753,150 @@ RSpec.describe "bundle gem" do
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+      end
+    end
+
+    context "--ext parameter set with go" do
+      let(:flags) { "--ext=go" }
+
+      before do
+        bundle ["gem", gem_name, flags].compact.join(" ")
+      end
+
+      after do
+        sys_exec("go clean -modcache", raise_on_error: true) if installed_go?
+      end
+
+      it "is not deprecated" do
+        expect(err).not_to include "[DEPRECATED] Option `--ext` without explicit value is deprecated."
+      end
+
+      it "builds ext skeleton" do
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.go")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.h")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/extconf.rb")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/go.mod")).to exist
+      end
+
+      it "includes extconf.rb in gem_name.gemspec" do
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(%(spec.extensions = ["ext/#{gem_name}/extconf.rb"]))
+      end
+
+      it "includes go_gem in gem_name.gemspec" do
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", "~> 0.2"')
+      end
+
+      it "includes go_gem extension in extconf.rb" do
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/extconf.rb").read).to include(<<~RUBY)
+          require "mkmf"
+          require "go_gem/mkmf"
+        RUBY
+
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/extconf.rb").read).to include(%(create_go_makefile("#{gem_name}/#{gem_name}")))
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/extconf.rb").read).not_to include("create_makefile")
+      end
+
+      it "includes go_gem extension in gem_name.c" do
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c").read).to eq(<<~C)
+          #include "#{gem_name}.h"
+          #include "_cgo_export.h"
+        C
+      end
+
+      it "includes skeleton code in gem_name.go" do
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.go").read).to include(<<~GO)
+          /*
+          #include "#{gem_name}.h"
+
+          VALUE rb_#{gem_name}_sum(VALUE self, VALUE a, VALUE b);
+          */
+          import "C"
+        GO
+
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.go").read).to include(<<~GO)
+          //export rb_#{gem_name}_sum
+          func rb_#{gem_name}_sum(_ C.VALUE, a C.VALUE, b C.VALUE) C.VALUE {
+        GO
+
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.go").read).to include(<<~GO)
+          //export Init_#{gem_name}
+          func Init_#{gem_name}() {
+        GO
+      end
+
+      it "includes valid module name in go.mod" do
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/go.mod").read).to include("module github.com/bundleuser/#{gem_name}")
+      end
+
+      context "with --no-ci" do
+        let(:flags) { "--ext=go --no-ci" }
+
+        it_behaves_like "CI config is absent"
+      end
+
+      context "--ci set to github" do
+        let(:flags) { "--ext=go --ci=github" }
+
+        it "generates .github/workflows/main.yml" do
+          expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+          expect(bundled_app("#{gem_name}/.github/workflows/main.yml").read).to include("go-version-file: ext/#{gem_name}/go.mod")
+        end
+      end
+
+      context "--ci set to circle" do
+        let(:flags) { "--ext=go --ci=circle" }
+
+        it "generates a .circleci/config.yml" do
+          expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+
+          expect(bundled_app("#{gem_name}/.circleci/config.yml").read).to include(<<-YAML.strip)
+    environment:
+      GO_VERSION:
+          YAML
+
+          expect(bundled_app("#{gem_name}/.circleci/config.yml").read).to include(<<-YAML)
+      - run:
+          name: Install Go
+          command: |
+            wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go.tar.gz
+            tar -C /usr/local -xzf /tmp/go.tar.gz
+            echo 'export PATH=/usr/local/go/bin:"$PATH"' >> "$BASH_ENV"
+          YAML
+        end
+      end
+
+      context "--ci set to gitlab" do
+        let(:flags) { "--ext=go --ci=gitlab" }
+
+        it "generates a .gitlab-ci.yml" do
+          expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
+
+          expect(bundled_app("#{gem_name}/.gitlab-ci.yml").read).to include(<<-YAML)
+    - wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go.tar.gz
+    - tar -C /usr/local -xzf /tmp/go.tar.gz
+    - export PATH=/usr/local/go/bin:$PATH
+          YAML
+
+          expect(bundled_app("#{gem_name}/.gitlab-ci.yml").read).to include(<<-YAML.strip)
+  variables:
+    GO_VERSION:
+          YAML
+        end
+      end
+
+      context "without github.user" do
+        before do
+          # FIXME: GitHub Actions Windows Runner hang up here for some reason...
+          skip "Workaround for hung up" if Gem.win_platform?
+
+          git("config --global --unset github.user")
+          bundle ["gem", gem_name, flags].compact.join(" ")
+        end
+
+        it "includes valid module name in go.mod" do
+          expect(bundled_app("#{gem_name}/ext/#{gem_name}/go.mod").read).to include("module github.com/username/#{gem_name}")
+        end
       end
     end
   end
