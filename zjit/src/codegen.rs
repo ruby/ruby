@@ -654,10 +654,20 @@ fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, 
 }
 
 fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let ret = asm_ccall!(asm, rb_obj_frozen_p, recv);
-    asm_comment!(asm, "side-exit if rb_obj_frozen_p returns Qtrue");
-    asm.cmp(ret, Qtrue.into());
-    asm.je(side_exit(jit, state, GuardNotFrozen));
+    let side_exit = side_exit(jit, state, GuardNotFrozen);
+    let recv = asm.load(recv);
+    // Side-exit if recv is false
+    assert_eq!(Qfalse.as_i64(), 0);
+    asm.test(recv, recv);
+    asm.jz(side_exit.clone());
+    // Side-exit if recv is immediate
+    asm.test(recv, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.jnz(side_exit.clone());
+    // It's a heap object, so check the frozen flag
+    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    // Side-exit if frozen
+    asm.jnz(side_exit.clone());
     recv
 }
 
