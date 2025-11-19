@@ -3754,29 +3754,11 @@ impl Function {
             let successors = cfi.successors(block_id).collect();
             let mut instructions = Vec::new();
 
-            // Get parameter instructions.
-            for (idx, param_id) in block.params.iter().enumerate() {
-                let param_id = self.union_find.borrow().find_const(*param_id);
-                let insn_type = self.type_of(param_id);
-
-                let type_str = if insn_type.is_subtype(types::Empty) {
-                    String::new()
-                } else {
-                    format!("{}", insn_type.print(&ptr_map))
-                };
-
-                instructions.push(
-                    Self::make_iongraph_instr(
-                        param_id,
-                        Vec::new(),
-                        &format!("Parameter {}", idx),
-                        &type_str
-                    )
-                );
-            }
-
-            // Get body instructions.
-            for insn_id in &block.insns {
+            // Process all instructions (parameters and body instructions).
+            // Parameters are currently guaranteed to be Parameter instructions, but in the future
+            // they might be refined to other instruction kinds by the optimizer.
+            let param_count = block.params.len();
+            for (idx, insn_id) in block.params.iter().chain(block.insns.iter()).enumerate() {
                 let insn_id = self.union_find.borrow().find_const(*insn_id);
                 let insn = self.find(insn_id);
 
@@ -3797,7 +3779,12 @@ impl Function {
                     String::new()
                 };
 
-                let opcode = insn.print(&ptr_map).to_string();
+                // For parameters, use numbered label. For other instructions, use the opcode.
+                let opcode = if idx < param_count {
+                    format!("Parameter {}", idx)
+                } else {
+                    insn.print(&ptr_map).to_string()
+                };
 
                 // Traverse the worklist to get inputs for a given instruction.
                 let mut inputs = VecDeque::new();
