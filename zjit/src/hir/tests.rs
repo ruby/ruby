@@ -3453,8 +3453,8 @@ pub mod hir_build_tests {
 
         let cfi = ControlFlowInfo::new(&function);
 
-        assert!(cfi.precedes(bb1, bb2));
-        assert!(cfi.succeeds(bb2, bb1));
+        assert!(cfi.is_preceded_by(bb1, bb2));
+        assert!(cfi.is_succeeded_by(bb2, bb1));
         assert!(cfi.predecessors(bb3).eq([bb2]));
      }
 
@@ -3478,9 +3478,10 @@ pub mod hir_build_tests {
 
         let cfi = ControlFlowInfo::new(&function);
 
-        assert!(cfi.precedes(bb2, bb3));
-        assert!(cfi.precedes(bb1, bb3));
-        assert!(!cfi.precedes(bb0, bb3));
+        assert!(cfi.is_preceded_by(bb2, bb3));
+        assert!(cfi.is_preceded_by(bb1, bb3));
+        assert!(!cfi.is_preceded_by(bb0, bb3));
+        assert!(cfi.is_succeeded_by(bb3, bb0));
      }
  }
 

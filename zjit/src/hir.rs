@@ -5880,11 +5880,11 @@ impl<'a> ControlFlowInfo<'a> {
         }
     }
 
-    pub fn succeeds(&self, left: BlockId, right: BlockId) -> bool {
+    pub fn is_succeeded_by(&self, left: BlockId, right: BlockId) -> bool {
         self.successor_map.get(&right).is_some_and(|set| set.contains(&left))
     }
 
-    pub fn precedes(&self, left: BlockId, right: BlockId) -> bool {
+    pub fn is_preceded_by(&self, left: BlockId, right: BlockId) -> bool {
         self.predecessor_map.get(&right).is_some_and(|set| set.contains(&left))
     }
 
