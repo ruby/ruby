@@ -8001,16 +8001,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    upcase(mapping) -> string
  *
- *  Returns a string containing the upcased characters in +self+:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.upcase           # => "HELLO WORLD!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase!, String#downcase, String#downcase!.
- *
+ *  :include: doc/string/upcase.rdoc
  */
 
 static VALUE
