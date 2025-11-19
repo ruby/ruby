@@ -3893,10 +3893,23 @@ impl Function {
     }
 
     pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
+        fn sanitize_for_filename(name: &str) -> String {
+            name.chars()
+                .map(|c| {
+                    if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                        c
+                    } else {
+                        '_'
+                    }
+                })
+                .collect()
+        }
+
         use std::io::Write;
         let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
         std::fs::create_dir_all(&dir).expect("Unable to create directory.");
-        let path = format!("{dir}/func_{function_name}.json");
+        let sanitized = sanitize_for_filename(function_name);
+        let path = format!("{dir}/func_{sanitized}.json");
         let mut file = std::fs::File::create(path).unwrap();
         let json = Json::object()
             .insert("name", function_name)
