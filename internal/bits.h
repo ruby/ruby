@@ -556,7 +556,7 @@ ntz_int64(uint64_t x)
 {
 #if defined(__x86_64__) && defined(__BMI__)
     return (unsigned)_tzcnt_u64(x);
-`
+
 #elif defined(_WIN64) && defined(_MSC_VER)
     unsigned long r;
     return _BitScanForward64(&r, x) ? (int)r : 64;
