@@ -219,7 +219,7 @@ module RubyVM::YJIT
     if !self.enabled?
       warn(
         "YJIT needs to be enabled to produce disasm output, e.g.\n" +
-        "ruby --yjit-call-threshold=1 my_script.rb (see doc/yjit/yjit.md)"
+        "ruby --yjit-call-threshold=1 my_script.rb (see doc/jit/yjit.md)"
       )
       return nil
     end
@@ -229,7 +229,7 @@ module RubyVM::YJIT
     if !disasm_str
       warn(
         "YJIT disasm is only available when YJIT is built in dev mode, i.e.\n" +
-        "./configure --enable-yjit=dev (see doc/yjit/yjit.md)\n"
+        "./configure --enable-yjit=dev (see doc/jit/yjit.md)\n"
       )
       return nil
     end
