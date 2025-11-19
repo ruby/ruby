@@ -423,10 +423,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // Give up CCallWithFrame for 7+ args since asm.ccall() doesn't support it.
         Insn::CCallWithFrame { cd, state, args, .. } if args.len() > C_ARG_OPNDS.len() =>
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
-        Insn::CCallWithFrame { cfunc, args, cme, state, blockiseq, .. } =>
-            gen_ccall_with_frame(jit, asm, *cfunc, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, args, name: _, cme, state, return_type: _, elidable: _ } => {
-            gen_ccall_variadic(jit, asm, *cfunc, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        Insn::CCallWithFrame { cfunc, name, args, cme, state, blockiseq, .. } =>
+            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
+        Insn::CCallVariadic { cfunc, recv, args, name, cme, state, return_type: _, elidable: _ } => {
+            gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
@@ -755,6 +755,7 @@ fn gen_ccall_with_frame(
     jit: &mut JITState,
     asm: &mut Assembler,
     cfunc: *const u8,
+    name: ID,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
     blockiseq: Option<IseqPtr>,
@@ -802,7 +803,7 @@ fn gen_ccall_with_frame(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
-    // TODO(max): Count calls to the CME
+    asm.count_call_to(&name.contents_lossy());
     let result = asm.ccall(cfunc, args);
 
     asm_comment!(asm, "pop C frame");
@@ -830,6 +831,7 @@ fn gen_ccall_variadic(
     jit: &mut JITState,
     asm: &mut Assembler,
     cfunc: *const u8,
+    name: ID,
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
@@ -862,7 +864,7 @@ fn gen_ccall_variadic(
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     let argv_ptr = gen_push_opnds(asm, &args);
-    // TODO(max): Count calls to the CME
+    asm.count_call_to(&name.contents_lossy());
     let result = asm.ccall(cfunc, vec![args.len().into(), argv_ptr, recv]);
     gen_pop_opnds(asm, &args);
 
