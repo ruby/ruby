@@ -424,8 +424,12 @@ fn main() {
         .blocklist_type("VALUE")
         .blocklist_type("ID")
 
-        .opaque_type("rb_iseq_t")
-        .blocklist_type("rb_iseq_t")
+        // Avoid binding to stuff we don't use
+        .blocklist_item("rb_thread_struct.*")
+        .opaque_type("rb_thread_struct.*")
+        .blocklist_item("iseq_inline_storage_entry_.*")
+        .opaque_type("iseq_inline_storage_entry")
+        .opaque_type("iseq_compile_data")
 
         // Finish the builder and generate the bindings.
         .generate()

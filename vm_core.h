@@ -431,7 +431,7 @@ struct rb_iseq_constant_body {
      *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
      */
 
-    struct {
+    struct rb_iseq_parameters {
         struct {
             unsigned int has_lead   : 1;
             unsigned int has_opt    : 1;

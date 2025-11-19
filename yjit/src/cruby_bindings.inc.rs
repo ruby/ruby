@@ -490,7 +490,7 @@ pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
 pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword {
+pub struct rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword {
     pub num: ::std::os::raw::c_int,
     pub required_num: ::std::os::raw::c_int,
     pub bits_start: ::std::os::raw::c_int,
@@ -942,12 +942,14 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub type rb_seq_param_keyword_struct =
+    rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub type jit_bindgen_constants = u32;
-pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub type rb_iseq_param_keyword_struct =
+    rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
 extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
