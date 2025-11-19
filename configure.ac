@@ -526,7 +526,6 @@ AS_CASE(["$target_os"],
 	RT_VER=`echo "$rb_cv_msvcrt" | tr -cd [0-9]`
 	test "$RT_VER" = "" && RT_VER=60
 	test "$rb_cv_msvcrt" = "ucrt" && RT_VER=140
-	AS_IF([test $RT_VER -lt 120], AC_MSG_ERROR(Runtime library $RT_VER is not supported))
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
 	sysconfdir=
     ])
