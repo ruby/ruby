@@ -3481,7 +3481,8 @@ pub mod hir_build_tests {
         assert!(cfi.is_preceded_by(bb2, bb3));
         assert!(cfi.is_preceded_by(bb1, bb3));
         assert!(!cfi.is_preceded_by(bb0, bb3));
-        assert!(cfi.is_succeeded_by(bb3, bb0));
+        assert!(cfi.is_succeeded_by(bb1, bb0));
+        assert!(cfi.is_succeeded_by(bb3, bb1));
      }
  }
 
