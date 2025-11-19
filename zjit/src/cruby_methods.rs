@@ -195,6 +195,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
     annotate!(rb_mKernel, "===", inline_eqq);
+    annotate!(rb_mKernel, "is_a?", inline_kernel_is_a_p);
     annotate!(rb_cString, "bytesize", inline_string_bytesize);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -204,7 +205,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
-    annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
+    annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
@@ -410,6 +411,15 @@ fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     None
 }
 
+fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if fun.is_a(recv, types::Class) {
+        let result = fun.push_insn(block, hir::Insn::IsA { val: other, class: recv });
+        return Some(result);
+    }
+    None
+}
+
 fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     if fun.likely_a(recv, types::Fixnum, state) {
@@ -565,6 +575,15 @@ fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, a
     let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
     Some(result)
+}
+
+fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if fun.is_a(other, types::Class) {
+        let result = fun.push_insn(block, hir::Insn::IsA { val: recv, class: other });
+        return Some(result);
+    }
+    None
 }
 
 fn inline_kernel_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
