@@ -3455,7 +3455,7 @@ pub mod hir_build_tests {
 
         assert!(cfi.precedes(bb2, bb1));
         assert!(cfi.succeeds(bb1, bb2));
-        assert!(cfi.predecessors(bb3).eq(&[bb2]));
+        assert!(cfi.predecessors(bb3).eq([bb2]));
      }
 
      #[test]

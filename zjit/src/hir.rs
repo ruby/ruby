@@ -3690,11 +3690,11 @@ impl Function {
     /// Helper function to make an Iongraph JSON "instruction".
     /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
     /// in the future.
-    fn make_iongraph_instr(id: usize, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
+    fn make_iongraph_instr(id: InsnId, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
         Json::object()
             // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
-            .insert("ptr", id + 0x1000)
-            .insert("id", id)
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
             .insert("opcode", opcode)
             .insert("attributes", Json::empty_array())
             .insert("inputs", Json::Array(inputs))
@@ -3705,15 +3705,15 @@ impl Function {
     }
 
     /// Helper function to make an Iongraph JSON "block".
-    fn make_iongraph_block(id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
+    fn make_iongraph_block(id: BlockId, predecessors: Vec<BlockId>, successors: Vec<BlockId>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
         Json::object()
             // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
-            .insert("ptr", id + 0x1000)
-            .insert("id", id)
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
             .insert("loopDepth", loop_depth)
             .insert("attributes", Json::array(attributes))
-            .insert("predecessors", Json::array(predecessors))
-            .insert("successors", Json::array(successors))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| x.0).collect::<Vec<usize>>()))
             .insert("instructions", Json::array(instructions))
             .build()
     }
@@ -3750,8 +3750,8 @@ impl Function {
         for block_id in self.rpo() {
             // Create the block with instructions.
             let block = &self.blocks[block_id.0];
-            let predecessors = cfi.predecessors(block_id);
-            let successors = cfi.successors(block_id);
+            let predecessors = cfi.predecessors(block_id).collect();
+            let successors = cfi.successors(block_id).collect();
             let mut instructions = Vec::new();
 
             // Get parameter instructions.
@@ -3767,7 +3767,7 @@ impl Function {
 
                 instructions.push(
                     Self::make_iongraph_instr(
-                        param_id.0,
+                        param_id,
                         Vec::new(),
                         &format!("Parameter {}", idx),
                         &type_str
@@ -3806,7 +3806,7 @@ impl Function {
 
                 instructions.push(
                     Self::make_iongraph_instr(
-                        insn_id.0,
+                        insn_id,
                         inputs,
                         &opcode,
                         &type_str
@@ -3824,9 +3824,9 @@ impl Function {
             let loop_depth = loop_info.loop_depth(block_id);
 
             hir_blocks.push(Self::make_iongraph_block(
-                block_id.0 as u64,
-                predecessors.map(|x| x.0 as u64).collect(),
-                successors.map(|x| x.0 as u64).collect(),
+                block_id,
+                predecessors,
+                successors,
                 instructions,
                 attributes,
                 loop_depth,
@@ -5795,7 +5795,7 @@ impl<'a> Dominators<'a> {
                     continue;
                 }
 
-                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).copied().collect();
+                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
                 if block_preds.is_empty() {
                     continue;
                 }
@@ -5888,12 +5888,12 @@ impl<'a> ControlFlowInfo<'a> {
         self.predecessor_map.get(&left).is_some_and(|set| set.contains(&right))
     }
 
-    pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = &BlockId> {
-        self.predecessor_map.get(&block).into_iter().flatten()
+    pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.predecessor_map.get(&block).into_iter().flatten().copied()
     }
 
-    pub fn successors(&self, block: BlockId) -> impl Iterator<Item = &BlockId> {
-        self.successor_map.get(&block).into_iter().flatten()
+    pub fn successors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.successor_map.get(&block).into_iter().flatten().copied()
     }
 
     /// Helper function to extract the target of a jump instruction.
@@ -5928,7 +5928,7 @@ impl<'a> LoopInfo<'a> {
         // Collect loop headers.
         for block in cfi.function.rpo() {
             // Initialize the loop depths.
-            for &predecessor in cfi.predecessors(block) {
+            for predecessor in cfi.predecessors(block) {
                 if dominators.is_dominated_by(predecessor, block) {
                     // Found a loop header, so then identify the natural loop.
                     loop_headers.insert(block);
@@ -5963,7 +5963,7 @@ impl<'a> LoopInfo<'a> {
         loop_blocks.insert(back_edge_source);
 
         while let Some(block) = stack.pop() {
-            for &pred in cfi.predecessors(block) {
+            for pred in cfi.predecessors(block) {
                 // Pushes to stack only if `pred` wasn't already in `loop_blocks`.
                 if loop_blocks.insert(pred) {
                     stack.push(pred)
