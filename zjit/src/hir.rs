@@ -5881,11 +5881,11 @@ impl<'a> ControlFlowInfo<'a> {
     }
 
     pub fn succeeds(&self, left: BlockId, right: BlockId) -> bool {
-        self.successor_map.get(&left).is_some_and(|set| set.contains(&right))
+        self.successor_map.get(&right).is_some_and(|set| set.contains(&left))
     }
 
     pub fn precedes(&self, left: BlockId, right: BlockId) -> bool {
-        self.predecessor_map.get(&left).is_some_and(|set| set.contains(&right))
+        self.predecessor_map.get(&right).is_some_and(|set| set.contains(&left))
     }
 
     pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
