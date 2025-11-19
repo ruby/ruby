@@ -6645,7 +6645,7 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
           v25:Fixnum = GuardType v11, Fixnum
-          v26:BasicObject = CCallWithFrame ^@0x1038, v25, v12
+          v26:BasicObject = CCallWithFrame Integer#^@0x1038, v25, v12
           CheckInterrupts
           Return v26
         ");
