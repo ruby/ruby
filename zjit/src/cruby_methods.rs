@@ -227,6 +227,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "empty?", inline_array_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
