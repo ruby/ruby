@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "lockfile_parser"
+require_relative "worker"
 
 module Bundler
   class Definition
@@ -1100,7 +1101,23 @@ module Bundler
       @source_requirements ||= find_source_requirements
     end
 
+    def preload_git_source_worker
+      @preload_git_source_worker ||= Bundler::Worker.new(5, "Git source preloading", ->(source, _) { source.specs })
+    end
+
+    def preload_git_sources
+      sources.git_sources.each {|source| preload_git_source_worker.enq(source) }
+    ensure
+      preload_git_source_worker.stop
+    end
+
     def find_source_requirements
+      if Gem.ruby_version >= "3.3"
+        # Ruby 3.2 has a bug that incorrectly triggers a circular dependency warning. This version will continue to
+        # fetch git repositories one by one.
+        preload_git_sources
+      end
+
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
