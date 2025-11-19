@@ -3425,3 +3425,821 @@ pub mod hir_build_tests {
         ");
     }
  }
+
+ /// Test successor and predecessor set computations.
+ #[cfg(test)]
+ mod control_flow_info_tests {
+     use super::*;
+
+     fn edge(target: BlockId) -> BranchEdge {
+         BranchEdge { target, args: vec![] }
+     }
+
+     #[test]
+     fn test_linked_list() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+
+        assert!(cfi.is_preceded_by(bb1, bb2));
+        assert!(cfi.is_succeeded_by(bb2, bb1));
+        assert!(cfi.predecessors(bb3).eq([bb2]));
+     }
+
+     #[test]
+     fn test_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb2)});
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+
+        assert!(cfi.is_preceded_by(bb2, bb3));
+        assert!(cfi.is_preceded_by(bb1, bb3));
+        assert!(!cfi.is_preceded_by(bb0, bb3));
+        assert!(cfi.is_succeeded_by(bb1, bb0));
+        assert!(cfi.is_succeeded_by(bb3, bb1));
+     }
+ }
+
+ /// Test dominator set computations.
+ #[cfg(test)]
+ mod dom_tests {
+     use super::*;
+     use insta::assert_snapshot;
+
+     fn edge(target: BlockId) -> BranchEdge {
+         BranchEdge { target, args: vec![] }
+     }
+
+     fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
+         for (i, _) in function.blocks.iter().enumerate() {
+             // Ensure that each dominating set contains the block itself.
+             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+         }
+     }
+
+     #[test]
+     fn test_linked_list() {
+         let mut function = Function::new(std::ptr::null());
+
+         let bb0 = function.entry_block;
+         let bb1 = function.new_block(0);
+         let bb2 = function.new_block(0);
+         let bb3 = function.new_block(0);
+
+         function.push_insn(bb0, Insn::Jump(edge(bb1)));
+         function.push_insn(bb1, Insn::Jump(edge(bb2)));
+         function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+         function.push_insn(bb3, Insn::Return { val: retval });
+
+         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+         fn <manual>:
+         bb0():
+           Jump bb1()
+         bb1():
+           Jump bb2()
+         bb2():
+           Jump bb3()
+         bb3():
+           v3:Any = Const CBool(true)
+           Return v3
+         ");
+
+         let dominators = Dominators::new(&function);
+         assert_dominators_contains_self(&function, &dominators);
+         assert!(dominators.dominators(bb0).eq([bb0].iter()));
+         assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+         assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+         assert!(dominators.dominators(bb3).eq([bb0, bb1, bb2, bb3].iter()));
+     }
+
+     #[test]
+     fn test_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val, target: edge(bb1)});
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb2()
+        bb1():
+          Jump bb3()
+        bb2():
+          Jump bb3()
+        bb3():
+          v5:Any = Const CBool(true)
+          Return v5
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb3].iter()));
+     }
+
+    #[test]
+    fn test_complex_cfg() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+        let bb6 = function.new_block(0);
+        let bb7 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        let v0 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb1, Insn::IfTrue { val: v0, target: edge(bb2)});
+        function.push_insn(bb1, Insn::Jump(edge(bb4)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let v1 = function.push_insn(bb3, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb3, Insn::IfTrue { val: v1, target: edge(bb5)});
+        function.push_insn(bb3, Insn::Jump(edge(bb7)));
+
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        function.push_insn(bb5, Insn::Jump(edge(bb6)));
+
+        function.push_insn(bb6, Insn::Jump(edge(bb7)));
+
+        let retval = function.push_insn(bb7, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb7, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          v1:Any = Const Value(false)
+          IfTrue v1, bb2()
+          Jump bb4()
+        bb2():
+          Jump bb3()
+        bb3():
+          v5:Any = Const Value(false)
+          IfTrue v5, bb5()
+          Jump bb7()
+        bb4():
+          Jump bb5()
+        bb5():
+          Jump bb6()
+        bb6():
+          Jump bb7()
+        bb7():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb1, bb2, bb3].iter()));
+        assert!(dominators.dominators(bb4).eq([bb0, bb1, bb4].iter()));
+        assert!(dominators.dominators(bb5).eq([bb0, bb1, bb5].iter()));
+        assert!(dominators.dominators(bb6).eq([bb0, bb1, bb5, bb6].iter()));
+        assert!(dominators.dominators(bb7).eq([bb0, bb1, bb7].iter()));
+    }
+
+    #[test]
+    fn test_back_edges() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+
+        let v0 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: v0, target: edge(bb1)});
+        function.push_insn(bb0, Insn::Jump(edge(bb4)));
+
+        let v1 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb1, Insn::IfTrue { val: v1, target: edge(bb2)});
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        let v2 = function.push_insn(bb5, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb5, Insn::IfTrue { val: v2, target: edge(bb3)});
+        function.push_insn(bb5, Insn::Jump(edge(bb4)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb4()
+        bb1():
+          v3:Any = Const Value(false)
+          IfTrue v3, bb2()
+          Jump bb3()
+        bb2():
+          Jump bb3()
+        bb4():
+          Jump bb5()
+        bb5():
+          v8:Any = Const Value(false)
+          IfTrue v8, bb3()
+          Jump bb4()
+        bb3():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+        assert!(dominators.dominators(bb0).eq([bb0].iter()));
+        assert!(dominators.dominators(bb1).eq([bb0, bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb0, bb1, bb2].iter()));
+        assert!(dominators.dominators(bb3).eq([bb0, bb3].iter()));
+        assert!(dominators.dominators(bb4).eq([bb0, bb4].iter()));
+        assert!(dominators.dominators(bb5).eq([bb0, bb4, bb5].iter()));
+    }
+
+    #[test]
+    fn test_multiple_entry_blocks() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        function.jit_entry_blocks.push(bb1);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb2()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const CBool(true)
+          Return v2
+        ");
+
+        let dominators = Dominators::new(&function);
+        assert_dominators_contains_self(&function, &dominators);
+
+        assert!(dominators.dominators(bb1).eq([bb1].iter()));
+        assert!(dominators.dominators(bb2).eq([bb2].iter()));
+
+        assert!(!dominators.is_dominated_by(bb1, bb2));
+    }
+ }
+
+ /// Test loop information computation.
+#[cfg(test)]
+mod loop_info_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    fn edge(target: BlockId) -> BranchEdge {
+        BranchEdge { target, args: vec![] }
+    }
+
+    #[test]
+    fn test_loop_depth() {
+        // ┌─────┐
+        // │ bb0 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐      ┌─────┐
+        // │ bb2 ◄──────┼ bb1 ◄─┐
+        // └──┬──┘      └─────┘ │
+        //    └─────────────────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb2()
+          v1:Any = Const Value(false)
+        bb2():
+          IfTrue v1, bb1()
+          v3:Any = Const CBool(true)
+          Return v3
+        bb1():
+          Jump bb2()
+        ");
+
+        assert!(loop_info.is_loop_header(bb2));
+        assert!(loop_info.is_back_edge_source(bb1));
+        assert_eq!(loop_info.loop_depth(bb1), 1);
+    }
+
+    #[test]
+    fn test_nested_loops() {
+        // ┌─────┐
+        // │ bb0 ◄─────┐
+        // └──┬──┘     │
+        //    │        │
+        // ┌──▼──┐     │
+        // │ bb1 ◄───┐ │
+        // └──┬──┘   │ │
+        //    │      │ │
+        // ┌──▼──┐   │ │
+        // │ bb2 ┼───┘ │
+        // └──┬──┘     │
+        //    │        │
+        // ┌──▼──┐     │
+        // │ bb3 ┼─────┘
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb4 │
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let cond = function.push_insn(bb3, Insn::Const { val: Const::Value(Qtrue) });
+        let _ = function.push_insn(bb3, Insn::IfTrue { val: cond, target: edge(bb0) });
+        function.push_insn(bb3, Insn::Jump(edge(bb4)));
+
+        let retval = function.push_insn(bb4, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb4, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const Value(false)
+          IfTrue v2, bb1()
+          Jump bb3()
+        bb3():
+          v5:Any = Const Value(true)
+          IfTrue v5, bb0()
+          Jump bb4()
+        bb4():
+          v8:Any = Const CBool(true)
+          Return v8
+        ");
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 2);
+        assert_eq!(loop_info.loop_depth(bb3), 1);
+        assert_eq!(loop_info.loop_depth(bb4), 0);
+
+        assert!(loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb3));
+    }
+
+    #[test]
+    fn test_complex_loops() {
+        //        ┌─────┐
+        // ┌──────► bb0 │
+        // │      └──┬──┘
+        // │    ┌────┴────┐
+        // │ ┌──▼──┐   ┌──▼──┐
+        // │ │ bb1 ◄─┐ │ bb3 ◄─┐
+        // │ └──┬──┘ │ └──┬──┘ │
+        // │    │    │    │    │
+        // │ ┌──▼──┐ │ ┌──▼──┐ │
+        // │ │ bb2 ┼─┘ │ bb4 ┼─┘
+        // │ └──┬──┘   └──┬──┘
+        // │    └────┬────┘
+        // │      ┌──▼──┐
+        // └──────┼ bb5 │
+        //        └──┬──┘
+        //           │
+        //        ┌──▼──┐
+        //        │ bb6 │
+        //        └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+        let bb6 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb0, Insn::Jump(edge(bb3)));
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb2, Insn::Jump(edge(bb5)));
+
+        function.push_insn(bb3, Insn::Jump(edge(bb4)));
+
+        let _ = function.push_insn(bb4, Insn::IfTrue { val: cond, target: edge(bb3) });
+        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+
+        let _ = function.push_insn(bb5, Insn::IfTrue { val: cond, target: edge(bb0) });
+        function.push_insn(bb5, Insn::Jump(edge(bb6)));
+
+        let retval = function.push_insn(bb6, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb6, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          IfTrue v0, bb1()
+          Jump bb3()
+        bb1():
+          Jump bb2()
+        bb2():
+          IfTrue v0, bb1()
+          Jump bb5()
+        bb3():
+          Jump bb4()
+        bb4():
+          IfTrue v0, bb3()
+          Jump bb5()
+        bb5():
+          IfTrue v0, bb0()
+          Jump bb6()
+        bb6():
+          v11:Any = Const CBool(true)
+          Return v11
+        ");
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+        assert!(!loop_info.is_loop_header(bb2));
+        assert!(loop_info.is_loop_header(bb3));
+        assert!(!loop_info.is_loop_header(bb5));
+        assert!(!loop_info.is_loop_header(bb4));
+        assert!(!loop_info.is_loop_header(bb6));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 2);
+        assert_eq!(loop_info.loop_depth(bb3), 2);
+        assert_eq!(loop_info.loop_depth(bb4), 2);
+        assert_eq!(loop_info.loop_depth(bb5), 1);
+        assert_eq!(loop_info.loop_depth(bb6), 0);
+
+        assert!(loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb4));
+        assert!(loop_info.is_back_edge_source(bb5));
+    }
+
+    #[test]
+    fn linked_list_non_loop() {
+        // ┌─────┐
+        // │ bb0 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb1 │
+        // └──┬──┘
+        //    │
+        // ┌──▼──┐
+        // │ bb2 │
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          v2:Any = Const CBool(true)
+          Return v2
+        ");
+
+        assert!(!loop_info.is_loop_header(bb0));
+        assert!(!loop_info.is_loop_header(bb1));
+        assert!(!loop_info.is_loop_header(bb2));
+
+        assert!(!loop_info.is_back_edge_source(bb0));
+        assert!(!loop_info.is_back_edge_source(bb1));
+        assert!(!loop_info.is_back_edge_source(bb2));
+
+        assert_eq!(loop_info.loop_depth(bb0), 0);
+        assert_eq!(loop_info.loop_depth(bb1), 0);
+        assert_eq!(loop_info.loop_depth(bb2), 0);
+    }
+
+    #[test]
+    fn triple_nested_loop() {
+        // ┌─────┐
+        // │ bb0 ◄──┐
+        // └──┬──┘  │
+        //    │     │
+        // ┌──▼──┐  │
+        // │ bb1 ◄─┐│
+        // └──┬──┘ ││
+        //    │    ││
+        // ┌──▼──┐ ││
+        // │ bb2 ◄┐││
+        // └──┬──┘│││
+        //    │   │││
+        // ┌──▼──┐│││
+        // │ bb3 ┼┘││
+        // └──┬──┘ ││
+        //    │    ││
+        // ┌──▼──┐ ││
+        // │ bb4 ┼─┘│
+        // └──┬──┘  │
+        //    │     │
+        // ┌──▼──┐  │
+        // │ bb5 ┼──┘
+        // └─────┘
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let bb4 = function.new_block(0);
+        let bb5 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let _ = function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        let _ = function.push_insn(bb3, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb3, Insn::IfTrue {val: cond, target: edge(bb2)});
+        let _ = function.push_insn(bb4, Insn::Jump(edge(bb5)));
+        let _ = function.push_insn(bb4, Insn::IfTrue {val: cond, target: edge(bb1)});
+        let _ = function.push_insn(bb5, Insn::IfTrue {val: cond, target: edge(bb0)});
+
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        fn <manual>:
+        bb0():
+          v0:Any = Const Value(false)
+          Jump bb1()
+        bb1():
+          Jump bb2()
+        bb2():
+          Jump bb3()
+        bb3():
+          Jump bb4()
+          IfTrue v0, bb2()
+        bb4():
+          Jump bb5()
+          IfTrue v0, bb1()
+        bb5():
+          IfTrue v0, bb0()
+        ");
+
+        let cfi = ControlFlowInfo::new(&function);
+        let dominators = Dominators::new(&function);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        assert!(!loop_info.is_back_edge_source(bb0));
+        assert!(!loop_info.is_back_edge_source(bb1));
+        assert!(!loop_info.is_back_edge_source(bb2));
+        assert!(loop_info.is_back_edge_source(bb3));
+        assert!(loop_info.is_back_edge_source(bb4));
+        assert!(loop_info.is_back_edge_source(bb5));
+
+        assert_eq!(loop_info.loop_depth(bb0), 1);
+        assert_eq!(loop_info.loop_depth(bb1), 2);
+        assert_eq!(loop_info.loop_depth(bb2), 3);
+        assert_eq!(loop_info.loop_depth(bb3), 3);
+        assert_eq!(loop_info.loop_depth(bb4), 2);
+        assert_eq!(loop_info.loop_depth(bb5), 1);
+
+        assert!(loop_info.is_loop_header(bb0));
+        assert!(loop_info.is_loop_header(bb1));
+        assert!(loop_info.is_loop_header(bb2));
+        assert!(!loop_info.is_loop_header(bb3));
+        assert!(!loop_info.is_loop_header(bb4));
+        assert!(!loop_info.is_loop_header(bb5));
+    }
+ }
+
+/// Test dumping to iongraph format.
+#[cfg(test)]
+mod iongraph_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    fn edge(target: BlockId) -> BranchEdge {
+        BranchEdge { target, args: vec![] }
+    }
+
+    #[test]
+    fn test_simple_function() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let retval = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::Return { val: retval });
+
+        let json = function.to_iongraph_pass("simple");
+        assert_snapshot!(json.to_string(), @r#"{"name":"simple", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_two_blocks() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+        let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb1, Insn::Return { val: retval });
+
+        let json = function.to_iongraph_pass("two_blocks");
+        assert_snapshot!(json.to_string(), @r#"{"name":"two_blocks", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb1()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4097, "id":1, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4098, "id":2, "opcode":"Return v1", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_multiple_instructions() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let val1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::Return { val: val1 });
+
+        let json = function.to_iongraph_pass("multiple_instructions");
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_instructions", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_conditional_branch() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+
+        let retval1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb0, Insn::Return { val: retval1 });
+
+        let retval2 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval2 });
+
+        let json = function.to_iongraph_pass("conditional_branch");
+        assert_snapshot!(json.to_string(), @r#"{"name":"conditional_branch", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"IfTrue v0, bb1()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}, {"ptr":4098, "id":2, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4099, "id":3, "opcode":"Return v2", "attributes":[], "inputs":[2], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4100, "id":4, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4101, "id":5, "opcode":"Return v4", "attributes":[], "inputs":[4], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_loop_structure() {
+        let mut function = Function::new(std::ptr::null());
+
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let json = function.to_iongraph_pass("loop_structure");
+        assert_snapshot!(json.to_string(), @r#"{"name":"loop_structure", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[2], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}, {"ptr":4097, "id":1, "opcode":"Const Value(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}]}, {"ptr":4098, "id":2, "loopDepth":1, "attributes":["loopheader"], "predecessors":[0, 1], "successors":[1], "instructions":[{"ptr":4098, "id":2, "opcode":"IfTrue v1, bb1()", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}, {"ptr":4099, "id":3, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4100, "id":4, "opcode":"Return v3", "attributes":[], "inputs":[3], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":1, "attributes":["backedge"], "predecessors":[2], "successors":[2], "instructions":[{"ptr":4101, "id":5, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+
+    #[test]
+    fn test_multiple_successors() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+
+        let retval1 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval1 });
+
+        let retval2 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb2, Insn::Return { val: retval2 });
+
+        let json = function.to_iongraph_pass("multiple_successors");
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_successors", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1, 2], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"IfTrue v0, bb1()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}, {"ptr":4098, "id":2, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4099, "id":3, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4100, "id":4, "opcode":"Return v3", "attributes":[], "inputs":[3], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4101, "id":5, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4102, "id":6, "opcode":"Return v5", "attributes":[], "inputs":[5], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
+    }
+ }

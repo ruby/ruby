@@ -6,7 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -39,7 +39,7 @@ impl std::fmt::Display for InsnId {
 }
 
 /// The index of a [`Block`], which effectively acts like a pointer.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
 impl From<BlockId> for usize {
@@ -3686,23 +3686,171 @@ impl Function {
         }
     }
 
+    /// Helper function to make an Iongraph JSON "instruction".
+    /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
+    /// in the future.
+    fn make_iongraph_instr(id: InsnId, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
+        Json::object()
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
+            .insert("opcode", opcode)
+            .insert("attributes", Json::empty_array())
+            .insert("inputs", Json::Array(inputs))
+            .insert("uses", Json::empty_array())
+            .insert("memInputs", Json::empty_array())
+            .insert("type", ty)
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "block".
+    fn make_iongraph_block(id: BlockId, predecessors: Vec<BlockId>, successors: Vec<BlockId>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
+        Json::object()
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
+            .insert("loopDepth", loop_depth)
+            .insert("attributes", Json::array(attributes))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("instructions", Json::array(instructions))
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "function".
+    /// Note that `lir` is unpopulated right now as ZJIT doesn't use its functionality.
+    fn make_iongraph_function(pass_name: &str, hir_blocks: Vec<Json>) -> Json {
+        Json::object()
+            .insert("name", pass_name)
+            .insert("mir", Json::object()
+                .insert("blocks", Json::array(hir_blocks))
+                .build()
+            )
+            .insert("lir", Json::object()
+                .insert("blocks", Json::empty_array())
+                .build()
+            )
+            .build()
+    }
+
+    /// Generate an iongraph JSON pass representation for this function.
+    pub fn to_iongraph_pass(&self, pass_name: &str) -> Json {
+        let mut ptr_map = PtrPrintMap::identity();
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
+
+        let mut hir_blocks = Vec::new();
+        let cfi = ControlFlowInfo::new(self);
+        let dominators = Dominators::new(self);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        // Push each block from the iteration in reverse post order to `hir_blocks`.
+        for block_id in self.rpo() {
+            // Create the block with instructions.
+            let block = &self.blocks[block_id.0];
+            let predecessors = cfi.predecessors(block_id).collect();
+            let successors = cfi.successors(block_id).collect();
+            let mut instructions = Vec::new();
+
+            // Process all instructions (parameters and body instructions).
+            // Parameters are currently guaranteed to be Parameter instructions, but in the future
+            // they might be refined to other instruction kinds by the optimizer.
+            for insn_id in block.params.iter().chain(block.insns.iter()) {
+                let insn_id = self.union_find.borrow().find_const(*insn_id);
+                let insn = self.find(insn_id);
+
+                // Snapshots are not serialized, so skip them.
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+
+                // Instructions with no output or an empty type should have an empty type field.
+                let type_str = if insn.has_output() {
+                    let insn_type = self.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        String::new()
+                    } else {
+                        insn_type.print(&ptr_map).to_string()
+                    }
+                } else {
+                    String::new()
+                };
+
+
+                let opcode = insn.print(&ptr_map).to_string();
+
+                // Traverse the worklist to get inputs for a given instruction.
+                let mut inputs = VecDeque::new();
+                self.worklist_traverse_single_insn(&insn, &mut inputs);
+                let inputs: Vec<Json> = inputs.into_iter().map(|x| x.0.into()).collect();
+
+                instructions.push(
+                    Self::make_iongraph_instr(
+                        insn_id,
+                        inputs,
+                        &opcode,
+                        &type_str
+                    )
+                );
+            }
+
+            let mut attributes = vec![];
+            if loop_info.is_back_edge_source(block_id) {
+                attributes.push("backedge");
+            }
+            if loop_info.is_loop_header(block_id) {
+                attributes.push("loopheader");
+            }
+            let loop_depth = loop_info.loop_depth(block_id);
+
+            hir_blocks.push(Self::make_iongraph_block(
+                block_id,
+                predecessors,
+                successors,
+                instructions,
+                attributes,
+                loop_depth,
+            ));
+        }
+
+        Self::make_iongraph_function(pass_name, hir_blocks)
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
+        let mut passes: Vec<Json> = Vec::new();
+        let should_dump = get_option!(dump_hir_iongraph);
+
+        macro_rules! run_pass {
+            ($name:ident) => {
+                self.$name();
+                #[cfg(debug_assertions)] self.assert_validates();
+                if should_dump {
+                    passes.push(
+                        self.to_iongraph_pass(stringify!($name))
+                    );
+                }
+            }
+        }
+
+        if should_dump {
+            passes.push(self.to_iongraph_pass("unoptimized"));
+        }
+
         // Function is assumed to have types inferred already
-        self.type_specialize();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.inline();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_getivar();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_c_calls();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.fold_constants();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.clean_cfg();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.eliminate_dead_code();
-        #[cfg(debug_assertions)] self.assert_validates();
+        run_pass!(type_specialize);
+        run_pass!(inline);
+        run_pass!(optimize_getivar);
+        run_pass!(optimize_c_calls);
+        run_pass!(fold_constants);
+        run_pass!(clean_cfg);
+        run_pass!(eliminate_dead_code);
+
+        if should_dump {
+            let iseq_name = iseq_get_location(self.iseq, 0);
+            self.dump_iongraph(&iseq_name, passes);
+        }
     }
 
     /// Dump HIR passed to codegen if specified by options.
@@ -3721,6 +3869,32 @@ impl Function {
             let mut file = OpenOptions::new().append(true).open(filename).unwrap();
             writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
         }
+    }
+
+    pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
+        fn sanitize_for_filename(name: &str) -> String {
+            name.chars()
+                .map(|c| {
+                    if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                        c
+                    } else {
+                        '_'
+                    }
+                })
+                .collect()
+        }
+
+        use std::io::Write;
+        let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
+        std::fs::create_dir_all(&dir).expect("Unable to create directory.");
+        let sanitized = sanitize_for_filename(function_name);
+        let path = format!("{dir}/func_{sanitized}.json");
+        let mut file = std::fs::File::create(path).unwrap();
+        let json = Json::object()
+            .insert("name", function_name)
+            .insert("passes", passes)
+            .build();
+        writeln!(file, "{}", json).unwrap();
     }
 
     /// Validates the following:
@@ -4087,7 +4261,13 @@ impl Function {
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
-        let iseq_name = iseq_get_location(fun.iseq, 0);
+        // In tests, there may not be an iseq to get location from.
+        let iseq_name = if fun.iseq.is_null() {
+            String::from("<manual>")
+        } else {
+            iseq_get_location(fun.iseq, 0)
+        };
+
         // In tests, strip the line number for builtin ISEQs to make tests stable across line changes
         let iseq_name = if cfg!(test) && iseq_name.contains("@<internal:") {
             iseq_name[..iseq_name.rfind(':').unwrap()].to_string()
@@ -5557,6 +5737,258 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         }
     }
     (self_param, entry_state)
+}
+
+pub struct Dominators<'a> {
+    f: &'a Function,
+    dominators: Vec<Vec<BlockId>>,
+}
+
+impl<'a> Dominators<'a> {
+    pub fn new(f: &'a Function) -> Self {
+        let mut cfi = ControlFlowInfo::new(f);
+        Self::with_cfi(f, &mut cfi)
+    }
+
+    pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
+        let block_ids = f.rpo();
+        let mut dominators = vec![vec![]; f.blocks.len()];
+
+        // Compute dominators for each node using fixed point iteration.
+        // Approach can be found in Figure 1 of:
+        // https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
+        //
+        // Initially we set:
+        //
+        // dom(entry) = {entry} for each entry block
+        // dom(b != entry) = {all nodes}
+        //
+        // Iteratively, apply:
+        //
+        // dom(b) = {b} union intersect(dom(p) for p in predecessors(b))
+        //
+        // When we've run the algorithm and the dominator set no longer changes
+        // between iterations, then we have found the dominator sets.
+
+        // Set up entry blocks.
+        // Entry blocks are only dominated by themselves.
+        for entry_block in &f.entry_blocks() {
+            dominators[entry_block.0] = vec![*entry_block];
+        }
+
+        // Setup the initial dominator sets.
+        for block_id in &block_ids {
+            if !f.entry_blocks().contains(block_id) {
+                // Non entry blocks are initially dominated by all other blocks.
+                dominators[block_id.0] = block_ids.clone();
+            }
+        }
+
+        let mut changed = true;
+        while changed {
+            changed = false;
+
+            for block_id in &block_ids {
+                if *block_id == f.entry_block {
+                    continue;
+                }
+
+                // Get all predecessors for a given block.
+                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
+                if block_preds.is_empty() {
+                    continue;
+                }
+
+                let mut new_doms = dominators[block_preds[0].0].clone();
+
+                // Compute the intersection of predecessor dominator sets into `new_doms`.
+                for pred_id in &block_preds[1..] {
+                    let pred_doms = &dominators[pred_id.0];
+                    // Only keep a dominator in `new_doms` if it is also found in pred_doms
+                    new_doms.retain(|d| pred_doms.contains(d));
+                }
+
+                // Insert sorted into `new_doms`.
+                match new_doms.binary_search(block_id) {
+                    Ok(_) => {}
+                    Err(pos) => new_doms.insert(pos, *block_id)
+                }
+
+                // If we have computed a new dominator set, then we can update
+                // the dominators and mark that we need another iteration.
+                if dominators[block_id.0] != new_doms {
+                    dominators[block_id.0] = new_doms;
+                    changed = true;
+                }
+            }
+        }
+
+        Self { f, dominators }
+    }
+
+
+    pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.dominators(left).any(|&b| b == right)
+    }
+
+    pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
+        self.dominators[block.0].iter()
+    }
+}
+
+pub struct ControlFlowInfo<'a> {
+    function: &'a Function,
+    successor_map: HashMap<BlockId, Vec<BlockId>>,
+    predecessor_map: HashMap<BlockId, Vec<BlockId>>,
+}
+
+impl<'a> ControlFlowInfo<'a> {
+    pub fn new(function: &'a Function) -> Self {
+        let mut successor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let uf = function.union_find.borrow();
+
+        for block_id in function.rpo() {
+            let block = &function.blocks[block_id.0];
+
+            // Since ZJIT uses extended basic blocks, one must check all instructions
+            // for their ability to jump to another basic block, rather than just
+            // the instructions at the end of a given basic block.
+            let successors: Vec<BlockId> = block
+                .insns
+                .iter()
+                .map(|&insn_id| uf.find_const(insn_id))
+                .filter_map(|insn_id| {
+                    Self::extract_jump_target(&function.insns[insn_id.0])
+                })
+                .collect();
+
+            // Update predecessors for successor blocks.
+            for &succ_id in &successors {
+                predecessor_map
+                    .entry(succ_id)
+                    .or_default()
+                    .push(block_id);
+            }
+
+            // Store successors for this block.
+            successor_map.insert(block_id, successors);
+        }
+
+        Self {
+            function,
+            successor_map,
+            predecessor_map,
+        }
+    }
+
+    pub fn is_succeeded_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.successor_map.get(&right).is_some_and(|set| set.contains(&left))
+    }
+
+    pub fn is_preceded_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.predecessor_map.get(&right).is_some_and(|set| set.contains(&left))
+    }
+
+    pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.predecessor_map.get(&block).into_iter().flatten().copied()
+    }
+
+    pub fn successors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.successor_map.get(&block).into_iter().flatten().copied()
+    }
+
+    /// Helper function to extract the target of a jump instruction.
+    fn extract_jump_target(insn: &Insn) -> Option<BlockId> {
+        match insn {
+            Insn::Jump(target)
+            | Insn::IfTrue { target, .. }
+            | Insn::IfFalse { target, .. } => Some(target.target),
+            _ => None,
+        }
+    }
+}
+
+pub struct LoopInfo<'a> {
+    cfi: &'a ControlFlowInfo<'a>,
+    dominators: &'a Dominators<'a>,
+    loop_depths: HashMap<BlockId, u32>,
+    loop_headers: BlockSet,
+    back_edge_sources: BlockSet,
+}
+
+impl<'a> LoopInfo<'a> {
+    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
+        let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+        let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
+        let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+        let rpo = cfi.function.rpo();
+
+        for &block in &rpo {
+            loop_depths.insert(block, 0);
+        }
+
+        // Collect loop headers.
+        for &block in &rpo {
+            // Initialize the loop depths.
+            for predecessor in cfi.predecessors(block) {
+                if dominators.is_dominated_by(predecessor, block) {
+                    // Found a loop header, so then identify the natural loop.
+                    loop_headers.insert(block);
+                    back_edge_sources.insert(predecessor);
+                    let loop_blocks = Self::find_natural_loop(cfi, block, predecessor);
+                    // Increment the loop depth.
+                    for loop_block in &loop_blocks {
+                        *loop_depths.get_mut(loop_block).expect("Loop block should be populated.") += 1;
+                    }
+                }
+            }
+        }
+
+        Self {
+            cfi,
+            dominators,
+            loop_depths,
+            loop_headers,
+            back_edge_sources,
+        }
+    }
+
+    fn find_natural_loop(
+        cfi: &ControlFlowInfo,
+        header: BlockId,
+        back_edge_source: BlockId,
+    ) -> HashSet<BlockId> {
+        // todo(aidenfoxivey): Reimplement using BlockSet
+        let mut loop_blocks = HashSet::new();
+        let mut stack = vec![back_edge_source];
+
+        loop_blocks.insert(header);
+        loop_blocks.insert(back_edge_source);
+
+        while let Some(block) = stack.pop() {
+            for pred in cfi.predecessors(block) {
+                // Pushes to stack only if `pred` wasn't already in `loop_blocks`.
+                if loop_blocks.insert(pred) {
+                    stack.push(pred)
+                }
+            }
+        }
+
+        loop_blocks
+    }
+
+    pub fn loop_depth(&self, block: BlockId) -> u32 {
+        self.loop_depths.get(&block).copied().unwrap_or(0)
+    }
+
+    pub fn is_back_edge_source(&self, block: BlockId) -> bool {
+        self.back_edge_sources.get(block)
+    }
+
+    pub fn is_loop_header(&self, block: BlockId) -> bool {
+        self.loop_headers.get(block)
+    }
 }
 
 #[cfg(test)]
