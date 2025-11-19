@@ -190,6 +190,7 @@ describe "Module#name" do
 
     ScratchPad.recorded.should.one?(/#<Module.+>::A$/)
     ScratchPad.recorded.should.one?(/#<Module.+>::A::B$/)
+    ModuleSpecs::NameSpecs.send :remove_const, :NamedModule
   end
 
   it "returns a frozen String" do

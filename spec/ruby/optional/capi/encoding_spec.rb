@@ -724,14 +724,16 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_define_dummy_encoding" do
+    run = 0
+
     it "defines the dummy encoding" do
-      @s.rb_define_dummy_encoding("FOO")
-      enc = Encoding.find("FOO")
+      @s.rb_define_dummy_encoding("FOO#{run += 1}")
+      enc = Encoding.find("FOO#{run}")
       enc.should.dummy?
     end
 
     it "returns the index of the dummy encoding" do
-      index = @s.rb_define_dummy_encoding("BAR")
+      index = @s.rb_define_dummy_encoding("BAR#{run += 1}")
       index.should == Encoding.list.size - 1
     end
 

@@ -136,10 +136,14 @@ describe "The rescue keyword" do
 
     it 'captures successfully at the top-level' do
       ScratchPad.record []
+      loaded_features = $".dup
+      begin
+        require_relative 'fixtures/rescue/top_level'
 
-      require_relative 'fixtures/rescue/top_level'
-
-      ScratchPad.recorded.should == ["message"]
+        ScratchPad.recorded.should == ["message"]
+      ensure
+        $".replace loaded_features
+      end
     end
   end
 
