@@ -7628,17 +7628,11 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
 
 /*
  *  call-seq:
- *    undump -> string
+ *    undump -> new_string
  *
- *  Returns an unescaped version of +self+:
+ *  Inverse of String#dump; returns a copy of +self+ with changes of the kinds made by String#dump "undone."
  *
- *    s_orig = "\f\x00\xff\\\""    # => "\f\u0000\xFF\\\""
- *    s_dumped = s_orig.dump       # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *    s_undumped = s_dumped.undump # => "\f\u0000\xFF\\\""
- *    s_undumped == s_orig         # => true
- *
- *  Related: String#dump (inverse of String#undump).
- *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
