@@ -1865,7 +1865,7 @@ pub mod hir_build_tests {
           v28:ArrayExact = ToArray v18
           PatchPoint NoEPEscape(test)
           GuardBlockParamProxy l0
-          v34:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v34:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1000))
           SideExit UnhandledYARVInsn(splatkw)
         ");
     }
@@ -2980,7 +2980,7 @@ pub mod hir_build_tests {
           v25:BasicObject = InvokeBuiltin dir_s_open, v16, v17, v18
           PatchPoint NoEPEscape(open)
           GuardBlockParamProxy l0
-          v32:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1000))
           CheckInterrupts
           v35:CBool[true] = Test v32
           IfFalse v35, bb3(v16, v17, v18, v19, v20, v25)

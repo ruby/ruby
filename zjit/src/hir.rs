@@ -3259,6 +3259,24 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
+                    Insn::IsA { val, class } => 'is_a: {
+                        let class_type = self.type_of(class);
+                        if !class_type.is_subtype(types::Class) {
+                            break 'is_a insn_id;
+                        }
+                        let Some(class_value) = class_type.ruby_object() else {
+                            break 'is_a insn_id;
+                        };
+                        let val_type = self.type_of(val);
+                        let the_class = Type::from_class_inexact(class_value);
+                        if val_type.is_subtype(the_class) {
+                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                        } else if !val_type.could_be(the_class) {
+                            self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::FixnumAdd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),

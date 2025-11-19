@@ -188,7 +188,7 @@ impl Type {
     }
 
     fn bits_from_subclass(class: VALUE) -> Option<u64> {
-        types::InexactBitsAndClass
+        types::SubclassBitsAndClass
             .iter()
             .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
             // Can't be an immediate if it's a subclass.
@@ -271,7 +271,8 @@ impl Type {
         else if val.is_nil() { types::NilClass }
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
-        else { Self::from_class(val.class()) }
+        // TODO(max): Revisit and maybe specialize to *not* an immediate
+        else { Self::from_class(val.class()).intersection(types::HeapBasicObject) }
     }
 
     pub fn from_class(class: VALUE) -> Type {
@@ -283,6 +284,14 @@ impl Type {
         }
         unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                      get_class_name(class))
+    }
+
+    pub fn from_class_inexact(class: VALUE) -> Type {
+        let bits = types::InexactBitsAndClass
+            .iter()
+            .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
+            .unwrap_or_else(|| panic!("Class {} is not a subclass of BasicObject! Don't know what to do.", get_class_name(class))).0;
+        Type { bits, spec: Specialization::Type(class) }
     }
 
     /// Private. Only for creating type globals.
@@ -729,7 +738,7 @@ mod tests {
             assert_bit_equal(Type::from_class(unsafe { rb_cTrueClass }), types::TrueClass);
             assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
             let c_class = define_class("C", unsafe { rb_cObject });
-            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::HeapObject, spec: Specialization::TypeExact(c_class) });
+            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class) });
         });
     }
 
