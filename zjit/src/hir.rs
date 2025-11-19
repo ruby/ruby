@@ -3705,8 +3705,6 @@ impl Function {
     }
 
     /// Helper function to make an Iongraph JSON "block".
-    /// `attributes` is specific to Spidermonkey, so it is left empty.
-    /// todo(aidenfoxivey): Calculate attributes
     fn make_iongraph_block(id: u64, predecessors: Vec<u64>, successors: Vec<u64>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
         Json::object()
             // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
