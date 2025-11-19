@@ -2890,6 +2890,7 @@ void
 rb_fiber_close(rb_fiber_t *fiber)
 {
     fiber_status_set(fiber, FIBER_TERMINATED);
+    rb_ec_close(&fiber->cont.saved_ec);
 }
 
 static void
