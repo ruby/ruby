@@ -1497,14 +1497,15 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         can_send = false;
         function.push_insn(block, Insn::IncrCounter(counter));
     };
+    let params = unsafe { iseq.params() };
 
     use Counter::*;
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
-    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
-    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
-    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
+    if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
+    if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
+    if 0 != params.flags.has_kw()      { count_failure(complex_arg_pass_param_kw) }
+    if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
+    if 0 != params.flags.has_block()   { count_failure(complex_arg_pass_param_block) }
+    if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
@@ -1512,8 +1513,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     }
 
     // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
-    let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let lead_num = params.lead_num;
+    let opt_num = params.opt_num;
     can_send = c_int::try_from(args.len())
         .as_ref()
         .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
@@ -2086,8 +2087,9 @@ impl Function {
     /// Set self.param_types. They are copied to the param types of jit_entry_blocks.
     fn set_param_types(&mut self) {
         let iseq = self.iseq;
-        let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-        let rest_param_idx = iseq_rest_param_idx(iseq);
+        let params = unsafe { iseq.params() };
+        let param_size = params.size.to_usize();
+        let rest_param_idx = iseq_rest_param_idx(params);
 
         self.param_types.push(types::BasicObject); // self
         for local_idx in 0..param_size {
@@ -4596,11 +4598,12 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 /// List of insn_idx that starts a JIT entry block
 pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
     // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let params = unsafe { iseq.params() };
+    let opt_num = params.opt_num;
     if opt_num > 0 {
         let mut result = vec![];
 
-        let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) }; // `opt_num + 1` entries
+        let opt_table = params.opt_table; // `opt_num + 1` entries
         for opt_idx in 0..=opt_num as isize {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
             result.push(insn_idx);
@@ -5715,8 +5718,9 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let rest_param_idx = iseq_rest_param_idx(iseq);
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let rest_param_idx = iseq_rest_param_idx(params);
 
     let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
     let mut entry_state = FrameState::new(iseq);
@@ -5748,9 +5752,10 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
 /// Compile params and initial locals for a jit_entry_block
 fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_entry_idx: usize) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let opt_num: usize = unsafe { get_iseq_body_param_opt_num(iseq) }.try_into().expect("iseq param opt_num >= 0");
-    let lead_num: usize = unsafe { get_iseq_body_param_lead_num(iseq) }.try_into().expect("iseq param lead_num >= 0");
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
+    let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);

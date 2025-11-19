@@ -192,21 +192,7 @@ pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
-pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
-pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
-pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
-pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
-pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
-pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
-pub use rb_get_iseq_flags_ambiguous_param0 as get_iseq_flags_ambiguous_param0;
-pub use rb_get_iseq_flags_accepts_no_kwarg as get_iseq_flags_accepts_no_kwarg;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
-pub use rb_get_iseq_body_param_keyword as get_iseq_body_param_keyword;
-pub use rb_get_iseq_body_param_size as get_iseq_body_param_size;
-pub use rb_get_iseq_body_param_lead_num as get_iseq_body_param_lead_num;
-pub use rb_get_iseq_body_param_opt_num as get_iseq_body_param_opt_num;
-pub use rb_get_iseq_body_param_opt_table as get_iseq_body_param_opt_table;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
@@ -306,11 +292,10 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
 }
 
 /// Index of the local variable that has a rest parameter if any
-pub fn iseq_rest_param_idx(iseq: IseqPtr) -> Option<i32> {
-    if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        Some(opt_num + lead_num)
+pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
+    // TODO(alan): replace with `params.rest_start`
+    if params.flags.has_rest() != 0 {
+        Some(params.opt_num + params.lead_num)
     } else {
         None
     }
@@ -683,6 +668,20 @@ impl VALUE {
         assert!(item <= RUBY_FIXNUM_MAX);
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
+    }
+}
+
+pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
+
+/// Extension trait to enable method calls on [`IseqPtr`]
+pub trait IseqAccess {
+    unsafe fn params<'a>(self) -> &'a IseqParameters;
+}
+
+impl IseqAccess for IseqPtr {
+    /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
+    unsafe fn params<'a>(self) -> &'a IseqParameters {
+        unsafe { &(*(*self).body).param }
     }
 }
 
