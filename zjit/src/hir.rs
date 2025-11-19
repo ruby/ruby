@@ -2889,12 +2889,13 @@ impl Function {
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                     let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                         cd,
                         cfunc,
                         args: cfunc_args,
                         cme,
-                        name: method_id,
+                        name,
                         state,
                         return_type: types::BasicObject,
                         elidable: false,
@@ -3018,6 +3019,7 @@ impl Function {
 
                     // No inlining; emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
                     let return_type = props.return_type;
@@ -3025,7 +3027,7 @@ impl Function {
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
@@ -3036,7 +3038,7 @@ impl Function {
                             cfunc,
                             args: cfunc_args,
                             cme,
-                            name: method_id,
+                            name,
                             state,
                             return_type,
                             elidable,
@@ -3099,12 +3101,13 @@ impl Function {
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
+                        let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfunc,
                             recv,
                             args,
                             cme,
-                            name: method_id,
+                            name,
                             state,
                             return_type,
                             elidable,

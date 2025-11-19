@@ -775,11 +775,17 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
 
-/// Produce a Ruby symbol from a Rust string slice
-pub fn rust_str_to_sym(str: &str) -> VALUE {
+/// Produce a Ruby ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
+}
+
+/// Produce a Ruby symbol from a Rust string slice
+pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
 }
 
 /// Produce an owned Rust String from a C char pointer

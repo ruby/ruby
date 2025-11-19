@@ -2065,6 +2065,17 @@ impl Assembler {
         out
     }
 
+    pub fn count_call_to(&mut self, fn_name: &str) {
+        // We emit ccalls while initializing the JIT. Unfortunately, we skip those because
+        // otherwise we have no counter pointers to read.
+        if crate::state::ZJITState::has_instance() && get_option!(stats) {
+            let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
+            let counter_ptr = ccall_counter_pointers.entry(fn_name.to_string()).or_insert_with(|| Box::new(0));
+            let counter_ptr: &mut u64 = counter_ptr.as_mut();
+            self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
+        }
+    }
+
     pub fn cmp(&mut self, left: Opnd, right: Opnd) {
         self.push_insn(Insn::Cmp { left, right });
     }
@@ -2389,6 +2400,7 @@ pub(crate) use asm_comment;
 macro_rules! asm_ccall {
     [$asm: ident, $fn_name:ident, $($args:expr),* ] => {{
         $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
+        $asm.count_call_to(stringify!($fn_name));
         $asm.ccall($fn_name as *const u8, vec![$($args),*])
     }};
 }

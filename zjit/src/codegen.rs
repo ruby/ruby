@@ -419,14 +419,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
-        Insn::CCall { cfunc, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, opnds!(args)),
+        Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() doesn't support it.
         Insn::CCallWithFrame { cd, state, args, .. } if args.len() > C_ARG_OPNDS.len() =>
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
-        Insn::CCallWithFrame { cfunc, args, cme, state, blockiseq, .. } =>
-            gen_ccall_with_frame(jit, asm, *cfunc, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, args, name: _, cme, state, return_type: _, elidable: _ } => {
-            gen_ccall_variadic(jit, asm, *cfunc, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        Insn::CCallWithFrame { cfunc, name, args, cme, state, blockiseq, .. } =>
+            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
+        Insn::CCallVariadic { cfunc, recv, args, name, cme, state, return_type: _, elidable: _ } => {
+            gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
@@ -697,6 +697,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
     let mut cargs = vec![EC];
     cargs.extend(args);
 
+    asm.count_call_to(unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() });
     asm.ccall(bf.func_ptr as *const u8, cargs)
 }
 
@@ -754,6 +755,7 @@ fn gen_ccall_with_frame(
     jit: &mut JITState,
     asm: &mut Assembler,
     cfunc: *const u8,
+    name: ID,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
     blockiseq: Option<IseqPtr>,
@@ -801,6 +803,7 @@ fn gen_ccall_with_frame(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
+    asm.count_call_to(&name.contents_lossy());
     let result = asm.ccall(cfunc, args);
 
     asm_comment!(asm, "pop C frame");
@@ -817,7 +820,8 @@ fn gen_ccall_with_frame(
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
-fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, args: Vec<Opnd>) -> lir::Opnd {
+fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, args: Vec<Opnd>) -> lir::Opnd {
+    asm.count_call_to(&name.contents_lossy());
     asm.ccall(cfunc, args)
 }
 
@@ -827,6 +831,7 @@ fn gen_ccall_variadic(
     jit: &mut JITState,
     asm: &mut Assembler,
     cfunc: *const u8,
+    name: ID,
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
@@ -859,6 +864,7 @@ fn gen_ccall_variadic(
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     let argv_ptr = gen_push_opnds(asm, &args);
+    asm.count_call_to(&name.contents_lossy());
     let result = asm.ccall(cfunc, vec![args.len().into(), argv_ptr, recv]);
     gen_pop_opnds(asm, &args);
 
@@ -1169,9 +1175,10 @@ fn gen_send(
     unsafe extern "C" {
         fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_send as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()],
+    asm_ccall!(
+        asm,
+        rb_vm_send,
+        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
 }
 
@@ -1192,9 +1199,10 @@ fn gen_send_forward(
     unsafe extern "C" {
         fn rb_vm_sendforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_sendforward as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()],
+    asm_ccall!(
+        asm,
+        rb_vm_sendforward,
+        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
 }
 
@@ -1213,9 +1221,10 @@ fn gen_send_without_block(
     unsafe extern "C" {
         fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_opt_send_without_block as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(cd)],
+    asm_ccall!(
+        asm,
+        rb_vm_opt_send_without_block,
+        EC, CFP, Opnd::const_ptr(cd)
     )
 }
 
@@ -1331,9 +1340,10 @@ fn gen_invokeblock(
     unsafe extern "C" {
         fn rb_vm_invokeblock(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_invokeblock as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(cd)],
+    asm_ccall!(
+        asm,
+        rb_vm_invokeblock,
+        EC, CFP, Opnd::const_ptr(cd)
     )
 }
 
@@ -1353,9 +1363,10 @@ fn gen_invokesuper(
     unsafe extern "C" {
         fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_invokesuper as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()],
+    asm_ccall!(
+        asm,
+        rb_vm_invokesuper,
+        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
 }
 
@@ -1436,9 +1447,10 @@ fn gen_array_include(
     unsafe extern "C" {
         fn rb_vm_opt_newarray_include_p(ec: EcPtr, num: c_long, elts: *const VALUE, target: VALUE) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_opt_newarray_include_p as *const u8,
-        vec![EC, num.into(), elements_ptr, target],
+    asm_ccall!(
+        asm,
+        rb_vm_opt_newarray_include_p,
+        EC, num.into(), elements_ptr, target
     )
 }
 
@@ -1454,9 +1466,10 @@ fn gen_dup_array_include(
     unsafe extern "C" {
         fn rb_vm_opt_duparray_include_p(ec: EcPtr, ary: VALUE, target: VALUE) -> VALUE;
     }
-    asm.ccall(
-        rb_vm_opt_duparray_include_p as *const u8,
-        vec![EC, ary.into(), target],
+    asm_ccall!(
+        asm,
+        rb_vm_opt_duparray_include_p,
+        EC, ary.into(), target
     )
 }
 
@@ -1527,6 +1540,7 @@ fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState)
         let alloc_func = unsafe { rb_zjit_class_get_alloc_func(class) };
         assert!(alloc_func.is_some(), "class {} passed to ObjectAllocClass must have an allocator", get_class_name(class));
         asm_comment!(asm, "call allocator for class {}", get_class_name(class));
+        asm.count_call_to(&format!("{}::allocator", get_class_name(class)));
         asm.ccall(alloc_func.unwrap() as *const u8, vec![class.into()])
     }
 }
