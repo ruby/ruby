@@ -2071,8 +2071,8 @@ impl Assembler {
         if crate::state::ZJITState::has_instance() && get_option!(stats) {
             let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
             let counter_ptr = ccall_counter_pointers.entry(fn_name.to_string()).or_insert_with(|| Box::new(0));
-            let counter_ptr = &mut **counter_ptr as *mut u64;
-            self.incr_counter(Opnd::const_ptr(counter_ptr as *const u8), Opnd::UImm(1));
+            let counter_ptr: &mut u64 = counter_ptr.as_mut();
+            self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
         }
     }
 
