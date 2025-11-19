@@ -11511,11 +11511,8 @@ rb_str_b(VALUE str)
  *  call-seq:
  *    valid_encoding? -> true or false
  *
- *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
+ *  :include: doc/string/valid_encoding_p.rdoc
  *
- *    "\xc2\xa1".force_encoding(Encoding::UTF_8).valid_encoding? # => true
- *    "\xc2".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
- *    "\x80".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
  */
 
 static VALUE
