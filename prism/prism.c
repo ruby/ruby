@@ -20395,6 +20395,9 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
         }
 
         size_t length = pm_strspn_hexadecimal_digit(cursor, end - cursor);
+        if (length == 0) {
+            break;
+        }
         uint32_t value = escape_unicode(parser, cursor, length);
 
         (void) pm_buffer_append_unicode_codepoint(unescaped, value);
