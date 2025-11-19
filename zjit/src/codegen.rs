@@ -472,6 +472,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
         Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        &Insn::IsA { val, class } => gen_is_a(asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -1518,6 +1519,10 @@ fn gen_dup_array_include(
         rb_vm_opt_duparray_include_p,
         EC, ary.into(), target
     )
+}
+
+fn gen_is_a(asm: &mut Assembler, obj: Opnd, class: Opnd) -> lir::Opnd {
+    asm_ccall!(asm, rb_obj_is_kind_of, obj, class)
 }
 
 /// Compile a new hash instruction

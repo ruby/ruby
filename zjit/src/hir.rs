@@ -721,6 +721,9 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
+    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
+    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    IsA { val: InsnId, class: InsnId },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -1000,6 +1003,7 @@ impl Insn {
             Insn::BoxFixnum { .. } => false,
             Insn::BoxBool { .. } => false,
             Insn::IsBitEqual { .. } => false,
+            Insn::IsA { .. } => false,
             _ => true,
         }
     }
@@ -1324,6 +1328,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
         }
     }
 }
@@ -1946,6 +1951,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &IsA { val, class } => IsA { val: find!(val), class: find!(class) },
         }
     }
 
@@ -2095,6 +2101,7 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::IsA { .. } => types::BoolExact,
         }
     }
 
@@ -3622,6 +3629,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::IsA { val, class } => {
+                worklist.push_back(val);
+                worklist.push_back(class);
+            }
         }
     }
 
@@ -4313,6 +4324,10 @@ impl Function {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
+            }
+            Insn::IsA { val, class } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)?;
+                self.assert_subtype(insn_id, class, types::Class)
             }
         }
     }
