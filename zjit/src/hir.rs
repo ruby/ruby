@@ -5911,22 +5911,23 @@ pub struct LoopInfo<'a> {
     cfi: &'a ControlFlowInfo<'a>,
     dominators: &'a Dominators<'a>,
     loop_depths: HashMap<BlockId, u32>,
-    loop_headers: HashSet<BlockId>,
-    back_edge_sources: HashSet<BlockId>,
+    loop_headers: BlockSet,
+    back_edge_sources: BlockSet,
 }
 
 impl<'a> LoopInfo<'a> {
     pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
-        let mut loop_headers: HashSet<BlockId> = HashSet::new();
+        let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
-        let mut back_edge_sources: HashSet<BlockId> = HashSet::new();
+        let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+        let rpo = cfi.function.rpo();
 
-        for block in cfi.function.rpo() {
+        for &block in &rpo {
             loop_depths.insert(block, 0);
         }
 
         // Collect loop headers.
-        for block in cfi.function.rpo() {
+        for &block in &rpo {
             // Initialize the loop depths.
             for predecessor in cfi.predecessors(block) {
                 if dominators.is_dominated_by(predecessor, block) {
@@ -5935,8 +5936,8 @@ impl<'a> LoopInfo<'a> {
                     back_edge_sources.insert(predecessor);
                     let loop_blocks = Self::find_natural_loop(cfi, block, predecessor);
                     // Increment the loop depth.
-                    for &loop_block in &loop_blocks {
-                        *loop_depths.get_mut(&loop_block).unwrap() += 1;
+                    for loop_block in &loop_blocks {
+                        *loop_depths.get_mut(loop_block).expect("Loop block should be populated.") += 1;
                     }
                 }
             }
@@ -5956,6 +5957,7 @@ impl<'a> LoopInfo<'a> {
         header: BlockId,
         back_edge_source: BlockId,
     ) -> HashSet<BlockId> {
+        // todo(aidenfoxivey): Reimplement using BlockSet
         let mut loop_blocks = HashSet::new();
         let mut stack = vec![back_edge_source];
 
@@ -5979,11 +5981,11 @@ impl<'a> LoopInfo<'a> {
     }
 
     pub fn is_back_edge_source(&self, block: BlockId) -> bool {
-        self.back_edge_sources.contains(&block)
+        self.back_edge_sources.get(block)
     }
 
     pub fn is_loop_header(&self, block: BlockId) -> bool {
-        self.loop_headers.contains(&block)
+        self.loop_headers.get(block)
     }
 }
 
