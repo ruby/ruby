@@ -647,7 +647,7 @@ class VCS
     end
 
     def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
-      []
+      self.release_date(release_date)
     end
   end
 end

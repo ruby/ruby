@@ -1306,8 +1306,7 @@ $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
 $(REVISION_H)$(no_baseruby:no=~disabled~):
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" | \
-	$(IFCHANGE) --timestamp=$@ --empty revision.h -
+	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 	$(Q) exit > $@
 
