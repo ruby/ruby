@@ -728,46 +728,52 @@ RSpec.describe "Bundler.setup" do
     G
 
     run <<-R
-      File.open(File.join(Gem.dir, "specifications", "broken.gemspec"), "w") do |f|
+      File.open(File.join(Gem.dir, "specifications", "invalid.gemspec"), "w") do |f|
         f.write <<-RUBY
 # -*- encoding: utf-8 -*-
-# stub: broken 1.0.0 ruby lib
+# stub: invalid 1.0.0 ruby lib
 
 Gem::Specification.new do |s|
-  s.name = "broken"
+  s.name = "invalid"
   s.version = "1.0.0"
-  raise "BROKEN GEMSPEC"
+  s.authors = ["Invalid Author"]
+  s.files = ["lib/invalid.rb"]
+  s.add_dependency "nonexistent-gem", "~> 999.999.999"
+  s.validate!
 end
         RUBY
       end
     R
 
     run <<-R
-      File.open(File.join(Gem.dir, "specifications", "broken-ext.gemspec"), "w") do |f|
+      File.open(File.join(Gem.dir, "specifications", "invalid-ext.gemspec"), "w") do |f|
         f.write <<-RUBY
 # -*- encoding: utf-8 -*-
-# stub: broken-ext 1.0.0 ruby lib
+# stub: invalid-ext 1.0.0 ruby lib
 # stub: a.ext\\0b.ext
 
 Gem::Specification.new do |s|
-  s.name = "broken-ext"
+  s.name = "invalid-ext"
   s.version = "1.0.0"
-  raise "BROKEN GEMSPEC EXT"
+  s.authors = ["Invalid Author"]
+  s.files = ["lib/invalid.rb"]
+  s.required_ruby_version = "~> 0.8.0"
+  s.validate!
 end
         RUBY
       end
       # Need to write the gem.build_complete file,
       # otherwise the full spec is loaded to check the installed_by_version
       extensions_dir = Gem.default_ext_dir_for(Gem.dir) || File.join(Gem.dir, "extensions", Gem::Platform.local.to_s, Gem.extension_api_version)
-      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "broken-ext-1.0.0"))
-      File.open(File.join(extensions_dir, "broken-ext-1.0.0", "gem.build_complete"), "w") {}
+      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "invalid-ext-1.0.0"))
+      File.open(File.join(extensions_dir, "invalid-ext-1.0.0", "gem.build_complete"), "w") {}
     R
 
     run <<-R
-      puts "WIN"
+      puts "Success"
     R
 
-    expect(out).to eq("WIN")
+    expect(out).to eq("Success")
   end
 
   it "ignores empty gem paths" do
@@ -1151,7 +1157,7 @@ end
         bundler_module = class << Bundler; self; end
         bundler_module.send(:remove_method, :require)
         def Bundler.require(path)
-          raise "LOSE"
+          raise StandardError, "didn't use binding from top level"
         end
         Bundler.load
       RUBY

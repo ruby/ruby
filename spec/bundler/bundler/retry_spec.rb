@@ -12,7 +12,7 @@ RSpec.describe Bundler::Retry do
   end
 
   it "returns the first valid result" do
-    jobs = [proc { raise "foo" }, proc { :bar }, proc { raise "foo" }]
+    jobs = [proc { raise "job 1 failed" }, proc { :bar }, proc { raise "job 2 failed" }]
     attempts = 0
     result = Bundler::Retry.new(nil, nil, 3).attempt do
       attempts += 1

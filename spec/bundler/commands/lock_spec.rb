@@ -834,7 +834,7 @@ RSpec.describe "bundle lock" do
     bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
     expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
 
-    update_repo4 do
+    build_repo4 do
       build_gem "bundler", "99"
     end
 
@@ -1456,7 +1456,7 @@ RSpec.describe "bundle lock" do
     before do
       gemfile_with_rails_weakling_and_foo_from_repo4
 
-      update_repo4 do
+      build_repo4 do
         build_gem "foo", "2.0"
       end
 

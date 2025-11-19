@@ -385,7 +385,7 @@ RSpec.describe "bundle install --standalone" do
       RUBY
 
       expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- spec/)
     end
 
     it "allows `without` configuration to limit the groups used in a standalone" do
@@ -403,7 +403,7 @@ RSpec.describe "bundle install --standalone" do
       RUBY
 
       expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- spec/)
     end
 
     it "allows `path` configuration to change the location of the standalone bundle" do
@@ -437,7 +437,7 @@ RSpec.describe "bundle install --standalone" do
       RUBY
 
       expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- spec/)
     end
   end
 
@@ -519,6 +519,6 @@ RSpec.describe "bundle install --standalone --local" do
     RUBY
 
     expect(out).to eq("1.0.0")
-    expect(err).to eq("ZOMG LOAD ERROR")
+    expect(err_without_deprecations).to match(/cannot load such file -- spec/)
   end
 end
