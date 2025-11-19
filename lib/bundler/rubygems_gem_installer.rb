@@ -69,7 +69,7 @@ module Bundler
     end
 
     def generate_plugins
-      return unless Gem::Installer.method_defined?(:generate_plugins)
+      return unless Gem::Installer.method_defined?(:generate_plugins, false)
 
       latest = Gem::Specification.stubs_for(spec.name).first
       return if latest && latest.version > spec.version
