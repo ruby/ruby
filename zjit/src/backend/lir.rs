@@ -2397,7 +2397,6 @@ macro_rules! asm_comment {
 pub(crate) use asm_comment;
 
 /// Convenience macro over [`Assembler::ccall`] that also adds a comment with the function name.
-
 macro_rules! asm_ccall {
     [$asm: ident, $fn_name:ident, $($args:expr),* ] => {{
         $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
