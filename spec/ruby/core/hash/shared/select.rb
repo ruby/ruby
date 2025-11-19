@@ -40,6 +40,27 @@ describe :hash_select, shared: true do
     @empty.send(@method).should be_an_instance_of(Enumerator)
   end
 
+  it "does not retain the default value" do
+    h = Hash.new(1)
+    h.send(@method) { true }.default.should be_nil
+    h[:a] = 1
+    h.send(@method) { true }.default.should be_nil
+  end
+
+  it "does not retain the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.send(@method) { true }.default_proc.should be_nil
+    h[:a] = 1
+    h.send(@method) { true }.default_proc.should be_nil
+  end
+
+  it "retains compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.send(@method) { |k, _| k == :a }
+    h2.compare_by_identity?.should == true
+  end
+
   it_should_behave_like :hash_iteration_no_block
 
   before :each do

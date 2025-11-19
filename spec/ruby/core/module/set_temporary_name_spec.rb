@@ -86,6 +86,7 @@ ruby_version_is "3.3" do
 
       ModuleSpecs::SetTemporaryNameSpec::M = m
       m::N.name.should == "ModuleSpecs::SetTemporaryNameSpec::M::N"
+      ModuleSpecs::SetTemporaryNameSpec.send :remove_const, :M
     end
 
     it "can update the name when assigned to a constant" do

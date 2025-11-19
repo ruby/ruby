@@ -103,7 +103,7 @@ describe :enumerable_inject, shared: true do
 
   it "without inject arguments(legacy rubycon)" do
     # no inject argument
-    EnumerableSpecs::EachDefiner.new(2).send(@method) {|acc,x| 999 } .should == 2
+    EnumerableSpecs::EachDefiner.new(2).send(@method) {|acc,x| 999 }.should == 2
     EnumerableSpecs::EachDefiner.new(2).send(@method) {|acc,x| acc }.should == 2
     EnumerableSpecs::EachDefiner.new(2).send(@method) {|acc,x| x }.should == 2
 

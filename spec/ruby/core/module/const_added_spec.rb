@@ -117,6 +117,7 @@ describe "Module#const_added" do
     end
 
     ScratchPad.recorded.should == [:A, :B]
+    ModuleSpecs::ConstAddedSpecs.send :remove_const, :NamedModule
   end
 
   it "is called when a new class is defined under self" do
@@ -158,6 +159,7 @@ describe "Module#const_added" do
     end
 
     ScratchPad.recorded.should == [:A, :B]
+    ModuleSpecs::ConstAddedSpecs.send :remove_const, :NamedModuleB
   end
 
   it "is called when an autoload is defined" do
