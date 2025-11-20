@@ -16,16 +16,17 @@ RSpec.describe "bundle doctor ssl" do
       end
     end
 
-    @previous_level = Bundler.ui.level
-    Bundler.ui.instance_variable_get(:@warning_history).clear
-    @previous_client = Gem::Request::ConnectionPools.client
+    @previous_ui = Bundler.ui
+    Bundler.ui = Bundler::UI::Shell.new
     Bundler.ui.level = "info"
+
+    @previous_client = Gem::Request::ConnectionPools.client
     Artifice.activate_with(@dummy_endpoint)
     Gem::Request::ConnectionPools.client = Gem::Net::HTTP
   end
 
   after(:each) do
-    Bundler.ui.level = @previous_level
+    Bundler.ui = @previous_ui
     Artifice.deactivate
     Gem::Request::ConnectionPools.client = @previous_client
   end
