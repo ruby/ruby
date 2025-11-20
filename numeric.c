@@ -633,7 +633,7 @@ num_div(VALUE x, VALUE y)
  *  call-seq:
  *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
@@ -1358,7 +1358,7 @@ ruby_float_mod(double x, double y)
  *  call-seq:
  *    self % other -> float
  *
- *  Returns +self+ modulo +other+ as a float.
+ *  Returns +self+ modulo +other+ as a \Float.
  *
  *  For float +f+ and real number +r+, these expressions are equivalent:
  *
@@ -4316,9 +4316,9 @@ fix_mod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self % other -> real_number
+ *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  For integer +n+ and real number +r+, these expressions are equivalent:
  *
