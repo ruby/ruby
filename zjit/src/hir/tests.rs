@@ -2241,7 +2241,7 @@ pub mod hir_build_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          SetInstanceVariable v6, :@foo, v10
+          SetIvar v6, :@foo, v10
           CheckInterrupts
           Return v10
         ");
