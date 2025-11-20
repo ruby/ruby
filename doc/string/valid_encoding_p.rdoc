@@ -1,6 +1,6 @@
 Returns whether +self+ is encoded correctly:
 
-  s = 'ТЕСТ'
+  s = 'Straße'
   s.valid_encoding?                                 # => true
   s.encoding                                        # => #<Encoding:UTF-8>
   s.force_encoding(Encoding::ASCII).valid_encoding? # => false
