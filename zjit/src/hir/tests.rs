@@ -1954,6 +1954,35 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_opt_newarray_send_max_redefined() {
+        eval("
+            class Array
+              alias_method :old_max, :max
+              def max
+                old_max * 2
+              end
+            end
+
+            def test(a,b) = [a,b].max
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX))
+        ");
+    }
+
+    #[test]
     fn test_opt_newarray_send_min() {
         eval("
             def test(a,b)
@@ -2132,6 +2161,45 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v33
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_include_p_redefined() {
+        eval("
+            class Array
+              alias_method :old_include?, :include?
+              def include?(x)
+                old_include?(x)
+              end
+            end
+
+            def test(a,b)
+              sum = a+b
+              result = [a,b].include? b
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
 
