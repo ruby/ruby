@@ -427,8 +427,8 @@ module Bundler
       windows_platforms = platforms.select {|pl| pl.to_s.match?(/mingw|mswin/) }
       if windows_platforms.any?
         windows_platforms = windows_platforms.map! {|pl| ":#{pl}" }.join(", ")
-        removed_message = "Platform #{windows_platforms} has been removed. Please use platform :windows instead."
-        Bundler::SharedHelpers.feature_removed! removed_message
+        deprecated_message = "Platform #{windows_platforms} will be removed in the future. Please use platform :windows instead."
+        Bundler::SharedHelpers.feature_deprecated! deprecated_message
       end
 
       # Save sources passed in a key

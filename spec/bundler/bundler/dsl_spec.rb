@@ -221,8 +221,8 @@ RSpec.describe Bundler::Dsl do
         to raise_error(Bundler::GemfileError, /is not a valid platform/)
     end
 
-    it "raises an error for legacy windows platforms" do
-      expect(Bundler::SharedHelpers).to receive(:feature_removed!).with(/\APlatform :mswin, :x64_mingw has been removed/)
+    it "warn for legacy windows platforms" do
+      expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(/\APlatform :mswin, :x64_mingw will be removed in the future./)
       subject.gem("foo", platforms: [:mswin, :jruby, :x64_mingw])
     end
 
@@ -291,8 +291,8 @@ RSpec.describe Bundler::Dsl do
   end
 
   describe "#platforms" do
-    it "raises an error for legacy windows platforms" do
-      expect(Bundler::SharedHelpers).to receive(:feature_removed!).with(/\APlatform :mswin64, :mingw has been removed/)
+    it "warn for legacy windows platforms" do
+      expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(/\APlatform :mswin64, :mingw will be removed in the future./)
       subject.platforms(:mswin64, :jruby, :mingw) do
         subject.gem("foo")
       end
