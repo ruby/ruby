@@ -1040,6 +1040,22 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_newarray_send], call_threshold: 1
   end
 
+  def test_opt_newarray_send_include_p_redefinition
+    assert_compiles '[true, false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x)
+        end
+      end
+
+      def test(x)
+        [:y, 1, Object.new].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
   def test_opt_duparray_send_include_p
     assert_compiles '[true, false]', %q{
       def test(x)
@@ -1048,6 +1064,22 @@ class TestZJIT < Test::Unit::TestCase
       [test(1), test("n")]
     }, insns: [:opt_duparray_send], call_threshold: 1
   end
+
+  def test_opt_duparray_send_include_p_redefinition
+      assert_compiles '[true, false]', %q{
+        class Array
+          alias_method :old_include?, :include?
+          def include?(x)
+            old_include?(x)
+          end
+        end
+
+        def test(x)
+          [:y, 1].include?(x)
+        end
+        [test(1), test("n")]
+      }, insns: [:opt_duparray_send], call_threshold: 1
+    end
 
   def test_opt_newarray_send_hash
     assert_compiles 'Integer', %q{
@@ -1066,6 +1098,27 @@ class TestZJIT < Test::Unit::TestCase
         [1, 2, x].hash
       end
       test(20)
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max
+    assert_compiles '[20, 40]', %q{
+      def test(a,b) = [a,b].max
+      [test(10, 20), test(40, 30)]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max_redefinition
+    assert_compiles '[60, 90]', %q{
+      class Array
+        alias_method :old_max, :max
+        def max
+          old_max * 2
+        end
+      end
+
+      def test(a,b) = [a,b].max
+      [test(15, 30), test(45, 35)]
     }, insns: [:opt_newarray_send], call_threshold: 1
   end
 
