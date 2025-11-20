@@ -5,8 +5,7 @@
 static VALUE mJSON, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
-static ID i_chr, i_aset, i_aref,
-          i_leftshift, i_new, i_try_convert, i_uminus, i_encode;
+static ID i_new, i_try_convert, i_uminus, i_encode;
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
              sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
@@ -1612,10 +1611,6 @@ void Init_parser(void)
     sym_decimal_class = ID2SYM(rb_intern("decimal_class"));
     sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));
 
-    i_chr = rb_intern("chr");
-    i_aset = rb_intern("[]=");
-    i_aref = rb_intern("[]");
-    i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
     i_uminus = rb_intern("-@");
