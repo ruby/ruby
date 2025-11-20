@@ -13467,7 +13467,7 @@ parse_target_implicit_parameter(pm_parser_t *parser, pm_node_t *node) {
             // remaining nodes down to fill the gap. This is extremely unlikely
             // to happen.
             if (index != implicit_parameters->size - 1) {
-                memcpy(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
+                memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
             }
 
             implicit_parameters->size--;
