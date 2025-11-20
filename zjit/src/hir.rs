@@ -5849,7 +5849,10 @@ impl<'a> ControlFlowInfo<'a> {
             // Since ZJIT uses extended basic blocks, one must check all instructions
             // for their ability to jump to another basic block, rather than just
             // the instructions at the end of a given basic block.
-            let successors: Vec<BlockId> = block
+            //
+            // Use HashSet to avoid duplicates. Also `HashSet<BlockId>` provides conversion
+            // trivially back to an `Vec<BlockId>`.
+            let successors: HashSet<BlockId> = block
                 .insns
                 .iter()
                 .map(|&insn_id| uf.find_const(insn_id))
@@ -5867,7 +5870,8 @@ impl<'a> ControlFlowInfo<'a> {
             }
 
             // Store successors for this block.
-            successor_map.insert(block_id, successors);
+            // Convert successors from a `HashSet<BlockId>` to a `Vec<BlockId>`.
+            successor_map.insert(block_id, successors.iter().copied().collect());
         }
 
         Self {
