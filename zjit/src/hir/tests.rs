@@ -3484,6 +3484,27 @@ pub mod hir_build_tests {
         assert!(cfi.is_succeeded_by(bb1, bb0));
         assert!(cfi.is_succeeded_by(bb3, bb1));
      }
+
+     #[test]
+     fn test_duplicated_successor() {
+         let mut function = Function::new(std::ptr::null());
+
+         let bb0 = function.entry_block;
+         let bb1 = function.new_block(0);
+
+         // Construct two separate jump instructions.
+         let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+         let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb1)});
+         function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+         let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+         function.push_insn(bb1, Insn::Return { val: retval });
+
+         let cfi = ControlFlowInfo::new(&function);
+
+         assert_eq!(cfi.predecessors(bb1).collect::<Vec<_>>().len(), 1);
+         assert_eq!(cfi.successors(bb0).collect::<Vec<_>>().len(), 1);
+     }
  }
 
  /// Test dominator set computations.
