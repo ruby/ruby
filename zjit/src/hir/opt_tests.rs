@@ -780,14 +780,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v13:BasicObject = GetLocal l0, EP@3
           PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
-          v24:ArraySubclass[class_exact:C] = GuardType v13, ArraySubclass[class_exact:C]
-          v25:BasicObject = CCallWithFrame C#fun_new_map@0x1038, v24, block=0x1040
-          v16:BasicObject = GetLocal l0, EP@3
+          v23:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
+          v24:BasicObject = CCallWithFrame C#fun_new_map@0x1038, v23, block=0x1040
+          v15:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -2700,12 +2699,11 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
-          SetLocal l0, EP@3, v13
-          v19:BasicObject = Send v8, 0x1000, :foo
-          v20:BasicObject = GetLocal l0, EP@3
-          v24:BasicObject = GetLocal l0, EP@3
+          v18:BasicObject = Send v8, 0x1000, :foo
+          v19:BasicObject = GetLocal l0, EP@3
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v24
+          Return v19
         ");
     }
 
