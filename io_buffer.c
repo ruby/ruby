@@ -667,18 +667,25 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *  call-seq: IO::Buffer.map(file, [size, [offset, [flags]]]) -> io_buffer
  *
  *  Create an IO::Buffer for reading from +file+ by memory-mapping the file.
- *  +file_io+ should be a +File+ instance, opened for reading.
+ *  +file+ should be a +File+ instance, opened for reading or reading and writing.
  *
  *  Optional +size+ and +offset+ of mapping can be specified.
+ *  Trying to map an empty file or specify +size+ of 0 will raise an error.
+ *  Valid values for +offset+ are system-dependent.
  *
- *  By default, the buffer would be immutable (read only); to create a writable
- *  mapping, you need to open a file in read-write mode, and explicitly pass
- *  +flags+ argument without IO::Buffer::IMMUTABLE.
+ *  By default, the buffer is writable and expects the file to be writable.
+ *  It is also shared, so several processes can use the same mapping.
+ *
+ *  You can pass IO::Buffer::READONLY in +flags+ argument to make a read-only buffer;
+ *  this allows to work with files opened only for reading.
+ *  Specifying IO::Buffer::PRIVATE in +flags+ creates a private mapping,
+ *  which will not impact other processes or the underlying file.
+ *  It also allows updating a buffer created from a read-only file.
  *
  *    File.write('test.txt', 'test')
  *
  *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::READONLY)
- *    # => #<IO::Buffer 0x00000001014a0000+4 MAPPED READONLY>
+ *    # => #<IO::Buffer 0x00000001014a0000+4 EXTERNAL MAPPED FILE SHARED READONLY>
  *
  *    buffer.readonly?   # => true
  *
@@ -686,7 +693,7 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *    # => "test"
  *
  *    buffer.set_string('b', 0)
- *    # `set_string': Buffer is not writable! (IO::Buffer::AccessError)
+ *    # 'IO::Buffer#set_string': Buffer is not writable! (IO::Buffer::AccessError)
  *
  *    # create read/write mapping: length 4 bytes, offset 0, flags 0
  *    buffer = IO::Buffer.map(File.open('test.txt', 'r+'), 4, 0)
@@ -708,31 +715,48 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     // We might like to handle a string path?
     VALUE io = argv[0];
 
+    rb_off_t file_size = rb_file_size(io);
+    // Compiler can confirm that we handled file_size <= 0 case:
+    if (UNLIKELY(file_size <= 0)) {
+        rb_raise(rb_eArgError, "Invalid negative or zero file size!");
+    }
+    // Here, we assume that file_size is positive:
+    else if (UNLIKELY((uintmax_t)file_size > SIZE_MAX)) {
+        rb_raise(rb_eArgError, "File larger than address space!");
+    }
+
     size_t size;
     if (argc >= 2 && !RB_NIL_P(argv[1])) {
         size = io_buffer_extract_size(argv[1]);
+        if (UNLIKELY(size == 0)) {
+            rb_raise(rb_eArgError, "Size can't be zero!");
+        }
+        if (UNLIKELY(size > (size_t)file_size)) {
+            rb_raise(rb_eArgError, "Size can't be larger than file size!");
+        }
     }
     else {
-        rb_off_t file_size = rb_file_size(io);
-
-        // Compiler can confirm that we handled file_size < 0 case:
-        if (file_size < 0) {
-            rb_raise(rb_eArgError, "Invalid negative file size!");
-        }
-        // Here, we assume that file_size is positive:
-        else if ((uintmax_t)file_size > SIZE_MAX) {
-            rb_raise(rb_eArgError, "File larger than address space!");
-        }
-        else {
-            // This conversion should be safe:
-            size = (size_t)file_size;
-        }
+        // This conversion should be safe:
+        size = (size_t)file_size;
     }
 
     // This is the file offset, not the buffer offset:
     rb_off_t offset = 0;
     if (argc >= 3) {
         offset = NUM2OFFT(argv[2]);
+        if (UNLIKELY(offset < 0)) {
+            rb_raise(rb_eArgError, "Offset can't be negative!");
+        }
+        if (UNLIKELY(offset >= file_size)) {
+            rb_raise(rb_eArgError, "Offset too large!");
+        }
+        if (RB_NIL_P(argv[1])) {
+            // Decrease size if it's set from the actual file size:
+            size = (size_t)(file_size - offset);
+        }
+        else if (UNLIKELY((size_t)(file_size - offset) < size)) {
+            rb_raise(rb_eArgError, "Offset too large!");
+        }
     }
 
     enum rb_io_buffer_flags flags = 0;
