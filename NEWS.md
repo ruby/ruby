@@ -33,6 +33,30 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Enumerator
+
+    * `Enumerator.produce` now accepts an optional `size` keyword argument
+      to specify the size of the enumerator.  It can be an integer,
+      `Float::INFINITY`, a callable object (such as a lambda), or `nil` to
+      indicate unknown size.  When not specified, the size is unknown (`nil`).
+      Previously, the size was always `Float::INFINITY` and not specifiable.
+
+        ```ruby
+        # Infinite enumerator
+        enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
+        enum.size  # => Float::INFINITY
+
+        # Finite enumerator with known/computable size
+        abs_dir = File.expand_path("./baz") # => "/foo/bar/baz"
+        traverser = Enumerator.produce(abs_dir, size: -> { abs_dir.count("/") + 1 }) {
+          raise StopIteration if it == "/"
+          File.dirname(it)
+        }
+        traverser.size  # => 4
+        ```
+
+      [[Feature #21701]]
+
 * Kernel
 
     * `Kernel#inspect` now checks for the existence of a `#instance_variables_to_inspect` method,
@@ -454,3 +478,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
+[Feature #21701]: https://bugs.ruby-lang.org/issues/21701

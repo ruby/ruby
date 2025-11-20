@@ -221,6 +221,7 @@ struct yielder {
 struct producer {
     VALUE init;
     VALUE proc;
+    VALUE size;
 };
 
 typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
@@ -2876,6 +2877,7 @@ producer_mark_and_move(void *p)
     struct producer *ptr = p;
     rb_gc_mark_and_move(&ptr->init);
     rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->size);
 }
 
 #define producer_free RUBY_TYPED_DEFAULT_FREE
@@ -2919,12 +2921,13 @@ producer_allocate(VALUE klass)
     obj = TypedData_Make_Struct(klass, struct producer, &producer_data_type, ptr);
     ptr->init = Qundef;
     ptr->proc = Qundef;
+    ptr->size = Qnil;
 
     return obj;
 }
 
 static VALUE
-producer_init(VALUE obj, VALUE init, VALUE proc)
+producer_init(VALUE obj, VALUE init, VALUE proc, VALUE size)
 {
     struct producer *ptr;
 
@@ -2936,6 +2939,7 @@ producer_init(VALUE obj, VALUE init, VALUE proc)
 
     RB_OBJ_WRITE(obj, &ptr->init, init);
     RB_OBJ_WRITE(obj, &ptr->proc, proc);
+    RB_OBJ_WRITE(obj, &ptr->size, size);
 
     return obj;
 }
@@ -2986,12 +2990,18 @@ producer_each(VALUE obj)
 static VALUE
 producer_size(VALUE obj, VALUE args, VALUE eobj)
 {
-    return DBL2NUM(HUGE_VAL);
+    struct producer *ptr = producer_ptr(obj);
+    VALUE size = ptr->size;
+
+    if (NIL_P(size)) return Qnil;
+    if (RB_INTEGER_TYPE_P(size) || RB_FLOAT_TYPE_P(size)) return size;
+
+    return rb_funcall(size, id_call, 0);
 }
 
 /*
  * call-seq:
- *    Enumerator.produce(initial = nil) { |prev| block } -> enumerator
+ *    Enumerator.produce(initial = nil, size: nil) { |prev| block } -> enumerator
  *
  * Creates an infinite enumerator from any block, just called over and
  * over.  The result of the previous iteration is passed to the next one.
@@ -3023,19 +3033,43 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   PATTERN = %r{\d+|[-/+*]}
  *   Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
  *   # => ["7", "+", "38", "/", "6"]
+ *
+ * The optional +size+ keyword argument specifies the size of the enumerator,
+ * which can be retrieved by Enumerator#size.  It can be an integer,
+ * +Float::INFINITY+, a callable object (such as a lambda), or +nil+ to
+ * indicate unknown size.  When not specified, the size is unknown (+nil+).
+ *
+ *   # Infinite enumerator
+ *   enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
+ *   enum.size  # => Float::INFINITY
+ *
+ *   # Finite enumerator with known/computable size
+ *   abs_dir = File.expand_path("./baz") # => "/foo/bar/baz"
+ *   traverser = Enumerator.produce(abs_dir, size: -> { abs_dir.count("/") + 1 }) {
+ *     raise StopIteration if it == "/"
+ *     File.dirname(it)
+ *   }
+ *   traverser.size  # => 4
  */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE init, producer;
+    VALUE init, producer, opts, size;
+    ID keyword_ids[1];
 
     if (!rb_block_given_p()) rb_raise(rb_eArgError, "no block given");
 
-    if (rb_scan_args(argc, argv, "01", &init) == 0) {
+    keyword_ids[0] = rb_intern("size");
+    rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "01:", &init, &opts);
+    rb_get_kwargs(opts, keyword_ids, 0, 1, &size);
+
+    size = UNDEF_P(size) ? Qnil : convert_to_feasible_size_value(size);
+
+    if (argc == 0 || (argc == 1 && !NIL_P(opts))) {
         init = Qundef;
     }
 
-    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc());
+    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc(), size);
 
     return rb_enumeratorize_with_size_kw(producer, sym_each, 0, 0, producer_size, RB_NO_KEYWORDS);
 }
