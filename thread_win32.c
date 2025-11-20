@@ -148,6 +148,18 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
     thread_sched_to_running(sched, th);
 }
 
+static void
+thread_sched_blocking_region_enter(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_to_waiting(sched, th);
+}
+
+static void
+thread_sched_blocking_region_exit(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_to_running(sched, th);
+}
+
 void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
@@ -155,15 +167,15 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     sched->lock = w32_mutex_create();
 }
 
-#if 0
 // per-ractor
 void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
+#if 0
     if (GVL_DEBUG) fprintf(stderr, "sched destroy\n");
     CloseHandle(sched->lock);
-}
 #endif
+}
 
 rb_thread_t *
 ruby_thread_from_native(void)

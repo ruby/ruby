@@ -194,7 +194,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
         /* Important that this is inlined into the macro, and not part of \
          * blocking_region_begin - see bug #20493 */ \
         RB_VM_SAVE_MACHINE_CONTEXT(th); \
-        thread_sched_to_waiting(TH_SCHED(th), th); \
+        thread_sched_blocking_region_enter(TH_SCHED(th), th); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -1537,7 +1537,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     /* entry to ubf_list impossible at this point, so unregister is safe: */
     unregister_ubf_list(th);
 
-    thread_sched_to_running(TH_SCHED(th), th);
+    thread_sched_blocking_region_exit(TH_SCHED(th), th);
     rb_ractor_thread_switch(th->ractor, th, false);
 
     th->blocking_region_buffer = 0;

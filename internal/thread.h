@@ -109,4 +109,8 @@ void rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
 
 void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
 
+struct rb_thread_sched;
+void rb_thread_sched_init(struct rb_thread_sched *, bool atfork);
+void rb_thread_sched_destroy(struct rb_thread_sched *);
+
 #endif /* INTERNAL_THREAD_H */

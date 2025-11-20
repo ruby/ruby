@@ -37,17 +37,25 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
 }
 
+static void
+thread_sched_blocking_region_enter(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+}
+
+static void
+thread_sched_blocking_region_exit(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+}
+
 void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
-#if 0
-static void
+void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
-#endif
 
 // Do nothing for mutex guard
 void
