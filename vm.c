@@ -3886,19 +3886,16 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 void
 rb_ec_close(rb_execution_context_t *ec)
 {
-    // Clear VM stack to avoid retaining any values:
-    rb_ec_clear_vm_stack(ec);
-
     // Free local_storage if it exists:
-    if (ec->local_storage) {
-        rb_id_table_free(ec->local_storage);
-        ec->local_storage = NULL;
-    }
+    // if (ec->local_storage) {
+    //     rb_id_table_free(ec->local_storage);
+    //     ec->local_storage = NULL;
+    // }
 
     // Clear storage and recursive hash fields so we don't retain them:
     ec->storage = Qnil;
-    ec->local_storage_recursive_hash = Qnil;
-    ec->local_storage_recursive_hash_for_trace = Qnil;
+    // ec->local_storage_recursive_hash = Qnil;
+    // ec->local_storage_recursive_hash_for_trace = Qnil;
 }
 
 static void
