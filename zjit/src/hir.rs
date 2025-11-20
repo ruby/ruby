@@ -5230,19 +5230,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                    if !local_inval {
+                        // The FrameState is the source of truth for locals until invalidated.
+                        // In case of JIT-to-JIT send locals might never end up in EP memory.
+                        let val = state.getlocal(ep_offset);
+                        state.stack_push(val);
+                    } else if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
                         // Read the local using EP
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        if local_inval {
-                            // If there has been any non-leaf call since JIT entry or the last patch point,
-                            // add a patch point to make sure locals have not been escaped.
-                            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
-                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                            local_inval = false;
-                        }
+                        assert!(local_inval); // if check above
+                        // There has been some non-leaf call since JIT entry or the last patch point,
+                        // so add a patch point to make sure locals have not been escaped.
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                        local_inval = false;
+
                         // Read the local from FrameState
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
