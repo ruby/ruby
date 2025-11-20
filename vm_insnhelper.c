@@ -1723,6 +1723,12 @@ rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IV
     vm_setinstancevariable(iseq, obj, id, val, ic);
 }
 
+VALUE
+rb_vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
+{
+    return vm_getinstancevariable(iseq, obj, id, ic);
+}
+
 static VALUE
 vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
 {
