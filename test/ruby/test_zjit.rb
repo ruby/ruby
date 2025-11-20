@@ -1041,11 +1041,11 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_newarray_send_include_p_redefined
-    assert_compiles '[true, false]', %q{
+    assert_compiles '[:true, :false]', %q{
       class Array
         alias_method :old_include?, :include?
         def include?(x)
-          old_include?(x)
+          old_include?(x) ? :true : :false
         end
       end
 
@@ -1066,11 +1066,11 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_duparray_send_include_p_redefined
-      assert_compiles '[true, false]', %q{
+      assert_compiles '[:true, :false]', %q{
         class Array
           alias_method :old_include?, :include?
           def include?(x)
-            old_include?(x)
+            old_include?(x) ? :true : :false
           end
         end
 
