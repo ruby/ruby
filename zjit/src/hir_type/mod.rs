@@ -77,6 +77,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
         Specialization::Object(val) if val == unsafe { rb_block_param_proxy } => write!(f, "[BlockParamProxy]"),
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
+        Specialization::Object(val) if ty.is_subtype(types::Class) =>
+            write!(f, "[{}@{:p}]", get_class_name(val), printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         // TODO(max): Ensure singleton classes never have Type specialization
         Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
