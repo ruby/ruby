@@ -6355,6 +6355,115 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_integer_ltlt_with_known_fixnum() {
+        eval("
+            def test(x) = x << 5
+            test(4)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_ltlt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:Fixnum = FixnumLShift v24, v14
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_ltlt_with_negative() {
+        eval("
+            def test(x) = x << -5
+            test(4)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_ltlt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[-5] = Const Value(-5)
+          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:BasicObject = CCallWithFrame Integer#<<@0x1038, v24, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_ltlt_with_out_of_range() {
+        eval("
+            def test(x) = x << 64
+            test(4)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_ltlt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[64] = Const Value(64)
+          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:BasicObject = CCallWithFrame Integer#<<@0x1038, v24, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_ltlt_with_unknown_fixnum() {
+        eval("
+            def test(x, y) = x << y
+            test(4, 5)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_ltlt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:BasicObject = CCallWithFrame Integer#<<@0x1038, v26, v12
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
     fn test_optimize_string_append() {
         eval(r#"
             def test(x, y) = x << y
