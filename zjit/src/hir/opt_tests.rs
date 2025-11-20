@@ -2299,7 +2299,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v18:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:Class[C@0x1008] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v18
         ");
@@ -2323,16 +2323,16 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v29:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v29:Class[String@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, Class)
-          v32:Class[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v32:Class[Class@0x1018] = Const Value(VALUE(0x1018))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1020, Module)
-          v35:Class[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+          v35:Class[Module@0x1028] = Const Value(VALUE(0x1028))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1030, BasicObject)
-          v38:Class[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+          v38:Class[BasicObject@0x1038] = Const Value(VALUE(0x1038))
           v22:ArrayExact = NewArray v29, v32, v35, v38
           CheckInterrupts
           Return v22
@@ -2954,7 +2954,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-          v18:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:Class[Foo::Bar::C@0x1008] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v18
         ");
@@ -2979,11 +2979,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[C@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
           v46:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
-          PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(C@0x1008)
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
@@ -3016,14 +3016,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v46:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v46:Class[C@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
           v16:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
           v49:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
-          PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(C@0x1008)
-          v52:BasicObject = SendWithoutBlockDirect v49, :initialize (0x1070), v16
+          v52:BasicObject = SendWithoutBlockDirect v49, :initialize (0x1068), v16
           CheckInterrupts
           CheckInterrupts
           Return v49
@@ -3048,11 +3048,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Object)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[Object@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Object@0x1008, new@0x1009, cme:0x1010)
           v46:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
-          PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(Object@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(Object@0x1008)
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
@@ -3080,11 +3080,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, BasicObject)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[BasicObject@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1009, cme:0x1010)
           v46:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
-          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(BasicObject@0x1008)
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
@@ -3112,9 +3112,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Hash)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[Hash@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           IncrCounter complex_arg_pass_param_kw
           IncrCounter complex_arg_pass_param_block
@@ -3144,13 +3144,13 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Array)
-          v46:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v46:Class[Array@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
           v16:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Array@0x1008, new@0x1010, cme:0x1018)
-          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(Class@0x1040)
-          v57:BasicObject = CCallVariadic Array.new@0x1048, v46, v16
+          PatchPoint MethodRedefined(Array@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v57:BasicObject = CCallVariadic Array.new@0x1040, v46, v16
           CheckInterrupts
           Return v57
         ");
@@ -3174,14 +3174,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Set)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[Set@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Set@0x1008, new@0x1009, cme:0x1010)
           v18:HeapBasicObject = ObjectAlloc v43
-          PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(Set@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(Set@0x1008)
           v49:SetExact = GuardType v18, SetExact
-          v50:BasicObject = CCallVariadic Set#initialize@0x1070, v49
+          v50:BasicObject = CCallVariadic Set#initialize@0x1068, v49
           CheckInterrupts
           CheckInterrupts
           Return v18
@@ -3206,12 +3206,12 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[String@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
-          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(Class@0x1040)
-          v54:BasicObject = CCallVariadic String.new@0x1048, v43
+          PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v54:BasicObject = CCallVariadic String.new@0x1040, v43
           CheckInterrupts
           Return v54
         ");
@@ -3235,7 +3235,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Regexp)
-          v47:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v47:Class[Regexp@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
           v16:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v17:StringExact = StringCopy v16
@@ -4406,7 +4406,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Foo)
-          v22:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v22:Class[Foo@0x1008] = Const Value(VALUE(0x1008))
           v13:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Class@0x1010, identity@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
@@ -5962,7 +5962,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Thread)
-          v20:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v20:Class[Thread@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Class@0x1010, current@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
           v24:CPtr = LoadEC
@@ -7893,7 +7893,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v26:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v26:Class[String@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Class@0x1010, ===@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
@@ -7953,8 +7953,8 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v24:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(String@0x1008, is_a?@0x1010, cme:0x1018)
+          v24:Class[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1008, is_a?@0x1009, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1008)
           v28:StringExact = GuardType v9, StringExact
           v29:BoolExact = IsA v28, v24
@@ -8015,7 +8015,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Integer)
-          v28:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v28:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(String@0x1010, is_a?@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(String@0x1010)
           v32:StringExact = GuardType v9, StringExact
@@ -8048,7 +8048,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Integer)
-          v30:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v30:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Class@0x1010, ===@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
