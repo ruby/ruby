@@ -1587,7 +1587,8 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     page->freelist = slot;
     asan_lock_freelist(page);
 
-    RVALUE_AGE_SET_BITMAP(obj, 0);
+    // Should have already been reset
+    GC_ASSERT(RVALUE_AGE_GET(obj) == 0);
 
     if (RGENGC_CHECK_MODE &&
         /* obj should belong to page */
@@ -2894,6 +2895,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             page->heap->final_slots_count--;
             page->final_slots--;
             page->free_slots++;
+            RVALUE_AGE_SET_BITMAP(zombie, 0);
             heap_page_add_freeobj(objspace, page, zombie);
             page->heap->total_freed_objects++;
         }
@@ -3496,6 +3498,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     // always add free slots back to the swept pages freelist,
                     // so that if we're compacting, we can re-use the slots
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                    RVALUE_AGE_SET_BITMAP(vp, 0);
                     heap_page_add_freeobj(objspace, sweep_page, vp);
                     gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                     ctx->freed_slots++;
@@ -3516,6 +3519,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 }
                 gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                 ctx->empty_slots++;
+                RVALUE_AGE_SET_BITMAP(vp, 0);
                 heap_page_add_freeobj(objspace, sweep_page, vp);
                 break;
               case T_ZOMBIE:
@@ -4023,6 +4027,7 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
+                    RVALUE_AGE_SET_BITMAP(object, 0);
                     heap_page_add_freeobj(objspace, orig_page, object);
 
                     GC_ASSERT(RVALUE_MARKED(objspace, forwarding_object));
