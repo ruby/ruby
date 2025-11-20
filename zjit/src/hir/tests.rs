@@ -3486,7 +3486,7 @@ pub mod hir_build_tests {
      }
 
      #[test]
-     fn test_duplicated_successor() {
+     fn test_cfi_deduplicated_successors_and_predecessors() {
          let mut function = Function::new(std::ptr::null());
 
          let bb0 = function.entry_block;
