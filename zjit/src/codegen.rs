@@ -895,7 +895,7 @@ fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, val:
 }
 
 /// Emit an uncached instance variable store using the interpreter inline cache
-fn gen_set_instance_variable(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_constant_cache, val: Opnd, state: &FrameState) {
+fn gen_set_instance_variable(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry, val: Opnd, state: &FrameState) {
     gen_incr_counter(asm, Counter::dynamic_setivar_count);
     // Setting an ivar can raise FrozenError, so we need proper frame state for exception handling.
     gen_prepare_non_leaf_call(jit, asm, state);

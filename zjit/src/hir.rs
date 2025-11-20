@@ -712,7 +712,7 @@ pub enum Insn {
     /// Set `self_val`'s instance variable `id` to `val`
     SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val` using the interpreter inline cache
-    SetInstanceVariable { self_val: InsnId, id: ID, ic: *const iseq_inline_constant_cache, val: InsnId, state: InsnId },
+    SetInstanceVariable { self_val: InsnId, id: ID, ic: *const iseq_inline_iv_cache_entry, val: InsnId, state: InsnId },
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
