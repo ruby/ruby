@@ -22639,7 +22639,7 @@ static const char *
 pm_strnstr(const char *big, const char *little, size_t big_length) {
     size_t little_length = strlen(little);
 
-    for (const char *big_end = big + big_length; big < big_end; big++) {
+    for (const char *max = big + big_length - little_length; big <= max; big++) {
         if (*big == *little && memcmp(big, little, little_length) == 0) return big;
     }
 
