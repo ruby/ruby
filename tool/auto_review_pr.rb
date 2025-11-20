@@ -52,7 +52,7 @@ class AutoReviewPR
     upstream_repos.delete(nil) # exclude no-upstream files
     upstream_repos.delete('prism') if changed_files.include?('prism_compile.c') # allow prism changes in this case
     if upstream_repos.empty?
-      puts "Skipped: The PR ##{pr_number} doesn't have upstream repositories."
+      puts "111 Skipped: The PR ##{pr_number} doesn't have upstream repositories."
       return
     end
 
