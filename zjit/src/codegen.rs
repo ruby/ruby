@@ -402,6 +402,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::FixnumXor { left, right } => gen_fixnum_xor(asm, opnd!(left), opnd!(right)),
+        &Insn::FixnumLShift { left, right, state } => {
+            // We only create FixnumLShift when we know the shift amount statically and it's in [0,
+            // 63].
+            let shift_amount = function.type_of(right).fixnum_value().unwrap() as u64;
+            gen_fixnum_lshift(jit, asm, opnd!(left), shift_amount, &function.frame_state(state))
+        }
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state: _ } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
@@ -1657,6 +1663,20 @@ fn gen_fixnum_xor(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir
     // XOR and then re-tag the resulting fixnum
     let out_val = asm.xor(left, right);
     asm.add(out_val, Opnd::UImm(1))
+}
+
+/// Compile Fixnum << Fixnum
+fn gen_fixnum_lshift(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, shift_amount: u64, state: &FrameState) -> lir::Opnd {
+    // Shift amount is known statically to be in the range [0, 63]
+    assert!(shift_amount < 64);
+    let in_val = asm.sub(left, Opnd::UImm(1));  // Drop tag bit
+    let out_val = asm.lshift(in_val, shift_amount.into());
+    let unshifted = asm.rshift(out_val, shift_amount.into());
+    asm.cmp(in_val, unshifted);
+    asm.jne(side_exit(jit, state, FixnumLShiftOverflow));
+    // Re-tag the output value
+    let out_val = asm.add(out_val, 1.into());
+    out_val
 }
 
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {

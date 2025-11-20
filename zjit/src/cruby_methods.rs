@@ -238,6 +238,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, ">=", inline_integer_ge);
     annotate!(rb_cInteger, "<", inline_integer_lt);
     annotate!(rb_cInteger, "<=", inline_integer_le);
+    annotate!(rb_cInteger, "<<", inline_integer_lshift);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
@@ -508,6 +509,15 @@ fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
+}
+
+fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
+    // plausibly create a fixnum.
+    let Some(other_value) = fun.type_of(other).fixnum_value() else { return None; };
+    if other_value < 0 || other_value > 63 { return None; }
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLShift { left, right, state }, BOP_LTLT, recv, other, state)
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
