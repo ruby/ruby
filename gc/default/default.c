@@ -426,6 +426,7 @@ typedef int (*gc_compact_compare_func)(const void *l, const void *r, void *d);
 
 typedef struct rb_heap_struct {
     short slot_size;
+    bits_t slot_bits_mask;
 
     /* Basic statistics */
     size_t total_allocated_pages;
@@ -3576,9 +3577,12 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
     // Skip out of range slots at the head of the page
     int num_in_page = NUM_IN_PAGE(p);
+    bits_t slot_mask = heap->slot_bits_mask;
+
     p -= (num_in_page * BASE_SLOT_SIZE);
     bitset = ~bits[0];
     bitset &= ~(((bits_t)1 << num_in_page) - 1);
+    bitset &= slot_mask;
     if (bitset) {
         gc_sweep_plane(objspace, heap, p, bitset, ctx);
     }
@@ -3586,6 +3590,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
     for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
+        bitset &= slot_mask;
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
         }
@@ -9425,6 +9430,15 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_heap_t *heap = &heaps[i];
 
         heap->slot_size = (1 << i) * BASE_SLOT_SIZE;
+
+        static const bits_t masks[] = {
+            ~0UL,                  // i=0
+            0x5555555555555555UL, // i=1
+            0x1111111111111111UL, // i=2
+            0x0101010101010101UL, // i=3
+            0x0001000100010001UL, // i=4
+        };
+        heap->slot_bits_mask = masks[i];
 
         ccan_list_head_init(&heap->pages);
     }
