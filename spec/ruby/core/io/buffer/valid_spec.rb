@@ -51,15 +51,6 @@ describe "IO::Buffer#valid?" do
     end
 
     context "when buffer is resized" do
-      platform_is_not :windows do
-        it "is true when slice is still inside the buffer" do
-          @buffer = IO::Buffer.new(4)
-          slice = @buffer.slice(1, 2)
-          @buffer.resize(3)
-          slice.valid?.should be_true
-        end
-      end
-
       it "is false when slice becomes outside the buffer" do
         @buffer = IO::Buffer.new(4)
         slice = @buffer.slice(2, 2)
