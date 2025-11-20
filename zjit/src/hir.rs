@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -5849,7 +5849,13 @@ impl<'a> ControlFlowInfo<'a> {
             // Since ZJIT uses extended basic blocks, one must check all instructions
             // for their ability to jump to another basic block, rather than just
             // the instructions at the end of a given basic block.
-            let successors: Vec<BlockId> = block
+            //
+            // Use BTreeSet to avoid duplicates and maintain an ordering. Also
+            // `BTreeSet<BlockId>` provides conversion trivially back to an `Vec<BlockId>`.
+            // Ordering is important so that the expect tests that serialize the predecessors
+            // and successors don't fail intermittently.
+            // todo(aidenfoxivey): Use `BlockSet` in lieu of `BTreeSet<BlockId>`
+            let successors: BTreeSet<BlockId> = block
                 .insns
                 .iter()
                 .map(|&insn_id| uf.find_const(insn_id))
@@ -5867,7 +5873,8 @@ impl<'a> ControlFlowInfo<'a> {
             }
 
             // Store successors for this block.
-            successor_map.insert(block_id, successors);
+            // Convert successors from a `BTreeSet<BlockId>` to a `Vec<BlockId>`.
+            successor_map.insert(block_id, successors.iter().copied().collect());
         }
 
         Self {
