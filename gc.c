@@ -2058,6 +2058,8 @@ obj_free_object_id(VALUE obj)
 void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
+    RBIMPL_ASSUME(!RB_SPECIAL_CONST_P(obj));
+
     obj_free_object_id(obj);
 
     if (rb_obj_exivar_p(obj)) {
