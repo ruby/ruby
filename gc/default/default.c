@@ -426,6 +426,7 @@ typedef int (*gc_compact_compare_func)(const void *l, const void *r, void *d);
 
 typedef struct rb_heap_struct {
     short slot_size;
+    bits_t slot_bits_mask;
 
     /* Basic statistics */
     size_t total_allocated_pages;
@@ -3570,9 +3571,12 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     GC_ASSERT(bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT - 1 ||
                   bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
 
+    bits_t slot_mask = heap->slot_bits_mask;
+
     // Skip out of range slots at the head of the page
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
+    bitset &= slot_mask;
     if (bitset) {
         gc_sweep_plane(objspace, heap, p, bitset, ctx);
     }
@@ -3580,6 +3584,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
     for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
+        bitset &= slot_mask;
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
         }
@@ -9434,6 +9439,17 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_heap_t *heap = &heaps[i];
 
         heap->slot_size = (1 << i) * BASE_SLOT_SIZE;
+
+        // Bitmask with every (1 << i)th bit set, representing aligned slot positions
+        static const bits_t slot_bits_masks[] = {
+            ~(bits_t)0,                    // i=0: every 1st bit
+            (bits_t)0x5555555555555555ULL, // i=1: every 2nd bit
+            (bits_t)0x1111111111111111ULL, // i=2: every 4th bit
+            (bits_t)0x0101010101010101ULL, // i=3: every 8th bit
+            (bits_t)0x0001000100010001ULL, // i=4: every 16th bit
+        };
+        GC_ASSERT(i < numberof(slot_bits_masks));
+        heap->slot_bits_mask = slot_bits_masks[i];
 
         ccan_list_head_init(&heap->pages);
     }
