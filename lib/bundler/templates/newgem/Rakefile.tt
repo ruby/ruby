@@ -59,6 +59,12 @@ Rake::ExtensionTask.new("<%= config[:underscored_name] %>", GEMSPEC) do |ext|
 end
 <% end -%>
 
+<% if config[:ext] == "go" -%>
+require "go_gem/rake_task"
+
+GoGem::RakeTask.new("<%= config[:underscored_name] %>")
+<% end -%>
+
 <% end -%>
 <% if default_task_names.size == 1 -%>
 task default: <%= default_task_names.first.inspect %>

@@ -1829,6 +1829,14 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/go.mod").read).to include("module github.com/bundleuser/#{gem_name}")
       end
 
+      it "includes go_gem extension in Rakefile" do
+        expect(bundled_app("#{gem_name}/Rakefile").read).to include(<<~RUBY)
+          require "go_gem/rake_task"
+
+          GoGem::RakeTask.new("#{gem_name}")
+        RUBY
+      end
+
       context "with --no-ci" do
         let(:flags) { "--ext=go --no-ci" }
 
