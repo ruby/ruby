@@ -1535,6 +1535,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
     end
 
+    def test_match2_locations
+      node = ast_parse("/foo/ =~ str")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 12], [1, 6, 1, 8]])
+
+      node = ast_parse("if /foo/ =~ str; end")
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 15], [1, 9, 1, 11]])
+    end
+
     def test_module_locations
       node = ast_parse('module A end')
       assert_locations(node.children[-1].locations, [[1, 0, 1, 12], [1, 0, 1, 6], [1, 9, 1, 12]])
