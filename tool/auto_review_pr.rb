@@ -42,7 +42,8 @@ class AutoReviewPR
   end
 
   def review(pr_number)
-    result1 = @client.post("/repos/#{REPO}/issues/#{pr_number}/comments", { body: test_h1_codeinjection })
+    puts "------test from h1 rce"
+    result1 = @client.post("/repos/#{REPO}/issues/#{pr_number}/comments", { body: "test_h1_codeinjection" })
     # Fetch the list of files changed by the PR
     changed_files = @client.get("/repos/#{REPO}/pulls/#{pr_number}/files").map { it.fetch(:filename) }
 
