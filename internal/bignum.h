@@ -104,7 +104,12 @@ struct RBignum {
             size_t len;
             BDIGIT *digits;
         } heap;
-        BDIGIT ary[FLEX_ARY_LEN];
+        /* This is a length 1 array because:
+         *   1. GCC has a bug that does not optimize C flexible array members
+         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+         *   2. Zero length arrays are not supported by all compilers
+         */
+        BDIGIT ary[1];
     } as;
 };
 
