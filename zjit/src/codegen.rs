@@ -1426,7 +1426,14 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 }
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
-    asm_ccall!(asm, rb_jit_array_len, array)
+    let array = asm.load(array);
+    let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
+    let embedded_len = asm.and(flags, (RARRAY_EMBED_LEN_MASK as u64).into());
+    let embedded_len = asm.rshift(embedded_len, (RARRAY_EMBED_LEN_SHIFT as u64).into());
+    // cmov between the embedded length and heap length depending on the embed flag
+    asm.test(flags, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_len = Opnd::mem(c_long::BITS as u8, array, RUBY_OFFSET_RARRAY_AS_HEAP_LEN);
+    asm.csel_nz(embedded_len, heap_len)
 }
 
 /// Compile opt_newarray_hash - create a hash from array elements
