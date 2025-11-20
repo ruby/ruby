@@ -5852,6 +5852,7 @@ impl<'a> ControlFlowInfo<'a> {
             //
             // Use HashSet to avoid duplicates. Also `HashSet<BlockId>` provides conversion
             // trivially back to an `Vec<BlockId>`.
+            // todo(aidenfoxivey): Use `BlockSet` in lieu of `HashSet<BlockId>`
             let successors: HashSet<BlockId> = block
                 .insns
                 .iter()
