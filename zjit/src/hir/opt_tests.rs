@@ -3498,8 +3498,10 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
-          StoreField v6, :@foo@0x1000, v10
-          WriteBarrier v6, v10
+          v19:HeapBasicObject = GuardType v6, HeapBasicObject
+          v20:HeapBasicObject = GuardShape v19, 0x1000
+          StoreField v20, :@foo@0x1001, v10
+          WriteBarrier v20, v10
           CheckInterrupts
           Return v10
         ");
