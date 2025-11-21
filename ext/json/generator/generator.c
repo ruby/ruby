@@ -926,11 +926,6 @@ static size_t State_memsize(const void *ptr)
     return sizeof(JSON_Generator_State);
 }
 
-#ifndef HAVE_RB_EXT_RACTOR_SAFE
-#   undef RUBY_TYPED_FROZEN_SHAREABLE
-#   define RUBY_TYPED_FROZEN_SHAREABLE 0
-#endif
-
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {

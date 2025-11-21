@@ -1554,11 +1554,6 @@ static size_t JSON_ParserConfig_memsize(const void *ptr)
     return sizeof(JSON_ParserConfig);
 }
 
-#ifndef HAVE_RB_EXT_RACTOR_SAFE
-#   undef RUBY_TYPED_FROZEN_SHAREABLE
-#   define RUBY_TYPED_FROZEN_SHAREABLE 0
-#endif
-
 static const rb_data_type_t JSON_ParserConfig_type = {
     "JSON::Ext::Parser/ParserConfig",
     {
