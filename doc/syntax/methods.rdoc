@@ -100,6 +100,7 @@ operators.
 <code>/</code>   :: divide
 <code>%</code>   :: modulus division, String#%
 <code>&</code>   :: AND
+<code>|</code>   :: OR
 <code>^</code>   :: XOR (exclusive OR)
 <code>>></code>  :: right-shift
 <code><<</code>  :: left-shift, append
