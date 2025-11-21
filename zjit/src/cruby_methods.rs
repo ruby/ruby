@@ -198,6 +198,8 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
     annotate!(rb_mKernel, "===", inline_eqq);
     annotate!(rb_mKernel, "is_a?", inline_kernel_is_a_p);
+    let string_singleton = unsafe { rb_singleton_class(rb_cString) };
+    annotate!(string_singleton, "new", inline_string_new);
     annotate!(rb_cString, "bytesize", inline_string_bytesize);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -349,6 +351,16 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     None
 }
 
+fn inline_string_new(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // Just handle the `String.new` case
+    let Some(class) = fun.type_of(recv).ruby_object() else { return None; };
+    if class != unsafe { rb_cString } { return None; }
+    // TODO(max): Check that String#initialize has not been redefined and emit a PatchPoint
+    // TODO(max): Check that String#allocate has not been redefined and emit a PatchPoint
+    let result = fun.push_insn(block, hir::Insn::ObjectAllocClass { class, state });
+    Some(result)
+}
 
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {

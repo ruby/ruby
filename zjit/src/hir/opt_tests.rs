@@ -3210,9 +3210,104 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
           PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
           PatchPoint NoSingletonClass(Class@0x1038)
-          v54:BasicObject = CCallVariadic v43, :String.new@0x1040
+          v54:StringExact = ObjectAllocClass String:VALUE(0x1008)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v54
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_string_with_overridden_new() {
+        eval(r#"
+            class String
+              def self.new(*_) = "abc"
+            end
+            def test = String.new
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v43:Class[String@0x1008] = Const Value(VALUE(0x1008))
+          v13:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
+          IncrCounter complex_arg_pass_param_rest
+          v29:BasicObject = SendWithoutBlock v43, :new
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_string_with_overridden_initialize() {
+        eval("
+            class String
+              def initialize; end
+            end
+            def test = String.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v43:Class[String@0x1008] = Const Value(VALUE(0x1008))
+          v13:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v55:StringExact = ObjectAllocClass String:VALUE(0x1008)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v55
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_string_subclass() {
+        eval("
+            class C < String; end
+            def test = C.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v43:Class[C@0x1008] = Const Value(VALUE(0x1008))
+          v13:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v49:BasicObject = CCallVariadic v43, :String.new@0x1040
+          CheckInterrupts
+          Return v49
         ");
     }
 
