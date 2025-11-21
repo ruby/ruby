@@ -720,6 +720,9 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
+    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
+    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    IsA { val: InsnId, class: InsnId },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -992,6 +995,7 @@ impl Insn {
             Insn::StringGetbyteFixnum { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
+            Insn::IsA { .. } => false,
             _ => true,
         }
     }
@@ -1314,6 +1318,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
         }
     }
 }
@@ -1934,6 +1939,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &IsA { val, class } => IsA { val: find!(val), class: find!(class) },
         }
     }
 
@@ -2081,6 +2087,7 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::IsA { .. } => types::BoolExact,
         }
     }
 
@@ -3254,6 +3261,24 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
+                    Insn::IsA { val, class } => 'is_a: {
+                        let class_type = self.type_of(class);
+                        if !class_type.is_subtype(types::Class) {
+                            break 'is_a insn_id;
+                        }
+                        let Some(class_value) = class_type.ruby_object() else {
+                            break 'is_a insn_id;
+                        };
+                        let val_type = self.type_of(val);
+                        let the_class = Type::from_class_inexact(class_value);
+                        if val_type.is_subtype(the_class) {
+                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                        } else if !val_type.could_be(the_class) {
+                            self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::FixnumAdd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
@@ -3574,6 +3599,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::IsA { val, class } => {
+                worklist.push_back(val);
+                worklist.push_back(class);
+            }
         }
     }
 
@@ -4263,6 +4292,10 @@ impl Function {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
+            }
+            Insn::IsA { val, class } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)?;
+                self.assert_subtype(insn_id, class, types::Class)
             }
         }
     }
