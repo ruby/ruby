@@ -3374,6 +3374,86 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_monomorphic_definedivar_true() {
+        eval("
+            @foo = 4
+            def test = defined?(@foo)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
+          v17:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_specialize_monomorphic_definedivar_false() {
+        eval("
+            def test = defined?(@foo)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
+          v17:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_polymorphic_definedivar_false() {
+        set_call_threshold(3);
+        eval("
+            class C
+              def test = defined?(@a)
+            end
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            obj = C.new
+            obj.instance_variable_set(:@b, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact|NilClass = DefinedIvar v6, :@a
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_elide_freeze_with_frozen_hash() {
         eval("
             def test = {}.freeze

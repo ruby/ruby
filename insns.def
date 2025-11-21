@@ -745,6 +745,7 @@ definedivar
 ()
 (VALUE val)
 // attr bool leaf  = false;
+// attr bool zjit_profile = true;
 {
     val = Qnil;
     if (!UNDEF_P(vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef))) {
