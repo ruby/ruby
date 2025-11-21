@@ -81,4 +81,32 @@ RSpec.describe Bundler::UI::Shell do
       end
     end
   end
+
+  describe "threads" do
+    it "is thread safe when using with_level" do
+      stop_thr1 = false
+      stop_thr2 = false
+
+      expect(subject.level).to eq("debug")
+
+      thr1 = Thread.new do
+        subject.silence do
+          sleep(0.1) until stop_thr1
+        end
+
+        stop_thr2 = true
+      end
+
+      thr2 = Thread.new do
+        subject.silence do
+          stop_thr1 = true
+          sleep(0.1) until stop_thr2
+        end
+      end
+
+      [thr1, thr2].each(&:join)
+
+      expect(subject.level).to eq("debug")
+    end
+  end
 end

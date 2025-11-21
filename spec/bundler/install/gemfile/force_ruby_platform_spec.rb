@@ -117,7 +117,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
           platform_specific
 
         BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
       L
 
       simulate_platform "x86-darwin-100" do

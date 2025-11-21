@@ -65,6 +65,7 @@ module Bundler
       gem.rubocop
       gem.test
       gemfile
+      lockfile
       path
       shebang
       simulate_version
@@ -83,7 +84,6 @@ module Bundler
       "BUNDLE_VERSION" => "lockfile",
       "BUNDLE_LOCKFILE_CHECKSUMS" => true,
       "BUNDLE_CACHE_ALL" => true,
-      "BUNDLE_DEFAULT_CLI_COMMAND" => "cli_help",
       "BUNDLE_PLUGINS" => true,
       "BUNDLE_GLOBAL_GEM_CACHE" => false,
       "BUNDLE_UPDATE_REQUIRES_ALL_FLAG" => false,

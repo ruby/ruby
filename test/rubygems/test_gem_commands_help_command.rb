@@ -36,7 +36,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
   def test_gem_help_build
     util_gem "build" do |out, err|
-      assert_match(/-C PATH *Run as if gem build was started in <PATH>/, out)
+      assert_match(/--platform PLATFORM\s+Specify the platform of gem to build/, out)
       assert_equal "", err
     end
   end

@@ -4081,6 +4081,26 @@ assert_equal '1', %q{
   bar { }
 }
 
+# unshareable bmethod call through Method#to_proc#call
+assert_equal '1000', %q{
+  define_method(:bmethod) do
+    self
+  end
+
+  Ractor.new do
+    errors = 0
+    1000.times do
+      p = method(:bmethod).to_proc
+      begin
+        p.call
+      rescue RuntimeError
+        errors += 1
+      end
+    end
+    errors
+  end.value
+}
+
 # test for return stub lifetime issue
 assert_equal '1', %q{
   def foo(n)
@@ -5368,4 +5388,15 @@ assert_equal 'false', %{
   end
 
   RESULT.any?
+}
+
+# throw and String#dup with GC stress
+assert_equal 'foo', %{
+  GC.stress = true
+
+  def foo
+    1.times { return "foo".dup }
+  end
+
+  10.times.map { foo.dup }.last
 }

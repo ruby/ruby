@@ -629,14 +629,10 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);
     wname[len] = L'\0';
     RB_GC_GUARD(fname);
-#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__WFREOPEN_S)
-    e = _wfreopen(wname, wmode, file) ? 0 : errno;
-#else
     {
         FILE *newfp = 0;
         e = _wfreopen_s(&newfp, wname, wmode, file);
     }
-#endif
     ALLOCV_END(wtmp);
     return e;
 }

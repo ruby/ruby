@@ -21,6 +21,10 @@
 
 #undef __STRICT_ANSI__
 
+/* Visual C++ 2015 (14.0):
+ * - _MSC_VER: 1900
+ * - MSVCRT_VERSION: 140
+ */
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/io.h"
@@ -42,7 +46,7 @@
 #include <shlobj.h>
 #include <mbstring.h>
 #include <shlwapi.h>
-#if defined _MSC_VER && _MSC_VER >= 1400
+#if defined _MSC_VER
 #include <crtdbg.h>
 #include <rtcapi.h>
 #endif
@@ -64,10 +68,6 @@
 #include "ruby/internal/stdbool.h"
 #include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
-
-#if defined _MSC_VER && _MSC_VER <= 1200
-# define CharNextExA(cp, p, flags) CharNextExA((WORD)(cp), (p), (flags))
-#endif
 
 static int w32_wopen(const WCHAR *file, int oflag, int perm);
 static int w32_stati128(const char *path, struct stati128 *st, UINT cp, BOOL lstat);
@@ -113,10 +113,8 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef dup2
 #undef strdup
 
-#if RUBY_MSVCRT_VERSION >= 140
-# define _filbuf _fgetc_nolock
-# define _flsbuf _fputc_nolock
-#endif
+#define _filbuf _fgetc_nolock
+#define _flsbuf _fputc_nolock
 #define enough_to_get(n) (--(n) >= 0)
 #define enough_to_put(n) (--(n) >= 0)
 
@@ -503,11 +501,6 @@ rb_w32_special_folder(int type)
     return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 }
 
-#if defined _MSC_VER && _MSC_VER <= 1200
-/* License: Ruby's */
-#define GetSystemWindowsDirectoryW GetWindowsDirectoryW
-#endif
-
 /* License: Ruby's */
 UINT
 rb_w32_system_tmpdir(WCHAR *path, UINT len)
@@ -629,7 +622,6 @@ init_env(void)
 
 static void init_stdhandle(void);
 
-#if RUBY_MSVCRT_VERSION >= 80
 /* License: Ruby's */
 static void
 invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
@@ -639,7 +631,7 @@ invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file,
 
 int ruby_w32_rtc_error;
 
-# ifndef __MINGW32__
+#ifndef __MINGW32__
 /* License: Ruby's */
 RBIMPL_ATTR_NONNULL((5))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 5, 6)
@@ -658,7 +650,6 @@ rtc_error_handler(int e, const char *src, int line, const char *exe, const char 
     rb_write_error2(RSTRING_PTR(str), RSTRING_LEN(str));
     return 0;
 }
-# endif
 #endif
 
 static CRITICAL_SECTION select_mutex;
@@ -852,13 +843,11 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
-#if RUBY_MSVCRT_VERSION >= 80
 # ifdef __MINGW32__
 #  define _CrtSetReportMode(type,mode) ((void)0)
 #  define _RTC_SetErrorFunc(func) ((void)0)
 # endif
 static void set_pioinfo_extra(void);
-#endif
 static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
@@ -867,13 +856,10 @@ static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 void
 rb_w32_sysinit(int *argc, char ***argv)
 {
-#if RUBY_MSVCRT_VERSION >= 80
-
     _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
     _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
-#endif
     SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 
     get_version();
@@ -2413,7 +2399,6 @@ rb_w32_closedir(DIR *dirp)
     return 0;
 }
 
-#if RUBY_MSVCRT_VERSION >= 140
 typedef struct {
     union
     {
@@ -2433,14 +2418,8 @@ typedef struct {
 #define FILE_COUNT(stream) ((vcruntime_file*)stream)->_cnt
 #define FILE_READPTR(stream) ((vcruntime_file*)stream)->_ptr
 #define FILE_FILENO(stream) ((vcruntime_file*)stream)->_file
-#else
-#define FILE_COUNT(stream) stream->_cnt
-#define FILE_READPTR(stream) stream->_ptr
-#define FILE_FILENO(stream) stream->_file
-#endif
 
 /* License: Ruby's */
-#if RUBY_MSVCRT_VERSION >= 140
 typedef char lowio_text_mode;
 typedef char lowio_pipe_lookahead[3];
 
@@ -2457,32 +2436,14 @@ typedef struct {
     uint8_t dbcsBufferUsed   : 1; // Is the dbcsBuffer in use?
     char    dbcsBuffer;           // Buffer for the lead byte of DBCS when converting from DBCS to Unicode
 } ioinfo;
-#else
-typedef struct	{
-    intptr_t osfhnd;	/* underlying OS file HANDLE */
-    char osfile;	/* attributes of file (e.g., open in text mode?) */
-    char pipech;	/* one char buffer for handles opened on pipes */
-    int lockinitflag;
-    CRITICAL_SECTION lock;
-#if RUBY_MSVCRT_VERSION >= 80
-    char textmode;
-    char pipech2[2];
-#endif
-}	ioinfo;
-#endif
 
 #if !defined _CRTIMP || defined __MINGW32__
 #undef _CRTIMP
 #define _CRTIMP __declspec(dllimport)
 #endif
 
-#if RUBY_MSVCRT_VERSION >= 140
 static ioinfo ** __pioinfo = NULL;
 #define IOINFO_L2E 6
-#else
-EXTERN_C _CRTIMP ioinfo * __pioinfo[];
-#define IOINFO_L2E 5
-#endif
 static inline ioinfo* _pioinfo(int);
 
 
@@ -2492,20 +2453,18 @@ static inline ioinfo* _pioinfo(int);
 #define rb_acrt_lowio_lock_fh(i)   EnterCriticalSection(&_pioinfo(i)->lock)
 #define rb_acrt_lowio_unlock_fh(i) LeaveCriticalSection(&_pioinfo(i)->lock)
 
-#if RUBY_MSVCRT_VERSION >= 80
 static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
 
 /* License: Ruby's */
 static void
 set_pioinfo_extra(void)
 {
-#if RUBY_MSVCRT_VERSION >= 140
-# define FUNCTION_RET 0xc3 /* ret */
-# ifdef _DEBUG
-#  define UCRTBASE "ucrtbased.dll"
-# else
-#  define UCRTBASE "ucrtbase.dll"
-# endif
+#define FUNCTION_RET 0xc3 /* ret */
+#ifdef _DEBUG
+# define UCRTBASE "ucrtbased.dll"
+#else
+# define UCRTBASE "ucrtbase.dll"
+#endif
     /* get __pioinfo addr with _isatty */
     /*
      * Why Ruby depends to _pioinfo is
@@ -2640,7 +2599,6 @@ set_pioinfo_extra(void)
     __pioinfo = *(ioinfo***)(p);
 #endif
 #endif /* _M_ARM64 */
-#endif /* RUBY_MSVCRT_VERSION */
     int fd;
 
     fd = _open("NUL", O_RDONLY);
@@ -2656,9 +2614,6 @@ set_pioinfo_extra(void)
         pioinfo_extra = 0;
     }
 }
-#else
-#define pioinfo_extra 0
-#endif
 
 static inline ioinfo*
 _pioinfo(int fd)
@@ -4235,7 +4190,6 @@ socketpair(int af, int type, int protocol, int *sv)
     return 0;
 }
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1400
 /* License: Ruby's */
 static void
 str2guid(const char *str, GUID *guid)
@@ -4361,7 +4315,6 @@ freeifaddrs(struct ifaddrs *ifp)
         ifp = next;
     }
 }
-#endif
 
 #if 0 // Have never been used
 //
@@ -7592,20 +7545,6 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     return (long)reslen;
 }
 
-#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__GMTIME64_S)
-/* License: Ruby's */
-static int
-unixtime_to_filetime(time_t time, FILETIME *ft)
-{
-    ULARGE_INTEGER tmp;
-
-    tmp.QuadPart = unix_to_filetime((ULONGLONG)time);
-    ft->dwLowDateTime = tmp.LowPart;
-    ft->dwHighDateTime = tmp.HighPart;
-    return 0;
-}
-#endif
-
 /* License: Ruby's */
 static int
 timespec_to_filetime(const struct timespec *ts, FILETIME *ft)
@@ -7982,23 +7921,6 @@ rb_w32_isatty(int fd)
     return 1;
 }
 
-#if defined(_MSC_VER) && RUBY_MSVCRT_VERSION <= 60
-extern long _ftol(double);
-/* License: Ruby's */
-long
-_ftol2(double d)
-{
-    return _ftol(d);
-}
-
-/* License: Ruby's */
-long
-_ftol2_sse(double d)
-{
-    return _ftol(d);
-}
-#endif
-
 #ifndef signbit
 /* License: Ruby's */
 int
@@ -8030,68 +7952,6 @@ rb_w32_fd_is_text(int fd)
     return _osfile(fd) & FTEXT;
 }
 
-#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__GMTIME64_S)
-/* License: Ruby's */
-static int
-unixtime_to_systemtime(const time_t t, SYSTEMTIME *st)
-{
-    FILETIME ft;
-    if (unixtime_to_filetime(t, &ft)) return -1;
-    if (!FileTimeToSystemTime(&ft, st)) return -1;
-    return 0;
-}
-
-/* License: Ruby's */
-static void
-systemtime_to_tm(const SYSTEMTIME *st, struct tm *t)
-{
-    int y = st->wYear, m = st->wMonth, d = st->wDay;
-    t->tm_sec  = st->wSecond;
-    t->tm_min  = st->wMinute;
-    t->tm_hour = st->wHour;
-    t->tm_mday = st->wDay;
-    t->tm_mon  = st->wMonth - 1;
-    t->tm_year = y - 1900;
-    t->tm_wday = st->wDayOfWeek;
-    switch (m) {
-      case 1:
-        break;
-      case 2:
-        d += 31;
-        break;
-      default:
-        d += 31 + 28 + (!(y % 4) && ((y % 100) || !(y % 400)));
-        d += ((m - 3) * 153 + 2) / 5;
-        break;
-    }
-    t->tm_yday = d - 1;
-}
-
-/* License: Ruby's */
-static int
-systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *lst)
-{
-    TIME_ZONE_INFORMATION stdtz;
-    SYSTEMTIME sst;
-
-    if (!SystemTimeToTzSpecificLocalTime(tz, gst, lst)) return -1;
-    if (!tz) {
-        GetTimeZoneInformation(&stdtz);
-        tz = &stdtz;
-    }
-    if (tz->StandardBias == tz->DaylightBias) return 0;
-    if (!tz->StandardDate.wMonth) return 0;
-    if (!tz->DaylightDate.wMonth) return 0;
-    if (tz != &stdtz) stdtz = *tz;
-
-    stdtz.StandardDate.wMonth = stdtz.DaylightDate.wMonth = 0;
-    if (!SystemTimeToTzSpecificLocalTime(&stdtz, gst, &sst)) return 0;
-    if (lst->wMinute == sst.wMinute && lst->wHour == sst.wHour)
-        return 0;
-    return 1;
-}
-#endif
-
 #ifdef HAVE__GMTIME64_S
 # ifndef HAVE__LOCALTIME64_S
 /* assume same as _gmtime64_s() */
@@ -8115,17 +7975,8 @@ gmtime_r(const time_t *tp, struct tm *rp)
         errno = e;
         return NULL;
     }
-#if RUBY_MSVCRT_VERSION >= 80 || defined(HAVE__GMTIME64_S)
     e = gmtime_s(rp, tp);
     if (e != 0) goto error;
-#else
-    {
-        SYSTEMTIME st;
-        if (unixtime_to_systemtime(*tp, &st)) goto error;
-        rp->tm_isdst = 0;
-        systemtime_to_tm(&st, rp);
-    }
-#endif
     return rp;
 }
 
@@ -8139,17 +7990,8 @@ localtime_r(const time_t *tp, struct tm *rp)
         errno = e;
         return NULL;
     }
-#if RUBY_MSVCRT_VERSION >= 80 || defined(HAVE__LOCALTIME64_S)
     e = localtime_s(rp, tp);
     if (e) goto error;
-#else
-    {
-        SYSTEMTIME gst, lst;
-        if (unixtime_to_systemtime(*tp, &gst)) goto error;
-        rp->tm_isdst = systemtime_to_localtime(NULL, &gst, &lst);
-        systemtime_to_tm(&lst, rp);
-    }
-#endif
     return rp;
 }
 
@@ -8365,10 +8207,6 @@ rb_w32_set_thread_description_str(HANDLE th, VALUE name)
 }
 
 VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notimplement;
-
-#if RUBY_MSVCRT_VERSION < 120
-#include "missing/nextafter.c"
-#endif
 
 void *
 rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, rb_off_t offset)

@@ -564,6 +564,8 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **option
 end
 
 class << Tempfile
+# :stopdoc:
+
 private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|

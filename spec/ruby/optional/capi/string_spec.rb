@@ -193,7 +193,7 @@ describe "C-API String function" do
     it "returns a new String object filled with \\0 bytes" do
       lens = [4]
 
-      ruby_version_is "3.5" do
+      ruby_version_is "4.0" do
         lens << 100
       end
 
@@ -1230,7 +1230,7 @@ describe "C-API String function" do
       -> { str.upcase! }.should raise_error(RuntimeError, 'can\'t modify string; temporarily locked')
     end
 
-    ruby_version_is "3.5" do
+    ruby_version_is "4.0" do
       it "raises FrozenError if string is frozen" do
         str = -"rb_str_locktmp"
         -> { @s.rb_str_locktmp(str) }.should raise_error(FrozenError)
@@ -1254,7 +1254,7 @@ describe "C-API String function" do
       -> { @s.rb_str_unlocktmp(+"test") }.should raise_error(RuntimeError, 'temporal unlocking already unlocked string')
     end
 
-    ruby_version_is "3.5" do
+    ruby_version_is "4.0" do
       it "raises FrozenError if string is frozen" do
         str = -"rb_str_locktmp"
         -> { @s.rb_str_unlocktmp(str) }.should raise_error(FrozenError)

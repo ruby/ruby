@@ -1077,6 +1077,7 @@ static void
 die(void)
 {
 #if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    /* mingw32 declares in stdlib.h but does not provide. */
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 

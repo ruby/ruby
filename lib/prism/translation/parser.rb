@@ -84,7 +84,7 @@ module Prism
       end
 
       def version # :nodoc:
-        35
+        40
       end
 
       # The default encoding for Ruby files is UTF-8.
@@ -356,8 +356,8 @@ module Prism
           "3.3.1"
         when 34
           "3.4.0"
-        when 35
-          "3.5.0"
+        when 35, 40
+          "4.0.0"
         else
           "latest"
         end

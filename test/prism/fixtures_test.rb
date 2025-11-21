@@ -35,8 +35,8 @@ module Prism
     except << "3.3-3.3/return_in_sclass.txt"
 
     # Leaving these out until they are supported by parse.y.
-    except << "3.5/leading_logical.txt"
-    except << "3.5/endless_methods_command_call.txt"
+    except << "4.0/leading_logical.txt"
+    except << "4.0/endless_methods_command_call.txt"
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
 

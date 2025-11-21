@@ -369,7 +369,7 @@ ossl_ocspreq_get_certid(VALUE self)
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags, digest;
+    VALUE signer_cert, signer_key, certs, flags, digest, md_holder;
     OCSP_REQUEST *req;
     X509 *signer;
     EVP_PKEY *key;
@@ -384,10 +384,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     key = GetPrivPKeyPtr(signer_key);
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
-    if (NIL_P(digest))
-	md = NULL;
-    else
-	md = ossl_evp_get_digestbyname(digest);
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
     if (NIL_P(certs))
 	flg |= OCSP_NOCERTS;
     else
@@ -395,7 +392,8 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 
     ret = OCSP_request_sign(req, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if (!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret)
+        ossl_raise(eOCSPError, "OCSP_request_sign");
 
     return self;
 }
@@ -1000,7 +998,7 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
 static VALUE
 ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags, digest;
+    VALUE signer_cert, signer_key, certs, flags, digest, md_holder;
     OCSP_BASICRESP *bs;
     X509 *signer;
     EVP_PKEY *key;
@@ -1015,10 +1013,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     key = GetPrivPKeyPtr(signer_key);
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
-    if (NIL_P(digest))
-	md = NULL;
-    else
-	md = ossl_evp_get_digestbyname(digest);
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
     if (NIL_P(certs))
 	flg |= OCSP_NOCERTS;
     else
@@ -1026,7 +1021,8 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 
     ret = OCSP_basic_sign(bs, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if (!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret)
+        ossl_raise(eOCSPError, "OCSP_basic_sign");
 
     return self;
 }
@@ -1460,10 +1456,11 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
     else {
 	X509 *x509s, *x509i;
 	const EVP_MD *md;
+        VALUE md_holder;
 
 	x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
 	x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
-	md = !NIL_P(digest) ? ossl_evp_get_digestbyname(digest) : NULL;
+        md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
 
 	newid = OCSP_cert_to_id(md, x509s, x509i);
 	if (!newid)

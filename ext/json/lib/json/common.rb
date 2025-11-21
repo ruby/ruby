@@ -71,8 +71,13 @@ module JSON
             end
           when object_class
             if opts[:create_additions] != false
-              if class_name = object[JSON.create_id]
-                klass = JSON.deep_const_get(class_name)
+              if class_path = object[JSON.create_id]
+                klass = begin
+                  Object.const_get(class_path)
+                rescue NameError => e
+                  raise ArgumentError, "can't get const #{class_path}: #{e}"
+                end
+
                 if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
                   create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
@@ -145,16 +150,6 @@ module JSON
       @parser = parser
       remove_const :Parser if const_defined?(:Parser, false)
       const_set :Parser, parser
-    end
-
-    # Return the constant located at _path_. The format of _path_ has to be
-    # either ::A::B::C or A::B::C. In any case, A has to be located at the top
-    # level (absolute namespace path?). If there doesn't exist a constant at
-    # the given path, an ArgumentError is raised.
-    def deep_const_get(path) # :nodoc:
-      Object.const_get(path)
-    rescue NameError => e
-      raise ArgumentError, "can't get const #{path}: #{e}"
     end
 
     # Set the module _generator_ to be used by JSON.

@@ -32,12 +32,15 @@ struct objspace {
     unsigned long live_ractor_cache_count;
 
     pthread_mutex_t mutex;
+    rb_atomic_t mutator_blocking_count;
     bool world_stopped;
     pthread_cond_t cond_world_stopped;
     pthread_cond_t cond_world_started;
     size_t start_the_world_count;
 
     struct rb_gc_vm_context vm_context;
+
+    unsigned int fork_hook_vm_lock_lev;
 };
 
 struct MMTk_ractor_cache {
@@ -129,7 +132,9 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     struct objspace *objspace = rb_gc_get_objspace();
 
     size_t starting_gc_count = objspace->gc_count;
+    RUBY_ATOMIC_INC(objspace->mutator_blocking_count);
     int lock_lev = RB_GC_VM_LOCK();
+    RUBY_ATOMIC_DEC(objspace->mutator_blocking_count);
     int err;
     if ((err = pthread_mutex_lock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot lock objspace->mutex: %s", strerror(err));
@@ -1022,16 +1027,20 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         gc_run_finalizers(objspace);
     }
 
-    struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
-    for (size_t i = 0; i < registered_candidates.len; i++) {
-        VALUE obj = (VALUE)registered_candidates.ptr[i];
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
+        struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
+        for (size_t i = 0; i < registered_candidates.len; i++) {
+            VALUE obj = (VALUE)registered_candidates.ptr[i];
 
-        if (rb_gc_shutdown_call_finalizer_p(obj)) {
-            rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            if (rb_gc_shutdown_call_finalizer_p(obj)) {
+                rb_gc_obj_free(objspace_ptr, obj);
+                RBASIC(obj)->flags = 0;
+            }
         }
+        mmtk_free_raw_vec_of_obj_ref(registered_candidates);
     }
-    mmtk_free_raw_vec_of_obj_ref(registered_candidates);
+    RB_GC_VM_UNLOCK(lev);
 
     gc_run_finalizers(objspace);
 }
@@ -1041,13 +1050,39 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
+    struct objspace *objspace = objspace_ptr;
+
+  retry:
+    objspace->fork_hook_vm_lock_lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+
+    /* At this point, we know that all the Ractors are paused because of the
+     * rb_gc_vm_barrier above. Since rb_mmtk_block_for_gc is a barrier point,
+     * one or more Ractors could be paused there. However, mmtk_before_fork is
+     * not compatible with that because it assumes that the MMTk workers are idle,
+     * but the workers are not idle because they are busy working on a GC.
+     *
+     * This essentially implements a trylock. It will optimistically lock but will
+     * release the lock if it detects that any other Ractors are waiting in
+     * rb_mmtk_block_for_gc.
+     */
+    rb_atomic_t mutator_blocking_count = RUBY_ATOMIC_LOAD(objspace->mutator_blocking_count);
+    if (mutator_blocking_count != 0) {
+        RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
+        goto retry;
+    }
+
     mmtk_before_fork();
 }
 
 void
 rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 {
+    struct objspace *objspace = objspace_ptr;
+
     mmtk_after_fork(rb_gc_get_ractor_newobj_cache());
+
+    RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
 }
 
 // Statistics
@@ -1258,12 +1293,6 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
 
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
-}
-
-bool
-rb_gc_impl_checking_shareable(void *ptr)
-{
-    return false;
 }
 
 // GC Identification

@@ -2003,7 +2003,7 @@ iseqw_eval(VALUE self)
     if (0 == ISEQ_BODY(iseq)->iseq_size) {
         rb_raise(rb_eTypeError, "attempt to evaluate dummy InstructionSequence");
     }
-    return rb_iseq_eval(iseq, rb_current_namespace());
+    return rb_iseq_eval(iseq, rb_current_box());
 }
 
 /*

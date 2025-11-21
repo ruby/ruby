@@ -9,7 +9,7 @@ module Prism
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
       # Not yet supported.
-      "3.5/leading_logical.txt",
+      "4.0/leading_logical.txt",
 
       # Ripper incorrectly attributes the block to the keyword.
       "seattlerb/block_break.txt",
@@ -40,7 +40,7 @@ module Prism
       "3.4/circular_parameters.txt",
 
       # https://bugs.ruby-lang.org/issues/17398#note-12
-      "3.5/endless_methods_command_call.txt",
+      "4.0/endless_methods_command_call.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",

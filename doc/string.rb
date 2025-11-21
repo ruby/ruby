@@ -194,10 +194,10 @@
 #
 # _Counts_
 #
-# - #length (aliased as #size): Returns the count of characters (not bytes).
-# - #empty?: Returns whether the length of +self+ is zero.
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
+# - #empty?: Returns whether the length of +self+ is zero.
+# - #length (aliased as #size): Returns the count of characters (not bytes).
 #
 # _Substrings_
 #
@@ -322,8 +322,7 @@
 # _Substitution_
 #
 # - #dump: Returns a printable version of +self+, enclosed in double-quotes.
-# - #undump: Returns a copy of +self+ with all <tt>\xNN</tt> notations replaced by <tt>\uNNNN</tt> notations
-#   and all escaped characters unescaped.
+# - #undump: Inverse of #dump; returns a copy of +self+ with changes of the kinds made by #dump "undone."
 # - #sub: Returns a copy of +self+ with the first substring matching a given pattern
 #   replaced with a given replacement string.
 # - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
@@ -399,8 +398,10 @@
 # - #hex: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
 # - #oct: Returns the integer value of the leading characters, interpreted as octal digits.
 # - #ord: Returns the integer ordinal of the first character in +self+.
+# - #to_c: Returns the complex value of leading characters, interpreted as a complex number.
 # - #to_i: Returns the integer value of leading characters, interpreted as an integer.
 # - #to_f: Returns the floating-point value of leading characters, interpreted as a floating-point number.
+# - #to_r: Returns the rational value of leading characters, interpreted as a rational.
 #
 # <em>Strings and Symbols</em>
 #

@@ -1,0 +1,38 @@
+With a block given, calls the block with each +String+ value
+returned by successive calls to String#succ;
+the first value is +self+, the next is <tt>self.succ</tt>, and so on;
+the sequence terminates when value +other_string+ is reached;
+returns +self+:
+
+  a = []
+  'a'.upto('f') {|c| a.push(c) }
+  a # => ["a", "b", "c", "d", "e", "f"]
+
+  a = []
+  'Ж'.upto('П') {|c| a.push(c) }
+  a # => ["Ж", "З", "И", "Й", "К", "Л", "М", "Н", "О", "П"]
+
+  a = []
+  'よ'.upto('ろ') {|c| a.push(c) }
+  a # => ["よ", "ら", "り", "る", "れ", "ろ"]
+
+  a = []
+  'a8'.upto('b6') {|c| a.push(c) }
+  a # => ["a8", "a9", "b0", "b1", "b2", "b3", "b4", "b5", "b6"]
+
+If argument +exclusive+ is given as a truthy object, the last value is omitted:
+
+  a = []
+  'a'.upto('f', true) {|c| a.push(c) }
+  a # => ["a", "b", "c", "d", "e"]
+
+If +other_string+ would not be reached, does not call the block:
+
+  '25'.upto('5') {|s| fail s }
+  'aa'.upto('a') {|s| fail s }
+
+With no block given, returns a new Enumerator:
+
+  'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].

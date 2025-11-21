@@ -25,7 +25,7 @@ RSpec.describe "bundle install with groups" do
         puts ACTIVESUPPORT
       R
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- activesupport/)
     end
 
     it "installs gems with inline :groups into those groups" do
@@ -36,7 +36,7 @@ RSpec.describe "bundle install with groups" do
         puts THIN
       R
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- thin/)
     end
 
     it "sets up everything if Bundler.setup is used with no groups" do
@@ -57,7 +57,7 @@ RSpec.describe "bundle install with groups" do
         puts THIN
       RUBY
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to match(/cannot load such file -- thin/)
     end
 
     it "sets up old groups when they have previously been removed" do

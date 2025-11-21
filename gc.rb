@@ -193,7 +193,10 @@ module GC
   # - +:time+:
   #   The total time spent in garbage collections (in milliseconds).
   # - +:heap_allocated_pages+:
-  #   The total number of +:heap_eden_pages+ + +:heap_tomb_pages+.
+  #   The total number of allocated pages.
+  # - +:heap_empty_pages+:
+  # - +:heap_allocated_pages+:
+  #   The number of pages with no live objects, and that could be released to the system.
   # - +:heap_sorted_length+:
   #   The number of pages that can fit into the buffer that holds references to  all pages.
   # - +:heap_allocatable_pages+:
@@ -210,8 +213,6 @@ module GC
   #   The total number of objects marked in the last \GC.
   # - +:heap_eden_pages+:
   #   The total number of pages which contain at least one live slot.
-  # - +:heap_tomb_pages+:
-  #   The total number of pages which do not contain any live slots.
   # - +:total_allocated_pages+:
   #   The cumulative number of pages allocated since application start.
   # - +:total_freed_pages+:
@@ -374,11 +375,6 @@ module GC
   #   The number of pages in the eden heap.
   # - +:heap_eden_slots+:
   #   The total number of slots in all of the pages in the eden heap.
-  # - +:heap_tomb_pages+:
-  #   The number of pages in the tomb heap. The tomb heap only contains pages
-  #   that do not have any live objects.
-  # - +:heap_tomb_slots+:
-  #   The total number of slots in all of the pages in the tomb heap.
   # - +:total_allocated_pages+:
   #   The total number of pages that have been allocated in the heap.
   # - +:total_freed_pages+:

@@ -104,6 +104,7 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
+#[allow(unnecessary_transmutes)] // https://github.com/rust-lang/rust-bindgen/issues/2807
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
@@ -147,6 +148,7 @@ unsafe extern "C" {
     ) -> bool;
     pub fn rb_vm_set_ivar_id(obj: VALUE, idx: u32, val: VALUE) -> VALUE;
     pub fn rb_vm_setinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, val: VALUE, ic: IVC);
+    pub fn rb_vm_getinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, ic: IVC) -> VALUE;
     pub fn rb_aliased_callable_method_entry(
         me: *const rb_callable_method_entry_t,
     ) -> *const rb_callable_method_entry_t;
@@ -190,21 +192,7 @@ pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
-pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
-pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
-pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
-pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
-pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
-pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
-pub use rb_get_iseq_flags_ambiguous_param0 as get_iseq_flags_ambiguous_param0;
-pub use rb_get_iseq_flags_accepts_no_kwarg as get_iseq_flags_accepts_no_kwarg;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
-pub use rb_get_iseq_body_param_keyword as get_iseq_body_param_keyword;
-pub use rb_get_iseq_body_param_size as get_iseq_body_param_size;
-pub use rb_get_iseq_body_param_lead_num as get_iseq_body_param_lead_num;
-pub use rb_get_iseq_body_param_opt_num as get_iseq_body_param_opt_num;
-pub use rb_get_iseq_body_param_opt_table as get_iseq_body_param_opt_table;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
@@ -243,14 +231,6 @@ pub fn insn_len(opcode: usize) -> u32 {
     unsafe {
         rb_insn_len(VALUE(opcode)).try_into().unwrap()
     }
-}
-
-/// Opaque iseq type for opaque iseq pointers from vm_core.h
-/// See: <https://doc.rust-lang.org/nomicon/ffi.html#representing-opaque-structs>
-#[repr(C)]
-pub struct rb_iseq_t {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
 /// An object handle similar to VALUE in the C code. Our methods assume
@@ -312,11 +292,10 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
 }
 
 /// Index of the local variable that has a rest parameter if any
-pub fn iseq_rest_param_idx(iseq: IseqPtr) -> Option<i32> {
-    if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        Some(opt_num + lead_num)
+pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
+    // TODO(alan): replace with `params.rest_start`
+    if params.flags.has_rest() != 0 {
+        Some(params.opt_num + params.lead_num)
     } else {
         None
     }
@@ -692,6 +671,20 @@ impl VALUE {
     }
 }
 
+pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
+
+/// Extension trait to enable method calls on [`IseqPtr`]
+pub trait IseqAccess {
+    unsafe fn params<'a>(self) -> &'a IseqParameters;
+}
+
+impl IseqAccess for IseqPtr {
+    /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
+    unsafe fn params<'a>(self) -> &'a IseqParameters {
+        unsafe { &(*(*self).body).param }
+    }
+}
+
 impl From<IseqPtr> for VALUE {
     /// For `.into()` convenience
     fn from(iseq: IseqPtr) -> Self {
@@ -775,11 +768,17 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
 
-/// Produce a Ruby symbol from a Rust string slice
-pub fn rust_str_to_sym(str: &str) -> VALUE {
+/// Produce a Ruby ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
+}
+
+/// Produce a Ruby symbol from a Rust string slice
+pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
 }
 
 /// Produce an owned Rust String from a C char pointer

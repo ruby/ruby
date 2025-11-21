@@ -2350,3 +2350,23 @@ assert_equal 'ok', <<~'RUBY'
   end
   :ok
 RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  begin
+    100.times do |i|
+      Ractor.new(i) do |j|
+        1000.times do |i|
+          "#{j}-#{i}"
+        end
+        Ractor.receive
+      end
+      pid = fork { }
+      _, status = Process.waitpid2 pid
+      raise unless status.success?
+    end
+
+    :ok
+  rescue NotImplementedError
+    :ok
+  end
+RUBY

@@ -20,7 +20,7 @@ end
 
 # Up to Ruby 3.4, Set was a regular object and was dumped as such
 # by Pysch.
-# Starting from Ruby 3.5 it's a core class written in C, so we have to implement
+# Starting from Ruby 4.0 it's a core class written in C, so we have to implement
 # #encode_with / #init_with to preserve backward compatibility.
 if defined?(::Set) && Set.new.instance_variables.empty?
   class Set

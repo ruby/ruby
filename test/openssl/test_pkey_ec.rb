@@ -54,7 +54,9 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_generate
-    assert_raise(OpenSSL::PKey::ECError) { OpenSSL::PKey::EC.generate("non-existent") }
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey::EC.generate("non-existent")
+    }
     g = OpenSSL::PKey::EC::Group.new("prime256v1")
     ec = OpenSSL::PKey::EC.generate(g)
     assert_equal(true, ec.private?)
@@ -65,7 +67,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_generate_key
     ec = OpenSSL::PKey::EC.new("prime256v1")
     assert_equal false, ec.private?
-    assert_raise(OpenSSL::PKey::ECError) { ec.to_der }
+    assert_raise(OpenSSL::PKey::PKeyError) { ec.to_der }
     ec.generate_key!
     assert_equal true, ec.private?
     assert_nothing_raised { ec.to_der }
@@ -109,13 +111,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(ec_key_data) }
     else
       key4 = OpenSSL::PKey.read(ec_key_data)
-      assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+      assert_raise(OpenSSL::PKey::PKeyError) { key4.check_key }
     end
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)
       key2.private_key += 1
-      assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
+      assert_raise(OpenSSL::PKey::PKeyError) { key2.check_key }
     end
   end
 
@@ -269,7 +271,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
     exported = p256.to_pem(cipher, "abcdef\0\1")
     assert_same_ec p256, OpenSSL::PKey::EC.new(exported, "abcdef\0\1")
-    assert_raise(OpenSSL::PKey::ECError) {
+    assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey::EC.new(exported, "abcdef")
     }
   end

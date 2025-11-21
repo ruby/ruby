@@ -90,14 +90,14 @@ describe "Numbered parameters" do
     proc { _2 }.parameters.should == [[:opt, :_1], [:opt, :_2]]
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "affects binding local variables" do
       -> { _1; binding.local_variables }.call("a").should == [:_1]
       -> { _2; binding.local_variables }.call("a", "b").should == [:_1, :_2]
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "does not affect binding local variables" do
       -> { _1; binding.local_variables }.call("a").should == []
       -> { _2; binding.local_variables }.call("a", "b").should == []

@@ -3,6 +3,7 @@
 source "https://rubygems.org"
 
 gem "test-unit", "~> 3.0"
+gem "test-unit-ruby-core"
 gem "rake", "~> 13.1"
 gem "rb_sys"
 
@@ -12,6 +13,7 @@ gem "parallel", "~> 1.19"
 gem "rspec-core", "~> 3.12"
 gem "rspec-expectations", "~> 3.12"
 gem "rspec-mocks", "~> 3.12"
+gem "rubygems-generate_index", "~> 1.1"
 
 group :doc do
   gem "ronn-ng", "~> 0.10.1", platform: :ruby

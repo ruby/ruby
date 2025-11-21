@@ -1058,4 +1058,13 @@ class TestEnumerator < Test::Unit::TestCase
     enum = ary.each
     assert_equal(35.0, enum.sum)
   end
+
+  def test_to_set
+    e = Enumerator.new { it << 1 << 1 << 2 << 3 << 5 }
+    set = e.to_set
+    assert_equal(Set[1, 2, 3, 5], set)
+
+    ei = Enumerator.new(Float::INFINITY) { it << 1 << 1 << 2 << 3 << 5 }
+    assert_raise(ArgumentError) { ei.to_set }
+  end
 end

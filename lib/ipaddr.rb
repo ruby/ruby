@@ -40,6 +40,7 @@ require 'socket'
 #   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
+  # The version string
   VERSION = "1.2.7"
 
   # 32 bit mask for IPv4
@@ -353,7 +354,7 @@ class IPAddr
     _ipv4_compat?
   end
 
-  def _ipv4_compat?
+  def _ipv4_compat?             # :nodoc:
     if !ipv6? || (@addr >> 32) != 0
       return false
     end
@@ -545,6 +546,7 @@ class IPAddr
   end
 
   protected
+  # :stopdoc:
 
   def begin_addr
     @addr & @mask_addr
@@ -560,6 +562,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
   end
+  #:startdoc:
 
   # Set +@addr+, the internal stored ip address, to given +addr+. The
   # parameter +addr+ is validated using the first +family+ member,
@@ -701,6 +704,7 @@ class IPAddr
     end
   end
 
+  # :stopdoc:
   def coerce_other(other)
     case other
     when IPAddr
@@ -812,7 +816,7 @@ unless Socket.const_defined? :AF_INET6
   class << IPSocket
     private
 
-    def valid_v6?(addr)
+    def valid_v6?(addr) # :nodoc:
       case addr
       when IPAddr::RE_IPV6ADDRLIKE_FULL
         if $2

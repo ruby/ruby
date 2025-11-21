@@ -275,7 +275,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               parallel_tests
             #{checksums}
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
 
@@ -299,7 +299,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               parallel_tests
             #{checksums}
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
 
@@ -361,7 +361,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               parallel_tests
             #{checksums}
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
 
@@ -388,7 +388,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               rubocop
             #{checksums}
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
       end
@@ -425,7 +425,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               sorbet (= 0.5.10554)
 
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
 
@@ -475,7 +475,7 @@ RSpec.describe "bundle install with install-time dependencies" do
                 nokogiri
 
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
 
             gemfile <<~G
@@ -517,7 +517,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               nokogiri
 
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
 
@@ -776,7 +776,7 @@ RSpec.describe "bundle install with install-time dependencies" do
             foo
           #{checksums}
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         L
       end
     end

@@ -51,7 +51,7 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     vm->builtin_function_table = NULL;
 
     // exec
-    rb_iseq_eval(rb_iseq_check(iseq), rb_root_namespace()); // builtin functions are loaded in the root namespace
+    rb_iseq_eval(rb_iseq_check(iseq), rb_root_box()); // builtin functions are loaded in the root box
 }
 
 void

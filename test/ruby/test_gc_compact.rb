@@ -361,6 +361,22 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
+  def test_compact_objects_of_varying_sizes
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
+    begin;
+      $objects = []
+      160.times do |n|
+        obj = Class.new.new
+        n.times { |i| obj.instance_variable_set("@foo" + i.to_s, 0) }
+        $objects << obj
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+    end;
+  end
+
   def test_moving_strings_up_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 

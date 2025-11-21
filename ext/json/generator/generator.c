@@ -38,7 +38,7 @@ typedef struct JSON_Generator_StateStruct {
 
 static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
 
-static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
+static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
              sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
 
@@ -2173,10 +2173,6 @@ void Init_generator(void)
     i_to_s = rb_intern("to_s");
     i_to_json = rb_intern("to_json");
     i_new = rb_intern("new");
-    i_pack = rb_intern("pack");
-    i_unpack = rb_intern("unpack");
-    i_create_id = rb_intern("create_id");
-    i_extend = rb_intern("extend");
     i_encode = rb_intern("encode");
 
     sym_indent = ID2SYM(rb_intern("indent"));

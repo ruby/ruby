@@ -9,7 +9,7 @@ RSpec.describe "installing a gem with native extensions" do
           require "mkmf"
           name = "c_extension_bundle"
           dir_config(name)
-          raise "OMG" unless with_config("c_extension") == "hello"
+          raise ArgumentError unless with_config("c_extension") == "hello"
           create_makefile(name)
         E
 
@@ -53,7 +53,7 @@ RSpec.describe "installing a gem with native extensions" do
         require "mkmf"
         name = "c_extension_bundle"
         dir_config(name)
-        raise "OMG" unless with_config("c_extension") == "hello"
+        raise ArgumentError unless with_config("c_extension") == "hello"
         create_makefile(name)
       E
 
@@ -97,7 +97,7 @@ RSpec.describe "installing a gem with native extensions" do
             require "mkmf"
             name = "c_extension_bundle_#{n}"
             dir_config(name)
-            raise "OMG" unless with_config("c_extension_#{n}") == "#{n}"
+            raise ArgumentError unless with_config("c_extension_#{n}") == "#{n}"
             create_makefile(name)
           E
 
@@ -149,7 +149,7 @@ RSpec.describe "installing a gem with native extensions" do
         require "mkmf"
         name = "c_extension_bundle"
         dir_config(name)
-        raise "OMG" unless with_config("c_extension") == "hello" && with_config("c_extension_bundle-dir") == "hola"
+        raise ArgumentError unless with_config("c_extension") == "hello" && with_config("c_extension_bundle-dir") == "hola"
         create_makefile(name)
       E
 

@@ -47,7 +47,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
           foo (= 1.0.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -154,7 +154,7 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         bar
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<-G
@@ -182,7 +182,7 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         foo
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 end

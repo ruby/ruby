@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
 require_relative "unknown_command_spell_checker"
 
 ##

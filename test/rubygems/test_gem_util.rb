@@ -13,17 +13,6 @@ class TestGemUtil < Gem::TestCase
     end
   end
 
-  def test_silent_system
-    pend if Gem.java_platform?
-    Gem::Deprecate.skip_during do
-      out, err = capture_output do
-        Gem::Util.silent_system(*ruby_with_rubygems_in_load_path, "-e", 'puts "hello"; warn "hello"')
-      end
-      assert_empty out
-      assert_empty err
-    end
-  end
-
   def test_traverse_parents
     FileUtils.mkdir_p "a/b/c"
 

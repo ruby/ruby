@@ -52,7 +52,7 @@ module Spec
     end
 
     def self.define_compound_matcher(matcher, preconditions, &declarations)
-      raise "Must have preconditions to define a compound matcher" if preconditions.empty?
+      raise ArgumentError, "Must have preconditions to define a compound matcher" if preconditions.empty?
       define_method(matcher) do |*expected, &block_arg|
         Precondition.new(
           RSpec::Matchers::DSL::Matcher.new(matcher, declarations, self, *expected, &block_arg),

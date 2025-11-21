@@ -23,6 +23,7 @@
  */
 static VALUE cHMAC;
 static VALUE eHMACError;
+static ID id_md_holder;
 
 /*
  * Public
@@ -94,19 +95,22 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
     EVP_MD_CTX *ctx;
     EVP_PKEY *pkey;
+    const EVP_MD *md;
+    VALUE md_holder;
 
     GetHMAC(self, ctx);
     StringValue(key);
+    md = ossl_evp_md_fetch(digest, &md_holder);
     pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL,
                                         (unsigned char *)RSTRING_PTR(key),
                                         RSTRING_LENINT(key));
     if (!pkey)
         ossl_raise(eHMACError, "EVP_PKEY_new_raw_private_key");
-    if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest),
-                           NULL, pkey) != 1) {
+    if (EVP_DigestSignInit(ctx, NULL, md, NULL, pkey) != 1) {
         EVP_PKEY_free(pkey);
         ossl_raise(eHMACError, "EVP_DigestSignInit");
     }
+    rb_ivar_set(self, id_md_holder, md_holder);
     /* Decrement reference counter; EVP_MD_CTX still keeps it */
     EVP_PKEY_free(pkey);
 
@@ -300,4 +304,6 @@ Init_ossl_hmac(void)
     rb_define_method(cHMAC, "hexdigest", ossl_hmac_hexdigest, 0);
     rb_define_alias(cHMAC, "inspect", "hexdigest");
     rb_define_alias(cHMAC, "to_s", "hexdigest");
+
+    id_md_holder = rb_intern_const("EVP_MD_holder");
 }

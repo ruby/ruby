@@ -11,7 +11,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
-    EXTENSIONS = ["c", "rust"].freeze
+    EXTENSIONS = ["c", "rust", "go"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -107,7 +107,22 @@ module Bundler
       shell.say
       self.class.send(:class_options_help, shell)
     end
-    default_task(Bundler.settings[:default_cli_command])
+
+    def self.default_command(meth = nil)
+      return super if meth
+
+      default_cli_command = Bundler.settings[:default_cli_command]
+      return default_cli_command if default_cli_command
+
+      Bundler.ui.warn(<<~MSG)
+        In the next version of Bundler, running `bundle` without argument will no longer run `bundle install`.
+        Instead, the `help` command will be displayed.
+
+        If you'd like to keep the previous behaviour please run `bundle config set default_cli_command install --global`.
+      MSG
+
+      "install"
+    end
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
     class_option "retry", type: :numeric, aliases: "-r", banner: "NUM",
@@ -219,6 +234,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
+    method_option "no-lock", type: :boolean, banner: "Don't create a lockfile."
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache (removed)."
     method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."

@@ -4,8 +4,6 @@ require_relative "version"
 require_relative "rubygems_integration"
 require_relative "current_ruby"
 
-autoload :Pathname, "pathname"
-
 module Bundler
   autoload :WINDOWS, File.expand_path("constants", __dir__)
   autoload :FREEBSD, File.expand_path("constants", __dir__)
@@ -25,6 +23,9 @@ module Bundler
     end
 
     def default_lockfile
+      given = ENV["BUNDLE_LOCKFILE"]
+      return Pathname.new(given) if given && !given.empty?
+
       gemfile = default_gemfile
 
       case gemfile.basename.to_s
@@ -57,7 +58,7 @@ module Bundler
 
     def pwd
       Bundler.rubygems.ext_lock.synchronize do
-        Pathname.pwd
+        Dir.pwd
       end
     end
 
@@ -299,6 +300,7 @@ module Bundler
     def set_bundle_variables
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", bundle_bin_path
       Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
+      Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", default_lockfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
       Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__)
     end

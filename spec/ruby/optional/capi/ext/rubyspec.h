@@ -35,8 +35,8 @@
    (RUBY_API_VERSION_MAJOR == (major) && RUBY_API_VERSION_MINOR < (minor)))
 #define RUBY_VERSION_SINCE(major,minor) (!RUBY_VERSION_BEFORE(major, minor))
 
-#if RUBY_VERSION_SINCE(3, 5)
-#define RUBY_VERSION_IS_3_5
+#if RUBY_VERSION_SINCE(4, 0)
+#define RUBY_VERSION_IS_4_0
 #endif
 
 #if RUBY_VERSION_SINCE(3, 4)

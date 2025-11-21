@@ -2747,7 +2747,7 @@ fn gen_checkkeyword(
 ) -> Option<CodegenStatus> {
     // When a keyword is unspecified past index 32, a hash will be used
     // instead. This can only happen in iseqs taking more than 32 keywords.
-    if unsafe { (*get_iseq_body_param_keyword(jit.iseq)).num >= 32 } {
+    if unsafe { (*get_iseq_body_param_keyword(jit.iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap() } {
         return None;
     }
 
@@ -6168,7 +6168,7 @@ fn jit_rb_str_dup(
 
     jit_prepare_call_with_gc(jit, asm);
 
-    let recv_opnd = asm.stack_pop(1);
+    let recv_opnd = asm.stack_opnd(0);
     let recv_opnd = asm.load(recv_opnd);
 
     let shape_id_offset = unsafe { rb_shape_id_offset() };
@@ -6177,8 +6177,10 @@ fn jit_rb_str_dup(
     asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
 
     // Call rb_str_dup
-    let stack_ret = asm.stack_push(Type::CString);
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+
+    asm.stack_pop(1);
+    let stack_ret = asm.stack_push(Type::CString);
     asm.mov(stack_ret, ret_opnd);
 
     true
@@ -9330,13 +9332,6 @@ fn gen_send_general(
 
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
                             gen_counter_incr(jit, asm, Counter::send_args_splat_opt_call);
-                            return None;
-                        }
-
-                        // Optimize for single ractor mode and avoid runtime check for
-                        // "defined with an un-shareable Proc in a different Ractor"
-                        if !assume_single_ractor_mode(jit, asm) {
-                            gen_counter_incr(jit, asm, Counter::send_call_multi_ractor);
                             return None;
                         }
 

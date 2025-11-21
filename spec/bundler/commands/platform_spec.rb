@@ -227,7 +227,7 @@ G
            ruby 1.0.0p127
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "platform --ruby"
@@ -250,7 +250,7 @@ G
         DEPENDENCIES
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "platform --ruby"

@@ -47,7 +47,7 @@ module Gem::URI
     #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
     #
-    #     uri3 = Gem::URI::File.build({:path => Gem::URI::escape('/path/my file.txt')})
+    #     uri3 = Gem::URI::File.build({:path => Gem::URI::RFC2396_PARSER.escape('/path/my file.txt')})
     #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
     def self.build(args)

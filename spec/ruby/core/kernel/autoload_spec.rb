@@ -7,7 +7,9 @@ require_relative 'fixtures/classes'
 
 autoload :KSAutoloadA, "autoload_a.rb"
 autoload :KSAutoloadB, fixture(__FILE__, "autoload_b.rb")
-autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+define_autoload_KSAutoloadCallsRequire = -> {
+  autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+}
 
 def check_autoload(const)
   autoload? const
@@ -43,6 +45,7 @@ describe "Kernel#autoload" do
   end
 
   it "calls main.require(path) to load the file" do
+    define_autoload_KSAutoloadCallsRequire.call
     main = TOPLEVEL_BINDING.eval("self")
     main.should_receive(:require).with("main_autoload_not_exist.rb")
     # The constant won't be defined since require is mocked to do nothing

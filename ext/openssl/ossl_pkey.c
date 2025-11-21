@@ -814,14 +814,14 @@ VALUE
 ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 {
     EVP_PKEY *pkey;
-    VALUE cipher, pass;
+    VALUE cipher, pass, cipher_holder;
     const EVP_CIPHER *enc = NULL;
     BIO *bio;
 
     GetPKey(self, pkey);
     rb_scan_args(argc, argv, "02", &cipher, &pass);
     if (!NIL_P(cipher)) {
-	enc = ossl_evp_get_cipherbyname(cipher);
+        enc = ossl_evp_cipher_fetch(cipher, &cipher_holder);
 	pass = ossl_pem_passwd_value(pass);
     }
 
@@ -849,7 +849,7 @@ static VALUE
 do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
 {
     EVP_PKEY *pkey;
-    VALUE cipher, pass;
+    VALUE cipher, pass, cipher_holder;
     const EVP_CIPHER *enc = NULL;
     BIO *bio;
 
@@ -860,7 +860,7 @@ do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
 	 * TODO: EncryptedPrivateKeyInfo actually has more options.
 	 * Should they be exposed?
 	 */
-	enc = ossl_evp_get_cipherbyname(cipher);
+        enc = ossl_evp_cipher_fetch(cipher, &cipher_holder);
 	pass = ossl_pem_passwd_value(pass);
     }
 
@@ -1111,7 +1111,7 @@ static VALUE
 ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, data, options, sig;
+    VALUE digest, data, options, sig, md_holder;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
     EVP_PKEY_CTX *pctx;
@@ -1121,7 +1121,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
     pkey = GetPrivPKeyPtr(self);
     rb_scan_args(argc, argv, "21", &digest, &data, &options);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
 
     ctx = EVP_MD_CTX_new();
@@ -1190,7 +1190,7 @@ static VALUE
 ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, data, options;
+    VALUE digest, sig, data, options, md_holder;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
     EVP_PKEY_CTX *pctx;
@@ -1200,7 +1200,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "31", &digest, &sig, &data, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
     StringValue(data);
 
@@ -1269,7 +1269,7 @@ static VALUE
 ossl_pkey_sign_raw(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, data, options, sig;
+    VALUE digest, data, options, sig, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     size_t outlen;
@@ -1278,7 +1278,7 @@ ossl_pkey_sign_raw(int argc, VALUE *argv, VALUE self)
     GetPKey(self, pkey);
     rb_scan_args(argc, argv, "21", &digest, &data, &options);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
 
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
@@ -1345,7 +1345,7 @@ static VALUE
 ossl_pkey_verify_raw(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, data, options;
+    VALUE digest, sig, data, options, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     int state, ret;
@@ -1354,7 +1354,7 @@ ossl_pkey_verify_raw(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "31", &digest, &sig, &data, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
     StringValue(data);
 
@@ -1408,7 +1408,7 @@ static VALUE
 ossl_pkey_verify_recover(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, options, out;
+    VALUE digest, sig, options, out, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     int state;
@@ -1418,7 +1418,7 @@ ossl_pkey_verify_recover(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "21", &digest, &sig, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
 
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
@@ -1718,7 +1718,16 @@ Init_ossl_pkey(void)
 
     /* Document-class: OpenSSL::PKey::PKeyError
      *
-     *Raised when errors occur during PKey#sign or PKey#verify.
+     * Raised when errors occur during PKey#sign or PKey#verify.
+     *
+     * Before version 4.0.0, OpenSSL::PKey::PKeyError had the following
+     * subclasses. These subclasses have been removed and the constants are
+     * now defined as aliases of OpenSSL::PKey::PKeyError.
+     *
+     * * OpenSSL::PKey::DHError
+     * * OpenSSL::PKey::DSAError
+     * * OpenSSL::PKey::ECError
+     * * OpenSSL::PKey::RSAError
      */
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 

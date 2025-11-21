@@ -86,6 +86,7 @@ ruby_version_is "3.3" do
 
       ModuleSpecs::SetTemporaryNameSpec::M = m
       m::N.name.should == "ModuleSpecs::SetTemporaryNameSpec::M::N"
+      ModuleSpecs::SetTemporaryNameSpec.send :remove_const, :M
     end
 
     it "can update the name when assigned to a constant" do
@@ -108,7 +109,7 @@ ruby_version_is "3.3" do
       m.name.should == "fake_name_2"
     end
 
-    ruby_bug "#21094", ""..."3.5" do
+    ruby_bug "#21094", ""..."4.0" do
       it "also updates a name of a nested module" do
         m = Module.new
         m::N = Module.new

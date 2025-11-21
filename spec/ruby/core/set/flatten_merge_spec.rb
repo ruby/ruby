@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Set#flatten_merge" do
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "is protected" do
       Set.should have_protected_instance_method("flatten_merge")
     end

@@ -102,14 +102,14 @@ module Gem::Net   #:nodoc:
   #
   # == URIs
   #
-  # On the internet, a URI
+  # On the internet, a Gem::URI
   # ({Universal Resource Identifier}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier])
   # is a string that identifies a particular resource.
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
-  # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
+  # see {Gem::URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem/URI/Generic.html] object
-  # represents an internet URI.
+  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem::URI/Generic.html] object
+  # represents an internet Gem::URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
   #
@@ -144,7 +144,7 @@ module Gem::Net   #:nodoc:
   #
   # === Queries
   #
-  # A host-specific query adds name/value pairs to the URI:
+  # A host-specific query adds name/value pairs to the Gem::URI:
   #
   #   _uri = uri.dup
   #   params = {userId: 1, completed: false}
@@ -154,7 +154,7 @@ module Gem::Net   #:nodoc:
   #
   # === Fragments
   #
-  # A {URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
+  # A {Gem::URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
   # in \Gem::Net::HTTP;
   # the same data is returned, regardless of whether a fragment is included.
   #
@@ -327,9 +327,9 @@ module Gem::Net   #:nodoc:
   #     res = http.request(req)
   #   end
   #
-  # Or if you simply want to make a GET request, you may pass in a URI
+  # Or if you simply want to make a GET request, you may pass in a Gem::URI
   # object that has an \HTTPS URL. \Gem::Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' :URI scheme:
+  # verification if the Gem::URI object has a 'https' Gem::URI scheme:
   #
   #   uri # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com/>
   #   Gem::Net::HTTP.get(uri)
@@ -374,7 +374,7 @@ module Gem::Net   #:nodoc:
   #
   # When environment variable <tt>'http_proxy'</tt>
   # is set to a \Gem::URI string,
-  # the returned +http+ will have the server at that URI as its proxy;
+  # the returned +http+ will have the server at that Gem::URI as its proxy;
   # note that the \Gem::URI string must have a protocol
   # such as <tt>'http'</tt> or <tt>'https'</tt>:
   #
@@ -724,7 +724,7 @@ module Gem::Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.6.0"
+    VERSION = "0.7.0"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -790,7 +790,7 @@ module Gem::Net   #:nodoc:
     #     "completed": false
     #   }
     #
-    # With URI object +uri+ and optional hash argument +headers+:
+    # With Gem::URI object +uri+ and optional hash argument +headers+:
     #
     #   uri = Gem::URI('https://jsonplaceholder.typicode.com/todos/1')
     #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
@@ -863,7 +863,7 @@ module Gem::Net   #:nodoc:
 
     # Posts data to a host; returns a Gem::Net::HTTPResponse object.
     #
-    # Argument +url+ must be a URI;
+    # Argument +url+ must be a Gem::URI;
     # argument +data+ must be a hash:
     #
     #   _uri = uri.dup
@@ -1529,7 +1529,7 @@ module Gem::Net   #:nodoc:
       :verify_hostname,
     ] # :nodoc:
 
-    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym } # :nodoc:
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
@@ -1860,7 +1860,7 @@ module Gem::Net   #:nodoc:
       @proxy_from_env
     end
 
-    # The proxy URI determined from the environment for this connection.
+    # The proxy Gem::URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
       return if @proxy_uri == false
       @proxy_uri ||= Gem::URI::HTTP.new(

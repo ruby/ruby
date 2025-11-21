@@ -7,7 +7,6 @@
 #++
 
 require_relative "vendored_tsort"
-require_relative "deprecate"
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the

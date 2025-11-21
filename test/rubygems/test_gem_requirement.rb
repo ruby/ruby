@@ -137,11 +137,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raise ArgumentError do
-      Gem::Deprecate.skip_during do
-        assert_satisfied_by nil, r
-      end
-    end
+    assert_satisfied_by nil, r
   end
 
   def test_satisfied_by_eh_blank
@@ -151,11 +147,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raise ArgumentError do
-      Gem::Deprecate.skip_during do
-        assert_satisfied_by nil, r
-      end
-    end
+    refute_satisfied_by nil, r
   end
 
   def test_satisfied_by_eh_equal
@@ -165,11 +157,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raise ArgumentError do
-      Gem::Deprecate.skip_during do
-        assert_satisfied_by nil, r
-      end
-    end
+    refute_satisfied_by nil, r
   end
 
   def test_satisfied_by_eh_gt
@@ -179,9 +167,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raise ArgumentError do
-      r.satisfied_by? nil
-    end
+    refute_satisfied_by nil, r
   end
 
   def test_satisfied_by_eh_gte

@@ -44,12 +44,14 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
   old_gemfile = ENV["BUNDLE_GEMFILE"]
+  old_lockfile = ENV["BUNDLE_LOCKFILE"]
 
   Bundler.unbundle_env!
 
   begin
     Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
     Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
+    Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", "Gemfile.lock"
 
     Bundler::Plugin.gemfile_install(&gemfile) if Bundler.settings[:plugins]
     builder = Bundler::Dsl.new
@@ -93,6 +95,12 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
       ENV["BUNDLE_GEMFILE"] = old_gemfile
     else
       ENV["BUNDLE_GEMFILE"] = ""
+    end
+
+    if old_lockfile
+      ENV["BUNDLE_LOCKFILE"] = old_lockfile
+    else
+      ENV["BUNDLE_LOCKFILE"] = ""
     end
   end
 end

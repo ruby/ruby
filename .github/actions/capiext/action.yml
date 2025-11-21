@@ -27,11 +27,11 @@ runs:
         eval $(grep -e '^arch *=' -e '^ruby_version *=' -e '^DLEXT *=' Makefile |
             sed 's/ *= */=/')
         case "${ruby_version}" in
-        *+*) key=capiexts-${arch}-${ruby_version};;
+        *+*) key=capiexts-${arch}-${ruby_version}-${{ hashFiles('src/spec/ruby/optional/capi/ext/*.[ch]') }};;
         *)   key=;;
         esac
         echo version=$ruby_version >> $GITHUB_OUTPUT
-        echo key=$key >> $GITHUB_OUTPUT
+        echo key="$key" >> $GITHUB_OUTPUT
         echo DLEXT=$DLEXT >> $GITHUB_OUTPUT
       working-directory: ${{ inputs.builddir }}
 

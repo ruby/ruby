@@ -183,7 +183,9 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal('{"1":2}', json)
     s = JSON.state.new
     assert s.check_circular?
-    assert s[:check_circular?]
+    assert_deprecated_warning(/JSON::State/) do
+      assert s[:check_circular?]
+    end
     h = { 1=>2 }
     h[3] = h
     assert_raise(JSON::NestingError) {  generate(h) }
@@ -193,7 +195,9 @@ class JSONGeneratorTest < Test::Unit::TestCase
     a << a
     assert_raise(JSON::NestingError) {  generate(a, s) }
     assert s.check_circular?
-    assert s[:check_circular?]
+    assert_deprecated_warning(/JSON::State/) do
+      assert s[:check_circular?]
+    end
   end
 
   def test_falsy_state
@@ -375,28 +379,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_hash_likeness_set_symbol
-    state = JSON.state.new
-    assert_equal nil, state[:foo]
-    assert_equal nil.class, state[:foo].class
-    assert_equal nil, state['foo']
-    state[:foo] = :bar
-    assert_equal :bar, state[:foo]
-    assert_equal :bar, state['foo']
-    state_hash = state.to_hash
-    assert_kind_of Hash, state_hash
-    assert_equal :bar, state_hash[:foo]
+    assert_deprecated_warning(/JSON::State/) do
+      state = JSON.state.new
+      assert_equal nil, state[:foo]
+      assert_equal nil.class, state[:foo].class
+      assert_equal nil, state['foo']
+      state[:foo] = :bar
+      assert_equal :bar, state[:foo]
+      assert_equal :bar, state['foo']
+      state_hash = state.to_hash
+      assert_kind_of Hash, state_hash
+      assert_equal :bar, state_hash[:foo]
+    end
   end
 
   def test_hash_likeness_set_string
-    state = JSON.state.new
-    assert_equal nil, state[:foo]
-    assert_equal nil, state['foo']
-    state['foo'] = :bar
-    assert_equal :bar, state[:foo]
-    assert_equal :bar, state['foo']
-    state_hash = state.to_hash
-    assert_kind_of Hash, state_hash
-    assert_equal :bar, state_hash[:foo]
+    assert_deprecated_warning(/JSON::State/) do
+      state = JSON.state.new
+      assert_equal nil, state[:foo]
+      assert_equal nil, state['foo']
+      state['foo'] = :bar
+      assert_equal :bar, state[:foo]
+      assert_equal :bar, state['foo']
+      state_hash = state.to_hash
+      assert_kind_of Hash, state_hash
+      assert_equal :bar, state_hash[:foo]
+    end
   end
 
   def test_json_state_to_h_roundtrip

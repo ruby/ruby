@@ -22,7 +22,7 @@
     GetPKeyDSA((obj), _pkey); \
     (dsa) = EVP_PKEY_get0_DSA(_pkey); \
     if ((dsa) == NULL) \
-        ossl_raise(eDSAError, "failed to get DSA from EVP_PKEY"); \
+        ossl_raise(ePKeyError, "failed to get DSA from EVP_PKEY"); \
 } while (0)
 
 static inline int
@@ -43,7 +43,6 @@ DSA_PRIVATE(VALUE obj, OSSL_3_const DSA *dsa)
  * Classes
  */
 VALUE cDSA;
-static VALUE eDSAError;
 
 /*
  * Private
@@ -105,7 +104,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 #else
         dsa = DSA_new();
         if (!dsa)
-            ossl_raise(eDSAError, "DSA_new");
+            ossl_raise(ePKeyError, "DSA_new");
         goto legacy;
 #endif
     }
@@ -125,12 +124,12 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     pkey = ossl_pkey_read_generic(in, pass);
     BIO_free(in);
     if (!pkey)
-        ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
+        ossl_raise(ePKeyError, "Neither PUB key nor PRIV key");
 
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_DSA) {
         EVP_PKEY_free(pkey);
-        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(ePKeyError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -141,7 +140,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa) != 1) {
         EVP_PKEY_free(pkey);
         DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DSA");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -164,13 +163,13 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
                               (d2i_of_void *)d2i_DSAPrivateKey,
                               (char *)dsa);
     if (!dsa_new)
-	ossl_raise(eDSAError, "ASN1_dup");
+	ossl_raise(ePKeyError, "ASN1_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa_new) != 1) {
         EVP_PKEY_free(pkey);
         DSA_free(dsa_new);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DSA");
     }
     RTYPEDDATA_DATA(self) = pkey;
 
@@ -340,14 +339,6 @@ Init_ossl_dsa(void)
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 #endif
-
-    /* Document-class: OpenSSL::PKey::DSAError
-     *
-     * Generic exception that is raised if an operation on a DSA PKey
-     * fails unexpectedly or in case an instantiation of an instance of DSA
-     * fails due to non-conformant input data.
-     */
-    eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
 
     /* Document-class: OpenSSL::PKey::DSA
      *

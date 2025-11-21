@@ -271,7 +271,7 @@ static VALUE
 pkcs12_set_mac(int argc, VALUE *argv, VALUE self)
 {
     PKCS12 *p12;
-    VALUE pass, salt, iter, md_name;
+    VALUE pass, salt, iter, md_name, md_holder = Qnil;
     int iter_i = 0;
     const EVP_MD *md_type = NULL;
 
@@ -285,7 +285,7 @@ pkcs12_set_mac(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(iter))
         iter_i = NUM2INT(iter);
     if (!NIL_P(md_name))
-        md_type = ossl_evp_get_digestbyname(md_name);
+        md_type = ossl_evp_md_fetch(md_name, &md_holder);
 
     if (!PKCS12_set_mac(p12, RSTRING_PTR(pass), RSTRING_LENINT(pass),
                         !NIL_P(salt) ? (unsigned char *)RSTRING_PTR(salt) : NULL,

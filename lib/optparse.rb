@@ -427,7 +427,8 @@ require 'set' unless defined?(Set)
 class OptionParser
   # The version string
   VERSION = "0.8.0"
-  Version = VERSION # for compatibility
+  # An alias for compatibility
+  Version = VERSION
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze

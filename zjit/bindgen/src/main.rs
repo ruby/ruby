@@ -101,6 +101,7 @@ fn main() {
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_var("rb_invalid_shape_id")
+        .allowlist_var("VM_KW_SPECIFIED_BITS_MAX")
         .allowlist_var("SHAPE_ID_NUM_BITS")
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
@@ -399,8 +400,7 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
-        .allowlist_function("rb_vm_get_block_handler")
-        .allowlist_function("rb_vm_block_handler_type")
+        .allowlist_function("rb_vm_get_untagged_block_handler")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")
@@ -424,8 +424,12 @@ fn main() {
         .blocklist_type("VALUE")
         .blocklist_type("ID")
 
-        .opaque_type("rb_iseq_t")
-        .blocklist_type("rb_iseq_t")
+        // Avoid binding to stuff we don't use
+        .blocklist_item("rb_thread_struct.*")
+        .opaque_type("rb_thread_struct.*")
+        .blocklist_item("iseq_inline_storage_entry_.*")
+        .opaque_type("iseq_inline_storage_entry")
+        .opaque_type("iseq_compile_data")
 
         // Finish the builder and generate the bindings.
         .generate()

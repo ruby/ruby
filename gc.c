@@ -180,13 +180,13 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
-#if USE_MODULAR_GC
 void *
 rb_gc_get_ractor_newobj_cache(void)
 {
     return GET_RACTOR()->newobj_cache;
 }
 
+#if USE_MODULAR_GC
 void
 rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 {
@@ -621,7 +621,6 @@ typedef struct gc_function_map {
     void (*config_set)(void *objspace_ptr, VALUE hash);
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
-    bool (*checking_shareable)(void *objspace_ptr);
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
     size_t (*obj_slot_size)(VALUE obj);
@@ -796,7 +795,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(config_get);
     load_modular_gc_func(stress_set);
     load_modular_gc_func(stress_get);
-    load_modular_gc_func(checking_shareable);
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(obj_slot_size);
@@ -877,7 +875,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_config_set rb_gc_functions.config_set
 # define rb_gc_impl_stress_set rb_gc_functions.stress_set
 # define rb_gc_impl_stress_get rb_gc_functions.stress_get
-# define rb_gc_impl_checking_shareable rb_gc_functions.checking_shareable
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
@@ -1228,7 +1225,7 @@ struct classext_foreach_args {
 };
 
 static void
-classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+classext_free(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
@@ -1236,7 +1233,7 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 }
 
 static void
-classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
@@ -1918,8 +1915,8 @@ object_id(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        // With namespaces, classes and modules have different fields
-        // in different namespaces, so we cannot store the object id
+        // With Ruby Box, classes and modules have different fields
+        // in different boxes, so we cannot store the object id
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
@@ -2271,7 +2268,7 @@ rb_gc_after_updating_jit_code(void)
 }
 
 static void
-classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_memsize(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     size_t *size = (size_t *)arg;
     size_t s = 0;
@@ -2295,7 +2292,7 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
 }
 
 static void
-classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     size_t *size = (size_t *)arg;
     size_t array_size;
@@ -2808,19 +2805,12 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
     }
 }
 
-bool
-rb_gc_checking_shareable(void)
-{
-    return rb_gc_impl_checking_shareable(rb_gc_get_objspace());
-}
-
-
 static enum rb_id_table_iterator_result
 mark_const_entry_i(VALUE value, void *objspace)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
 
-    if (!rb_gc_impl_checking_shareable(objspace)) {
+    if (!rb_gc_checking_shareable()) {
         gc_mark_internal(ce->value);
         gc_mark_internal(ce->file); // TODO: ce->file should be shareable?
     }
@@ -3075,7 +3065,7 @@ struct gc_mark_classext_foreach_arg {
 };
 
 static void
-gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
@@ -3085,7 +3075,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
 
-    if (!rb_gc_impl_checking_shareable(objspace)) {
+    if (!rb_gc_checking_shareable()) {
         // unshareable
         gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
     }
@@ -3100,7 +3090,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
 }
 
 static void
-gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
@@ -3156,7 +3146,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
         if (FL_TEST_RAW(obj, FL_SINGLETON) &&
-            !rb_gc_impl_checking_shareable(objspace)) {
+            !rb_gc_checking_shareable()) {
             gc_mark_internal(RCLASS_ATTACHED_OBJECT(obj));
         }
         // Continue to the shared T_CLASS/T_MODULE
@@ -3327,18 +3317,40 @@ rb_gc_obj_optimal_size(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
-        return rb_ary_size_as_embedded(obj);
+        {
+            size_t size = rb_ary_size_as_embedded(obj);
+            if (rb_gc_size_allocatable_p(size)) {
+                return size;
+            }
+            else {
+                return sizeof(struct RArray);
+            }
+        }
 
       case T_OBJECT:
         if (rb_shape_obj_too_complex_p(obj)) {
             return sizeof(struct RObject);
         }
         else {
-            return rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
+            size_t size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
+            if (rb_gc_size_allocatable_p(size)) {
+                return size;
+            }
+            else {
+                return sizeof(struct RObject);
+            }
         }
 
       case T_STRING:
-        return rb_str_size_as_embedded(obj);
+        {
+            size_t size = rb_str_size_as_embedded(obj);
+            if (rb_gc_size_allocatable_p(size)) {
+                return size;
+            }
+            else {
+                return sizeof(struct RString);
+            }
+        }
 
       case T_HASH:
         return sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));
@@ -3774,7 +3786,7 @@ update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_icla
 }
 
 static void
-update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+update_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     rb_objspace_t *objspace = args->objspace;
@@ -3798,7 +3810,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 }
 
 static void
-update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
+update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     rb_objspace_t *objspace = args->objspace;
@@ -5439,6 +5451,68 @@ void
 rb_gc_rp(VALUE obj)
 {
     rp(obj);
+}
+
+struct check_shareable_data {
+    VALUE parent;
+    long err_count;
+};
+
+static void
+check_shareable_i(const VALUE child, void *ptr)
+{
+    struct check_shareable_data *data = (struct check_shareable_data *)ptr;
+
+    if (!rb_gc_obj_shareable_p(child)) {
+        fprintf(stderr, "(a) ");
+        rb_gc_rp(data->parent);
+        fprintf(stderr, "(b) ");
+        rb_gc_rp(child);
+        fprintf(stderr, "check_shareable_i: shareable (a) -> unshareable (b)\n");
+
+        data->err_count++;
+        rb_bug("!! violate shareable constraint !!");
+    }
+}
+
+static bool gc_checking_shareable = false;
+
+static void
+gc_verify_shareable(void *objspace, VALUE obj, void *data)
+{
+    // while gc_checking_shareable is true,
+    // other Ractors should not run the GC, until the flag is not local.
+    // TODO: remove VM locking if the flag is Ractor local
+
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
+        gc_checking_shareable = true;
+        rb_objspace_reachable_objects_from(obj, check_shareable_i, (void *)data);
+        gc_checking_shareable = false;
+    }
+    RB_GC_VM_UNLOCK(lev);
+}
+
+// TODO: only one level (non-recursive)
+void
+rb_gc_verify_shareable(VALUE obj)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    struct check_shareable_data data = {
+        .parent = obj,
+        .err_count = 0,
+    };
+    gc_verify_shareable(objspace, obj, &data);
+
+    if (data.err_count > 0) {
+        rb_bug("rb_gc_verify_shareable");
+    }
+}
+
+bool
+rb_gc_checking_shareable(void)
+{
+    return gc_checking_shareable;
 }
 
 /*

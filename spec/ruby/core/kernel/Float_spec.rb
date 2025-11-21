@@ -231,6 +231,10 @@ describe :kernel_float, shared: true do
       @object.send(:Float, "0x0f").should == 15.0
     end
 
+    it "interprets negative hex value" do
+      @object.send(:Float, "-0x10").should == -16.0
+    end
+
     it "accepts embedded _ if the number does not contain a-f" do
       @object.send(:Float, "0x1_0").should == 16.0
     end

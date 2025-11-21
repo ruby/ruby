@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-<%- if config[:ext] == 'c' || config[:ext] == 'rust' -%>
+<%- if %w(c rust go).include?(config[:ext]) -%>
   spec.extensions = ["ext/<%= config[:underscored_name] %>/extconf.rb"]
 <%- end -%>
 
@@ -46,6 +46,9 @@ Gem::Specification.new do |spec|
   # spec.add_dependency "example-gem", "~> 1.0"
 <%- if config[:ext] == 'rust' -%>
   spec.add_dependency "rb_sys", "~> 0.9.91"
+<%- end -%>
+<%- if config[:ext] == 'go' -%>
+  spec.add_dependency "go_gem", "~> 0.2"
 <%- end -%>
 
   # For more information and examples about making a new gem, check out our

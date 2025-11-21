@@ -14005,8 +14005,6 @@ ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
     header->iseq_list_size = (unsigned int)size;
 }
 
-#define IBF_OBJECT_INTERNAL FL_PROMOTED0
-
 /*
  * Binary format
  * - ibf_object_header

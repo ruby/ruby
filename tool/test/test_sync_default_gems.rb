@@ -319,6 +319,9 @@ module Test_SyncDefaultGems
     end
 
     def test_squash_merge
+      if RUBY_PLATFORM =~ /s390x/
+        omit("git 2.43.0 bug on s390x ubuntu 24.04: BUG: log-tree.c:1058: did a remerge diff without remerge_objdir?!?")
+      end
       #   2---.   <- branch
       #  /     \
       # 1---3---3'<- merge commit with conflict resolution
@@ -345,6 +348,21 @@ module Test_SyncDefaultGems
       subject, body = top_commit("src", format: "%B").split("\n\n", 2)
       assert_equal("[ruby/#@target] Merge commit", subject, out)
       assert_includes(body, "Commit in branch", out)
+    end
+
+    def test_no_upstream_file
+      group = SyncDefaultGems::Repository.group(%w[
+          lib/un.rb
+          lib/unicode_normalize/normalize.rb
+          lib/unicode_normalize/tables.rb
+          lib/net/https.rb
+      ])
+      expected = {
+        "un" => %w[lib/un.rb],
+        "net-http" => %w[lib/net/https.rb],
+        nil => %w[lib/unicode_normalize/normalize.rb lib/unicode_normalize/tables.rb],
+      }
+      assert_equal(expected, group)
     end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 end

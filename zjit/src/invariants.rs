@@ -2,7 +2,8 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
+use crate::payload::IseqPayload;
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -33,6 +34,17 @@ struct PatchPoint {
     side_exit_ptr: CodePtr,
     /// Raw pointer to the ISEQ payload
     payload_ptr: *mut IseqPayload,
+}
+
+impl PatchPoint {
+    /// PatchPointer constructor
+    fn new(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) -> PatchPoint {
+        Self {
+            patch_point_ptr,
+            side_exit_ptr,
+            payload_ptr,
+        }
+    }
 }
 
 /// Used to track all of the various block references that contain assumptions
@@ -197,11 +209,11 @@ pub fn track_no_ep_escape_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint {
+    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
@@ -218,11 +230,11 @@ pub fn track_bop_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint {
+    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Track a patch point for a callable method entry (CME).
@@ -233,11 +245,11 @@ pub fn track_cme_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint {
+    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Track a patch point for each constant name in a constant path assumption.
@@ -256,11 +268,11 @@ pub fn track_stable_constant_names_assumption(
             break;
         }
 
-        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint {
+        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint::new(
             patch_point_ptr,
             side_exit_ptr,
             payload_ptr,
-        });
+        ));
 
         idx += 1;
     }
@@ -274,11 +286,11 @@ pub fn track_no_singleton_class_assumption(
     payload_ptr: *mut IseqPayload,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint {
+    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
@@ -329,11 +341,11 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 /// Track the JIT code that assumes that the interpreter is running with only one ractor
 pub fn track_single_ractor_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
     let invariants = ZJITState::get_invariants();
-    invariants.single_ractor_patch_points.insert(PatchPoint {
+    invariants.single_ractor_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 /// Callback for when Ruby is about to spawn a ractor. In that case we need to
@@ -358,16 +370,16 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
 
 pub fn track_no_trace_point_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_trace_point_patch_points.insert(PatchPoint {
+    invariants.no_trace_point_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         payload_ptr,
-    });
+    ));
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_tracing_invalidate_all() {
-    use crate::gc::{get_or_create_iseq_payload, IseqStatus};
+    use crate::payload::{get_or_create_iseq_payload, IseqStatus};
     use crate::cruby::{for_each_iseq, rb_iseq_reset_jit_func};
 
     if !zjit_enabled_p() {

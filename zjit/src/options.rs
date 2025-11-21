@@ -45,7 +45,7 @@ pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: NumProfiles,
 
-    /// Enable YJIT statsitics
+    /// Enable ZJIT statistics
     pub stats: bool,
 
     /// Print stats on exit (when stats is also true)
@@ -53,6 +53,10 @@ pub struct Options {
 
     /// Enable debug logging
     pub debug: bool,
+
+    // Whether to enable JIT at boot. This option prevents other
+    // ZJIT tuning options from enabling ZJIT at boot.
+    pub disable: bool,
 
     /// Turn off the HIR optimizer
     pub disable_hir_opt: bool,
@@ -65,6 +69,9 @@ pub struct Options {
 
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
+
+    /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
+    pub dump_hir_iongraph: bool,
 
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
@@ -97,10 +104,12 @@ impl Default for Options {
             stats: false,
             print_stats: false,
             debug: false,
+            disable: false,
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: None,
+            dump_hir_iongraph: false,
             dump_lir: None,
             dump_disasm: false,
             trace_side_exits: None,
@@ -123,6 +132,8 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
     ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
+    ("--zjit-disable",
+                     "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
@@ -175,7 +186,7 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::scratch_split,
 ];
 
-/// Mamximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
+/// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
 /// We set 1TiB just to avoid overflow. We could make it smaller.
 const MAX_MEM_MIB: usize = 1024 * 1024;
 
@@ -319,6 +330,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("debug", "") => options.debug = true,
 
+        ("disable", "") => options.disable = true,
+
         ("disable-hir-opt", "") => options.disable_hir_opt = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
@@ -343,6 +356,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.dump_hir_graphviz = Some(opt_val);
         }
+
+        ("dump-hir-iongraph", "") => options.dump_hir_iongraph = true,
 
         ("dump-lir", "") => options.dump_lir = Some(HashSet::from([DumpLIR::init])),
         ("dump-lir", filters) => {
@@ -442,15 +457,13 @@ macro_rules! debug {
 }
 pub(crate) use debug;
 
-/// Return Qtrue if --zjit* has been specified. For the `#with_jit` hook,
-/// this becomes Qtrue before ZJIT is actually initialized and enabled.
+/// Return true if ZJIT should be enabled at boot.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
-    // If any --zjit* option is specified, OPTIONS becomes Some.
-    if unsafe { OPTIONS.is_some() } {
-        Qtrue
+pub extern "C" fn rb_zjit_option_enable() -> bool {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| !opts.disable) {
+        true
     } else {
-        Qfalse
+        false
     }
 }
 

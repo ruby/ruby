@@ -73,10 +73,62 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)}
-    contents = buffer.get_string
+    assert_equal File.size(__FILE__), buffer.size
 
+    contents = buffer.get_string
     assert_include contents, "Hello World"
     assert_equal Encoding::BINARY, contents.encoding
+  end
+
+  def test_file_mapped_with_size
+    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, 30, 0, IO::Buffer::READONLY)}
+    assert_equal 30, buffer.size
+
+    contents = buffer.get_string
+    assert_equal "# frozen_string_literal: false", contents
+    assert_equal Encoding::BINARY, contents.encoding
+  end
+
+  def test_file_mapped_size_too_large
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 200_000, 0, IO::Buffer::READONLY)}
+    end
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, File.size(__FILE__) + 1, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_size_just_enough
+    File.open(__FILE__) {|file|
+      assert_equal File.size(__FILE__), IO::Buffer.map(file, File.size(__FILE__), 0, IO::Buffer::READONLY).size
+    }
+  end
+
+  def test_file_mapped_offset_too_large
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+    end
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_zero_size
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 0, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_negative_size
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, -10, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_negative_offset
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, -1, IO::Buffer::READONLY)}
+    end
   end
 
   def test_file_mapped_invalid

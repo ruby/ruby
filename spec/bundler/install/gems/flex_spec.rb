@@ -289,7 +289,7 @@ RSpec.describe "bundle flex_install" do
           myrack-obama
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -317,7 +317,7 @@ RSpec.describe "bundle flex_install" do
           myrack-obama
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -358,7 +358,7 @@ RSpec.describe "bundle flex_install" do
           myrack
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end

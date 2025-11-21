@@ -1,0 +1,4 @@
+1 => a | b
+     ^ variable capture in alternative pattern
+         ^ variable capture in alternative pattern
+

@@ -21,7 +21,7 @@ gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 16.0.0
+UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -46,7 +46,7 @@ RUN_OPTS      = --disable-gems
 
 GIT_IN_SRC    = $(GIT) -C $(srcdir)
 GIT_LOG       = $(GIT_IN_SRC) log --no-show-signature
-GIT_LOG_FORMAT = $(GIT_LOG) --pretty=format:
+GIT_LOG_FORMAT = $(GIT_LOG) "--pretty=format:"
 
 # GITPULLOPTIONS = --no-tags
 
@@ -119,6 +119,7 @@ COMMONOBJS    = \
 		array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
+		box.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		compile.$(OBJEXT) \
@@ -146,7 +147,6 @@ COMMONOBJS    = \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
 		memory_view.$(OBJEXT) \
-		namespace.$(OBJEXT) \
 		node.$(OBJEXT) \
 		node_dump.$(OBJEXT) \
 		numeric.$(OBJEXT) \
@@ -624,15 +624,20 @@ html: PHONY main srcs-doc
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
+RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
+	-x ^lib/bundler -x ^lib/rubygems \
+	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
+
 rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) .
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
 undocumented: PHONY main srcs-doc
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) . | \
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
-	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | sort
+	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | \
+	sort -t: -k1,1 -k2n,2
 
 RDOCBENCHOUT=/tmp/rdocbench
 
@@ -1715,7 +1720,7 @@ UNICODE_UCD_EMOJI_DOWNLOAD = \
 UNICODE_EMOJI_DOWNLOAD = \
 	$(UNICODE_DOWNLOADER) \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
-	    -p emoji/$(UNICODE_EMOJI_VERSION)
+	    -p $(UNICODE_VERSION)/emoji
 
 update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...

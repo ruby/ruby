@@ -103,14 +103,14 @@ describe "Hash.[]" do
     HashSpecs::MyInitializerHash[Hash[1, 2]].should be_an_instance_of(HashSpecs::MyInitializerHash)
   end
 
-  it "removes the default value" do
+  it "does not retain the default value" do
     hash = Hash.new(1)
     Hash[hash].default.should be_nil
     hash[:a] = 1
     Hash[hash].default.should be_nil
   end
 
-  it "removes the default_proc" do
+  it "does not retain the default_proc" do
     hash = Hash.new { |h, k| h[k] = [] }
     Hash[hash].default_proc.should be_nil
     hash[:a] = 1
@@ -118,10 +118,11 @@ describe "Hash.[]" do
   end
 
   ruby_version_is '3.3' do
-    it "does not retain compare_by_identity_flag" do
-      hash = {}.compare_by_identity
+    it "does not retain compare_by_identity flag" do
+      hash = { a: 1 }.compare_by_identity
       Hash[hash].compare_by_identity?.should == false
-      hash[:a] = 1
+
+      hash = {}.compare_by_identity
       Hash[hash].compare_by_identity?.should == false
     end
   end

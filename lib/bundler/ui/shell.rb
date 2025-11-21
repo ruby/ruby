@@ -17,6 +17,7 @@ module Bundler
         @level = ENV["DEBUG"] ? "debug" : "info"
         @warning_history = []
         @output_stream = :stdout
+        @thread_safe_logger_key = "logger_level_#{object_id}"
       end
 
       def add_color(string, *color)
@@ -97,11 +98,13 @@ module Bundler
       end
 
       def level(name = nil)
-        return @level unless name
+        current_level = Thread.current.thread_variable_get(@thread_safe_logger_key) || @level
+        return current_level unless name
+
         unless index = LEVELS.index(name)
           raise "#{name.inspect} is not a valid level"
         end
-        index <= LEVELS.index(@level)
+        index <= LEVELS.index(current_level)
       end
 
       def output_stream=(symbol)
@@ -167,12 +170,13 @@ module Bundler
         end * "\n"
       end
 
-      def with_level(level)
-        original = @level
-        @level = level
+      def with_level(desired_level)
+        old_level = level
+        Thread.current.thread_variable_set(@thread_safe_logger_key, desired_level)
+
         yield
       ensure
-        @level = original
+        Thread.current.thread_variable_set(@thread_safe_logger_key, old_level)
       end
 
       def with_output_stream(symbol)

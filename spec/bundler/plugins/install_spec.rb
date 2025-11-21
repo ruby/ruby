@@ -168,7 +168,7 @@ RSpec.describe "bundler plugin install" do
       build_repo2 do
         build_plugin "chaplin" do |s|
           s.write "plugins.rb", <<-RUBY
-            raise "I got you man"
+            raise RuntimeError, "threw exception on load"
           RUBY
         end
       end

@@ -432,7 +432,7 @@ module Prism
         1
       when /\A3\.4(\.\d+)?\z/
         2
-      when /\A3\.5(\.\d+)?\z/
+      when /\A3\.5(\.\d+)?\z/, /\A4\.0(\.\d+)?\z/
         3
       else
         if current

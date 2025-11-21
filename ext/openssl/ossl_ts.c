@@ -1155,9 +1155,14 @@ ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, time_t *sec, long *usec)
 }
 
 static VALUE
-ossl_evp_get_digestbyname_i(VALUE arg)
+ossl_evp_md_fetch_i(VALUE args_)
 {
-    return (VALUE)ossl_evp_get_digestbyname(arg);
+    VALUE *args = (VALUE *)args_, md_holder;
+    const EVP_MD *md;
+
+    md = ossl_evp_md_fetch(args[1], &md_holder);
+    rb_ary_push(args[0], md_holder);
+    return (VALUE)md;
 }
 
 static VALUE
@@ -1193,7 +1198,8 @@ ossl_obj2bio_i(VALUE arg)
 static VALUE
 ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
 {
-    VALUE serial_number, def_policy_id, gen_time, additional_certs, allowed_digests;
+    VALUE serial_number, def_policy_id, gen_time, additional_certs,
+          allowed_digests, allowed_digests_tmp = Qnil;
     VALUE str;
     STACK_OF(X509) *inter_certs;
     VALUE tsresp, ret = Qnil;
@@ -1270,16 +1276,18 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
 
     allowed_digests = ossl_tsfac_get_allowed_digests(self);
     if (rb_obj_is_kind_of(allowed_digests, rb_cArray)) {
-        int i;
-        VALUE rbmd;
-        const EVP_MD *md;
-
-        for (i = 0; i < RARRAY_LEN(allowed_digests); i++) {
-            rbmd = rb_ary_entry(allowed_digests, i);
-            md = (const EVP_MD *)rb_protect(ossl_evp_get_digestbyname_i, rbmd, &status);
+        allowed_digests_tmp = rb_ary_new_capa(RARRAY_LEN(allowed_digests));
+        for (long i = 0; i < RARRAY_LEN(allowed_digests); i++) {
+            VALUE args[] = {
+                allowed_digests_tmp,
+                rb_ary_entry(allowed_digests, i),
+            };
+            const EVP_MD *md = (const EVP_MD *)rb_protect(ossl_evp_md_fetch_i,
+                                                          (VALUE)args, &status);
             if (status)
                 goto end;
-            TS_RESP_CTX_add_md(ctx, md);
+            if (!TS_RESP_CTX_add_md(ctx, md))
+                goto end;
         }
     }
 
@@ -1293,6 +1301,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
 
     response = TS_RESP_create_response(ctx, req_bio);
     BIO_free(req_bio);
+    RB_GC_GUARD(allowed_digests_tmp);
 
     if (!response) {
         err_msg = "Error during response generation";

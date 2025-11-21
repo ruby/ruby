@@ -5,7 +5,7 @@ description: >-
 inputs:
   tag:
     required: false
-    default: clang-18
+    default: clang-20
     description: >-
       container image tag to use in this run.
 

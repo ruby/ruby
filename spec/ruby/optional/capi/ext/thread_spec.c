@@ -166,7 +166,7 @@ static VALUE thread_spec_ruby_native_thread_p_new_thread(VALUE self) {
 #endif
 }
 
-#ifdef RUBY_VERSION_IS_3_5
+#ifdef RUBY_VERSION_IS_4_0
 static VALUE thread_spec_ruby_thread_has_gvl_p(VALUE self) {
   return ruby_thread_has_gvl_p() ? Qtrue : Qfalse;
 }
@@ -185,7 +185,7 @@ void Init_thread_spec(void) {
   rb_define_method(cls,  "rb_thread_create", thread_spec_rb_thread_create, 2);
   rb_define_method(cls,  "ruby_native_thread_p", thread_spec_ruby_native_thread_p, 0);
   rb_define_method(cls,  "ruby_native_thread_p_new_thread", thread_spec_ruby_native_thread_p_new_thread, 0);
-#ifdef RUBY_VERSION_IS_3_5
+#ifdef RUBY_VERSION_IS_4_0
   rb_define_method(cls,  "ruby_thread_has_gvl_p", thread_spec_ruby_thread_has_gvl_p, 0);
 #endif
 }

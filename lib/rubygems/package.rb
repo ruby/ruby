@@ -642,6 +642,8 @@ EOM
     raise Gem::Package::FormatError.new e.message, @gem
   end
 
+  private
+
   ##
   # Verifies the +checksums+ against the +digests+.  This check is not
   # cryptographically secure.  Missing checksums are ignored.

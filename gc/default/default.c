@@ -491,7 +491,6 @@ typedef struct rb_objspace {
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
         unsigned int measure_gc : 1;
-        unsigned int check_shareable : 1;
     } flags;
 
     rb_event_flag_t hook_events;
@@ -1460,13 +1459,6 @@ RVALUE_WHITE_P(rb_objspace_t *objspace, VALUE obj)
 }
 
 bool
-rb_gc_impl_checking_shareable(void *objspace_ptr)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-    return objspace->flags.check_shareable;
-}
-
-bool
 rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
@@ -2224,6 +2216,17 @@ rb_gc_impl_size_allocatable_p(size_t size)
 }
 
 static const size_t ALLOCATED_COUNT_STEP = 1024;
+static void
+ractor_cache_flush_count(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache)
+{
+    for (int heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
+        rb_ractor_newobj_heap_cache_t *heap_cache = &cache->heap_caches[heap_idx];
+
+        rb_heap_t *heap = &heaps[heap_idx];
+        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
+        heap_cache->allocated_objects_count = 0;
+    }
+}
 
 static inline VALUE
 ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache,
@@ -2248,19 +2251,11 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
         rb_asan_unpoison_object(obj, true);
         heap_cache->freelist = p->next;
 
-        if (rb_gc_multi_ractor_p()) {
-            heap_cache->allocated_objects_count++;
-            rb_heap_t *heap = &heaps[heap_idx];
-            if (heap_cache->allocated_objects_count >= ALLOCATED_COUNT_STEP) {
-                RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
-                heap_cache->allocated_objects_count = 0;
-            }
-        }
-        else {
-            rb_heap_t *heap = &heaps[heap_idx];
-            heap->total_allocated_objects++;
-            GC_ASSERT(heap->total_slots >=
-                    (heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count));
+        heap_cache->allocated_objects_count++;
+        rb_heap_t *heap = &heaps[heap_idx];
+        if (heap_cache->allocated_objects_count >= ALLOCATED_COUNT_STEP) {
+            RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
+            heap_cache->allocated_objects_count = 0;
         }
 
 #if RGENGC_CHECK_MODE
@@ -4980,55 +4975,6 @@ check_children_i(const VALUE child, void *ptr)
     }
 }
 
-static void
-check_shareable_i(const VALUE child, void *ptr)
-{
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
-
-    if (!rb_gc_obj_shareable_p(child)) {
-        fprintf(stderr, "(a) ");
-        rb_gc_rp(data->parent);
-        fprintf(stderr, "(b) ");
-        rb_gc_rp(child);
-        fprintf(stderr, "check_shareable_i: shareable (a) -> unshareable (b)\n");
-
-        data->err_count++;
-        rb_bug("!! violate shareable constraint !!");
-    }
-}
-
-static void
-gc_verify_shareable(rb_objspace_t *objspace, VALUE obj, void *data)
-{
-    // while objspace->flags.check_shareable is true,
-    // other Ractors should not run the GC, until the flag is not local.
-    // TODO: remove VM locking if the flag is Ractor local
-
-    unsigned int lev = RB_GC_VM_LOCK();
-    {
-        objspace->flags.check_shareable = true;
-        rb_objspace_reachable_objects_from(obj, check_shareable_i, (void *)data);
-        objspace->flags.check_shareable = false;
-    }
-    RB_GC_VM_UNLOCK(lev);
-}
-
-// TODO: only one level (non-recursive)
-void
-rb_gc_verify_shareable(VALUE obj)
-{
-    rb_objspace_t *objspace = rb_gc_get_objspace();
-    struct verify_internal_consistency_struct data = {
-        .parent = obj,
-        .err_count = 0,
-    };
-    gc_verify_shareable(objspace, obj, &data);
-
-    if (data.err_count > 0) {
-        rb_bug("rb_gc_verify_shareable");
-    }
-}
-
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                               struct verify_internal_consistency_struct *data)
@@ -5061,7 +5007,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 }
 
                 if (!is_marking(objspace) && rb_gc_obj_shareable_p(obj)) {
-                    gc_verify_shareable(objspace, obj, data);
+                    rb_gc_verify_shareable(obj);
                 }
 
                 if (is_incremental_marking(objspace)) {
@@ -5228,6 +5174,8 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
     gc_verify_heap_pages(objspace);
 
     /* check counters */
+
+    ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
 
     if (!is_lazy_sweeping(objspace) &&
             !finalizing &&
@@ -5541,10 +5489,9 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_heap_t *src_pool, VALUE 
         return src_pool;
     }
 
-    size_t idx = 0;
-    if (rb_gc_impl_size_allocatable_p(obj_size)) {
-        idx = heap_idx_for_size(obj_size);
-    }
+    GC_ASSERT(rb_gc_impl_size_allocatable_p(obj_size));
+
+    size_t idx = heap_idx_for_size(obj_size);
 
     return &heaps[idx];
 }
@@ -6716,7 +6663,6 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     gc_enter_count(event);
     if (RB_UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
-    GC_ASSERT(!objspace->flags.check_shareable);
 
     during_gc = TRUE;
     RUBY_DEBUG_LOG("%s (%s)",gc_enter_event_cstr(event), gc_current_status(objspace));
@@ -6730,7 +6676,6 @@ static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
-    GC_ASSERT(!objspace->flags.check_shareable);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
@@ -7570,6 +7515,8 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 
     setup_gc_stat_symbols();
 
+    ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
+
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         hash = hash_or_sym;
     }
@@ -7652,6 +7599,9 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 
 enum gc_stat_heap_sym {
     gc_stat_heap_sym_slot_size,
+    gc_stat_heap_sym_heap_live_slots,
+    gc_stat_heap_sym_heap_free_slots,
+    gc_stat_heap_sym_heap_final_slots,
     gc_stat_heap_sym_heap_eden_pages,
     gc_stat_heap_sym_heap_eden_slots,
     gc_stat_heap_sym_total_allocated_pages,
@@ -7670,6 +7620,9 @@ setup_gc_stat_heap_symbols(void)
     if (gc_stat_heap_symbols[0] == 0) {
 #define S(s) gc_stat_heap_symbols[gc_stat_heap_sym_##s] = ID2SYM(rb_intern_const(#s))
         S(slot_size);
+        S(heap_live_slots);
+        S(heap_free_slots);
+        S(heap_final_slots);
         S(heap_eden_pages);
         S(heap_eden_slots);
         S(total_allocated_pages);
@@ -7691,6 +7644,9 @@ stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
         rb_hash_aset(hash, gc_stat_heap_symbols[gc_stat_heap_sym_##name], SIZET2NUM(attr));
 
     SET(slot_size, heap->slot_size);
+    SET(heap_live_slots, heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count);
+    SET(heap_free_slots, heap->total_slots - (heap->total_allocated_objects - heap->total_freed_objects));
+    SET(heap_final_slots, heap->final_slots_count);
     SET(heap_eden_pages, heap->total_pages);
     SET(heap_eden_slots, heap->total_slots);
     SET(total_allocated_pages, heap->total_allocated_pages);
@@ -7712,6 +7668,8 @@ VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = objspace_ptr;
+
+    ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
 
     setup_gc_stat_heap_symbols();
 

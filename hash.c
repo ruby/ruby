@@ -492,37 +492,6 @@ RHASH_AR_TABLE_BOUND(VALUE h)
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
 
-void
-rb_hash_dump(VALUE hash)
-{
-    rb_obj_info_dump(hash);
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
-
-        fprintf(stderr, "  size:%u bound:%u\n",
-                RHASH_AR_TABLE_SIZE(hash), bound);
-
-        for (i=0; i<bound; i++) {
-            st_data_t k, v;
-
-            if (!ar_cleared_entry(hash, i)) {
-                char b1[0x100], b2[0x100];
-                ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-                k = pair->key;
-                v = pair->val;
-                fprintf(stderr, "  %d key:%s val:%s hint:%02x\n", i,
-                        rb_raw_obj_info(b1, 0x100, k),
-                        rb_raw_obj_info(b2, 0x100, v),
-                        ar_hint(hash, i));
-            }
-            else {
-                fprintf(stderr, "  %d empty\n", i);
-            }
-        }
-    }
-}
-
 static VALUE
 hash_verify_(VALUE hash, const char *file, int line)
 {

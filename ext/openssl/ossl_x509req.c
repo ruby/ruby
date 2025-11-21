@@ -312,17 +312,14 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
     X509_REQ *req;
     EVP_PKEY *pkey;
     const EVP_MD *md;
+    VALUE md_holder;
 
     GetX509Req(self, req);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    if (NIL_P(digest)) {
-        md = NULL; /* needed for some key types, e.g. Ed25519 */
-    } else {
-        md = ossl_evp_get_digestbyname(digest);
-    }
-    if (!X509_REQ_sign(req, pkey, md)) {
-	ossl_raise(eX509ReqError, NULL);
-    }
+    /* NULL needed for some key types, e.g. Ed25519 */
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
+    if (!X509_REQ_sign(req, pkey, md))
+        ossl_raise(eX509ReqError, "X509_REQ_sign");
 
     return self;
 }

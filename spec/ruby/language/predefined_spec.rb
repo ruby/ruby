@@ -687,7 +687,7 @@ describe "Predefined global $/" do
     $VERBOSE = @verbose
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "can be assigned a String" do
       str = +"abc"
       $/ = str
@@ -695,7 +695,7 @@ describe "Predefined global $/" do
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "makes a new frozen String from the assigned String" do
       string_subclass = Class.new(String)
       str = string_subclass.new("abc")
@@ -763,7 +763,7 @@ describe "Predefined global $-0" do
     $VERBOSE = @verbose
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "can be assigned a String" do
       str = +"abc"
       $-0 = str
@@ -771,7 +771,7 @@ describe "Predefined global $-0" do
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "makes a new frozen String from the assigned String" do
       string_subclass = Class.new(String)
       str = string_subclass.new("abc")

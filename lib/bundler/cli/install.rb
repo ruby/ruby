@@ -44,6 +44,7 @@ module Bundler
       # (rather than some optimizations we perform at app runtime).
       definition = Bundler.definition(strict: true)
       definition.validate_runtime!
+      definition.lockfile = false if options["no-lock"]
 
       installer = Installer.install(Bundler.root, definition, options)
 

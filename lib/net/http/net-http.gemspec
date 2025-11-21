@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{HTTP client api for Ruby.}
   spec.description   = %q{HTTP client api for Ruby.}
   spec.homepage      = "https://github.com/ruby/net-http"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.7.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["changelog_uri"] = spec.homepage + "/releases"
@@ -30,11 +30,10 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z 2>#{IO::NULL}`.split("\x0").reject { |f| f.match(%r{\A(?:(?:test|spec|features)/|\.git)}) }
-  end
+  excludes = %W[/.git* /bin /test /*file /#{File.basename(__FILE__)}]
+  spec.files = IO.popen(%W[git -C #{__dir__} ls-files -z --] + excludes.map {|e| ":^#{e}"}, &:read).split("\x0")
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "uri"
+  spec.add_dependency "uri", ">= 0.11.1"
 end

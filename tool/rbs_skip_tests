@@ -73,6 +73,8 @@ test_iconv(JSONSingletonTest)
 test_recurse_proc(JSONInstanceTest)
 test_recurse_proc(JSONSingletonTest)
 
+test_deep_const_get(JSONSingletonTest)
+
 CGITest CGI is retired
 CGISingletonTest CGI is retired
 

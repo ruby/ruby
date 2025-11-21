@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
 .SH "SYNOPSIS"
-\fBbundle install\fR [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-prefer\-local] [\-\-quiet] [\-\-retry=NUMBER] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG]
+\fBbundle install\fR [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-lock] [\-\-prefer\-local] [\-\-quiet] [\-\-retry=NUMBER] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG]
 .SH "DESCRIPTION"
 Install the gems specified in your Gemfile(5)\. If this is the first time you run bundle install (and a \fBGemfile\.lock\fR does not exist), Bundler will fetch all remote sources, resolve dependencies and install all needed gems\.
 .P
@@ -33,6 +33,11 @@ Force using locally installed gems, or gems already present in Rubygems' cache o
 .TP
 \fB\-\-no\-cache\fR
 Do not update the cache in \fBvendor/cache\fR with the newly bundled gems\. This does not remove any gems in the cache but keeps the newly bundled gems from being cached during the install\.
+.TP
+\fB\-\-no\-lock\fR
+Do not create a lockfile\. Useful if you want to install dependencies but not lock versions of gems\. Recommended for library development, and other situations where the code is expected to work with a range of dependency versions\.
+.IP
+This has the same effect as using \fBlockfile false\fR in the Gemfile\. See gemfile(5) for more information\.
 .TP
 \fB\-\-quiet\fR
 Do not print progress information to the standard output\.

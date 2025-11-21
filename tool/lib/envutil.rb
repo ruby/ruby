@@ -104,9 +104,11 @@ module EnvUtil
     else
       return unless dpid
       [[timeout, :TERM], [reprieve, :KILL]].find do |t, sig|
-        return EnvUtil.timeout(t) {Process.wait(dpid)}
-      rescue Timeout::Error
-        Process.kill(sig, dpid)
+        begin
+          return EnvUtil.timeout(t) {Process.wait(dpid)}
+        rescue Timeout::Error
+          Process.kill(sig, dpid)
+        end
       end
       true
     end
@@ -277,7 +279,7 @@ module EnvUtil
   module_function :invoke_ruby
 
   def current_parser
-    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
+    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z\[\] ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
     features&.split&.include?("+PRISM") ? "prism" : "parse.y"
   end
   module_function :current_parser

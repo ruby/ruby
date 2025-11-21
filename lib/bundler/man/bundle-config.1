@@ -145,6 +145,9 @@ Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init
 \fBjobs\fR (\fBBUNDLE_JOBS\fR)
 The number of gems Bundler can install in parallel\. Defaults to the number of available processors\.
 .TP
+\fBlockfile\fR (\fBBUNDLE_LOCKFILE\fR)
+The path to the lockfile that bundler should use\. By default, Bundler adds \fB\.lock\fR to the end of the \fBgemfile\fR entry\. Can be set to \fBfalse\fR in the Gemfile to disable lockfile creation entirely (see gemfile(5))\.
+.TP
 \fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR)
 Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\. Defaults to true\.
 .TP

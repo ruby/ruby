@@ -29,7 +29,7 @@ describe "Kernel#inspect" do
     obj.inspect.should be_kind_of(String)
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "calls #instance_variables_to_inspect private method to know which variables to display" do
       obj = Object.new
       obj.instance_eval do

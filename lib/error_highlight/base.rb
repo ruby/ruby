@@ -913,7 +913,7 @@ module ErrorHighlight
     #       ^^^
     def prism_spot_def_for_name
       location = @node.name_loc
-      location = location.join(@node.operator_loc) if @node.operator_loc
+      location = @node.operator_loc.join(location) if @node.operator_loc
       prism_location(location)
     end
 

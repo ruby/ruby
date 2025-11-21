@@ -1,4 +1,4 @@
-# NEWS for Ruby 3.5.0
+# NEWS for Ruby 4.0.0
 
 This document is a list of user-visible feature changes
 since the **3.4.0** release, except for bug fixes.
@@ -55,6 +55,9 @@ Note: We're only listing outstanding class updates.
 
         [[Feature #21219]]
 
+    * A deprecated behavior, process creation by `Kernel#open` with a
+      leading `|`, was removed.  [[Feature #19630]]
+
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
@@ -65,6 +68,9 @@ Note: We're only listing outstanding class updates.
 
     * `IO.select` accepts `Float::INFINITY` as a timeout argument.
       [[Feature #20610]]
+
+    * A deprecated behavior, process creation by `IO` class methods
+      with a leading `|`, was removed.  [[Feature #19630]]
 
 * Math
 
@@ -128,8 +134,8 @@ Note: We're only listing outstanding class updates.
 
 * String
 
-    * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
-      [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
+    * Update Unicode to Version 17.0.0 and Emoji Version 17.0.
+      [[Feature #19908]][[Feature #20724]][[Feature #21275]] (also applies to Regexp)
 
 * Thread
 
@@ -164,7 +170,7 @@ The following bundled gems are promoted from default gems.
 * rdoc 6.15.1
 * win32ole 1.9.2
 * irb 1.15.3
-* reline 0.6.2
+* reline 0.6.3
 * readline 0.0.4
 * fiddle 1.1.8
 
@@ -180,27 +186,27 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.0.dev
-* bundler 4.0.0.dev
+* RubyGems 4.0.0.beta1
+* bundler 4.0.0.beta1
 * date 3.5.0
 * digest 3.2.1
 * english 0.8.1
-* erb 5.1.3
+* erb 6.0.0
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
-* io-wait 0.3.3
-* json 2.15.2
-* net-http 0.7.0
+* io-wait 0.4.0.dev
+* json 2.16.0
+* net-http 0.8.0
 * openssl 4.0.0.pre
 * optparse 0.8.0
 * pp 0.6.3
 * prism 1.6.0
 * psych 5.2.6
 * resolv 0.6.3
-* stringio 3.1.8.dev
+* stringio 3.1.9.dev
 * strscan 3.1.6.dev
 * timeout 0.4.4
 * uri 1.1.1
@@ -212,7 +218,7 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
-* minitest 5.26.0
+* minitest 5.26.2
 * power_assert 3.0.1
 * rake 13.3.1
 * test-unit 3.7.1
@@ -308,8 +314,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 * ZJIT
     * Add an experimental method-based JIT compiler.
       Use `--enable-zjit` on `configure` to enable the `--zjit` support.
-    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
-      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
+    * As of Ruby 4.0.0-preview1, ZJIT is not yet ready for speeding up most benchmarks.
+      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 4.0 release.
 * RJIT
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
@@ -317,6 +323,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
+[Feature #19630]: https://bugs.ruby-lang.org/issues/19630
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724

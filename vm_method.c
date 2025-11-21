@@ -384,7 +384,7 @@ struct invalidate_callable_method_entry_foreach_arg {
 };
 
 static void
-invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE namespace, void *data)
+invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
 {
     st_data_t me;
     struct invalidate_callable_method_entry_foreach_arg *arg = (struct invalidate_callable_method_entry_foreach_arg *)data;
@@ -563,6 +563,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+    xfree(ccs);
     return ID_TABLE_DELETE;
 }
 
@@ -1089,7 +1090,7 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def->type = type;
     def->original_id = mid;
     def->method_serial = (uintptr_t)RUBY_ATOMIC_FETCH_ADD(method_serial, 1);
-    def->ns = rb_current_namespace();
+    def->box = rb_current_box();
     return def;
 }
 
@@ -2005,7 +2006,12 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         tmp_me = me->def->body.refined.orig_me;
         if (tmp_me) {
-            if (defined_class_ptr) *defined_class_ptr = tmp_me->defined_class;
+            if (!tmp_me->defined_class) {
+                VM_ASSERT_TYPE(tmp_me->owner, T_MODULE);
+            }
+            else if (defined_class_ptr) {
+                *defined_class_ptr = tmp_me->defined_class;
+            }
             return tmp_me;
         }
 

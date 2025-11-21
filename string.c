@@ -612,6 +612,10 @@ rb_gc_free_fstring(VALUE obj)
 {
     ASSERT_vm_locking_with_barrier();
 
+    RUBY_ASSERT(FL_TEST(obj, RSTRING_FSTR));
+    RUBY_ASSERT(OBJ_FROZEN(obj));
+    RUBY_ASSERT(!FL_TEST(obj, STR_SHARED));
+
     rb_concurrent_set_delete_by_identity(fstring_table_obj, obj);
 
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
@@ -1554,7 +1558,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
      * allocated. If the string is shared then the shared root must be
      * embedded, so we want to create a copy. If the string is a shared root
      * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -1931,8 +1935,8 @@ str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
     long len = RSTRING_LEN(str);
 
     RUBY_ASSERT(STR_EMBED_P(dup));
-    RUBY_ASSERT(str_embed_capa(dup) >= len + 1);
-    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
+    RUBY_ASSERT(str_embed_capa(dup) >= len + TERM_LEN(str));
+    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + TERM_LEN(str));
     STR_SET_LEN(dup, RSTRING_LEN(str));
     return str_duplicate_setup_encoding(str, dup, flags);
 }
@@ -5459,33 +5463,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    upto(other_string, exclusive = false) {|string| ... } -> self
  *    upto(other_string, exclusive = false) -> new_enumerator
  *
- *  With a block given, calls the block with each +String+ value
- *  returned by successive calls to String#succ;
- *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
- *  the sequence terminates when value +other_string+ is reached;
- *  returns +self+:
- *
- *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
- *
- *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
- *
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5
- *
- *  If +other_string+ would not be reached, does not call the block:
- *
- *    '25'.upto('5') {|s| fail s }
- *    'aa'.upto('a') {|s| fail s }
- *
- *  With no block given, returns a new Enumerator:
- *
- *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+ *  :include: doc/string/upto.rdoc
  *
  */
 
@@ -7023,12 +7001,13 @@ rb_str_include(VALUE str, VALUE arg)
  *    to_i(base = 10) -> integer
  *
  *  Returns the result of interpreting leading characters in +self+
- *  as an integer in the given +base+ (which must be in (0, 2..36)):
+ *  as an integer in the given +base+;
+ *  +base+ must be either +0+ or in range <tt>(2..36)</tt>:
  *
  *    '123456'.to_i     # => 123456
  *    '123def'.to_i(16) # => 1195503
  *
- *  With +base+ zero, string +object+ may contain leading characters
+ *  With +base+ zero given, string +object+ may contain leading characters
  *  to specify the actual base:
  *
  *    '123def'.to_i(0)   # => 123
@@ -7048,6 +7027,7 @@ rb_str_include(VALUE str, VALUE arg)
  *    'abcdef'.to_i # => 0
  *    '2'.to_i(2)   # => 0
  *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
@@ -7091,10 +7071,12 @@ rb_str_to_f(VALUE str)
 
 /*
  *  call-seq:
- *    to_s -> self or string
+ *    to_s -> self or new_string
  *
  *  Returns +self+ if +self+ is a +String+,
  *  or +self+ converted to a +String+ if +self+ is a subclass of +String+.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -7620,17 +7602,11 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
 
 /*
  *  call-seq:
- *    undump -> string
+ *    undump -> new_string
  *
- *  Returns an unescaped version of +self+:
+ *  Inverse of String#dump; returns a copy of +self+ with changes of the kinds made by String#dump "undone."
  *
- *    s_orig = "\f\x00\xff\\\""    # => "\f\u0000\xFF\\\""
- *    s_dumped = s_orig.dump       # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *    s_undumped = s_dumped.undump # => "\f\u0000\xFF\\\""
- *    s_undumped == s_orig         # => true
- *
- *  Related: String#dump (inverse of String#undump).
- *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -7957,19 +7933,12 @@ upcase_single(VALUE str)
  *  call-seq:
  *    upcase!(mapping) -> self or nil
  *
- *  Upcases the characters in +self+;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#upcase, except that:
  *
- *    s = 'Hello World!' # => "Hello World!"
- *    s.upcase!          # => "HELLO WORLD!"
- *    s                  # => "HELLO WORLD!"
- *    s.upcase!          # => nil
+ *  - Changes character casings in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase, String#downcase, String#downcase!.
- *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -7999,16 +7968,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    upcase(mapping) -> string
  *
- *  Returns a string containing the upcased characters in +self+:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.upcase           # => "HELLO WORLD!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase!, String#downcase, String#downcase!.
- *
+ *  :include: doc/string/upcase.rdoc
  */
 
 static VALUE
@@ -8595,9 +8555,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
  *  call-seq:
  *    tr!(selector, replacements) -> self or nil
  *
- *  Like String#tr, but modifies +self+ in place.
- *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *  Like String#tr, except:
  *
+ *  - Performs substitutions in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any modifications were made, +nil+ otherwise.
+ *
+ *  Related: {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -8633,17 +8596,15 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *  Arguments +selector+ and +replacements+ must be valid character selectors
  *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
- *  and may use any of its valid forms, including negation, ranges, and escaping:
+ *  and may use any of its valid forms, including negation, ranges, and escapes:
  *
- *    # Negation.
- *    'hello'.tr('^aeiou', '-') # => "-e--o"
- *    # Ranges.
- *    'ibm'.tr('b-z', 'a-z') # => "hal"
- *    # Escapes.
+ *    'hello'.tr('^aeiou', '-')       # => "-e--o"     # Negation.
+ *    'ibm'.tr('b-z', 'a-z')          # => "hal"       # Range.
  *    'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
  *    'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
  *    'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
  *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -8940,10 +8901,12 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    tr_s!(selector, replacements) -> self or nil
  *
- *  Like String#tr_s, but modifies +self+ in place.
- *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *  Like String#tr_s, except:
  *
- *  Related: String#squeeze!.
+ *  - Modifies +self+ in place (not a copy of +self+).
+ *  - Returns +self+ if any changes were made, +nil+ otherwise.
+ *
+ *  Related: {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -8955,16 +8918,21 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *    tr_s(selector, replacements) -> string
+ *    tr_s(selector, replacements) -> new_string
  *
- *  Like String#tr, but also squeezes the modified portions of the translated string;
- *  returns a new string (translated and squeezed).
+ *  Like String#tr, except:
+ *
+ *  - Also squeezes the modified portions of the translated string;
+ *    see String#squeeze.
+ *  - Returns the translated and squeezed string.
+ *
+ *  Examples:
  *
  *    'hello'.tr_s('l', 'r')   #=> "hero"
  *    'hello'.tr_s('el', '-')  #=> "h-o"
  *    'hello'.tr_s('el', 'hx') #=> "hhxo"
  *
- *  Related: String#squeeze.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -11501,11 +11469,8 @@ rb_str_b(VALUE str)
  *  call-seq:
  *    valid_encoding? -> true or false
  *
- *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
+ *  :include: doc/string/valid_encoding_p.rdoc
  *
- *    "\xc2\xa1".force_encoding(Encoding::UTF_8).valid_encoding? # => true
- *    "\xc2".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
- *    "\x80".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
  */
 
 static VALUE
@@ -11916,34 +11881,8 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  call-seq:
  *    unicode_normalize(form = :nfc) -> string
  *
- *  Returns a copy of +self+ with
- *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
+ *  :include: doc/string/unicode_normalize.rdoc
  *
- *  Argument +form+ must be one of the following symbols
- *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
- *
- *  - +:nfc+: Canonical decomposition, followed by canonical composition.
- *  - +:nfd+: Canonical decomposition.
- *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
- *  - +:nfkd+: Compatibility decomposition.
- *
- *  The encoding of +self+ must be one of:
- *
- *  - Encoding::UTF_8
- *  - Encoding::UTF_16BE
- *  - Encoding::UTF_16LE
- *  - Encoding::UTF_32BE
- *  - Encoding::UTF_32LE
- *  - Encoding::GB18030
- *  - Encoding::UCS_2BE
- *  - Encoding::UCS_4BE
- *
- *  Examples:
- *
- *    "a\u0300".unicode_normalize      # => "a"
- *    "\u00E0".unicode_normalize(:nfd) # => "a "
- *
- *  Related: String#unicode_normalize!, String#unicode_normalized?.
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
@@ -11956,9 +11895,9 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
  *    unicode_normalize!(form = :nfc) -> self
  *
  *  Like String#unicode_normalize, except that the normalization
- *  is performed on +self+.
+ *  is performed on +self+ (not on a copy of +self+).
  *
- *  Related String#unicode_normalized?.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 static VALUE
@@ -11970,8 +11909,9 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 /*  call-seq:
  *   unicode_normalized?(form = :nfc) -> true or false
  *
- *  Returns +true+ if +self+ is in the given +form+ of Unicode normalization,
- *  +false+ otherwise.
+ *  Returns whether +self+ is in the given +form+ of Unicode normalization;
+ *  see String#unicode_normalize.
+ *
  *  The +form+ must be one of +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
  *
  *  Examples:
@@ -11985,10 +11925,9 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
  *  Raises an exception if +self+ is not in a Unicode encoding:
  *
  *    s = "\xE0".force_encoding(Encoding::ISO_8859_1)
- *    s.unicode_normalized? # Raises Encoding::CompatibilityError.
+ *    s.unicode_normalized? # Raises Encoding::CompatibilityError
  *
- *  Related: String#unicode_normalize, String#unicode_normalize!.
- *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 static VALUE
 rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)

@@ -250,7 +250,7 @@ class TestTimeout < Test::Unit::TestCase
   end
 
   def test_threadgroup
-    assert_separately(%w[-rtimeout], <<-'end;')
+    assert_separately(%w[-W0 -rtimeout], <<-'end;')
       tg = ThreadGroup.new
       thr = Thread.new do
         tg.add(Thread.current)
@@ -263,7 +263,7 @@ class TestTimeout < Test::Unit::TestCase
 
   # https://github.com/ruby/timeout/issues/24
   def test_handling_enclosed_threadgroup
-    assert_separately(%w[-rtimeout], <<-'end;')
+    assert_separately(%w[-W0 -rtimeout], <<-'end;')
       Thread.new {
         t = Thread.current
         group = ThreadGroup.new

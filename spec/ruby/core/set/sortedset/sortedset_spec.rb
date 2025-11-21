@@ -1,7 +1,7 @@
 require_relative '../../../spec_helper'
 
 describe "SortedSet" do
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "raises error including message that it has been extracted from the set stdlib" do
       -> {
         SortedSet

@@ -14,7 +14,7 @@ This project is open source and falls under the same license as CRuby.
 
 <p align="center"><b>
     If you're using YJIT in production, please
-    <a href="mailto:maxime.chevalierboisvert@shopify.com">share your success stories with us!</a>
+    <a href="mailto:ruby@shopify.com">share your success stories with us!</a>
 </b></p>
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:

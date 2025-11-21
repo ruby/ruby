@@ -5,9 +5,11 @@ fn main() {
 
     // option_env! automatically registers a rerun-if-env-changed
     if let Some(ruby_build_dir) = option_env!("RUBY_BUILD_DIR") {
-        // Link against libminiruby
+        // Link against libminiruby.a
         println!("cargo:rustc-link-search=native={ruby_build_dir}");
         println!("cargo:rustc-link-lib=static:-bundle=miniruby");
+        // Re-link when libminiruby.a changes
+        println!("cargo:rerun-if-changed={ruby_build_dir}/libminiruby.a");
 
         // System libraries that libminiruby needs. Has to be
         // ordered after -lminiruby above.

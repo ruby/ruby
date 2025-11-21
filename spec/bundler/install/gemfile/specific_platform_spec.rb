@@ -54,7 +54,7 @@ RSpec.describe "bundle install with specific platforms" do
           sass-embedded
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install --verbose"
@@ -88,7 +88,7 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       # force strict usage of the lockfile by setting frozen mode
@@ -126,7 +126,7 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "update"
@@ -151,7 +151,7 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -185,7 +185,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "arm64-darwin-22", &example
@@ -235,7 +235,7 @@ RSpec.describe "bundle install with specific platforms" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install --verbose"
@@ -273,7 +273,7 @@ RSpec.describe "bundle install with specific platforms" do
           grpc
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install --verbose", artifice: "compact_index_precompiled_before"
@@ -333,7 +333,7 @@ RSpec.describe "bundle install with specific platforms" do
         pg_array_parser!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "cache --all-platforms"
@@ -433,7 +433,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static (= 0.5.6403)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install --verbose"
@@ -580,7 +580,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static-and-runtime
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "update"
@@ -611,7 +611,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static-and-runtime
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -663,7 +663,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "x86_64-darwin-22" do
@@ -685,7 +685,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -732,7 +732,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static-and-runtime
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "update"
@@ -763,7 +763,7 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static-and-runtime
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -807,7 +807,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock"
@@ -836,7 +836,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -881,7 +881,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet-static
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "update"
@@ -906,7 +906,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet-static
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -949,7 +949,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet-static (= 0.5.10549)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install"
@@ -968,7 +968,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet-static (= 0.5.10549)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1005,7 +1005,7 @@ RSpec.describe "bundle install with specific platforms" do
           ibandit (~> 0.7.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --update i18n"
@@ -1025,7 +1025,7 @@ RSpec.describe "bundle install with specific platforms" do
           ibandit (~> 0.7.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1066,7 +1066,7 @@ RSpec.describe "bundle install with specific platforms" do
         tzinfo (~> 1.2)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile original_lockfile
@@ -1110,7 +1110,7 @@ RSpec.describe "bundle install with specific platforms" do
         tzinfo (~> 1.2)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile original_lockfile
@@ -1153,7 +1153,7 @@ RSpec.describe "bundle install with specific platforms" do
         concurrent-ruby
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock"
@@ -1173,7 +1173,7 @@ RSpec.describe "bundle install with specific platforms" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1204,7 +1204,7 @@ RSpec.describe "bundle install with specific platforms" do
         my-precompiled-gem
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle :install
@@ -1249,7 +1249,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri (= 1.14.0)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle :install
@@ -1273,7 +1273,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri (= 1.14.0)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1307,7 +1307,7 @@ RSpec.describe "bundle install with specific platforms" do
         DEPENDENCIES
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock"
@@ -1327,7 +1327,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1389,7 +1389,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       gemfile <<~G
@@ -1426,7 +1426,7 @@ RSpec.describe "bundle install with specific platforms" do
           sorbet-static
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1481,7 +1481,7 @@ RSpec.describe "bundle install with specific platforms" do
           sass-embedded
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1523,7 +1523,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1570,7 +1570,7 @@ RSpec.describe "bundle install with specific platforms" do
               rcee_precompiled (= 0.5.0)
             #{checksums}
             BUNDLED WITH
-               #{Bundler::VERSION}
+              #{Bundler::VERSION}
           L
         end
       end
@@ -1617,7 +1617,7 @@ RSpec.describe "bundle install with specific platforms" do
           rcee_precompiled (= 0.5.0)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1655,7 +1655,7 @@ RSpec.describe "bundle install with specific platforms" do
           rcee_precompiled (= 0.5.0)
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1684,7 +1684,7 @@ RSpec.describe "bundle install with specific platforms" do
         nokogiri!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     simulate_platform "arm64-darwin-23" do
@@ -1727,7 +1727,7 @@ RSpec.describe "bundle install with specific platforms" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile original_lockfile
@@ -1778,7 +1778,7 @@ RSpec.describe "bundle install with specific platforms" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile original_lockfile
@@ -1820,7 +1820,7 @@ RSpec.describe "bundle install with specific platforms" do
         google-protobuf (~> 3.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile original_lockfile

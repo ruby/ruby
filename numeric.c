@@ -633,7 +633,7 @@ num_div(VALUE x, VALUE y)
  *  call-seq:
  *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
@@ -1358,7 +1358,7 @@ ruby_float_mod(double x, double y)
  *  call-seq:
  *    self % other -> float
  *
- *  Returns +self+ modulo +other+ as a float.
+ *  Returns +self+ modulo +other+ as a \Float.
  *
  *  For float +f+ and real number +r+, these expressions are equivalent:
  *
@@ -1591,17 +1591,11 @@ rb_float_equal(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a == b);
 }
 
@@ -1734,16 +1728,10 @@ rb_float_gt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '>');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a > b);
 }
 
@@ -1777,16 +1765,10 @@ flo_ge(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idGE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a >= b);
 }
 
@@ -1819,16 +1801,10 @@ flo_lt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '<');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a < b);
 }
 
@@ -1862,16 +1838,10 @@ flo_le(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idLE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a <= b);
 }
 
@@ -1899,10 +1869,7 @@ rb_float_eql(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
         double a = RFLOAT_VALUE(x);
         double b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a) || isnan(b)) return Qfalse;
-#endif
-    return RBOOL(a == b);
+        return RBOOL(a == b);
     }
     return Qfalse;
 }
@@ -4349,9 +4316,9 @@ fix_mod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self % other -> real_number
+ *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  For integer +n+ and real number +r+, these expressions are equivalent:
  *
@@ -5553,7 +5520,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     }
 
     bases = rb_ary_new();
-    for (VALUE b = base; int_lt(b, num) == Qtrue; b = rb_int_mul(b, b)) {
+    for (VALUE b = base; int_le(b, num) == Qtrue; b = rb_int_mul(b, b)) {
         rb_ary_push(bases, b);
     }
     digits = rb_ary_new_from_args(1, num);

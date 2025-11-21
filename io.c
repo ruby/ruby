@@ -3156,8 +3156,6 @@ io_enc_str(VALUE str, rb_io_t *fptr)
     return str;
 }
 
-static rb_encoding *io_read_encoding(rb_io_t *fptr);
-
 static void
 make_readconv(rb_io_t *fptr, int size)
 {
@@ -4909,6 +4907,7 @@ rb_io_each_codepoint(VALUE io)
     rb_io_check_char_readable(fptr);
 
     READ_CHECK(fptr);
+    enc = io_read_encoding(fptr);
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
         r = 1;		/* no invalid char yet */
@@ -4916,12 +4915,9 @@ rb_io_each_codepoint(VALUE io)
             make_readconv(fptr, 0);
             for (;;) {
                 if (fptr->cbuf.len) {
-                    if (fptr->encs.enc)
-                        r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
-                                                  fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                                  fptr->encs.enc);
-                    else
-                        r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
+                    r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
+                                              fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
+                                              enc);
                     if (!MBCLEN_NEEDMORE_P(r))
                         break;
                     if (fptr->cbuf.len == fptr->cbuf.capa) {
@@ -4931,25 +4927,18 @@ rb_io_each_codepoint(VALUE io)
                 if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
                     if (!MBCLEN_CHARFOUND_P(r)) {
-                        enc = fptr->encs.enc;
                         goto invalid;
                     }
                     return io;
                 }
             }
             if (MBCLEN_INVALID_P(r)) {
-                enc = fptr->encs.enc;
                 goto invalid;
             }
             n = MBCLEN_CHARFOUND_LEN(r);
-            if (fptr->encs.enc) {
-                c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
-                                     fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
-                                     fptr->encs.enc);
-            }
-            else {
-                c = (unsigned char)fptr->cbuf.ptr[fptr->cbuf.off];
-            }
+            c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
+                                 fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
+                                 enc);
             fptr->cbuf.off += n;
             fptr->cbuf.len -= n;
             rb_yield(UINT2NUM(c));
@@ -4957,7 +4946,6 @@ rb_io_each_codepoint(VALUE io)
         }
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
-    enc = io_input_encoding(fptr);
     while (io_fillbuf(fptr) >= 0) {
         r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off,
                                   fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
@@ -8223,21 +8211,6 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
     return INT2NUM(fd);
 }
 
-static VALUE
-check_pipe_command(VALUE filename_or_command)
-{
-    char *s = RSTRING_PTR(filename_or_command);
-    long l = RSTRING_LEN(filename_or_command);
-    char *e = s + l;
-    int chlen;
-
-    if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
-        VALUE cmd = rb_str_new(s+chlen, l-chlen);
-        return cmd;
-    }
-    return Qnil;
-}
-
 /*
  *  call-seq:
  *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
@@ -8283,13 +8256,7 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
                 redirect = TRUE;
             }
             else {
-                VALUE cmd = check_pipe_command(tmp);
-                if (!NIL_P(cmd)) {
-                    // TODO: when removed in 4.0, update command_injection.rdoc
-                    rb_warn_deprecated_to_remove_at(4.0, "Calling Kernel#open with a leading '|'", "IO.popen");
-                    argv[0] = cmd;
-                    return rb_io_s_popen(argc, argv, rb_cIO);
-                }
+                argv[0] = tmp;
             }
         }
     }
@@ -8308,16 +8275,8 @@ static VALUE
 rb_io_open_generic(VALUE klass, VALUE filename, int oflags, enum rb_io_mode fmode,
                    const struct rb_io_encoding *convconfig, mode_t perm)
 {
-    VALUE cmd;
-    if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
-        // TODO: when removed in 4.0, update command_injection.rdoc
-        rb_warn_deprecated_to_remove_at(4.0, "IO process creation with a leading '|'", "IO.popen");
-        return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
-    }
-    else {
-        return rb_file_open_generic(io_alloc(klass), filename,
-                                    oflags, fmode, convconfig, perm);
-    }
+    return rb_file_open_generic(io_alloc(klass), filename,
+                                oflags, fmode, convconfig, perm);
 }
 
 static VALUE

@@ -16,7 +16,7 @@ pub mod x86_64;
 pub mod arm64;
 
 /// Index to a label created by cb.new_label()
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Label(pub usize);
 
 /// The object that knows how to encode the branch instruction.
@@ -206,6 +206,14 @@ impl CodeBlock {
     /// Check if bytes have been dropped (unwritten because of insufficient space)
     pub fn has_dropped_bytes(&self) -> bool {
         self.dropped_bytes
+    }
+
+    /// Set dropped_bytes to false if the current zjit_alloc_bytes() + code_region_size
+    /// + page_size is below --zjit-mem-size.
+    pub fn update_dropped_bytes(&mut self) {
+        if self.mem_block.borrow().can_allocate() {
+            self.dropped_bytes = false;
+        }
     }
 
     /// Allocate a new label with a given name

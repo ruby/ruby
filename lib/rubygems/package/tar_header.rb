@@ -56,7 +56,7 @@ class Gem::Package::TarHeader
   ##
   # Pack format for a tar header
 
-  PACK_FORMAT = "a100" + # name
+  PACK_FORMAT = ("a100" + # name
                 "a8"   + # mode
                 "a8"   + # uid
                 "a8"   + # gid
@@ -71,12 +71,12 @@ class Gem::Package::TarHeader
                 "a32"  + # gname
                 "a8"   + # devmajor
                 "a8"   + # devminor
-                "a155"   # prefix
+                "a155").freeze # prefix
 
   ##
   # Unpack format for a tar header
 
-  UNPACK_FORMAT = "A100" + # name
+  UNPACK_FORMAT = ("A100" + # name
                   "A8"   + # mode
                   "A8"   + # uid
                   "A8"   + # gid
@@ -91,7 +91,7 @@ class Gem::Package::TarHeader
                   "A32"  + # gname
                   "A8"   + # devmajor
                   "A8"   + # devminor
-                  "A155"   # prefix
+                  "A155").freeze # prefix
 
   attr_reader(*FIELDS)
 

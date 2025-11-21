@@ -34,15 +34,6 @@ class Gem::BasicSpecification
     internal_init
   end
 
-  def self.default_specifications_dir
-    Gem.default_specifications_dir
-  end
-
-  class << self
-    extend Gem::Deprecate
-    rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
-  end
-
   ##
   # The path to the gem.build_complete file within the extension install
   # directory.

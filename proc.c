@@ -735,7 +735,6 @@ sym_proc_new(VALUE klass, VALUE sym)
     GetProcPtr(procval, proc);
 
     vm_block_type_set(&proc->block, block_type_symbol);
-    // No namespace specified: similar to built-in methods
     proc->is_lambda = TRUE;
     RB_OBJ_WRITE(procval, &proc->block.as.symbol, sym);
     return procval;
@@ -2029,23 +2028,22 @@ method_owner(VALUE obj)
 
 /*
  *  call-see:
- *    meth.namespace   -> namespace or nil
+ *    meth.box   -> box or nil
  *
- *  Returns the namespace where +meth+ is defined in.
+ *  Returns the Ruby::Box where +meth+ is defined in.
  */
 static VALUE
-method_namespace(VALUE obj)
+method_box(VALUE obj)
 {
     struct METHOD *data;
-    const rb_namespace_t *ns;
+    const rb_box_t *box;
 
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    ns = data->me->def->ns;
-    if (!ns) return Qfalse;
-    if (ns->ns_object) return ns->ns_object;
-    // This should not happen
-    rb_bug("Unexpected namespace on the method definition: %p", (void*) ns);
-    return Qtrue;
+    box = data->me->def->box;
+    if (!box) return Qnil;
+    if (box->box_object) return box->box_object;
+    rb_bug("Unexpected box on the method definition: %p", (void*) box);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void
@@ -4520,7 +4518,7 @@ Init_Proc(void)
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
 
-    rb_define_method(rb_cMethod, "namespace", method_namespace, 0);
+    rb_define_method(rb_cMethod, "box", method_box, 0);
 
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);

@@ -27,6 +27,8 @@ require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
 require "rspec/support/differ"
+gem "rubygems-generate_index"
+require "rubygems/indexer"
 
 require_relative "support/builders"
 require_relative "support/checksums"

@@ -1468,7 +1468,7 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
       MethodDefLocationSupported ?
    "|   def wrong_number_of_arguments_test(x, y)
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1494,7 +1494,7 @@ missing keyword: :kw3 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1515,7 +1515,7 @@ missing keywords: :kw2, :kw3 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1536,7 +1536,7 @@ unknown keyword: :kw4 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1557,7 +1557,7 @@ unknown keywords: :kw4, :kw5 (ArgumentError)
       MethodDefLocationSupported ?
    "|   def keyword_test(kw1:, kw2:, kw3:)
             ^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1587,7 +1587,7 @@ wrong number of arguments (given 1, expected 3) (ArgumentError)
       MethodDefLocationSupported ?
    "|   def wrong_number_of_arguments_test2(
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1609,7 +1609,7 @@ wrong number of arguments (given 1, expected 0) (ArgumentError)
       MethodDefLocationSupported ?
    "|     v = -> {}
               ^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1631,7 +1631,7 @@ wrong number of arguments (given 1, expected 0) (ArgumentError)
       MethodDefLocationSupported ?
    "|     v = lambda { }
                      ^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1657,7 +1657,7 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
       MethodDefLocationSupported ?
    "|   define_method :define_method_test do |x, y|
                                           ^^" :
-   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
    }
     END
 
@@ -1731,6 +1731,62 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
     actual_spot = ErrorHighlight.spot(node)
 
     assert_equal expected_spot, actual_spot
+  end
+
+  module SingletonMethodWithSpacing
+    LINENO = __LINE__ + 1
+    def self . baz(x:)
+      x
+    end
+  end
+
+  def test_singleton_method_with_spacing_missing_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keyword: :x (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       SingletonMethodWithSpacing.baz
+                                      ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodWithSpacing::LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|     def self . baz(x:)
+                   ^^^^^" :
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
+   }
+    END
+
+      SingletonMethodWithSpacing.baz
+    end
+  end
+
+  module SingletonMethodMultipleKwargs
+    LINENO = __LINE__ + 1
+    def self.run(shop_id:, param1:)
+      shop_id + param1
+    end
+  end
+
+  def test_singleton_method_multiple_missing_keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keywords: :shop_id, :param1 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       SingletonMethodMultipleKwargs.run
+                                         ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodMultipleKwargs::LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|     def self.run(shop_id:, param1:)
+                  ^^^^" :
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
+   }
+    END
+
+      SingletonMethodMultipleKwargs.run
+    end
   end
 
   private

@@ -16,7 +16,7 @@ RSpec.describe "real world edgecases", realworld: true do
         index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end
       if rubygem.nil?
-        raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
+        raise ArgumentError, "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
           "Found specs:\n\#{index.send(:specs).inspect}"
       end
       puts "#{name} (\#{rubygem.version})"

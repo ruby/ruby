@@ -17,7 +17,7 @@ describe "Kernel#require" do
   end
 
   provided = %w[complex enumerator fiber rational thread ruby2_keywords]
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     provided << "set"
     provided << "pathname"
   end
@@ -32,13 +32,14 @@ describe "Kernel#require" do
 
     features.sort.should == provided.sort
 
-    ruby_version_is "3.5" do
-      provided.map! { |f| f == "pathname" ? "pathname.so" : f }
+    requires = provided
+    ruby_version_is "4.0" do
+      requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
     end
 
-    code = provided.map { |f| "puts require #{f.inspect}\n" }.join
+    code = requires.map { |f| "puts require #{f.inspect}\n" }.join
     required = ruby_exe(code, options: '--disable-gems')
-    required.should == "false\n" * provided.size
+    required.should == "false\n" * requires.size
   end
 
   it_behaves_like :kernel_require_basic, :require, CodeLoadingSpecs::Method.new
