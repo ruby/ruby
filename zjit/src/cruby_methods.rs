@@ -158,6 +158,7 @@ pub fn init() -> Annotations {
         ($module:ident, $method_name:literal, $inline:ident) => {
             let mut props = FnProperties::default();
             props.inline = $inline;
+            #[allow(unused_unsafe)]
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         };
         ($module:ident, $method_name:literal, $inline:ident, $return_type:expr $(, $properties:ident)*) => {
@@ -167,6 +168,7 @@ pub fn init() -> Annotations {
             $(
                 props.$properties = true;
             )*
+            #[allow(unused_unsafe)]
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         };
         ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
