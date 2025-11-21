@@ -903,7 +903,8 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
-    /// Side-exit if val is frozen.
+    /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
+    /// a heap object.
     GuardNotFrozen { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
@@ -2553,6 +2554,7 @@ impl Function {
                                     //
                                     // No need for a GuardShape.
                                     if let OptimizedMethodType::StructAset = opt_type {
+                                        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
                                         recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
                                     }
 
@@ -4150,7 +4152,6 @@ impl Function {
             | Insn::IsNil { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::GuardShape { val, .. }
-            | Insn::GuardNotFrozen { recv: val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -4168,6 +4169,9 @@ impl Function {
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            Insn::GuardNotFrozen { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::HeapBasicObject)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
