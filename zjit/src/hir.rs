@@ -736,6 +736,8 @@ pub enum Insn {
 
     /// Load cfp->pc
     LoadPC,
+    /// Load EC
+    LoadEC,
     /// Load cfp->self
     LoadSelf,
     LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
@@ -980,6 +982,7 @@ impl Insn {
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
+            Insn::LoadEC => false,
             Insn::LoadSelf => false,
             Insn::LoadField { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
@@ -1272,6 +1275,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
+            Insn::LoadEC => write!(f, "LoadEC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:p}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
@@ -1775,6 +1779,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
+                    | LoadEC
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
@@ -2069,6 +2074,7 @@ impl Function {
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
+            Insn::LoadEC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -3397,6 +3403,7 @@ impl Function {
             | &Insn::Param
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
+            | &Insn::LoadEC
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
@@ -4101,6 +4108,7 @@ impl Function {
             | Insn::IsBlockGiven
             | Insn::GetGlobal { .. }
             | Insn::LoadPC
+            | Insn::LoadEC
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }

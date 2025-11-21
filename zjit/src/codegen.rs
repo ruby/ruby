@@ -457,6 +457,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
+        Insn::LoadEC => gen_load_ec(),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val))),
@@ -1039,6 +1040,10 @@ fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: Sh
 
 fn gen_load_pc(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC))
+}
+
+fn gen_load_ec() -> Opnd {
+    EC
 }
 
 fn gen_load_self() -> Opnd {
