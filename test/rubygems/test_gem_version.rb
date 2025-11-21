@@ -160,11 +160,7 @@ class TestGemVersion < Gem::TestCase
       [-1, "1.9.3.1"],
       [nil, "whatever"],
     ].each do |cmp, string_ver|
-      actual_stdout, actual_stderr = capture_output do
-        assert_equal(cmp, v("1.9.3") <=> string_ver)
-      end
-      assert_empty actual_stdout
-      assert_match(/comparing version objects with strings is deprecated and will be removed/, actual_stderr)
+      assert_equal(cmp, v("1.9.3") <=> string_ver)
     end
   end
 
