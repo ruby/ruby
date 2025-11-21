@@ -2913,8 +2913,9 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        let replacement = self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
