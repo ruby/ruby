@@ -954,6 +954,27 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_crash_report_pipe_script
+    omit "only runs on Linux" unless RUBY_PLATFORM.include?("linux")
+
+    Tempfile.create(["script", ".sh"]) do |script|
+      Tempfile.create("crash_report") do |crash_report|
+        script.write(<<~BASH)
+          #!/usr/bin/env bash
+
+          cat > #{crash_report.path}
+        BASH
+        script.close
+
+        FileUtils.chmod("+x", script)
+
+        assert_crash_report("| #{script.path}") do
+          assert_include(File.read(crash_report.path), "[BUG] Segmentation fault at")
+        end
+      end
+    end
+  end
+
   def test_DATA
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
       t.puts "puts DATA.read.inspect"
