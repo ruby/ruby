@@ -3423,7 +3423,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_specialize_polymorphic_definedivar_false() {
+    fn test_dont_specialize_polymorphic_definedivar() {
         set_call_threshold(3);
         eval("
             class C
