@@ -853,15 +853,17 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *    rat * numeric  ->  numeric
+ *   self * other -> numeric
  *
- * Performs multiplication.
+ * Returns the numeric product of +self+ and +other+:
  *
- *    Rational(2, 3)  * Rational(2, 3)   #=> (4/9)
- *    Rational(900)   * Rational(1)      #=> (900/1)
- *    Rational(-2, 9) * Rational(-9, 2)  #=> (1/1)
- *    Rational(9, 8)  * 4                #=> (9/2)
- *    Rational(20, 9) * 9.8              #=> 21.77777777777778
+ *   Rational(9, 8)  * 4               #=> (9/2)
+ *   Rational(20, 9) * 9.8             #=> 21.77777777777778
+ *   Rational(9, 8)  * Complex(1, 2)   # => ((9/8)+(9/4)*i)
+ *   Rational(2, 3)  * Rational(2, 3)  #=> (4/9)
+ *   Rational(900)   * Rational(1)     #=> (900/1)
+ *   Rational(-2, 9) * Rational(-9, 2) #=> (1/1)
+ *
  */
 VALUE
 rb_rational_mul(VALUE self, VALUE other)
