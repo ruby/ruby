@@ -6263,10 +6263,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v23:StringExact = GuardType v9, StringExact
+          v24:CInt64 = LoadField v23, :len@0x1038
+          v25:CInt64[0] = Const CInt64(0)
+          v26:CBool = IsBitEqual v24, v25
+          v27:BoolExact = BoxBool v26
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BoolExact = CCall String#empty?@0x1038, v23
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 

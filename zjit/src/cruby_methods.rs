@@ -200,7 +200,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
     annotate!(rb_cString, "setbyte", inline_string_setbyte);
-    annotate!(rb_cString, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
@@ -374,6 +374,20 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     } else {
         None
     }
+}
+
+fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let len = fun.push_insn(block, hir::Insn::LoadField {
+        recv,
+        id: ID!(len),
+        offset: RUBY_OFFSET_RSTRING_LEN as i32,
+        return_type: types::CInt64,
+    });
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let is_zero = fun.push_insn(block, hir::Insn::IsBitEqual { left: len, right: zero });
+    let result = fun.push_insn(block, hir::Insn::BoxBool { val: is_zero });
+    Some(result)
 }
 
 fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
