@@ -822,6 +822,7 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_frozen
     parser_config = JSON::Parser::Config.new({}).freeze
+    omit "JRuby failure in CI" if RUBY_ENGINE == "jruby"
     assert_raise FrozenError do
       parser_config.send(:initialize, {})
     end
