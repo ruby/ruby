@@ -8052,7 +8052,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(mapping) -> string
+ *    downcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/downcase.rdoc
  *
