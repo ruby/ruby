@@ -3423,6 +3423,33 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dont_specialize_definedivar_with_t_data() {
+        eval("
+            class C < Range
+              def test = defined?(@a)
+            end
+            obj = C.new 0, 1
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact|NilClass = DefinedIvar v6, :@a
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_dont_specialize_polymorphic_definedivar() {
         set_call_threshold(3);
         eval("
