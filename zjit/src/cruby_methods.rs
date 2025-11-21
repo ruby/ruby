@@ -240,7 +240,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
-    annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
+    annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
@@ -267,6 +267,26 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
         return Some(recv);
     }
     None
+}
+
+fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let ec = fun.push_insn(block, hir::Insn::LoadEC);
+    let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
+        recv: ec,
+        id: ID!(thread_ptr),
+        offset: RUBY_OFFSET_EC_THREAD_PTR as i32,
+        return_type: types::CPtr,
+    });
+    let thread_self = fun.push_insn(block, hir::Insn::LoadField {
+        recv: thread_ptr,
+        id: ID!(self_),
+        offset: RUBY_OFFSET_THREAD_SELF as i32,
+        // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
+        // You can make subclasses...
+        return_type: types::BasicObject,
+    });
+    Some(thread_self)
 }
 
 fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

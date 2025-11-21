@@ -5858,10 +5858,12 @@ mod hir_opt_tests {
           v20:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Class@0x1010, current@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
+          v24:CPtr = LoadEC
+          v25:CPtr = LoadField v24, :thread_ptr@0x1048
+          v26:BasicObject = LoadField v25, :self@0x1049
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BasicObject = CCall Thread.current@0x1048, v20
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 

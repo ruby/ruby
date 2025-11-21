@@ -1385,6 +1385,8 @@ pub(crate) mod ids {
         name: aref               content: b"[]"
         name: len
         name: _as_heap
+        name: thread_ptr
+        name: self_              content: b"self"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
