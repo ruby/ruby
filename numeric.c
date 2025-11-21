@@ -910,15 +910,44 @@ num_negative_p(VALUE num)
  *
  *  Document-class: Float
  *
- *  A \Float object represents a sometimes-inexact real number using the native
- *  architecture's double-precision floating point representation.
+ *  A \Float object stores a real number using the native
+ *  architecture's double-precision floating-point representation.
  *
- *  Floating point has a different arithmetic and is an inexact number.
- *  So you should know its esoteric system. See following:
+ *  == \Float Imprecisions
+ *
+ *  Some real numbers can be represented precisely as \Float objects:
+ *
+ *    Float(37.5)    # => 37.5
+ *    Float(98.6)    # => 98.6
+ *    Float(12.2345) # => 12.2345
+ *
+ *  Others cannot; among these are the irrational numbers,
+ *  including <i>π</i> and Euler's number, <i>e</i>:
+ *
+ *    Math::PI       # => 3.141592653589793
+ *    Math::E        # => 2.718281828459045
+ *
+ *  Some computed values can be represented precisely:
+ *
+ *    1.0/2          # => 0.5
+ *    100.0/8        # => 12.5
+ *
+ *  Others cannot:
+ *
+ *    1.0/3          # => 0.3333333333333333
+ *    2.0/3          # => 0.6666666666666666
+ *    Math.sqrt(2.0) # => 1.4142135623730951
+ *
+ *  See:
  *
  *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
  *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
+ *
+ *  Note that precise storage and computation of rational numbers
+ *  is possible using Rational objects.
+ *
+ *  == Creating a \Float
  *
  *  You can create a \Float object explicitly with:
  *
