@@ -8079,7 +8079,12 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     int write_pair[2];
 # endif
 
-    int result = rb_cloexec_pipe(write_pair);
+#ifdef HAVE_PIPE2
+    int result = pipe2(write_pair, O_CLOEXEC);
+#else
+    int result = pipe(write_pair);
+#endif
+
     *pid = -1;
     if (result == 0) {
 # ifdef HAVE_WORKING_FORK
