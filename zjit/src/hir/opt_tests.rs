@@ -3211,7 +3211,8 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
           PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Class@0x1040)
-          v54:BasicObject = CCallVariadic String.new@0x1048, v43
+          v54:StringExact = ObjectAllocClass String:VALUE(0x1008)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v54
         ");
