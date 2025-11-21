@@ -2820,6 +2820,38 @@ impl Function {
                         };
                         self.make_equal_to(insn_id, replacement);
                     }
+                    Insn::DefinedIvar { self_val, id, pushval, state } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let _ = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let mut ivar_index: u16 = 0;
+                        let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                        } else {
+                            // If there is no IVAR index, then the ivar was undefined when we
+                            // entered the compiler.  That means we can just return nil for this
+                            // shape + iv name
+                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        };
+                        self.make_equal_to(insn_id, replacement);
+                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -4838,6 +4870,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // for profiling purposes: there is no operand on the stack to look up; we have
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
                 profiles.profile_self(&exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
                 if get_option!(stats) {
