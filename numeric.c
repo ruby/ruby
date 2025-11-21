@@ -1131,15 +1131,21 @@ rb_float_uminus(VALUE flt)
 
 /*
  *  call-seq:
- *    self + other -> numeric
+ *    self + other -> float or complex
  *
- *  Returns a new \Float which is the sum of +self+ and +other+:
+ *  Returns the sum of +self+ and +other+;
+ *  the result may be inexact (see Float):
  *
- *    f = 3.14
- *    f + 1                 # => 4.140000000000001
- *    f + 1.0               # => 4.140000000000001
- *    f + Rational(1, 1)    # => 4.140000000000001
- *    f + Complex(1, 0)     # => (4.140000000000001+0i)
+ *    3.14 + 0              # => 3.14
+ *    3.14 + 1              # => 4.140000000000001
+ *    -3.14 + 0             # => -3.14
+ *    -3.14 + 1             # => -2.14
+
+ *    3.14 + -3.14          # => 0.0
+ *    -3.14 + -3.14         # => -6.28
+ *
+ *    3.14 + Complex(1, 0)   # => (4.140000000000001+0i)
+ *    3.14 + Rational(1, 1)  # => 4.140000000000001
  *
  */
 
@@ -3997,16 +4003,18 @@ rb_fix_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self + numeric -> numeric_result
+ *    self + other -> numeric
  *
- *  Performs addition:
+ *  Returns the sum of +self+ and +other+;
+ *  the result may be inexact (see Float):
  *
- *    2 + 2              # => 4
- *    -2 + 2             # => 0
- *    -2 + -2            # => -4
- *    2 + 2.0            # => 4.0
- *    2 + Rational(2, 1) # => (4/1)
- *    2 + Complex(2, 0)  # => (4+0i)
+ *    1 + 1               # => 2
+ *    1 + -1             # => 0
+ *    1 + 0              # => 1
+ *    1 + 3.14           # => 4.140000000000001
+ *    1 + -2             # => -1
+ *    1 + Complex(1, 0)  # => (2+0i)
+ *    1 + Rational(1, 1) # => (2/1)
  *
  */
 
