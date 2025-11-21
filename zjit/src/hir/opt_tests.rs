@@ -3508,7 +3508,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_specialize_monomorphic_setivar_with_shape_transition() {
+    fn test_dont_specialize_monomorphic_setivar_with_shape_transition() {
         eval("
             def test = @foo = 5
             test
@@ -3572,6 +3572,37 @@ mod hir_opt_tests {
             obj.test
             obj = C.new
             obj.instance_variable_set(:@b, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@a, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_complex_shape_setivar() {
+        eval("
+            class C
+              def test = @a = 5
+            end
+            obj = C.new
+            (0..1000).each do |i|
+              obj.instance_variable_set(:"@#{i}", i)
+            end
             obj.test
             TEST = C.instance_method(:test)
         ");
