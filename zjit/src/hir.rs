@@ -992,6 +992,8 @@ impl Insn {
             Insn::StringGetbyteFixnum { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
+            Insn::BoxBool { .. } => false,
+            Insn::IsBitEqual { .. } => false,
             _ => true,
         }
     }
