@@ -8060,6 +8060,98 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_kind_of_class() {
+        eval(r#"
+            def test(o) = o.kind_of?(String)
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v24:Class[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1008, kind_of?@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v28:StringExact = GuardType v9, StringExact
+          v29:BoolExact = IsA v28, v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_kind_of_module() {
+        eval(r#"
+            def test(o) = o.kind_of?(Kernel)
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Kernel)
+          v24:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v28:StringExact = GuardType v9, StringExact
+          v29:BasicObject = CCallWithFrame Kernel#kind_of?@0x1048, v28, v24
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_elide_kind_of() {
+        eval(r#"
+            def test(o)
+              o.kind_of?(Integer)
+              5
+            end
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Integer)
+          v28:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v32:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v21:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn counting_complex_feature_use_for_fallback() {
         eval("
             define_method(:fancy) { |_a, *_b, kw: 100, **kw_rest, &block| }
