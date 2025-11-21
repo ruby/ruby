@@ -22,6 +22,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "shape.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -301,6 +302,11 @@ rb_zjit_class_has_default_allocator(VALUE klass)
     return alloc == rb_class_allocate_instance;
 }
 
+bool
+rb_zjit_shape_frozen_p(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_FROZEN;
+}
 
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 

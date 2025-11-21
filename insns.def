@@ -224,6 +224,7 @@ setinstancevariable
 (VALUE val)
 ()
 // attr bool leaf = false; /* has rb_check_frozen() */
+// attr bool zjit_profile = true;
 {
     vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
