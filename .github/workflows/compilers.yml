@@ -109,7 +109,8 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' } }
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' } }
       - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' } }
-      - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' } }
+      # clang-18 has a bug causing ruby_current_ec to sometimes be null
+      # - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' } }
       - { uses: './.github/actions/compilers', name: 'clang 17', with: { tag: 'clang-17' } }
       - { uses: './.github/actions/compilers', name: 'clang 16', with: { tag: 'clang-16' } }
       - { uses: './.github/actions/compilers', name: 'clang 15', with: { tag: 'clang-15' } }
