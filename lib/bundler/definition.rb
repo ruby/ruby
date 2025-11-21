@@ -1114,7 +1114,7 @@ module Bundler
     end
 
     def find_source_requirements
-      if Gem.ruby_version >= "3.3"
+      if Gem.ruby_version >= Gem::Version.new("3.3")
         # Ruby 3.2 has a bug that incorrectly triggers a circular dependency warning. This version will continue to
         # fetch git repositories one by one.
         preload_git_sources

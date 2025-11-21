@@ -345,7 +345,7 @@ class Gem::Version
   def <=>(other)
     if String === other
       unless Gem::Deprecate.skip
-        warn "comparing version objects with strings is deprecated and will be removed"
+        warn "comparing version objects with strings is deprecated and will be removed", uplevel: 1
       end
       return unless self.class.correct?(other)
       return self <=> self.class.new(other)
