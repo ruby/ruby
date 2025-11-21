@@ -913,15 +913,16 @@ comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE 
 
 /*
  * call-seq:
- *   complex * numeric -> new_complex
+ *   self * other -> numeric
  *
- * Returns the product of +self+ and +numeric+:
+ * Returns the numeric product of +self+ and +other+:
  *
+ *   Complex.rect(9, 8)  * 4                   # => (36+32i)
+ *   Complex.rect(20, 9) * 9.8                 # => (196.0+88.2i)
  *   Complex.rect(2, 3)  * Complex.rect(2, 3)  # => (-5+12i)
  *   Complex.rect(900)   * Complex.rect(1)     # => (900+0i)
  *   Complex.rect(-2, 9) * Complex.rect(-9, 2) # => (0-85i)
- *   Complex.rect(9, 8)  * 4                   # => (36+32i)
- *   Complex.rect(20, 9) * 9.8                 # => (196.0+88.2i)
+ *   Complex.rect(9, 8)  * Rational(2, 3)      # => ((6/1)+(16/3)*i)
  *
  */
 VALUE

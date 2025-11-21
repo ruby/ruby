@@ -1195,13 +1195,14 @@ rb_float_minus(VALUE x, VALUE y)
  *  call-seq:
  *    self * other -> numeric
  *
- *  Returns a new \Float which is the product of +self+ and +other+:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    f = 3.14
  *    f * 2              # => 6.28
  *    f * 2.0            # => 6.28
  *    f * Rational(1, 2) # => 1.57
  *    f * Complex(2, 0)  # => (6.28+0.0i)
+ *
  */
 
 VALUE
@@ -4098,16 +4099,17 @@ fix_mul(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self * numeric -> numeric_result
+ *    self * other -> numeric
  *
- *  Performs multiplication:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    4 * 2              # => 8
- *    4 * -2             # => -8
  *    -4 * 2             # => -8
+ *    4 * -2             # => -8
  *    4 * 2.0            # => 8.0
  *    4 * Rational(1, 3) # => (4/3)
  *    4 * Complex(2, 0)  # => (8+0i)
+ *
  */
 
 VALUE
