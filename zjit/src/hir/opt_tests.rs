@@ -2761,9 +2761,9 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_kw() {
+    fn specialize_call_to_iseq_with_required_kw() {
         eval("
-            def foo(a:) = 1
+            def foo(a:) = a * 2
             def test = foo(a: 1)
             test
             test
@@ -2779,7 +2779,35 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_caller_kwarg
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_send_call_to_iseq_with_optional_kw() {
+        eval("
+            def foo(a: 1) = a
+            def test = foo(a: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[2] = Const Value(2)
+          IncrCounter complex_arg_pass_param_kw_opt
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2805,7 +2833,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
-          IncrCounter complex_arg_pass_caller_kwarg
+          IncrCounter complex_arg_pass_param_kwrest
           v13:BasicObject = SendWithoutBlock v6, :foo, v11
           CheckInterrupts
           Return v13
@@ -2830,7 +2858,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kw_opt
           v11:BasicObject = SendWithoutBlock v6, :foo
           CheckInterrupts
           Return v11
@@ -3116,7 +3144,7 @@ mod hir_opt_tests {
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kw_opt
           IncrCounter complex_arg_pass_param_block
           v20:BasicObject = SendWithoutBlock v46, :initialize
           CheckInterrupts
@@ -7781,7 +7809,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_rest
-          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kw_opt
           IncrCounter complex_arg_pass_param_kwrest
           IncrCounter complex_arg_pass_param_block
           v13:BasicObject = SendWithoutBlock v6, :fancy, v11

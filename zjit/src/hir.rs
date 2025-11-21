@@ -614,6 +614,10 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
+    SendWithoutBlockDirectKeywordMismatch,
+    SendWithoutBlockDirectOptionalKeywords,
+    SendWithoutBlockDirectKeywordCountMismatch,
+    SendWithoutBlockDirectMissingKeyword,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
@@ -630,6 +634,8 @@ pub enum SendFallbackReason {
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
     ComplexArgPass,
+    /// Caller has keyword arguments but callee doesn't expect them; need to convert to hash.
+    UnexpectedKeywordArgs,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -1501,7 +1507,20 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     use Counter::*;
     if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
     if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
+
+    // We support required-only keywords, but not optional keywords yet
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
+        if !keyword.is_null() {
+            let num = unsafe { (*keyword).num };
+            let required_num = unsafe { (*keyword).required_num };
+            // Only support required keywords for now (no optional keywords)
+            if num != required_num {
+                count_failure(complex_arg_pass_param_kw_opt)
+            }
+        }
+    }
+
     if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
     if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
     if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
@@ -1514,9 +1533,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
     let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
+    let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } };
+    let req_num = lead_num + kw_req_num;
     can_send = c_int::try_from(args.len())
         .as_ref()
-        .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
+        .map(|argc| (req_num..=req_num + opt_num).contains(argc))
         .unwrap_or(false);
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
@@ -2203,6 +2225,72 @@ impl Function {
         }
     }
 
+    /// Reorder keyword arguments to match the callee's expectation.
+    ///
+    /// Returns Ok with reordered arguments if successful, or Err with the fallback reason if not.
+    fn reorder_keyword_arguments(
+        &self,
+        args: &[InsnId],
+        kwarg: *const rb_callinfo_kwarg,
+        iseq: IseqPtr,
+    ) -> Result<Vec<InsnId>, SendFallbackReason> {
+        let callee_keyword = unsafe { get_iseq_body_param_keyword(iseq) };
+        if callee_keyword.is_null() {
+            // Caller is passing kwargs but callee doesn't expect them.
+            return Err(SendWithoutBlockDirectKeywordMismatch);
+        }
+
+        let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
+        let callee_kw_count = unsafe { (*callee_keyword).num } as usize;
+        let callee_kw_required = unsafe { (*callee_keyword).required_num } as usize;
+        let callee_kw_table = unsafe { (*callee_keyword).table };
+
+        // For now, only handle the case where all keywords are required.
+        if callee_kw_count != callee_kw_required {
+            return Err(SendWithoutBlockDirectOptionalKeywords);
+        }
+        if caller_kw_count != callee_kw_count {
+            return Err(SendWithoutBlockDirectKeywordCountMismatch);
+        }
+
+        // The keyword arguments are the last arguments in the args vector.
+        let kw_args_start = args.len() - caller_kw_count;
+
+        // Build a mapping from caller keywords to their positions.
+        let mut caller_kw_order: Vec<ID> = Vec::with_capacity(caller_kw_count);
+        for i in 0..caller_kw_count {
+            let sym = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
+            let id = unsafe { rb_sym2id(sym) };
+            caller_kw_order.push(id);
+        }
+
+        // Reorder keyword arguments to match callee expectation.
+        let mut reordered_kw_args: Vec<InsnId> = Vec::with_capacity(callee_kw_count);
+        for i in 0..callee_kw_count {
+            let expected_id = unsafe { *callee_kw_table.add(i) };
+
+            // Find where this keyword is in the caller's order
+            let mut found = false;
+            for (j, &caller_id) in caller_kw_order.iter().enumerate() {
+                if caller_id == expected_id {
+                    reordered_kw_args.push(args[kw_args_start + j]);
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                // Required keyword not provided by caller which will raise an ArgumentError.
+                return Err(SendWithoutBlockDirectMissingKeyword);
+            }
+        }
+
+        // Replace the keyword arguments with the reordered ones.
+        let mut processed_args = args[..kw_args_start].to_vec();
+        processed_args.extend(reordered_kw_args);
+        Ok(processed_args)
+    }
+
     /// Resolve the receiver type for method dispatch optimization.
     ///
     /// Takes the receiver's Type, receiver HIR instruction, and ISEQ instruction index.
@@ -2422,7 +2510,29 @@ impl Function {
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
+
+                            // Check if caller is passing keywords but callee doesn't expect them.
+                            let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+                            if !kwarg.is_null() && !unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+                                // Caller has keywords but callee doesn't; Need to convert to hash.
+                                self.set_dynamic_send_reason(insn_id, UnexpectedKeywordArgs);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Handle keyword argument reordering if present.
+                            let processed_args = if !kwarg.is_null() {
+                                match self.reorder_keyword_arguments(&args, kwarg, iseq) {
+                                    Ok(reordered) => reordered,
+                                    Err(reason) => {
+                                        self.set_dynamic_send_reason(insn_id, reason);
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                }
+                            } else {
+                                args.clone()
+                            };
+
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -2457,7 +2567,29 @@ impl Function {
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
+
+                            // Check if caller is passing keywords but callee doesn't expect them.
+                            let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+                            if !kwarg.is_null() && !unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+                                // Caller has keywords but callee doesn't; Need to convert to hash.
+                                self.set_dynamic_send_reason(insn_id, UnexpectedKeywordArgs);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Handle keyword argument reordering if present.
+                            let processed_args = if !kwarg.is_null() {
+                                match self.reorder_keyword_arguments(&args, kwarg, iseq) {
+                                    Ok(reordered) => reordered,
+                                    Err(reason) => {
+                                        self.set_dynamic_send_reason(insn_id, reason);
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                }
+                            } else {
+                                args.clone()
+                            };
+
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -4686,7 +4818,6 @@ fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
 
 /// If a given call uses overly complex arguments, then we won't specialize.
 fn unspecializable_call_type(flags: u32) -> bool {
-    ((flags & VM_CALL_KWARG) != 0) ||
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
     ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
 }
