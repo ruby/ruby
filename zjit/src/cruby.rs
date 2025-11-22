@@ -263,6 +263,10 @@ impl ShapeId {
     pub fn is_too_complex(self) -> bool {
         unsafe { rb_jit_shape_too_complex_p(self.0) }
     }
+
+    pub fn is_frozen(self) -> bool {
+        unsafe { rb_zjit_shape_frozen_p(self.0) }// & SHAPE_ID_FL_FROZEN
+    }
 }
 
 // Given an ISEQ pointer, convert PC to insn_idx

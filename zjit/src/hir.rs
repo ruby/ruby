@@ -2873,6 +2873,50 @@ impl Function {
                         };
                         self.make_equal_to(insn_id, replacement);
                     }
+                    Insn::SetIvar { self_val, id, val, state, ic: _ } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_frozen() {
+                            // Can't set ivars on frozen objects
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let mut ivar_index: u16 = 0;
+                        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            // TODO(max): Shape transition
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        // Current shape contains this ivar
+                        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
+                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            (self_val, offset)
+                        } else {
+                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                            (as_heap, offset)
+                        };
+                        let replacement = self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        self.make_equal_to(insn_id, replacement);
+                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -4905,6 +4949,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // for profiling purposes: there is no operand on the stack to look up; we have
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_setinstancevariable || opcode == YARVINSN_trace_setinstancevariable {
                 profiles.profile_self(&exit_state, self_param);
             } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
                 profiles.profile_self(&exit_state, self_param);
