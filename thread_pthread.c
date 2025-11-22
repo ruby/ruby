@@ -1763,9 +1763,12 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
      * may still grab vm->gvl.lock when calling gvl_release at
      * the end of thread_start_func_2
      */
+#if 0
+// TODO
     rb_native_mutex_destroy(&sched->lock_);
 
-    //clear_thread_cache_altstack();
+    clear_thread_cache_altstack();
+#endif
 }
 
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
