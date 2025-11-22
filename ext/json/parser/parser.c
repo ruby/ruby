@@ -937,7 +937,7 @@ static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
     uint64_t mask = 0;
     if (string_scan_simd_neon(&state->cursor, state->end, &mask)) {
         state->cursor += trailing_zeros64(mask) >> 2;
-        return 1;
+        return true;
     }
 
 #elif defined(HAVE_SIMD_SSE2)
@@ -945,7 +945,7 @@ static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
         int mask = 0;
         if (string_scan_simd_sse2(&state->cursor, state->end, &mask)) {
             state->cursor += trailing_zeros(mask);
-            return 1;
+            return true;
         }
     }
 #endif /* HAVE_SIMD_NEON or HAVE_SIMD_SSE2 */
@@ -953,11 +953,11 @@ static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
 
     while (!eos(state)) {
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
-            return 1;
+            return true;
         }
         state->cursor++;
     }
-    return 0;
+    return false;
 }
 
 static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
