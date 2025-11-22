@@ -510,8 +510,8 @@ class JSONParserTest < Test::Unit::TestCase
     data = ['"']
     assert_equal data, parse(json)
     #
-    json = '["\\\'"]'
-    data = ["'"]
+    json = '["\\/"]'
+    data = ["/"]
     assert_equal data, parse(json)
 
     json = '["\/"]'

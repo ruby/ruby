@@ -639,44 +639,43 @@ static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *st
 static VALUE json_string_unescape(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
-    const char *p = string, *pe = string, *unescape, *bufferStart;
+    const char *p = string, *pe = string, *bufferStart;
     char *buffer;
-    int unescape_len;
-    char buf[4];
 
     VALUE result = rb_str_buf_new(bufferSize);
     rb_enc_associate_index(result, utf8_encindex);
     buffer = RSTRING_PTR(result);
     bufferStart = buffer;
 
+#define APPEND_CHAR(chr) *buffer++ = chr; p = ++pe;
+
     while (pe < stringEnd && (pe = memchr(pe, '\\', stringEnd - pe))) {
-        unescape = (char *) "?";
-        unescape_len = 1;
         if (pe > p) {
           MEMCPY(buffer, p, char, pe - p);
           buffer += pe - p;
         }
         switch (*++pe) {
-            case 'n':
-                unescape = (char *) "\n";
-                break;
-            case 'r':
-                unescape = (char *) "\r";
-                break;
-            case 't':
-                unescape = (char *) "\t";
-                break;
             case '"':
-                unescape = (char *) "\"";
+            case '/':
+                p = pe; // nothing to unescape just need to skip the backslash
                 break;
             case '\\':
-                unescape = (char *) "\\";
+                APPEND_CHAR('\\');
+                break;
+            case 'n':
+                APPEND_CHAR('\n');
+                break;
+            case 'r':
+                APPEND_CHAR('\r');
+                break;
+            case 't':
+                APPEND_CHAR('\t');
                 break;
             case 'b':
-                unescape = (char *) "\b";
+                APPEND_CHAR('\b');
                 break;
             case 'f':
-                unescape = (char *) "\f";
+                APPEND_CHAR('\f');
                 break;
             case 'u':
                 if (pe > stringEnd - 5) {
@@ -714,18 +713,23 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                             break;
                         }
                     }
-                    unescape_len = convert_UTF32_to_UTF8(buf, ch);
-                    unescape = buf;
+
+                    char buf[4];
+                    int unescape_len = convert_UTF32_to_UTF8(buf, ch);
+                    MEMCPY(buffer, buf, char, unescape_len);
+                    buffer += unescape_len;
+                    p = ++pe;
                 }
                 break;
             default:
-                p = pe;
-                continue;
+                if ((unsigned char)*pe < 0x20) {
+                    raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                }
+                raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
+                break;
         }
-        MEMCPY(buffer, unescape, char, unescape_len);
-        buffer += unescape_len;
-        p = ++pe;
     }
+#undef APPEND_CHAR
 
     if (stringEnd > p) {
       MEMCPY(buffer, p, char, stringEnd - p);
@@ -976,9 +980,6 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
             case '\\': {
                 state->cursor++;
                 escaped = true;
-                if ((unsigned char)*state->cursor < 0x20) {
-                    raise_parse_error("invalid ASCII control character in string: %s", state);
-                }
                 break;
             }
             default:
