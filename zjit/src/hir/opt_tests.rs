@@ -3595,17 +3595,17 @@ mod hir_opt_tests {
 
     #[test]
     fn test_dont_specialize_complex_shape_setivar() {
-        eval("
+        eval(r#"
             class C
               def test = @a = 5
             end
             obj = C.new
             (0..1000).each do |i|
-              obj.instance_variable_set(:"@#{i}", i)
+              obj.instance_variable_set(:"@v#{i}", i)
             end
             obj.test
             TEST = C.instance_method(:test)
-        ");
+        "#);
         assert_snapshot!(hir_string_proc("TEST"), @r"
         fn test@<compiled>:3:
         bb0():
