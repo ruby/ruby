@@ -616,8 +616,10 @@ static inline bool json_string_cacheable_p(const char *string, size_t length)
     return length <= JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH && rb_isalpha(string[0]);
 }
 
-static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
+static inline VALUE json_string_fastpath(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name)
 {
+    bool intern = is_name || config->freeze;
+    bool symbolize = is_name && config->symbolize_names;
     size_t bufferSize = stringEnd - string;
 
     if (is_name && state->in_array && RB_LIKELY(json_string_cacheable_p(string, bufferSize))) {
@@ -636,8 +638,33 @@ static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *st
     return build_string(string, stringEnd, intern, symbolize);
 }
 
-static VALUE json_string_unescape(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
+#define JSON_MAX_UNESCAPE_POSITIONS 16
+typedef struct _json_unescape_positions {
+    long size;
+    const char **positions;
+    bool has_more;
+} JSON_UnescapePositions;
+
+static inline const char *json_next_backslash(const char *pe, const char *stringEnd, JSON_UnescapePositions *positions)
 {
+    while (positions->size) {
+        positions->size--;
+        const char *next_position = positions->positions[0];
+        positions->positions++;
+        return next_position;
+    }
+
+    if (positions->has_more) {
+        return memchr(pe, '\\', stringEnd - pe);
+    }
+
+    return NULL;
+}
+
+static NOINLINE() VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
+{
+    bool intern = is_name || config->freeze;
+    bool symbolize = is_name && config->symbolize_names;
     size_t bufferSize = stringEnd - string;
     const char *p = string, *pe = string, *bufferStart;
     char *buffer;
@@ -649,7 +676,7 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
 
 #define APPEND_CHAR(chr) *buffer++ = chr; p = ++pe;
 
-    while (pe < stringEnd && (pe = memchr(pe, '\\', stringEnd - pe))) {
+    while (pe < stringEnd && (pe = json_next_backslash(pe, stringEnd, positions))) {
         if (pe > p) {
           MEMCPY(buffer, p, char, pe - p);
           buffer += pe - p;
@@ -893,20 +920,6 @@ static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfi
     return object;
 }
 
-static inline VALUE json_decode_string(JSON_ParserState *state, JSON_ParserConfig *config, const char *start, const char *end, bool escaped, bool is_name)
-{
-    VALUE string;
-    bool intern = is_name || config->freeze;
-    bool symbolize = is_name && config->symbolize_names;
-    if (escaped) {
-        string = json_string_unescape(state, start, end, is_name, intern, symbolize);
-    } else {
-        string = json_string_fastpath(state, start, end, is_name, intern, symbolize);
-    }
-
-    return string;
-}
-
 static inline VALUE json_push_value(JSON_ParserState *state, JSON_ParserConfig *config, VALUE value)
 {
     if (RB_UNLIKELY(config->on_load_proc)) {
@@ -964,22 +977,30 @@ static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
     return false;
 }
 
-static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name, const char *start)
 {
-    state->cursor++;
-    const char *start = state->cursor;
-    bool escaped = false;
+    const char *backslashes[JSON_MAX_UNESCAPE_POSITIONS];
+    JSON_UnescapePositions positions = {
+        .size = 0,
+        .positions = backslashes,
+        .has_more = false,
+    };
 
-    while (RB_UNLIKELY(string_scan(state))) {
+    do {
         switch (*state->cursor) {
             case '"': {
-                VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
+                VALUE string = json_string_unescape(state, config, start, state->cursor, is_name, &positions);
                 state->cursor++;
                 return json_push_value(state, config, string);
             }
             case '\\': {
+                if (RB_LIKELY(positions.size < JSON_MAX_UNESCAPE_POSITIONS)) {
+                    backslashes[positions.size] = state->cursor;
+                    positions.size++;
+                } else {
+                    positions.has_more = true;
+                }
                 state->cursor++;
-                escaped = true;
                 break;
             }
             default:
@@ -988,10 +1009,27 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
         }
 
         state->cursor++;
-    }
+    } while (string_scan(state));
 
     raise_parse_error("unexpected end of input, expected closing \"", state);
     return Qfalse;
+}
+
+static ALWAYS_INLINE() VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+{
+    state->cursor++;
+    const char *start = state->cursor;
+
+    if (RB_UNLIKELY(!string_scan(state))) {
+        raise_parse_error("unexpected end of input, expected closing \"", state);
+    }
+
+    if (RB_LIKELY(*state->cursor == '"')) {
+        VALUE string = json_string_fastpath(state, config, start, state->cursor, is_name);
+        state->cursor++;
+        return json_push_value(state, config, string);
+    }
+    return json_parse_escaped_string(state, config, is_name, start);
 }
 
 #if JSON_CPU_LITTLE_ENDIAN_64BITS
