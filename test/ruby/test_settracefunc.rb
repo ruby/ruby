@@ -2957,4 +2957,18 @@ CODE
 
     assert_kind_of(Thread, target_thread)
   end
+
+  def test_tracepoint_gvar_set
+    events = []
+
+    TracePoint.new(:gvar_set) do |tp|
+      events << [tp.self, tp.gvar_name, tp.return_value]
+    end.enable do
+      $GVAR_1 = 42
+      $GVAR_2 = 43
+      _foo = $GVAR_3
+    end
+
+    assert_equal([[nil, :$GVAR_1, 42], [nil, :$GVAR_2, 43]], events)
+  end
 end

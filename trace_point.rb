@@ -338,6 +338,11 @@ class TracePoint
     Primitive.tracepoint_attr_callee_id
   end
 
+  # Returns the global variable name being set.
+  def gvar_name
+    Primitive.tracepoint_attr_gvar_name
+  end
+
   # Returns the class or module of the method being called.
   #
   #     class C; def foo; end; end
