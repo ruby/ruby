@@ -721,13 +721,26 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
 #endif
         rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
     }
-    // TODO: register the path to be clean-uped
     return rb_str_new_cstr(ext_path);
 }
 
-// TODO: delete it just after dln_load? or delay it?
-//       At least for _WIN32, deleting extension files should be delayed until the namespace's destructor.
-//       And it requires calling dlclose before deleting it.
+void
+rb_box_delete_local_extension(VALUE loaded)
+{
+#if defined(_WIN32)
+    WCHAR *path = rb_w32_mbstr_to_wstr(CP_UTF8, RSTRING_PTR(loaded), -1, NULL);
+    if (!path) {
+        rb_memerror();
+    }
+    if (!DeleteFileW(path)) {
+        rb_warn("Box failed to delete the boxed dll:%s", RSTRING_PTR(loaded));
+    }
+#else
+    if (unlink(RSTRING_PTR(loaded)) != 0) {
+        rb_warn("Box failed to delete the boxed so:%s", RSTRING_PTR(loaded));
+    }
+#endif
+}
 
 static VALUE
 rb_box_load(int argc, VALUE *argv, VALUE box)

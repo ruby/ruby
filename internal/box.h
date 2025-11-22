@@ -76,6 +76,7 @@ rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
 VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path);
+void rb_box_delete_local_extension(VALUE loaded);
 
 void rb_initialize_main_box(void);
 void rb_box_init_done(void);

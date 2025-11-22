@@ -827,4 +827,17 @@ class TestBox < Test::Unit::TestCase
       assert_equal 42, b.eval('1+2')
     end;
   end
+
+  def test_loaded_extension_deleted_in_user_box
+    require 'tmpdir'
+    Dir.mktmpdir do |tmpdir|
+      env = ENV_ENABLE_BOX.merge({'TMPDIR'=>tmpdir})
+      assert_separately([env], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+      begin;
+        require "json"
+        tmpdirname = ENV['TMPDIR']
+        assert_equal(['.', '..'], Dir.entries(tmpdirname).sort)
+      end;
+    end
+  end
 end
