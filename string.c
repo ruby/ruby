@@ -8197,7 +8197,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping) -> new_string
+ *    swapcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/swapcase.rdoc
  *

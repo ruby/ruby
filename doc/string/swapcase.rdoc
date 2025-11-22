@@ -5,15 +5,28 @@ Returns a string containing the characters in +self+, with cases reversed:
 
 Examples:
 
-  'Hello World!'.swapcase # => "hELLO wORLD!"
-  'тест'.swapcase         # => "ТЕСТ"
+  'Hello'.swapcase        # => "hELLO"
+  'Straße'.swapcase       # => "sTRASSE"
+  'Привет'.swapcase       # => "пРИВЕТ"
+  'RubyGems.org'.swapcase # => "rUBYgEMS.ORG"
 
-Some characters (and even character sets) do not have casing:
+The sizes of +self+ and the upcased result may differ:
 
-  '12345'.swapcase    # => "12345"
-  'こんにちは'.swapcase # => "こんにちは"
+  s = 'Straße'
+  s.size          # => 6
+  s.swapcase      # => "sTRASSE"
+  s.swapcase.size # => 7
 
-The casing may be affected by the given +mapping+;
-see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+Some characters (and some character sets) do not have upcase and downcase versions;
+see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+
+  s = '1, 2, 3, ...'
+  s.swapcase == s # => true
+  s = 'こんにちは'
+  s.swapcase == s # => true
+
+The casing is affected by the given +mapping+,
+which may be +:ascii+, +:fold+, or +:turkic+;
+see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
