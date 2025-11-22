@@ -1291,15 +1291,17 @@ set_xor_i(st_data_t key, st_data_t data)
 static VALUE
 set_i_xor(VALUE set, VALUE other)
 {
-    VALUE new_set;
+    VALUE new_set = rb_obj_dup(set);
+
     if (rb_obj_is_kind_of(other, rb_cSet)) {
-        new_set = other;
+        set_iter(other, set_xor_i, (st_data_t)new_set);
     }
     else {
-        new_set = set_s_alloc(rb_obj_class(set));
-        set_merge_enum_into(new_set, other);
+        VALUE tmp = set_s_alloc(rb_cSet);
+        set_merge_enum_into(tmp, other);
+        set_iter(tmp, set_xor_i, (st_data_t)new_set);
     }
-    set_iter(set, set_xor_i, (st_data_t)new_set);
+
     return new_set;
 }
 
