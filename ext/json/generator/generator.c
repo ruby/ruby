@@ -1476,11 +1476,20 @@ static VALUE generate_json_try(VALUE d)
     return fbuffer_finalize(data->buffer);
 }
 
-static VALUE generate_json_ensure(VALUE d)
+// Preserves the deprecated behavior of State#depth being set.
+static VALUE generate_json_ensure_deprecated(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
     fbuffer_free(data->buffer);
     data->state->depth = data->depth;
+
+    return Qundef;
+}
+
+static VALUE generate_json_ensure(VALUE d)
+{
+    struct generate_json_data *data = (struct generate_json_data *)d;
+    fbuffer_free(data->buffer);
 
     return Qundef;
 }
@@ -1503,7 +1512,7 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
         .obj = obj,
         .func = func
     };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure_deprecated, (VALUE)&data);
 }
 
 /* call-seq:
