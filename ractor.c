@@ -256,6 +256,8 @@ ractor_free(void *ptr)
         r->newobj_cache = NULL;
     }
 
+    rb_thread_sched_destroy(&r->threads.sched);
+
     ractor_sync_free(r);
     ruby_xfree(r);
 }
@@ -468,8 +470,6 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     ractor_sync_terminate_atfork(vm, r);
 }
 #endif
-
-void rb_thread_sched_init(struct rb_thread_sched *, bool atfork);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)

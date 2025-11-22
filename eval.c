@@ -262,6 +262,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
     EC_POP_TAG();
     th = th0;
     rb_thread_stop_timer_thread();
+    rb_thread_stop_deferred_wait_thread(false);
     ruby_vm_destruct(th->vm);
     // For YJIT, call this after ruby_vm_destruct() frees jit_cont for the root fiber.
     rb_jit_cont_finish();

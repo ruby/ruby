@@ -133,6 +133,12 @@ struct rb_thread_sched {
     int readyq_cnt;
     // ractor scheduling
     struct ccan_list_node grq_node;
+
+    // deferred wait
+    struct rb_thread_struct *deferred_wait_th;
+    int deferred_wait_seq1;
+    int deferred_wait_seq2;
+    struct ccan_list_node deferred_wait_link;
 };
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
