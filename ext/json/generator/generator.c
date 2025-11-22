@@ -1539,12 +1539,6 @@ static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
 
     GET_STATE(self);
 
-    JSON_Generator_State new_state;
-    MEMCPY(&new_state, state, JSON_Generator_State, 1);
-
-    // FIXME: depth shouldn't be part of JSON_Generator_State, as that prevents it from being used concurrently.
-    new_state.depth = 0;
-
     char stack_buffer[FBUFFER_STACK_SIZE];
     FBuffer buffer = {
         .io = RTEST(io) ? io : Qfalse,
@@ -1554,8 +1548,8 @@ static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
     struct generate_json_data data = {
         .buffer = &buffer,
         .vstate = Qfalse,
-        .state = &new_state,
-        .depth = new_state.depth,
+        .state = state,
+        .depth = 0,
         .obj = obj,
         .func = generate_json
     };
