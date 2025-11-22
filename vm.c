@@ -3883,6 +3883,21 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
+void
+rb_ec_close(rb_execution_context_t *ec)
+{
+    // Free local_storage if it exists:
+    // if (ec->local_storage) {
+    //     rb_id_table_free(ec->local_storage);
+    //     ec->local_storage = NULL;
+    // }
+
+    // Clear storage and recursive hash fields so we don't retain them:
+    ec->storage = Qnil;
+    // ec->local_storage_recursive_hash = Qnil;
+    // ec->local_storage_recursive_hash_for_trace = Qnil;
+}
+
 static void
 th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
