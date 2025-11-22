@@ -2569,7 +2569,9 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 
     io_buffer_initialize(self, buffer, NULL, source_size, io_flags_for_size(source_size), Qnil);
 
-    return io_buffer_copy_from(buffer, source_base, source_size, 0, NULL);
+    VALUE result = io_buffer_copy_from(buffer, source_base, source_size, 0, NULL);
+    RB_GC_GUARD(source);
+    return result;
 }
 
 /*
@@ -2654,7 +2656,9 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
 
     rb_io_buffer_get_bytes_for_reading(source, &source_base, &source_size);
 
-    return io_buffer_copy_from(buffer, source_base, source_size, argc-1, argv+1);
+    VALUE result = io_buffer_copy_from(buffer, source_base, source_size, argc-1, argv+1);
+    RB_GC_GUARD(source);
+    return result;
 }
 
 /*
@@ -2732,7 +2736,9 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
     const void *source_base = RSTRING_PTR(string);
     size_t source_size = RSTRING_LEN(string);
 
-    return io_buffer_copy_from(buffer, source_base, source_size, argc-1, argv+1);
+    VALUE result = io_buffer_copy_from(buffer, source_base, source_size, argc-1, argv+1);
+    RB_GC_GUARD(string);
+    return result;
 }
 
 void
