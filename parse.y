@@ -4185,6 +4185,11 @@ opt_paren_args	: none
                 ;
 
 opt_call_args	: none
+                | value_expr(block_command)
+                    {
+                        $$ = NEW_LIST($1, &@1);
+                    /*% ripper: args_add!(args_new!, $:1) %*/
+                    }
                 | call_args
                 | args ','
                 | args ',' assocs ','
