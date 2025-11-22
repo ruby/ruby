@@ -166,26 +166,26 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
     return version;
 }
 
+/*
+ * call-seq:
+ *    crl.signature_algorithm -> string
+ *
+ * Returns the signature algorithm used to sign this CRL.
+ *
+ * Returns the long name of the signature algorithm, or the dotted decimal
+ * notation if \OpenSSL does not define a long name for it.
+ */
 static VALUE
 ossl_x509crl_get_signature_algorithm(VALUE self)
 {
     X509_CRL *crl;
     const X509_ALGOR *alg;
     const ASN1_OBJECT *obj;
-    BIO *out;
 
     GetX509CRL(self, crl);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509CRLError, NULL);
-    }
     X509_CRL_get0_signature(crl, NULL, &alg);
     X509_ALGOR_get0(&obj, NULL, NULL, alg);
-    if (!i2a_ASN1_OBJECT(out, obj)) {
-	BIO_free(out);
-	ossl_raise(eX509CRLError, NULL);
-    }
-
-    return ossl_membio2str(out);
+    return ossl_asn1obj_to_string_long_name(obj);
 }
 
 static VALUE

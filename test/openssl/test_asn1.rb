@@ -306,7 +306,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
   end
 
   def test_object_identifier
-    encode_decode_test B(%w{ 06 01 00 }), OpenSSL::ASN1::ObjectId.new("0.0".b)
+    obj = encode_decode_test B(%w{ 06 01 00 }), OpenSSL::ASN1::ObjectId.new("0.0".b)
+    assert_equal "0.0", obj.oid
+    assert_nil obj.sn
+    assert_nil obj.ln
+    assert_equal obj.oid, obj.value
     encode_decode_test B(%w{ 06 01 28 }), OpenSSL::ASN1::ObjectId.new("1.0".b)
     encode_decode_test B(%w{ 06 03 88 37 03 }), OpenSSL::ASN1::ObjectId.new("2.999.3".b)
     encode_decode_test B(%w{ 06 05 2A 22 83 BB 55 }), OpenSSL::ASN1::ObjectId.new("1.2.34.56789".b)
@@ -314,6 +318,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal "2.16.840.1.101.3.4.2.1", obj.oid
     assert_equal "SHA256", obj.sn
     assert_equal "sha256", obj.ln
+    assert_equal obj.sn, obj.value
     assert_raise(OpenSSL::ASN1::ASN1Error) {
       OpenSSL::ASN1.decode(B(%w{ 06 00 }))
     }

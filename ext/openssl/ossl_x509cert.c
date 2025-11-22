@@ -318,27 +318,23 @@ ossl_x509_set_serial(VALUE self, VALUE num)
 /*
  * call-seq:
  *    cert.signature_algorithm => string
+ *
+ * Returns the signature algorithm used to sign this certificate. This returns
+ * the algorithm name found in the TBSCertificate structure, not the outer
+ * \Certificate structure.
+ *
+ * Returns the long name of the signature algorithm, or the dotted decimal
+ * notation if \OpenSSL does not define a long name for it.
  */
 static VALUE
 ossl_x509_get_signature_algorithm(VALUE self)
 {
     X509 *x509;
-    BIO *out;
     const ASN1_OBJECT *obj;
-    VALUE str;
 
     GetX509(self, x509);
-    out = BIO_new(BIO_s_mem());
-    if (!out) ossl_raise(eX509CertError, NULL);
-
     X509_ALGOR_get0(&obj, NULL, NULL, X509_get0_tbs_sigalg(x509));
-    if (!i2a_ASN1_OBJECT(out, obj)) {
-	BIO_free(out);
-	ossl_raise(eX509CertError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
+    return ossl_asn1obj_to_string_long_name(obj);
 }
 
 /*
