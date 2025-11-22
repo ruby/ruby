@@ -1526,13 +1526,19 @@ VALUE rb_io_buffer_free_locked(VALUE self)
     return self;
 }
 
+static bool
+size_sum_is_bigger_than(size_t a, size_t b, size_t x)
+{
+    struct rbimpl_size_mul_overflow_tag size = rbimpl_size_add_overflow(a, b);
+    return size.left || size.right > x;
+}
+
 // Validate that access to the buffer is within bounds, assuming you want to
 // access length bytes from the specified offset.
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t length)
 {
-    // We assume here that offset + length won't overflow:
-    if (offset + length > buffer->size) {
+    if (size_sum_is_bigger_than(offset, length, buffer->size)) {
         rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
     }
 }
@@ -1842,9 +1848,9 @@ rb_io_buffer_compare(VALUE self, VALUE other)
 }
 
 static void
-io_buffer_validate_type(size_t size, size_t offset)
+io_buffer_validate_type(size_t size, size_t offset, size_t extend)
 {
-    if (offset > size) {
+    if (size_sum_is_bigger_than(offset, extend, size)) {
         rb_raise(rb_eArgError, "Type extends beyond end of buffer! (offset=%"PRIdSIZE" > size=%"PRIdSIZE")", offset, size);
     }
 }
@@ -1944,7 +1950,7 @@ static ID RB_IO_BUFFER_DATA_TYPE_##name; \
 static VALUE \
 io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 { \
-    io_buffer_validate_type(size, *offset + sizeof(type)); \
+    io_buffer_validate_type(size, *offset, sizeof(type)); \
     type value; \
     memcpy(&value, (char*)base + *offset, sizeof(type)); \
     if (endian != RB_IO_BUFFER_HOST_ENDIAN) value = swap(value); \
@@ -1955,7 +1961,7 @@ io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 static void \
 io_buffer_write_##name(const void* base, size_t size, size_t *offset, VALUE _value) \
 { \
-    io_buffer_validate_type(size, *offset + sizeof(type)); \
+    io_buffer_validate_type(size, *offset, sizeof(type)); \
     type value = unwrap(_value); \
     if (endian != RB_IO_BUFFER_HOST_ENDIAN) value = swap(value); \
     memcpy((char*)base + *offset, &value, sizeof(type)); \
@@ -2483,7 +2489,7 @@ io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source
 
     io_buffer_validate_range(buffer, offset, length);
 
-    if (source_offset + length > source_size) {
+    if (size_sum_is_bigger_than(source_offset, length, source_size)) {
         rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
     }
 

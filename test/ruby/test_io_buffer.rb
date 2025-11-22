@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 
 require 'tempfile'
+require 'rbconfig/sizeof'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -414,6 +415,8 @@ class TestIOBuffer < Test::Unit::TestCase
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
   }
 
+  SIZE_MAX = RbConfig::LIMITS["SIZE_MAX"]
+
   def test_get_set_value
     buffer = IO::Buffer.new(128)
 
@@ -421,6 +424,16 @@ class TestIOBuffer < Test::Unit::TestCase
       values.each do |value|
         buffer.set_value(data_type, 0, value)
         assert_equal value, buffer.get_value(data_type, 0), "Converting #{value} as #{data_type}."
+      end
+      assert_raise(ArgumentError) {buffer.get_value(data_type, 128)}
+      assert_raise(ArgumentError) {buffer.set_value(data_type, 128, 0)}
+      case data_type
+      when :U8, :S8
+      else
+        assert_raise(ArgumentError) {buffer.get_value(data_type, 127)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, 127, 0)}
+        assert_raise(ArgumentError) {buffer.get_value(data_type, SIZE_MAX)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, SIZE_MAX, 0)}
       end
     end
   end
@@ -503,7 +516,7 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) {buffer.clear(0, 20)}
     assert_raise(ArgumentError) {buffer.clear(0, 0, 20)}
     assert_raise(ArgumentError) {buffer.clear(0, 10, 10)}
-    assert_raise(ArgumentError) {buffer.clear(0, (1<<64)-8, 10)}
+    assert_raise(ArgumentError) {buffer.clear(0, SIZE_MAX-7, 10)}
   end
 
   def test_invalidation
