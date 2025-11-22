@@ -59,6 +59,7 @@
 #define RUBY_EVENT_FIBER_SWITCH      0x1000 /**< Encountered a `Fiber#yield`. */
 #define RUBY_EVENT_SCRIPT_COMPILED   0x2000 /**< Encountered an `eval`. */
 #define RUBY_EVENT_RESCUE            0x4000 /**< Encountered a `rescue` statement. */
+#define RUBY_EVENT_IVAR_SET          0x8000 /**< Encountered an ivar set. */
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff /**< Bitmask of extended events. */
 
 /** @} */
