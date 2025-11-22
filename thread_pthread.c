@@ -100,6 +100,26 @@ static const void *const condattr_monotonic = NULL;
 #define native_thread_yield() ((void)0)
 #endif
 
+// process-global: deferred thread waiter
+static struct {
+    bool running;
+    pthread_t thread;
+
+    // Do not wait for any other lock while holding this one. The scheduler lock
+    // may be held while blocking on this one.
+    rb_nativethread_lock_t lock;
+    rb_nativethread_cond_t cond;
+
+    // Only one thread can run at a time for any given scheduler, but ractors
+    // enable multiple schedulers to have active threads running concurrently.
+    // They may concurrently queue deferred waits. We maintain these as a list
+    // of thread_deferred_wait_node.
+    //
+    // You may only link/unlink if you own BOTH the thread_deferred_wait lock
+    // and the rb_thread_sched lock.
+    struct ccan_list_head q_head;
+} thread_deferred_wait;
+
 // native thread wrappers
 
 #define NATIVE_MUTEX_LOCK_DEBUG 0
@@ -683,6 +703,9 @@ rb_del_running_thread(rb_thread_t *th)
     thread_sched_unlock(sched, th);
 }
 
+static void
+deferred_wait_thread_cancel_yield(struct rb_thread_sched *sched);
+
 // setup current or next running thread
 // sched->running should be set only on this function.
 //
@@ -695,9 +718,7 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
     VM_ASSERT(sched->running != th);
 
     sched->running = th;
-    // This cancels any deferred scheduling action.
-    sched->deferred_wait_th = NULL;
-    sched->deferred_wait_th_count += 1;
+    deferred_wait_thread_cancel_yield(sched);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -1166,42 +1187,9 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_blocking_region_enter(struct rb_thread_sched *sched, rb_thread_t *th)
-{
-    thread_sched_lock(sched, th);
-    if (sched->is_running) {
-        VM_ASSERT(sched->running == th);
-
-        sched->deferred_wait_th = th;
-        sched->deferred_wait_th_count += 1;
-        rb_native_cond_signal(&sched->deferred_wait_cond);
-    } else {
-        VM_ASSERT(sched->running == NULL);
-        thread_sched_to_waiting_common(sched, th);
-    }
-    thread_sched_unlock(sched, th);
-}
-
-static void
-thread_sched_blocking_region_exit(struct rb_thread_sched *sched, rb_thread_t *th)
-{
-    thread_sched_lock(sched, th);
-
-    if (sched->running == th && th == sched->deferred_wait_th) {
-        // We never descheduled the thread. Cancel that request now.
-        sched->deferred_wait_th_count += 1;
-        sched->deferred_wait_th = NULL;
-    } else {
-        thread_sched_to_running_common(sched, th);
-    }
-
-    thread_sched_unlock(sched, th);
-}
-
-static void
 transfer_sched_lock(struct rb_thread_sched *sched, struct rb_thread_struct *current, struct rb_thread_struct *th)
 {
-    RUBY_DEBUG_LOG("Transferring sched ownership from:%u to th:%u", rb_th_serial(current), rb_th_serial(th));
+    RUBY_DEBUG_LOG("Transferring sched ownership from:%u to th:%u", current ? rb_th_serial(current) : 0, th ? rb_th_serial(th) : 0);
 #if VM_CHECK_MODE
     VM_ASSERT(sched->lock_owner == current);
     sched->lock_owner = th;
@@ -1214,61 +1202,145 @@ deferred_wait_thread_worker(void *arg)
 #ifdef SET_CURRENT_THREAD_NAME
     SET_CURRENT_THREAD_NAME("rb_def_wait");
 #endif
-    struct rb_thread_sched *sched = (struct rb_thread_sched *) arg;
-    struct rb_thread_struct *lock_owner = sched->deferred_wait_th_dummy;
+    rb_native_mutex_lock(&thread_deferred_wait.lock);
 
-    thread_sched_lock(sched, lock_owner);
     for (;;) {
-        if (sched->stop) {
-            break;
+        bool should_sleep = false;
+        struct rb_thread_sched *sched, *sched_next;
+        ccan_list_for_each_safe(&thread_deferred_wait.q_head, sched, sched_next, deferred_wait_link) {
+            if (rb_native_mutex_trylock(&sched->lock_) == 0) {
+                struct rb_thread_struct *th = sched->deferred_wait_th;
+                if (th) {
+                    if (sched->deferred_wait_seq1 == sched->deferred_wait_seq2) {
+                        VM_ASSERT(sched->is_running);
+                        VM_ASSERT(sched->running == th);
+                        transfer_sched_lock(sched, NULL, th);
+                        thread_sched_to_waiting_common(sched, th);
+                        VM_ASSERT(sched->deferred_wait_th == NULL);
+                        transfer_sched_lock(sched, th, NULL);
+                        ccan_list_del_init(&sched->deferred_wait_link);
+                    }
+                    else {
+                        sched->deferred_wait_seq2 = sched->deferred_wait_seq1;
+                        should_sleep = true;
+                    }
+                }
+                else {
+                    ccan_list_del_init(&sched->deferred_wait_link);
+                }
+                rb_native_mutex_unlock(&sched->lock_);
+            }
+            else {
+                should_sleep = true;
+            }
         }
-        // The cond-wait will drop the lock. We'll need to update lock_owner manually.
-        transfer_sched_lock(sched, lock_owner, NULL);
-        rb_native_cond_wait(&sched->deferred_wait_cond, &sched->lock_);
-        transfer_sched_lock(sched, NULL, lock_owner);
-        for (;;) {
-            if (!sched->deferred_wait_th) {
+        if (should_sleep) {
+            rb_native_mutex_unlock(&thread_deferred_wait.lock);
+            usleep(50);
+            rb_native_mutex_lock(&thread_deferred_wait.lock);
+        }
+        else {
+            if (!thread_deferred_wait.running) {
                 break;
             }
-            struct rb_thread_struct *th = sched->deferred_wait_th;
-            int count = sched->deferred_wait_th_count;
-            thread_sched_unlock(sched, lock_owner);
-            usleep(50);
-
-            // th is not a stable reference here. Go back to our dummy thread.
-            lock_owner = sched->deferred_wait_th_dummy;
-            thread_sched_lock(sched, lock_owner);
-
-            if (count != sched->deferred_wait_th_count) {
-                continue;
-            }
-            VM_ASSERT(sched->is_running);
-            VM_ASSERT(th == sched->deferred_wait_th);
-            VM_ASSERT(sched->running == sched->deferred_wait_th);
-
-            // Before calling into the scheduler we need to transfer lock ownership (logically) from the worker
-            // thread to the target thread.
-            transfer_sched_lock(sched, lock_owner, th);
-            // We're now acting on behalf of the target thread.
-            lock_owner = th;
-            thread_sched_to_waiting_common(sched, th);
-            break;
+            VM_ASSERT(ccan_list_empty(&thread_deferred_wait.q_head));
+            rb_native_cond_wait(&thread_deferred_wait.cond, &thread_deferred_wait.lock);
         }
     }
-    thread_sched_unlock(sched, lock_owner);
+
+    rb_native_mutex_unlock(&thread_deferred_wait.lock);
     return NULL;
 }
 
 static void
-start_deferred_wait_thread(struct rb_thread_sched *sched)
+deferred_wait_thread_detach_sched(struct rb_thread_sched *sched)
 {
+    // Only unlink if we're actually linked.
+    if (ccan_node_linked(&sched->deferred_wait_link)) {
+        rb_native_mutex_lock(&thread_deferred_wait.lock);
+        VM_ASSERT(ccan_node_linked(&sched->deferred_wait_link));
+        ccan_list_del_init(&sched->deferred_wait_link);
+        rb_native_mutex_unlock(&thread_deferred_wait.lock);
+    }
+}
+
+static bool
+deferred_wait_thread_enqueue_yield(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    if (!sched->is_running) {
+        return false;
+    }
+
+    VM_ASSERT(sched->running == th);
+
+    sched->deferred_wait_th = th;
+    sched->deferred_wait_seq1 += 1;
+
+    // Only link if we're not already linked and the background thread is running.
+    if (!ccan_node_linked(&sched->deferred_wait_link) && thread_deferred_wait.running) {
+        rb_native_mutex_lock(&thread_deferred_wait.lock);
+        // We held the sched lock while waiting for the mutex so we should not have been unlinked.
+        VM_ASSERT(!ccan_node_linked(&sched->deferred_wait_link));
+        if (!thread_deferred_wait.running) {
+            // Deferred waiter is stopped. Fall back.
+            rb_native_mutex_unlock(&thread_deferred_wait.lock);
+            return false;
+        }
+        ccan_list_add(&thread_deferred_wait.q_head, &sched->deferred_wait_link);
+        rb_native_cond_signal(&thread_deferred_wait.cond);
+        rb_native_mutex_unlock(&thread_deferred_wait.lock);
+    }
+    return true;
+}
+
+static void
+deferred_wait_thread_cancel_yield(struct rb_thread_sched *sched)
+{
+    // This cancels any deferred scheduling action, without reacquiring the
+    // deferred wait lock.
+    sched->deferred_wait_th = NULL;
+    sched->deferred_wait_seq1 += 1;
+}
+
+static void
+thread_sched_blocking_region_enter(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_lock(sched, th);
+    if (!deferred_wait_thread_enqueue_yield(sched, th)) {
+        // If we couldn't defer, then transition to waiting immediately.
+        thread_sched_to_waiting_common(sched, th);
+    }
+    thread_sched_unlock(sched, th);
+}
+
+static void
+thread_sched_blocking_region_exit(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_lock(sched, th);
+    if (sched->running == th && th == sched->deferred_wait_th) {
+        // We never descheduled the thread. Cancel that request now.
+        deferred_wait_thread_cancel_yield(sched);
+    }
+    else {
+        thread_sched_to_running_common(sched, th);
+    }
+    thread_sched_unlock(sched, th);
+}
+
+void
+rb_thread_start_deferred_wait_thread(void)
+{
+    rb_native_mutex_initialize(&thread_deferred_wait.lock);
+    rb_native_cond_initialize(&thread_deferred_wait.cond);
+    ccan_list_head_init(&thread_deferred_wait.q_head);
+    thread_deferred_wait.running = true;
     pthread_attr_t attr;
     int r;
     r = pthread_attr_init(&attr);
     if (r) {
         rb_bug_errno("start_deferred_wait_thread - pthread_attr_init", r);
     }
-    r = pthread_create(&sched->deferred_wait_pthread, &attr, deferred_wait_thread_worker, sched);
+    r = pthread_create(&thread_deferred_wait.thread, &attr, deferred_wait_thread_worker, NULL);
     if (r) {
         rb_bug_errno("start_deferred_wait_thread - pthread_create", r);
     }
@@ -1276,9 +1348,22 @@ start_deferred_wait_thread(struct rb_thread_sched *sched)
 }
 
 void
+rb_thread_stop_deferred_wait_thread(void)
+{
+    rb_native_mutex_lock(&thread_deferred_wait.lock);
+    thread_deferred_wait.running = false;
+    rb_native_cond_signal(&thread_deferred_wait.cond);
+    rb_native_mutex_unlock(&thread_deferred_wait.lock);
+    pthread_join(thread_deferred_wait.thread, NULL);
+    VM_ASSERT(ccan_list_empty(&thread_deferred_wait.q_head));
+    rb_native_cond_destroy(&thread_deferred_wait.cond);
+    rb_native_mutex_destroy(&thread_deferred_wait.lock);
+}
+
+
+void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
-    sched->stop = false;
     rb_native_mutex_initialize(&sched->lock_);
 
 #if VM_CHECK_MODE
@@ -1292,12 +1377,10 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
 #endif
 
-    rb_native_cond_initialize(&sched->deferred_wait_cond);
     sched->deferred_wait_th = NULL;
-    sched->deferred_wait_th_count = 0;
-    sched->deferred_wait_th_dummy = (struct rb_thread_struct *) malloc(sizeof(struct rb_thread_struct));
-    sched->deferred_wait_th_dummy->serial = 100000;
-    start_deferred_wait_thread(sched);
+    sched->deferred_wait_seq1 = 0;
+    sched->deferred_wait_seq2 = 0;
+    ccan_list_node_init(&sched->deferred_wait_link);
 }
 
 static void
@@ -1673,14 +1756,7 @@ static void clear_thread_cache_altstack(void);
 void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
-    // Stop the deferred wait worker
-    rb_native_mutex_lock(&sched->lock_);
-
-    sched->stop = true;
-    rb_native_cond_signal(&sched->deferred_wait_cond);
-    rb_native_mutex_unlock(&sched->lock_);
-
-    pthread_join(sched->deferred_wait_pthread, NULL);
+    deferred_wait_thread_detach_sched(sched);
 
     /*
      * only called once at VM shutdown (not atfork), another thread
@@ -1688,7 +1764,6 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
      * the end of thread_start_func_2
      */
     rb_native_mutex_destroy(&sched->lock_);
-    rb_native_cond_destroy(&sched->deferred_wait_cond);
 
     //clear_thread_cache_altstack();
 }
@@ -1711,6 +1786,7 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 {
     current_fork_gen++;
     rb_thread_sched_init(sched, true);
+    rb_thread_start_deferred_wait_thread();
     rb_thread_t *th =  GET_THREAD();
     rb_vm_t *vm = GET_VM();
 

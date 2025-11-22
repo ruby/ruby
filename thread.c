@@ -5764,6 +5764,7 @@ Init_Thread(void)
     }
 
     rb_thread_create_timer_thread();
+    rb_thread_start_deferred_wait_thread();
 
     Init_thread_sync();
 

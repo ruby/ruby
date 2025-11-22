@@ -1960,6 +1960,8 @@ void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
+void rb_thread_start_deferred_wait_thread(void);
+void rb_thread_stop_deferred_wait_thread(void);
 void rb_thread_reset_timer_thread(void);
 void rb_thread_wakeup_timer_thread(int);
 

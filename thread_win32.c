@@ -161,6 +161,16 @@ thread_sched_blocking_region_exit(struct rb_thread_sched *sched, rb_thread_t *th
 }
 
 void
+rb_thread_start_deferred_wait_thread(void)
+{
+}
+
+void
+rb_thread_stop_deferred_wait_thread(void)
+{
+}
+
+void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
     if (GVL_DEBUG) fprintf(stderr, "sched init\n");
