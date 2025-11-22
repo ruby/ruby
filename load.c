@@ -1210,6 +1210,9 @@ load_ext(VALUE path, VALUE fname)
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);
+    if (BOX_USER_P(box)) {
+        rb_box_delete_local_extension(loaded);
+    }
     return (VALUE)handle;
 }
 
