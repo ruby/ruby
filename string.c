@@ -7966,7 +7966,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(mapping) -> string
+ *    upcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/upcase.rdoc
  */
