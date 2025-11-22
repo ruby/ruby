@@ -832,13 +832,11 @@ rb_ractor_terminate_all(void)
 
     VM_ASSERT(cr == GET_RACTOR()); // only main-ractor's main-thread should kick it.
 
-    if (vm->ractor.cnt > 1) {
-        RB_VM_LOCK();
-        {
-            ractor_terminal_interrupt_all(vm); // kill all ractors
-        }
-        RB_VM_UNLOCK();
+    RB_VM_LOCK();
+    {
+        ractor_terminal_interrupt_all(vm); // kill all ractors
     }
+    RB_VM_UNLOCK();
     rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
 
     RB_VM_LOCK();
@@ -851,6 +849,17 @@ rb_ractor_terminate_all(void)
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
+#ifdef RUBY_THREAD_PTHREAD_H
+            while (vm->ractor.sched.barrier_waiting) {
+                // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
+                // since we just acquired the VM lock back, we're blocking other threads from joining it.
+                // We loop until the barrier is over. We can't join this barrier because our thread isn't added to
+                // running_threads until the call below to `rb_add_running_thread`.
+                RB_VM_UNLOCK();
+                unsigned int lev;
+                RB_VM_LOCK_ENTER_LEV_NB(&lev);
+            }
+#endif
             rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 
