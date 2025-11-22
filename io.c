@@ -2704,8 +2704,14 @@ rb_io_eof(VALUE io)
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
 #if RUBY_CRLF_ENVIRONMENT
-    if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
-        return RBOOL(eof(fptr->fd));
+    if (NEED_READCONV(fptr)) {
+        SET_BINARY_MODE(fptr);
+    }
+    else {
+        NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+        if (rb_w32_fd_is_text(fptr->fd)) {
+            return RBOOL(eof(fptr->fd));
+        }
     }
 #endif
     return RBOOL(io_fillbuf(fptr) < 0);
