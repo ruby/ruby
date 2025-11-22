@@ -1500,11 +1500,10 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v13:BasicObject = GetLocal l0, EP@3
-          v15:BasicObject = Send v13, 0x1000, :each
-          v16:BasicObject = GetLocal l0, EP@3
+          v14:BasicObject = Send v9, 0x1000, :each
+          v15:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v15
+          Return v14
         ");
     }
 
