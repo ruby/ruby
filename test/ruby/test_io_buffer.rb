@@ -489,7 +489,21 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_clear
     buffer = IO::Buffer.new(16)
-    buffer.set_string("Hello World!")
+    assert_equal "\0" * 16, buffer.get_string
+    buffer.clear(1)
+    assert_equal "\1" * 16, buffer.get_string
+    buffer.clear(2, 1, 2)
+    assert_equal "\1" + "\2"*2 + "\1"*13, buffer.get_string
+    buffer.clear(2, 1)
+    assert_equal "\1" + "\2"*15, buffer.get_string
+    buffer.clear(260)
+    assert_equal "\4" * 16, buffer.get_string
+    assert_raise(TypeError) {buffer.clear("x")}
+
+    assert_raise(ArgumentError) {buffer.clear(0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 10, 10)}
+    assert_raise(ArgumentError) {buffer.clear(0, (1<<64)-8, 10)}
   end
 
   def test_invalidation
