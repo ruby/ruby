@@ -3227,19 +3227,21 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
+        uint32_t len;
         if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
+            len = ROBJECT_FIELDS_COUNT_COMPLEX(obj);
         }
         else {
             const VALUE * const ptr = ROBJECT_FIELDS(obj);
 
-            uint32_t len = ROBJECT_FIELDS_COUNT(obj);
+            len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
             for (uint32_t i = 0; i < len; i++) {
                 gc_mark_internal(ptr[i]);
             }
         }
 
-        attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
+        attr_index_t fields_count = (attr_index_t)len;
         if (fields_count) {
             VALUE klass = RBASIC_CLASS(obj);
 
