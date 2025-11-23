@@ -492,10 +492,12 @@ When determining path to the lockfile or whether to create a lockfile, the follo
 .IP "1." 4
 The \fBbundle install\fR \fB\-\-no\-lock\fR option (which disables lockfile creation)\.
 .IP "2." 4
-The \fBlockfile\fR method in the Gemfile\.
+The \fBbundle install\fR \fB\-\-lockfile\fR option\.
 .IP "3." 4
-The \fBBUNDLE_LOCKFILE\fR environment variable\.
+The \fBlockfile\fR method in the Gemfile\.
 .IP "4." 4
+The \fBBUNDLE_LOCKFILE\fR environment variable\.
+.IP "5." 4
 The default behavior of adding \fB\.lock\fR to the end of the Gemfile name\.
 .IP "" 0
 

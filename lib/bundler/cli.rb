@@ -59,17 +59,29 @@ module Bundler
     def initialize(*args)
       super
 
+      current_cmd = args.last[:current_command].name
+
       custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
       if custom_gemfile && !custom_gemfile.empty?
         Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
-        Bundler.reset_settings_and_root!
+        reset_settings = true
       end
+
+      # lock --lockfile works differently than install --lockfile
+      unless current_cmd == "lock"
+        custom_lockfile = options[:lockfile] || Bundler.settings[:lockfile]
+        if custom_lockfile && !custom_lockfile.empty?
+          Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
+          reset_settings = true
+        end
+      end
+
+      Bundler.reset_settings_and_root! if reset_settings
 
       Bundler.auto_switch
 
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
-      current_cmd = args.last[:current_command].name
       Bundler.auto_install if AUTO_INSTALL_CMDS.include?(current_cmd)
     rescue UnknownArgumentError => e
       raise InvalidOption, e.message
@@ -232,6 +244,7 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "jobs", aliases: "-j", type: :numeric, banner: "Specify the number of jobs to run in parallel"
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "lockfile", type: :string, banner: "Use the specified lockfile instead of the default."
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
     method_option "no-lock", type: :boolean, banner: "Don't create a lockfile."
