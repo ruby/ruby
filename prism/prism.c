@@ -13849,6 +13849,18 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // syntax error. In this case we'll fall through to our default
             // handling. We need to free the value that we parsed because there
             // is no way for us to attach it to the tree at this point.
+            switch (PM_NODE_TYPE(value)) {
+                case PM_LOCAL_VARIABLE_READ_NODE:
+                case PM_IT_LOCAL_VARIABLE_READ_NODE:
+                    // Since it is possible for the value to be an implicit
+                    // parameter, we need to remove it from the list of implicit
+                    // parameters.
+                    parse_target_implicit_parameter(parser, value);
+                    break;
+                default:
+                    break;
+            }
+
             pm_node_destroy(parser, value);
         }
         PRISM_FALLTHROUGH
