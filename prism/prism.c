@@ -14244,25 +14244,6 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
     return contains_keyword_splat;
 }
 
-static inline bool
-argument_allowed_for_bare_hash(pm_parser_t *parser, pm_node_t *argument) {
-    if (pm_symbol_node_label_p(argument)) {
-        return true;
-    }
-
-    switch (PM_NODE_TYPE(argument)) {
-        case PM_CALL_NODE: {
-            pm_call_node_t *cast = (pm_call_node_t *) argument;
-            if (cast->opening_loc.start == NULL && cast->arguments != NULL) {
-                return false;
-            }
-            break;
-        }
-        default: break;
-    }
-    return accept1(parser, PM_TOKEN_EQUAL_GREATER);
-}
-
 /**
  * Append an argument to a list of arguments.
  */
@@ -14420,7 +14401,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 bool contains_keywords = false;
                 bool contains_keyword_splat = false;
 
-                if (argument_allowed_for_bare_hash(parser, argument)){
+                if (pm_symbol_node_label_p(argument) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
                     if (parsed_bare_hash) {
                         pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
                     }
