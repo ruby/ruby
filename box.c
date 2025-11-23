@@ -1047,9 +1047,8 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
 /*
  *  Document-class: Ruby::Box
  *
- *  Ruby::Box is designed to provide separated spaces in a Ruby
- *  process, to isolate applications and libraries.
- *  See {Ruby::Box}[rdoc-ref:box.md].
+ *  :markup: markdown
+ *  :include: doc/_box.md
  */
 void
 Init_Box(void)

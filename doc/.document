@@ -1,5 +1,5 @@
-*.md
-*.rb
+[^_]*.md
+[^_]*.rb
 [^_]*.rdoc
 contributing
 NEWS
