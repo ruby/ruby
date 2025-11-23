@@ -163,7 +163,7 @@ literal_cmp(st_data_t val, st_data_t lit)
         return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
       case NODE_STR:
         return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
         return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
       case NODE_REGX:
         return rb_parser_regx_hash_cmp(RNODE_REGX(node_val), RNODE_REGX(node_lit));
@@ -199,7 +199,7 @@ literal_hash(st_data_t a)
         return rb_char_p_hash(RNODE_IMAGINARY(node)->val);
       case NODE_STR:
         return rb_parser_str_hash(RNODE_STR(node)->string);
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
         return rb_parser_str_hash(RNODE_SYM(node)->string);
       case NODE_REGX:
         return rb_parser_str_hash(RNODE_REGX(node)->string);
@@ -1313,6 +1313,16 @@ static rb_true_node_t *rb_new_node_true_new(struct parser_params *p, const YYLTY
 static rb_false_node_t *rb_new_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_self_node_t *rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc);
+static rb_symbol_node_t *rb_new_node_symbol_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *value_loc, const YYLTYPE *closing_loc);
+static rb_string_node_t *rb_new_node_string_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc);
+static rb_array_node_t *rb_new_node_array_new(struct parser_params *p, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+static rb_return_node_t *rb_new_node_return_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
+static rb_redo_node_t *rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_retry_node_t *rb_new_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_break_node_t *rb_new_node_break_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
+static rb_next_node_t *rb_new_node_next_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
+static rb_integer_node_t *rb_new_node_integer_new(struct parser_params *p, pm_integer_t *value, const YYLTYPE *loc);
+static rb_float_node_t *rb_new_node_float_new(struct parser_params *p, double value, const YYLTYPE *loc);
 
 #define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
@@ -1321,6 +1331,16 @@ static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, rb_node_t *
 #define NEW_RB_FALSE(loc) rb_new_node_false_new(p,loc)
 #define NEW_RB_SELF(loc) rb_new_node_self_new(p,loc)
 #define NEW_RB_CALL(r,m,a,loc) rb_new_node_call_new(p,r,m,a,loc)
+#define NEW_RB_SYMBOL(s,loc,op_loc,v_loc,cl_loc) rb_new_node_symbol_new(p,s,loc,op_loc,v_loc,cl_loc)
+#define NEW_RB_STRING(s,loc,op_loc,c_loc,cl_loc) rb_new_node_string_new(p,s,loc,op_loc,c_loc,cl_loc)
+#define NEW_RB_ARRAY(loc,op_loc,cl_loc) rb_new_node_array_new(p,loc,op_loc,cl_loc)
+#define NEW_RB_RETURN(a,loc,kw_loc) rb_new_node_return_new(p,a,loc,kw_loc)
+#define NEW_RB_REDO(loc) rb_new_node_redo_new(p,loc)
+#define NEW_RB_RETRY(loc) rb_new_node_retry_new(p,loc)
+#define NEW_RB_BREAK(a,loc,kw_loc) rb_new_node_break_new(p,a,loc,kw_loc)
+#define NEW_RB_NEXT(a,loc,kw_loc) rb_new_node_next_new(p,a,loc,kw_loc)
+#define NEW_RB_INTEGER(v,loc) rb_new_node_integer_new(p,v,loc)
+#define NEW_RB_FLOAT(v,loc) rb_new_node_float_new(p,v,loc)
 
 
 enum internal_node_type {
@@ -1503,7 +1523,7 @@ static NODE* negate_lit(struct parser_params*, NODE*,const YYLTYPE*);
 static void no_blockarg(struct parser_params*,NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
-static NODE *dsym_node(struct parser_params*,NODE*,const YYLTYPE*);
+static NODE *dsym_node(struct parser_params*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 
 static NODE *gettable(struct parser_params*,ID,const YYLTYPE*);
 static NODE *assignable(struct parser_params*,ID,NODE*,const YYLTYPE*);
@@ -1566,6 +1586,7 @@ enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_stat
 VALUE rb_parser_lex_state_name(struct parser_params *p, enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *p, const char *fmt, ...), 2, 3);
+void rb_parser_set_location_of_label_token(const YYLTYPE *label_loc, YYLTYPE *value_loc, YYLTYPE *closing_loc);
 YYLTYPE *rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location_of_delayed_token(struct parser_params *p, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location_of_heredoc_end(struct parser_params *p, YYLTYPE *yylloc);
@@ -3700,7 +3721,7 @@ command		: fcall command_args       %prec tLOWEST
                 | k_return_arg call_args
                     {
                         CMDARG_POP();
-                        $$ = NEW_RETURN(ret_args(p, $2), &@$, &@1);
+                        $$ = NEW_RB_RETURN(ret_args(p, $2), &@$, &@1);
                     /*% ripper: return!($:2) %*/
                     }
                 | k_break_arg call_args
@@ -3708,7 +3729,7 @@ command		: fcall command_args       %prec tLOWEST
                         CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
-                        $$ = add_block_exit(p, NEW_BREAK(args, &@$, &@1));
+                        $$ = add_block_exit(p, NEW_RB_BREAK(args, &@$, &@1));
                     /*% ripper: break!($:2) %*/
                     }
                 | k_next_arg call_args
@@ -3716,7 +3737,7 @@ command		: fcall command_args       %prec tLOWEST
                         CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
-                        $$ = add_block_exit(p, NEW_NEXT(args, &@$, &@1));
+                        $$ = add_block_exit(p, NEW_RB_NEXT(args, &@$, &@1));
                     /*% ripper: next!($:2) %*/
                     }
                 ;
@@ -3926,7 +3947,7 @@ fname		: operation
 
 fitem		: fname
                     {
-                        $$ = NEW_SYM(rb_id2str($1), &@$);
+                        $$ = NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str($1)), &@$, &NULL_LOC, &@$, &NULL_LOC);
                     /*% ripper: symbol_literal!($:1) %*/
                     }
                 | symbol
@@ -4490,7 +4511,7 @@ primary		: inline_primary
                 }
             | k_return[kw]
                 {
-                    $$ = NEW_RETURN(0, &@$, &@kw);
+                    $$ = NEW_RB_RETURN(0, &@$, &@kw);
                 /*% ripper: return0! %*/
                 }
             | k_yield[kw] '('[lpar] call_args[args] rparen[rpar]
@@ -4746,17 +4767,17 @@ primary		: inline_primary
                 }
             | keyword_break[kw]
                 {
-                    $$ = add_block_exit(p, NEW_BREAK(0, &@$, &@kw));
+                    $$ = add_block_exit(p, NEW_RB_BREAK(0, &@$, &@kw));
                 /*% ripper: break!(args_new!) %*/
                 }
             | keyword_next[kw]
                 {
-                    $$ = add_block_exit(p, NEW_NEXT(0, &@$, &@kw));
+                    $$ = add_block_exit(p, NEW_RB_NEXT(0, &@$, &@kw));
                 /*% ripper: next!(args_new!) %*/
                 }
             | keyword_redo[kw]
                 {
-                    $$ = add_block_exit(p, NEW_REDO(&@$, &@kw));
+                    $$ = add_block_exit(p, NEW_RB_REDO(&@$));
                 /*% ripper: redo! %*/
                 }
             | keyword_retry[kw]
@@ -4769,7 +4790,7 @@ primary		: inline_primary
                           case after_ensure: yyerror1(&@kw, "Invalid retry after ensure"); break;
                         }
                     }
-                    $$ = NEW_RETRY(&@$);
+                    $$ = NEW_RB_RETRY(&@$);
                 /*% ripper: retry! %*/
                 }
             ;
@@ -5756,7 +5777,9 @@ p_kwarg 	: p_kw
 p_kw		: p_kw_label p_expr
                     {
                         error_duplicate_pattern_key(p, $1, &@1);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1), &@$), $2);
+                        YYLTYPE value_loc, closing_loc;
+                        rb_parser_set_location_of_label_token(&@1, &value_loc, &closing_loc);
+                        $$ = list_append(p, NEW_LIST(NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str($1)), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), $2);
                     /*% ripper: [$:1, $:2] %*/
                     }
                 | p_kw_label
@@ -5766,8 +5789,9 @@ p_kw		: p_kw_label p_expr
                             yyerror1(&@1, "key must be valid as local variables");
                         }
                         error_duplicate_pattern_variable(p, $1, &@1);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@$), &@$), assignable(p, $1, 0, &@$));
-                    /*% ripper: [$:1, Qnil] %*/
+                        YYLTYPE value_loc, closing_loc;
+                        rb_parser_set_location_of_label_token(&@1, &value_loc, &closing_loc);
+                        $$ = list_append(p, NEW_LIST(NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str($1)), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), assignable(p, $1, 0, &@$));                    /*% ripper: [$:1, Qnil] %*/
                     }
                 ;
 
@@ -5776,7 +5800,7 @@ p_kw_label	: tLABEL
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
                         if (!$2 || nd_type_p($2, NODE_STR)) {
-                            NODE *node = dsym_node(p, $2, &loc);
+                            NODE *node = dsym_node(p, $2, &loc, &@1, &@2, &@3);
                             $$ = rb_sym2id(rb_node_sym_string_val(node));
                         }
                         else {
@@ -6196,7 +6220,7 @@ ssym		: tSYMBEG sym
                          *   hold lexed string.
                          */
                         if (!str) str = STR_NEW0();
-                        $$ = NEW_SYM(str, &@$);
+                        $$ = (NODE *)NEW_RB_SYMBOL(rb_str_to_parser_string(p, str), &@$, &@1, &@2, &NULL_LOC);
                     /*% ripper: symbol_literal!(symbol!($:2)) %*/
                     }
                 ;
@@ -6208,7 +6232,7 @@ sym		: fname
 dsym		: tSYMBEG string_contents tSTRING_END
                     {
                         SET_LEX_STATE(EXPR_END);
-                        $$ = dsym_node(p, $2, &@$);
+                        $$ = dsym_node(p, $2, &@$, &@1, &@2, &@3);
                     /*% ripper: dyna_symbol!($:2) %*/
                     }
                 ;
@@ -6641,7 +6665,7 @@ singleton	: value_expr(singleton_expr)
                           case NODE_DXSTR:
                           case NODE_REGX:
                           case NODE_DREGX:
-                          case NODE_SYM:
+                          case RB_SYMBOL_NODE:
                           case NODE_LINE:
                           case NODE_FILE:
                           case NODE_ENCODING:
@@ -6715,20 +6739,24 @@ assoc		: arg_value tASSOC arg_value
                     }
                 | tLABEL arg_value
                     {
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1), &@$), $2);
+                        YYLTYPE value_loc, closing_loc;
+                        rb_parser_set_location_of_label_token(&@1, &value_loc, &closing_loc);
+                        $$ = list_append(p, NEW_LIST(NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str($1)), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), $2);
                     /*% ripper: assoc_new!($:1, $:2) %*/
                     }
                 | tLABEL
                     {
+                        YYLTYPE value_loc, closing_loc;
+                        rb_parser_set_location_of_label_token(&@1, &value_loc, &closing_loc);
                         NODE *val = gettable(p, $1, &@$);
                         if (!val) val = NEW_ERROR(&@$);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1), &@$), val);
+                        $$ = list_append(p, NEW_LIST(NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str($1)), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), val);
                     /*% ripper: assoc_new!($:1, Qnil) %*/
                     }
                 | tSTRING_BEG string_contents tLABEL_END arg_value
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
-                        $$ = list_append(p, NEW_LIST(dsym_node(p, $2, &loc), &loc), $4);
+                        $$ = list_append(p, NEW_LIST(dsym_node(p, $2, &loc, &@1, &@2, &@3), &loc), $4);
                     /*% ripper: assoc_new!(dyna_symbol!($:2), $:4) %*/
                     }
                 | tDSTAR arg_value
@@ -12638,6 +12666,97 @@ rb_new_node_fcall_new(struct parser_params *p, ID name, struct rb_arguments_node
     return rb_new_node_call_new(p, NULL, name, arguments, loc);
 }
 
+static rb_symbol_node_t *
+rb_new_node_symbol_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *value_loc, const YYLTYPE *closing_loc)
+{
+    rb_symbol_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SYMBOL_NODE, rb_symbol_node_t, loc);
+    n->opening_loc = *opening_loc;
+    n->content_loc = *value_loc;
+    n->closing_loc = *closing_loc;
+    n->unescaped = string;
+    return n;
+}
+
+static rb_string_node_t *
+rb_new_node_string_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc)
+{
+    rb_string_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_STRING_NODE, rb_string_node_t, loc);
+    n->opening_loc = *opening_loc;
+    n->content_loc = *content_loc;
+    n->closing_loc = *closing_loc;
+    n->unescaped = string;
+    return n;
+}
+
+static rb_array_node_t *
+rb_new_node_array_new(struct parser_params *p, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_array_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_ARRAY_NODE, rb_array_node_t, loc);
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
+    n->elements.size = 0;
+    n->elements.capacity = 0;
+    n->elements.nodes = NULL;
+    return n;
+}
+
+static rb_return_node_t *
+rb_new_node_return_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
+{
+    rb_return_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_RETURN_NODE, rb_return_node_t, loc);
+    n->keyword_loc = *keyword_loc;
+    n->arguments = arguments;
+    return n;
+}
+
+static rb_redo_node_t *
+rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_redo_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_REDO_NODE, rb_redo_node_t, loc);
+    return n;
+}
+
+static rb_retry_node_t *
+rb_new_node_retry_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_retry_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_RETRY_NODE, rb_retry_node_t, loc);
+    return n;
+}
+
+static rb_break_node_t *
+rb_new_node_break_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
+{
+    rb_break_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_BREAK_NODE, rb_break_node_t, loc);
+    n->keyword_loc = *keyword_loc;
+    n->arguments = arguments;
+    return n;
+}
+
+static rb_next_node_t *
+rb_new_node_next_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
+{
+    rb_next_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_NEXT_NODE, rb_next_node_t, loc);
+    n->keyword_loc = *keyword_loc;
+    n->arguments = arguments;
+    return n;
+}
+
+static rb_integer_node_t *
+rb_new_node_integer_new(struct parser_params *p, pm_integer_t *value, const YYLTYPE *loc)
+{
+    rb_integer_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INTEGER_NODE, rb_integer_node_t, loc);
+    n->value = *value;
+    return n;
+}
+
+static rb_float_node_t *
+rb_new_node_float_new(struct parser_params *p, double value, const YYLTYPE *loc)
+{
+    rb_float_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_FLOAT_NODE, rb_float_node_t, loc);
+    n->value = value;
+    return n;
+}
+
 #ifndef RIPPER
 static enum node_type
 nodetype(NODE *node)			/* for debug */
@@ -13357,7 +13476,7 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc, const YYLTY
 }
 
 static NODE*
-str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
+str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *value_loc, const YYLTYPE *closing_loc)
 {
     VALUE lit;
     rb_parser_string_t *str = RNODE_STR(node)->string;
@@ -13368,19 +13487,20 @@ str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     else {
         lit = rb_str_new_parser_string(str);
     }
-    return NEW_SYM(lit, loc);
+    return NEW_RB_SYMBOL(rb_str_to_parser_string(p, lit), loc, opening_loc, value_loc, closing_loc);
 }
 
 static NODE*
 symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 {
     enum node_type type = nd_type(symbol);
+    const YYLTYPE *loc = &RNODE(symbol)->nd_loc;
     switch (type) {
       case NODE_DSTR:
         nd_set_type(symbol, NODE_DSYM);
         break;
       case NODE_STR:
-        symbol = str_to_sym_node(p, symbol, &RNODE(symbol)->nd_loc);
+        symbol = str_to_sym_node(p, symbol, loc, &NULL_LOC, loc, &NULL_LOC);
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -13652,6 +13772,15 @@ rb_parser_set_pos(YYLTYPE *yylloc, int sourceline, int beg_pos, int end_pos)
     yylloc->end_pos.lineno = sourceline;
     yylloc->end_pos.column = end_pos;
     return yylloc;
+}
+
+void
+rb_parser_set_location_of_label_token(const YYLTYPE *label_loc, YYLTYPE *value_loc, YYLTYPE *closing_loc)
+{
+    *value_loc = *label_loc;
+    *closing_loc = *label_loc;
+    value_loc->end_pos.column = label_loc->end_pos.column - 1;
+    closing_loc->beg_pos.column = label_loc->end_pos.column - 1;
 }
 
 YYLTYPE *
@@ -14247,7 +14376,7 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_CONST:
         useless = "a constant";
         break;
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_ENCODING:
@@ -14393,7 +14522,7 @@ is_static_content(NODE *node)
         do {
             if (!is_static_content(RNODE_LIST(node)->nd_head)) return 0;
         } while ((node = RNODE_LIST(node)->nd_next) != 0);
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
       case NODE_REGX:
       case NODE_LINE:
       case NODE_FILE:
@@ -14535,7 +14664,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         }
         break;
 
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
       case NODE_DSYM:
         SWITCH_BY_COND_TYPE(type, warning, "symbol ");
         break;
@@ -14911,10 +15040,10 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
 }
 
 static NODE*
-dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
+dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *value_loc, const YYLTYPE *closing_loc)
 {
     if (!node) {
-        return NEW_SYM(STR_NEW0(), loc);
+        return NEW_RB_SYMBOL(rb_str_to_parser_string(p, STR_NEW0()), loc, opening_loc, value_loc, closing_loc);
     }
 
     switch (nd_type(node)) {
@@ -14923,7 +15052,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         break;
       case NODE_STR:
-        node = str_to_sym_node(p, node, loc);
+        node = str_to_sym_node(p, node, loc, opening_loc, value_loc, closing_loc);
         break;
       default:
         node = NEW_DSYM(0, 1, NEW_LIST(node, loc), loc);
@@ -14941,7 +15070,7 @@ nd_type_st_key_enable_p(NODE *node)
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
       case NODE_STR:
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
       case NODE_REGX:
       case NODE_LINE:
       case NODE_FILE:
@@ -14966,7 +15095,7 @@ nd_value(struct parser_params *p, NODE *node)
         return rb_node_rational_literal_val(node);
       case NODE_IMAGINARY:
         return rb_node_imaginary_literal_val(node);
-      case NODE_SYM:
+      case RB_SYMBOL_NODE:
         return rb_node_sym_string_val(node);
       case NODE_REGX:
         return rb_node_regx_string_val(node);
@@ -15750,7 +15879,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
         if (!lvar_defined(p, var)) return ST_CONTINUE;
     }
-    node = node_assign(p, assignable(p, var, 0, loc), NEW_SYM(rb_id2str(var), loc), NO_LEX_CTXT, loc);
+    node = node_assign(p, assignable(p, var, 0, loc), NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str(var)), loc, &NULL_LOC, loc, &NULL_LOC), NO_LEX_CTXT, loc);
     succ = *succ_block;
     if (!succ) succ = NEW_ERROR(loc);
     succ = block_append(p, succ, node);
@@ -15830,7 +15959,7 @@ parser_append_options(struct parser_params *p, NODE *node)
             node = block_append(p, split, node);
         }
         if (p->do_chomp) {
-            NODE *chomp = NEW_SYM(rb_str_new_cstr("chomp"), LOC);
+            NODE *chomp = NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_str_new_cstr("chomp")), LOC, &NULL_LOC, LOC, &NULL_LOC);
             chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_TRUE(LOC));
             irs = list_append(p, irs, NEW_HASH(chomp, LOC));
         }

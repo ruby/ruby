@@ -315,6 +315,24 @@ free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)
             rb_node_list_free(&n->body);
             break;
         }
+      case RB_STRING_NODE:
+        {
+            rb_string_node_t *n = (rb_string_node_t *)node;
+            parser_string_free(ast, n->unescaped);
+            break;
+        }
+      case RB_SYMBOL_NODE:
+        {
+            rb_symbol_node_t *n = (rb_symbol_node_t *)node;
+            parser_string_free(ast, n->unescaped);
+            break;
+        }
+      case RB_ARRAY_NODE:
+        {
+            rb_array_node_t *n = (rb_array_node_t *)node;
+            rb_node_list_free(&n->elements);
+            break;
+        }
       default:
         break;
     }

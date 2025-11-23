@@ -11205,6 +11205,7 @@ compile_shareable_constant_value(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pars
     }
 }
 
+static VALUE parse_integer_value(const pm_integer_t *integer);
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -11296,6 +11297,350 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case RB_FALSE_NODE: {
         if (!popped) {
             ADD_INSN1(ret, node, putobject, Qfalse);
+        }
+        break;
+      }
+      case RB_SYMBOL_NODE:{
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_sym_string_val(node));
+        }
+        break;
+      }
+      case RB_STRING_NODE:{
+        if (!popped) {
+            VALUE lit = rb_string_node_string_val(node);
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case RB_ARRAY_NODE: {
+        const rb_array_node_t *cast = (const rb_array_node_t *) node;
+        const rb_node_list2_t *elements = &cast->elements;
+
+        // Simple implementation: compile each element and create array
+        for (size_t index = 0; index < elements->size; index++) {
+            COMPILE(ret, "array element", elements->nodes[index]);
+        }
+
+        if (!popped) {
+            ADD_INSN1(ret, node, newarray, INT2FIX(elements->size));
+        }
+        else if (elements->size > 0) {
+            // Pop all elements if array is popped
+            for (size_t index = 0; index < elements->size; index++) {
+                ADD_INSN(ret, node, pop);
+            }
+        }
+        break;
+      }
+      case RB_RETURN_NODE: {
+        const rb_return_node_t *cast = (const rb_return_node_t *) node;
+        const rb_arguments_node_t *arguments = cast->arguments;
+        enum rb_iseq_type iseq_type = ISEQ_BODY(iseq)->type;
+        LABEL *splabel = 0;
+
+        const rb_iseq_t *parent_iseq = iseq;
+        enum rb_iseq_type parent_type = ISEQ_BODY(parent_iseq)->type;
+        while (parent_type == ISEQ_TYPE_RESCUE || parent_type == ISEQ_TYPE_ENSURE) {
+            if (!(parent_iseq = ISEQ_BODY(parent_iseq)->parent_iseq)) break;
+            parent_type = ISEQ_BODY(parent_iseq)->type;
+        }
+
+        switch (parent_type) {
+          case ISEQ_TYPE_TOP:
+          case ISEQ_TYPE_MAIN:
+            if (arguments) {
+                rb_warn("argument of top-level return is ignored");
+            }
+            if (parent_iseq == iseq) {
+                iseq_type = ISEQ_TYPE_METHOD;
+            }
+            break;
+          default:
+            break;
+        }
+
+        if (iseq_type == ISEQ_TYPE_METHOD) {
+            splabel = NEW_LABEL(0);
+            ADD_LABEL(ret, splabel);
+            ADD_ADJUST(ret, node, 0);
+        }
+
+        if (arguments != NULL) {
+            COMPILE(ret, "return arguments", (const rb_node_t *)arguments);
+        }
+        else {
+            ADD_INSN(ret, node, putnil);
+        }
+
+        if (iseq_type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+            add_ensure_iseq(ret, iseq, 1);
+            ADD_TRACE(ret, RUBY_EVENT_RETURN);
+            ADD_INSN(ret, node, leave);
+            ADD_ADJUST_RESTORE(ret, splabel);
+            if (!popped) ADD_INSN(ret, node, putnil);
+        }
+        else {
+            ADD_INSN1(ret, node, throw, INT2FIX(TAG_RETURN));
+            if (popped) ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+
+      case RB_RETRY_NODE: {
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+            ADD_INSN(ret, node, putnil);
+            ADD_INSN1(ret, node, throw, INT2FIX(TAG_RETRY));
+
+            if (popped) {
+                ADD_INSN(ret, node, pop);
+            }
+        }
+        else {
+            COMPILE_ERROR(ERROR_ARGS "Invalid retry");
+            return COMPILE_NG;
+        }
+        break;
+      }
+
+      case RB_REDO_NODE: {
+        if (ISEQ_COMPILE_DATA(iseq)->redo_label && can_add_ensure_iseq(iseq)) {
+            LABEL *splabel = NEW_LABEL(0);
+
+            ADD_LABEL(ret, splabel);
+            ADD_ADJUST(ret, node, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            add_ensure_iseq(ret, iseq, 0);
+            ADD_INSNL(ret, node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            ADD_ADJUST_RESTORE(ret, splabel);
+
+            if (!popped) {
+                ADD_INSN(ret, node, putnil);
+            }
+        }
+        else if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label && can_add_ensure_iseq(iseq)) {
+            LABEL *splabel = NEW_LABEL(0);
+
+            ADD_LABEL(ret, splabel);
+            add_ensure_iseq(ret, iseq, 0);
+            ADD_ADJUST(ret, node, ISEQ_COMPILE_DATA(iseq)->start_label);
+            ADD_INSNL(ret, node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+            ADD_ADJUST_RESTORE(ret, splabel);
+
+            if (!popped) {
+                ADD_INSN(ret, node, putnil);
+            }
+        }
+        else {
+            const rb_iseq_t *ip = iseq;
+
+            while (ip) {
+                if (!ISEQ_COMPILE_DATA(ip)) {
+                    ip = 0;
+                    break;
+                }
+
+                if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
+                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+                    return COMPILE_NG;
+                }
+
+                ip = ISEQ_BODY(ip)->parent_iseq;
+            }
+
+            if (ip != 0) {
+                ADD_INSN(ret, node, putnil);
+                ADD_INSN1(ret, node, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
+
+                if (popped) {
+                    ADD_INSN(ret, node, pop);
+                }
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+                return COMPILE_NG;
+            }
+        }
+        break;
+      }
+
+      case RB_BREAK_NODE: {
+        rb_break_node_t *break_node = (rb_break_node_t *)node;
+        unsigned long throw_flag = 0;
+
+        if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
+            /* while/until */
+            LABEL *splabel = NEW_LABEL(0);
+            ADD_LABEL(ret, splabel);
+            ADD_ADJUST(ret, node, ISEQ_COMPILE_DATA(iseq)->redo_label);
+
+            if (break_node->arguments != NULL) {
+                CHECK(COMPILE_((rb_node_t *)break_node->arguments, "break val", ret, popped));
+            }
+            else {
+                ADD_INSN(ret, node, putnil);
+            }
+
+            add_ensure_iseq(ret, iseq, 0);
+            ADD_INSNL(ret, node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            ADD_ADJUST_RESTORE(ret, splabel);
+            if (!popped) ADD_INSN(ret, node, putnil);
+        }
+        else {
+            const rb_iseq_t *ip = iseq;
+
+            while (ip) {
+                if (!ISEQ_COMPILE_DATA(ip)) {
+                    ip = 0;
+                    break;
+                }
+
+                if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+                    throw_flag = VM_THROW_NO_ESCAPE_FLAG;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
+                    throw_flag = 0;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
+                    COMPILE_ERROR(ERROR_ARGS "Invalid break");
+                    return COMPILE_NG;
+                }
+                else {
+                    ip = ISEQ_BODY(ip)->parent_iseq;
+                    continue;
+                }
+
+                /* escape from block */
+                if (break_node->arguments != NULL) {
+                    CHECK(COMPILE_((rb_node_t *)break_node->arguments, "break val", ret, popped));
+                }
+                else {
+                    ADD_INSN(ret, node, putnil);
+                }
+
+                ADD_INSN1(ret, node, throw, INT2FIX(throw_flag | TAG_BREAK));
+                if (popped) ADD_INSN(ret, node, pop);
+
+                return COMPILE_OK;
+            }
+
+            COMPILE_ERROR(ERROR_ARGS "Invalid break");
+            return COMPILE_NG;
+        }
+        break;
+      }
+
+      case RB_INTEGER_NODE: {
+        if (!popped) {
+            rb_integer_node_t *int_node = (rb_integer_node_t *)node;
+            VALUE value = parse_integer_value(&int_node->value);
+
+            ADD_INSN1(ret, node, putobject, value);
+            RB_OBJ_WRITTEN(iseq, Qundef, value);
+        }
+        break;
+      }
+
+      case RB_FLOAT_NODE: {
+        if (!popped) {
+            rb_float_node_t *float_node = (rb_float_node_t *)node;
+            VALUE value = DBL2NUM(float_node->value);
+            ADD_INSN1(ret, node, putobject, value);
+            RB_OBJ_WRITTEN(iseq, Qundef, value);
+        }
+        break;
+      }
+
+      case RB_NEXT_NODE: {
+        rb_next_node_t *next_node = (rb_next_node_t *)node;
+
+        if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
+            LABEL *splabel = NEW_LABEL(0);
+            ADD_LABEL(ret, splabel);
+
+            if (next_node->arguments) {
+                CHECK(COMPILE_((rb_node_t *)next_node->arguments, "next val", ret, popped));
+            }
+            else {
+                ADD_INSN(ret, node, putnil);
+            }
+            add_ensure_iseq(ret, iseq, 0);
+
+            ADD_ADJUST(ret, node, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            ADD_INSNL(ret, node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+
+            ADD_ADJUST_RESTORE(ret, splabel);
+            if (!popped) ADD_INSN(ret, node, putnil);
+        }
+        else if (ISEQ_COMPILE_DATA(iseq)->end_label && can_add_ensure_iseq(iseq)) {
+            LABEL *splabel = NEW_LABEL(0);
+
+            ADD_LABEL(ret, splabel);
+            ADD_ADJUST(ret, node, ISEQ_COMPILE_DATA(iseq)->start_label);
+
+            if (next_node->arguments != NULL) {
+                CHECK(COMPILE_((rb_node_t *)next_node->arguments, "next val", ret, popped));
+            }
+            else {
+                ADD_INSN(ret, node, putnil);
+            }
+
+            add_ensure_iseq(ret, iseq, 0);
+            ADD_INSNL(ret, node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            ADD_ADJUST_RESTORE(ret, splabel);
+            splabel->unremovable = FALSE;
+
+            if (!popped) ADD_INSN(ret, node, putnil);
+        }
+        else {
+            const rb_iseq_t *ip = iseq;
+            unsigned long throw_flag = 0;
+
+            while (ip) {
+                if (!ISEQ_COMPILE_DATA(ip)) {
+                    ip = 0;
+                    break;
+                }
+
+                throw_flag = VM_THROW_NO_ESCAPE_FLAG;
+                if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+                    /* while loop */
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
+                    COMPILE_ERROR(ERROR_ARGS "Invalid next");
+                    return COMPILE_NG;
+                }
+
+                ip = ISEQ_BODY(ip)->parent_iseq;
+            }
+
+            if (ip != 0) {
+                if (next_node->arguments) {
+                    CHECK(COMPILE_((rb_node_t *)next_node->arguments, "next val", ret, popped));
+                }
+                else {
+                    ADD_INSN(ret, node, putnil);
+                }
+                ADD_INSN1(ret, node, throw, INT2FIX(throw_flag | TAG_NEXT));
+
+                if (popped) {
+                    ADD_INSN(ret, node, pop);
+                }
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "Invalid next");
+                return COMPILE_NG;
+            }
         }
         break;
       }
