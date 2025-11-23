@@ -39,6 +39,7 @@
 #include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
+#include "internal/string_simd.h"
 #include "internal/transcode.h"
 #include "probes.h"
 #include "ruby/encoding.h"
@@ -477,7 +478,7 @@ fstring_concurrent_set_cmp(VALUE a, VALUE b)
     RSTRING_GETMEM(b, bptr, blen);
     return (alen == blen &&
             ENCODING_GET(a) == ENCODING_GET(b) &&
-            memcmp(aptr, bptr, alen) == 0);
+            rb_str_simd_memeq((const unsigned char *)aptr, (const unsigned char *)bptr, (size_t)alen));
 }
 
 struct fstr_create_arg {
@@ -4218,7 +4219,10 @@ rb_str_cmp(VALUE str1, VALUE str2)
     if (str1 == str2) return 0;
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
-    if (ptr1 == ptr2 || (retval = memcmp(ptr1, ptr2, lesser(len1, len2))) == 0) {
+    /* Use SIMD-accelerated comparison for better performance */
+    if (ptr1 == ptr2 || (retval = rb_str_simd_memcmp((const unsigned char *)ptr1,
+                                                      (const unsigned char *)ptr2,
+                                                      (size_t)lesser(len1, len2))) == 0) {
         if (len1 == len2) {
             if (!rb_str_comparable(str1, str2)) {
                 if (ENCODING_GET(str1) > ENCODING_GET(str2))
@@ -11223,7 +11227,10 @@ deleted_prefix_length(VALUE str, VALUE prefix)
     if (olen < prefixlen) return 0;
     strptr = RSTRING_PTR(str);
     prefixptr = RSTRING_PTR(prefix);
-    if (memcmp(strptr, prefixptr, prefixlen) != 0) return 0;
+    /* Use SIMD for prefix comparison */
+    if (!rb_str_simd_memeq((const unsigned char *)strptr,
+                            (const unsigned char *)prefixptr,
+                            (size_t)prefixlen)) return 0;
     if (is_broken_string(prefix)) {
         if (!is_broken_string(str)) {
             /* prefix in a valid string cannot be broken */
@@ -11311,7 +11318,10 @@ deleted_suffix_length(VALUE str, VALUE suffix)
     suffixptr = RSTRING_PTR(suffix);
     const char *strend = strptr + olen;
     const char *before_suffix = strend - suffixlen;
-    if (memcmp(before_suffix, suffixptr, suffixlen) != 0) return 0;
+    /* Use SIMD for suffix comparison */
+    if (!rb_str_simd_memeq((const unsigned char *)before_suffix,
+                            (const unsigned char *)suffixptr,
+                            (size_t)suffixlen)) return 0;
     if (!at_char_boundary(strptr, before_suffix, strend, enc)) return 0;
 
     return suffixlen;

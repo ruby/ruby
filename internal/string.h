@@ -11,6 +11,7 @@
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "internal/compilers.h" /* for __has_builtin */
+#include "internal/string_simd.h" /* for SIMD-accelerated string operations */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
@@ -189,7 +190,8 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
     if (!rb_str_comparable(str1, str2)) return Qfalse;
     if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
         return Qtrue;
-    if (memcmp(ptr1, ptr2, len) == 0)
+    /* Use SIMD-accelerated equality check for better performance */
+    if (rb_str_simd_memeq((const unsigned char *)ptr1, (const unsigned char *)ptr2, (size_t)len))
         return Qtrue;
     return Qfalse;
 }
