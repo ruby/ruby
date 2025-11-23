@@ -2231,7 +2231,7 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    each_byte([offset, [count]]) {|offset, byte| ...} -> self
+ *    each_byte([offset, [count]]) {|byte| ...} -> self
  *    each_byte([offset, [count]]) -> enumerator
  *
  *  Iterates over the buffer, yielding each byte starting from +offset+.
@@ -2255,7 +2255,7 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
     rb_io_buffer_get_bytes_for_reading(self, &base, &size);
 
     size_t offset, count;
-    io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc-1, argv+1, &offset, &count);
+    io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
 
     for (size_t i = 0; i < count; i++) {
         unsigned char *value = (unsigned char *)base + i + offset;
