@@ -34,15 +34,22 @@ typedef enum {
 # define STRING_SIMD_PURE __attribute__((pure))
 # define STRING_SIMD_HOT __attribute__((hot))
 # define STRING_SIMD_RESTRICT __restrict__
-# define LIKELY(x) __builtin_expect(!!(x), 1)
-# define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
 # define STRING_SIMD_INLINE static inline
 # define STRING_SIMD_PURE
 # define STRING_SIMD_HOT
 # define STRING_SIMD_RESTRICT
-# define LIKELY(x) (x)
-# define UNLIKELY(x) (x)
+#endif
+
+/* Use Ruby's existing LIKELY/UNLIKELY macros if available, otherwise define them */
+#ifndef LIKELY
+# if defined(__GNUC__) || defined(__clang__)
+#  define LIKELY(x) __builtin_expect(!!(x), 1)
+#  define UNLIKELY(x) __builtin_expect(!!(x), 0)
+# else
+#  define LIKELY(x) (x)
+#  define UNLIKELY(x) (x)
+# endif
 #endif
 
 /* SIMD configuration thresholds */
