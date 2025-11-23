@@ -15,7 +15,7 @@ void rb_parser_prettyprint(void);
 #include <stdio.h>
 
 #include "parser_ast.h"
-#include "prism/util/pm_buffer.h"
+#include "prism/buffer.h"
 
 /**
  * Pretty-prints the AST represented by the given node to the given buffer.

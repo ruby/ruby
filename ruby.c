@@ -2334,11 +2334,11 @@ prism_dump_tree(pm_parse_result_t *result)
 static VALUE
 parser_dump_tree(const rb_node_t *node)
 {
-    pm_buffer_t output_buffer = { 0 };
+    pm_buffer_t *output_buffer = pm_buffer_new();
 
-    rb_parser_prettyprint(&output_buffer, node);
-    VALUE tree = rb_str_new(output_buffer.value, output_buffer.length);
-    pm_buffer_free(&output_buffer);
+    rb_parser_prettyprint(output_buffer, node);
+    VALUE tree = rb_str_new(pm_buffer_value(output_buffer), pm_buffer_length(output_buffer));
+    pm_buffer_free(output_buffer);
     return tree;
 }
 

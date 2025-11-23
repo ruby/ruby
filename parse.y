@@ -1312,7 +1312,7 @@ static rb_nil_node_t *rb_new_node_nil_new(struct parser_params *p, const YYLTYPE
 static rb_true_node_t *rb_new_node_true_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_false_node_t *rb_new_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_self_node_t *rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc);
 
 #define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
@@ -12617,7 +12617,7 @@ rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_call_node_t *
-rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc)
 {
     rb_call_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CALL_NODE, rb_self_node_t, loc);
     n->receiver = receiver;
@@ -12627,13 +12627,13 @@ rb_new_node_call_new(struct parser_params *p, rb_node_t *receiver, ID name, rb_a
 }
 
 static rb_call_node_t *
-rb_new_node_opcall_new(struct parser_params *p, rb_node_t *receiver, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+rb_new_node_opcall_new(struct parser_params *p, rb_node_t *receiver, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc)
 {
     return rb_new_node_call_new(p, receiver, name, arguments, loc);
 }
 
 static rb_call_node_t *
-rb_new_node_fcall_new(struct parser_params *p, ID name, rb_arguments_node *arguments, const YYLTYPE *loc)
+rb_new_node_fcall_new(struct parser_params *p, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc)
 {
     return rb_new_node_call_new(p, NULL, name, arguments, loc);
 }
