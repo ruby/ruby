@@ -915,4 +915,13 @@ class JSONGeneratorTest < Test::Unit::TestCase
       end
     end
   end
+
+  # The case when the State is frozen is tested in JSONCoderTest#test_nesting_recovery
+  def test_nesting_recovery
+    state = JSON::State.new
+    ary = []
+    ary << ary
+    assert_raise(JSON::NestingError) { state.generate_new(ary) }
+    assert_equal '{"a":1}', state.generate({ a: 1 })
+  end
 end
