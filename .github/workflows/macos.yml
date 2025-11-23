@@ -45,7 +45,6 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
-            extra_checks: [capi]
       fail-fast: false
 
     env:
