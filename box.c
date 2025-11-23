@@ -1057,7 +1057,7 @@ Init_Box(void)
     tmp_dir = system_tmpdir();
     tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
-    VALUE mRuby = rb_path2class("Ruby");
+    VALUE mRuby = rb_define_module("Ruby");
 
     rb_cBox = rb_define_class_under(mRuby, "Box", rb_cModule);
     rb_define_method(rb_cBox, "initialize", box_initialize, 0);
