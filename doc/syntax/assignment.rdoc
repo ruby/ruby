@@ -9,7 +9,7 @@ Assignment creates a local variable if the variable was not previously
 referenced.
 
 An assignment expression result is always the assigned value, including
-{assignment methods}[rdoc-ref:syntax/assignment.rdoc@Assignment+Methods].
+{assignment methods}[rdoc-ref:@Assignment+Methods].
 
 == Local Variable Names
 

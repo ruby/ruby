@@ -136,7 +136,7 @@ the only required part is the conversion specifier, so we begin with that.
     t = Time.now       # => 2022-06-29 07:10:20.3230914 -0500
     t.strftime('%N')   # => "323091400"                  # Default.
 
-  Use {width specifiers}[rdoc-ref:strftime_formatting.rdoc@Width+Specifiers]
+  Use {width specifiers}[rdoc-ref:@Width+Specifiers]
   to adjust units:
 
       t.strftime('%3N')  # => "323"                      # Milliseconds.
@@ -522,6 +522,5 @@ An ISO 8601 combined date and time representation may be any
 ISO 8601 date and any ISO 8601 time,
 separated by the letter +T+.
 
-For the relevant +strftime+ formats, see
-{Dates}[rdoc-ref:strftime_formatting.rdoc@Dates]
-and {Times}[rdoc-ref:strftime_formatting.rdoc@Times] above.
+For the relevant +strftime+ formats, see {Dates}[rdoc-ref:@Dates] and
+{Times}[rdoc-ref:@Times] above.
