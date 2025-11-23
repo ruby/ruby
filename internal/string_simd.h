@@ -28,13 +28,21 @@ typedef enum {
   #define __has_builtin(x) 0
 #endif
 
-/* Inline and target attributes */
+/* Inline and target attributes for maximum performance */
 #if defined(__GNUC__) || defined(__clang__)
 # define STRING_SIMD_INLINE static inline __attribute__((always_inline))
 # define STRING_SIMD_PURE __attribute__((pure))
+# define STRING_SIMD_HOT __attribute__((hot))
+# define STRING_SIMD_RESTRICT __restrict__
+# define LIKELY(x) __builtin_expect(!!(x), 1)
+# define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
 # define STRING_SIMD_INLINE static inline
 # define STRING_SIMD_PURE
+# define STRING_SIMD_HOT
+# define STRING_SIMD_RESTRICT
+# define LIKELY(x) (x)
+# define UNLIKELY(x) (x)
 #endif
 
 /* SIMD configuration thresholds */
@@ -61,23 +69,26 @@ string_simd_get_implementation(void)
 /**
  * NEON-accelerated memory comparison
  * Compares 16 bytes at a time using NEON SIMD instructions
+ * Optimized with restrict pointers and branch hints for maximum performance
  * Returns: 0 if equal, non-zero if different
  */
-STRING_SIMD_INLINE int
-string_simd_memcmp_neon(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_SIMD_INLINE STRING_SIMD_HOT int
+string_simd_memcmp_neon(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                        const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                        size_t len)
 {
     const unsigned char *end = ptr1 + len;
     const unsigned char *aligned_end = ptr1 + (len & ~15UL); /* Align to 16-byte boundary */
 
-    /* Process 16 bytes at a time */
-    while (ptr1 < aligned_end) {
+    /* Process 16 bytes at a time with branch hints */
+    while (LIKELY(ptr1 < aligned_end)) {
         uint8x16_t v1 = vld1q_u8(ptr1);
         uint8x16_t v2 = vld1q_u8(ptr2);
         uint8x16_t cmp = vceqq_u8(v1, v2);
 
         /* If not all bytes are equal, we need to find the first difference */
-        if (vminvq_u8(cmp) == 0) {
-            /* Find first differing byte */
+        if (UNLIKELY(vminvq_u8(cmp) == 0)) {
+            /* Find first differing byte using optimized search */
             for (size_t i = 0; i < 16; i++) {
                 if (ptr1[i] != ptr2[i]) {
                     return (int)ptr1[i] - (int)ptr2[i];
@@ -104,21 +115,23 @@ string_simd_memcmp_neon(const unsigned char *ptr1, const unsigned char *ptr2, si
 /**
  * NEON-accelerated equality check
  * Returns: 1 if equal, 0 if different
- * Optimized for early exit on first difference
+ * Optimized for early exit with restrict pointers and branch hints
  */
-STRING_SIMD_INLINE int
-string_simd_memeq_neon(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_SIMD_INLINE STRING_SIMD_HOT int
+string_simd_memeq_neon(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                       const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                       size_t len)
 {
     const unsigned char *aligned_end = ptr1 + (len & ~15UL);
 
-    /* Process 16 bytes at a time */
-    while (ptr1 < aligned_end) {
+    /* Process 16 bytes at a time with branch hints for common case (equality) */
+    while (LIKELY(ptr1 < aligned_end)) {
         uint8x16_t v1 = vld1q_u8(ptr1);
         uint8x16_t v2 = vld1q_u8(ptr2);
         uint8x16_t cmp = vceqq_u8(v1, v2);
 
-        /* Early exit if any byte differs */
-        if (vminvq_u8(cmp) == 0) {
+        /* Early exit if any byte differs (unlikely in equality check) */
+        if (UNLIKELY(vminvq_u8(cmp) == 0)) {
             return 0;
         }
 
@@ -163,36 +176,42 @@ string_simd_memeq_neon(const unsigned char *ptr1, const unsigned char *ptr2, siz
 /**
  * SSE2-accelerated memory comparison
  * Compares 16 bytes at a time using SSE2 SIMD instructions
+ * Optimized with restrict pointers, loop unrolling, and branch hints
  */
-STRING_TARGET_SSE2 STRING_SIMD_INLINE int
-string_simd_memcmp_sse2(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_TARGET_SSE2 STRING_SIMD_INLINE STRING_SIMD_HOT int
+string_simd_memcmp_sse2(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                        const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                        size_t len)
 {
     const unsigned char *end = ptr1 + len;
     const unsigned char *aligned_end = ptr1 + (len & ~15UL);
 
     /* Process 16 bytes at a time */
-    while (ptr1 < aligned_end) {
+    while (LIKELY(ptr1 < aligned_end)) {
         __m128i v1 = _mm_loadu_si128((__m128i const*)ptr1);
         __m128i v2 = _mm_loadu_si128((__m128i const*)ptr2);
         __m128i cmp = _mm_cmpeq_epi8(v1, v2);
-        int mask = _mm_movemask_epi8(cmp);
+        unsigned int mask = (unsigned int)_mm_movemask_epi8(cmp);
 
-        /* If not all bytes equal (mask != 0xFFFF) */
-        if (mask != 0xFFFF) {
-            /* Find first differing byte */
-            for (size_t i = 0; i < 16; i++) {
-                if (ptr1[i] != ptr2[i]) {
-                    return (int)ptr1[i] - (int)ptr2[i];
-                }
-            }
+        /* If not all bytes equal (mask != 0xFFFF) - early exit */
+        if (UNLIKELY(mask != 0xFFFFu)) {
+            /* Find first differing byte using ctz for speed */
+            unsigned int diff_mask = ~mask & 0xFFFFu;
+            #if defined(__GNUC__) || defined(__clang__)
+            unsigned int first_diff = (unsigned int)__builtin_ctz(diff_mask);
+            #else
+            unsigned int first_diff = 0;
+            while ((diff_mask & (1u << first_diff)) == 0) first_diff++;
+            #endif
+            return (int)ptr1[first_diff] - (int)ptr2[first_diff];
         }
 
         ptr1 += 16;
         ptr2 += 16;
     }
 
-    /* Handle remaining bytes */
-    while (ptr1 < end) {
+    /* Handle remaining bytes (< 16) */
+    while (UNLIKELY(ptr1 < end)) {
         if (*ptr1 != *ptr2) {
             return (int)*ptr1 - (int)*ptr2;
         }
@@ -205,32 +224,57 @@ string_simd_memcmp_sse2(const unsigned char *ptr1, const unsigned char *ptr2, si
 
 /**
  * SSE2-accelerated equality check
- * Optimized for early exit - faster than memcmp for equality testing
+ * Optimized for early exit with restrict pointers and branch prediction hints
  */
-STRING_TARGET_SSE2 STRING_SIMD_INLINE int
-string_simd_memeq_sse2(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_TARGET_SSE2 STRING_SIMD_INLINE STRING_SIMD_HOT int
+string_simd_memeq_sse2(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                       const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                       size_t len)
 {
-    const unsigned char *aligned_end = ptr1 + (len & ~15UL);
+    const unsigned char *aligned_end = ptr1 + (len & ~31UL); /* Process 32 bytes when possible */
 
-    /* Process 16 bytes at a time */
-    while (ptr1 < aligned_end) {
-        __m128i v1 = _mm_loadu_si128((__m128i const*)ptr1);
-        __m128i v2 = _mm_loadu_si128((__m128i const*)ptr2);
-        __m128i cmp = _mm_cmpeq_epi8(v1, v2);
-        int mask = _mm_movemask_epi8(cmp);
+    /* Unrolled loop - process 32 bytes (2x SSE2) per iteration for better throughput */
+    while (LIKELY(ptr1 < aligned_end)) {
+        __m128i v1a = _mm_loadu_si128((__m128i const*)ptr1);
+        __m128i v2a = _mm_loadu_si128((__m128i const*)ptr2);
+        __m128i v1b = _mm_loadu_si128((__m128i const*)(ptr1 + 16));
+        __m128i v2b = _mm_loadu_si128((__m128i const*)(ptr2 + 16));
+
+        __m128i cmpa = _mm_cmpeq_epi8(v1a, v2a);
+        __m128i cmpb = _mm_cmpeq_epi8(v1b, v2b);
+        __m128i combined = _mm_and_si128(cmpa, cmpb);
 
         /* Early exit if any byte differs */
-        if (mask != 0xFFFF) {
+        if (UNLIKELY(_mm_movemask_epi8(combined) != 0xFFFF)) {
+            /* Check first 16 bytes */
+            if (_mm_movemask_epi8(cmpa) != 0xFFFF) {
+                return 0;
+            }
+            /* Check second 16 bytes */
             return 0;
         }
 
+        ptr1 += 32;
+        ptr2 += 32;
+    }
+
+    /* Process remaining 16-byte chunk if any */
+    aligned_end = ptr1 + ((len & 31) & ~15UL);
+    if (LIKELY(ptr1 < aligned_end)) {
+        __m128i v1 = _mm_loadu_si128((__m128i const*)ptr1);
+        __m128i v2 = _mm_loadu_si128((__m128i const*)ptr2);
+        __m128i cmp = _mm_cmpeq_epi8(v1, v2);
+
+        if (UNLIKELY(_mm_movemask_epi8(cmp) != 0xFFFF)) {
+            return 0;
+        }
         ptr1 += 16;
         ptr2 += 16;
     }
 
-    /* Handle remaining bytes */
+    /* Handle remaining bytes (< 16) */
     const unsigned char *end = ptr1 + (len & 15);
-    while (ptr1 < end) {
+    while (UNLIKELY(ptr1 < end)) {
         if (*ptr1++ != *ptr2++) {
             return 0;
         }
@@ -289,15 +333,18 @@ string_simd_get_implementation(void)
 
 /**
  * SIMD-accelerated string comparison
- * Drop-in replacement for memcmp, but optimized with SIMD
+ * Drop-in replacement for memcmp, optimized with SIMD, restrict pointers,
+ * and intelligent branch prediction for maximum CPU performance
  *
  * @param ptr1 First string pointer (as unsigned char for proper comparison)
  * @param ptr2 Second string pointer
  * @param len Length to compare
  * @return 0 if equal, <0 if ptr1 < ptr2, >0 if ptr1 > ptr2
  */
-STRING_SIMD_INLINE STRING_SIMD_PURE int
-rb_str_simd_memcmp(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_SIMD_INLINE STRING_SIMD_PURE STRING_SIMD_HOT int
+rb_str_simd_memcmp(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                   const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                   size_t len)
 {
     /* Quick checks for identical pointers or zero length */
     if (ptr1 == ptr2 || len == 0) {
@@ -322,14 +369,17 @@ rb_str_simd_memcmp(const unsigned char *ptr1, const unsigned char *ptr2, size_t 
 /**
  * SIMD-accelerated string equality check
  * Faster than memcmp when you only need to know if strings are equal
+ * Heavily optimized with restrict, inline, hot attribute, and branch hints
  *
  * @param ptr1 First string pointer
  * @param ptr2 Second string pointer
  * @param len Length to compare
  * @return 1 if equal, 0 if different
  */
-STRING_SIMD_INLINE STRING_SIMD_PURE int
-rb_str_simd_memeq(const unsigned char *ptr1, const unsigned char *ptr2, size_t len)
+STRING_SIMD_INLINE STRING_SIMD_PURE STRING_SIMD_HOT int
+rb_str_simd_memeq(const unsigned char *STRING_SIMD_RESTRICT ptr1,
+                  const unsigned char *STRING_SIMD_RESTRICT ptr2,
+                  size_t len)
 {
     /* Quick checks */
     if (ptr1 == ptr2 || len == 0) {
