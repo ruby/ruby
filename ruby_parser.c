@@ -1031,6 +1031,13 @@ rb_node_str_string_val(const NODE *node)
 }
 
 VALUE
+rb_string_node_string_val(const rb_node_t *node)
+{
+    const rb_string_node_t *n = (const rb_string_node_t *)node;
+    return rb_str_new_parser_string(n->unescaped);
+}
+
+VALUE
 rb_node_sym_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_SYM(node)->string;
