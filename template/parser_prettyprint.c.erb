@@ -1,5 +1,7 @@
 <%# encoding: ASCII -%>
 #include "parser_prettyprint.h"
+#include "prism/internal/buffer.h"
+#include "prism/internal/integer.h"
 
 // We optionally support pretty printing nodes. For systems that don't want or
 // need this functionality, it can be turned off with the
@@ -160,9 +162,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t 
  */
 PRISM_EXPORTED_FUNCTION void
 rb_parser_prettyprint(pm_buffer_t *output_buffer, const rb_node_t *node) {
-    pm_buffer_t prefix_buffer = { 0 };
-    prettyprint_node(output_buffer, node, &prefix_buffer);
-    pm_buffer_free(&prefix_buffer);
+    pm_buffer_t *prefix_buffer = pm_buffer_new();
+    prettyprint_node(output_buffer, node, prefix_buffer);
+    pm_buffer_free(prefix_buffer);
 }
 
 #endif
