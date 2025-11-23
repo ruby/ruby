@@ -277,6 +277,8 @@ make_counters! {
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
 
+    unspecialized_setivar_...
+
     // Unsupported parameter features
     complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
