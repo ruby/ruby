@@ -428,40 +428,10 @@ rb_class_modify_check(VALUE klass)
         rb_class_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
-        const char *desc;
-
         if (RCLASS_SINGLETON_P(klass)) {
-            desc = "object";
             klass = RCLASS_ATTACHED_OBJECT(klass);
-            if (!SPECIAL_CONST_P(klass)) {
-                switch (BUILTIN_TYPE(klass)) {
-                  case T_MODULE:
-                  case T_ICLASS:
-                    desc = "Module";
-                    break;
-                  case T_CLASS:
-                    desc = "Class";
-                    break;
-                  default:
-                    break;
-                }
-            }
         }
-        else {
-            switch (BUILTIN_TYPE(klass)) {
-              case T_MODULE:
-              case T_ICLASS:
-                desc = "module";
-                break;
-              case T_CLASS:
-                desc = "class";
-                break;
-              default:
-                Check_Type(klass, T_CLASS);
-                UNREACHABLE;
-            }
-        }
-        rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
+        rb_error_frozen_object(klass);
     }
 }
 
