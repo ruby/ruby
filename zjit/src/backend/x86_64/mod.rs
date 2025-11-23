@@ -542,14 +542,23 @@ impl Assembler {
                     *opnds = vec![];
                     asm.push_insn(insn);
                 }
-                Insn::CSelZ { out, .. } |
-                Insn::CSelNZ { out, .. } |
-                Insn::CSelE { out, .. } |
-                Insn::CSelNE { out, .. } |
-                Insn::CSelL { out, .. } |
-                Insn::CSelLE { out, .. } |
-                Insn::CSelG { out, .. } |
-                Insn::CSelGE { out, .. } |
+                Insn::CSelZ { truthy: left, falsy: right, out } |
+                Insn::CSelNZ { truthy: left, falsy: right, out } |
+                Insn::CSelE { truthy: left, falsy: right, out } |
+                Insn::CSelNE { truthy: left, falsy: right, out } |
+                Insn::CSelL { truthy: left, falsy: right, out } |
+                Insn::CSelLE { truthy: left, falsy: right, out } |
+                Insn::CSelG { truthy: left, falsy: right, out } |
+                Insn::CSelGE { truthy: left, falsy: right, out } => {
+                    *left = split_stack_membase(asm, *left, SCRATCH1_OPND, &stack_state);
+                    *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
+                    *right = split_if_both_memory(asm, *right, *left, SCRATCH0_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+                    asm.push_insn(insn);
+                    if let Some(mem_out) = mem_out {
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::Lea { out, .. } => {
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
@@ -1775,5 +1784,24 @@ mod tests {
             0xa: mov qword ptr [rbx], r11
         ");
         assert_snapshot!(cb.hexdump(), @"49bb00100000000000004c891b");
+    }
+
+    #[test]
+    fn test_csel_split_memory_read() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let left = Opnd::Mem(Mem { base: MemBase::Stack { stack_idx: 0, num_bits: 64 }, disp: 0, num_bits: 64 });
+        let right = Opnd::Mem(Mem { base: MemBase::Stack { stack_idx: 1, num_bits: 64 }, disp: 2, num_bits: 64 });
+        let _ = asm.csel_e(left, right);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov r10, qword ptr [rbp - 8]
+            0x4: mov r11, qword ptr [rbp - 0x10]
+            0x8: mov r11, qword ptr [r11 + 2]
+            0xc: cmove r11, qword ptr [r10]
+            0x10: mov qword ptr [rbp - 8], r11
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c8b55f84c8b5df04d8b5b024d0f441a4c895df8");
     }
 }

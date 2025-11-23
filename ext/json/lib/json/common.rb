@@ -1048,7 +1048,7 @@ module JSON
       options[:as_json] = as_json if as_json
 
       @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options))
+      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options)).freeze
     end
 
     # call-seq:

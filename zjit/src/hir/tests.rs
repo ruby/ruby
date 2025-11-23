@@ -1954,6 +1954,35 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_opt_newarray_send_max_redefined() {
+        eval("
+            class Array
+              alias_method :old_max, :max
+              def max
+                old_max * 2
+              end
+            end
+
+            def test(a,b) = [a,b].max
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX))
+        ");
+    }
+
+    #[test]
     fn test_opt_newarray_send_min() {
         eval("
             def test(a,b)
@@ -2013,7 +2042,49 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnhandledNewarraySend(HASH)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH)
+          v32:Fixnum = ArrayHash v15, v16
+          PatchPoint NoEPEscape(test)
+          v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v40:ArrayExact = ArrayDup v39
+          v42:BasicObject = SendWithoutBlock v14, :puts, v40
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_hash_redefined() {
+        eval("
+            Array.class_eval { def hash = 42 }
+
+            def test(a,b)
+              sum = a+b
+              result = [a,b].hash
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH))
         ");
     }
 
@@ -2081,7 +2152,7 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v33:BoolExact = ArrayInclude v15, v16 | v16
           PatchPoint NoEPEscape(test)
           v40:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2090,6 +2161,45 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v33
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_include_p_redefined() {
+        eval("
+            class Array
+              alias_method :old_include?, :include?
+              def include?(x)
+                old_include?(x)
+              end
+            end
+
+            def test(a,b)
+              sum = a+b
+              result = [a,b].include? b
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
 
@@ -2112,7 +2222,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v15:BoolExact = DupArrayInclude VALUE(0x1000) | v9
           CheckInterrupts
           Return v15
@@ -2144,7 +2254,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33))
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
 
@@ -3483,6 +3593,27 @@ pub mod hir_build_tests {
         assert!(!cfi.is_preceded_by(bb0, bb3));
         assert!(cfi.is_succeeded_by(bb1, bb0));
         assert!(cfi.is_succeeded_by(bb3, bb1));
+     }
+
+     #[test]
+     fn test_cfi_deduplicated_successors_and_predecessors() {
+         let mut function = Function::new(std::ptr::null());
+
+         let bb0 = function.entry_block;
+         let bb1 = function.new_block(0);
+
+         // Construct two separate jump instructions.
+         let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+         let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb1)});
+         function.push_insn(bb0, Insn::Jump(edge(bb1)));
+
+         let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+         function.push_insn(bb1, Insn::Return { val: retval });
+
+         let cfi = ControlFlowInfo::new(&function);
+
+         assert_eq!(cfi.predecessors(bb1).collect::<Vec<_>>().len(), 1);
+         assert_eq!(cfi.successors(bb0).collect::<Vec<_>>().len(), 1);
      }
  }
 

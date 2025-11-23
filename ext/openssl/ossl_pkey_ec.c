@@ -849,25 +849,23 @@ static VALUE ossl_ec_group_get_cofactor(VALUE self)
 
 /*
  * call-seq:
- *   group.curve_name  => String
+ *    group.curve_name -> string or nil
  *
- * Returns the curve name (sn).
+ * Returns the curve name (short name) corresponding to this group, or +nil+
+ * if \OpenSSL does not have an OID associated with the group.
  *
  * See the OpenSSL documentation for EC_GROUP_get_curve_name()
  */
 static VALUE ossl_ec_group_get_curve_name(VALUE self)
 {
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
     int nid;
 
     GetECGroup(self, group);
-    if (group == NULL)
-        return Qnil;
-
     nid = EC_GROUP_get_curve_name(group);
-
-/* BUG: an nid or asn1 object should be returned, maybe. */
-    return rb_str_new2(OBJ_nid2sn(nid));
+    if (nid == NID_undef)
+        return Qnil;
+    return rb_str_new_cstr(OBJ_nid2sn(nid));
 }
 
 /*

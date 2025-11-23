@@ -187,17 +187,25 @@ module Spec
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
+    #
+    # If the repo already exists, `#update_repo` will be called.
     def build_repo3(**kwargs, &blk)
-      raise "gem_repo3 already exists -- use update_repo3 instead" if File.exist?(gem_repo3)
-      build_repo gem_repo3, **kwargs, &blk
+      if File.exist?(gem_repo3)
+        update_repo(gem_repo3, &blk)
+      else
+        build_repo gem_repo3, **kwargs, &blk
+      end
     end
 
     # Like build_repo3, this is a repo that has no pre-installed gems included.
-    # We have two different methods for situations where two different empty
-    # sources are needed.
+    #
+    # If the repo already exists, `#udpate_repo` will be called
     def build_repo4(**kwargs, &blk)
-      raise "gem_repo4 already exists -- use update_repo4 instead" if File.exist?(gem_repo4)
-      build_repo gem_repo4, **kwargs, &blk
+      if File.exist?(gem_repo4)
+        update_repo gem_repo4, &blk
+      else
+        build_repo gem_repo4, **kwargs, &blk
+      end
     end
 
     def update_repo2(**kwargs, &blk)
@@ -206,10 +214,6 @@ module Spec
 
     def update_repo3(&blk)
       update_repo(gem_repo3, &blk)
-    end
-
-    def update_repo4(&blk)
-      update_repo(gem_repo4, &blk)
     end
 
     def build_security_repo
@@ -420,8 +424,6 @@ module Spec
 
     class BundlerBuilder
       def initialize(context, name, version)
-        raise "can only build bundler" unless name == "bundler"
-
         @context = context
         @spec = Spec::Path.loaded_gemspec.dup
         @spec.version = version || Bundler::VERSION

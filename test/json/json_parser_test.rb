@@ -510,8 +510,8 @@ class JSONParserTest < Test::Unit::TestCase
     data = ['"']
     assert_equal data, parse(json)
     #
-    json = '["\\\'"]'
-    data = ["'"]
+    json = '["\\/"]'
+    data = ["/"]
     assert_equal data, parse(json)
 
     json = '["\/"]'
@@ -818,6 +818,14 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_parse_whitespace_after_newline
     assert_equal [], JSON.parse("[\n#{' ' * (8 + 8 + 4 + 3)}]")
+  end
+
+  def test_frozen
+    parser_config = JSON::Parser::Config.new({}).freeze
+    omit "JRuby failure in CI" if RUBY_ENGINE == "jruby"
+    assert_raise FrozenError do
+      parser_config.send(:initialize, {})
+    end
   end
 
   private

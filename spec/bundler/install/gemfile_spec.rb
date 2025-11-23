@@ -27,6 +27,35 @@ RSpec.describe "bundle install" do
       ENV["BUNDLE_GEMFILE"] = "NotGemfile"
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
+
+    it "respects lockfile and BUNDLE_LOCKFILE" do
+      gemfile bundled_app("NotGemfile"), <<-G
+        lockfile "ReallyNotGemfile.lock"
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+
+      bundle :install, gemfile: bundled_app("NotGemfile")
+
+      ENV["BUNDLE_GEMFILE"] = "NotGemfile"
+      ENV["BUNDLE_LOCKFILE"] = "ReallyNotGemfile.lock"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "respects BUNDLE_LOCKFILE during bundle install" do
+      ENV["BUNDLE_LOCKFILE"] = "ReallyNotGemfile.lock"
+
+      gemfile bundled_app("NotGemfile"), <<-G
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+
+      bundle :install, gemfile: bundled_app("NotGemfile")
+      expect(bundled_app("ReallyNotGemfile.lock")).to exist
+
+      ENV["BUNDLE_GEMFILE"] = "NotGemfile"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
   end
 
   context "with gemfile set via config" do

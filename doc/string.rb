@@ -194,10 +194,10 @@
 #
 # _Counts_
 #
-# - #length (aliased as #size): Returns the count of characters (not bytes).
-# - #empty?: Returns whether the length of +self+ is zero.
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
+# - #empty?: Returns whether the length of +self+ is zero.
+# - #length (aliased as #size): Returns the count of characters (not bytes).
 #
 # _Substrings_
 #

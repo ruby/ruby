@@ -359,27 +359,20 @@ ossl_x509ext_set_critical(VALUE self, VALUE flag)
     return flag;
 }
 
+/*
+ * call-seq:
+ *    ext.oid -> string
+ *
+ * Returns the OID of the extension. Returns the short name or the dotted
+ * decimal notation.
+ */
 static VALUE
 ossl_x509ext_get_oid(VALUE obj)
 {
     X509_EXTENSION *ext;
-    ASN1_OBJECT *extobj;
-    BIO *out;
-    VALUE ret;
-    int nid;
 
     GetX509Ext(obj, ext);
-    extobj = X509_EXTENSION_get_object(ext);
-    if ((nid = OBJ_obj2nid(extobj)) != NID_undef)
-	ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-	if (!(out = BIO_new(BIO_s_mem())))
-	    ossl_raise(eX509ExtError, NULL);
-	i2a_ASN1_OBJECT(out, extobj);
-	ret = ossl_membio2str(out);
-    }
-
-    return ret;
+    return ossl_asn1obj_to_string(X509_EXTENSION_get_object(ext));
 }
 
 static VALUE

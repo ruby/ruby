@@ -2,6 +2,9 @@
 #define INTERNAL_ATOMIC_H
 
 #include "ruby/atomic.h"
+#ifdef HAVE_STDATOMIC_H
+# include <stdatomic.h>
+#endif
 
 #define RUBY_ATOMIC_VALUE_LOAD(x) rbimpl_atomic_value_load(&(x), RBIMPL_ATOMIC_SEQ_CST)
 
@@ -43,6 +46,8 @@ rbimpl_atomic_u64_load_relaxed(const volatile rbimpl_atomic_uint64_t *value)
     uint64_t val = *value;
     return atomic_cas_64(value, val, val);
 #else
+    // TODO: stdatomic
+
     return *value;
 #endif
 }
@@ -58,9 +63,34 @@ rbimpl_atomic_u64_set_relaxed(volatile rbimpl_atomic_uint64_t *address, uint64_t
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_swap_64(address, value);
 #else
+    // TODO: stdatomic
+
     *address = value;
 #endif
 }
 #define ATOMIC_U64_SET_RELAXED(var, val) rbimpl_atomic_u64_set_relaxed(&(var), val)
+
+static inline uint64_t
+rbimpl_atomic_u64_fetch_add(volatile rbimpl_atomic_uint64_t *ptr, uint64_t val)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    return __atomic_fetch_add(ptr, val, __ATOMIC_SEQ_CST);
+#elif defined(_WIN32)
+    return InterlockedExchangeAdd64((volatile LONG64 *)ptr, val);
+#elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
+    return atomic_add_64_nv(ptr, val) - val;
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_fetch_add_explicit((_Atomic uint64_t *)ptr, val, memory_order_seq_cst);
+#else
+    // Fallback using mutex for platforms without 64-bit atomics
+    static rb_native_mutex_t lock = RB_NATIVE_MUTEX_INITIALIZER;
+    rb_native_mutex_lock(&lock);
+    uint64_t old = *ptr;
+    *ptr = old + val;
+    rb_native_mutex_unlock(&lock);
+    return old;
+#endif
+}
+#define ATOMIC_U64_FETCH_ADD(var, val) rbimpl_atomic_u64_fetch_add(&(var), val)
 
 #endif

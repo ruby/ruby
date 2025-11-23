@@ -65,6 +65,7 @@ module Bundler
       gem.rubocop
       gem.test
       gemfile
+      lockfile
       path
       shebang
       simulate_version

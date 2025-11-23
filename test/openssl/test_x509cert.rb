@@ -236,6 +236,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
 
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa1, 1, [], nil, nil, digest: "SHA256")
+    assert_equal("sha256WithRSAEncryption", cert.signature_algorithm) # ln
     assert_equal(true, cert.verify(@rsa1))
     assert_equal(false, cert.verify(@rsa2))
     assert_equal(false, certificate_error_returns_false { cert.verify(@ec1) })

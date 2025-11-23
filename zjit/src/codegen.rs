@@ -402,6 +402,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::FixnumXor { left, right } => gen_fixnum_xor(asm, opnd!(left), opnd!(right)),
+        &Insn::FixnumLShift { left, right, state } => {
+            // We only create FixnumLShift when we know the shift amount statically and it's in [0,
+            // 63].
+            let shift_amount = function.type_of(right).fixnum_value().unwrap() as u64;
+            gen_fixnum_lshift(jit, asm, opnd!(left), shift_amount, &function.frame_state(state))
+        }
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state: _ } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
@@ -457,6 +463,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
+        Insn::LoadEC => gen_load_ec(),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val))),
@@ -464,6 +471,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
+        Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        &Insn::IsA { val, class } => gen_is_a(asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -645,10 +654,12 @@ fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, 
 }
 
 fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let ret = asm_ccall!(asm, rb_obj_frozen_p, recv);
-    asm_comment!(asm, "side-exit if rb_obj_frozen_p returns Qtrue");
-    asm.cmp(ret, Qtrue.into());
-    asm.je(side_exit(jit, state, GuardNotFrozen));
+    let recv = asm.load(recv);
+    // It's a heap object, so check the frozen flag
+    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    // Side-exit if frozen
+    asm.jnz(side_exit(jit, state, GuardNotFrozen));
     recv
 }
 
@@ -1040,6 +1051,10 @@ fn gen_load_pc(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC))
 }
 
+fn gen_load_ec() -> Opnd {
+    EC
+}
+
 fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
@@ -1292,10 +1307,11 @@ fn gen_send_without_block_direct(
     let mut c_args = vec![recv];
     c_args.extend(&args);
 
-    let num_optionals_passed = if unsafe { get_iseq_flags_has_opt(iseq) } {
+    let params = unsafe { iseq.params() };
+    let num_optionals_passed = if params.flags.has_opt() != 0 {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) } as u32;
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) } as u32;
+        let lead_num = params.lead_num as u32;
+        let opt_num = params.opt_num as u32;
         assert!(args.len() as u32 <= lead_num + opt_num);
         let num_optionals_passed = args.len() as u32 - lead_num;
         num_optionals_passed
@@ -1424,7 +1440,41 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 }
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
-    asm_ccall!(asm, rb_jit_array_len, array)
+    let array = asm.load(array);
+    let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
+    let embedded_len = asm.and(flags, (RARRAY_EMBED_LEN_MASK as u64).into());
+    let embedded_len = asm.rshift(embedded_len, (RARRAY_EMBED_LEN_SHIFT as u64).into());
+    // cmov between the embedded length and heap length depending on the embed flag
+    asm.test(flags, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_len = Opnd::mem(c_long::BITS as u8, array, RUBY_OFFSET_RARRAY_AS_HEAP_LEN);
+    asm.csel_nz(embedded_len, heap_len)
+}
+
+/// Compile opt_newarray_hash - create a hash from array elements
+fn gen_opt_newarray_hash(
+    jit: &JITState,
+    asm: &mut Assembler,
+    elements: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    // `Array#hash` will hash the elements of the array.
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+
+    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
+    // Get a pointer to the first element on the Ruby stack.
+    let stack_bottom = state.stack().len() - elements.len();
+    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+
+    unsafe extern "C" {
+        fn rb_vm_opt_newarray_hash(ec: EcPtr, array_len: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    asm.ccall(
+        rb_vm_opt_newarray_hash as *const u8,
+        vec![EC, (array_len as u32).into(), elements_ptr],
+    )
 }
 
 fn gen_array_include(
@@ -1436,7 +1486,7 @@ fn gen_array_include(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
     // The elements are at the bottom of the virtual stack, followed by the target.
@@ -1450,7 +1500,7 @@ fn gen_array_include(
     asm_ccall!(
         asm,
         rb_vm_opt_newarray_include_p,
-        EC, num.into(), elements_ptr, target
+        EC, array_len.into(), elements_ptr, target
     )
 }
 
@@ -1471,6 +1521,10 @@ fn gen_dup_array_include(
         rb_vm_opt_duparray_include_p,
         EC, ary.into(), target
     )
+}
+
+fn gen_is_a(asm: &mut Assembler, obj: Opnd, class: Opnd) -> lir::Opnd {
+    asm_ccall!(asm, rb_obj_is_kind_of, obj, class)
 }
 
 /// Compile a new hash instruction
@@ -1657,6 +1711,20 @@ fn gen_fixnum_xor(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir
     // XOR and then re-tag the resulting fixnum
     let out_val = asm.xor(left, right);
     asm.add(out_val, Opnd::UImm(1))
+}
+
+/// Compile Fixnum << Fixnum
+fn gen_fixnum_lshift(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, shift_amount: u64, state: &FrameState) -> lir::Opnd {
+    // Shift amount is known statically to be in the range [0, 63]
+    assert!(shift_amount < 64);
+    let in_val = asm.sub(left, Opnd::UImm(1));  // Drop tag bit
+    let out_val = asm.lshift(in_val, shift_amount.into());
+    let unshifted = asm.rshift(out_val, shift_amount.into());
+    asm.cmp(in_val, unshifted);
+    asm.jne(side_exit(jit, state, FixnumLShiftOverflow));
+    // Re-tag the output value
+    let out_val = asm.add(out_val, 1.into());
+    out_val
 }
 
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
@@ -2184,7 +2252,7 @@ c_callable! {
 
                     // Fill nils to uninitialized (non-argument) locals
                     let local_size = get_iseq_body_local_table_size(iseq).to_usize();
-                    let num_params = get_iseq_body_param_size(iseq).to_usize();
+                    let num_params = iseq.params().size.to_usize();
                     let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
                     slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
                 }

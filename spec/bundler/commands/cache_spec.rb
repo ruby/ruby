@@ -207,15 +207,15 @@ RSpec.describe "bundle cache" do
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
-    it "prints an error when using legacy windows rubies" do
+    it "prints a warn when using legacy windows rubies" do
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]
       D
 
       bundle "cache --all-platforms", raise_on_error: false
-      expect(err).to include("removed")
-      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).not_to exist
+      expect(err).to include("will be removed in the future")
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
     it "does not attempt to install gems in without groups" do

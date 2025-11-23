@@ -28,8 +28,8 @@ module Spec
       Gem.clear_paths
     end
 
-    def the_bundle(*args)
-      TheBundle.new(*args)
+    def the_bundle
+      TheBundle.new
     end
 
     MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/
@@ -54,7 +54,7 @@ module Spec
         begin
           #{ruby}
         rescue LoadError => e
-          warn "ZOMG LOAD ERROR" if e.message.include?("-- #{name}")
+          warn e.message if e.message.include?("-- #{name}")
         end
       RUBY
       opts = args.last.is_a?(Hash) ? args.pop : {}
@@ -132,7 +132,7 @@ module Spec
         begin
           #{ruby}
         rescue LoadError => e
-          warn "ZOMG LOAD ERROR" if e.message.include?("-- #{name}")
+          warn e.message if e.message.include?("-- #{name}")
         end
       R
     end
@@ -324,7 +324,7 @@ module Spec
     end
 
     def install_gem(path, install_dir, default = false)
-      raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+      raise ArgumentError, "`#{path}` does not exist!" unless File.exist?(path)
 
       args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
 
@@ -415,7 +415,7 @@ module Spec
 
       gems.each do |g|
         path = "#{gem_repo}/gems/#{g}.gem"
-        raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+        raise ArgumentError, "`#{path}` does not exist!" unless File.exist?(path)
         FileUtils.cp(path, "#{bundled_app}/vendor/cache")
       end
     end

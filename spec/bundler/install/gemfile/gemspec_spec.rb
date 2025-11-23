@@ -420,12 +420,13 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
 
         build_lib "foo", path: bundled_app do |s|
-          if platform_specific_type == :runtime
+          case platform_specific_type
+          when :runtime
             s.add_runtime_dependency dependency
-          elsif platform_specific_type == :development
+          when :development
             s.add_development_dependency dependency
           else
-            raise "wrong dependency type #{platform_specific_type}, can only be :development or :runtime"
+            raise ArgumentError, "wrong dependency type #{platform_specific_type}, can only be :development or :runtime"
           end
         end
 

@@ -147,6 +147,48 @@ asn1integer_to_num_i(VALUE arg)
     return asn1integer_to_num((ASN1_INTEGER *)arg);
 }
 
+/*
+ * ASN1_OBJECT conversions
+ */
+VALUE
+ossl_asn1obj_to_string_oid(const ASN1_OBJECT *a1obj)
+{
+    VALUE str;
+    int len;
+
+    str = rb_usascii_str_new(NULL, 127);
+    len = OBJ_obj2txt(RSTRING_PTR(str), RSTRING_LENINT(str), a1obj, 1);
+    if (len <= 0 || len == INT_MAX)
+	ossl_raise(eOSSLError, "OBJ_obj2txt");
+    if (len > RSTRING_LEN(str)) {
+	/* +1 is for the \0 terminator added by OBJ_obj2txt() */
+	rb_str_resize(str, len + 1);
+	len = OBJ_obj2txt(RSTRING_PTR(str), len + 1, a1obj, 1);
+	if (len <= 0)
+	    ossl_raise(eOSSLError, "OBJ_obj2txt");
+    }
+    rb_str_set_len(str, len);
+    return str;
+}
+
+VALUE
+ossl_asn1obj_to_string(const ASN1_OBJECT *obj)
+{
+    int nid = OBJ_obj2nid(obj);
+    if (nid != NID_undef)
+        return rb_str_new_cstr(OBJ_nid2sn(nid));
+    return ossl_asn1obj_to_string_oid(obj);
+}
+
+VALUE
+ossl_asn1obj_to_string_long_name(const ASN1_OBJECT *obj)
+{
+    int nid = OBJ_obj2nid(obj);
+    if (nid != NID_undef)
+        return rb_str_new_cstr(OBJ_nid2ln(nid));
+    return ossl_asn1obj_to_string_oid(obj);
+}
+
 /********/
 /*
  * ASN1 module
@@ -160,7 +202,7 @@ asn1integer_to_num_i(VALUE arg)
 #define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
 
 VALUE mASN1;
-VALUE eASN1Error;
+static VALUE eASN1Error;
 
 VALUE cASN1Data;
 static VALUE cASN1Primitive;
@@ -247,8 +289,8 @@ obj_to_asn1null(VALUE obj)
     return null;
 }
 
-static ASN1_OBJECT*
-obj_to_asn1obj(VALUE obj)
+ASN1_OBJECT *
+ossl_to_asn1obj(VALUE obj)
 {
     ASN1_OBJECT *a1obj;
 
@@ -393,32 +435,27 @@ decode_null(unsigned char* der, long length)
     return Qnil;
 }
 
+VALUE
+asn1obj_to_string_i(VALUE arg)
+{
+    return ossl_asn1obj_to_string((const ASN1_OBJECT *)arg);
+}
+
 static VALUE
 decode_obj(unsigned char* der, long length)
 {
     ASN1_OBJECT *obj;
     const unsigned char *p;
     VALUE ret;
-    int nid;
-    BIO *bio;
+    int state;
 
     p = der;
-    if(!(obj = d2i_ASN1_OBJECT(NULL, &p, length)))
-	ossl_raise(eASN1Error, NULL);
-    if((nid = OBJ_obj2nid(obj)) != NID_undef){
-	ASN1_OBJECT_free(obj);
-	ret = rb_str_new2(OBJ_nid2sn(nid));
-    }
-    else{
-	if(!(bio = BIO_new(BIO_s_mem()))){
-	    ASN1_OBJECT_free(obj);
-	    ossl_raise(eASN1Error, NULL);
-	}
-	i2a_ASN1_OBJECT(bio, obj);
-	ASN1_OBJECT_free(obj);
-	ret = ossl_membio2str(bio);
-    }
-
+    if (!(obj = d2i_ASN1_OBJECT(NULL, &p, length)))
+        ossl_raise(eASN1Error, "d2i_ASN1_OBJECT");
+    ret = rb_protect(asn1obj_to_string_i, (VALUE)obj, &state);
+    ASN1_OBJECT_free(obj);
+    if (state)
+        rb_jump_tag(state);
     return ret;
 }
 
@@ -544,7 +581,7 @@ ossl_asn1_get_asn1type(VALUE obj)
 	free_func = (free_func_type *)ASN1_STRING_free;
 	break;
     case V_ASN1_OBJECT:
-	ptr = obj_to_asn1obj(value);
+	ptr = ossl_to_asn1obj(value);
 	free_func = (free_func_type *)ASN1_OBJECT_free;
 	break;
     case V_ASN1_UTCTIME:
@@ -1172,23 +1209,7 @@ ossl_asn1obj_get_ln(VALUE self)
 static VALUE
 asn1obj_get_oid_i(VALUE vobj)
 {
-    ASN1_OBJECT *a1obj = (void *)vobj;
-    VALUE str;
-    int len;
-
-    str = rb_usascii_str_new(NULL, 127);
-    len = OBJ_obj2txt(RSTRING_PTR(str), RSTRING_LENINT(str), a1obj, 1);
-    if (len <= 0 || len == INT_MAX)
-	ossl_raise(eASN1Error, "OBJ_obj2txt");
-    if (len > RSTRING_LEN(str)) {
-	/* +1 is for the \0 terminator added by OBJ_obj2txt() */
-	rb_str_resize(str, len + 1);
-	len = OBJ_obj2txt(RSTRING_PTR(str), len + 1, a1obj, 1);
-	if (len <= 0)
-	    ossl_raise(eASN1Error, "OBJ_obj2txt");
-    }
-    rb_str_set_len(str, len);
-    return str;
+    return ossl_asn1obj_to_string_oid((const ASN1_OBJECT *)vobj);
 }
 
 /*
@@ -1205,7 +1226,7 @@ ossl_asn1obj_get_oid(VALUE self)
     ASN1_OBJECT *a1obj;
     int state;
 
-    a1obj = obj_to_asn1obj(ossl_asn1_get_value(self));
+    a1obj = ossl_to_asn1obj(ossl_asn1_get_value(self));
     str = rb_protect(asn1obj_get_oid_i, (VALUE)a1obj, &state);
     ASN1_OBJECT_free(a1obj);
     if (state)

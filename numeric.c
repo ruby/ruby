@@ -633,7 +633,7 @@ num_div(VALUE x, VALUE y)
  *  call-seq:
  *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
@@ -1195,13 +1195,14 @@ rb_float_minus(VALUE x, VALUE y)
  *  call-seq:
  *    self * other -> numeric
  *
- *  Returns a new \Float which is the product of +self+ and +other+:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    f = 3.14
  *    f * 2              # => 6.28
  *    f * 2.0            # => 6.28
  *    f * Rational(1, 2) # => 1.57
  *    f * Complex(2, 0)  # => (6.28+0.0i)
+ *
  */
 
 VALUE
@@ -1358,7 +1359,7 @@ ruby_float_mod(double x, double y)
  *  call-seq:
  *    self % other -> float
  *
- *  Returns +self+ modulo +other+ as a float.
+ *  Returns +self+ modulo +other+ as a \Float.
  *
  *  For float +f+ and real number +r+, these expressions are equivalent:
  *
@@ -4098,16 +4099,17 @@ fix_mul(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self * numeric -> numeric_result
+ *    self * other -> numeric
  *
- *  Performs multiplication:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    4 * 2              # => 8
- *    4 * -2             # => -8
  *    -4 * 2             # => -8
+ *    4 * -2             # => -8
  *    4 * 2.0            # => 8.0
  *    4 * Rational(1, 3) # => (4/3)
  *    4 * Complex(2, 0)  # => (8+0i)
+ *
  */
 
 VALUE
@@ -4316,9 +4318,9 @@ fix_mod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self % other -> real_number
+ *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  For integer +n+ and real number +r+, these expressions are equivalent:
  *
@@ -4590,17 +4592,48 @@ fix_pow(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** numeric -> numeric_result
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +numeric+:
+ *  Returns the value of base +self+ raised to the power +exponent+;
+ *  see {Exponentiation}[https://en.wikipedia.org/wiki/Exponentiation]:
  *
- *    2 ** 3              # => 8
- *    2 ** -3             # => (1/8)
- *    -2 ** 3             # => -8
- *    -2 ** -3            # => (-1/8)
- *    2 ** 3.3            # => 9.849155306759329
- *    2 ** Rational(3, 1) # => (8/1)
- *    2 ** Complex(3, 0)  # => (8+0i)
+ *    # Result for non-negative Integer exponent is Integer.
+ *    2 ** 0   # => 1
+ *    2 ** 1   # => 2
+ *    2 ** 2   # => 4
+ *    2 ** 3   # => 8
+ *    -2 ** 3  # => -8
+ *    # Result for negative Integer exponent is Rational, not Float.
+ *    2 ** -3  # => (1/8)
+ *    -2 ** -3 # => (-1/8)
+ *
+ *    # Result for Float exponent is Float.
+ *    2 ** 0.0   # => 1.0
+ *    2 ** 1.0   # => 2.0
+ *    2 ** 2.0   # => 4.0
+ *    2 ** 3.0   # => 8.0
+ *    -2 ** 3.0  # => -8.0
+ *    2 ** -3.0  # => 0.125
+ *    -2 ** -3.0 # => -0.125
+ *
+ *    # Result for non-negative Complex exponent is Complex with Integer parts.
+ *    2 ** Complex(0, 0)   # => (1+0i)
+ *    2 ** Complex(1, 0)   # => (2+0i)
+ *    2 ** Complex(2, 0)   # => (4+0i)
+ *    2 ** Complex(3, 0)   # => (8+0i)
+ *    -2 ** Complex(3, 0) # => (-8+0i)
+ *    # Result for negative Complex exponent is Complex with Rational parts.
+ *    2 ** Complex(-3, 0)  # => ((1/8)+(0/1)*i)
+ *    -2 ** Complex(-3, 0) # => ((-1/8)+(0/1)*i)
+ *
+ *    # Result for Rational exponent is Rational.
+ *    2 ** Rational(0, 1)   # => (1/1)
+ *    2 ** Rational(1, 1)   # => (2/1)
+ *    2 ** Rational(2, 1)   # => (4/1)
+ *    2 ** Rational(3, 1)   # => (8/1)
+ *    -2 ** Rational(3, 1)  # => (-8/1)
+ *    2 ** Rational(-3, 1)  # => (1/8)
+ *    -2 ** Rational(-3, 1) # => (-1/8)
  *
  */
 VALUE

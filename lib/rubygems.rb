@@ -287,7 +287,7 @@ module Gem
       # RubyGems now uses this new `Gem.activate_and_load_bin_path` helper in
       # binstubs, which is of course not overridden in Bundler since it didn't
       # exist at the time. So, include the override here to workaround that.
-      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= "2.5.22"
+      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= Gem::Version.create("2.5.22")
 
       # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
       # from the version we just activated. If that was the case (it happens
@@ -666,7 +666,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # warnings in platform constants
 
   def self.load_bundler_extensions(version)
-    return unless version <= "2.6.9"
+    return unless version <= Gem::Version.create("2.6.9")
 
     previous_platforms = {}
 

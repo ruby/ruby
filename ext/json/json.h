@@ -45,6 +45,11 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   undef RUBY_TYPED_FROZEN_SHAREABLE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 #ifndef NORETURN
 #define NORETURN(x) x
 #endif

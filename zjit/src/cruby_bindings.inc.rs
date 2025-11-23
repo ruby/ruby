@@ -410,6 +410,11 @@ pub const BOP_INCLUDE_P: ruby_basic_operators = 33;
 pub const BOP_LAST_: ruby_basic_operators = 34;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    _unused: [u8; 0],
+}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -475,6 +480,7 @@ pub const VM_METHOD_TYPE_OPTIMIZED: rb_method_type_t = 9;
 pub const VM_METHOD_TYPE_MISSING: rb_method_type_t = 10;
 pub const VM_METHOD_TYPE_REFINED: rb_method_type_t = 11;
 pub type rb_method_type_t = u32;
+pub type rb_iseq_t = rb_iseq_struct;
 pub type rb_cfunc_t = ::std::option::Option<unsafe extern "C" fn() -> VALUE>;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -497,7 +503,22 @@ pub const OPTIMIZED_METHOD_TYPE_STRUCT_AREF: method_optimized_type = 3;
 pub const OPTIMIZED_METHOD_TYPE_STRUCT_ASET: method_optimized_type = 4;
 pub const OPTIMIZED_METHOD_TYPE__MAX: method_optimized_type = 5;
 pub type method_optimized_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_code_position_struct {
+    pub lineno: ::std::os::raw::c_int,
+    pub column: ::std::os::raw::c_int,
+}
+pub type rb_code_position_t = rb_code_position_struct;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_code_location_struct {
+    pub beg_pos: rb_code_position_t,
+    pub end_pos: rb_code_position_t,
+}
+pub type rb_code_location_t = rb_code_location_struct;
 pub type rb_num_t = ::std::os::raw::c_ulong;
+pub type rb_snum_t = ::std::os::raw::c_long;
 pub const RUBY_TAG_NONE: ruby_tag_type = 0;
 pub const RUBY_TAG_RETURN: ruby_tag_type = 1;
 pub const RUBY_TAG_BREAK: ruby_tag_type = 2;
@@ -534,6 +555,23 @@ pub struct iseq_inline_iv_cache_entry {
 pub struct iseq_inline_cvar_cache_entry {
     pub entry: *mut rb_cvar_class_tbl_entry,
 }
+#[repr(C)]
+#[repr(align(8))]
+#[derive(Copy, Clone)]
+pub struct iseq_inline_storage_entry {
+    pub _bindgen_opaque_blob: [u64; 2usize],
+}
+#[repr(C)]
+pub struct rb_iseq_location_struct {
+    pub pathobj: VALUE,
+    pub base_label: VALUE,
+    pub label: VALUE,
+    pub first_lineno: ::std::os::raw::c_int,
+    pub node_id: ::std::os::raw::c_int,
+    pub code_location: rb_code_location_t,
+}
+pub type rb_iseq_location_t = rb_iseq_location_struct;
+pub type iseq_bits_t = usize;
 pub const ISEQ_TYPE_TOP: rb_iseq_type = 0;
 pub const ISEQ_TYPE_METHOD: rb_iseq_type = 1;
 pub const ISEQ_TYPE_BLOCK: rb_iseq_type = 2;
@@ -549,15 +587,677 @@ pub const BUILTIN_ATTR_SINGLE_NOARG_LEAF: rb_builtin_attr = 2;
 pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
 pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
 pub type rb_builtin_attr = u32;
+pub type rb_jit_func_t = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg1: *mut rb_execution_context_struct,
+        arg2: *mut rb_control_frame_struct,
+    ) -> VALUE,
+>;
+#[repr(C)]
+pub struct rb_iseq_constant_body {
+    pub type_: rb_iseq_type,
+    pub iseq_size: ::std::os::raw::c_uint,
+    pub iseq_encoded: *mut VALUE,
+    pub param: rb_iseq_constant_body_rb_iseq_parameters,
+    pub location: rb_iseq_location_t,
+    pub insns_info: rb_iseq_constant_body_iseq_insn_info,
+    pub local_table: *const ID,
+    pub lvar_states: *mut rb_iseq_constant_body_lvar_state,
+    pub catch_table: *mut iseq_catch_table,
+    pub parent_iseq: *const rb_iseq_struct,
+    pub local_iseq: *mut rb_iseq_struct,
+    pub is_entries: *mut iseq_inline_storage_entry,
+    pub call_data: *mut rb_call_data,
+    pub variable: rb_iseq_constant_body__bindgen_ty_1,
+    pub local_table_size: ::std::os::raw::c_uint,
+    pub ic_size: ::std::os::raw::c_uint,
+    pub ise_size: ::std::os::raw::c_uint,
+    pub ivc_size: ::std::os::raw::c_uint,
+    pub icvarc_size: ::std::os::raw::c_uint,
+    pub ci_size: ::std::os::raw::c_uint,
+    pub stack_max: ::std::os::raw::c_uint,
+    pub builtin_attrs: ::std::os::raw::c_uint,
+    pub prism: bool,
+    pub mark_bits: rb_iseq_constant_body__bindgen_ty_2,
+    pub outer_variables: *mut rb_id_table,
+    pub mandatory_only_iseq: *const rb_iseq_t,
+    pub jit_entry: rb_jit_func_t,
+    pub jit_entry_calls: ::std::os::raw::c_ulong,
+    pub jit_exception: rb_jit_func_t,
+    pub jit_exception_calls: ::std::os::raw::c_ulong,
+    pub zjit_payload: *mut ::std::os::raw::c_void,
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword {
+pub struct rb_iseq_constant_body_rb_iseq_parameters {
+    pub flags: rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1,
+    pub size: ::std::os::raw::c_uint,
+    pub lead_num: ::std::os::raw::c_int,
+    pub opt_num: ::std::os::raw::c_int,
+    pub rest_start: ::std::os::raw::c_int,
+    pub post_start: ::std::os::raw::c_int,
+    pub post_num: ::std::os::raw::c_int,
+    pub block_start: ::std::os::raw::c_int,
+    pub opt_table: *const VALUE,
+    pub keyword: *const rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword,
+}
+#[repr(C)]
+#[repr(align(4))]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 2usize]>,
+    pub __bindgen_padding_0: u16,
+}
+impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
+    #[inline]
+    pub fn has_lead(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_lead(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_lead_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_lead_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_opt(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_opt(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(1usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_opt_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                1usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_opt_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                1usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_rest(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_rest(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(2usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_rest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                2usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_rest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                2usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_post(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_post(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(3usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_post_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                3usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_post_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                3usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_kw(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_kw(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(4usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_kw_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                4usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_kw_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                4usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_kwrest(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_kwrest(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(5usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_kwrest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                5usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_kwrest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                5usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn has_block(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_has_block(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(6usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn has_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                6usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_has_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                6usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn ambiguous_param0(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(7usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_ambiguous_param0(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(7usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn ambiguous_param0_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                7usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_ambiguous_param0_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                7usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn accepts_no_kwarg(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_accepts_no_kwarg(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(8usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn accepts_no_kwarg_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                8usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_accepts_no_kwarg_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                8usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn ruby2_keywords(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_ruby2_keywords(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(9usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn ruby2_keywords_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                9usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_ruby2_keywords_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                9usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn anon_rest(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_anon_rest(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(10usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn anon_rest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                10usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_anon_rest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                10usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn anon_kwrest(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_anon_kwrest(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(11usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn anon_kwrest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                11usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_anon_kwrest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                11usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn use_block(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_use_block(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(12usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn use_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                12usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_use_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                12usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn forwardable(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_forwardable(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(13usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn forwardable_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                13usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_forwardable_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                13usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(
+        has_lead: ::std::os::raw::c_uint,
+        has_opt: ::std::os::raw::c_uint,
+        has_rest: ::std::os::raw::c_uint,
+        has_post: ::std::os::raw::c_uint,
+        has_kw: ::std::os::raw::c_uint,
+        has_kwrest: ::std::os::raw::c_uint,
+        has_block: ::std::os::raw::c_uint,
+        ambiguous_param0: ::std::os::raw::c_uint,
+        accepts_no_kwarg: ::std::os::raw::c_uint,
+        ruby2_keywords: ::std::os::raw::c_uint,
+        anon_rest: ::std::os::raw::c_uint,
+        anon_kwrest: ::std::os::raw::c_uint,
+        use_block: ::std::os::raw::c_uint,
+        forwardable: ::std::os::raw::c_uint,
+    ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let has_lead: u32 = unsafe { ::std::mem::transmute(has_lead) };
+            has_lead as u64
+        });
+        __bindgen_bitfield_unit.set(1usize, 1u8, {
+            let has_opt: u32 = unsafe { ::std::mem::transmute(has_opt) };
+            has_opt as u64
+        });
+        __bindgen_bitfield_unit.set(2usize, 1u8, {
+            let has_rest: u32 = unsafe { ::std::mem::transmute(has_rest) };
+            has_rest as u64
+        });
+        __bindgen_bitfield_unit.set(3usize, 1u8, {
+            let has_post: u32 = unsafe { ::std::mem::transmute(has_post) };
+            has_post as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 1u8, {
+            let has_kw: u32 = unsafe { ::std::mem::transmute(has_kw) };
+            has_kw as u64
+        });
+        __bindgen_bitfield_unit.set(5usize, 1u8, {
+            let has_kwrest: u32 = unsafe { ::std::mem::transmute(has_kwrest) };
+            has_kwrest as u64
+        });
+        __bindgen_bitfield_unit.set(6usize, 1u8, {
+            let has_block: u32 = unsafe { ::std::mem::transmute(has_block) };
+            has_block as u64
+        });
+        __bindgen_bitfield_unit.set(7usize, 1u8, {
+            let ambiguous_param0: u32 = unsafe { ::std::mem::transmute(ambiguous_param0) };
+            ambiguous_param0 as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 1u8, {
+            let accepts_no_kwarg: u32 = unsafe { ::std::mem::transmute(accepts_no_kwarg) };
+            accepts_no_kwarg as u64
+        });
+        __bindgen_bitfield_unit.set(9usize, 1u8, {
+            let ruby2_keywords: u32 = unsafe { ::std::mem::transmute(ruby2_keywords) };
+            ruby2_keywords as u64
+        });
+        __bindgen_bitfield_unit.set(10usize, 1u8, {
+            let anon_rest: u32 = unsafe { ::std::mem::transmute(anon_rest) };
+            anon_rest as u64
+        });
+        __bindgen_bitfield_unit.set(11usize, 1u8, {
+            let anon_kwrest: u32 = unsafe { ::std::mem::transmute(anon_kwrest) };
+            anon_kwrest as u64
+        });
+        __bindgen_bitfield_unit.set(12usize, 1u8, {
+            let use_block: u32 = unsafe { ::std::mem::transmute(use_block) };
+            use_block as u64
+        });
+        __bindgen_bitfield_unit.set(13usize, 1u8, {
+            let forwardable: u32 = unsafe { ::std::mem::transmute(forwardable) };
+            forwardable as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword {
     pub num: ::std::os::raw::c_int,
     pub required_num: ::std::os::raw::c_int,
     pub bits_start: ::std::os::raw::c_int,
     pub rest_start: ::std::os::raw::c_int,
     pub table: *const ID,
     pub default_values: *mut VALUE,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_constant_body_iseq_insn_info {
+    pub body: *const iseq_insn_info_entry,
+    pub positions: *mut ::std::os::raw::c_uint,
+    pub size: ::std::os::raw::c_uint,
+    pub succ_index_table: *mut succ_index_table,
+}
+pub const lvar_uninitialized: rb_iseq_constant_body_lvar_state = 0;
+pub const lvar_initialized: rb_iseq_constant_body_lvar_state = 1;
+pub const lvar_reassigned: rb_iseq_constant_body_lvar_state = 2;
+pub type rb_iseq_constant_body_lvar_state = u32;
+#[repr(C)]
+pub struct rb_iseq_constant_body__bindgen_ty_1 {
+    pub flip_count: rb_snum_t,
+    pub script_lines: VALUE,
+    pub coverage: VALUE,
+    pub pc2branchindex: VALUE,
+    pub original_iseq: *mut VALUE,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body__bindgen_ty_2 {
+    pub list: *mut iseq_bits_t,
+    pub single: iseq_bits_t,
+}
+#[repr(C)]
+pub struct rb_iseq_struct {
+    pub flags: VALUE,
+    pub wrapper: VALUE,
+    pub body: *mut rb_iseq_constant_body,
+    pub aux: rb_iseq_struct__bindgen_ty_1,
+}
+#[repr(C)]
+pub struct rb_iseq_struct__bindgen_ty_1 {
+    pub compile_data: __BindgenUnionField<*mut iseq_compile_data>,
+    pub loader: __BindgenUnionField<rb_iseq_struct__bindgen_ty_1__bindgen_ty_1>,
+    pub exec: __BindgenUnionField<rb_iseq_struct__bindgen_ty_1__bindgen_ty_2>,
+    pub bindgen_union_field: [u64; 2usize],
+}
+#[repr(C)]
+pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_1 {
+    pub obj: VALUE,
+    pub index: ::std::os::raw::c_int,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_2 {
+    pub local_hooks: *mut rb_hook_list_struct,
+    pub global_trace_events: rb_event_flag_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_hook_list_struct {
+    pub hooks: *mut rb_event_hook_struct,
+    pub events: rb_event_flag_t,
+    pub running: ::std::os::raw::c_uint,
+    pub need_clean: bool,
+    pub is_local: bool,
 }
 #[repr(C)]
 pub struct rb_captured_block {
@@ -1044,38 +1744,100 @@ pub const YARVINSN_trace_setlocal_WC_1: ruby_vminsn_type = 215;
 pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 216;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 217;
 pub const YARVINSN_zjit_getinstancevariable: ruby_vminsn_type = 218;
-pub const YARVINSN_zjit_send: ruby_vminsn_type = 219;
-pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 220;
-pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 221;
-pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 222;
-pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 223;
-pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 224;
-pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 225;
-pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 226;
-pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 227;
-pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 228;
-pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 229;
-pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 230;
-pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 231;
-pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 232;
-pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 233;
-pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 234;
-pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 236;
-pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 237;
-pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 238;
-pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 239;
-pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 240;
-pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 241;
-pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 242;
-pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 243;
-pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 244;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 245;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 246;
+pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 219;
+pub const YARVINSN_zjit_send: ruby_vminsn_type = 220;
+pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 221;
+pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 222;
+pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 223;
+pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 224;
+pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 225;
+pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 226;
+pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 227;
+pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 228;
+pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 229;
+pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 230;
+pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 231;
+pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 232;
+pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 233;
+pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 234;
+pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 236;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 237;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 238;
+pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 239;
+pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 240;
+pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 241;
+pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 242;
+pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 243;
+pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 244;
+pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 245;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 246;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 247;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
+#[repr(C)]
+#[repr(align(8))]
+#[derive(Debug, Copy, Clone)]
+pub struct iseq_compile_data {
+    pub _bindgen_opaque_blob: [u64; 24usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union iseq_compile_data__bindgen_ty_1 {
+    pub list: *mut iseq_bits_t,
+    pub single: iseq_bits_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct iseq_compile_data__bindgen_ty_2 {
+    pub storage_head: *mut iseq_compile_data_storage,
+    pub storage_current: *mut iseq_compile_data_storage,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct iseq_compile_data__bindgen_ty_3 {
+    pub storage_head: *mut iseq_compile_data_storage,
+    pub storage_current: *mut iseq_compile_data_storage,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct iseq_insn_info_entry {
+    pub line_no: ::std::os::raw::c_int,
+    pub node_id: ::std::os::raw::c_int,
+    pub events: rb_event_flag_t,
+}
+pub const CATCH_TYPE_RESCUE: rb_catch_type = 3;
+pub const CATCH_TYPE_ENSURE: rb_catch_type = 5;
+pub const CATCH_TYPE_RETRY: rb_catch_type = 7;
+pub const CATCH_TYPE_BREAK: rb_catch_type = 9;
+pub const CATCH_TYPE_REDO: rb_catch_type = 11;
+pub const CATCH_TYPE_NEXT: rb_catch_type = 13;
+pub type rb_catch_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct iseq_catch_table_entry {
+    pub type_: rb_catch_type,
+    pub iseq: *mut rb_iseq_t,
+    pub start: ::std::os::raw::c_uint,
+    pub end: ::std::os::raw::c_uint,
+    pub cont: ::std::os::raw::c_uint,
+    pub sp: ::std::os::raw::c_uint,
+}
+#[repr(C, packed)]
+pub struct iseq_catch_table {
+    pub size: ::std::os::raw::c_uint,
+    pub entries: __IncompleteArrayField<iseq_catch_table_entry>,
+}
+#[repr(C)]
+#[derive(Debug)]
+pub struct iseq_compile_data_storage {
+    pub next: *mut iseq_compile_data_storage,
+    pub pos: ::std::os::raw::c_uint,
+    pub size: ::std::os::raw::c_uint,
+    pub buff: __IncompleteArrayField<::std::os::raw::c_char>,
+}
 pub const DEFINED_NOT_DEFINED: defined_type = 0;
 pub const DEFINED_NIL: defined_type = 1;
 pub const DEFINED_IVAR: defined_type = 2;
@@ -1100,7 +1862,18 @@ pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub type jit_bindgen_constants = u32;
 pub const rb_invalid_shape_id: shape_id_t = 4294967295;
-pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub type rb_iseq_param_keyword_struct =
+    rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct succ_index_table {
+    pub _address: u8,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_event_hook_struct {
+    pub _address: u8,
+}
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;

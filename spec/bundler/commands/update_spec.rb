@@ -247,7 +247,7 @@ RSpec.describe "bundle update" do
 
       expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
 
-      update_repo4 do
+      build_repo4 do
         build_gem "slim", "4.0.0" do |s|
           s.add_dependency "tilt", [">= 2.0.6", "< 2.1"]
         end
@@ -572,7 +572,7 @@ RSpec.describe "bundle update" do
 
       expect(the_bundle).to include_gems("a 1.0", "b 1.0", "c 2.0")
 
-      update_repo4 do
+      build_repo4 do
         build_gem "b", "2.0" do |s|
           s.add_dependency "c", "< 2"
         end
@@ -976,7 +976,7 @@ RSpec.describe "bundle update" do
     bundle "update", all: true
     expect(out).to match(/Resolving dependencies\.\.\.\.*\nBundle updated!/)
 
-    update_repo4 do
+    build_repo4 do
       build_gem "foo", "2.0"
     end
 

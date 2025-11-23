@@ -132,44 +132,10 @@ asn1_to_der(void *template, int (*i2d)(void *template, unsigned char **pp))
     return str;
 }
 
-static ASN1_OBJECT*
-obj_to_asn1obj(VALUE obj)
-{
-    ASN1_OBJECT *a1obj;
-
-    StringValue(obj);
-    a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 0);
-    if(!a1obj) a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 1);
-    if(!a1obj) ossl_raise(eASN1Error, "invalid OBJECT ID");
-
-    return a1obj;
-}
-
 static VALUE
 obj_to_asn1obj_i(VALUE obj)
 {
-    return (VALUE)obj_to_asn1obj(obj);
-}
-
-static VALUE
-get_asn1obj(const ASN1_OBJECT *obj)
-{
-    BIO *out;
-    VALUE ret;
-    int nid;
-    if ((nid = OBJ_obj2nid(obj)) != NID_undef)
-        ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-        if (!(out = BIO_new(BIO_s_mem())))
-            ossl_raise(eTimestampError, "BIO_new(BIO_s_mem())");
-        if (i2a_ASN1_OBJECT(out, obj) <= 0) {
-            BIO_free(out);
-            ossl_raise(eTimestampError, "i2a_ASN1_OBJECT");
-        }
-        ret = ossl_membio2str(out);
-    }
-
-    return ret;
+    return (VALUE)ossl_to_asn1obj(obj);
 }
 
 static VALUE
@@ -242,7 +208,7 @@ ossl_ts_req_get_algorithm(VALUE self)
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
     X509_ALGOR_get0(&obj, NULL, NULL, algor);
-    return get_asn1obj(obj);
+    return ossl_asn1obj_to_string(obj);
 }
 
 /*
@@ -264,7 +230,7 @@ ossl_ts_req_set_algorithm(VALUE self, VALUE algo)
     X509_ALGOR *algor;
 
     GetTSRequest(self, req);
-    obj = obj_to_asn1obj(algo);
+    obj = ossl_to_asn1obj(algo);
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
     if (!X509_ALGOR_set0(algor, obj, V_ASN1_NULL, NULL)) {
@@ -371,7 +337,7 @@ ossl_ts_req_get_policy_id(VALUE self)
     GetTSRequest(self, req);
     if (!TS_REQ_get_policy_id(req))
         return Qnil;
-    return get_asn1obj(TS_REQ_get_policy_id(req));
+    return ossl_asn1obj_to_string(TS_REQ_get_policy_id(req));
 }
 
 /*
@@ -394,7 +360,7 @@ ossl_ts_req_set_policy_id(VALUE self, VALUE oid)
     int ok;
 
     GetTSRequest(self, req);
-    obj = obj_to_asn1obj(oid);
+    obj = ossl_to_asn1obj(oid);
     ok = TS_REQ_set_policy_id(req, obj);
     ASN1_OBJECT_free(obj);
     if (!ok)
@@ -961,7 +927,7 @@ ossl_ts_token_info_get_policy_id(VALUE self)
     TS_TST_INFO *info;
 
     GetTSTokenInfo(self, info);
-    return get_asn1obj(TS_TST_INFO_get_policy_id(info));
+    return ossl_asn1obj_to_string(TS_TST_INFO_get_policy_id(info));
 }
 
 /*
@@ -989,7 +955,7 @@ ossl_ts_token_info_get_algorithm(VALUE self)
     mi = TS_TST_INFO_get_msg_imprint(info);
     algo = TS_MSG_IMPRINT_get_algo(mi);
     X509_ALGOR_get0(&obj, NULL, NULL, algo);
-    return get_asn1obj(obj);
+    return ossl_asn1obj_to_string(obj);
 }
 
 /*

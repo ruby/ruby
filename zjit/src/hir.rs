@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -217,21 +217,40 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 }
                 write!(f, ", ")?;
                 match bop {
-                    BOP_PLUS  => write!(f, "BOP_PLUS")?,
-                    BOP_MINUS => write!(f, "BOP_MINUS")?,
-                    BOP_MULT  => write!(f, "BOP_MULT")?,
-                    BOP_DIV   => write!(f, "BOP_DIV")?,
-                    BOP_MOD   => write!(f, "BOP_MOD")?,
-                    BOP_EQ    => write!(f, "BOP_EQ")?,
-                    BOP_NEQ   => write!(f, "BOP_NEQ")?,
-                    BOP_LT    => write!(f, "BOP_LT")?,
-                    BOP_LE    => write!(f, "BOP_LE")?,
-                    BOP_GT    => write!(f, "BOP_GT")?,
-                    BOP_GE    => write!(f, "BOP_GE")?,
-                    BOP_FREEZE => write!(f, "BOP_FREEZE")?,
-                    BOP_UMINUS => write!(f, "BOP_UMINUS")?,
-                    BOP_MAX    => write!(f, "BOP_MAX")?,
-                    BOP_AREF   => write!(f, "BOP_AREF")?,
+                    BOP_PLUS     => write!(f, "BOP_PLUS")?,
+                    BOP_MINUS    => write!(f, "BOP_MINUS")?,
+                    BOP_MULT     => write!(f, "BOP_MULT")?,
+                    BOP_DIV      => write!(f, "BOP_DIV")?,
+                    BOP_MOD      => write!(f, "BOP_MOD")?,
+                    BOP_EQ       => write!(f, "BOP_EQ")?,
+                    BOP_EQQ      => write!(f, "BOP_EQQ")?,
+                    BOP_LT       => write!(f, "BOP_LT")?,
+                    BOP_LE       => write!(f, "BOP_LE")?,
+                    BOP_LTLT     => write!(f, "BOP_LTLT")?,
+                    BOP_AREF     => write!(f, "BOP_AREF")?,
+                    BOP_ASET     => write!(f, "BOP_ASET")?,
+                    BOP_LENGTH   => write!(f, "BOP_LENGTH")?,
+                    BOP_SIZE     => write!(f, "BOP_SIZE")?,
+                    BOP_EMPTY_P  => write!(f, "BOP_EMPTY_P")?,
+                    BOP_NIL_P    => write!(f, "BOP_NIL_P")?,
+                    BOP_SUCC     => write!(f, "BOP_SUCC")?,
+                    BOP_GT       => write!(f, "BOP_GT")?,
+                    BOP_GE       => write!(f, "BOP_GE")?,
+                    BOP_NOT      => write!(f, "BOP_NOT")?,
+                    BOP_NEQ      => write!(f, "BOP_NEQ")?,
+                    BOP_MATCH    => write!(f, "BOP_MATCH")?,
+                    BOP_FREEZE   => write!(f, "BOP_FREEZE")?,
+                    BOP_UMINUS   => write!(f, "BOP_UMINUS")?,
+                    BOP_MAX      => write!(f, "BOP_MAX")?,
+                    BOP_MIN      => write!(f, "BOP_MIN")?,
+                    BOP_HASH     => write!(f, "BOP_HASH")?,
+                    BOP_CALL     => write!(f, "BOP_CALL")?,
+                    BOP_AND      => write!(f, "BOP_AND")?,
+                    BOP_OR       => write!(f, "BOP_OR")?,
+                    BOP_CMP      => write!(f, "BOP_CMP")?,
+                    BOP_DEFAULT  => write!(f, "BOP_DEFAULT")?,
+                    BOP_PACK     => write!(f, "BOP_PACK")?,
+                    BOP_INCLUDE_P => write!(f, "BOP_INCLUDE_P")?,
                     _ => write!(f, "{bop}")?,
                 }
                 write!(f, ")")
@@ -466,6 +485,7 @@ pub enum SideExitReason {
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
+    FixnumLShiftOverflow,
     GuardType(Type),
     GuardTypeNot(Type),
     GuardShape(ShapeId),
@@ -650,6 +670,7 @@ pub enum Insn {
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
+    ArrayHash { elements: Vec<InsnId>, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
@@ -700,6 +721,9 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
+    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
+    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    IsA { val: InsnId, class: InsnId },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -716,6 +740,8 @@ pub enum Insn {
 
     /// Load cfp->pc
     LoadPC,
+    /// Load EC
+    LoadEC,
     /// Load cfp->self
     LoadSelf,
     LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
@@ -846,7 +872,7 @@ pub enum Insn {
     /// Non-local control flow. See the throw YARV instruction
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
-    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^
+    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^, <<
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
     FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMult { left: InsnId, right: InsnId, state: InsnId },
@@ -861,6 +887,7 @@ pub enum Insn {
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
+    FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
@@ -876,7 +903,8 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
-    /// Side-exit if val is frozen.
+    /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
+    /// a heap object.
     GuardNotFrozen { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
@@ -957,9 +985,11 @@ impl Insn {
             Insn::FixnumAnd  { .. } => false,
             Insn::FixnumOr   { .. } => false,
             Insn::FixnumXor  { .. } => false,
+            Insn::FixnumLShift { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
+            Insn::LoadEC => false,
             Insn::LoadSelf => false,
             Insn::LoadField { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
@@ -972,6 +1002,9 @@ impl Insn {
             Insn::StringGetbyteFixnum { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
+            Insn::BoxBool { .. } => false,
+            Insn::IsBitEqual { .. } => false,
+            Insn::IsA { .. } => false,
             _ => true,
         }
     }
@@ -1033,6 +1066,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
+                let mut prefix = " ";
+                for element in elements {
+                    write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
+            Insn::ArrayHash { elements, .. } => {
+                write!(f, "ArrayHash")?;
                 let mut prefix = " ";
                 for element in elements {
                     write!(f, "{prefix}{element}")?;
@@ -1184,6 +1226,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
+            Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
@@ -1241,6 +1284,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
+            Insn::LoadEC => write!(f, "LoadEC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:p}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
@@ -1285,6 +1329,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
         }
     }
 }
@@ -1468,14 +1513,15 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         can_send = false;
         function.push_insn(block, Insn::IncrCounter(counter));
     };
+    let params = unsafe { iseq.params() };
 
     use Counter::*;
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
-    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
-    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
-    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
+    if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
+    if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
+    if 0 != params.flags.has_kw()      { count_failure(complex_arg_pass_param_kw) }
+    if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
+    if 0 != params.flags.has_block()   { count_failure(complex_arg_pass_param_block) }
+    if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
@@ -1483,8 +1529,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     }
 
     // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
-    let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let lead_num = params.lead_num;
+    let opt_num = params.opt_num;
     can_send = c_int::try_from(args.len())
         .as_ref()
         .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
@@ -1743,6 +1789,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
+                    | LoadEC
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
@@ -1799,6 +1846,7 @@ impl Function {
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
+            &FixnumLShift { left, right, state } => FixnumLShift { left: find!(left), right: find!(right), state },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
                 cd,
@@ -1887,6 +1935,7 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
+            &ArrayHash { ref elements, state } => ArrayHash { elements: find_vec!(elements), state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, ic, state } => GetIvar { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
@@ -1903,6 +1952,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &IsA { val, class } => IsA { val: find!(val), class: find!(class) },
         }
     }
 
@@ -2016,6 +2066,7 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
+            Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
@@ -2032,9 +2083,11 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
             Insn::DupArrayInclude { .. } => types::BoolExact,
+            Insn::ArrayHash { .. } => types::Fixnum,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
+            Insn::LoadEC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -2049,14 +2102,16 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::IsA { .. } => types::BoolExact,
         }
     }
 
     /// Set self.param_types. They are copied to the param types of jit_entry_blocks.
     fn set_param_types(&mut self) {
         let iseq = self.iseq;
-        let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-        let rest_param_idx = iseq_rest_param_idx(iseq);
+        let params = unsafe { iseq.params() };
+        let param_size = params.size.to_usize();
+        let rest_param_idx = iseq_rest_param_idx(params);
 
         self.param_types.push(types::BasicObject); // self
         for local_idx in 0..param_size {
@@ -2499,6 +2554,7 @@ impl Function {
                                     //
                                     // No need for a GuardShape.
                                     if let OptimizedMethodType::StructAset = opt_type {
+                                        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
                                         recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
                                     }
 
@@ -2782,6 +2838,38 @@ impl Function {
 
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                        };
+                        self.make_equal_to(insn_id, replacement);
+                    }
+                    Insn::DefinedIvar { self_val, id, pushval, state } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let _ = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let mut ivar_index: u16 = 0;
+                        let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                        } else {
+                            // If there is no IVAR index, then the ivar was undefined when we
+                            // entered the compiler.  That means we can just return nil for this
+                            // shape + iv name
+                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
                         };
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -3330,6 +3418,7 @@ impl Function {
             | &Insn::Param
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
+            | &Insn::LoadEC
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
@@ -3346,6 +3435,7 @@ impl Function {
                 worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
+            | &Insn::ArrayHash { ref elements, state }
             | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
@@ -3431,6 +3521,7 @@ impl Function {
             | &Insn::FixnumDiv { left, right, state }
             | &Insn::FixnumMod { left, right, state }
             | &Insn::ArrayExtend { left, right, state }
+            | &Insn::FixnumLShift { left, right, state }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -3540,6 +3631,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::IsA { val, class } => {
+                worklist.push_back(val);
+                worklist.push_back(class);
+            }
         }
     }
 
@@ -4033,6 +4128,7 @@ impl Function {
             | Insn::IsBlockGiven
             | Insn::GetGlobal { .. }
             | Insn::LoadPC
+            | Insn::LoadEC
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
@@ -4056,7 +4152,6 @@ impl Function {
             | Insn::IsNil { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::GuardShape { val, .. }
-            | Insn::GuardNotFrozen { recv: val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -4074,6 +4169,9 @@ impl Function {
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            Insn::GuardNotFrozen { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::HeapBasicObject)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
@@ -4102,6 +4200,7 @@ impl Function {
             | Insn::InvokeBuiltin { ref args, .. }
             | Insn::InvokeBlock { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
+            | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -4194,6 +4293,7 @@ impl Function {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::FixnumLShift { left, right, .. }
             | Insn::NewRangeFixnum { low: left, high: right, .. }
             => {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
@@ -4228,6 +4328,10 @@ impl Function {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
+            }
+            Insn::IsA { val, class } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)?;
+                self.assert_subtype(insn_id, class, types::Class)
             }
         }
     }
@@ -4563,11 +4667,12 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 /// List of insn_idx that starts a JIT entry block
 pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
     // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let params = unsafe { iseq.params() };
+    let opt_num = params.opt_num;
     if opt_num > 0 {
         let mut result = vec![];
 
-        let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) }; // `opt_num + 1` entries
+        let opt_table = params.opt_table; // `opt_num + 1` entries
         for opt_idx in 0..=opt_num as isize {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
             result.push(insn_idx);
@@ -4801,6 +4906,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
                 profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
+                profiles.profile_self(&exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
                 if get_option!(stats) {
                     let iseq_insn_idx = exit_state.insn_idx;
@@ -4908,6 +5015,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let elements = state.stack_pop_n(count)?;
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_HASH => (BOP_HASH, Insn::ArrayHash { elements, state: exit_id }),
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = elements[elements.len() - 1];
                             let array_elements = elements[..elements.len() - 1].to_vec();
@@ -5681,8 +5789,9 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let rest_param_idx = iseq_rest_param_idx(iseq);
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let rest_param_idx = iseq_rest_param_idx(params);
 
     let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
     let mut entry_state = FrameState::new(iseq);
@@ -5714,9 +5823,10 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
 /// Compile params and initial locals for a jit_entry_block
 fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_entry_idx: usize) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let opt_num: usize = unsafe { get_iseq_body_param_opt_num(iseq) }.try_into().expect("iseq param opt_num >= 0");
-    let lead_num: usize = unsafe { get_iseq_body_param_lead_num(iseq) }.try_into().expect("iseq param lead_num >= 0");
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
+    let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
@@ -5849,7 +5959,13 @@ impl<'a> ControlFlowInfo<'a> {
             // Since ZJIT uses extended basic blocks, one must check all instructions
             // for their ability to jump to another basic block, rather than just
             // the instructions at the end of a given basic block.
-            let successors: Vec<BlockId> = block
+            //
+            // Use BTreeSet to avoid duplicates and maintain an ordering. Also
+            // `BTreeSet<BlockId>` provides conversion trivially back to an `Vec<BlockId>`.
+            // Ordering is important so that the expect tests that serialize the predecessors
+            // and successors don't fail intermittently.
+            // todo(aidenfoxivey): Use `BlockSet` in lieu of `BTreeSet<BlockId>`
+            let successors: BTreeSet<BlockId> = block
                 .insns
                 .iter()
                 .map(|&insn_id| uf.find_const(insn_id))
@@ -5867,7 +5983,8 @@ impl<'a> ControlFlowInfo<'a> {
             }
 
             // Store successors for this block.
-            successor_map.insert(block_id, successors);
+            // Convert successors from a `BTreeSet<BlockId>` to a `Vec<BlockId>`.
+            successor_map.insert(block_id, successors.iter().copied().collect());
         }
 
         Self {

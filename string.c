@@ -5463,33 +5463,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    upto(other_string, exclusive = false) {|string| ... } -> self
  *    upto(other_string, exclusive = false) -> new_enumerator
  *
- *  With a block given, calls the block with each +String+ value
- *  returned by successive calls to String#succ;
- *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
- *  the sequence terminates when value +other_string+ is reached;
- *  returns +self+:
- *
- *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
- *
- *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
- *
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5
- *
- *  If +other_string+ would not be reached, does not call the block:
- *
- *    '25'.upto('5') {|s| fail s }
- *    'aa'.upto('a') {|s| fail s }
- *
- *  With no block given, returns a new Enumerator:
- *
- *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+ *  :include: doc/string/upto.rdoc
  *
  */
 
@@ -7959,19 +7933,12 @@ upcase_single(VALUE str)
  *  call-seq:
  *    upcase!(mapping) -> self or nil
  *
- *  Upcases the characters in +self+;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#upcase, except that:
  *
- *    s = 'Hello World!' # => "Hello World!"
- *    s.upcase!          # => "HELLO WORLD!"
- *    s                  # => "HELLO WORLD!"
- *    s.upcase!          # => nil
+ *  - Changes character casings in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase, String#downcase, String#downcase!.
- *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -8001,16 +7968,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    upcase(mapping) -> string
  *
- *  Returns a string containing the upcased characters in +self+:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.upcase           # => "HELLO WORLD!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase!, String#downcase, String#downcase!.
- *
+ *  :include: doc/string/upcase.rdoc
  */
 
 static VALUE
@@ -11511,11 +11469,8 @@ rb_str_b(VALUE str)
  *  call-seq:
  *    valid_encoding? -> true or false
  *
- *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
+ *  :include: doc/string/valid_encoding_p.rdoc
  *
- *    "\xc2\xa1".force_encoding(Encoding::UTF_8).valid_encoding? # => true
- *    "\xc2".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
- *    "\x80".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
  */
 
 static VALUE
