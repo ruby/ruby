@@ -949,6 +949,20 @@ sigsegv(int sig SIGINFO_ARG)
 }
 #endif
 
+#ifdef SIGABRT
+
+static sighandler_t default_sigabrt_handler;
+NORETURN(static ruby_sigaction_t sigabrt);
+
+static void
+sigabrt(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("ABRT");
+    CHECK_STACK_OVERFLOW();
+    rb_bug_for_fatal_signal(default_sigabrt_handler, sig, SIGINFO_CTX, "Aborted" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
 #ifdef SIGILL
 
 static sighandler_t default_sigill_handler;
@@ -1557,6 +1571,10 @@ Init_signal(void)
 #ifdef SIGSEGV
         RB_ALTSTACK_INIT(GET_VM()->main_altstack, rb_allocate_sigaltstack());
         force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
+#endif
+
+#ifdef SIGABRT
+        force_install_sighandler(SIGABRT, (sighandler_t)sigabrt, &default_sigabrt_handler);
 #endif
     }
 #ifdef SIGPIPE
