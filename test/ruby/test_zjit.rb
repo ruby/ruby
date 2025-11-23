@@ -2057,7 +2057,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_setclassvariable_raises
-    assert_compiles '"can\'t modify frozen #<Class:Foo>: Foo"', %q{
+    assert_compiles '"can\'t modify frozen Class: Foo"', %q{
       class Foo
         def self.test = @@x = 42
         freeze
