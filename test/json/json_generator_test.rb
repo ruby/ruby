@@ -282,6 +282,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_depth
+    pretty = { object_nl: "\n", array_nl: "\n", space: " ", indent: "  " }
+    state = JSON.state.new(**pretty)
+    assert_equal %({\n  "foo": 42\n}), JSON.generate({ foo: 42 }, pretty)
+    assert_equal %({\n  "foo": 42\n}), state.generate(foo: 42)
+    state.depth = 1
+    assert_equal %({\n    "foo": 42\n  }), JSON.generate({ foo: 42 }, pretty.merge(depth: 1))
+    assert_equal %({\n    "foo": 42\n  }), state.generate(foo: 42)
+  end
+
+  def test_depth_nesting_error
     ary = []; ary << ary
     assert_raise(JSON::NestingError) { generate(ary) }
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
