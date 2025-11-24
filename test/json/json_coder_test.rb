@@ -134,7 +134,7 @@ class JSONCoderTest < Test::Unit::TestCase
 
   def test_depth
     coder = JSON::Coder.new(object_nl: "\n", array_nl: "\n", space: " ", indent: "  ", depth: 1)
-    assert_equal %({\n  "foo": 42\n}), coder.dump(foo: 42)
+    assert_equal %({\n    "foo": 42\n  }), coder.dump(foo: 42)
   end
 
   def test_nesting_recovery

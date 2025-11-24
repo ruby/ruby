@@ -1549,7 +1549,7 @@ static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
         .buffer = &buffer,
         .vstate = Qfalse,
         .state = state,
-        .depth = 0,
+        .depth = state->depth,
         .obj = obj,
         .func = generate_json
     };
