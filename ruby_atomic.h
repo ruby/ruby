@@ -2,9 +2,6 @@
 #define INTERNAL_ATOMIC_H
 
 #include "ruby/atomic.h"
-#ifdef HAVE_STDATOMIC_H
-# include <stdatomic.h>
-#endif
 
 #define RUBY_ATOMIC_VALUE_LOAD(x) rbimpl_atomic_value_load(&(x), RBIMPL_ATOMIC_SEQ_CST)
 
@@ -79,9 +76,9 @@ rbimpl_atomic_u64_fetch_add(volatile rbimpl_atomic_uint64_t *ptr, uint64_t val)
     return InterlockedExchangeAdd64((volatile LONG64 *)ptr, val);
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_add_64_nv(ptr, val) - val;
-#elif defined(HAVE_STDATOMIC_H)
-    return atomic_fetch_add_explicit((_Atomic uint64_t *)ptr, val, memory_order_seq_cst);
 #else
+    // TODO: stdatomic
+
     // Fallback using mutex for platforms without 64-bit atomics
     static rb_native_mutex_t lock = RB_NATIVE_MUTEX_INITIALIZER;
     rb_native_mutex_lock(&lock);
