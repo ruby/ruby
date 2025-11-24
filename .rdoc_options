@@ -11,6 +11,8 @@ rdoc_include:
 exclude:
 - \.gemspec\z
 
+generator_name: aliki
+
 autolink_excluded_words:
 - Class
 - Method
@@ -23,3 +25,16 @@ autolink_excluded_words:
 - YJIT
 
 canonical_root: https://docs.ruby-lang.org/en/master
+
+footer_content:
+  Ruby:
+    Documentation: index.html
+    Official Website: https://www.ruby-lang.org/
+    Playground: https://ruby.github.io/play-ruby/
+  Resources:
+    GitHub: https://github.com/ruby/ruby
+    Issue Tracker: https://bugs.ruby-lang.org/projects/ruby-master/issues
+    RubyGems: https://rubygems.org/
+  Community:
+    X: https://x.com/rubylangorg
+
