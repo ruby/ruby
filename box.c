@@ -250,7 +250,7 @@ box_entry_memsize(const void *ptr)
 }
 
 const rb_data_type_t rb_box_data_type = {
-    "Namespace::Entry",
+    "Box::Entry",
     {
         rb_box_entry_mark,
         box_entry_free,
@@ -261,7 +261,7 @@ const rb_data_type_t rb_box_data_type = {
 };
 
 const rb_data_type_t rb_root_box_data_type = {
-    "Namespace::Root",
+    "Box::Root",
     {
         rb_box_entry_mark,
         box_root_free,
@@ -315,7 +315,7 @@ rb_get_box_object(rb_box_t *box)
 
 /*
  *  call-seq:
- *    Namespace.new -> new_box
+ *    Ruby::Box.new -> new_box
  *
  *  Returns a new Ruby::Box object.
  */
@@ -356,7 +356,7 @@ box_initialize(VALUE box_value)
 
 /*
  *  call-seq:
- *    Namespace.enabled? -> true or false
+ *    Ruby::Box.enabled? -> true or false
  *
  *  Returns +true+ if Ruby::Box is enabled.
  */
@@ -368,7 +368,7 @@ rb_box_s_getenabled(VALUE recv)
 
 /*
  *  call-seq:
- *    Namespace.current -> box, nil or false
+ *    Ruby::Box.current -> box or nil
  *
  *  Returns the current box.
  *  Returns +nil+ if Ruby Box is not enabled.
@@ -821,11 +821,11 @@ rb_box_inspect(VALUE obj)
     rb_box_t *box;
     VALUE r;
     if (obj == Qfalse) {
-        r = rb_str_new_cstr("#<Namespace:root>");
+        r = rb_str_new_cstr("#<Ruby::Box:root>");
         return r;
     }
     box = rb_get_box_t(obj);
-    r = rb_str_new_cstr("#<Namespace:");
+    r = rb_str_new_cstr("#<Ruby::Box:");
     rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
     if (BOX_ROOT_P(box)) {
         rb_str_cat_cstr(r, ",root");
