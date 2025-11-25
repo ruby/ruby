@@ -6451,10 +6451,15 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1000)
           v26:StringExact = GuardType v11, StringExact
           v27:Fixnum = GuardType v12, Fixnum
-          v28:NilClass|Fixnum = StringGetbyteFixnum v26, v27
+          v28:CInt64 = UnboxFixnum v27
+          v29:CInt64 = LoadField v26, :len@0x1038
+          v30:CInt64 = GuardLess v28, v29
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CInt64 = GuardGreaterEq v30, v31
+          v33:Fixnum = StringGetbyte v26, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v33
         ");
     }
 
@@ -6483,6 +6488,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1000)
           v30:StringExact = GuardType v11, StringExact
           v31:Fixnum = GuardType v12, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64 = LoadField v30, :len@0x1038
+          v34:CInt64 = GuardLess v32, v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
           IncrCounter inline_cfunc_optimized_send_count
           v22:Fixnum[5] = Const Value(5)
           CheckInterrupts
