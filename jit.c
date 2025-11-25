@@ -30,8 +30,6 @@ enum jit_bindgen_constants {
 // so this can't be in a `enum`, and we avoid `static const`
 // to avoid allocating storage for the constant.
 const shape_id_t rb_invalid_shape_id = INVALID_SHAPE_ID;
-// This makes bindgen import SHAPE_ID_FL_FROZEN
-const enum shape_id_fl_type rb_shape_id_fl_frozen = SHAPE_ID_FL_FROZEN;
 
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)

@@ -100,9 +100,8 @@ fn main() {
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        // This makes bindgen import SHAPE_ID_FL_FROZEN
         .allowlist_var("rb_invalid_shape_id")
-        .allowlist_var("rb_shape_id_fl_frozen")
+        .allowlist_type("shape_id_fl_type")
         .allowlist_var("VM_KW_SPECIFIED_BITS_MAX")
         .allowlist_var("SHAPE_ID_NUM_BITS")
         .allowlist_function("rb_obj_is_kind_of")
