@@ -5950,6 +5950,33 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_any_to_string_with_known_string_exact() {
+        eval(r##"
+            def test(x) = "#{x}"
+            test 123
+        "##);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v26:Fixnum = GuardType v9, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v30:StringExact = CCallVariadic Integer#to_s@0x1040, v26
+          v21:StringExact = StringConcat v13, v30
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_array_aref_fixnum_literal() {
         eval("
             def test
