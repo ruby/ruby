@@ -326,6 +326,7 @@ fn main() {
         .allowlist_function("rb_attr_get")
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
+        .allowlist_function("rb_ivar_get_at_no_ractor_check")
         .allowlist_function("rb_ivar_set")
         .allowlist_function("rb_mod_name")
         .allowlist_var("rb_vm_insn_count")

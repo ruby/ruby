@@ -1742,6 +1742,15 @@ impl Function {
         self.blocks.len()
     }
 
+    pub fn assume_single_ractor_mode(&mut self, block: BlockId, state: InsnId) -> bool {
+        if unsafe { rb_jit_multi_ractor_p() } {
+            false
+        } else {
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+            true
+        }
+    }
+
     /// Return a copy of the instruction where the instruction and its operands have been read from
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
@@ -2377,6 +2386,17 @@ impl Function {
         }
     }
 
+    fn is_metaclass(&self, object: VALUE) -> bool {
+        unsafe {
+            if RB_TYPE_P(object, RUBY_T_CLASS) && rb_zjit_singleton_class_p(object) {
+                let attached = rb_class_attached_object(object);
+                RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE)
+            } else {
+                false
+            }
+        }
+    }
+
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
     /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
@@ -2483,9 +2503,9 @@ impl Function {
 
                             // Patch points:
                             // Check for "defined with an un-shareable Proc in a different Ractor"
-                            if !procv.shareable_p() {
+                            if !procv.shareable_p() && !self.assume_single_ractor_mode(block, state) {
                                 // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                                self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
@@ -2498,6 +2518,12 @@ impl Function {
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
                                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
@@ -2507,31 +2533,21 @@ impl Function {
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if unsafe { rb_zjit_singleton_class_p(klass) } {
-                                let attached = unsafe { rb_class_attached_object(klass) };
-                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
-                                }
-                            }
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
                         } else if let (VM_METHOD_TYPE_ATTRSET, &[val]) = (def_type, args.as_slice()) {
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_setivar, so it's unsafe to raise for multi-ractor mode.
-                            if unsafe { rb_zjit_singleton_class_p(klass) } {
-                                let attached = unsafe { rb_class_attached_object(klass) };
-                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
-                                }
-                            }
                             self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             self.make_equal_to(insn_id, val);
                         } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
@@ -2657,12 +2673,9 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        let multi_ractor_mode = unsafe { rb_jit_multi_ractor_p() };
-                        if cref_sensitive || multi_ractor_mode {
+                        if cref_sensitive || !self.assume_single_ractor_mode(block, state) {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        // Assume single-ractor mode.
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
@@ -2829,11 +2842,6 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
@@ -2847,6 +2855,17 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        } else if !recv_type.flags().is_t_object() {
+                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                            // getinstancevariable does assume_single_ractor_mode()
+                            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            self.push_insn(block, Insn::CCall {
+                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                recv: self_val,
+                                args: vec![ivar_index_insn],
+                                name: ID!(rb_ivar_get_at_no_ractor_check),
+                                return_type: types::BasicObject,
+                                elidable: true })
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
@@ -4277,6 +4296,7 @@ impl Function {
             | Insn::ObjectAlloc { val, .. }
             | Insn::DupArrayInclude { target: val, .. }
             | Insn::GetIvar { self_val: val, .. }
+            | Insn::CCall { recv: val, .. }
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
@@ -4298,7 +4318,6 @@ impl Function {
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
-            | Insn::CCall { recv, ref args, .. }
             | Insn::CCallWithFrame { recv, ref args, .. }
             | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
@@ -5693,7 +5712,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // ic is in arg 1
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
                     // TODO: We only really need this if self_val is a class/module
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
+                    if !fun.assume_single_ractor_mode(block, exit_id) {
+                        // gen_getivar assumes single Ractor; side-exit into the interpreter
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
+                        break;  // End the block
+                    }
                     let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
                     state.stack_push(result);
                 }
@@ -5702,7 +5725,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ic = get_arg(pc, 1).as_ptr();
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
                     // TODO: We only really need this if self_val is a class/module
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
+                    if !fun.assume_single_ractor_mode(block, exit_id) {
+                        // gen_setivar assumes single Ractor; side-exit into the interpreter
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
+                        break;  // End the block
+                    }
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
                 }
