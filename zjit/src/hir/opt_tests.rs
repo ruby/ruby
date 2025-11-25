@@ -5232,6 +5232,148 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_getivar_on_module() {
+        eval("
+            module M
+              @foo = 42
+              def self.test = @foo
+            end
+            M.test
+        ");
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v16:HeapBasicObject = GuardType v6, HeapBasicObject
+          v17:HeapBasicObject = GuardShape v16, 0x1000
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v18
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_class() {
+        eval("
+            class C
+              @foo = 42
+              def self.test = @foo
+            end
+            C.test
+        ");
+        assert_snapshot!(hir_string_proc("C.method(:test)"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v16:HeapBasicObject = GuardType v6, HeapBasicObject
+          v17:HeapBasicObject = GuardShape v16, 0x1000
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v18
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_t_data() {
+        eval("
+            class C < Range
+              def test = @a
+            end
+            obj = C.new 0, 1
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v16:HeapBasicObject = GuardType v6, HeapBasicObject
+          v17:HeapBasicObject = GuardShape v16, 0x1000
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v18
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_module_multi_ractor() {
+        eval("
+            module M
+              @foo = 42
+              def self.test = @foo
+            end
+            Ractor.new {}.value
+            M.test
+        ");
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          SideExit UnhandledYARVInsn(getinstancevariable)
+        ");
+    }
+
+    #[test]
+    fn test_optimize_attr_reader_on_module_multi_ractor() {
+        eval("
+            module M
+              @foo = 42
+              class << self
+                attr_reader :foo
+              end
+              def self.test = foo
+            end
+            Ractor.new {}.value
+            M.test
+        ");
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = SendWithoutBlock v6, :foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_dont_optimize_getivar_polymorphic() {
         set_call_threshold(3);
         eval("
