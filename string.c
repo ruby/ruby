@@ -136,15 +136,24 @@ VALUE rb_cSymbol;
 #define STR_NOFREE FL_USER18
 #define STR_FAKESTR FL_USER19
 
-#define STR_SET_NOEMBED(str) do {\
-    FL_SET((str), STR_NOEMBED);\
-    FL_UNSET((str), STR_SHARED | STR_SHARED_ROOT | STR_BORROWED);\
-} while (0)
-#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED | STR_SHARED | STR_NOFREE)
+static inline void
+STR_SET_NOEMBED(VALUE str)
+{
+    FL_SET(str, STR_NOEMBED);
+    FL_UNSET(str, STR_SHARED | STR_SHARED_ROOT | STR_BORROWED);
+}
 
-#define STR_SET_LEN(str, n) do { \
-    RSTRING(str)->len = (n); \
-} while (0)
+static inline void
+STR_SET_EMBED(VALUE str)
+{
+    FL_UNSET(str, STR_NOEMBED | STR_SHARED | STR_NOFREE);
+}
+
+static inline void
+STR_SET_LEN(VALUE str, long n)
+{
+    RSTRING(str)->len = n;
+}
 
 static inline bool
 str_encindex_fastpath(int encindex)
@@ -166,66 +175,95 @@ str_enc_fastpath(VALUE str)
     return str_encindex_fastpath(ENCODING_GET_INLINED(str));
 }
 
-#define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
-#define TERM_FILL(ptr, termlen) do {\
-    char *const term_fill_ptr = (ptr);\
-    const int term_fill_len = (termlen);\
-    *term_fill_ptr = '\0';\
-    if (UNLIKELY(term_fill_len > 1))\
-        memset(term_fill_ptr, 0, term_fill_len);\
-} while (0)
+static inline int
+TERM_LEN(VALUE str)
+{
+    return str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str)));
+}
 
-#define RESIZE_CAPA(str,capacity) do {\
-    const int termlen = TERM_LEN(str);\
-    RESIZE_CAPA_TERM(str,capacity,termlen);\
-} while (0)
-#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
-    if (STR_EMBED_P(str)) {\
-        if (str_embed_capa(str) < capacity + termlen) {\
-            char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
-            const long tlen = RSTRING_LEN(str);\
-            memcpy(tmp, RSTRING_PTR(str), tlen);\
-            RSTRING(str)->as.heap.ptr = tmp;\
-            RSTRING(str)->len = tlen;\
-            STR_SET_NOEMBED(str);\
-            RSTRING(str)->as.heap.aux.capa = (capacity);\
-        }\
-    }\
-    else {\
-        RUBY_ASSERT(!FL_TEST((str), STR_SHARED)); \
-        SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, \
-                        (size_t)(capacity) + (termlen), STR_HEAP_SIZE(str)); \
-        RSTRING(str)->as.heap.aux.capa = (capacity);\
-    }\
-} while (0)
+static inline void
+TERM_FILL(char *const term_fill_ptr, const int term_fill_len)
+{
+    *term_fill_ptr = '\0';
+    if (UNLIKELY(term_fill_len > 1))
+        memset(term_fill_ptr, 0, term_fill_len);
+}
 
-#define STR_SET_SHARED(str, shared_str) do { \
-    if (!FL_TEST(str, STR_FAKESTR)) { \
-        RUBY_ASSERT(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
-        RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
-        RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
-        FL_SET((str), STR_SHARED); \
-        FL_SET((shared_str), STR_SHARED_ROOT); \
-        if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
-            FL_SET_RAW((shared_str), STR_BORROWED); \
-    } \
-} while (0)
+static inline void RESIZE_CAPA_TERM(VALUE str, long capacity, const int termlen);
 
-#define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
-#define STR_HEAP_SIZE(str) ((size_t)RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
-/* TODO: include the terminator size in capa. */
+static inline void
+RESIZE_CAPA(VALUE str, long capacity)
+{
+    const int termlen = TERM_LEN(str);
+    RESIZE_CAPA_TERM(str, capacity, termlen);
+}
+
+static inline long str_embed_capa(VALUE str);
+
+static inline void
+RESIZE_CAPA_TERM(VALUE str, long capacity, const int termlen)
+{
+    if (STR_EMBED_P(str)) {
+        if (str_embed_capa(str) < capacity + termlen) {
+            char *const tmp = ALLOC_N(char, (size_t)capacity + termlen);
+            const long tlen = RSTRING_LEN(str);
+            memcpy(tmp, RSTRING_PTR(str), tlen);
+            RSTRING(str)->as.heap.ptr = tmp;
+            RSTRING(str)->len = tlen;
+            STR_SET_NOEMBED(str);
+            RSTRING(str)->as.heap.aux.capa = capacity;
+        }
+    }
+    else {
+        RUBY_ASSERT(!FL_TEST(str, STR_SHARED));
+        SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
+                        (size_t)capacity + termlen, STR_HEAP_SIZE(str));
+        RSTRING(str)->as.heap.aux.capa = capacity;
+    }
+}
+
+static inline void
+STR_SET_SHARED(VALUE str, VALUE shared_str)
+{
+    if (!FL_TEST(str, STR_FAKESTR)) {
+        RUBY_ASSERT(RSTRING_PTR(shared_str) <= RSTRING_PTR(str));
+        RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str));
+        RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, shared_str);
+        FL_SET(str, STR_SHARED);
+        FL_SET(shared_str, STR_SHARED_ROOT);
+        if (RBASIC_CLASS(shared_str) == 0) /* for CoW-friendliness */
+            FL_SET_RAW(shared_str, STR_BORROWED);
+    }
+}
+
+static inline char*
+STR_HEAP_PTR(VALUE str)
+{
+    return RSTRING(str)->as.heap.ptr;
+}
+
+static inline size_t
+STR_HEAP_SIZE(VALUE str)
+{
+    /* TODO: include the terminator size in capa. */
+    return (size_t)RSTRING(str)->as.heap.aux.capa + TERM_LEN(str);
+}
 
 #define STR_ENC_GET(str) get_encoding(str)
 
 #if !defined SHARABLE_MIDDLE_SUBSTRING
 # define SHARABLE_MIDDLE_SUBSTRING 0
 #endif
-#if !SHARABLE_MIDDLE_SUBSTRING
-#define SHARABLE_SUBSTRING_P(beg, len, end) ((beg) + (len) == (end))
-#else
-#define SHARABLE_SUBSTRING_P(beg, len, end) 1
-#endif
 
+static inline bool
+SHARABLE_SUBSTRING_P(long beg, long len, long end)
+{
+#if !SHARABLE_MIDDLE_SUBSTRING
+    return beg + len == end;
+#else
+    return true;
+#endif
+}
 
 static inline long
 str_embed_capa(VALUE str)
@@ -2217,7 +2255,11 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 #ifdef NONASCII_MASK
-#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+static inline bool
+is_utf8_lead_byte(unsigned char c)
+{
+    return (c & 0xC0) != 0x80;
+}
 
 /*
  * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
@@ -3556,7 +3598,12 @@ str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
     return str;
 }
 
-#define str_buf_cat(str, ptr, len) str_buf_cat4((str), (ptr), len, false)
+static inline VALUE
+str_buf_cat(VALUE str, const char *ptr, long len)
+{
+    return str_buf_cat4(str, ptr, len, false);
+}
+
 #define str_buf_cat2(str, ptr) str_buf_cat4((str), (ptr), rb_strlen_lit(ptr), false)
 
 VALUE
@@ -4492,9 +4539,20 @@ strseq_core(const char *str_ptr, const char *str_ptr_end, long str_len,
     return pos + offset;
 }
 
+static long rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte);
+
 /* found index in byte */
-#define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
-#define rb_str_byteindex(str, sub, offset) rb_strseq_index(str, sub, offset, 1)
+static inline long
+rb_str_index(VALUE str, VALUE sub, long offset)
+{
+    return rb_strseq_index(str, sub, offset, 0);
+}
+
+static inline long
+rb_str_byteindex(VALUE str, VALUE sub, long offset)
+{
+    return rb_strseq_index(str, sub, offset, 1);
+}
 
 static long
 rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
@@ -7310,7 +7368,11 @@ rb_str_inspect(VALUE str)
     return result;
 }
 
-#define IS_EVSTR(p,e) ((p) < (e) && (*(p) == '$' || *(p) == '@' || *(p) == '{'))
+static inline bool
+IS_EVSTR(const char *p, const char *e)
+{
+    return p < e && (*p == '$' || *p == '@' || *p == '{');
+}
 
 /*
  *  call-seq:
@@ -9050,7 +9112,11 @@ static const char isspacetable[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-#define ascii_isspace(c) isspacetable[(unsigned char)(c)]
+static inline bool
+ascii_isspace(unsigned char c)
+{
+    return isspacetable[c];
+}
 
 static long
 split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
