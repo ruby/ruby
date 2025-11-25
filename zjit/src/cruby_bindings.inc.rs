@@ -1462,6 +1462,13 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
+pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 29360128;
+pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 33554432;
+pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 134217728;
+pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 100663296;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 264241152;
+pub type shape_id_fl_type = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -2109,8 +2116,8 @@ unsafe extern "C" {
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
-    pub fn rb_zjit_shape_frozen_p(shape_id: shape_id_t) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
+    pub static rb_shape_id_fl_frozen: shape_id_fl_type;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

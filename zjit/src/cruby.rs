@@ -265,7 +265,7 @@ impl ShapeId {
     }
 
     pub fn is_frozen(self) -> bool {
-        unsafe { rb_zjit_shape_frozen_p(self.0) }// & SHAPE_ID_FL_FROZEN
+        (self.0 & SHAPE_ID_FL_FROZEN) != 0
     }
 }
 
