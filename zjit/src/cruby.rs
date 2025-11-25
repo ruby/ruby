@@ -1381,6 +1381,7 @@ pub(crate) mod ids {
         name: _as_heap
         name: thread_ptr
         name: self_              content: b"self"
+        name: rb_ivar_get_at_no_ractor_check
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
