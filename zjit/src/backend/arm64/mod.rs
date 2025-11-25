@@ -492,15 +492,28 @@ impl Assembler {
                 }
                 */
                 Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+                    // assert!(opnds.len() <= C_ARG_OPNDS.len());
+                    let num_reg_args = C_ARG_OPNDS.len().min(opnds.len());
+                    let num_stack_args = opnds.len().saturating_sub(C_ARG_OPNDS.len());
+
+                    // Push stack arguments to before setting up registers.
+                    if num_stack_args > 0 {
+                        for opnd in opnds.iter().skip(num_reg_args).rev() {
+                            let value = match opnd {
+                                Opnd::Mem(_) => split_memory_address(asm, *opnd),
+                                _ => *opnd,
+                            };
+                            asm.cpush(value);
+                        }
+                    }
 
                     // Load each operand into the corresponding argument
                     // register.
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
-                    if !opnds.is_empty() {
+                    if num_reg_args > 0 {
                         let mut args: Vec<(Opnd, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().take(num_reg_args).enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -1872,7 +1885,7 @@ mod tests {
         0x28: mrs x16, nzcv
         0x2c: str x16, [sp, #-0x10]!
         ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
+        assert_snapshot!(cb.hexdump(), @"e10f1ff8e60f1ff8e70f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
     }
 
     #[test]
@@ -1896,7 +1909,7 @@ mod tests {
         0x28: ldr x6, [sp], #0x10
         0x2c: ldr x1, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e70741f8e60741f8e10741f8");
     }
 
     #[test]
