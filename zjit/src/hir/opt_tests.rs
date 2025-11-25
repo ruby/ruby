@@ -5901,6 +5901,56 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fixnum_to_s_returns_string() {
+        eval(r#"
+            def test(x) = x.to_s
+            test 5
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v21:Fixnum = GuardType v9, Fixnum
+          v22:StringExact = CCallVariadic Integer#to_s@0x1038, v21
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_bignum_to_s_returns_string() {
+        eval(r#"
+            def test(x) = x.to_s
+            test (2**65)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v21:Integer = GuardType v9, Integer
+          v22:StringExact = CCallVariadic Integer#to_s@0x1038, v21
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn test_array_aref_fixnum_literal() {
         eval("
             def test
