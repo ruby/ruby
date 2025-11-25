@@ -61,6 +61,12 @@ jobs:
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit --enable-zjit=dev'
             rust_version: '1.85.0'
