@@ -4129,12 +4129,11 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v26:BasicObject = GuardTypeNot v9, String
+          v26:ArrayExact = GuardType v9, ArrayExact
           PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
-          v31:ArrayExact = GuardType v9, ArrayExact
-          v32:BasicObject = CCallWithFrame Array#to_s@0x1040, v31
-          v19:String = AnyToString v9, str: v32
+          v31:BasicObject = CCallWithFrame Array#to_s@0x1040, v26
+          v19:String = AnyToString v9, str: v31
           v21:StringExact = StringConcat v13, v19
           CheckInterrupts
           Return v21
