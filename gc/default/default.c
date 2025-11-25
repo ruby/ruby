@@ -9327,7 +9327,9 @@ rb_gc_impl_before_fork(void *objspace_ptr)
     /* no-op */
 }
 
-void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) {
+void
+rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
+{
     if (pid == 0) { /* child process */
         rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, NULL);
     }
