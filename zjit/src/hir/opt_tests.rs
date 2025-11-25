@@ -3343,6 +3343,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
+          IncrCounter getivar_fallback_not_monomorphic
           v11:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
           Return v11
@@ -3366,6 +3367,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_not_monomorphic
           SetIvar v6, :@foo, v10
           CheckInterrupts
           Return v10
@@ -3442,6 +3444,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          IncrCounter definedivar_fallback_not_t_object
           v10:StringExact|NilClass = DefinedIvar v6, :@a
           CheckInterrupts
           Return v10
@@ -3473,6 +3476,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          IncrCounter definedivar_fallback_not_monomorphic
           v10:StringExact|NilClass = DefinedIvar v6, :@a
           CheckInterrupts
           Return v10
@@ -3525,6 +3529,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_shape_transition
           SetIvar v6, :@foo, v10
           CheckInterrupts
           Return v10
@@ -3554,6 +3559,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_not_t_object
           SetIvar v6, :@a, v10
           CheckInterrupts
           Return v10
@@ -3587,6 +3593,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_not_monomorphic
           SetIvar v6, :@a, v10
           CheckInterrupts
           Return v10
@@ -3618,6 +3625,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_shape_transition
           SetIvar v6, :@a, v10
           CheckInterrupts
           Return v10
@@ -5527,6 +5535,7 @@ mod hir_opt_tests {
           v16:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          IncrCounter setivar_fallback_shape_transition
           SetIvar v26, :@foo, v16
           CheckInterrupts
           Return v16
@@ -5558,6 +5567,7 @@ mod hir_opt_tests {
           v16:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          IncrCounter setivar_fallback_shape_transition
           SetIvar v26, :@foo, v16
           CheckInterrupts
           Return v16
@@ -8609,17 +8619,18 @@ mod hir_opt_tests {
          SetLocal l0, EP@3, v27
          v39:BasicObject = GetLocal l0, EP@3
          PatchPoint SingleRactorMode
+         IncrCounter setivar_fallback_shape_transition
          SetIvar v14, :@formatted, v39
          v45:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
          PatchPoint MethodRedefined(Class@0x1008, lambda@0x1010, cme:0x1018)
          PatchPoint NoSingletonClass(Class@0x1008)
-         v59:BasicObject = CCallWithFrame RubyVM::FrozenCore.lambda@0x1040, v45, block=0x1048
+         v60:BasicObject = CCallWithFrame RubyVM::FrozenCore.lambda@0x1040, v45, block=0x1048
          v48:BasicObject = GetLocal l0, EP@6
          v49:BasicObject = GetLocal l0, EP@5
          v50:BasicObject = GetLocal l0, EP@4
          v51:BasicObject = GetLocal l0, EP@3
          CheckInterrupts
-         Return v59
+         Return v60
        ");
     }
 }
