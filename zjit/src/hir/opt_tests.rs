@@ -6824,9 +6824,8 @@ mod hir_opt_tests {
         ");
     }
 
-    // TODO: This should be inlined just as in the interpreter
     #[test]
-    fn test_optimize_string_append_non_string() {
+    fn test_optimize_string_append_codepoint() {
         eval(r#"
             def test(x, y) = x << y
             test("iron", 4)
@@ -6846,9 +6845,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v27:StringExact = GuardType v11, StringExact
-          v28:BasicObject = CCallWithFrame String#<<@0x1038, v27, v12
+          v28:Fixnum = GuardType v12, Fixnum
+          v29:StringExact = StringAppendCodepoint v27, v28
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v27
         ");
     }
 
@@ -6909,6 +6910,32 @@ mod hir_opt_tests {
           v28:BasicObject = CCallWithFrame String#<<@0x1038, v27, v12
           CheckInterrupts
           Return v28
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_string_append_non_string() {
+        eval(r#"
+            def test = "iron" << :a
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:StringExact = StringCopy v10
+          v13:StaticSymbol[:a] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, <<@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v24:BasicObject = CCallWithFrame String#<<@0x1048, v11, v13
+          CheckInterrupts
+          Return v24
         ");
     }
 

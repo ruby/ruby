@@ -425,10 +425,15 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         let other = fun.coerce_to(block, other, types::String, state);
         let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
-        Some(recv)
-    } else {
-        None
+        return Some(recv);
     }
+    if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        let other = fun.coerce_to(block, other, types::Fixnum, state);
+        let _ = fun.push_insn(block, hir::Insn::StringAppendCodepoint { recv, other, state });
+        return Some(recv);
+    }
+    None
 }
 
 fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
