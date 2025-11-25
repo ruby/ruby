@@ -206,6 +206,10 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
+    // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
+    // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
+    // ENC_CODERANGE_UNKNOWN.
+    annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
