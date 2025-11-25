@@ -836,7 +836,7 @@ class TestBox < Test::Unit::TestCase
       begin;
         require "json"
         tmpdirname = ENV['TMPDIR']
-        assert_equal(['.', '..'], Dir.entries(tmpdirname).sort)
+        assert_empty(Dir.children(tmpdirname))
       end;
     end
   end
