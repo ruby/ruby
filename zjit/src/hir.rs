@@ -652,6 +652,7 @@ pub enum Insn {
     StringGetbyteFixnum { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -1123,6 +1124,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::StringAppend { recv, other, .. } => {
                 write!(f, "StringAppend {recv}, {other}")
+            }
+            Insn::StringAppendCodepoint { recv, other, .. } => {
+                write!(f, "StringAppendCodepoint {recv}, {other}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -1814,6 +1818,7 @@ impl Function {
             &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
+            &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -2032,6 +2037,7 @@ impl Function {
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
+            Insn::StringAppendCodepoint { .. } => types::StringExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -3564,7 +3570,9 @@ impl Function {
                 worklist.push_back(index);
                 worklist.push_back(value);
             }
-            &Insn::StringAppend { recv, other, state } => {
+            &Insn::StringAppend { recv, other, state }
+            | &Insn::StringAppendCodepoint { recv, other, state }
+            => {
                 worklist.push_back(recv);
                 worklist.push_back(other);
                 worklist.push_back(state);
@@ -4327,6 +4335,10 @@ impl Function {
             Insn::StringAppend { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
                 self.assert_subtype(insn_id, other, types::String)
+            }
+            Insn::StringAppendCodepoint { recv, other, .. } => {
+                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, other, types::Fixnum)
             }
             // Instructions with Array operands
             Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
