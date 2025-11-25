@@ -810,4 +810,21 @@ class TestBox < Test::Unit::TestCase
       assert_equal expected, 1
     end;
   end
+
+  def test_mark_box_object_referred_only_from_binding
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval('class Integer; def +(*)=42; end')
+      b = box.eval('binding')
+      box = nil # remove direct reference to the box
+
+      assert_equal 42, b.eval('1+2')
+
+      GC.stress = true
+      GC.start
+
+      assert_equal 42, b.eval('1+2')
+    end;
+  end
 end
