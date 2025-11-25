@@ -622,6 +622,8 @@ typedef struct rb_objspace {
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
     unsigned long live_ractor_cache_count;
+
+    int fork_vm_lock_lev;
 } rb_objspace_t;
 
 #ifndef HEAP_PAGE_ALIGN_LOG
@@ -9324,12 +9326,20 @@ gc_malloc_allocations(VALUE self)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
-    /* no-op */
+    rb_objspace_t *objspace = objspace_ptr;
+
+    objspace->fork_vm_lock_lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
 }
 
 void
 rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 {
+    rb_objspace_t *objspace = objspace_ptr;
+
+    RB_GC_VM_UNLOCK(objspace->fork_vm_lock_lev);
+    objspace->fork_vm_lock_lev = 0;
+
     if (pid == 0) { /* child process */
         rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, NULL);
     }
