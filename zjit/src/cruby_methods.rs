@@ -376,7 +376,21 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
         // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
-        let result = fun.push_insn(block, hir::Insn::StringGetbyteFixnum { string: recv, index });
+        let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+        let len = fun.push_insn(block, hir::Insn::LoadField {
+            recv,
+            id: ID!(len),
+            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            return_type: types::CInt64,
+        });
+        // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
+        // the data dependency is gone (say, the StringGetbyte is elided), they can also be elided.
+        //
+        // This is unlike most other guards.
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
+        let result = fun.push_insn(block, hir::Insn::StringGetbyte { string: recv, index: unboxed_index });
         return Some(result);
     }
     None
