@@ -1240,6 +1240,10 @@ rb_shape_foreach_field(shape_id_t initial_shape_id, rb_shape_foreach_transition_
 bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 {
+    if (shape_id == ROOT_SHAPE_ID) {
+        return true;
+    }
+
     if (shape_id == INVALID_SHAPE_ID) {
         rb_bug("Can't set INVALID_SHAPE_ID on an object");
     }
