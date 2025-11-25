@@ -83,7 +83,7 @@ rbimpl_atomic_u64_fetch_add(volatile rbimpl_atomic_uint64_t *ptr, uint64_t val)
     return atomic_fetch_add_explicit((_Atomic uint64_t *)ptr, val, memory_order_seq_cst);
 #else
     // Fallback using mutex for platforms without 64-bit atomics
-    static rb_native_mutex_t lock = RB_NATIVE_MUTEX_INITIALIZER;
+    static rb_nativethread_mutex_t lock = RB_NATIVETHREAD_LOCK_INIT;
     rb_native_mutex_lock(&lock);
     uint64_t old = *ptr;
     *ptr = old + val;
