@@ -242,6 +242,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "<", inline_integer_lt);
     annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cInteger, "<<", inline_integer_lshift);
+    annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
