@@ -3399,6 +3399,11 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
+                    Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
+                        self.make_equal_to(insn_id, str);
+                        // Don't bother re-inferring the type of str; we already know it.
+                        continue;
+                    }
                     Insn::FixnumAdd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
