@@ -1746,6 +1746,7 @@ AS_IF([test "$GCC" = yes], [
 		    [rb_cv_gcc_atomic_builtins=no])])
     AS_IF([test "$rb_cv_gcc_atomic_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
+	AC_CHECK_LIB([atomic], [__atomic_fetch_add_8])
 	AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
 	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
 			uint64_t atomic_var;]],
