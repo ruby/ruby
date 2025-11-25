@@ -2815,11 +2815,6 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
@@ -2833,6 +2828,14 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        } else if !recv_type.flags().is_t_object() {
+                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            self.push_insn(block, Insn::CCall {
+                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                args: vec![self_val, ivar_index_insn],
+                                name: ID!(rb_ivar_get_at_no_ractor_check),
+                                return_type: types::BasicObject,
+                                elidable: true })
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
