@@ -7101,6 +7101,33 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_ascii_only_p() {
+        eval(r#"
+            def test(x) = x.ascii_only?
+            test("iron")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, ascii_only?@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v22:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v24:BoolExact = CCall v22, :String#ascii_only?@0x1038
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_dont_optimize_when_passing_too_few_args() {
         eval(r#"
             public def foo(lead, opt=raise) = opt
