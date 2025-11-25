@@ -163,10 +163,8 @@ bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
 #endif
 
 static inline void
-RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 {
-    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
@@ -174,6 +172,16 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 #endif
+}
+
+static inline void
+RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+{
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+
+    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
