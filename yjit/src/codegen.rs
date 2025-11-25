@@ -2417,16 +2417,28 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-// Gets the EP of the ISeq of the containing method, or "local level".
-// Equivalent of GET_LEP() macro.
+/// Get the EP of the ISeq of the containing method, or "local level EP".
+/// Equivalent to `GET_LEP()` with a constraint:
+/// `ISEQ_TYPE_METHOD == iseq_under_compilation->body->local_iseq->body->type`.
 fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
     // Equivalent of get_lvar_level() in compile.c
-    fn get_lvar_level(iseq: IseqPtr) -> u32 {
-        if iseq == unsafe { rb_get_iseq_body_local_iseq(iseq) } {
-            0
-        } else {
-            1 + get_lvar_level(unsafe { rb_get_iseq_body_parent_iseq(iseq) })
+    fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
+        // GET_LEP() chases the parent environment pointer to reach the local environment. Usually,
+        // it chases the same number of times as chasing the parent iseq pointer to reach the local
+        // iseq. We rely on this parallel to fully unroll the chasing loop. However, this parallel
+        // doesn't hold when the local iseq is ISEQ_TYPE_TOP because of TOP_LEVEL_BINDING funkiness.
+        // Luckily, language features that require GET_LEP() such as `super` and `yield` don't work
+        // under ISEQ_TYPE_TOP anyways. So requiring the local iseq to be ISEQ_TYPE_METHOD isn't
+        // practically limiting.
+        let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+        assert_eq!(ISEQ_TYPE_METHOD, unsafe { rb_get_iseq_body_type(local_iseq) });
+
+        let mut level = 0;
+        while iseq != local_iseq {
+            iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+            level += 1;
         }
+        level
     }
 
     let level = get_lvar_level(jit.get_iseq());
