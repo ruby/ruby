@@ -3480,6 +3480,151 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_monomorphic_setivar_already_in_shape() {
+        eval("
+            @foo = 4
+            def test = @foo = 5
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          v19:HeapBasicObject = GuardType v6, HeapBasicObject
+          v20:HeapBasicObject = GuardShape v19, 0x1000
+          StoreField v20, :@foo@0x1001, v10
+          WriteBarrier v20, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_monomorphic_setivar_with_shape_transition() {
+        eval("
+            def test = @foo = 5
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@foo, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_setivar_with_t_data() {
+        eval("
+            class C < Range
+              def test = @a = 5
+            end
+            obj = C.new 0, 1
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@a, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_polymorphic_setivar() {
+        set_call_threshold(3);
+        eval("
+            class C
+              def test = @a = 5
+            end
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            obj = C.new
+            obj.instance_variable_set(:@b, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@a, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_complex_shape_setivar() {
+        eval(r#"
+            class C
+              def test = @a = 5
+            end
+            obj = C.new
+            (0..1000).each do |i|
+              obj.instance_variable_set(:"@v#{i}", i)
+            end
+            obj.test
+            TEST = C.instance_method(:test)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@a, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_elide_freeze_with_frozen_hash() {
         eval("
             def test = {}.freeze
