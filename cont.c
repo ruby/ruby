@@ -2005,10 +2005,9 @@ fiber_alloc(VALUE klass)
 }
 
 static rb_serial_t
-next_fiber_serial(void)
+next_fiber_serial(rb_ractor_t *cr)
 {
-    static rbimpl_atomic_uint64_t fiber_serial = 1;
-    return (rb_serial_t)ATOMIC_U64_FETCH_ADD(fiber_serial, 1);
+    return cr->next_fiber_serial++;
 }
 
 static rb_fiber_t*
@@ -2027,7 +2026,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     fiber->cont.type = FIBER_CONTEXT;
     fiber->blocking = blocking;
     fiber->killed = 0;
-    fiber->serial = next_fiber_serial();
+    fiber->serial = next_fiber_serial(th->ractor);
     cont_init(&fiber->cont, th);
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
@@ -2580,7 +2579,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.thread_ptr = th;
     fiber->blocking = 1;
     fiber->killed = 0;
-    fiber->serial = next_fiber_serial();
+    fiber->serial = next_fiber_serial(th->ractor);
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
     cont_init_jit_cont(&fiber->cont);
