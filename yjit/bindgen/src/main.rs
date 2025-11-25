@@ -273,7 +273,7 @@ fn main() {
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
-        .allowlist_function("rb_yjit_str_concat_codepoint")
+        .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_type("rstring_offsets")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")

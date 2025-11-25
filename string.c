@@ -12580,9 +12580,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 void
-rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint)
 {
     if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
         ssize_t code = RB_NUM2SSIZE(codepoint);
