@@ -3238,9 +3238,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[String@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
           IncrCounter complex_arg_pass_param_rest
           v29:BasicObject = SendWithoutBlock v43, :new
           CheckInterrupts
@@ -3269,11 +3269,11 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[String@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
-          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(Class@0x1040)
+          PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
           v55:StringExact = ObjectAllocClass String:VALUE(0x1008)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -3300,12 +3300,12 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v43:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v43:Class[C@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
-          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(Class@0x1040)
-          v49:BasicObject = CCallVariadic String.new@0x1048, v43
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v49:BasicObject = CCallVariadic String.new@0x1040, v43
           CheckInterrupts
           Return v49
         ");
