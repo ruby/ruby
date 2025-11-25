@@ -1746,19 +1746,24 @@ AS_IF([test "$GCC" = yes], [
 		    [rb_cv_gcc_atomic_builtins=no])])
     AS_IF([test "$rb_cv_gcc_atomic_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
-	AC_CHECK_LIB([atomic], [__atomic_fetch_add_8])
-	AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
-	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
-			uint64_t atomic_var;]],
-			[[
-			    __atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
-			    __atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
-			]])],
-			[rb_cv_gcc_atomic_builtins_64=yes],
-			[rb_cv_gcc_atomic_builtins_64=no])])
-	AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
-	    AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
-	])
+	for lib in "" atomic; do
+	    AS_IF([test "$lib" != ""], [
+		AC_CHECK_LIB([atomic], [__atomic_fetch_add_8])
+	    ])
+	    AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
+			    uint64_t atomic_var;]],
+			    [[
+				__atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
+				__atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
+			    ]])],
+			    [rb_cv_gcc_atomic_builtins_64=yes],
+			    [rb_cv_gcc_atomic_builtins_64=no])])
+	    AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
+		AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
+		break
+	    ])
+	done
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
