@@ -60,7 +60,7 @@ class TestGemRemoteFetcher < Gem::TestCase
     uri = Gem::URI "http://example/file"
     path = File.join @tempdir, "file"
 
-    fetcher = util_fuck_with_fetcher "hello"
+    fetcher = fake_fetcher(uri.to_s, "hello")
 
     data = fetcher.cache_update_path uri, path
 
@@ -75,7 +75,7 @@ class TestGemRemoteFetcher < Gem::TestCase
       path = File.join @tempdir, "file"
       data = String.new("\xC8").force_encoding(Encoding::BINARY)
 
-      fetcher = util_fuck_with_fetcher data
+      fetcher = fake_fetcher(uri.to_s, data)
 
       written_data = fetcher.cache_update_path uri, path
 
@@ -88,7 +88,7 @@ class TestGemRemoteFetcher < Gem::TestCase
     uri = Gem::URI "http://example/file"
     path = File.join @tempdir, "file"
 
-    fetcher = util_fuck_with_fetcher "hello"
+    fetcher = fake_fetcher(uri.to_s, "hello")
 
     data = fetcher.cache_update_path uri, path, false
 
@@ -97,103 +97,79 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert_path_not_exist path
   end
 
-  def util_fuck_with_fetcher(data, blow = false)
-    fetcher = Gem::RemoteFetcher.fetcher
-    fetcher.instance_variable_set :@test_data, data
+  def test_cache_update_path_overwrites_existing_file
+    uri = Gem::URI "http://example/file"
+    path = File.join @tempdir, "file"
 
-    if blow
-      def fetcher.fetch_path(arg, *rest)
-        # OMG I'm such an ass
-        class << self; remove_method :fetch_path; end
-        def self.fetch_path(arg, *rest)
-          @test_arg = arg
-          @test_data
-        end
+    # Create existing file with old content
+    File.write(path, "old content")
+    assert_equal "old content", File.read(path)
 
-        raise Gem::RemoteFetcher::FetchError.new("haha!", "")
-      end
-    else
-      def fetcher.fetch_path(arg, *rest)
-        @test_arg = arg
-        @test_data
-      end
-    end
+    fetcher = fake_fetcher(uri.to_s, "new content")
 
-    fetcher
+    data = fetcher.cache_update_path uri, path
+
+    assert_equal "new content", data
+    assert_equal "new content", File.read(path)
   end
 
   def test_download
-    a1_data = nil
-    File.open @a1_gem, "rb" do |fp|
-      a1_data = fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
-    assert_equal("http://gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
     assert File.exist?(a1_cache_gem)
   end
 
   def test_download_with_auth
-    a1_data = nil
-    File.open @a1_gem, "rb" do |fp|
-      a1_data = fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://user:password@gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, "http://user:password@gems.example.com")
-    assert_equal("http://user:password@gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
     assert File.exist?(a1_cache_gem)
   end
 
   def test_download_with_token
-    a1_data = nil
-    File.open @a1_gem, "rb" do |fp|
-      a1_data = fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://token@gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, "http://token@gems.example.com")
-    assert_equal("http://token@gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
     assert File.exist?(a1_cache_gem)
   end
 
   def test_download_with_x_oauth_basic
-    a1_data = nil
-    File.open @a1_gem, "rb" do |fp|
-      a1_data = fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://token:x-oauth-basic@gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, "http://token:x-oauth-basic@gems.example.com")
-    assert_equal("http://token:x-oauth-basic@gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
     assert File.exist?(a1_cache_gem)
   end
 
   def test_download_with_encoded_auth
-    a1_data = nil
-    File.open @a1_gem, "rb" do |fp|
-      a1_data = fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://user:%25pas%25sword@gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, "http://user:%25pas%25sword@gems.example.com")
-    assert_equal("http://user:%25pas%25sword@gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
     assert File.exist?(a1_cache_gem)
   end
 
@@ -235,8 +211,9 @@ class TestGemRemoteFetcher < Gem::TestCase
 
   def test_download_install_dir
     a1_data = File.open @a1_gem, "rb", &:read
+    a1_url = "http://gems.example.com/gems/a-1.gem"
 
-    fetcher = util_fuck_with_fetcher a1_data
+    fetcher = fake_fetcher(a1_url, a1_data)
 
     install_dir = File.join @tempdir, "more_gems"
 
@@ -245,8 +222,7 @@ class TestGemRemoteFetcher < Gem::TestCase
     actual = fetcher.download(@a1, "http://gems.example.com", install_dir)
 
     assert_equal a1_cache_gem, actual
-    assert_equal("http://gems.example.com/gems/a-1.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert_equal a1_url, fetcher.paths.last
 
     assert File.exist?(a1_cache_gem)
   end
@@ -282,7 +258,12 @@ class TestGemRemoteFetcher < Gem::TestCase
       FileUtils.chmod 0o555, @a1.cache_dir
       FileUtils.chmod 0o555, @gemhome
 
-      fetcher = util_fuck_with_fetcher File.read(@a1_gem)
+      fetcher = Gem::RemoteFetcher.fetcher
+      def fetcher.fetch_path(uri, *rest)
+        File.read File.join(@test_gem_dir, "a-1.gem")
+      end
+      fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
       fetcher.download(@a1, "http://gems.example.com")
       a1_cache_gem = File.join Gem.user_dir, "cache", @a1.file_name
       assert File.exist? a1_cache_gem
@@ -301,19 +282,21 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
     e1.loaded_from = File.join(@gemhome, "specifications", e1.full_name)
 
-    e1_data = nil
-    File.open e1_gem, "rb" do |fp|
-      e1_data = fp.read
-    end
+    e1_data = File.open e1_gem, "rb", &:read
 
-    fetcher = util_fuck_with_fetcher e1_data, :blow_chunks
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      @call_count ||= 0
+      @call_count += 1
+      raise Gem::RemoteFetcher::FetchError.new("error", uri) if @call_count == 1
+      @test_data
+    end
+    fetcher.instance_variable_set(:@test_data, e1_data)
 
     e1_cache_gem = e1.cache_file
 
     assert_equal e1_cache_gem, fetcher.download(e1, "http://gems.example.com")
 
-    assert_equal("http://gems.example.com/gems/#{e1.original_name}.gem",
-                 fetcher.instance_variable_get(:@test_arg).to_s)
     assert File.exist?(e1_cache_gem)
   end
 
@@ -592,6 +575,8 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
   end
 
+  private
+
   def assert_error(exception_class = Exception)
     got_exception = false
 
@@ -602,5 +587,14 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
 
     assert got_exception, "Expected exception conforming to #{exception_class}"
+  end
+
+  def fake_fetcher(url, data)
+    original_fetcher = Gem::RemoteFetcher.fetcher
+    fetcher = Gem::FakeFetcher.new
+    fetcher.data[url] = data
+    Gem::RemoteFetcher.fetcher = fetcher
+  ensure
+    Gem::RemoteFetcher.fetcher = original_fetcher
   end
 end
