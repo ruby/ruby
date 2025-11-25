@@ -2699,12 +2699,11 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
-          SetLocal l0, EP@3, v13
-          v19:BasicObject = Send v8, 0x1000, :foo
-          v20:BasicObject = GetLocal l0, EP@3
-          v24:BasicObject = GetLocal l0, EP@3
+          v18:BasicObject = Send v8, 0x1000, :foo
+          v19:BasicObject = GetLocal l0, EP@3
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v24
+          Return v19
         ");
     }
 
@@ -8460,21 +8459,20 @@ mod hir_opt_tests {
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
          CheckInterrupts
-         v27:BasicObject = GetLocal l0, EP@6
-         SetLocal l0, EP@3, v27
-         v39:BasicObject = GetLocal l0, EP@3
+         PatchPoint NoEPEscape(read_nil_local)
+         PatchPoint NoEPEscape(read_nil_local)
          PatchPoint SingleRactorMode
-         SetIvar v14, :@formatted, v39
-         v45:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+         SetIvar v14, :@formatted, v15
+         v46:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
          PatchPoint MethodRedefined(Class@0x1008, lambda@0x1010, cme:0x1018)
          PatchPoint NoSingletonClass(Class@0x1008)
-         v59:BasicObject = CCallWithFrame RubyVM::FrozenCore.lambda@0x1040, v45, block=0x1048
-         v48:BasicObject = GetLocal l0, EP@6
-         v49:BasicObject = GetLocal l0, EP@5
-         v50:BasicObject = GetLocal l0, EP@4
-         v51:BasicObject = GetLocal l0, EP@3
+         v60:BasicObject = CCallWithFrame RubyVM::FrozenCore.lambda@0x1040, v46, block=0x1048
+         v49:BasicObject = GetLocal l0, EP@6
+         v50:BasicObject = GetLocal l0, EP@5
+         v51:BasicObject = GetLocal l0, EP@4
+         v52:BasicObject = GetLocal l0, EP@3
          CheckInterrupts
-         Return v59
+         Return v60
        ");
     }
 }
