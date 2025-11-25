@@ -1204,16 +1204,17 @@ load_ext(VALUE path, VALUE fname)
     VALUE loaded = path;
     const rb_box_t *box = rb_loading_box();
     if (BOX_USER_P(box)) {
-        loaded = rb_box_local_extension(box->box_object, fname, path);
+        loaded = rb_box_local_extension(box, fname, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);
+    rb_hash_aset(box->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
     if (BOX_USER_P(box)) {
         rb_box_delete_local_extension(loaded);
     }
-    return (VALUE)handle;
+    return Qnil;
 }
 
 static VALUE
@@ -1322,7 +1323,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     ec->errinfo = Qnil; /* ensure */
     th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        VALUE handle;
         int found;
 
         RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
@@ -1353,8 +1353,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                   case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
-                    rb_hash_aset(box->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
+                    rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
                     break;
                 }
                 result = TAG_RETURN;
