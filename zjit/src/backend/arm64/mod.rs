@@ -496,15 +496,32 @@ impl Assembler {
                     let num_reg_args = C_ARG_OPNDS.len().min(opnds.len());
                     let num_stack_args = opnds.len().saturating_sub(C_ARG_OPNDS.len());
 
-                    // Push stack arguments to before setting up registers.
+                    // // Push stack arguments to before setting up registers.
+                    // if num_stack_args > 0 {
+                    //     for opnd in opnds.iter().skip(num_reg_args).rev() {
+                    //         let value = match opnd {
+                    //             Opnd::Mem(_) => split_memory_address(asm, *opnd),
+                    //             _ => *opnd,
+                    //         };
+                    //         asm.cpush(value);
+                    //     }
+                    // }
+
+                    // must be qword aligned
                     if num_stack_args > 0 {
-                        for opnd in opnds.iter().skip(num_reg_args).rev() {
-                            let value = match opnd {
-                                Opnd::Mem(_) => split_memory_address(asm, *opnd),
-                                _ => *opnd,
-                            };
-                            asm.cpush(value);
+                        let stack_opnds = &opnds[num_stack_args..];
+                        let mut args: Vec<(Opnd, Opnd)> = Vec::with_capacity(stack_opnds.len());
+
+                        for opnd in stack_opnds {
+                            args.push((Opnd::mem(64, NATIVE_STACK_PTR, -8), *opnd));
                         }
+
+                        asm.parallel_mov(args);
+
+                        let offset = if num_stack_args % 2 == 0 { num_stack_args } else {num_stack_args + 1};
+
+                        // Align stack to the next quadword.
+                        asm.sub_into(NATIVE_STACK_PTR, offset.into());
                     }
 
                     // Load each operand into the corresponding argument
