@@ -2002,18 +2002,18 @@ rb_mod_gt(VALUE mod, VALUE arg)
  *
  *  Returns:
  *
- *  - +-1+, if +self+ includes +object+, if or +self+ is derived from +object+.
+ *  - +-1+, if +self+ includes +object+, if or +self+ is a subclass of +object+.
  *  - +0+, if +self+ and +object+ are the same.
- *  - +1+, if +object+ includes +self+, or if +object+ is derived from +self+.
+ *  - +1+, if +object+ includes +self+, or if +object+ is a subclass of +self+.
  *  - +nil+, if none of the above is true.
  *
  *  Examples:
  *
- *    # Inclusion (class Array includes module Enumerable).
+ *    # Class Array includes module Enumerable.
  *             Array <=> Enumerable # => -1
  *        Enumerable <=> Enumerable # =>  0
  *        Enumerable <=> Array      # =>  1
- *    # Derivation (class File derives from class IO).
+ *    # Class File is a subclass of class IO.
  *              File <=> IO         # => -1
  *                IO <=> File       # =>  1
  *              File <=> File       # =>  0
