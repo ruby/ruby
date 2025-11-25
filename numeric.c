@@ -595,8 +595,8 @@ num_uminus(VALUE num)
  *    fdiv(other) -> float
  *
  *  Returns the quotient <tt>self/other</tt> as a float,
- *  using method +/+ in the derived class of +self+.
- *  (\Numeric itself does not define method +/+.)
+ *  using method +/+ as defined in the subclass of \Numeric.
+ *  (\Numeric itself does not define +/+.)
  *
  *  Of the Core and Standard Library classes,
  *  only BigDecimal uses this implementation.
@@ -614,8 +614,8 @@ num_fdiv(VALUE x, VALUE y)
  *    div(other) -> integer
  *
  *  Returns the quotient <tt>self/other</tt> as an integer (via +floor+),
- *  using method +/+ in the derived class of +self+.
- *  (\Numeric itself does not define method +/+.)
+ *  using method +/+ as defined in the subclass of \Numeric.
+ *  (\Numeric itself does not define +/+.)
  *
  *  Of the Core and Standard Library classes,
  *  Only Float and Rational use this implementation.
@@ -847,7 +847,8 @@ num_nonzero_p(VALUE num)
  *    to_int -> integer
  *
  *  Returns +self+ as an integer;
- *  converts using method +to_i+ in the derived class.
+ *  converts using method +to_i+ in the subclass of \Numeric.
+ *  (\Numeric itself does not define +to_i+.)
  *
  *  Of the Core and Standard Library classes,
  *  only Rational and Complex use this implementation.
