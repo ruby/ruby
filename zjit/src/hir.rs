@@ -649,7 +649,7 @@ pub enum Insn {
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
-    StringGetbyteFixnum { string: InsnId, index: InsnId },
+    StringGetbyte { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
@@ -1004,7 +1004,7 @@ impl Insn {
             // but we don't have type information here in `impl Insn`. See rb_range_new().
             Insn::NewRange { .. } => true,
             Insn::NewRangeFixnum { .. } => false,
-            Insn::StringGetbyteFixnum { .. } => false,
+            Insn::StringGetbyte { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
             Insn::BoxBool { .. } => false,
@@ -1118,8 +1118,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
 
                 Ok(())
             }
-            Insn::StringGetbyteFixnum { string, index, .. } => {
-                write!(f, "StringGetbyteFixnum {string}, {index}")
+            Insn::StringGetbyte { string, index, .. } => {
+                write!(f, "StringGetbyte {string}, {index}")
             }
             Insn::StringSetbyteFixnum { string, index, value, .. } => {
                 write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
@@ -1818,7 +1818,7 @@ impl Function {
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
-            &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
+            &StringGetbyte { string, index } => StringGetbyte { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
@@ -2038,7 +2038,7 @@ impl Function {
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
-            Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
+            Insn::StringGetbyte { .. } => types::Fixnum,
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
             Insn::StringAppendCodepoint { .. } => types::StringExact,
@@ -3566,7 +3566,7 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            &Insn::StringGetbyteFixnum { string, index } => {
+            &Insn::StringGetbyte { string, index } => {
                 worklist.push_back(string);
                 worklist.push_back(index);
             }
@@ -4450,9 +4450,9 @@ impl Function {
                 self.assert_subtype(insn_id, left, types::CInt64)?;
                 self.assert_subtype(insn_id, right, types::CInt64)
             },
-            Insn::StringGetbyteFixnum { string, index } => {
+            Insn::StringGetbyte { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
-                self.assert_subtype(insn_id, index, types::Fixnum)
+                self.assert_subtype(insn_id, index, types::CInt64)
             },
             Insn::StringSetbyteFixnum { string, index, value } => {
                 self.assert_subtype(insn_id, string, types::String)?;
