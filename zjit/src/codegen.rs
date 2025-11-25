@@ -365,7 +365,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // If it happens we abort the compilation for now
         Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
-        &Insn::StringGetbyteFixnum { string, index } => gen_string_getbyte_fixnum(asm, opnd!(string), opnd!(index)),
+        &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
@@ -2496,9 +2496,34 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
     result
 }
 
-fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
-    // TODO(max): Open-code rb_str_getbyte to avoid a call
-    asm_ccall!(asm, rb_str_getbyte, string, index)
+// Generate RSTRING_PTR
+fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
+    asm_comment!(asm, "get string pointer for embedded or heap");
+    let string = asm.load(string);
+    let flags = Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags, (RSTRING_NOEMBED as u64).into());
+    let heap_ptr = asm.load(Opnd::mem(
+        usize::BITS as u8,
+        string,
+        RUBY_OFFSET_RSTRING_AS_HEAP_PTR,
+    ));
+    // Load the address of the embedded array
+    // (struct RString *)(obj)->as.ary
+    let ary = asm.lea(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RSTRING_AS_ARY));
+    asm.csel_nz(heap_ptr, ary)
+}
+
+fn gen_string_getbyte(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
+    let string_ptr = get_string_ptr(asm, string);
+    // TODO(max): Use SIB indexing here once the backend supports it
+    let string_ptr = asm.add(string_ptr, index);
+    let byte = asm.load(Opnd::mem(8, string_ptr, 0));
+    // Zero-extend the byte to 64 bits
+    let byte = byte.with_num_bits(64);
+    let byte = asm.and(byte, 0xFF.into());
+    // Tag the byte
+    let byte = asm.lshift(byte, Opnd::UImm(1));
+    asm.or(byte, Opnd::UImm(1))
 }
 
 fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, value: Opnd) -> Opnd {
