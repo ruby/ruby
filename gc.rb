@@ -195,7 +195,6 @@ module GC
   # - +:heap_allocated_pages+:
   #   The total number of allocated pages.
   # - +:heap_empty_pages+:
-  # - +:heap_allocated_pages+:
   #   The number of pages with no live objects, and that could be released to the system.
   # - +:heap_sorted_length+:
   #   The number of pages that can fit into the buffer that holds references to  all pages.
