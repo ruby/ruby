@@ -104,7 +104,6 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
-#[allow(unnecessary_transmutes)] // https://github.com/rust-lang/rust-bindgen/issues/2807
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
