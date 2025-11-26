@@ -87,9 +87,8 @@ RSpec.describe "bundle executable" do
   end
 
   context "with no arguments" do
-    it "installs and log a warning by default" do
+    it "installs by default" do
       bundle "", raise_on_error: false
-      expect(err).to include("running `bundle` without argument will no longer run `bundle install`.")
       expect(err).to include("Could not locate Gemfile")
     end
 
