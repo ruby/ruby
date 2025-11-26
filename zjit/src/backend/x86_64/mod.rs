@@ -138,11 +138,12 @@ impl Assembler {
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
-        let mut asm = Assembler::new_with_asm(&self);
+        let mut asm_local = Assembler::new_with_asm(&self);
+        let asm = &mut asm_local;
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut iterator = self.instruction_iterator();
 
-        while let Some((index, mut insn)) = iterator.next() {
+        while let Some((index, mut insn)) = iterator.next(asm) {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
 
@@ -187,13 +188,13 @@ impl Assembler {
                         if out == src && left == dest && live_ranges[out.vreg_idx()].end() == index + 1 && uimm_num_bits(*value) <= 32 => {
                             *out = *dest;
                             asm.push_insn(insn);
-                            iterator.next(); // Pop merged Insn::Mov
+                            iterator.next(asm); // Pop merged Insn::Mov
                         }
                         (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src }))
                         if out == src && live_ranges[out.vreg_idx()].end() == index + 1 && *dest == *left => {
                             *out = *dest;
                             asm.push_insn(insn);
-                            iterator.next(); // Pop merged Insn::Mov
+                            iterator.next(asm); // Pop merged Insn::Mov
                         }
                         _ => {
                             match (*left, *right) {
@@ -373,7 +374,7 @@ impl Assembler {
                         (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
                         if matches!(out, Opnd::VReg { .. }) && out == src && live_ranges[out.vreg_idx()].end() == index + 1 => {
                             asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
-                            iterator.next(); // Pop merged Insn::Mov
+                            iterator.next(asm); // Pop merged Insn::Mov
                         }
                         _ => asm.push_insn(insn),
                     }
@@ -384,14 +385,14 @@ impl Assembler {
             }
         }
 
-        asm
+        asm_local
     }
 
     /// Split instructions using scratch registers. To maximize the use of the register pool
     /// for VRegs, most splits should happen in [`Self::x86_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so
     /// this splits them and uses scratch registers for it.
-    pub fn x86_scratch_split(self) -> Assembler {
+    pub fn x86_scratch_split(mut self) -> Assembler {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
         /// allocator. So we just use the SCRATCH0_OPND register temporarily to hold
@@ -470,9 +471,9 @@ impl Assembler {
         let mut asm_local = Assembler::new_with_asm(&self);
         let asm = &mut asm_local;
         asm.accept_scratch_reg = true;
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut iterator = self.instruction_iterator();
 
-        while let Some((_, mut insn)) = iterator.next() {
+        while let Some((_, mut insn)) = iterator.next(asm) {
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
