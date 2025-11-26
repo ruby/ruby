@@ -3342,11 +3342,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          PatchPoint SingleRactorMode
           IncrCounter getivar_fallback_not_monomorphic
-          v11:BasicObject = GetIvar v6, :@foo
+          PatchPoint SingleRactorMode
+          v10:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
-          Return v11
+          Return v10
         ");
     }
 
@@ -5251,11 +5251,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
           PatchPoint SingleRactorMode
-          v16:HeapBasicObject = GuardType v6, HeapBasicObject
-          v17:HeapBasicObject = GuardShape v16, 0x1000
           v18:CUInt16[0] = Const CUInt16(0)
-          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v17, v18
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
           CheckInterrupts
           Return v19
         ");
@@ -5280,11 +5280,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
           PatchPoint SingleRactorMode
-          v16:HeapBasicObject = GuardType v6, HeapBasicObject
-          v17:HeapBasicObject = GuardShape v16, 0x1000
           v18:CUInt16[0] = Const CUInt16(0)
-          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v17, v18
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
           CheckInterrupts
           Return v19
         ");
@@ -5311,11 +5311,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
           PatchPoint SingleRactorMode
-          v16:HeapBasicObject = GuardType v6, HeapBasicObject
-          v17:HeapBasicObject = GuardShape v16, 0x1000
           v18:CUInt16[0] = Const CUInt16(0)
-          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v17, v18
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
           CheckInterrupts
           Return v19
         ");
