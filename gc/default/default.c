@@ -3836,6 +3836,11 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     struct heap_page *sweep_page = heap->sweeping_page;
     int swept_slots = 0;
     int pooled_slots = 0;
+    // Limit migration of pages from heap to global empty pages. If we unlink too
+    // many pages and resurrect them back, this causes too much freelist building.
+    size_t unlink_limit = CEILDIV(heap->total_pages, 4);
+    size_t init_slots = minimum_slots_for_heap(objspace, heap);
+    size_t min_free_slots = init_slots * gc_params.heap_free_slots_min_ratio;
 
     if (sweep_page == NULL) return FALSE;
 
@@ -3857,7 +3862,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
-        if (free_slots == sweep_page->total_slots) {
+        if (free_slots == sweep_page->total_slots && unlink_limit > 0 && (heap->total_slots - sweep_page->total_slots > min_free_slots)) {
+            unlink_limit--;
             /* There are no living objects, so move this page to the global empty pages. */
             heap_unlink_page(objspace, heap, sweep_page);
 
@@ -5401,7 +5407,8 @@ gc_marks_finish(rb_objspace_t *objspace)
     {
         const unsigned long r_mul = objspace->live_ractor_cache_count > 8 ? 8 : objspace->live_ractor_cache_count; // upto 8
 
-        size_t total_slots = objspace_available_slots(objspace);
+        size_t empty_slots = objspace->empty_pages_count * HEAP_PAGE_OBJ_LIMIT;
+        size_t total_slots = objspace_available_slots(objspace) + empty_slots;
         size_t sweep_slots = total_slots - objspace->marked_slots; /* will be swept slots */
         size_t max_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_max_ratio);
         size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
