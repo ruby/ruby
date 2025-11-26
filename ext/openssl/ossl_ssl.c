@@ -127,38 +127,62 @@ ssl_cb_call(VALUE (*func)(VALUE args), VALUE args, VALUE *ret)
     return 1;
 }
 
-static VALUE
-ossl_call_client_cert_cb(VALUE obj)
-{
-    VALUE ctx_obj, cb, ary, cert, key;
+struct client_cert_cb_args {
+    SSL *ssl;
+    X509 **x509;
+    EVP_PKEY **pkey;
+};
 
+static VALUE
+ossl_call_client_cert_cb(VALUE args_)
+{
+    struct client_cert_cb_args *args = (struct client_cert_cb_args *)args_;
+    VALUE obj, ctx_obj, cb, ary, cert, key;
+    X509 *x509;
+    EVP_PKEY *pkey;
+
+    obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
     ctx_obj = rb_attr_get(obj, id_i_context);
     cb = rb_attr_get(ctx_obj, id_i_client_cert_cb);
     if (NIL_P(cb))
         return Qnil;
 
-    ary = rb_funcallv(cb, id_call, 1, &obj);
-    Check_Type(ary, T_ARRAY);
-    GetX509CertPtr(cert = rb_ary_entry(ary, 0));
-    GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
+    ary = rb_funcall(cb, id_call, 1, obj);
+    if (NIL_P(ary))
+        return Qnil;
+    ary = rb_check_array_type(ary);
+    if (NIL_P(ary) || RARRAY_LEN(ary) != 2) {
+        rb_raise(rb_eTypeError,
+                 "client_cert_cb must return either nil or [cert, key]");
+    }
 
-    return rb_ary_new3(2, cert, key);
+    x509 = GetX509CertPtr(cert = rb_ary_entry(ary, 0));
+    pkey = GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
+    if (!X509_check_private_key(x509, pkey))
+        ossl_raise(eSSLError, "X509_check_private_key");
+    if (!X509_up_ref(x509))
+        ossl_raise(eSSLError, "X509_up_ref");
+    if (!EVP_PKEY_up_ref(pkey)) {
+        X509_free(x509);
+        ossl_raise(eSSLError, "EVP_PKEY_up_ref");
+    }
+    RB_GC_GUARD(cert);
+    RB_GC_GUARD(key);
+
+    *args->x509 = x509;
+    *args->pkey = pkey;
+    return Qtrue;
 }
 
 static int
 ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 {
-    VALUE obj, ret;
+    struct client_cert_cb_args args = { ssl, x509, pkey };
+    VALUE ret;
 
-    obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    ret = rb_protect(ossl_call_client_cert_cb, obj, NULL);
-    if (NIL_P(ret))
-        return 0;
-
-    *x509 = DupX509CertPtr(RARRAY_AREF(ret, 0));
-    *pkey = DupPKeyPtr(RARRAY_AREF(ret, 1));
-
-    return 1;
+    if (!ssl_cb_call(ossl_call_client_cert_cb, (VALUE)&args, &ret))
+        return -1;
+    return RTEST(ret);
 }
 
 #if !defined(OPENSSL_NO_DH)
@@ -2785,11 +2809,11 @@ Init_ossl_ssl(void)
 
     /*
      * A callback invoked when a client certificate is requested by a server
-     * and no certificate has been set.
+     * and no certificate has been set (see #add_certificate).
      *
-     * The callback is invoked with a Session and must return an Array
-     * containing an OpenSSL::X509::Certificate and an OpenSSL::PKey.  If any
-     * other value is returned the handshake is suspended.
+     * The callback is invoked with the SSLSocket, and must return a
+     * two-element Array of an OpenSSL::X509::Certificate and the corresponding
+     * private key OpenSSL::PKey::PKey, or nil to send no certificate.
      */
     rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
 
