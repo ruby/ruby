@@ -860,9 +860,7 @@ zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
     char *bufptr;
     long filled;
 
-    if (NIL_P(z->buf) || (long)rb_str_capacity(z->buf) <= ZSTREAM_BUF_FILLED(z)) {
-	zstream_expand_buffer_into(z, len);
-    }
+    zstream_expand_buffer_into(z, len);
 
     RSTRING_GETMEM(z->buf, bufptr, filled);
     memmove(bufptr + len, bufptr, filled);
