@@ -92,6 +92,46 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"World"', "World".to_json(strict: true)
   end
 
+  def test_state_depth_to_json
+    depth = Object.new
+    def depth.to_json(state)
+      JSON::State.from_state(state).depth.to_s
+    end
+
+    assert_equal "0", JSON.generate(depth)
+    assert_equal "[1]", JSON.generate([depth])
+    assert_equal %({"depth":1}), JSON.generate(depth: depth)
+    assert_equal "[[2]]", JSON.generate([[depth]])
+    assert_equal %([{"depth":2}]), JSON.generate([{depth: depth}])
+
+    state = JSON::State.new
+    assert_equal "0", state.generate(depth)
+    assert_equal "[1]", state.generate([depth])
+    assert_equal %({"depth":1}), state.generate(depth: depth)
+    assert_equal "[[2]]", state.generate([[depth]])
+    assert_equal %([{"depth":2}]), state.generate([{depth: depth}])
+  end
+
+  def test_state_depth_to_json_recursive
+    recur = Object.new
+    def recur.to_json(state = nil, *)
+      state = JSON::State.from_state(state)
+      if state.depth < 3
+        state.generate([state.depth, self])
+      else
+        state.generate([state.depth])
+      end
+    end
+
+    assert_raise(NestingError) { JSON.generate(recur, max_nesting: 3) }
+    assert_equal "[0,[1,[2,[3]]]]", JSON.generate(recur, max_nesting: 4)
+
+    state = JSON::State.new(max_nesting: 3)
+    assert_raise(NestingError) { state.generate(recur) }
+    state.max_nesting = 4
+    assert_equal "[0,[1,[2,[3]]]]", JSON.generate(recur, max_nesting: 4)
+  end
+
   def test_generate_pretty
     json = pretty_generate({})
     assert_equal('{}', json)
