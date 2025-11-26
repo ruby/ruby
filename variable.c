@@ -1237,6 +1237,18 @@ rb_mark_generic_ivar(VALUE obj)
 }
 
 VALUE
+rb_obj_fields_generic_uncached(VALUE obj)
+{
+    VALUE fields_obj = 0;
+    RB_VM_LOCKING() {
+        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
+            rb_bug("Object is missing entry in generic_fields_tbl");
+        }
+    }
+    return fields_obj;
+}
+
+VALUE
 rb_obj_fields(VALUE obj, ID field_name)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
@@ -1263,13 +1275,10 @@ rb_obj_fields(VALUE obj, ID field_name)
                 rb_execution_context_t *ec = GET_EC();
                 if (ec->gen_fields_cache.obj == obj && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
                     fields_obj = ec->gen_fields_cache.fields_obj;
+                    RUBY_ASSERT(fields_obj == rb_obj_fields_generic_uncached(obj));
                 }
                 else {
-                    RB_VM_LOCKING() {
-                        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-                            rb_bug("Object is missing entry in generic_fields_tbl");
-                        }
-                    }
+                    fields_obj = rb_obj_fields_generic_uncached(obj);
                     ec->gen_fields_cache.fields_obj = fields_obj;
                     ec->gen_fields_cache.obj = obj;
                 }
@@ -1320,7 +1329,9 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
     ivar_ractor_check(obj, field_name);
 
     if (!fields_obj) {
+        RUBY_ASSERT(original_fields_obj);
         rb_free_generic_ivar(obj);
+        rb_imemo_fields_clear(original_fields_obj);
         return;
     }
 
