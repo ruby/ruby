@@ -2806,19 +2806,23 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_t_object));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -2845,19 +2849,23 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_immediate));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -2877,28 +2885,34 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let mut ivar_index: u16 = 0;
                         if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // TODO(max): Shape transition
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_shape_transition));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });

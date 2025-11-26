@@ -24,6 +24,15 @@ macro_rules! make_counters {
         optimized_send {
             $($optimized_send_counter_name:ident,)+
         }
+        dynamic_setivar {
+            $($dynamic_setivar_counter_name:ident,)+
+        }
+        dynamic_getivar {
+            $($dynamic_getivar_counter_name:ident,)+
+        }
+        dynamic_definedivar {
+            $($dynamic_definedivar_counter_name:ident,)+
+        }
         $($counter_name:ident,)+
     ) => {
         /// Struct containing the counter values
@@ -33,6 +42,9 @@ macro_rules! make_counters {
             $(pub $exit_counter_name: u64,)+
             $(pub $dynamic_send_counter_name: u64,)+
             $(pub $optimized_send_counter_name: u64,)+
+            $(pub $dynamic_setivar_counter_name: u64,)+
+            $(pub $dynamic_getivar_counter_name: u64,)+
+            $(pub $dynamic_definedivar_counter_name: u64,)+
             $(pub $counter_name: u64,)+
         }
 
@@ -44,6 +56,9 @@ macro_rules! make_counters {
             $($exit_counter_name,)+
             $($dynamic_send_counter_name,)+
             $($optimized_send_counter_name,)+
+            $($dynamic_setivar_counter_name,)+
+            $($dynamic_getivar_counter_name,)+
+            $($dynamic_definedivar_counter_name,)+
             $($counter_name,)+
         }
 
@@ -54,6 +69,9 @@ macro_rules! make_counters {
                     $( Counter::$exit_counter_name => stringify!($exit_counter_name), )+
                     $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name), )+
                     $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name), )+
+                    $( Counter::$dynamic_setivar_counter_name => stringify!($dynamic_setivar_counter_name), )+
+                    $( Counter::$dynamic_getivar_counter_name => stringify!($dynamic_getivar_counter_name), )+
+                    $( Counter::$dynamic_definedivar_counter_name => stringify!($dynamic_definedivar_counter_name), )+
                     $( Counter::$counter_name => stringify!($counter_name), )+
                 }
             }
@@ -64,6 +82,9 @@ macro_rules! make_counters {
                     $( stringify!($exit_counter_name) => Some(Counter::$exit_counter_name), )+
                     $( stringify!($dynamic_send_counter_name) => Some(Counter::$dynamic_send_counter_name), )+
                     $( stringify!($optimized_send_counter_name) => Some(Counter::$optimized_send_counter_name), )+
+                    $( stringify!($dynamic_setivar_counter_name) => Some(Counter::$dynamic_setivar_counter_name), )+
+                    $( stringify!($dynamic_getivar_counter_name) => Some(Counter::$dynamic_getivar_counter_name), )+
+                    $( stringify!($dynamic_definedivar_counter_name) => Some(Counter::$dynamic_definedivar_counter_name), )+
                     $( stringify!($counter_name) => Some(Counter::$counter_name), )+
                     _ => None,
                 }
@@ -77,6 +98,9 @@ macro_rules! make_counters {
                 $( Counter::$default_counter_name => std::ptr::addr_of_mut!(counters.$default_counter_name), )+
                 $( Counter::$exit_counter_name => std::ptr::addr_of_mut!(counters.$exit_counter_name), )+
                 $( Counter::$dynamic_send_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_send_counter_name), )+
+                $( Counter::$dynamic_setivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_setivar_counter_name), )+
+                $( Counter::$dynamic_getivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_getivar_counter_name), )+
+                $( Counter::$dynamic_definedivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_definedivar_counter_name), )+
                 $( Counter::$optimized_send_counter_name => std::ptr::addr_of_mut!(counters.$optimized_send_counter_name), )+
                 $( Counter::$counter_name => std::ptr::addr_of_mut!(counters.$counter_name), )+
             }
@@ -101,6 +125,21 @@ macro_rules! make_counters {
         /// List of other counters that are summed as optimized_send_count.
         pub const OPTIMIZED_SEND_COUNTERS: &'static [Counter] = &[
             $( Counter::$optimized_send_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_setivar_count.
+        pub const DYNAMIC_SETIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_setivar_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_getivar_count.
+        pub const DYNAMIC_GETIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_getivar_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_definedivar_count.
+        pub const DYNAMIC_DEFINEDIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_definedivar_counter_name, )+
         ];
 
         /// List of other counters that are available only for --zjit-stats.
@@ -207,6 +246,35 @@ make_counters! {
         variadic_cfunc_optimized_send_count,
     }
 
+    // Ivar fallback counters that are summed as dynamic_setivar_count
+    dynamic_setivar {
+        // setivar_fallback_: Fallback reasons for dynamic setivar instructions
+        setivar_fallback_not_monomorphic,
+        setivar_fallback_immediate,
+        setivar_fallback_not_t_object,
+        setivar_fallback_too_complex,
+        setivar_fallback_frozen,
+        setivar_fallback_shape_transition,
+    }
+
+    // Ivar fallback counters that are summed as dynamic_getivar_count
+    dynamic_getivar {
+        // getivar_fallback_: Fallback reasons for dynamic getivar instructions
+        getivar_fallback_not_monomorphic,
+        getivar_fallback_immediate,
+        getivar_fallback_not_t_object,
+        getivar_fallback_too_complex,
+    }
+
+    // Ivar fallback counters that are summed as dynamic_definedivar_count
+    dynamic_definedivar {
+        // definedivar_fallback_: Fallback reasons for dynamic definedivar instructions
+        definedivar_fallback_not_monomorphic,
+        definedivar_fallback_immediate,
+        definedivar_fallback_not_t_object,
+        definedivar_fallback_too_complex,
+    }
+
     // compile_error_: Compile error reasons
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
@@ -235,10 +303,6 @@ make_counters! {
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
-
-    // The number of times we do a dynamic ivar lookup from JIT code
-    dynamic_getivar_count,
-    dynamic_setivar_count,
 
     // Method call def_type related to send without block fallback to dynamic dispatch
     unspecialized_send_without_block_def_type_iseq,
@@ -656,6 +720,33 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
     set_stat_usize!(hash, "optimized_send_count", optimized_send_count);
     set_stat_usize!(hash, "send_count", dynamic_send_count + optimized_send_count);
+
+    // Set send fallback counters for each setivar fallback reason
+    let mut dynamic_setivar_count = 0;
+    for &counter in DYNAMIC_SETIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_setivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_setivar_count", dynamic_setivar_count);
+
+    // Set send fallback counters for each getivar fallback reason
+    let mut dynamic_getivar_count = 0;
+    for &counter in DYNAMIC_GETIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_getivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_getivar_count", dynamic_getivar_count);
+
+    // Set send fallback counters for each definedivar fallback reason
+    let mut dynamic_definedivar_count = 0;
+    for &counter in DYNAMIC_DEFINEDIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_definedivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_definedivar_count", dynamic_definedivar_count);
 
     // Set send fallback counters for Uncategorized
     let send_fallback_counters = ZJITState::get_send_fallback_counters();
