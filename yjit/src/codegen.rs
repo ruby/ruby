@@ -2258,7 +2258,8 @@ fn gen_expandarray(
 
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
 
-    // If the comptime receiver is not an array
+    // If the comptime receiver is not an array, speculate for when the `rb_check_array_type()`
+    // conversion returns nil and without side-effects (e.g. arbitrary method calls).
     if !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_ARRAY) } {
         // at compile time, ensure to_ary is not defined
         let target_cme = unsafe { rb_callable_method_entry_or_negative(comptime_recv.class_of(), ID!(to_ary)) };
@@ -2267,6 +2268,13 @@ fn gen_expandarray(
         // if to_ary is defined, return can't compile so to_ary can be called
         if cme_def_type != VM_METHOD_TYPE_UNDEF {
             gen_counter_incr(jit, asm, Counter::expandarray_to_ary);
+            return None;
+        }
+
+        // Bail when method_missing is defined to avoid generating code to call it.
+        // Also, for simplicity, bail when BasicObject#method_missing has been removed.
+        if !assume_method_basic_definition(jit, asm, comptime_recv.class_of(), ID!(method_missing)) {
+            gen_counter_incr(jit, asm, Counter::expandarray_method_missing);
             return None;
         }
 

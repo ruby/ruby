@@ -496,6 +496,7 @@ make_counters! {
     expandarray_postarg,
     expandarray_not_array,
     expandarray_to_ary,
+    expandarray_method_missing,
     expandarray_chain_max_depth,
 
     // getblockparam
