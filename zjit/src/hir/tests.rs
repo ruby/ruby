@@ -1834,7 +1834,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = SendForward 0x1000, :foo, v9
+          v15:BasicObject = SendForward v8, 0x1000, :foo, v9
           CheckInterrupts
           Return v15
         ");
