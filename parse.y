@@ -5468,11 +5468,6 @@ p_top_expr_body	: p_expr
                 ;
 
 p_expr		: p_as
-                    {
-                        p->ctxt.in_alt_pattern = 0;
-                        p->ctxt.capture_in_pattern = 0;
-                        $$ = $1;
-                    }
                 ;
 
 p_as		: p_expr tASSOC p_variable
@@ -5494,6 +5489,7 @@ p_alt		: p_alt[left] '|'[alt]
                         if (p->ctxt.capture_in_pattern) {
                             yyerror1(&@alt, "alternative pattern after variable capture");
                         }
+                        p->ctxt.in_alt_pattern = 0;
                         $$ = NEW_OR($left, $right, &@$, &@alt);
                     /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
