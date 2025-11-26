@@ -822,6 +822,7 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: method_missing     content: b"method_missing"
         name: to_ary             content: b"to_ary"
         name: to_s               content: b"to_s"
         name: eq                 content: b"=="
