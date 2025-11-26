@@ -1317,7 +1317,9 @@ rb_free_generic_ivar(VALUE obj)
                     ec->gen_fields_cache.fields_obj = Qundef;
                 }
                 RB_VM_LOCKING() {
-                    st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
+                    if (!st_delete(generic_fields_tbl_no_ractor_check(), &key, &value)) {
+                        rb_bug("Object is missing entry in generic_fields_tbl");
+                    }
                 }
             }
         }
