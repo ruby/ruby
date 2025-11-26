@@ -12,7 +12,13 @@ prism/$(HAVE_BASERUBY:yes=.srcs.mk.time): \
 		$(PRISM_SRCDIR)/srcs.mk.in
 	$(BASERUBY) $(tooldir)/generic_erb.rb -c -t$@ -o $(PRISM_SRCDIR)/srcs.mk $(PRISM_SRCDIR)/srcs.mk.in
 
-realclean-prism-srcs::
+distclean-prism-srcs::
+	$(RM) prism/.srcs.mk.time
+	$(RMDIR) prism
+
+distclean-srcs-local:: distclean-prism-srcs
+
+realclean-prism-srcs:: distclean-prism-srcs
 	$(RM) $(PRISM_SRCDIR)/srcs.mk
 
 realclean-srcs-local:: realclean-prism-srcs

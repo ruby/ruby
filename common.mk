@@ -706,7 +706,8 @@ distclean-local:: clean-local
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
-distclean-ext:: PHONY
+distclean-local:: distclean-srcs-local
+distclean-ext:: distclean-srcs-ext
 distclean-golf: clean-golf
 distclean-rdoc: clean-rdoc
 distclean-html: clean-html
@@ -721,6 +722,7 @@ realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean
 realclean-local:: distclean-local realclean-srcs-local
 
 clean-srcs:: clean-srcs-local clean-srcs-ext
+distclean-srcs:: distclean-srcs-local distclean-srcs-ext
 realclean-srcs:: realclean-srcs-local realclean-srcs-ext
 
 clean-srcs-local::
@@ -728,7 +730,9 @@ clean-srcs-local::
 	$(Q)$(RM) id.c id.h probes.dmyh probes.h
 	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
 
-realclean-srcs-local:: clean-srcs-local
+distclean-srcs-local:: clean-srcs-local
+
+realclean-srcs-local:: distclean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(RM) \
 	  parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h \
 	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub \
@@ -736,7 +740,8 @@ realclean-srcs-local:: clean-srcs-local
 	|| $(NULLCMD)
 
 clean-srcs-ext::
-realclean-srcs-ext:: clean-srcs-ext
+distclean-srcs-ext:: clean-srcs-ext
+realclean-srcs-ext:: distclean-srcs-ext
 
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
@@ -1007,8 +1012,11 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: test install install-nodoc install-doc dist
 .PHONY: loadpath golf capi rdoc install-prereq clear-installed-list
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
+.PHONY: clean-srcs clean-srcs-local clean-srcs-ext
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
+.PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
+.PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
 .PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
