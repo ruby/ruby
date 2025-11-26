@@ -9,7 +9,7 @@
 minitest            5.26.2  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
 rake                13.3.1  https://github.com/ruby/rake
-test-unit           3.7.1   https://github.com/test-unit/test-unit
+test-unit           3.7.3   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.1   https://github.com/ruby/rss
 net-ftp             0.3.9   https://github.com/ruby/net-ftp
@@ -39,7 +39,7 @@ ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                6.15.1  https://github.com/ruby/rdoc
+rdoc                6.16.0  https://github.com/ruby/rdoc
 win32ole            1.9.2   https://github.com/ruby/win32ole
 irb                 1.15.3  https://github.com/ruby/irb
 reline              0.6.3   https://github.com/ruby/reline
