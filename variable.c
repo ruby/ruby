@@ -1273,7 +1273,7 @@ rb_obj_fields(VALUE obj, ID field_name)
           generic_fields:
             {
                 rb_execution_context_t *ec = GET_EC();
-                if (ec->gen_fields_cache.obj == obj && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
+                if (ec->gen_fields_cache.obj == obj && !UNDEF_P(ec->gen_fields_cache.fields_obj) && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
                     fields_obj = ec->gen_fields_cache.fields_obj;
                     RUBY_ASSERT(fields_obj == rb_obj_fields_generic_uncached(obj));
                 }
@@ -1309,6 +1309,8 @@ rb_free_generic_ivar(VALUE obj)
           default:
           generic_fields:
             {
+                // Other EC may have stale caches, so fields_obj should be
+                // invalidated and the GC will replace with Qundef
                 rb_execution_context_t *ec = GET_EC();
                 if (ec->gen_fields_cache.obj == obj) {
                     ec->gen_fields_cache.obj = Qundef;
