@@ -3677,6 +3677,13 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
+            if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
+                const rb_box_t *box = VM_ENV_BOX(ep);
+                if (BOX_USER_P(box)) {
+                    rb_gc_mark_movable(box->box_object);
+                }
+            }
+
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
