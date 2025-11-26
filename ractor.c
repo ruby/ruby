@@ -1796,7 +1796,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_FIELDS_COUNT(obj);
+                uint32_t len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
                 VALUE *ptr = ROBJECT_FIELDS(obj);
 
                 for (uint32_t i = 0; i < len; i++) {
