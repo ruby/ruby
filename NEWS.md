@@ -186,8 +186,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.0.beta1
-* bundler 4.0.0.beta1
+* RubyGems 4.0.0.beta2
+* bundler 4.0.0.beta2
 * date 3.5.0
 * digest 3.2.1
 * english 0.8.1
