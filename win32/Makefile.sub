@@ -1393,5 +1393,5 @@ exts: rubyspec-capiext
 yesterday:
 	(set TZ=UTC-9) && \
 	for /f "usebackq" %H in \
-	    (`$(GIT_LOG_FORMAT):%H -1 "--before=00:00"`) do \
+	    (`$(GIT_LOG_FORMAT)%H -1 "--before=00:00"`) do \
 	    $(GIT_IN_SRC) reset --hard %%H

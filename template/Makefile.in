@@ -748,4 +748,4 @@ yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
 no-test-syntax-suggest:
 
 yesterday:
-	$(GIT_IN_SRC) reset --hard `TZ=UTC-9 $(GIT_LOG_FORMAT):%H -1 --before=00:00`
+	$(GIT_IN_SRC) reset --hard `TZ=UTC-9 $(GIT_LOG_FORMAT)%H -1 --before=00:00`
