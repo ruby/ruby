@@ -472,7 +472,6 @@ class OptionParser
       Completion.candidate(key, icase, pat, &method(:each))
     end
 
-    public
     def complete(key, icase = false, pat = nil)
       candidates = candidate(key, icase, pat, &method(:each)).sort_by {|k, v, kn| kn.size}
       if candidates.size == 1
