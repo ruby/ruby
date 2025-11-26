@@ -16,12 +16,51 @@ To build ZJIT on macOS:
 make -j miniruby
 ```
 
+To build ZJIT on Linux:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit=dev \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc
+
+make -j miniruby
+```
+
+Note that `--enable-zjit=dev` does a lot of IR validation, which will help to catch errors early but mean compilation and warmup are significantly slower.
+
+The valid values for `--enable-zjit` are, from fastest to slowest:
+* `--enable-zjit`: enable ZJIT in release mode for maximum performance
+* `--enable-zjit=stats`: enable ZJIT in extended-stats mode
+* `--enable-zjit=dev_nodebug`: enable ZJIT in development mode but without slow runtime checks
+* `--enable-zjit=dev`: enable ZJIT in debug mode for development, also enables `RUBY_DEBUG`
+
+### Regenerate bindings
+
+When modifying `zjit/bindgen/src/main.rs` you need to regenerate bindings in `zjit/src/cruby_bindings.inc.rs` with:
+
+```bash
+make zjit-bindgen
+```
+
 ## Documentation
 
 You can generate and open the source level documentation in your browser using:
 
 ```bash
 cargo doc --document-private-items -p zjit --open
+```
+
+### Graph of the Type System
+
+You can generate a graph of the ZJIT type hierarchy using:
+
+```bash
+ruby zjit/src/hir_type/gen_hir_type.rb > zjit/src/hir_type/hir_type.inc.rs
+dot -O -Tpdf zjit_types.dot
+open zjit_types.dot.pdf
 ```
 
 ## Testing
@@ -139,14 +178,8 @@ end
 
 ### Performance Ratio
 
-The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter. This metric only appears when ZJIT is built with `--enable-zjit=stats` (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
-
-To build with stats support:
-
-```bash
-./configure --enable-zjit=stats
-make -j
-```
+The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter.
+This metric only appears when ZJIT is built with `--enable-zjit=stats` [or more](#build-instructions) (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
 
 ### Tracing side exits
 
