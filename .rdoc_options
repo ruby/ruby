@@ -14,6 +14,7 @@ exclude:
 generator_name: aliki
 
 autolink_excluded_words:
+- Box
 - Class
 - Method
 - Module
@@ -37,4 +38,3 @@ footer_content:
     RubyGems: https://rubygems.org/
   Community:
     X: https://x.com/rubylangorg
-
