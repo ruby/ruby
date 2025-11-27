@@ -957,12 +957,14 @@ impl Insn {
 
     /// Return true if the instruction needs to be kept around. For example, if the instruction
     /// might have a side effect, or if the instruction may raise an exception.
-    fn has_effects(&self) -> bool {
+    pub fn has_effects(&self) -> bool {
         match self {
             Insn::Const { .. } => false,
             Insn::Param => false,
             Insn::StringCopy { .. } => false,
+            Insn::FixnumBitCheck { .. } => false,
             Insn::NewArray { .. } => false,
+            Insn::IsBitEqual { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
             Insn::NewHash { elements, .. } => !elements.is_empty(),
@@ -4555,8 +4557,8 @@ pub struct FrameState {
     // Ruby bytecode instruction pointer
     pub pc: *const VALUE,
 
-    stack: Vec<InsnId>,
-    locals: Vec<InsnId>,
+    pub stack: Vec<InsnId>,
+    pub locals: Vec<InsnId>,
 }
 
 impl FrameState {
