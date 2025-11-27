@@ -796,7 +796,7 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/box.md for known issues, etc.");
+                         "See doc/language/box.md for known issues, etc.");
         box_experimental_warned = 1;
     }
 
@@ -1048,7 +1048,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *  Document-class: Ruby::Box
  *
  *  :markup: markdown
- *  :include: doc/_box.md
+ *  :include: doc/language/box.md
  */
 void
 Init_Box(void)

@@ -3521,7 +3521,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  Returns the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
@@ -3545,7 +3545,7 @@ rb_ary_bsearch(VALUE ary)
  *  Returns the integer index of the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
