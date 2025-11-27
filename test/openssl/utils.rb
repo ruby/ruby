@@ -190,93 +190,87 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @server = nil
   end
 
-  def readwrite_loop(ctx, ssl)
+  def readwrite_loop(ssl)
     while line = ssl.gets
       ssl.write(line)
     end
+    ssl.close
   end
 
-  def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE,
-                   ctx_proc: nil, server_proc: method(:readwrite_loop),
-                   accept_proc: proc{},
-                   ignore_listener_error: false, &block)
-    IO.pipe {|stop_pipe_r, stop_pipe_w|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.cert = @svr_cert
-      ctx.key = @svr_key
-      ctx.verify_mode = verify_mode
-      ctx_proc.call(ctx) if ctx_proc
+  def make_server_context
+    sctx = OpenSSL::SSL::SSLContext.new
+    sctx.add_certificate(@svr_cert, @svr_key)
+    sctx
+  end
 
-      Socket.do_not_reverse_lookup = true
+  def start_server_proc(server_proc, &block)
+    IO.pipe do |stop_pipe_r, stop_pipe_w|
       tcps = TCPServer.new("127.0.0.1", 0)
+      tcps.setsockopt(:TCP, :NODELAY, 1)
       port = tcps.connect_address.ip_port
 
-      ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-
       threads = []
-      begin
-        server_thread = Thread.new do
-          Thread.current.report_on_exception = false
+      server_thread = Thread.new do
+        Thread.current.report_on_exception = false
 
-          begin
-            loop do
-              begin
-                readable, = IO.select([ssls, stop_pipe_r])
-                break if readable.include? stop_pipe_r
-                ssl = ssls.accept
-                accept_proc.call(ssl)
-              rescue OpenSSL::SSL::SSLError, IOError, Errno::EBADF, Errno::EINVAL,
-                     Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
-                retry if ignore_listener_error
-                raise
-              end
+        loop do
+          readable, = IO.select([tcps, stop_pipe_r])
+          break if readable.include? stop_pipe_r
+          sock = tcps.accept
 
-              th = Thread.new do
-                Thread.current.report_on_exception = false
+          th = Thread.new do
+            Thread.current.report_on_exception = false
 
-                begin
-                  server_proc.call(ctx, ssl)
-                ensure
-                  ssl.close
-                end
-                true
-              end
-              threads << th
-            end
+            server_proc.call(sock)
           ensure
-            tcps.close
+            sock.close
           end
+          threads << th
         end
-
-        client_thread = Thread.new do
-          Thread.current.report_on_exception = false
-
-          begin
-            block.call(port)
-          ensure
-            # Stop accepting new connection
-            stop_pipe_w.close
-            server_thread.join
-          end
-        end
-        threads.unshift client_thread
       ensure
-        # Terminate existing connections. If a thread did 'pend', re-raise it.
-        pend = nil
-        threads.each { |th|
-          begin
-            timeout = EnvUtil.apply_timeout_scale(30)
-            th.join(timeout) or
-              th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
-          rescue Test::Unit::PendedError
-            pend = $!
-          rescue Exception
-          end
-        }
-        raise pend if pend
-        assert_join_threads(threads)
+        tcps.close
       end
+
+      client_thread = Thread.new do
+        Thread.current.report_on_exception = false
+
+        block.call(port)
+      ensure
+        # Stop accepting new connection
+        stop_pipe_w.close
+        server_thread.join
+      end
+      threads.unshift client_thread
+    ensure
+      # Terminate existing connections. If a thread did 'pend', re-raise it.
+      pend = nil
+      threads.each { |th|
+        begin
+          timeout = EnvUtil.apply_timeout_scale(30)
+          th.join(timeout) or
+            th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
+        rescue Test::Unit::PendedError
+          pend = $!
+        rescue Exception
+        end
+      }
+      raise pend if pend
+      assert_join_threads(threads)
+    end
+  end
+
+  def start_server(ctx = make_server_context, ignore_listener_error: false, &block)
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      begin
+        ssl.accept
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNABORTED, Errno::ECONNRESET
+        next if ignore_listener_error
+        raise
+      end
+      readwrite_loop(ssl)
     }
+    start_server_proc(server_proc, &block)
   end
 end
 
