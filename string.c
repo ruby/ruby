@@ -716,7 +716,7 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
-    const uintptr_t *s, *t;
+    const char *s, *t;
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # if SIZEOF_UINTPTR_T == 8
@@ -760,17 +760,19 @@ search_nonascii(const char *p, const char *e)
 #define aligned_ptr(value) \
         __builtin_assume_aligned((value), sizeof(uintptr_t))
 #else
-#define aligned_ptr(value) (uintptr_t *)(value)
+#define aligned_ptr(value) (value)
 #endif
         s = aligned_ptr(p);
-        t = (uintptr_t *)(e - (SIZEOF_VOIDP-1));
+        t = (e - (SIZEOF_VOIDP-1));
 #undef aligned_ptr
-        for (;s < t; s++) {
-            if (*s & NONASCII_MASK) {
+        for (;s < t; s += sizeof(uintptr_t)) {
+            uintptr_t word;
+            memcpy(&word, s, sizeof(word));
+            if (word & NONASCII_MASK) {
 #ifdef WORDS_BIGENDIAN
-                return (const char *)s + (nlz_intptr(*s&NONASCII_MASK)>>3);
+                return (const char *)s + (nlz_intptr(word&NONASCII_MASK)>>3);
 #else
-                return (const char *)s + (ntz_intptr(*s&NONASCII_MASK)>>3);
+                return (const char *)s + (ntz_intptr(word&NONASCII_MASK)>>3);
 #endif
             }
         }
