@@ -479,17 +479,35 @@ ssl_servername_cb(SSL *ssl, int *ad, void *arg)
     return SSL_TLSEXT_ERR_OK;
 }
 
-static void
-ssl_renegotiation_cb(const SSL *ssl)
+struct info_cb_args {
+    const SSL *ssl;
+    int where;
+    int val;
+};
+
+static VALUE
+call_renegotiation_cb(VALUE args_)
 {
-    VALUE ssl_obj, sslctx_obj, cb;
+    struct info_cb_args *args = (struct info_cb_args *)args_;
+    VALUE ssl_obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
+    VALUE sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    VALUE cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
+    if (NIL_P(cb))
+        return Qnil;
 
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
-    cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
-    if (NIL_P(cb)) return;
+    return rb_funcall(cb, id_call, 1, ssl_obj);
+}
 
-    rb_funcallv(cb, id_call, 1, &ssl_obj);
+/* This function may serve as the entry point to support further callbacks. */
+static void
+ssl_info_cb(const SSL *ssl, int where, int val)
+{
+    struct info_cb_args args = { ssl, where, val };
+    VALUE ret;
+
+    if (where & SSL_CB_HANDSHAKE_START && SSL_is_server(ssl)) {
+        (void)ssl_cb_call(call_renegotiation_cb, (VALUE)&args, &ret);
+    }
 }
 
 static VALUE
@@ -614,17 +632,6 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
     cb = rb_attr_get(sslctx_obj, id_i_alpn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, out, outlen, in, inlen);
-}
-
-/* This function may serve as the entry point to support further callbacks. */
-static void
-ssl_info_cb(const SSL *ssl, int where, int val)
-{
-    int is_server = SSL_is_server((SSL *)ssl);
-
-    if (is_server && where & SSL_CB_HANDSHAKE_START) {
-        ssl_renegotiation_cb(ssl);
-    }
 }
 
 /*
@@ -799,6 +806,9 @@ ossl_sslctx_setup(VALUE self)
 
     val = rb_attr_get(self, id_i_verify_depth);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
+
+    if (!NIL_P(rb_attr_get(self, id_i_renegotiation_cb)))
+        SSL_CTX_set_info_callback(ctx, ssl_info_cb);
 
 #ifdef OSSL_USE_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
@@ -1819,7 +1829,6 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     if (!SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self))
         ossl_raise(eSSLError, "SSL_set_ex_data");
-    SSL_set_info_callback(ssl, ssl_info_cb);
 
     rb_call_super(0, NULL);
 

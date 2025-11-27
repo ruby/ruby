@@ -1807,6 +1807,26 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     }
+
+    client_can_close = Thread::Queue.new
+    server_proc = proc do |sock|
+      sctx = make_server_context
+      sctx.renegotiation_cb = -> ssl { raise "in renegotiation_cb" }
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      assert_raise_with_message(RuntimeError, "in renegotiation_cb") {
+        ssl.accept
+      }
+    ensure
+      client_can_close.close
+    end
+    start_server_proc(server_proc) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.connect_nonblock(exception: false)
+      client_can_close.pop
+    ensure
+      sock.close
+    end
   end
 
   def test_alpn_protocol_selection_ary
