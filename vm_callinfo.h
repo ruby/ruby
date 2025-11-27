@@ -305,6 +305,7 @@ struct rb_callcache {
 #define VM_CALLCACHE_BF         IMEMO_FL_USER1
 #define VM_CALLCACHE_SUPER      IMEMO_FL_USER2
 #define VM_CALLCACHE_REFINEMENT IMEMO_FL_USER3
+#define VM_CALLCACHE_INVALID_SUPER IMEMO_FL_USER6
 
 enum vm_cc_type {
     cc_type_normal, // chained from ccs
@@ -335,7 +336,7 @@ vm_cc_new(VALUE klass,
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(UNDEF_P(klass) || RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
 
     switch (type) {
       case cc_type_normal:
@@ -348,8 +349,10 @@ vm_cc_new(VALUE klass,
         break;
     }
 
-    if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
-        vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+    if (cme) {
+        if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
+            vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+        }
     }
 
     RB_DEBUG_COUNTER_INC(cc_new);
@@ -401,6 +404,7 @@ vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
+              UNDEF_P(cc->klass)  ||
               !vm_cc_markable(cc) ||
               cc->cme_ != NULL);
 
