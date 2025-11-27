@@ -321,6 +321,30 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_depth_bad_to_json
+    obj = Object.new
+    def obj.to_json(state)
+      state.depth += 1
+      "{#{state.object_nl}"\
+        "#{state.indent * state.depth}\"foo\":#{state.space}1#{state.object_nl}"\
+        "#{state.indent * (state.depth - 1)}}"
+    end
+    indent = "  " * 2 if RUBY_ENGINE != "ruby"
+    assert_equal <<~JSON.chomp, JSON.pretty_generate([obj] * 2)
+      [
+        {
+          "foo": 1
+        },
+        {
+            "foo": 1
+          }
+      #{indent}]
+    JSON
+    state = JSON::State.new(object_nl: "\n", array_nl: "\n", space: " ", indent: "  ")
+    state.generate(obj)
+    assert_equal 1, state.depth
+  end
+
   def test_depth
     pretty = { object_nl: "\n", array_nl: "\n", space: " ", indent: "  " }
     state = JSON.state.new(**pretty)

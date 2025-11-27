@@ -1294,6 +1294,8 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
     VALUE tmp;
     if (rb_respond_to(obj, i_to_json)) {
         tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
+        GET_STATE(data->vstate);
+        data->depth = state->depth;
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
     } else {
