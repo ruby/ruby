@@ -40,6 +40,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       end
 
       ENV["DESTDIR"] = nil
+      ENV["MAKEFLAGS"] ||= "-j#{Etc.nprocessors + 1}"
 
       make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig
 
