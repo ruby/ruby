@@ -4,6 +4,9 @@ require 'test/unit'
 class TestRefinement < Test::Unit::TestCase
   module Sandbox
     BINDING = binding
+    def self.create_binding # TODO: create new one each time for multiple ractors
+      BINDING
+    end
   end
 
   class Foo
@@ -231,13 +234,14 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NameError) { foo.method(:z) }
     assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
     assert_raise(NameError) { foo.method(:z) }
-    assert_equal(8, eval(<<~EOS, Sandbox::BINDING))
+    b = Sandbox.create_binding
+    assert_equal(8, eval(<<~EOS, b))
       meth = 2.method(:pow)
       using MethodIntegerPowEx
       meth.call(3)
     EOS
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"))
-    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"))
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.pow(3)"), b)
+    assert_equal(:refine_pow, eval_using(MethodIntegerPowEx, "2.method(:pow).(3)"), b)
   end
 
   module InstanceMethodIntegerPowEx
@@ -254,12 +258,13 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NameError) { Foo.instance_method(:z) }
     assert_equal("FooExt#z", FooExtClient.instance_method_z(foo).bind(foo).call)
     assert_raise(NameError) { Foo.instance_method(:z) }
-    assert_equal(4, eval(<<~EOS, Sandbox::BINDING))
+    b = Sandbox.create_binding
+    assert_equal(4, eval(<<~EOS, b))
       meth = Integer.instance_method(:abs)
       using InstanceMethodIntegerPowEx
       meth.bind(-4).call
     EOS
-    assert_equal(:refine_abs, eval_using(InstanceMethodIntegerPowEx, "Integer.instance_method(:abs).bind(-4).call"))
+    assert_equal(:refine_abs, eval_using(InstanceMethodIntegerPowEx, "Integer.instance_method(:abs).bind(-4).call", b))
   end
 
   def test_no_local_rebinding
@@ -542,7 +547,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("recv = self; recv.using Module.new", Sandbox::BINDING)
+      eval("recv = self; recv.using Module.new", Sandbox.create_binding)
     end
   end
 
@@ -557,7 +562,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_module_using_class
     assert_raise(TypeError) do
-      eval("using TestRefinement::UsingClass", Sandbox::BINDING)
+      eval("using TestRefinement::UsingClass", Sandbox.create_binding)
     end
   end
 
@@ -720,12 +725,12 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_using_in_module
     assert_raise(RuntimeError) do
-      eval(<<-EOF, Sandbox::BINDING)
-        $main = self
+      eval(<<-EOF, Sandbox.create_binding)
+        main = self
         module M
         end
-        module M2
-          $main.send(:using, M)
+        M2 = Module.new do
+          main.send(:using, M)
         end
       EOF
     end
@@ -733,16 +738,16 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_using_in_method
     assert_raise(RuntimeError) do
-      eval(<<-EOF, Sandbox::BINDING)
-        $main = self
+      eval(<<-EOF, Sandbox.create_binding)
+        main = self
         module M
         end
-        class C
-          def call_using_in_method
-            $main.send(:using, M)
+        c = Class.new do
+          define_method(:call_using_in_method) do
+            main.send(:using, M)
           end
         end
-        C.new.call_using_in_method
+        c.new.call_using_in_method
       EOF
     end
   end
@@ -861,8 +866,9 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_super_in_block
     bug7925 = '[ruby-core:52750] [Bug #7925]'
+    b = Sandbox.create_binding
     x = eval_using(SuperInBlock::R,
-                   "TestRefinement:: SuperInBlock::C.new.foo(#{bug7925.dump})")
+                   "TestRefinement::SuperInBlock::C.new.foo(#{bug7925.dump})", b)
     assert_equal([:foo, :ref, bug7925], x, bug7925)
   end
 
@@ -919,7 +925,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_module_using_invalid_self
     assert_raise(RuntimeError) do
-      eval <<-EOF, Sandbox::BINDING
+      eval <<-EOF, Sandbox.create_binding
         module TestRefinement::TestModuleUsingInvalidSelf
           Module.new.send(:using, TestRefinement::FooExt)
         end
@@ -1766,21 +1772,21 @@ class TestRefinement < Test::Unit::TestCase
 
     module Foo
       using RefB
-      USED_MODS = Module.used_modules
-      USED_REFS = Module.used_refinements
+      USED_MODS = Ractor.make_shareable(Module.used_modules)
+      USED_REFS = Ractor.make_shareable(Module.used_refinements)
     end
 
     module Bar
       using RefC
-      USED_MODS = Module.used_modules
-      USED_REFS = Module.used_refinements
+      USED_MODS = Ractor.make_shareable(Module.used_modules)
+      USED_REFS = Ractor.make_shareable(Module.used_refinements)
     end
 
     module Combined
       using RefA
       using RefB
-      USED_MODS = Module.used_modules
-      USED_REFS = Module.used_refinements
+      USED_MODS = Ractor.make_shareable(Module.used_modules)
+      USED_REFS = Ractor.make_shareable(Module.used_refinements)
     end
   end
 
@@ -2624,7 +2630,7 @@ class TestRefinement < Test::Unit::TestCase
     end
 
     module B
-      BAR = "bar"
+      BAR = "bar".freeze
 
       def bar
         "#{foo}:#{BAR}"
@@ -2761,7 +2767,7 @@ class TestRefinement < Test::Unit::TestCase
 
   private
 
-  def eval_using(mod, s)
-    eval("using #{mod}; #{s}", Sandbox::BINDING)
+  def eval_using(mod, s, b = nil)
+    eval("using #{mod}; #{s}", b || Sandbox.create_binding)
   end
 end

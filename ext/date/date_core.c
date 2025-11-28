@@ -9476,9 +9476,9 @@ d_lite_zero(VALUE x)
 void
 Init_date_core(void)
 {
-    #ifdef HAVE_RB_EXT_RACTOR_SAFE
-	RB_EXT_RACTOR_SAFE(true);
-    #endif
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     id_cmp = rb_intern_const("<=>");
     id_le_p = rb_intern_const("<=");
     id_ge_p = rb_intern_const(">=");

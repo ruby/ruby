@@ -1,0 +1,7 @@
+exclude(:test_2038, "class ivars")
+exclude(:test_time_interval, "Timeout.timeout")
+exclude(:test_timegm, "class ivars")
+exclude(:test_marshal_broken_offset, "global side effects")
+exclude(:test_marshal_broken_zone, "global side effects")
+exclude(:test_marshal_zone_ractor_unsafe, "global side effects")
+exclude(:test_deconstruct_keys, "global side effects")

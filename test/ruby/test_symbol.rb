@@ -492,10 +492,10 @@ class TestSymbol < Test::Unit::TestCase
     assert_raise(TypeError) { a = :foo; def a.foo; end }
   end
 
-  SymbolsForEval = [
+  SymbolsForEval = Ractor.make_shareable([
     :foo,
     "dynsym_#{Random.rand(10000)}_#{Time.now}".to_sym
-  ]
+  ])
 
   def test_instance_eval
     bug11086 = '[ruby-core:68961] [Bug #11086]'

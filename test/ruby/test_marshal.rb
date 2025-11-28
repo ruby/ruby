@@ -72,23 +72,26 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_inconsistent_struct
-    TestMarshal.const_set :StructOrNot, Struct.new(:a)
-    s = Marshal.dump(StructOrNot.new(1))
-    TestMarshal.instance_eval { remove_const :StructOrNot }
-    TestMarshal.const_set :StructOrNot, Class.new
+    const_name = "StructOrNot#{Ractor.current.object_id}".to_sym
+    TestMarshal.const_set const_name, Struct.new(:a)
+    s = Marshal.dump(TestMarshal.const_get(const_name).new(1))
+    TestMarshal.instance_eval { remove_const const_name }
+    TestMarshal.const_set const_name, Class.new
     assert_raise(TypeError, "[ruby-dev:31709]") { Marshal.load(s) }
   ensure
-    TestMarshal.instance_eval { remove_const :StructOrNot }
+    TestMarshal.instance_eval { remove_const const_name }
   end
 
   def test_struct_invalid_members
-    TestMarshal.const_set :StructInvalidMembers, Struct.new(:a)
-    assert_raise(TypeError, "[ruby-dev:31759]") {
-      Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
-      TestMarshal::StructInvalidMembers.members
-    }
-  ensure
-    TestMarshal.instance_eval { remove_const :StructInvalidMembers }
+    begin
+      TestMarshal.const_set :StructInvalidMembers, Struct.new(:a)
+      assert_raise(TypeError, "[ruby-dev:31759]") {
+        Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
+        TestMarshal::StructInvalidMembers.members
+      }
+    ensure
+      TestMarshal.instance_eval { remove_const :StructInvalidMembers }
+    end
   end
 
   def test_load_range_as_struct
@@ -334,11 +337,11 @@ class TestMarshal < Test::Unit::TestCase
 
   class DumpTest
     def marshal_dump
-      @@block.call(:marshal_dump)
+      @block.call(:marshal_dump)
     end
 
     def dump_each(&block)
-      @@block = block
+      @block = block
       Marshal.dump(self)
     end
   end
@@ -404,14 +407,14 @@ class TestMarshal < Test::Unit::TestCase
 
   class C6
     def initialize
-      @stdin = STDIN
+      @stdin = $stdin
     end
     attr_reader :stdin
     def marshal_dump
       1
     end
     def marshal_load(x)
-      @stdin = STDIN
+      @stdin = $stdin
     end
   end
   def test_marshal_dump_extra_iv
@@ -421,7 +424,7 @@ class TestMarshal < Test::Unit::TestCase
       m = Marshal.dump(o)
     }
     o2 = Marshal.load(m)
-    assert_equal(STDIN, o2.stdin)
+    assert_equal($stdin, o2.stdin)
   end
 
   def test_marshal_string_encoding
@@ -662,28 +665,28 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_undumpable_message
-    c = Module.new {break module_eval("class IO\u{26a1} < IO;self;end")}
-    assert_raise_with_message(TypeError, /IO\u{26a1}/) {
+    c = Module.new {break module_eval("class IO#{Ractor.current.object_id}\u{26a1} < IO;self;end")}
+    assert_raise_with_message(TypeError, /IO#{Ractor.current.object_id}\u{26a1}/) {
       Marshal.dump(c.new(0, autoclose: false))
     }
   end
 
   def test_undumpable_data
-    c = Module.new {break module_eval("class T\u{23F0 23F3}<Time;undef _dump;self;end")}
-    assert_raise_with_message(TypeError, /T\u{23F0 23F3}/) {
+    c = Module.new {break module_eval("class T#{Ractor.current.object_id}\u{23F0 23F3}<Time;undef _dump;self;end")}
+    assert_raise_with_message(TypeError, /T#{Ractor.current.object_id}\u{23F0 23F3}/) {
       Marshal.dump(c.new)
     }
   end
 
   def test_unloadable_data
-    name = "Unloadable\u{23F0 23F3}"
+    name = "Unloadable#{Ractor.current.object_id}\u{23F0 23F3}"
     c = eval("class #{name} < Time;;self;end")
     c.class_eval {
       alias _dump_data _dump
       undef _dump
     }
     d = Marshal.dump(c.new)
-    assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
+    assert_raise_with_message(TypeError, /Unloadable#{Ractor.current.object_id}\u{23F0 23F3}/) {
       Marshal.load(d)
     }
 
@@ -694,13 +697,13 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_userdef
-    name = "Userdef\u{23F0 23F3}"
+    name = "Userdef#{Ractor.current.object_id}\u{23F0 23F3}"
     c = eval("class #{name} < Time;self;end")
     class << c
       undef _load
     end
     d = Marshal.dump(c.new)
-    assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
+    assert_raise_with_message(TypeError, /Userdef#{Ractor.current.object_id}\u{23F0 23F3}/) {
       Marshal.load(d)
     }
 
@@ -719,12 +722,12 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_usrmarshal
-    c = eval("class UsrMarshal\u{23F0 23F3}<Time;self;end")
+    c = eval("class UsrMarshal#{Ractor.current.object_id}\u{23F0 23F3}<Time;self;end")
     c.class_eval {
       alias marshal_dump _dump
     }
     d = Marshal.dump(c.new)
-    assert_raise_with_message(TypeError, /UsrMarshal\u{23F0 23F3}/) {
+    assert_raise_with_message(TypeError, /UsrMarshal#{Ractor.current.object_id}\u{23F0 23F3}/) {
       Marshal.load(d)
     }
   end

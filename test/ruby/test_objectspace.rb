@@ -7,10 +7,10 @@ class TestObjectSpace < Test::Unit::TestCase
     file = $`
     line = $1.to_i
     code = <<"End"
-    define_method("test_id2ref_#{line}") {\
+    define_method("test_id2ref_#{line}", &Ractor.make_shareable(proc {\
       o = EnvUtil.suppress_warning { ObjectSpace._id2ref(obj.object_id) }
       assert_same(obj, o, "didn't round trip: \#{obj.inspect}");\
-    }
+    }))
 End
     eval code, binding, file, line
   end
@@ -29,7 +29,7 @@ End
   deftest_id2ref(:a)
   deftest_id2ref(:abcdefghijilkjl)
   deftest_id2ref(:==)
-  deftest_id2ref(Object.new)
+  deftest_id2ref(Object.new.freeze)
   deftest_id2ref(self)
   deftest_id2ref(true)
   deftest_id2ref(false)
