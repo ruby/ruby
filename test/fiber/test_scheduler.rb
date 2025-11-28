@@ -228,6 +228,8 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_process_fork
+    assert Fiber::SCHEDULER_PROCESS_FORK
+
     forked_pid = nil
     forked_scheduler_process_pid = nil
 

@@ -353,6 +353,10 @@ Init_Fiber_Scheduler(void)
     // Register the anonymous class as a GC root so it doesn't get collected
     rb_gc_register_mark_object(rb_cFiberSchedulerBlockingOperation);
 
+    // Define Fiber::SCHEDULER_PROCESS_FORK in order to allow feature-detection
+    VALUE rb_cFiber = rb_const_get(rb_cObject, rb_intern_const("Fiber"));
+    rb_define_const(rb_cFiber, "SCHEDULER_PROCESS_FORK", Qtrue);
+
 #if 0 /* for RDoc */
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "Scheduler", rb_cObject);
     rb_define_method(rb_cFiberScheduler, "close", rb_fiber_scheduler_close, 0);
