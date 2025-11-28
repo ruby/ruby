@@ -395,7 +395,7 @@ ROBJECT_FIELDS_COUNT(VALUE obj)
 static inline uint32_t
 RBASIC_FIELDS_COUNT(VALUE obj)
 {
-    return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
+    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
 }
 
 static inline bool
