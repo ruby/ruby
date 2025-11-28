@@ -230,12 +230,12 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_process_fork
     forked_pid = nil
     forked_scheduler_process_pid = nil
-  
+
     thread = Thread.new do
       r, w = IO.pipe
       scheduler = Scheduler.new
       Fiber.set_scheduler scheduler
-      
+
       forked_pid = fork do
         # scheduler.process_fork is already called, so scheduler's process_pid
         # should be updated.
