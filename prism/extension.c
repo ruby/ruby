@@ -1346,7 +1346,6 @@ Init_prism(void) {
     }
 
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-    // Mark this extension as Ractor-safe.
     rb_ext_ractor_safe(true);
 #endif
 

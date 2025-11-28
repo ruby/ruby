@@ -28,6 +28,9 @@ lsan_enabled_p(VALUE self)
 void
 Init_sanitizers(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     VALUE m = rb_define_module("Test");
     VALUE c = rb_define_class_under(m, "Sanitizers", rb_cObject);
     rb_define_singleton_method(c, "asan_enabled?", asan_enabled_p, 0);

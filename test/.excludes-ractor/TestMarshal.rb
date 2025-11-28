@@ -1,0 +1,6 @@
+exclude(:test_context_switch, "class variables")
+exclude(:test_struct_invalid_members, "global side effects")
+exclude(:test_change_class_name, "global side effects")
+exclude(:test_change_struct, "global side effects")
+exclude(:test_continuation, "callcc")
+exclude(:test_singleton, "class ivar")

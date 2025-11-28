@@ -1,0 +1,5 @@
+exclude(:test_unbind, "global side effects")
+exclude(:test_define_method_in_private_scope, "TOPLEVEL_BINDING")
+exclude(:test_method_list, "ObjectSpace.each_object")
+exclude(:test_singleton_define_method_in_private_scope, "TOPLEVEL_BINDING")
+exclude(:test_method_in_method_visibility_should_be_public, "global side effects")

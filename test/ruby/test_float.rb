@@ -657,7 +657,7 @@ class TestFloat < Test::Unit::TestCase
     -18446744073709551616.8,
     -18446744073709551617.0,
     -18446744073709551618.0,
-  ]
+  ].freeze
 
   def test_truncate
     VS.each {|f|
