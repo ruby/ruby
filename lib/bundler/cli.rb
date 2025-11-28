@@ -131,6 +131,16 @@ module Bundler
     def self.default_command(meth = nil)
       return super if meth
 
+      unless Bundler.settings[:default_cli_command]
+        Bundler.ui.info <<-MSG
+          In the feature version of Bundler, running `bundle` without argument will no longer run `bundle install`.
+          Instead, the `cli_help` command will be displayed. Please use `bundle install` explicitly for scripts like CI/CD.
+          If you wish to use feature behavior now with `bundle config set default_cli_command cli_help --global`
+          or you can continue to use the old behavior with `bundle config set default_cli_command install_or_cli_help --global`.
+          This message will be removed after a default_cli_command value is set.
+        MSG
+      end
+
       Bundler.settings[:default_cli_command] || "install_or_cli_help"
     end
 
