@@ -1860,7 +1860,7 @@ nodes:
         comment: |
           Represents the location of the `class` keyword.
 
-              class Foo end
+              class Foo; end
               ^^^^^
       - name: constant_path
         type: node
@@ -1899,19 +1899,19 @@ nodes:
         comment: |
           Represents the location of the `end` keyword.
 
-              class Foo end
-                        ^^^
+              class Foo; end
+                         ^^^
       - name: name
         type: constant
         comment: |
           The name of the class.
 
-              class Foo end # name `:Foo`
+              class Foo; end # name `:Foo`
     comment: |
       Represents a class declaration involving the `class` keyword.
 
-          class Foo end
-          ^^^^^^^^^^^^^
+          class Foo; end
+          ^^^^^^^^^^^^^^
   - name: ClassVariableAndWriteNode
     fields:
       - name: name
