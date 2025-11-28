@@ -4094,7 +4094,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *  into +format_string+.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/format_specifications.rdoc].
  */
 
 static VALUE

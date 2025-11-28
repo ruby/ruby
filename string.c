@@ -2618,7 +2618,7 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Returns the result of formatting +object+ into the format specifications
  *  contained in +self+
- *  (see {Format Specifications}[rdoc-ref:format_specifications.rdoc]):
+ *  (see {Format Specifications}[rdoc-ref:language/format_specifications.rdoc]):
  *
  *    '%05d' % 123 # => "00123"
  *

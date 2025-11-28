@@ -159,7 +159,7 @@ Any directive may be followed by either of these modifiers:
     'AB'.unpack('C3')   # => [65, 66, nil]
 
   Note: Directives in <tt>%w[A a Z m]</tt> use +count+ differently;
-  see {String Directives}[rdoc-ref:@String+Directives].
+  see {String Directives}[rdoc-ref:language/packed_data.rdoc@String+Directives].
 
 If elements don't fit the provided directive, only least significant bits are encoded:
 

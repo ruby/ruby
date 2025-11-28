@@ -2,11 +2,12 @@
 [^_]*.rb
 [^_]*.rdoc
 contributing
+distribution
 NEWS
 syntax
 optparse
 date
 rdoc
-regexp
-yjit
-ruby
+jit
+security
+language

@@ -522,5 +522,4 @@ An ISO 8601 combined date and time representation may be any
 ISO 8601 date and any ISO 8601 time,
 separated by the letter +T+.
 
-For the relevant +strftime+ formats, see {Dates}[rdoc-ref:@Dates] and
-{Times}[rdoc-ref:@Times] above.
+For the relevant +strftime+ formats, see {Dates}[rdoc-ref:@Dates] and {Times}[rdoc-ref:@Times] above.

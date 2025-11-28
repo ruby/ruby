@@ -682,7 +682,7 @@ CESU-8
 ### `--jit`
 
 Option `--jit` is an alias for option `--yjit`, which enables YJIT;
-see additional YJIT options in the [YJIT documentation](rdoc-ref:yjit/yjit.md).
+see additional YJIT options in the [YJIT documentation](rdoc-ref:jit/yjit.md).
 
 ### `--verbose`: Set `$VERBOSE`
 

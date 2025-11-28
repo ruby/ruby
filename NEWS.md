@@ -242,7 +242,7 @@ The following bundled gems are updated.
 
 ## Compatibility issues
 
-* The following methods were removed from Ractor due because of `Ractor::Port`:
+* The following methods were removed from Ractor due to the addition of `Ractor::Port`:
 
     * `Ractor.yield`
     * `Ractor#take`
@@ -335,6 +335,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
+[Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360

@@ -5,7 +5,7 @@ require 'test/unit'
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNINGS = [
     "warning: Ruby::Box is experimental, and the behavior may change in the future!",
-    "See doc/box.md for known issues, etc."
+    "See doc/language/box.md for known issues, etc."
   ].join("\n")
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
