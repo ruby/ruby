@@ -329,7 +329,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
         "#{state.indent * state.depth}\"foo\":#{state.space}1#{state.object_nl}"\
         "#{state.indent * (state.depth - 1)}}"
     end
-    indent = "  " * 2 if RUBY_ENGINE != "ruby"
     assert_equal <<~JSON.chomp, JSON.pretty_generate([obj] * 2)
       [
         {
@@ -338,11 +337,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
         {
             "foo": 1
           }
-      #{indent}]
+      ]
     JSON
     state = JSON::State.new(object_nl: "\n", array_nl: "\n", space: " ", indent: "  ")
     state.generate(obj)
-    assert_equal 1, state.depth
+    assert_equal 1, state.depth # FIXME
+    state.depth = 0
+    state.generate([obj])
+    assert_equal 0, state.depth
   end
 
   def test_depth
