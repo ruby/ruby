@@ -186,6 +186,15 @@ int rb_fiber_scheduler_supports_process_wait(VALUE scheduler);
 VALUE rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags);
 
 /**
+ * Post-fork hook. A scheduler should use this hook to reset its internal state
+ * after a fork.
+ *
+ * @param[in]  scheduler  Target scheduler.
+ * @return     What `scheduler.process_hook` returns.
+ */
+VALUE rb_fiber_scheduler_process_fork(VALUE scheduler);
+
+/**
  * Non-blocking  wait  for  the  passed   "blocker",  which  is   for  instance
  * `Thread.join` or `Mutex.lock`.  Depending  on scheduler implementation, this
  * for instance switches to another fiber etc.

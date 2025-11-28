@@ -31,6 +31,7 @@ static ID id_unblock;
 static ID id_timeout_after;
 static ID id_kernel_sleep;
 static ID id_process_wait;
+static ID id_process_fork;
 
 static ID id_io_read, id_io_pread;
 static ID id_io_write, id_io_pwrite;
@@ -325,6 +326,7 @@ Init_Fiber_Scheduler(void)
     id_timeout_after = rb_intern_const("timeout_after");
     id_kernel_sleep = rb_intern_const("kernel_sleep");
     id_process_wait = rb_intern_const("process_wait");
+    id_process_fork = rb_intern_const("process_fork");
 
     id_io_read = rb_intern_const("io_read");
     id_io_pread = rb_intern_const("io_pread");
@@ -355,6 +357,7 @@ Init_Fiber_Scheduler(void)
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "Scheduler", rb_cObject);
     rb_define_method(rb_cFiberScheduler, "close", rb_fiber_scheduler_close, 0);
     rb_define_method(rb_cFiberScheduler, "process_wait", rb_fiber_scheduler_process_wait, 2);
+    rb_define_method(rb_cFiberScheduler, "process_fork", rb_fiber_scheduler_process_fork, 0);
     rb_define_method(rb_cFiberScheduler, "io_wait", rb_fiber_scheduler_io_wait, 3);
     rb_define_method(rb_cFiberScheduler, "io_read", rb_fiber_scheduler_io_read, 4);
     rb_define_method(rb_cFiberScheduler, "io_write", rb_fiber_scheduler_io_write, 4);
@@ -608,6 +611,24 @@ rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
     };
 
     return rb_check_funcall(scheduler, id_process_wait, 2, arguments);
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#process_fork
+ *  call-seq: process_fork()
+ *
+ *  Invoked after a fork in order to reset its internal state so it will work
+ *  correctly in the forked process.
+ *
+ *  This hook is optional.
+ */
+VALUE
+rb_fiber_scheduler_process_fork(VALUE scheduler)
+{
+    printf("rb_fiber_scheduler_process_fork >>\n");
+    rb_check_funcall(scheduler, id_process_fork, 0, 0);
+    printf("rb_fiber_scheduler_process_fork <<\n");
+    return scheduler;
 }
 
 /*

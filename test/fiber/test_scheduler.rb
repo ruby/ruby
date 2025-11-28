@@ -226,4 +226,31 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.join
     assert_kind_of RuntimeError, error
   end
+
+  def test_process_fork
+    forked_pid = nil
+    forked_scheduler_process_pid = nil
+  
+    thread = Thread.new do
+      r, w = IO.pipe
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+      
+      forked_pid = fork do
+        # scheduler.process_fork is already called, so scheduler's process_pid
+        # should be updated.
+        r.close
+        w << Fiber.scheduler.process_pid.to_s
+        w.close
+      end
+      w.close
+      forked_scheduler_process_pid = r.read.to_i
+      Process.wait(forked_pid)
+    end
+
+    thread.join
+
+    refute_equal Process.pid, forked_pid
+    assert_equal forked_pid, forked_scheduler_process_pid
+  end
 end

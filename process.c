@@ -1588,6 +1588,11 @@ after_fork_ruby(rb_pid_t pid)
         // child
         clear_pid_cache();
         rb_thread_atfork();
+
+        VALUE scheduler = rb_fiber_scheduler_get();
+        if (scheduler != Qnil) {
+            rb_fiber_scheduler_process_fork(scheduler);
+        }
     }
     else {
         // parent

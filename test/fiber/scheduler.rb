@@ -34,6 +34,8 @@ class Scheduler
     @writable = {}
     @waiting = {}
 
+    @process_pid = Process.pid
+
     @closed = false
 
     @lock = Thread::Mutex.new
@@ -46,6 +48,7 @@ class Scheduler
   attr :readable
   attr :writable
   attr :waiting
+  attr :process_pid
 
   def transfer
     @fiber.transfer
@@ -135,6 +138,22 @@ class Scheduler
   # A fiber scheduler hook, invoked when the scheduler goes out of scope.
   def scheduler_close
     close(true)
+  end
+
+  # This hook is invoked after a fork (in the forked process)
+  def process_fork
+    @process_pid = Process.pid
+
+    @readable = {}
+    @writable = {}
+    @waiting = {}
+
+    @lock = Thread::Mutex.new
+    @blocking = Hash.new.compare_by_identity
+    @ready = []
+
+    @urgent = nil
+    # @urgent = IO.pipe
   end
 
   # If the `scheduler_close` hook does not exist, this method `close` will be
