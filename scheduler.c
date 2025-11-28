@@ -629,9 +629,7 @@ rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
 VALUE
 rb_fiber_scheduler_process_fork(VALUE scheduler)
 {
-    printf("rb_fiber_scheduler_process_fork >>\n");
     rb_check_funcall(scheduler, id_process_fork, 0, 0);
-    printf("rb_fiber_scheduler_process_fork <<\n");
     return scheduler;
 }
 
