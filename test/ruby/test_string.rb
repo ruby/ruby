@@ -930,6 +930,20 @@ CODE
     end
   end
 
+  def test_true?
+    assert_true(S("true").true?)
+    assert_false(S("false").true?)
+    assert_false(S("").true?)
+    assert_false(S("abc").true?)
+  end
+
+  def test_false?
+    assert_true(S("false").false?)
+    assert_false(S("true").false?)
+    assert_false(S("").false?)
+    assert_false(S("abc").false?)
+  end
+
   class StringWithIVSet < String
     def set_iv
       @foo = 1
