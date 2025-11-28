@@ -152,8 +152,7 @@ class Scheduler
     @blocking = Hash.new.compare_by_identity
     @ready = []
 
-    @urgent = nil
-    # @urgent = IO.pipe
+    @urgent = IO.pipe
   end
 
   # If the `scheduler_close` hook does not exist, this method `close` will be
