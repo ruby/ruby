@@ -40,7 +40,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       end
 
       ENV["DESTDIR"] = nil
-      unless RbConfig::CONFIG["MAKE"] =~ /nmake/
+      unless RbConfig::CONFIG["MAKE"]&.include?("nmake")
         ENV["MAKEFLAGS"] ||= "-j#{Etc.nprocessors + 1}"
       end
 
