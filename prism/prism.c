@@ -22865,8 +22865,8 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     // If the shebang does not include "ruby" and this is the main script being
     // parsed, then we will start searching the file for a shebang that does
     // contain "ruby" as if -x were passed on the command line.
-    const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
-    size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
+    const uint8_t *newline = next_newline(parser->current.end, parser->end - parser->current.end);
+    size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->current.end);
 
     if (length > 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
         const char *engine;
