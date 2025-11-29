@@ -441,12 +441,6 @@ void
 Init_ossl_x509ext(void)
 {
 #undef rb_intern
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
 
     cX509ExtFactory = rb_define_class_under(mX509, "ExtensionFactory", rb_cObject);

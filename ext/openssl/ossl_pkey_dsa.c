@@ -334,12 +334,6 @@ OSSL_PKEY_BN_DEF2(dsa, DSA, key, pub_key, priv_key)
 void
 Init_ossl_dsa(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
     /* Document-class: OpenSSL::PKey::DSA
      *
      * DSA, the Digital Signature Algorithm, is specified in NIST's

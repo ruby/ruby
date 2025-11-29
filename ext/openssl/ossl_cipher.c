@@ -901,11 +901,6 @@ ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
 void
 Init_ossl_cipher(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /* Document-class: OpenSSL::Cipher
      *
      * Provides symmetric algorithms for encryption and decryption. The

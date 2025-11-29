@@ -1202,11 +1202,6 @@ ossl_bn_set_flags(VALUE self, VALUE arg)
 void
 Init_ossl_bn(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
     ossl_bn_ctx_key = rb_ractor_local_storage_ptr_newkey(&ossl_bn_ctx_key_type);
 #else

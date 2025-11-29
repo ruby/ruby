@@ -1288,11 +1288,6 @@ Init_ossl_asn1(void)
     VALUE ary;
     int i;
 
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     sym_UNIVERSAL = ID2SYM(rb_intern_const("UNIVERSAL"));
     sym_CONTEXT_SPECIFIC = ID2SYM(rb_intern_const("CONTEXT_SPECIFIC"));
     sym_APPLICATION = ID2SYM(rb_intern_const("APPLICATION"));

@@ -1298,10 +1298,6 @@ end:
 void
 Init_ossl_ts(void)
 {
-    #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
-    #endif
-
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server rejects the message imprint algorithm used in the

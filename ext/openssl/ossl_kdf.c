@@ -239,11 +239,6 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
 void
 Init_ossl_kdf(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * Document-module: OpenSSL::KDF
      *

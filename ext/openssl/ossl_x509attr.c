@@ -288,12 +288,6 @@ ossl_x509attr_to_der(VALUE self)
 void
 Init_ossl_x509attr(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509AttrError = rb_define_class_under(mX509, "AttributeError", eOSSLError);
 
     cX509Attr = rb_define_class_under(mX509, "Attribute", rb_cObject);
