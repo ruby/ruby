@@ -21062,6 +21062,42 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     return value;
 }
 
+static bool
+parse_call_operator_write_block_exits_each(const pm_node_t *node, void *data) {
+    pm_parser_t *parser = (pm_parser_t *) data;
+    size_t index = 0;
+
+    while (index < parser->current_block_exits->size) {
+        pm_node_t *block_exit = parser->current_block_exits->nodes[index];
+
+        if (block_exit == node) {
+            if (index + 1 < parser->current_block_exits->size) {
+                memmove(
+                    &parser->current_block_exits->nodes[index],
+                    &parser->current_block_exits->nodes[index + 1],
+                    (parser->current_block_exits->size - index - 1) * sizeof(pm_node_t *)
+                );
+            }
+            parser->current_block_exits->size--;
+            return false;
+        }
+
+        index++;
+    }
+
+    return true;
+}
+
+/**
+ * When we are about to destroy a set of nodes that could potentially contain
+ * block exits for the current scope, we need to check if they are contained in
+ * the list of block exits and remove them if they are.
+ */
+static void
+parse_call_operator_write_block_exits(pm_parser_t *parser, const pm_node_t *node) {
+    pm_visit_node(node, parse_call_operator_write_block_exits_each, parser);
+}
+
 /**
  * Ensure a call node that is about to become a call operator node does not
  * have arguments or a block attached. If it does, then we'll need to add an
@@ -21073,12 +21109,14 @@ static void
 parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const pm_token_t *operator) {
     if (call_node->arguments != NULL) {
         pm_parser_err_token(parser, operator, PM_ERR_OPERATOR_WRITE_ARGUMENTS);
+        parse_call_operator_write_block_exits(parser, (pm_node_t *) call_node->arguments);
         pm_node_destroy(parser, (pm_node_t *) call_node->arguments);
         call_node->arguments = NULL;
     }
 
     if (call_node->block != NULL) {
         pm_parser_err_token(parser, operator, PM_ERR_OPERATOR_WRITE_BLOCK);
+        parse_call_operator_write_block_exits(parser, (pm_node_t *) call_node->block);
         pm_node_destroy(parser, (pm_node_t *) call_node->block);
         call_node->block = NULL;
     }
