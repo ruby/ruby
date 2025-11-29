@@ -2012,14 +2012,26 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     module <=> other_module   -> -1, 0, +1, or nil
+ *     self <=> object -> -1, 0, +1, or nil
  *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
- *  includes +other_module+, they are the same, or if +module+ is included by
- *  +other_module+.
+ *  Returns:
  *
- *  Returns +nil+ if +module+ has no relationship with +other_module+, if
- *  +other_module+ is not a module, or if the two values are incomparable.
+ *  - +-1+, if +self+ includes +object+, if or +self+ is a subclass of +object+.
+ *  - +0+, if +self+ and +object+ are the same.
+ *  - +1+, if +object+ includes +self+, or if +object+ is a subclass of +self+.
+ *  - +nil+, if none of the above is true.
+ *
+ *  Examples:
+ *
+ *    # Class Array includes module Enumerable.
+ *             Array <=> Enumerable # => -1
+ *        Enumerable <=> Enumerable # =>  0
+ *        Enumerable <=> Array      # =>  1
+ *    # Class File is a subclass of class IO.
+ *              File <=> IO         # => -1
+ *                IO <=> File       # =>  1
+ *              File <=> File       # =>  0
+ *
  */
 
 static VALUE
