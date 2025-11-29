@@ -550,7 +550,7 @@ end
 #
 # Implementation note:
 #
-# The keyword argument +anonymous=true+ is implemented using FILE_SHARE_DELETE on Windows.
+# The keyword argument <tt>anonymous=true</tt> is implemented using FILE_SHARE_DELETE on Windows.
 # O_TMPFILE is used on Linux.
 #
 # Related: Tempfile.new.
