@@ -17336,7 +17336,11 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             pm_node_t *value = NULL;
 
             if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-                value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
+                if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
+                } else {
+                    value = (pm_node_t *) pm_missing_node_create(parser, key->location.end, key->location.end);
+                }
             } else {
                 value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY, (uint16_t) (depth + 1));
             }
