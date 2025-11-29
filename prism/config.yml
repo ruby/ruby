@@ -3306,6 +3306,9 @@ nodes:
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
           - on error: XStringNode # `<<`FOO` "bar"
+          - on error: InterpolatedXStringNode
+          - on error: SymbolNode
+          - on error: InterpolatedSymbolNode
       - name: closing_loc
         type: location?
     newline: parts

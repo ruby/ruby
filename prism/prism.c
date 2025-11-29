@@ -5344,8 +5344,10 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
             break;
         case PM_X_STRING_NODE:
         case PM_INTERPOLATED_X_STRING_NODE:
-            // If this is an x string, then this is a syntax error. But we want
-            // to handle it here so that we don't fail the assertion.
+        case PM_SYMBOL_NODE:
+        case PM_INTERPOLATED_SYMBOL_NODE:
+            // These will only happen in error cases. But we want to handle it
+            // here so that we don't fail the assertion.
             CLEAR_FLAGS(node);
             break;
         default:
