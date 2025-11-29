@@ -8445,7 +8445,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                 if (*cursor == '\\' && (cursor + 1 < end)) cursor++;
             }
             value_end = cursor;
-            if (*cursor == '"') cursor++;
+            if (cursor < end && *cursor == '"') cursor++;
         } else {
             value_start = cursor;
             while (cursor < end && *cursor != '"' && *cursor != ';' && !pm_char_is_whitespace(*cursor)) cursor++;
