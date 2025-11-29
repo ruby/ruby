@@ -1234,8 +1234,7 @@ ext/clean.sub ext/distclean.sub ext/realclean.sub \
 		))) || $(NULLCMD)
 
 ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
-		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (exts.mk*) \
-		do $(Q)(del %I & rmdir %~dpI)) || $(NULLCMD)
+		$(Q)(for /D /R $(@D) %I in (.) do $(Q)$(RMDIRS) %I) || $(NULLCMD)
 
 .bundle/distclean .bundle/realclean::
 		$(Q)for /D %I in ($(@D)\*) do $(Q)$(RMDIRS) %I || $(NULLCMD)
