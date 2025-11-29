@@ -886,12 +886,13 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
+    assert_raise(ArgumentError) { Enumerator.produce(a: 1, b: 1) {} }
 
     # Without initial object
     passed_args = []
     enum = Enumerator.produce { |obj| passed_args << obj; (obj || 0).succ }
     assert_instance_of(Enumerator, enum)
-    assert_equal Float::INFINITY, enum.size
+    assert_nil enum.size
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [nil, 1, 2], passed_args
 
@@ -899,22 +900,14 @@ class TestEnumerator < Test::Unit::TestCase
     passed_args = []
     enum = Enumerator.produce(1) { |obj| passed_args << obj; obj.succ }
     assert_instance_of(Enumerator, enum)
-    assert_equal Float::INFINITY, enum.size
+    assert_nil enum.size
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [1, 2], passed_args
-
-    # With initial keyword arguments
-    passed_args = []
-    enum = Enumerator.produce(a: 1, b: 1) { |obj| passed_args << obj; obj.shift if obj.respond_to?(:shift)}
-    assert_instance_of(Enumerator, enum)
-    assert_equal Float::INFINITY, enum.size
-    assert_equal [{b: 1}, [1], :a, nil], enum.take(4)
-    assert_equal [{b: 1}, [1], :a], passed_args
 
     # Raising StopIteration
     words = "The quick brown fox jumps over the lazy dog.".scan(/\w+/)
     enum = Enumerator.produce { words.shift or raise StopIteration }
-    assert_equal Float::INFINITY, enum.size
+    assert_nil enum.size
     assert_instance_of(Enumerator, enum)
     assert_equal %w[The quick brown fox jumps over the lazy dog], enum.to_a
 
@@ -924,7 +917,7 @@ class TestEnumerator < Test::Unit::TestCase
       obj.respond_to?(:first) or raise StopIteration
       obj.first
     }
-    assert_equal Float::INFINITY, enum.size
+    assert_nil enum.size
     assert_instance_of(Enumerator, enum)
     assert_nothing_raised {
       assert_equal [
@@ -935,6 +928,25 @@ class TestEnumerator < Test::Unit::TestCase
         "abc",
       ], enum.to_a
     }
+
+    # With size keyword argument
+    enum = Enumerator.produce(1, size: 10) { |obj| obj.succ }
+    assert_equal 10, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
+
+    enum = Enumerator.produce(1, size: -> { 5 }) { |obj| obj.succ }
+    assert_equal 5, enum.size
+
+    enum = Enumerator.produce(1, size: nil) { |obj| obj.succ }
+    assert_equal nil, enum.size
+
+    enum = Enumerator.produce(1, size: Float::INFINITY) { |obj| obj.succ }
+    assert_equal Float::INFINITY, enum.size
+
+    # Without initial value but with size
+    enum = Enumerator.produce(size: 3) { |obj| (obj || 0).succ }
+    assert_equal 3, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
   end
 
   def test_chain_each_lambda
