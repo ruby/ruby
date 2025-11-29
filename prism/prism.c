@@ -13454,28 +13454,43 @@ parse_unwriteable_target(pm_parser_t *parser, pm_node_t *target) {
     return (pm_node_t *) result;
 }
 
+static bool
+parse_target_implicit_parameter_each(const pm_node_t *node, void *data) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_LOCAL_VARIABLE_READ_NODE:
+        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+            pm_parser_t *parser = (pm_parser_t *) data;
+            pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
+
+            for (size_t index = 0; index < implicit_parameters->size; index++) {
+                if (implicit_parameters->nodes[index] == node) {
+                    // If the node is not the last one in the list, we need to
+                    // shift the remaining nodes down to fill the gap. This is
+                    // extremely unlikely to happen.
+                    if (index != implicit_parameters->size - 1) {
+                        memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
+                    }
+
+                    implicit_parameters->size--;
+                    break;
+                }
+            }
+
+            return false;
+        }
+        default:
+            return true;
+    }
+}
+
 /**
  * When an implicit local variable is written to or targeted, it becomes a
  * regular, named local variable. This function removes it from the list of
  * implicit parameters when that happens.
  */
 static void
-parse_target_implicit_parameter(pm_parser_t *parser, pm_node_t *node) {
-    pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
-
-    for (size_t index = 0; index < implicit_parameters->size; index++) {
-        if (implicit_parameters->nodes[index] == node) {
-            // If the node is not the last one in the list, we need to shift the
-            // remaining nodes down to fill the gap. This is extremely unlikely
-            // to happen.
-            if (index != implicit_parameters->size - 1) {
-                memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
-            }
-
-            implicit_parameters->size--;
-            break;
-        }
-    }
+parse_target_implicit_parameter(pm_parser_t *parser, const pm_node_t *node) {
+    pm_visit_node(node, parse_target_implicit_parameter_each, parser);
 }
 
 /**
@@ -13851,18 +13866,12 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // syntax error. In this case we'll fall through to our default
             // handling. We need to free the value that we parsed because there
             // is no way for us to attach it to the tree at this point.
-            switch (PM_NODE_TYPE(value)) {
-                case PM_LOCAL_VARIABLE_READ_NODE:
-                case PM_IT_LOCAL_VARIABLE_READ_NODE:
-                    // Since it is possible for the value to be an implicit
-                    // parameter, we need to remove it from the list of implicit
-                    // parameters.
-                    parse_target_implicit_parameter(parser, value);
-                    break;
-                default:
-                    break;
-            }
-
+            //
+            // Since it is possible for the value to contain an implicit
+            // parameter somewhere in its subtree, we need to walk it and remove
+            // any implicit parameters from the list of implicit parameters for
+            // the current scope.
+            parse_target_implicit_parameter(parser, value);
             pm_node_destroy(parser, value);
         }
         PRISM_FALLTHROUGH
