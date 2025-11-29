@@ -801,7 +801,7 @@ clean-capi distclean-capi realclean-capi:
 
 clean-platform distclean-platform realclean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
