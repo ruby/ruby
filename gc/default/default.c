@@ -3061,7 +3061,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     gc_enter(objspace, gc_enter_event_finalizer, &lock_lev);
 
 #define FREE_OBJECT(obj) \
-    rb_gc_obj_free_vm_weak_references(obj); \
     if (rb_gc_obj_free(objspace, obj)) { \
         RBASIC(obj)->flags = 0; \
     };
@@ -3089,14 +3088,12 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
                     current->next = next;
                     current = next;
                     next = NULL;
-                    continue;
                 }
-                if (rb_obj_is_root_box_entry(vp)) {
+                else if (rb_obj_is_root_box_entry(vp)) {
                     root_box_entry = vp;
-                    continue;
                 }
-
-                if (rb_gc_shutdown_call_finalizer_p(vp)) {
+                else if (rb_gc_shutdown_call_finalizer_p(vp)) {
+                    rb_gc_obj_free_vm_weak_references(vp);
                     FREE_OBJECT(vp);
                 }
             }
