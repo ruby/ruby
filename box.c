@@ -250,7 +250,7 @@ box_entry_memsize(const void *ptr)
 }
 
 const rb_data_type_t rb_box_data_type = {
-    "Namespace::Entry",
+    "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
         box_entry_free,
@@ -261,7 +261,7 @@ const rb_data_type_t rb_box_data_type = {
 };
 
 const rb_data_type_t rb_root_box_data_type = {
-    "Namespace::Root",
+    "Ruby::Box::Root",
     {
         rb_box_entry_mark,
         box_root_free,
