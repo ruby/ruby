@@ -2324,10 +2324,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          v11:BasicObject = GetIvar v6, :@foo
+          v10:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
-          Return v11
+          Return v10
         ");
     }
 
@@ -2838,16 +2837,13 @@ pub mod hir_build_tests {
           v10:NilClass = Const Value(nil)
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
-          PatchPoint SingleRactorMode
-          v20:BasicObject = GetIvar v12, :@a
-          PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v12, :@b
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v12, :@c
+          v19:BasicObject = GetIvar v12, :@a
+          v21:BasicObject = GetIvar v12, :@b
+          v23:BasicObject = GetIvar v12, :@c
           PatchPoint NoEPEscape(reverse_odd)
-          v38:ArrayExact = NewArray v20, v23, v26
+          v35:ArrayExact = NewArray v19, v21, v23
           CheckInterrupts
-          Return v38
+          Return v35
 
         fn reverse_even@<compiled>:8:
         bb0():
@@ -2866,18 +2862,14 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
-          PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v14, :@a
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v14, :@b
-          PatchPoint SingleRactorMode
-          v29:BasicObject = GetIvar v14, :@c
-          PatchPoint SingleRactorMode
-          v32:BasicObject = GetIvar v14, :@d
+          v22:BasicObject = GetIvar v14, :@a
+          v24:BasicObject = GetIvar v14, :@b
+          v26:BasicObject = GetIvar v14, :@c
+          v28:BasicObject = GetIvar v14, :@d
           PatchPoint NoEPEscape(reverse_even)
-          v46:ArrayExact = NewArray v23, v26, v29, v32
+          v42:ArrayExact = NewArray v22, v24, v26, v28
           CheckInterrupts
-          Return v46
+          Return v42
         ");
     }
 

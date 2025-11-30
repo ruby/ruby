@@ -3002,7 +3002,7 @@ class TestZJIT < Test::Unit::TestCase
       test
 
       Ractor.new { test }.value
-    }
+    }, call_threshold: 2
   end
 
   def test_ivar_set_with_multi_ractor_mode

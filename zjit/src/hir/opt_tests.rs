@@ -3342,11 +3342,11 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          PatchPoint SingleRactorMode
           IncrCounter getivar_fallback_not_monomorphic
-          v11:BasicObject = GetIvar v6, :@foo
+          PatchPoint SingleRactorMode
+          v10:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
-          Return v11
+          Return v10
         ");
     }
 
@@ -5229,6 +5229,95 @@ mod hir_opt_tests {
           v26:BasicObject = LoadField v25, :@foo@0x103a
           CheckInterrupts
           Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_module() {
+        eval("
+            module M
+              @foo = 42
+              def self.test = @foo
+            end
+            M.test
+        ");
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
+          PatchPoint SingleRactorMode
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_class() {
+        eval("
+            class C
+              @foo = 42
+              def self.test = @foo
+            end
+            C.test
+        ");
+        assert_snapshot!(hir_string_proc("C.method(:test)"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
+          PatchPoint SingleRactorMode
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_t_data() {
+        eval("
+            class C < Range
+              def test = @a
+            end
+            obj = C.new 0, 1
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v15:HeapBasicObject = GuardType v6, HeapBasicObject
+          v16:HeapBasicObject = GuardShape v15, 0x1000
+          PatchPoint SingleRactorMode
+          v18:CUInt16[0] = Const CUInt16(0)
+          v19:BasicObject = CCall rb_ivar_get_at_no_ractor_check@0x1008, v16, v18
+          CheckInterrupts
+          Return v19
         ");
     }
 

@@ -2807,22 +2807,23 @@ impl Function {
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
+                            // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
+                            // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
+                            // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -2833,6 +2834,17 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        } else if !recv_type.flags().is_t_object() && !unsafe { rb_jit_multi_ractor_p() } {
+                            // Only handle single-Ractor mode here for simplicity and not needing gen_prepare_non_leaf_call
+                            // TODO: We only need this if self_val is a class/module but we don't track this in flags currently
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            self.push_insn(block, Insn::CCall {
+                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                args: vec![self_val, ivar_index_insn],
+                                name: ID!(rb_ivar_get_at_no_ractor_check),
+                                return_type: types::BasicObject,
+                                elidable: true })
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
@@ -5619,9 +5631,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     let ic = get_arg(pc, 1).as_ptr();
                     // ic is in arg 1
-                    // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
-                    // TODO: We only really need this if self_val is a class/module
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
                     state.stack_push(result);
                 }
