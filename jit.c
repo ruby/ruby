@@ -192,7 +192,7 @@ rb_jit_get_proc_ptr(VALUE procv)
 }
 
 VALUE
-rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
