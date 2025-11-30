@@ -537,7 +537,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal(100, h['a'])
   end
 
-  FOO = "foo"
+  FOO = "foo".freeze
 
   def test_hash_value_omission
     x = 1

@@ -154,10 +154,10 @@ class TestTmpdir < Test::Unit::TestCase
             Ractor.receive
           end
         end
-        dir = r.take
+        dir = r.value
         assert_file.directory? dir
         r.send true
-        r.take
+        r.join
         assert_file.not_exist? dir
       end
     end;

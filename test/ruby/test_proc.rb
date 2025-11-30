@@ -513,7 +513,7 @@ class TestProc < Test::Unit::TestCase
 
     file, lineno = method(:source_location_test).to_proc.binding.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test[0], lineno, 'Bug #2427')
+    assert_equal(LINE_OF_SOURCE_LOCATION_TEST[0], lineno, 'Bug #2427')
   end
 
   def test_binding_error_unless_ruby_frame
@@ -1499,7 +1499,7 @@ class TestProc < Test::Unit::TestCase
     assert_include(EnvUtil.labeled_class(name, Proc).new {}.to_s, name)
   end
 
-  @@line_of_source_location_test = [__LINE__ + 1, 2, __LINE__ + 3, 5]
+  LINE_OF_SOURCE_LOCATION_TEST = [__LINE__ + 1, 2, __LINE__ + 3, 5].freeze
   def source_location_test a=1,
     b=2
   end
@@ -1507,16 +1507,16 @@ class TestProc < Test::Unit::TestCase
   def test_source_location
     file, *loc = method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
+    assert_equal(LINE_OF_SOURCE_LOCATION_TEST, loc, 'Bug #2427')
 
     file, *loc = self.class.instance_method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
+    assert_equal(LINE_OF_SOURCE_LOCATION_TEST, loc, 'Bug #2427')
   end
 
-  @@line_of_attr_reader_source_location_test   = __LINE__ + 3
-  @@line_of_attr_writer_source_location_test   = __LINE__ + 3
-  @@line_of_attr_accessor_source_location_test = __LINE__ + 3
+  LINE_OF_ATTR_READER_SOURCE_LOCATION_TEST   = __LINE__ + 3
+  LINE_OF_ATTR_WRITER_SOURCE_LOCATION_TEST   = __LINE__ + 3
+  LINE_OF_ATTR_ACCESSOR_SOURCE_LOCATION_TEST = __LINE__ + 3
   attr_reader   :attr_reader_source_location_test
   attr_writer   :attr_writer_source_location_test
   attr_accessor :attr_accessor_source_location_test
@@ -1524,19 +1524,19 @@ class TestProc < Test::Unit::TestCase
   def test_attr_source_location
     file, lineno = method(:attr_reader_source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_attr_reader_source_location_test, lineno)
+    assert_equal(LINE_OF_ATTR_READER_SOURCE_LOCATION_TEST, lineno)
 
     file, lineno = method(:attr_writer_source_location_test=).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_attr_writer_source_location_test, lineno)
+    assert_equal(LINE_OF_ATTR_WRITER_SOURCE_LOCATION_TEST, lineno)
 
     file, lineno = method(:attr_accessor_source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_attr_accessor_source_location_test, lineno)
+    assert_equal(LINE_OF_ATTR_ACCESSOR_SOURCE_LOCATION_TEST, lineno)
 
     file, lineno = method(:attr_accessor_source_location_test=).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_attr_accessor_source_location_test, lineno)
+    assert_equal(LINE_OF_ATTR_ACCESSOR_SOURCE_LOCATION_TEST, lineno)
   end
 
   def block_source_location_test(*args, &block)
