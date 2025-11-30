@@ -703,6 +703,17 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_xor_does_not_mutate_other_set
+    a = Set[1]
+    b = Set[1, 2]
+    original_b = b.dup
+
+    result = a ^ b
+
+    assert_equal(original_b, b)
+    assert_equal(Set[2], result)
+  end
+
   def test_eq
     set1 = Set[2,3,1]
     set2 = Set[1,2,3]
