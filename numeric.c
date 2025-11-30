@@ -4005,17 +4005,18 @@ rb_fix_plus(VALUE x, VALUE y)
  *  call-seq:
  *    self + other -> numeric
  *
- *  Returns the sum of +self+ and +other+;
- *  the result may be inexact (see Float):
+ *  Returns the sum of +self+ and +other+:
  *
  *    1 + 1               # => 2
  *    1 + -1             # => 0
  *    1 + 0              # => 1
- *    1 + 3.14           # => 4.140000000000001
  *    1 + -2             # => -1
  *    1 + Complex(1, 0)  # => (2+0i)
  *    1 + Rational(1, 1) # => (2/1)
  *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    1 + 3.14           # => 4.140000000000001
  */
 
 VALUE

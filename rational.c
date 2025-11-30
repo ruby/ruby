@@ -718,22 +718,23 @@ static double nurat_to_double(VALUE self);
  *  call-seq:
  *    self + other -> numeric
  *
- *  Returns the sum of +self+ and +other+;
- *  the result may be inexact (see Float):
+ *  Returns the sum of +self+ and +other+:
  *
  *    Rational(2, 3) + 0  # => (2/3)
  *    Rational(2, 3) + 1  # => (5/3)
  *    Rational(2, 3) + -1 # => (-1/3)
  *
- *    Rational(2, 3) + 1.0 # => 1.6666666666666665
- *
  *    Rational(2, 3) + Complex(1, 0)     # => ((5/3)+0i)
- *    Rational(2, 3) + Complex(1.0, 0.0) # => (1.6666666666666665+0.0i)
  *
  *    Rational(2, 3) + Rational(1, 1)     # => (5/3)
  *    Rational(2, 3) + Rational(3, 2)     # => (13/6)
  *    Rational(2, 3) + Rational(3.0, 2.0) # => (13/6)
  *    Rational(2, 3) + Rational(3.1, 2.1) # => (30399297484750849/14186338826217063)
+ *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    Rational(2, 3) + 1.0 # => 1.6666666666666665
+ *    Rational(2, 3) + Complex(1.0, 0.0) # => (1.6666666666666665+0.0i)
  *
  */
 VALUE
