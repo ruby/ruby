@@ -1,5 +1,6 @@
 /* indent-tabs-mode: nil */
 
+#include "dln.h"
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/box.h"
@@ -10,6 +11,7 @@
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/load.h"
+#include "internal/set_table.h"
 #include "internal/st.h"
 #include "internal/variable.h"
 #include "iseq.h"
@@ -19,6 +21,16 @@
 #include "darray.h"
 
 #include <stdio.h>
+
+#if SIZEOF_VALUE <= SIZEOF_LONG
+# define SVALUE2NUM(x) LONG2NUM((long)(x))
+# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LONG(x)
+#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
+# define SVALUE2NUM(x) LL2NUM((LONG_LONG)(x))
+# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LL(x)
+#else
+# error Need integer for VALUE
+#endif
 
 VALUE rb_cBox = 0;
 VALUE rb_cBoxEntry = 0;
@@ -148,7 +160,9 @@ box_entry_initialize(rb_box_t *box)
     box->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
+    box->ruby_dln_pathmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
+    box->classext_cow_classes = st_init_numtable();
 
     box->is_user = true;
     box->is_optional = true;
@@ -175,6 +189,7 @@ rb_box_gc_update_references(void *ptr)
     box->loaded_features_realpaths = rb_gc_location(box->loaded_features_realpaths);
     box->loaded_features_realpath_map = rb_gc_location(box->loaded_features_realpath_map);
     box->ruby_dln_libmap = rb_gc_location(box->ruby_dln_libmap);
+    box->ruby_dln_pathmap = rb_gc_location(box->ruby_dln_pathmap);
     box->gvar_tbl = rb_gc_location(box->gvar_tbl);
 }
 
@@ -198,7 +213,11 @@ rb_box_entry_mark(void *ptr)
         rb_mark_tbl(box->loading_table);
     }
     rb_gc_mark(box->ruby_dln_libmap);
+    rb_gc_mark(box->ruby_dln_pathmap);
     rb_gc_mark(box->gvar_tbl);
+    if (box->classext_cow_classes) {
+        rb_mark_tbl(box->classext_cow_classes);
+    }
 }
 
 static int
@@ -220,6 +239,8 @@ free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
 static void
 box_root_free(void *ptr)
 {
+    // The root box doesn't free ruby_dln_libmap values because the root box destruction
+    // means the end of this process.
     rb_box_t *box = (rb_box_t *)ptr;
     if (box->loading_table) {
         st_foreach(box->loading_table, free_loading_table_entry, 0);
@@ -233,9 +254,64 @@ box_root_free(void *ptr)
     }
 }
 
+static int
+free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+{
+    rb_classext_t *ext;
+    VALUE obj = (VALUE)obj_value;
+    const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_class_classext_free(obj, ext, false);
+    }
+    else if (RB_TYPE_P(obj, T_ICLASS)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_iclass_classext_free(obj, ext, false);
+    }
+    else {
+        rb_bug("Invalid type of object in classext_cow_classes: %s", rb_type_str(BUILTIN_TYPE(obj)));
+    }
+    return ST_CONTINUE;
+}
+
+static int
+unload_library_in_box(VALUE path, VALUE handle_value, VALUE arg)
+{
+#ifdef _WIN32
+    VALUE extpath;
+    WCHAR *wextpath;
+    const rb_box_t *box;
+#endif
+
+    dln_close((void *)NUM2SVALUE(handle_value));
+
+#ifdef _WIN32
+    box = (const rb_box_t *)arg;
+    extpath = rb_hash_delete_entry(box->ruby_dln_pathmap, path);
+    if (!UNDEF_P(extpath)) {
+        wextpath = rb_w32_mbstr_to_wstr(CP_UTF8, RSTRING_PTR(extpath), -1, NULL);
+        if (!wextpath) {
+            rb_memerror();
+        }
+        if (!DeleteFileW(wextpath)) {
+            rb_warn("Box failed to delete the boxed dll:%s", RSTRING_PTR(extpath));
+        }
+    }
+#endif
+    return ST_CONTINUE;
+}
+
 static void
 box_entry_free(void *ptr)
 {
+    const rb_box_t *box = (const rb_box_t *)ptr;
+
+    if (box->classext_cow_classes) {
+        st_foreach(box->classext_cow_classes, free_classext_for_box, (st_data_t)box);
+    }
+    rb_hash_foreach(box->ruby_dln_libmap, unload_library_in_box, (VALUE)box);
+
     box_root_free(ptr);
     xfree(ptr);
 }
@@ -660,12 +736,12 @@ escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize
 }
 
 VALUE
-rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
+rb_box_local_extension(const rb_box_t *box, VALUE fname, VALUE path)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
     int copy_error, wrote;
+    VALUE ext_path_value;
     const char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
-    rb_box_t *box = rb_get_box_t(box_value);
 
     fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
     escaped_basename(src_path, fname2, basename, sizeof(basename));
@@ -684,13 +760,24 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
 #endif
         rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
     }
-    // TODO: register the path to be clean-uped
-    return rb_str_new_cstr(ext_path);
+    ext_path_value = rb_str_new_cstr(ext_path);
+#if defined(_WIN32)
+    rb_hash_aset(box->ruby_dln_pathmap, path, ext_path_value);
+#endif
+    return ext_path_value;
 }
 
-// TODO: delete it just after dln_load? or delay it?
-//       At least for _WIN32, deleting extension files should be delayed until the namespace's destructor.
-//       And it requires calling dlclose before deleting it.
+void
+rb_box_delete_local_extension(VALUE loaded)
+{
+#if defined(_WIN32)
+    // Do nothing - Deleting the file lazily after unloading it. See box_entry_free().
+#else
+    if (unlink(RSTRING_PTR(loaded)) != 0) {
+        rb_warn("Box failed to delete the boxed so:%s", RSTRING_PTR(loaded));
+    }
+#endif
+}
 
 static VALUE
 rb_box_load(int argc, VALUE *argv, VALUE box)
@@ -744,6 +831,7 @@ initialize_root_box(void)
 
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
+    root->classext_cow_classes = NULL; // classext CoW never happen on the root box
 
     vm->root_box = root;
 
