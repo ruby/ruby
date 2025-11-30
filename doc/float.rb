@@ -5,26 +5,48 @@
 #
 # Some real numbers can be represented precisely as \Float objects:
 #
-#   Float(37.5)   #=> 37.5
-#   Float(98.6)   #=> 98.6
-#   Float(12.2345)#=> 12.2345
+#   37.5    # => 37.5
+#   98.75   # => 98.75
+#   12.3125 # => 12.3125
 #
-# Others cannot; among these are the irrational numbers,
-# including <i>π</i> and Euler's number, <i>e</i>:
+# Others cannot; among these are the transcendental numbers, including:
 #
-#   Math::PI      #=> 3.141592653589793
-#   Math::E       #=> 2.718281828459045
+# - Pi, <i>π</i>: in mathematics, a number of infinite precision:
+#   3.1415926535897932384626433... (to 25 places);
+#   in Ruby, it is of limited precision (in this case, to 16 decimal places):
 #
-# Some computed values can be represented precisely:
+#     Math::PI # => 3.141592653589793
 #
-#   1.0/2         #=> 0.5
-#   100.0/8       #=> 12.5
+# - Euler's number, <i>e</i>: in mathematics, a number of infinite precision:
+#   2.7182818284590452353602874... (to 25 places);
+#   in Ruby, it is of limited precision (in this case, to 15 decimal places):
 #
-# Others cannot:
+#     Math::E # => 2.718281828459045
 #
-#   1.0/3         #=> 0.3333333333333333
-#   2.0/3         #=> 0.6666666666666666
-#   Math.sqrt(2.0)#=> 1.4142135623730951
+# Some floating-point computations in Ruby give precise results:
+#
+#   1.0/2   # => 0.5
+#   100.0/8 # => 12.5
+#
+# Others do not:
+#
+# - In mathematics, 2/3 as a decimal number is an infinitely-repeating decimal:
+#   0.666... (forever);
+#   in Ruby, +2.0/3+ is of limited precision (in this case, to 16 decimal places):
+#
+#     2.0/3 # => 0.6666666666666666
+#
+# - In mathematics, the square root of 2 is an irrational number of infinite precision:
+#   1.4142135623730950488016887... (to 25 decimal places);
+#   in Ruby, it is of limited precision (in this case, to 16 decimal places):
+#
+#     Math.sqrt(2.0) # => 1.4142135623730951
+#
+# - Even a simple computation can introduce imprecision:
+#
+#     x = 0.1 + 0.2 # => 0.30000000000000004
+#     y = 0.3       # => 0.3
+#     x == y        # => false
 #
 # See:
 #
