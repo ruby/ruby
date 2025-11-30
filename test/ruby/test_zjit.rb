@@ -525,6 +525,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_variadic_with_block
+    assert_compiles '[[1, "a"], [2, "b"], [3, "c"]]', %q{
+      A = [1, 2, 3]
+      B = ["a", "b", "c"]
+
+      def test
+        result = []
+        A.zip(B) { |x, y| result << [x, y] }
+        result
+      end
+
+      test; test
+    }, call_threshold: 2
+  end
+
   def test_send_splat
     assert_runs '[1, 2]', %q{
       def test(a, b) = [a, b]

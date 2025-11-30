@@ -431,8 +431,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
         Insn::CCallWithFrame { cfunc, name, args, cme, state, blockiseq, .. } =>
             gen_ccall_with_frame(jit, asm, *cfunc, *name, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, args, name, cme, state, return_type: _, elidable: _ } => {
-            gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        Insn::CCallVariadic { cfunc, recv, args, name, cme, state, blockiseq, .. } => {
+            gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
@@ -845,26 +845,47 @@ fn gen_ccall_variadic(
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
+    blockiseq: Option<IseqPtr>,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::variadic_cfunc_optimized_send_count);
+    gen_stack_overflow_check(jit, asm, state, state.stack_size());
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    let args_with_recv_len = args.len() + 1;
 
-    let stack_growth = state.stack_size();
-    gen_stack_overflow_check(jit, asm, state, stack_growth);
+    // Compute the caller's stack size after consuming recv and args.
+    // state.stack() includes recv + args, so subtract both.
+    let caller_stack_size = state.stack_size() - args_with_recv_len;
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
+    // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
+    // to account for the receiver and arguments (like gen_ccall_with_frame does)
+    gen_prepare_call_with_gc(asm, state, false);
+    gen_save_sp(asm, caller_stack_size);
+    gen_spill_stack(jit, asm, state);
+    gen_spill_locals(jit, asm, state);
+
+    let block_handler_specval = if let Some(block_iseq) = blockiseq {
+        // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
+        // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
+        // rb_captured_block->code.iseq aliases with cfp->block_code.
+        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
+        let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+        asm.or(cfp_self_addr, Opnd::Imm(1))
+    } else {
+        VM_BLOCK_HANDLER_NONE.into()
+    };
+
+    gen_push_frame(asm, args_with_recv_len, state, ControlFrame {
         recv,
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
-        specval: VM_BLOCK_HANDLER_NONE.into(),
+        specval: block_handler_specval,
         pc: PC_POISON,
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    let sp_offset = (caller_stack_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
