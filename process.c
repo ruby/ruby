@@ -1522,6 +1522,7 @@ before_exec_non_async_signal_safe(void)
      * Nowadays, we always stop the timer thread completely to allow redirects.
      */
     rb_thread_stop_timer_thread();
+    rb_thread_stop_deferred_wait_thread(false);
 }
 
 #define WRITE_CONST(fd, str) (void)(write((fd),(str),sizeof(str)-1)<0)
@@ -1569,6 +1570,7 @@ after_exec(void)
 {
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
+    rb_thread_start_deferred_wait_thread(false);
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON

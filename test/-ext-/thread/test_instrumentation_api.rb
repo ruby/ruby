@@ -98,8 +98,11 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thread = nil
     full_timeline = record do
       thread = Thread.new do
-        w.write("Hello\n")
+        r.readline
       end
+      # Sleep causes the readline call to take long enough that its thread gets descheduled.
+      sleep(1)
+      w.puts("Hello")
       thread.join
     end
 
