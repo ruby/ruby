@@ -6197,7 +6197,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 struct rb_gc_object_metadata_names {
     // Must be ID only
     ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking,
-        ID_marked, ID_pinned, ID_object_id, ID_shareable;
+        ID_marked, ID_pinned, ID_remembered, ID_object_id, ID_shareable;
 };
 
 #define RB_GC_OBJECT_METADATA_ENTRY_COUNT (sizeof(struct rb_gc_object_metadata_names) / sizeof(ID))
@@ -6219,6 +6219,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
         I(marking);
         I(marked);
         I(pinned);
+        I(remembered);
         I(object_id);
         I(shareable);
 #undef I
@@ -6238,6 +6239,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     if (RVALUE_MARKING(objspace, obj)) SET_ENTRY(marking, Qtrue);
     if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
     if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
+    if (RVALUE_REMEMBERED(objspace, obj)) SET_ENTRY(remembered, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 
