@@ -569,3 +569,18 @@ dln_load_feature(const char *file, const char *fname)
     return 0;
 #endif
 }
+
+void
+dln_close(void *handle)
+{
+#if defined(_WIN32)
+    FreeLibrary(handle);
+#else
+    if (dln_disable_dlclose()) {
+        /* ignore dlclose() request because dlclose() segfaults */
+    }
+    else {
+        dlclose(handle);
+    }
+#endif
+}

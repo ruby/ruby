@@ -795,6 +795,7 @@ box.$(OBJEXT): {$(VPATH)}constant.h
 box.$(OBJEXT): {$(VPATH)}darray.h
 box.$(OBJEXT): {$(VPATH)}debug_counter.h
 box.$(OBJEXT): {$(VPATH)}defines.h
+box.$(OBJEXT): {$(VPATH)}dln.h
 box.$(OBJEXT): {$(VPATH)}encoding.h
 box.$(OBJEXT): {$(VPATH)}eval_intern.h
 box.$(OBJEXT): {$(VPATH)}id.h

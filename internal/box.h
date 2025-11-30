@@ -32,6 +32,7 @@ struct rb_box_struct {
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
     VALUE ruby_dln_libmap;
+    VALUE ruby_dln_pathmap;
 
     VALUE gvar_tbl;
     struct st_table *classext_cow_classes;
@@ -78,7 +79,7 @@ void rb_box_gc_update_references(void *ptr);
 rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
-VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path);
+VALUE rb_box_local_extension(const rb_box_t *box, VALUE fname, VALUE path);
 void rb_box_delete_local_extension(VALUE loaded);
 
 void rb_initialize_main_box(void);

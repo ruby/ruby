@@ -27,6 +27,7 @@ char *dln_find_file_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DE
 void *dln_load(const char*);
 void *dln_load_feature(const char*, const char*);
 void *dln_symbol(void*,const char*);
+void dln_close(void*);
 
 RUBY_SYMBOL_EXPORT_END
 
