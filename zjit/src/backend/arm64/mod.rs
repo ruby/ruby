@@ -428,13 +428,13 @@ impl Assembler {
                             *right = split_shifted_immediate(asm, other_opnd);
                             // Now `right` is either a register or an immediate, both can try to
                             // merge with a subsequent mov.
-                            merge_three_reg_mov(&live_ranges, &mut iterator, left, left, out);
+                            merge_three_reg_mov(&live_ranges, &mut iterator, out);
                             asm.push_insn(insn);
                         }
                         _ => {
                             *left = split_load_operand(asm, *left);
                             *right = split_shifted_immediate(asm, *right);
-                            merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
+                            merge_three_reg_mov(&live_ranges, &mut iterator, out);
                             asm.push_insn(insn);
                         }
                     }
@@ -444,7 +444,7 @@ impl Assembler {
                     *right = split_shifted_immediate(asm, *right);
                     // Now `right` is either a register or an immediate,
                     // both can try to merge with a subsequent mov.
-                    merge_three_reg_mov(&live_ranges, &mut iterator, left, left, out);
+                    merge_three_reg_mov(&live_ranges, &mut iterator, out);
                     asm.push_insn(insn);
                 }
                 Insn::And { left, right, out } |
@@ -454,7 +454,7 @@ impl Assembler {
                     *left = opnd0;
                     *right = opnd1;
 
-                    merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
+                    merge_three_reg_mov(&live_ranges, &mut iterator, out);
 
                     asm.push_insn(insn);
                 }
@@ -1661,14 +1661,9 @@ impl Assembler {
 fn merge_three_reg_mov(
     live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
-    left: &Opnd,
-    right: &Opnd,
     out: &mut Opnd,
 ) {
-    if let (Opnd::Reg(_) | Opnd::VReg{..},
-            Opnd::Reg(_) | Opnd::VReg{..},
-            Some((mov_idx, Insn::Mov { dest, src })))
-            = (left, right, iterator.peek()) {
+    if let Some((mov_idx, Insn::Mov { dest, src })) = iterator.peek() {
         if out == src && live_ranges[out.vreg_idx()].end() == *mov_idx && matches!(*dest, Opnd::Reg(_) | Opnd::VReg{..}) {
             *out = *dest;
             iterator.next(); // Pop merged Insn::Mov
