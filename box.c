@@ -389,13 +389,13 @@ rb_get_box_object(rb_box_t *box)
 }
 
 VALUE
-rb_obj_is_user_box(VALUE obj)
+rb_obj_is_user_box_entry(VALUE obj)
 {
     return RBOOL(rb_typeddata_is_kind_of(obj, &rb_box_data_type));
 }
 
 VALUE
-rb_obj_is_root_box(VALUE obj)
+rb_obj_is_root_box_entry(VALUE obj)
 {
     return RBOOL(rb_typeddata_is_kind_of(obj, &rb_root_box_data_type));
 }

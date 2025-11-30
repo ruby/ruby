@@ -70,8 +70,8 @@ const rb_box_t * rb_current_box(void);
 const rb_box_t * rb_loading_box(void);
 const rb_box_t * rb_current_box_in_crash_report(void);
 
-VALUE rb_obj_is_user_box(VALUE obj);
-VALUE rb_obj_is_root_box(VALUE obj);
+VALUE rb_obj_is_user_box_entry(VALUE obj);
+VALUE rb_obj_is_root_box_entry(VALUE obj);
 
 void rb_box_entry_mark(void *);
 void rb_box_gc_update_references(void *ptr);

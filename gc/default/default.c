@@ -3019,7 +3019,7 @@ rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _da
 }
 
 struct gc_deferred_box_link {
-    VALUE box;
+    VALUE box_entry;
     struct gc_deferred_box_link *next;
 };
 
@@ -3068,7 +3068,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     /* run data/file object's finalizers */
     struct gc_deferred_box_link *head, *current, *next;
-    VALUE root_box = (VALUE)NULL;
+    VALUE root_box_entry = (VALUE)NULL;
     head = malloc(sizeof(struct gc_deferred_box_link));
     current = head;
     for (size_t i = 0; i < rb_darray_size(objspace->heap_pages.sorted); i++) {
@@ -3081,18 +3081,18 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
             VALUE vp = (VALUE)p;
             asan_unpoisoning_object(vp) {
                 // Objects on pages can be instance of classes defined with data_type
-                // from extensions in boxes. Freeing boxes triggers freeing extensions.
+                // from extensions in boxes. Freeing box entries triggers freeing extensions.
                 // So freeing boxes should be done after freeing other objects.
-                if (rb_obj_is_user_box(vp)) {
+                if (rb_obj_is_user_box_entry(vp)) {
                     next = malloc(sizeof(struct gc_deferred_box_link));
-                    next->box = vp;
+                    next->box_entry = vp;
                     current->next = next;
                     current = next;
                     next = NULL;
                     continue;
                 }
-                if (rb_obj_is_root_box(vp)) {
-                    root_box = vp;
+                if (rb_obj_is_root_box_entry(vp)) {
+                    root_box_entry = vp;
                     continue;
                 }
 
@@ -3104,15 +3104,15 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     }
     current = head;
     while (current) {
-        if (current->box) {
-            FREE_OBJECT(current->box);
+        if (current->box_entry) {
+            FREE_OBJECT(current->box_entry);
         }
         next = current->next;
         free(current);
         current = next;
     }
-    if (root_box) {
-        FREE_OBJECT(root_box);
+    if (root_box_entry) {
+        FREE_OBJECT(root_box_entry);
     }
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
