@@ -324,11 +324,10 @@ struct rb_calling_info {
 struct rb_execution_context_struct;
 
 #if 1
-#define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)
+#define GetCoreDataFromValue(obj, type, data_type, ptr) ((ptr) = (type*)RTYPEDDATA_GET_DATA(obj))
 #else
-#define CoreDataFromValue(obj, type) (type*)rb_data_object_get(obj)
+#define GetCoreDataFromValue(obj, type, data_type, ptr) TypedData_Get_Struct(obj, type, data_type, ptr)
 #endif
-#define GetCoreDataFromValue(obj, type, ptr) ((ptr) = CoreDataFromValue((obj), type))
 
 typedef struct rb_iseq_location_struct {
     VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
@@ -635,8 +634,10 @@ enum ruby_special_exceptions {
     ruby_special_error_count
 };
 
+extern const rb_data_type_t ruby_vm_data_type;
+
 #define GetVMPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_vm_t, (ptr))
+    GetCoreDataFromValue((obj), rb_vm_t, &ruby_vm_data_type, (ptr))
 
 struct rb_vm_struct;
 typedef void rb_vm_at_exit_func(struct rb_vm_struct*);
@@ -1282,8 +1283,10 @@ RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 RUBY_EXTERN VALUE rb_block_param_proxy;
 RUBY_SYMBOL_EXPORT_END
 
+extern const rb_data_type_t ruby_proc_data_type;
+
 #define GetProcPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_proc_t, (ptr))
+    GetCoreDataFromValue((obj), rb_proc_t, &ruby_proc_data_type, (ptr))
 
 typedef struct {
     const struct rb_block block;
@@ -1309,7 +1312,7 @@ typedef struct {
 extern const rb_data_type_t ruby_binding_data_type;
 
 #define GetBindingPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_binding_t, (ptr))
+    GetCoreDataFromValue((obj), rb_binding_t, &ruby_binding_data_type, (ptr))
 
 typedef struct {
     const struct rb_block block;

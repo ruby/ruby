@@ -3525,12 +3525,13 @@ vm_memsize(const void *ptr)
     // struct rb_objspace *objspace;
 }
 
-static const rb_data_type_t vm_data_type = {
+const rb_data_type_t ruby_vm_data_type = {
     "VM",
     {0, 0, vm_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define vm_data_type ruby_vm_data_type
 
 static VALUE
 vm_default_params(void)
