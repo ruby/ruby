@@ -439,8 +439,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: begin; [nd_head]; ensure; [nd_ensr]; end");
         ANN("example: begin; foo; ensure; bar; end");
         F_NODE(nd_head, RNODE_ENSURE, "body");
-        LAST_NODE;
         F_NODE(nd_ensr, RNODE_ENSURE, "ensure clause");
+        F_LOC(ensure_keyword_loc, RNODE_ENSURE);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_ENSURE);
         return;
 
       case NODE_AND:
