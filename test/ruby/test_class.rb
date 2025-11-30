@@ -601,7 +601,7 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(FrozenError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen Object/) {
       c.class_eval {def f; end}
     }
   end
