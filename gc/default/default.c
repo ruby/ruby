@@ -9448,7 +9448,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
             (bits_t)0x0101010101010101ULL, // i=3: every 8th bit
             (bits_t)0x0001000100010001ULL, // i=4: every 16th bit
         };
-        GC_ASSERT(i < sizeof(slot_bits_masks) / sizeof(slot_bits_masks[0]));
+        GC_ASSERT(HEAP_COUNT == sizeof(slot_bits_masks) / sizeof(slot_bits_masks[0]));
         heap->slot_bits_mask = slot_bits_masks[i];
 
         ccan_list_head_init(&heap->pages);
