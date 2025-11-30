@@ -323,7 +323,14 @@ struct rb_calling_info {
 
 struct rb_execution_context_struct;
 
-#if 1
+#ifndef RUBY_CORE_DATA_TYPE_CHECK
+# if RUBY_DEBUG
+#   define RUBY_CORE_DATA_TYPE_CHECK 1
+# else
+#   define RUBY_CORE_DATA_TYPE_CHECK 0
+# endif
+#endif
+#if !RUBY_CORE_DATA_TYPE_CHECK
 #define GetCoreDataFromValue(obj, type, data_type, ptr) ((ptr) = (type*)RTYPEDDATA_GET_DATA(obj))
 #else
 #define GetCoreDataFromValue(obj, type, data_type, ptr) TypedData_Get_Struct(obj, type, data_type, ptr)
