@@ -344,6 +344,18 @@ rb_get_box_object(rb_box_t *box)
     return box->box_object;
 }
 
+VALUE
+rb_obj_is_user_box(VALUE obj)
+{
+    return RBOOL(rb_typeddata_is_kind_of(obj, &rb_box_data_type));
+}
+
+VALUE
+rb_obj_is_root_box(VALUE obj)
+{
+    return RBOOL(rb_typeddata_is_kind_of(obj, &rb_root_box_data_type));
+}
+
 /*
  *  call-seq:
  *    Namespace.new -> new_box
