@@ -1628,6 +1628,26 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 1], [1, 1, 1, 4], [1, 4, 1, 6]])
     end
 
+    def test_rescue_locations
+      node = ast_parse("x = foo rescue bar")
+      assert_locations(node.children[-1].children[1].locations, [[1, 4, 1, 18], [1, 8, 1, 14]])
+
+      node = ast_parse("result = method_call rescue default_value")
+      assert_locations(node.children[-1].children[1].locations, [[1, 9, 1, 41], [1, 21, 1, 27]])
+
+      node = ast_parse("foo rescue bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 14], [1, 4, 1, 10]])
+
+      node = ast_parse("begin; foo; rescue; bar; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 24], [1, 12, 1, 18]])
+
+      node = ast_parse("begin; foo; rescue Error; bar; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 30], [1, 12, 1, 18]])
+
+      node = ast_parse("begin; foo; rescue Error => e; bar; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 35], [1, 12, 1, 18]])
+    end
+
     def test_return_locations
       node = ast_parse("return 1")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 6]])
