@@ -765,3 +765,5 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
     // We wrap this since it's static inline
     return rb_str_eql_internal(str1, str2);
 }
+
+void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);

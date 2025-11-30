@@ -365,9 +365,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // If it happens we abort the compilation for now
         Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
-        &Insn::StringGetbyteFixnum { string, index } => gen_string_getbyte_fixnum(asm, opnd!(string), opnd!(index)),
+        &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
+        Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
@@ -407,6 +408,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             // 63].
             let shift_amount = function.type_of(right).fixnum_value().unwrap() as u64;
             gen_fixnum_lshift(jit, asm, opnd!(left), shift_amount, &function.frame_state(state))
+        }
+        &Insn::FixnumRShift { left, right } => {
+            // We only create FixnumRShift when we know the shift amount statically and it's in [0,
+            // 63].
+            let shift_amount = function.type_of(right).fixnum_value().unwrap() as u64;
+            gen_fixnum_rshift(asm, opnd!(left), shift_amount)
         }
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
@@ -1725,6 +1732,15 @@ fn gen_fixnum_lshift(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, s
     out_val
 }
 
+/// Compile Fixnum >> Fixnum
+fn gen_fixnum_rshift(asm: &mut Assembler, left: lir::Opnd, shift_amount: u64) -> lir::Opnd {
+    // Shift amount is known statically to be in the range [0, 63]
+    assert!(shift_amount < 64);
+    let result = asm.rshift(left, shift_amount.into());
+    // Re-tag the output value
+    asm.or(result, 1.into())
+}
+
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Check for left % 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
@@ -2452,9 +2468,34 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
     result
 }
 
-fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
-    // TODO(max): Open-code rb_str_getbyte to avoid a call
-    asm_ccall!(asm, rb_str_getbyte, string, index)
+// Generate RSTRING_PTR
+fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
+    asm_comment!(asm, "get string pointer for embedded or heap");
+    let string = asm.load(string);
+    let flags = Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags, (RSTRING_NOEMBED as u64).into());
+    let heap_ptr = asm.load(Opnd::mem(
+        usize::BITS as u8,
+        string,
+        RUBY_OFFSET_RSTRING_AS_HEAP_PTR,
+    ));
+    // Load the address of the embedded array
+    // (struct RString *)(obj)->as.ary
+    let ary = asm.lea(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RSTRING_AS_ARY));
+    asm.csel_nz(heap_ptr, ary)
+}
+
+fn gen_string_getbyte(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
+    let string_ptr = get_string_ptr(asm, string);
+    // TODO(max): Use SIB indexing here once the backend supports it
+    let string_ptr = asm.add(string_ptr, index);
+    let byte = asm.load(Opnd::mem(8, string_ptr, 0));
+    // Zero-extend the byte to 64 bits
+    let byte = byte.with_num_bits(64);
+    let byte = asm.and(byte, 0xFF.into());
+    // Tag the byte
+    let byte = asm.lshift(byte, Opnd::UImm(1));
+    asm.or(byte, Opnd::UImm(1))
 }
 
 fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, value: Opnd) -> Opnd {
@@ -2465,6 +2506,11 @@ fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, val
 fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_str_buf_append, string, val)
+}
+
+fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val)
 }
 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits

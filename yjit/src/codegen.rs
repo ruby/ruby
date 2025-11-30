@@ -6244,7 +6244,7 @@ fn jit_rb_str_concat_codepoint(
 
     guard_object_is_fixnum(jit, asm, codepoint, StackOpnd(0));
 
-    asm.ccall(rb_yjit_str_concat_codepoint as *const u8, vec![recv, codepoint]);
+    asm.ccall(rb_jit_str_concat_codepoint as *const u8, vec![recv, codepoint]);
 
     // The receiver is the return value, so we only need to pop the codepoint argument off the stack.
     // We can reuse the receiver slot in the stack as the return value.

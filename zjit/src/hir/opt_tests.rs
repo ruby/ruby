@@ -4137,12 +4137,11 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v26:BasicObject = GuardTypeNot v9, String
+          v26:ArrayExact = GuardType v9, ArrayExact
           PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
-          v31:ArrayExact = GuardType v9, ArrayExact
-          v32:BasicObject = CCallWithFrame Array#to_s@0x1040, v31
-          v19:String = AnyToString v9, str: v32
+          v31:BasicObject = CCallWithFrame Array#to_s@0x1040, v26
+          v19:String = AnyToString v9, str: v31
           v21:StringExact = StringConcat v13, v19
           CheckInterrupts
           Return v21
@@ -5881,6 +5880,83 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fixnum_to_s_returns_string() {
+        eval(r#"
+            def test(x) = x.to_s
+            test 5
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v21:Fixnum = GuardType v9, Fixnum
+          v22:StringExact = CCallVariadic Integer#to_s@0x1038, v21
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_bignum_to_s_returns_string() {
+        eval(r#"
+            def test(x) = x.to_s
+            test (2**65)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v21:Integer = GuardType v9, Integer
+          v22:StringExact = CCallVariadic Integer#to_s@0x1038, v21
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_any_to_string_with_known_string_exact() {
+        eval(r##"
+            def test(x) = "#{x}"
+            test 123
+        "##);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v26:Fixnum = GuardType v9, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v30:StringExact = CCallVariadic Integer#to_s@0x1040, v26
+          v21:StringExact = StringConcat v13, v30
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_array_aref_fixnum_literal() {
         eval("
             def test
@@ -6355,10 +6431,15 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1000)
           v26:StringExact = GuardType v11, StringExact
           v27:Fixnum = GuardType v12, Fixnum
-          v28:NilClass|Fixnum = StringGetbyteFixnum v26, v27
+          v28:CInt64 = UnboxFixnum v27
+          v29:CInt64 = LoadField v26, :len@0x1038
+          v30:CInt64 = GuardLess v28, v29
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CInt64 = GuardGreaterEq v30, v31
+          v33:Fixnum = StringGetbyte v26, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v33
         ");
     }
 
@@ -6387,6 +6468,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1000)
           v30:StringExact = GuardType v11, StringExact
           v31:Fixnum = GuardType v12, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64 = LoadField v30, :len@0x1038
+          v34:CInt64 = GuardLess v32, v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
           IncrCounter inline_cfunc_optimized_send_count
           v22:Fixnum[5] = Const Value(5)
           CheckInterrupts
@@ -6730,6 +6816,111 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_integer_gtgt_with_known_fixnum() {
+        eval("
+            def test(x) = x >> 5
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
+          v23:Fixnum = GuardType v9, Fixnum
+          v24:Fixnum = FixnumRShift v23, v14
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_gtgt_with_negative() {
+        eval("
+            def test(x) = x >> -5
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[-5] = Const Value(-5)
+          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
+          v23:Fixnum = GuardType v9, Fixnum
+          v24:BasicObject = CCallWithFrame Integer#>>@0x1038, v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_gtgt_with_out_of_range() {
+        eval("
+            def test(x) = x >> 64
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[64] = Const Value(64)
+          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
+          v23:Fixnum = GuardType v9, Fixnum
+          v24:BasicObject = CCallWithFrame Integer#>>@0x1038, v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_gtgt_with_unknown_fixnum() {
+        eval("
+            def test(x, y) = x >> y
+            test(4, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
+          v25:Fixnum = GuardType v11, Fixnum
+          v26:BasicObject = CCallWithFrame Integer#>>@0x1038, v25, v12
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
     fn test_optimize_string_append() {
         eval(r#"
             def test(x, y) = x << y
@@ -6758,9 +6949,8 @@ mod hir_opt_tests {
         ");
     }
 
-    // TODO: This should be inlined just as in the interpreter
     #[test]
-    fn test_optimize_string_append_non_string() {
+    fn test_optimize_string_append_codepoint() {
         eval(r#"
             def test(x, y) = x << y
             test("iron", 4)
@@ -6780,9 +6970,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v27:StringExact = GuardType v11, StringExact
-          v28:BasicObject = CCallWithFrame String#<<@0x1038, v27, v12
+          v28:Fixnum = GuardType v12, Fixnum
+          v29:StringExact = StringAppendCodepoint v27, v28
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v27
         ");
     }
 
@@ -6847,6 +7039,32 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dont_optimize_string_append_non_string() {
+        eval(r#"
+            def test = "iron" << :a
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:StringExact = StringCopy v10
+          v13:StaticSymbol[:a] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, <<@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v24:BasicObject = CCallWithFrame String#<<@0x1048, v11, v13
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_dont_optimize_when_passing_too_many_args() {
         eval(r#"
             public def foo(lead, opt=raise) = opt
@@ -6869,6 +7087,33 @@ mod hir_opt_tests {
           v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16
           CheckInterrupts
           Return v18
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_ascii_only_p() {
+        eval(r#"
+            def test(x) = x.ascii_only?
+            test("iron")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, ascii_only?@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v22:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v24:BoolExact = CCall String#ascii_only?@0x1038, v22
+          CheckInterrupts
+          Return v24
         ");
     }
 
