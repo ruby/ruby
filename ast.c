@@ -854,6 +854,11 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_FOR(node)->in_keyword_loc),
                                     location_new(&RNODE_FOR(node)->do_keyword_loc),
                                     location_new(&RNODE_FOR(node)->end_keyword_loc));
+      case NODE_HASH:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_HASH(node)->opening_loc),
+                                    location_new(&RNODE_HASH(node)->closing_loc));
       case NODE_LAMBDA:
         return rb_ary_new_from_args(4,
                                     location_new(nd_code_loc(node)),
