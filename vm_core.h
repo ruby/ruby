@@ -1104,6 +1104,10 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
 
+// Close an execution context and free related resources that are no longer needed.
+// @param ec the execution context to close.
+void rb_ec_close(rb_execution_context_t *ec);
+
 struct rb_ext_config {
     bool ractor_safe;
 };
