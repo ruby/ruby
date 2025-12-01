@@ -500,8 +500,8 @@ impl Assembler {
                         let stack_opnds = &opnds[num_reg_args..];
                         let mut args: Vec<(Opnd, Opnd)> = Vec::with_capacity(stack_opnds.len());
 
-                        for opnd in stack_opnds {
-                            args.push((Opnd::mem(64, NATIVE_STACK_PTR, -8), *opnd));
+                        for (i, opnd) in stack_opnds.iter().enumerate() {
+                            args.push((Opnd::mem(64, NATIVE_STACK_PTR, -8 * (i + 1) as i32), *opnd));
                         }
 
                         asm.parallel_mov(args);
