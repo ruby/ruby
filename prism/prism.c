@@ -13404,6 +13404,78 @@ parse_starred_expression(pm_parser_t *parser, pm_binding_power_t binding_power, 
     return parse_value_expression(parser, binding_power, accepts_command_call, false, diag_id, depth);
 }
 
+static bool
+pm_node_unreference_each(const pm_node_t *node, void *data) {
+    switch (PM_NODE_TYPE(node)) {
+        /* When we are about to destroy a set of nodes that could potentially
+         * contain block exits for the current scope, we need to check if they
+         * are contained in the list of block exits and remove them if they are.
+         */
+        case PM_BREAK_NODE:
+        case PM_NEXT_NODE:
+        case PM_REDO_NODE: {
+            pm_parser_t *parser = (pm_parser_t *) data;
+            size_t index = 0;
+
+            while (index < parser->current_block_exits->size) {
+                pm_node_t *block_exit = parser->current_block_exits->nodes[index];
+
+                if (block_exit == node) {
+                    if (index + 1 < parser->current_block_exits->size) {
+                        memmove(
+                            &parser->current_block_exits->nodes[index],
+                            &parser->current_block_exits->nodes[index + 1],
+                            (parser->current_block_exits->size - index - 1) * sizeof(pm_node_t *)
+                        );
+                    }
+                    parser->current_block_exits->size--;
+                    return false;
+                }
+
+                index++;
+            }
+
+            return true;
+        }
+        /* When an implicit local variable is written to or targeted, it becomes
+         * a regular, named local variable. This branch removes it from the list
+         * of implicit parameters when that happens. */
+        case PM_LOCAL_VARIABLE_READ_NODE:
+        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
+            pm_parser_t *parser = (pm_parser_t *) data;
+            pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
+
+            for (size_t index = 0; index < implicit_parameters->size; index++) {
+                if (implicit_parameters->nodes[index] == node) {
+                    /* If the node is not the last one in the list, we need to
+                     * shift the remaining nodes down to fill the gap. This is
+                     * extremely unlikely to happen. */
+                    if (index != implicit_parameters->size - 1) {
+                        memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
+                    }
+
+                    implicit_parameters->size--;
+                    break;
+                }
+            }
+
+            return false;
+        }
+        default:
+            return true;
+    }
+}
+
+/**
+ * When we are about to destroy a set of nodes that could potentially be
+ * referenced by one or more lists on the parser, then remove them from those
+ * lists so we don't get a use-after-free.
+ */
+static void
+pm_node_unreference(pm_parser_t *parser, const pm_node_t *node) {
+    pm_visit_node(node, pm_node_unreference_each, parser);
+}
+
 /**
  * Convert the name of a method into the corresponding write method name. For
  * example, foo would be turned into foo=.
@@ -13452,45 +13524,6 @@ parse_unwriteable_target(pm_parser_t *parser, pm_node_t *target) {
 
     pm_node_destroy(parser, target);
     return (pm_node_t *) result;
-}
-
-static bool
-parse_target_implicit_parameter_each(const pm_node_t *node, void *data) {
-    switch (PM_NODE_TYPE(node)) {
-        case PM_LOCAL_VARIABLE_READ_NODE:
-        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
-            pm_parser_t *parser = (pm_parser_t *) data;
-            pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
-
-            for (size_t index = 0; index < implicit_parameters->size; index++) {
-                if (implicit_parameters->nodes[index] == node) {
-                    // If the node is not the last one in the list, we need to
-                    // shift the remaining nodes down to fill the gap. This is
-                    // extremely unlikely to happen.
-                    if (index != implicit_parameters->size - 1) {
-                        memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
-                    }
-
-                    implicit_parameters->size--;
-                    break;
-                }
-            }
-
-            return false;
-        }
-        default:
-            return true;
-    }
-}
-
-/**
- * When an implicit local variable is written to or targeted, it becomes a
- * regular, named local variable. This function removes it from the list of
- * implicit parameters when that happens.
- */
-static void
-parse_target_implicit_parameter(pm_parser_t *parser, const pm_node_t *node) {
-    pm_visit_node(node, parse_target_implicit_parameter_each, parser);
 }
 
 /**
@@ -13550,7 +13583,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
         case PM_LOCAL_VARIABLE_READ_NODE: {
             if (pm_token_is_numbered_parameter(target->location.start, target->location.end)) {
                 PM_PARSER_ERR_FORMAT(parser, target->location.start, target->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, target->location.start);
-                parse_target_implicit_parameter(parser, target);
+                pm_node_unreference(parser, target);
             }
 
             const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) target;
@@ -13567,7 +13600,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             pm_constant_id_t name = pm_parser_local_add_constant(parser, "it", 2);
             pm_node_t *node = (pm_node_t *) pm_local_variable_target_node_create(parser, &target->location, name, 0);
 
-            parse_target_implicit_parameter(parser, target);
+            pm_node_unreference(parser, target);
             pm_node_destroy(parser, target);
 
             return node;
@@ -13742,7 +13775,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             if (pm_token_is_numbered_parameter(target->location.start, target->location.end)) {
                 pm_diagnostic_id_t diag_id = (scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED_FOUND) ? PM_ERR_EXPRESSION_NOT_WRITABLE_NUMBERED : PM_ERR_PARAMETER_NUMBERED_RESERVED;
                 PM_PARSER_ERR_FORMAT(parser, target->location.start, target->location.end, diag_id, target->location.start);
-                parse_target_implicit_parameter(parser, target);
+                pm_node_unreference(parser, target);
             }
 
             pm_locals_unread(&scope->locals, name);
@@ -13754,7 +13787,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             pm_constant_id_t name = pm_parser_local_add_constant(parser, "it", 2);
             pm_node_t *node = (pm_node_t *) pm_local_variable_write_node_create(parser, name, 0, value, &target->location, operator);
 
-            parse_target_implicit_parameter(parser, target);
+            pm_node_unreference(parser, target);
             pm_node_destroy(parser, target);
 
             return node;
@@ -13861,9 +13894,9 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                 return target;
             }
 
-            // If there are arguments on the call node, then it can't be a method
-            // call ending with = or a local variable write, so it must be a
-            // syntax error. In this case we'll fall through to our default
+            // If there are arguments on the call node, then it can't be a
+            // method call ending with = or a local variable write, so it must
+            // be a syntax error. In this case we'll fall through to our default
             // handling. We need to free the value that we parsed because there
             // is no way for us to attach it to the tree at this point.
             //
@@ -13871,7 +13904,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // parameter somewhere in its subtree, we need to walk it and remove
             // any implicit parameters from the list of implicit parameters for
             // the current scope.
-            parse_target_implicit_parameter(parser, value);
+            pm_node_unreference(parser, value);
             pm_node_destroy(parser, value);
         }
         PRISM_FALLTHROUGH
@@ -18772,7 +18805,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         // If we're about to convert an 'it' implicit local
                         // variable read into a method call, we need to remove
                         // it from the list of implicit local variables.
-                        parse_target_implicit_parameter(parser, node);
+                        pm_node_unreference(parser, node);
                     } else {
                         // Otherwise, we're about to convert a regular local
                         // variable read into a method call, in which case we
@@ -18781,7 +18814,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         assert(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
 
                         if (pm_token_is_numbered_parameter(identifier.start, identifier.end)) {
-                            parse_target_implicit_parameter(parser, node);
+                            pm_node_unreference(parser, node);
                         } else {
                             pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                             pm_locals_unread(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
@@ -21071,42 +21104,6 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     return value;
 }
 
-static bool
-parse_call_operator_write_block_exits_each(const pm_node_t *node, void *data) {
-    pm_parser_t *parser = (pm_parser_t *) data;
-    size_t index = 0;
-
-    while (index < parser->current_block_exits->size) {
-        pm_node_t *block_exit = parser->current_block_exits->nodes[index];
-
-        if (block_exit == node) {
-            if (index + 1 < parser->current_block_exits->size) {
-                memmove(
-                    &parser->current_block_exits->nodes[index],
-                    &parser->current_block_exits->nodes[index + 1],
-                    (parser->current_block_exits->size - index - 1) * sizeof(pm_node_t *)
-                );
-            }
-            parser->current_block_exits->size--;
-            return false;
-        }
-
-        index++;
-    }
-
-    return true;
-}
-
-/**
- * When we are about to destroy a set of nodes that could potentially contain
- * block exits for the current scope, we need to check if they are contained in
- * the list of block exits and remove them if they are.
- */
-static void
-parse_call_operator_write_block_exits(pm_parser_t *parser, const pm_node_t *node) {
-    pm_visit_node(node, parse_call_operator_write_block_exits_each, parser);
-}
-
 /**
  * Ensure a call node that is about to become a call operator node does not
  * have arguments or a block attached. If it does, then we'll need to add an
@@ -21118,14 +21115,14 @@ static void
 parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const pm_token_t *operator) {
     if (call_node->arguments != NULL) {
         pm_parser_err_token(parser, operator, PM_ERR_OPERATOR_WRITE_ARGUMENTS);
-        parse_call_operator_write_block_exits(parser, (pm_node_t *) call_node->arguments);
+        pm_node_unreference(parser, (pm_node_t *) call_node->arguments);
         pm_node_destroy(parser, (pm_node_t *) call_node->arguments);
         call_node->arguments = NULL;
     }
 
     if (call_node->block != NULL) {
         pm_parser_err_token(parser, operator, PM_ERR_OPERATOR_WRITE_BLOCK);
-        parse_call_operator_write_block_exits(parser, (pm_node_t *) call_node->block);
+        pm_node_unreference(parser, (pm_node_t *) call_node->block);
         pm_node_destroy(parser, (pm_node_t *) call_node->block);
         call_node->block = NULL;
     }
@@ -21517,14 +21514,14 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ, (uint16_t) (depth + 1));
                     pm_node_t *result = (pm_node_t *) pm_local_variable_and_write_node_create(parser, node, &token, value, name, 0);
 
-                    parse_target_implicit_parameter(parser, node);
+                    pm_node_unreference(parser, node);
                     pm_node_destroy(parser, node);
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
                     if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
                         PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
-                        parse_target_implicit_parameter(parser, node);
+                        pm_node_unreference(parser, node);
                     }
 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
@@ -21651,14 +21648,14 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ, (uint16_t) (depth + 1));
                     pm_node_t *result = (pm_node_t *) pm_local_variable_or_write_node_create(parser, node, &token, value, name, 0);
 
-                    parse_target_implicit_parameter(parser, node);
+                    pm_node_unreference(parser, node);
                     pm_node_destroy(parser, node);
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
                     if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
                         PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
-                        parse_target_implicit_parameter(parser, node);
+                        pm_node_unreference(parser, node);
                     }
 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
@@ -21795,14 +21792,14 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
                     pm_node_t *result = (pm_node_t *) pm_local_variable_operator_write_node_create(parser, node, &token, value, name, 0);
 
-                    parse_target_implicit_parameter(parser, node);
+                    pm_node_unreference(parser, node);
                     pm_node_destroy(parser, node);
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
                     if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
                         PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
-                        parse_target_implicit_parameter(parser, node);
+                        pm_node_unreference(parser, node);
                     }
 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
