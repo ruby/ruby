@@ -5302,26 +5302,46 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_do_not_optimize_send_variadic_with_block() {
+    fn test_optimize_send_variadic_with_block() {
         eval(r#"
-            def test = [1, 2, 3].index { |x| x == 2 }
+            A = [1, 2, 3]
+            B = ["a", "b", "c"]
+
+            def test
+              result = []
+              A.zip(B) { |x, y| result << [x, y] }
+              result
+            end
+
             test; test
         "#);
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
+        fn test@<compiled>:6:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
           EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v11:ArrayExact = ArrayDup v10
-          v13:BasicObject = Send v11, 0x1008, :index
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:ArrayExact = NewArray
+          SetLocal l0, EP@3, v13
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, A)
+          v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1010, B)
+          v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
+          PatchPoint NoSingletonClass(Array@0x1020)
+          v43:BasicObject = CCallVariadic zip@0x1058, v36, v39
+          v25:BasicObject = GetLocal l0, EP@3
+          v29:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v13
+          Return v29
         ");
     }
 
