@@ -3016,17 +3016,17 @@ class TestModule < Test::Unit::TestCase
     bug11532 = '[ruby-core:70828] [Bug #11532]'
 
     c = Class.new {const_set(:A, 1)}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {private_constant :A}
     }
 
     c = Class.new {const_set(:A, 1); private_constant :A}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {public_constant :A}
     }
 
     c = Class.new {const_set(:A, 1)}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {deprecate_constant :A}
     }
   end
