@@ -69,7 +69,7 @@ module Bundler
 
       # lock --lockfile works differently than install --lockfile
       unless current_cmd == "lock"
-        custom_lockfile = options[:lockfile] || Bundler.settings[:lockfile]
+        custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
         if custom_lockfile && !custom_lockfile.empty?
           Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
           reset_settings = true
@@ -282,8 +282,10 @@ module Bundler
       end
 
       require_relative "cli/install"
+      options = self.options.dup
+      options["lockfile"] ||= ENV["BUNDLE_LOCKFILE"]
       Bundler.settings.temporary(no_install: false) do
-        Install.new(options.dup).run
+        Install.new(options).run
       end
     end
 

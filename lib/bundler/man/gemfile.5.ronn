@@ -581,6 +581,6 @@ following precedence is used:
 
 1. The `bundle install` `--no-lock` option (which disables lockfile creation).
 1. The `bundle install` `--lockfile` option.
-1. The `lockfile` method in the Gemfile.
 1. The `BUNDLE_LOCKFILE` environment variable.
+1. The `lockfile` method in the Gemfile.
 1. The default behavior of adding `.lock` to the end of the Gemfile name.

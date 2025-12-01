@@ -41,6 +41,20 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app("OmgFile.lock")).to exist
     end
 
+    it "creates lockfile using BUNDLE_LOCKFILE instead of lockfile method" do
+      ENV["BUNDLE_LOCKFILE"] = "ReallyOmgFile.lock"
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    ensure
+      ENV.delete("BUNDLE_LOCKFILE")
+    end
+
     it "creates lockfile based on --lockfile option is given" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
