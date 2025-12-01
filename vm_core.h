@@ -1104,9 +1104,7 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
 
-// Close an execution context by freeing resources and clearing storage.
-// This helps GC by releasing references that are no longer needed.
-// Clears the VM stack, frees local_storage, and clears storage fields.
+// Close an execution context and free related resources that are no longer needed.
 // @param ec the execution context to close.
 void rb_ec_close(rb_execution_context_t *ec);
 
