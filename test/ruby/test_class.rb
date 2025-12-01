@@ -917,4 +917,17 @@ CODE
       end
     end;
   end
+
+  def test_safe_multi_ractor_subclasses_list_mutation
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      4.times.map do
+        Ractor.new do
+          20_000.times do
+            Object.new.singleton_class
+          end
+        end
+      end.each(&:join)
+    end;
+  end
 end

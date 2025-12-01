@@ -734,8 +734,10 @@ class_detach_subclasses(VALUE klass, VALUE arg)
 static void
 class_switch_superclass(VALUE super, VALUE klass)
 {
-    class_detach_subclasses(klass, Qnil);
-    rb_class_subclass_add(super, klass);
+    RB_VM_LOCKING() {
+        class_detach_subclasses(klass, Qnil);
+        rb_class_subclass_add(super, klass);
+    }
 }
 
 /**
