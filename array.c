@@ -109,11 +109,11 @@ should_be_T_ARRAY(VALUE ary)
 #define FL_UNSET_SHARED(ary) FL_UNSET((ary), RARRAY_SHARED_FLAG)
 
 #define ARY_SET_PTR_FORCE(ary, p) \
-    RARRAY(ary)->as.heap.ptr = (p);
+    (RARRAY(ary)->as.heap.ptr = (p))
 #define ARY_SET_PTR(ary, p) do { \
     RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     RUBY_ASSERT(!OBJ_FROZEN(ary)); \
-     ARY_SET_PTR_FORCE(ary, p); \
+    ARY_SET_PTR_FORCE(ary, p); \
 } while (0)
 #define ARY_SET_EMBED_LEN(ary, n) do { \
     long tmp_n = (n); \

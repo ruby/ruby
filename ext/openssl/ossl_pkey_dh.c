@@ -357,12 +357,6 @@ OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 void
 Init_ossl_dh(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
     /* Document-class: OpenSSL::PKey::DH
      *
      * An implementation of the Diffie-Hellman key exchange protocol based on

@@ -185,11 +185,6 @@ ossl_provider_inspect(VALUE self)
 void
 Init_ossl_provider(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     cProvider = rb_define_class_under(mOSSL, "Provider", rb_cObject);
     eProviderError = rb_define_class_under(cProvider, "ProviderError", eOSSLError);
 

@@ -506,12 +506,6 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
 void
 Init_ossl_x509crl(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509CRLError = rb_define_class_under(mX509, "CRLError", eOSSLError);
 
     cX509CRL = rb_define_class_under(mX509, "CRL", rb_cObject);

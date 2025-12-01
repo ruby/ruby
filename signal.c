@@ -1252,11 +1252,6 @@ trap_handler(VALUE *cmd, int sig)
                 break;
             }
         }
-        else {
-            rb_proc_t *proc;
-            GetProcPtr(*cmd, proc);
-            (void)proc;
-        }
     }
 
     return func;

@@ -267,12 +267,6 @@ ossl_x509revoked_to_der(VALUE self)
 void
 Init_ossl_x509revoked(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509RevError = rb_define_class_under(mX509, "RevokedError", eOSSLError);
 
     cX509Rev = rb_define_class_under(mX509, "Revoked", rb_cObject);

@@ -536,12 +536,6 @@ OSSL_PKEY_BN_DEF3(rsa, RSA, crt_params, dmp1, dmq1, iqmp)
 void
 Init_ossl_rsa(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
     /* Document-class: OpenSSL::PKey::RSA
      *
      * RSA is an asymmetric public key algorithm that has been formalized in

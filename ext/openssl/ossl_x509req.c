@@ -414,12 +414,6 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 void
 Init_ossl_x509req(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
 
     cX509Req = rb_define_class_under(mX509, "Request", rb_cObject);

@@ -3890,6 +3890,13 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
+void
+rb_ec_close(rb_execution_context_t *ec)
+{
+    // Fiber storage is not accessible from outside the running fiber, so it is safe to clear it here.
+    ec->storage = Qnil;
+}
+
 static void
 th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {

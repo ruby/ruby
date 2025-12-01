@@ -514,16 +514,22 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *s
     switch (copy_retvalue) {
       case 1:
         snprintf(message, size, "can't open the extension path: %s", src_path);
+        break;
       case 2:
         snprintf(message, size, "can't open the file to write: %s", dst_path);
+        break;
       case 3:
         snprintf(message, size, "failed to read the extension path: %s", src_path);
+        break;
       case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
+        break;
       case 5:
         snprintf(message, size, "failed to stat the extension path to copy permissions: %s", src_path);
+        break;
       case 6:
         snprintf(message, size, "failed to set permissions to the copied extension path: %s", dst_path);
+        break;
       default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }

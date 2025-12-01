@@ -120,20 +120,28 @@ module Bundler
       self.class.send(:class_options_help, shell)
     end
 
+    desc "install_or_cli_help", "Tries to run bundle install but prints a summary of bundler commands if there is no Gemfile", hide: true
+    def install_or_cli_help
+      invoke_other_command("install")
+    rescue GemfileNotFound => error
+      Bundler.ui.error error.message, wrap: true
+      invoke_other_command("cli_help")
+    end
+
     def self.default_command(meth = nil)
       return super if meth
 
-      default_cli_command = Bundler.settings[:default_cli_command]
-      return default_cli_command if default_cli_command
+      unless Bundler.settings[:default_cli_command]
+        Bundler.ui.info <<-MSG
+          In the feature version of Bundler, running `bundle` without argument will no longer run `bundle install`.
+          Instead, the `cli_help` command will be displayed. Please use `bundle install` explicitly for scripts like CI/CD.
+          If you wish to use feature behavior now with `bundle config set default_cli_command cli_help --global`
+          or you can continue to use the old behavior with `bundle config set default_cli_command install_or_cli_help --global`.
+          This message will be removed after a default_cli_command value is set.
+        MSG
+      end
 
-      Bundler.ui.warn(<<~MSG)
-        In the next version of Bundler, running `bundle` without argument will no longer run `bundle install`.
-        Instead, the `help` command will be displayed.
-
-        If you'd like to keep the previous behaviour please run `bundle config set default_cli_command install --global`.
-      MSG
-
-      "install"
+      Bundler.settings[:default_cli_command] || "install_or_cli_help"
     end
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
@@ -721,6 +729,19 @@ module Bundler
     def current_command
       _, _, config = @_initializer
       config[:current_command]
+    end
+
+    def invoke_other_command(name)
+      _, _, config = @_initializer
+      original_command = config[:current_command]
+      command = self.class.all_commands[name]
+      config[:current_command] = command
+      send(name)
+    ensure
+      config[:current_command] = original_command
+    end
+
+    def current_command=(command)
     end
 
     def print_command

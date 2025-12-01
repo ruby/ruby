@@ -378,11 +378,6 @@ ossl_spki_verify(VALUE self, VALUE key)
 void
 Init_ossl_ns_spki(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     mNetscape = rb_define_module_under(mOSSL, "Netscape");
 
     eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);

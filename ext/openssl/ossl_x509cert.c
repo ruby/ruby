@@ -886,12 +886,6 @@ ossl_x509_load(VALUE klass, VALUE buffer)
 void
 Init_ossl_x509cert(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509CertError = rb_define_class_under(mX509, "CertificateError", eOSSLError);
 
     /* Document-class: OpenSSL::X509::Certificate

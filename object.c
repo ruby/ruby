@@ -854,14 +854,21 @@ rb_obj_inspect(VALUE obj)
 {
     VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
     st_index_t n = 0;
-    if (UNDEF_P(ivars)) {
+    if (UNDEF_P(ivars) || NIL_P(ivars)) {
         n = rb_ivar_count(obj);
         ivars = Qnil;
     }
-    else if (!NIL_P(ivars)) {
-        Check_Type(ivars, T_ARRAY);
+    else if (RB_TYPE_P(ivars, T_ARRAY)) {
         n = RARRAY_LEN(ivars);
     }
+    else {
+        rb_raise(
+            rb_eTypeError,
+            "Expected #instance_variables_to_inspect to return an Array or nil, but it returned %"PRIsVALUE,
+            rb_obj_class(ivars)
+        );
+    }
+
     if (n > 0) {
         VALUE c = rb_class_name(CLASS_OF(obj));
         VALUE args[2] = {
@@ -873,6 +880,13 @@ rb_obj_inspect(VALUE obj)
     else {
         return rb_any_to_s(obj);
     }
+}
+
+/* :nodoc: */
+static VALUE
+rb_obj_instance_variables_to_inspect(VALUE obj)
+{
+    return Qnil;
 }
 
 static VALUE
@@ -1998,14 +2012,26 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     module <=> other_module   -> -1, 0, +1, or nil
+ *     self <=> object -> -1, 0, +1, or nil
  *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
- *  includes +other_module+, they are the same, or if +module+ is included by
- *  +other_module+.
+ *  Returns:
  *
- *  Returns +nil+ if +module+ has no relationship with +other_module+, if
- *  +other_module+ is not a module, or if the two values are incomparable.
+ *  - +-1+, if +self+ includes +object+, if or +self+ is a subclass of +object+.
+ *  - +0+, if +self+ and +object+ are the same.
+ *  - +1+, if +object+ includes +self+, or if +object+ is a subclass of +self+.
+ *  - +nil+, if none of the above is true.
+ *
+ *  Examples:
+ *
+ *    # Class Array includes module Enumerable.
+ *             Array <=> Enumerable # => -1
+ *        Enumerable <=> Enumerable # =>  0
+ *        Enumerable <=> Array      # =>  1
+ *    # Class File is a subclass of class IO.
+ *              File <=> IO         # => -1
+ *                IO <=> File       # =>  1
+ *              File <=> File       # =>  0
+ *
  */
 
 static VALUE
@@ -4535,6 +4561,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
+    rb_define_private_method(rb_mKernel, "instance_variables_to_inspect", rb_obj_instance_variables_to_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1); /* in class.c */

@@ -539,6 +539,8 @@ module Bundler
     end
 
     def add_checksums
+      require "rubygems/package"
+
       @locked_checksums = true
 
       setup_domain!(add_checksums: true)

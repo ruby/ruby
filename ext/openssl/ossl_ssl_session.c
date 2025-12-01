@@ -305,11 +305,6 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 
 void Init_ossl_ssl_session(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    mSSL = rb_define_module_under(mOSSL, "SSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
 #ifndef OPENSSL_NO_SOCK
 	cSSLSession = rb_define_class_under(mSSL, "Session", rb_cObject);
 	eSSLSession = rb_define_class_under(cSSLSession, "SessionError", eOSSLError);

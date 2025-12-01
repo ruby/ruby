@@ -29,10 +29,6 @@ ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
 void
 Init_ossl_x509(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-#endif
-
     mX509 = rb_define_module_under(mOSSL, "X509");
 
     Init_ossl_x509attr();

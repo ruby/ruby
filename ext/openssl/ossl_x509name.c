@@ -496,12 +496,6 @@ Init_ossl_x509name(void)
 #undef rb_intern
     VALUE utf8str, ptrstr, ia5str, hash;
 
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     id_aref = rb_intern("[]");
     eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
