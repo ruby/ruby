@@ -75,6 +75,8 @@ jobs:
         with:
           srcdir: src
           builddir: build
+          make-command: nmake
+          clean: true
 
       - name: Install tools with scoop
         run: |
