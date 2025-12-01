@@ -24,13 +24,15 @@ pub const EC: Opnd = Opnd::Reg(X20_REG);
 pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const C_ARG_OPNDS: [Opnd; 6] = [
+pub const C_ARG_OPNDS: [Opnd; 8] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
     Opnd::Reg(X3_REG),
     Opnd::Reg(X4_REG),
-    Opnd::Reg(X5_REG)
+    Opnd::Reg(X5_REG),
+    Opnd::Reg(X6_REG),
+    Opnd::Reg(X7_REG)
 ];
 
 // C return value register on this platform
@@ -199,6 +201,8 @@ pub const ALLOC_REGS: &[Reg] = &[
     X3_REG,
     X4_REG,
     X5_REG,
+    X6_REG,
+    X7_REG,
     X11_REG,
     X12_REG,
 ];
@@ -231,7 +235,7 @@ impl Assembler {
 
     /// Get a list of all of the caller-saved registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
-        vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
+        vec![X1_REG, X6_REG, X7_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
     /// How many bytes a call and a [Self::frame_setup] would change native SP
@@ -488,15 +492,32 @@ impl Assembler {
                 }
                 */
                 Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+                    let num_reg_args = C_ARG_OPNDS.len().min(opnds.len());
+                    let num_stack_args = opnds.len().saturating_sub(C_ARG_OPNDS.len());
+
+                    if num_stack_args > 0 {
+                        // Take all opnds past the `num_reg_args`.
+                        let stack_opnds = &opnds[num_reg_args..];
+                        let mut args: Vec<(Opnd, Opnd)> = Vec::with_capacity(stack_opnds.len());
+
+                        for opnd in stack_opnds {
+                            args.push((Opnd::mem(64, NATIVE_STACK_PTR, -8), *opnd));
+                        }
+
+                        asm.parallel_mov(args);
+
+                        // Align stack to the next quadword.
+                        let offset = if num_stack_args % 2 == 0 { num_stack_args } else {num_stack_args + 1};
+                        asm.sub_into(NATIVE_STACK_PTR, offset.into());
+                    }
 
                     // Load each operand into the corresponding argument
                     // register.
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
-                    if !opnds.is_empty() {
+                    if num_reg_args > 0 {
                         let mut args: Vec<(Opnd, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().take(num_reg_args).enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -1857,17 +1878,19 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: str x1, [sp, #-0x10]!
-        0x4: str x9, [sp, #-0x10]!
-        0x8: str x10, [sp, #-0x10]!
-        0xc: str x11, [sp, #-0x10]!
-        0x10: str x12, [sp, #-0x10]!
-        0x14: str x13, [sp, #-0x10]!
-        0x18: str x14, [sp, #-0x10]!
-        0x1c: str x15, [sp, #-0x10]!
-        0x20: mrs x16, nzcv
-        0x24: str x16, [sp, #-0x10]!
+        0x4: str x6, [sp, #-0x10]!
+        0x8: str x7, [sp, #-0x10]!
+        0xc: str x9, [sp, #-0x10]!
+        0x10: str x10, [sp, #-0x10]!
+        0x14: str x11, [sp, #-0x10]!
+        0x18: str x12, [sp, #-0x10]!
+        0x1c: str x13, [sp, #-0x10]!
+        0x20: str x14, [sp, #-0x10]!
+        0x24: str x15, [sp, #-0x10]!
+        0x28: mrs x16, nzcv
+        0x2c: str x16, [sp, #-0x10]!
         ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
+        assert_snapshot!(cb.hexdump(), @"e10f1ff8e60f1ff8e70f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
     }
 
     #[test]
@@ -1887,9 +1910,11 @@ mod tests {
         0x18: ldr x11, [sp], #0x10
         0x1c: ldr x10, [sp], #0x10
         0x20: ldr x9, [sp], #0x10
-        0x24: ldr x1, [sp], #0x10
+        0x24: ldr x7, [sp], #0x10
+        0x28: ldr x6, [sp], #0x10
+        0x2c: ldr x1, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e70741f8e60741f8e10741f8");
     }
 
     #[test]
