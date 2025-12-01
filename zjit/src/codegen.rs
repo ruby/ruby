@@ -425,13 +425,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
-        Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnds!(args)),
-        // Give up CCallWithFrame for 7+ args since asm.ccall() doesn't support it.
-        Insn::CCallWithFrame { cd, state, args, .. } if args.len() > C_ARG_OPNDS.len() =>
+        Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
+        // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
+        // There's no test case for this because no core cfuncs have this many parameters. But C extensions could have such methods.
+        Insn::CCallWithFrame { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() =>
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
-        Insn::CCallWithFrame { cfunc, name, args, cme, state, blockiseq, .. } =>
-            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, args, name, cme, state, blockiseq, .. } => {
+        Insn::CCallWithFrame { cfunc, recv, name, args, cme, state, blockiseq, .. } =>
+            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
+        Insn::CCallVariadic { cfunc, recv, name, args, cme, state, blockiseq, return_type: _, elidable: _ } => {
             gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
@@ -766,6 +767,7 @@ fn gen_ccall_with_frame(
     asm: &mut Assembler,
     cfunc: *const u8,
     name: ID,
+    recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
     blockiseq: Option<IseqPtr>,
@@ -774,7 +776,8 @@ fn gen_ccall_with_frame(
     gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
     gen_stack_overflow_check(jit, asm, state, state.stack_size());
 
-    let caller_stack_size = state.stack_size() - args.len();
+    let args_with_recv_len = args.len() + 1;
+    let caller_stack_size = state.stack().len() - args_with_recv_len;
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
@@ -794,8 +797,8 @@ fn gen_ccall_with_frame(
         VM_BLOCK_HANDLER_NONE.into()
     };
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
-        recv: args[0],
+    gen_push_frame(asm, args_with_recv_len, state, ControlFrame {
+        recv,
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
@@ -813,8 +816,10 @@ fn gen_ccall_with_frame(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
+    let mut cfunc_args = vec![recv];
+    cfunc_args.extend(args);
     asm.count_call_to(&name.contents_lossy());
-    let result = asm.ccall(cfunc, args);
+    let result = asm.ccall(cfunc, cfunc_args);
 
     asm_comment!(asm, "pop C frame");
     let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
@@ -830,9 +835,11 @@ fn gen_ccall_with_frame(
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
-fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, args: Vec<Opnd>) -> lir::Opnd {
+fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, recv: Opnd, args: Vec<Opnd>) -> lir::Opnd {
+    let mut cfunc_args = vec![recv];
+    cfunc_args.extend(args);
     asm.count_call_to(&name.contents_lossy());
-    asm.ccall(cfunc, args)
+    asm.ccall(cfunc, cfunc_args)
 }
 
 /// Generate code for a variadic C function call
