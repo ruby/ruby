@@ -12249,7 +12249,13 @@ parser_lex(pm_parser_t *parser) {
                     size_t eol_length = match_eol_at(parser, breakpoint);
                     if (eol_length) {
                         parser->current.end = breakpoint + eol_length;
-                        pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
+
+                        // Track the newline if we're not in a heredoc that
+                        // would have already have added the newline to the
+                        // list.
+                        if (parser->heredoc_end == NULL) {
+                            pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                        }
                     } else {
                         parser->current.end = breakpoint + 1;
                     }
@@ -12503,7 +12509,13 @@ parser_lex(pm_parser_t *parser) {
                     size_t eol_length = match_eol_at(parser, breakpoint);
                     if (eol_length) {
                         parser->current.end = breakpoint + eol_length;
-                        pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
+
+                        // Track the newline if we're not in a heredoc that
+                        // would have already have added the newline to the
+                        // list.
+                        if (parser->heredoc_end == NULL) {
+                            pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                        }
                     } else {
                         parser->current.end = breakpoint + 1;
                     }
