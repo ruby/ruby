@@ -440,7 +440,8 @@ fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
         // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
         let result = fun.push_insn(block, hir::Insn::CCall {
             cfunc: rb_yarv_str_eql_internal as *const u8,
-            args: vec![recv, other],
+            recv,
+            args: vec![other],
             name: ID!(string_eq),
             return_type,
             elidable,
