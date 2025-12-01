@@ -408,7 +408,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_string_copy() {
+    fn test_string_resurrect() {
         eval("def test = \"hello\"");
         assert_contains_opcode("test", YARVINSN_putchilledstring);
         assert_snapshot!(hir_string("test"), @r"
@@ -422,7 +422,7 @@ pub mod hir_build_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v11:StringExact = StringCopy v10
+          v11:StringExact = StringResurrect v10
           CheckInterrupts
           Return v11
         ");
@@ -1556,9 +1556,9 @@ pub mod hir_build_tests {
           v14:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v15:ArrayExact = ArrayDup v14
           v17:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v18:StringExact = StringCopy v17
+          v18:StringExact = StringResurrect v17
           v20:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v21:StringExact = StringCopy v20
+          v21:StringExact = StringResurrect v20
           v23:BasicObject = SendWithoutBlock v6, :unknown_method, v12, v15, v18, v21
           CheckInterrupts
           Return v23
@@ -2116,7 +2116,7 @@ pub mod hir_build_tests {
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
           v31:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v32:StringExact = StringCopy v31
+          v32:StringExact = StringResurrect v31
           SideExit UnhandledNewarraySend(PACK)
         ");
     }
@@ -2150,9 +2150,9 @@ pub mod hir_build_tests {
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
           v29:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v30:StringExact = StringCopy v29
+          v30:StringExact = StringResurrect v29
           v36:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v37:StringExact = StringCopy v36
+          v37:StringExact = StringResurrect v36
           v39:BasicObject = GetLocal l0, EP@3
           SideExit UnhandledNewarraySend(PACK_BUFFER)
         ");

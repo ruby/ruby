@@ -360,7 +360,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
-        Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
+        Insn::StringResurrect { val, chilled, state } => gen_string_resurrect(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
         Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
@@ -1420,7 +1420,7 @@ fn gen_invokesuper(
 }
 
 /// Compile a string resurrection
-fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
+fn gen_string_resurrect(asm: &mut Assembler, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
     gen_prepare_leaf_call_with_gc(asm, state);
     let chilled = if chilled { Opnd::Imm(1) } else { Opnd::Imm(0) };
