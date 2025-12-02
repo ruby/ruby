@@ -71,7 +71,7 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(src, filepath: filename, line: lineno)
+        result = Prism.lex_compat(src, filepath: filename, line: lineno, version: "current")
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
@@ -3295,7 +3295,7 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source, partial_script: true)
+        @result ||= Prism.parse(source, partial_script: true, version: "current")
       end
 
       ##########################################################################
