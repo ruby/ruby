@@ -1576,8 +1576,7 @@ not_provided(pm_parser_t *parser) {
 #define PM_LOCATION_TOKEN_VALUE(token) ((pm_location_t) { .start = (token)->start, .end = (token)->end })
 #define PM_LOCATION_NODE_VALUE(node) ((pm_location_t) { .start = (node)->location.start, .end = (node)->location.end })
 #define PM_LOCATION_NODE_BASE_VALUE(node) ((pm_location_t) { .start = (node)->base.location.start, .end = (node)->base.location.end })
-#define PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE ((pm_location_t) { .start = NULL, .end = NULL })
-#define PM_OPTIONAL_LOCATION_TOKEN_VALUE(token) ((token)->type == PM_TOKEN_NOT_PROVIDED ? PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE : PM_LOCATION_TOKEN_VALUE(token))
+#define PM_OPTIONAL_LOCATION_TOKEN_VALUE(token) ((token)->type == PM_TOKEN_NOT_PROVIDED ? ((pm_location_t) { 0 }) : PM_LOCATION_TOKEN_VALUE(token))
 
 /**
  * This is a special out parameter to the parse_arguments_list function that
@@ -2153,8 +2152,8 @@ pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *node
         .rest = NULL,
         .requireds = { 0 },
         .posts = { 0 },
-        .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .opening_loc = { 0 },
+        .closing_loc = { 0 }
     };
 
     // For now we're going to just copy over each pointer manually. This could be
@@ -2189,8 +2188,8 @@ pm_array_pattern_node_rest_create(pm_parser_t *parser, pm_node_t *rest) {
         .rest = rest,
         .requireds = { 0 },
         .posts = { 0 },
-        .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .opening_loc = { 0 },
+        .closing_loc = { 0 }
     };
 
     return node;
@@ -2338,7 +2337,7 @@ pm_begin_node_create(pm_parser_t *parser, const pm_token_t *begin_keyword, pm_st
         ),
         .begin_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(begin_keyword),
         .statements = statements,
-        .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .end_keyword_loc = { 0 }
     };
 
     return node;
@@ -2476,7 +2475,7 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
         .base = PM_NODE_INIT(parser, PM_BLOCK_PARAMETERS_NODE, 0, start, end),
         .parameters = parameters,
         .opening_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = { 0 },
         .locals = { 0 }
     };
 
@@ -2562,12 +2561,12 @@ pm_call_node_create(pm_parser_t *parser, pm_node_flags_t flags) {
     *node = (pm_call_node_t) {
         .base = PM_NODE_INIT_BASE(parser, PM_CALL_NODE, flags),
         .receiver = NULL,
-        .call_operator_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .message_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .call_operator_loc = { 0 },
+        .message_loc = { 0 },
+        .opening_loc = { 0 },
         .arguments = NULL,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .equal_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = { 0 },
+        .equal_loc = { 0 },
         .block = NULL,
         .name = 0
     };
@@ -3788,8 +3787,8 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
         .left = left_splat_node,
         .right = right_splat_node,
         .requireds = { 0 },
-        .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .opening_loc = { 0 },
+        .closing_loc = { 0 }
     };
 
     // For now we're going to just copy over each pointer manually. This could be
@@ -4115,8 +4114,8 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
         .constant = NULL,
         .elements = { 0 },
         .rest = rest,
-        .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .opening_loc = { 0 },
+        .closing_loc = { 0 }
     };
 
     pm_node_t *element;
@@ -4369,10 +4368,10 @@ pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_t
         .base = PM_NODE_INIT_NODES(parser, PM_IF_NODE, PM_NODE_FLAG_NEWLINE, statement, predicate),
         .if_keyword_loc = PM_LOCATION_TOKEN_VALUE(if_keyword),
         .predicate = predicate,
-        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .then_keyword_loc = { 0 },
         .statements = statements,
         .subsequent = NULL,
-        .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .end_keyword_loc = { 0 }
     };
 
     return node;
@@ -4399,12 +4398,12 @@ pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_to
 
     *node = (pm_if_node_t) {
         .base = PM_NODE_INIT_NODES(parser, PM_IF_NODE, PM_NODE_FLAG_NEWLINE, predicate, false_expression),
-        .if_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .if_keyword_loc = { 0 },
         .predicate = predicate,
         .then_keyword_loc = PM_LOCATION_TOKEN_VALUE(qmark),
         .statements = if_statements,
         .subsequent = UP(else_node),
-        .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .end_keyword_loc = { 0 }
     };
 
     return node;
@@ -5370,8 +5369,8 @@ pm_multi_target_node_create(pm_parser_t *parser) {
         .lefts = { 0 },
         .rest = NULL,
         .rights = { 0 },
-        .lparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .rparen_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .lparen_loc = { 0 },
+        .rparen_loc = { 0 }
     };
 
     return node;
@@ -5954,8 +5953,8 @@ pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
     *node = (pm_rescue_node_t) {
         .base = PM_NODE_INIT_TOKEN(parser, PM_RESCUE_NODE, 0, keyword),
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
-        .operator_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .operator_loc = { 0 },
+        .then_keyword_loc = { 0 },
         .reference = NULL,
         .statements = NULL,
         .subsequent = NULL,
@@ -6806,7 +6805,7 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
         .then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(then_keyword),
         .statements = statements,
         .else_clause = NULL,
-        .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .end_keyword_loc = { 0 }
     };
 
     return node;
@@ -6827,10 +6826,10 @@ pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const 
         .base = PM_NODE_INIT_NODES(parser, PM_UNLESS_NODE, PM_NODE_FLAG_NEWLINE, statement, predicate),
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(unless_keyword),
         .predicate = predicate,
-        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .then_keyword_loc = { 0 },
         .statements = statements,
         .else_clause = NULL,
-        .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+        .end_keyword_loc = { 0 }
     };
 
     return node;
@@ -6897,8 +6896,8 @@ pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
     *node = (pm_until_node_t) {
         .base = PM_NODE_INIT_NODES(parser, PM_UNTIL_NODE, flags, statements, predicate),
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
-        .do_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .do_keyword_loc = { 0 },
+        .closing_loc = { 0 },
         .predicate = predicate,
         .statements = statements
     };
@@ -6917,7 +6916,7 @@ pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         .base = PM_NODE_INIT_TOKEN(parser, PM_WHEN_NODE, 0, keyword),
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .statements = NULL,
-        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .then_keyword_loc = { 0 },
         .conditions = { 0 }
     };
 
@@ -6986,8 +6985,8 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
     *node = (pm_while_node_t) {
         .base = PM_NODE_INIT_NODES(parser, PM_WHILE_NODE, flags, statements, predicate),
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
-        .do_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .do_keyword_loc = { 0 },
+        .closing_loc = { 0 },
         .predicate = predicate,
         .statements = statements
     };
