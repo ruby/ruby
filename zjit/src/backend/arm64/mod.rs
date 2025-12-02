@@ -508,7 +508,7 @@ impl Assembler {
 
                         // Align stack to the next quadword.
                         let offset = if num_stack_args % 2 == 0 { num_stack_args } else {num_stack_args + 1};
-                        asm.sub_into(NATIVE_STACK_PTR, offset.into());
+                        asm.sub_into(NATIVE_STACK_PTR, (offset * 8).into());
                     }
 
                     // Load each operand into the corresponding argument
