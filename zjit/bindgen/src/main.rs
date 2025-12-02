@@ -403,6 +403,7 @@ fn main() {
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_vm_get_untagged_block_handler")
+        .allowlist_function("rb_zjit_str_uplus")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")

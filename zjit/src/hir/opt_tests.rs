@@ -8898,4 +8898,116 @@ mod hir_opt_tests {
          Return v60
        ");
     }
+
+    #[test]
+    fn duplicate_string_literal() {
+      eval(r#"
+          def test = +""
+          test
+       "#);
+       assert_snapshot!(hir_string("test"), @r"
+       fn test@<compiled>:2:
+       bb0():
+         EntryPoint interpreter
+         v1:BasicObject = LoadSelf
+         Jump bb2(v1)
+       bb1(v4:BasicObject):
+         EntryPoint JIT(0)
+         Jump bb2(v4)
+       bb2(v6:BasicObject):
+         v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+         v11:StringExact = StringResurrect v10
+         PatchPoint MethodRedefined(String@0x1008, +@@0x1010, cme:0x1018)
+         PatchPoint NoSingletonClass(String@0x1008)
+         v21:StringExact = StringDup v11
+         IncrCounter inline_cfunc_optimized_send_count
+         CheckInterrupts
+         Return v21
+       ");
+    }
+
+    #[test]
+    fn duplicate_frozen_string_literal() {
+      eval(r#"
+          # frozen_string_literal: true
+          def test = +""
+          test
+       "#);
+       assert_snapshot!(hir_string("test"), @r"
+       fn test@<compiled>:3:
+       bb0():
+         EntryPoint interpreter
+         v1:BasicObject = LoadSelf
+         Jump bb2(v1)
+       bb1(v4:BasicObject):
+         EntryPoint JIT(0)
+         Jump bb2(v4)
+       bb2(v6:BasicObject):
+         v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+         PatchPoint MethodRedefined(String@0x1008, +@@0x1010, cme:0x1018)
+         PatchPoint NoSingletonClass(String@0x1008)
+         v20:StringExact = StringDup v10
+         IncrCounter inline_cfunc_optimized_send_count
+         CheckInterrupts
+         Return v20
+       ");
+    }
+
+    #[test]
+    fn duplicate_string() {
+      eval(r##"
+          # frozen_string_literal: true
+          def test = +"#{1}"
+          test
+       "##);
+       assert_snapshot!(hir_string("test"), @r"
+       fn test@<compiled>:3:
+       bb0():
+         EntryPoint interpreter
+         v1:BasicObject = LoadSelf
+         Jump bb2(v1)
+       bb1(v4:BasicObject):
+         EntryPoint JIT(0)
+         Jump bb2(v4)
+       bb2(v6:BasicObject):
+         v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+         v12:Fixnum[1] = Const Value(1)
+         PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+         v30:StringExact = CCallVariadic v12, :Integer#to_s@0x1040
+         v19:StringExact = StringConcat v10, v30
+         PatchPoint MethodRedefined(String@0x1048, +@@0x1050, cme:0x1058)
+         PatchPoint NoSingletonClass(String@0x1048)
+         v34:StringExact = StringDup v19
+         IncrCounter inline_cfunc_optimized_send_count
+         CheckInterrupts
+         Return v34
+       ");
+    }
+
+    #[test]
+    fn duplicate_string_subclass() {
+      eval(r#"
+          class C < String; end
+          def test(s) = +s
+          test(C.new)
+       "#);
+       assert_snapshot!(hir_string("test"), @r"
+       fn test@<compiled>:3:
+       bb0():
+         EntryPoint interpreter
+         v1:BasicObject = LoadSelf
+         v2:BasicObject = GetLocal l0, SP@4
+         Jump bb2(v1, v2)
+       bb1(v5:BasicObject, v6:BasicObject):
+         EntryPoint JIT(0)
+         Jump bb2(v5, v6)
+       bb2(v8:BasicObject, v9:BasicObject):
+         PatchPoint MethodRedefined(C@0x1000, +@@0x1008, cme:0x1010)
+         PatchPoint NoSingletonClass(C@0x1000)
+         v22:StringSubclass[class_exact:C] = GuardType v9, StringSubclass[class_exact:C]
+         v23:String = CCallWithFrame v22, :String#+@@0x1038
+         CheckInterrupts
+         Return v23
+       ");
+    }
 }

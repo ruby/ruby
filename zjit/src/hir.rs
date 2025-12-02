@@ -646,6 +646,7 @@ pub enum Insn {
     Param,
 
     StringResurrect { val: InsnId, chilled: bool, state: InsnId },
+    StringDup { val: InsnId, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
@@ -966,6 +967,7 @@ impl Insn {
             Insn::Const { .. } => false,
             Insn::Param => false,
             Insn::StringResurrect { .. } => false,
+            Insn::StringDup { .. } => false,
             Insn::NewArray { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
@@ -1108,6 +1110,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
             }
             Insn::StringResurrect { val, .. } => { write!(f, "StringResurrect {val}") }
+            Insn::StringDup { val, .. } => { write!(f, "StringDup {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
                 let mut prefix = " ";
@@ -1816,6 +1819,7 @@ impl Function {
             &FixnumBitCheck { val, index } => FixnumBitCheck { val: find!(val), index },
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringResurrect { val, chilled, state } => StringResurrect { val: find!(val), chilled, state },
+            &StringDup { val, state } => StringDup { val: find!(val), state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &StringGetbyte { string, index } => StringGetbyte { string: find!(string), index: find!(index) },
@@ -2036,6 +2040,7 @@ impl Function {
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { .. } => types::CInt64,
             Insn::StringResurrect { .. } => types::StringExact,
+            Insn::StringDup { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::StringGetbyte { .. } => types::Fixnum,
@@ -3596,6 +3601,7 @@ impl Function {
             | &Insn::Defined { v: val, state, .. }
             | &Insn::StringIntern { val, state }
             | &Insn::StringResurrect { val, state, .. }
+            | &Insn::StringDup { val, state, .. }
             | &Insn::ObjectAlloc { val, state }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardTypeNot { val, state, .. }
@@ -4337,6 +4343,7 @@ impl Function {
             }
             // Instructions with String operands
             Insn::StringResurrect { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringDup { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringAppend { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;

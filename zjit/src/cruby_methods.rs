@@ -210,6 +210,7 @@ pub fn init() -> Annotations {
     // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
     // ENC_CODERANGE_UNKNOWN.
     annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
+    annotate!(rb_cString, "+@", inline_string_uplus, types::String);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -471,6 +472,16 @@ fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
             return_type,
             elidable,
         });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_string_uplus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::StringExact, state) {
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        let result = fun.push_insn(block, hir::Insn::StringDup { val: recv, state });
         return Some(result);
     }
     None

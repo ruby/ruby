@@ -3306,6 +3306,12 @@ str_uplus(VALUE str)
     }
 }
 
+VALUE
+rb_zjit_str_uplus(VALUE str)
+{
+    return str_uplus(str);
+}
+
 /*
  * call-seq:
  *   -self -> frozen_string
