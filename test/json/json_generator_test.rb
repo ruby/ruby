@@ -883,6 +883,15 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
   end
 
+  def test_as_json_nan_does_not_call_to_json
+    def (obj = Object.new).to_json(*)
+      "null"
+    end
+    assert_raise(JSON::GeneratorError) do
+      JSON.generate(Float::NAN, strict: true, as_json: proc { obj })
+    end
+  end
+
   def assert_float_roundtrip(expected, actual)
     assert_equal(expected, JSON.generate(actual))
     assert_equal(actual, JSON.parse(JSON.generate(actual)), "JSON: #{JSON.generate(actual)}")
