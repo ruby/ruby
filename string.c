@@ -1447,15 +1447,23 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
     return rb_str_conv_enc(str, STR_ENC_GET(str), enc);
 }
 
+static inline bool str_discarded_p(VALUE str);
+
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
+    RUBY_ASSERT(str_discarded_p(str2));
+
     const int termlen = TERM_LEN(str);
     char *ptr;
     long len;
 
     RSTRING_GETMEM(str, ptr, len);
     if (str_embed_capa(str2) >= len + termlen) {
+        // if (!STR_EMBED_P(str2)) {
+        //     fprintf(stderr, "[debug] String %p is not embedded. ptr: %p\n",
+        //         (void*)str2, RSTRING(str2)->as.heap.ptr);
+        // }
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str), len);
@@ -1495,6 +1503,8 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
+    RUBY_ASSERT(str_discarded_p(str2));
+
     str_replace_shared_without_enc(str2, str);
     rb_enc_cr_str_exact_copy(str2, str);
     return str2;
@@ -1867,6 +1877,8 @@ rb_obj_as_string_result(VALUE str, VALUE obj)
 static VALUE
 str_replace(VALUE str, VALUE str2)
 {
+    RUBY_ASSERT(str_discarded_p(str));
+
     long len;
 
     len = RSTRING_LEN(str2);
@@ -2781,6 +2793,22 @@ str_discard(VALUE str)
         ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         RSTRING(str)->as.heap.ptr = 0;
         STR_SET_LEN(str, 0);
+    }
+}
+
+static inline bool
+str_discarded_p(VALUE str)
+{
+    str_modifiable(str);
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+        if (RSTRING(str)->as.heap.ptr == NULL) {
+            RUBY_ASSERT(RSTRING(str)->len == 0);
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return true;
     }
 }
 

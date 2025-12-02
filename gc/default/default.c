@@ -8207,6 +8207,8 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
          */
         return;
     }
+
+    // fprintf(stderr, "[debug] xfree(%p)\n", ptr);
 #if CALC_EXACT_MALLOC_SIZE
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
     ptr = info;
@@ -8233,7 +8235,9 @@ rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
     TRY_WITH_GC(size, mem = malloc(size));
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
+    void *result = objspace_malloc_fixup(objspace, mem, size, gc_allowed);
+    // fprintf(stderr, "[debug] xmalloc(%zu) -> %p\n", size, result);
+    return result;
 }
 
 void *
@@ -8253,7 +8257,9 @@ rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(size, mem = calloc1(size));
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
+    void *result = objspace_malloc_fixup(objspace, mem, size, gc_allowed);
+    // fprintf(stderr, "[debug] xcalloc(%zu) -> %p\n", size, result);
+    return result;
 }
 
 void *
