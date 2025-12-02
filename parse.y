@@ -5235,6 +5235,12 @@ block_call	: command do_block
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
+                | block_call call_op2 paren_args
+                    {
+                        $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
+                        nd_set_line($$, @2.end_pos.lineno);
+                    /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
+                    }
                 ;
 
 method_call	: fcall paren_args
