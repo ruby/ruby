@@ -2947,10 +2947,34 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let mut ivar_index: u16 = 0;
+                        let mut next_shape_id = recv_type.shape();
                         if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // TODO(max): Shape transition
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_shape_transition));
-                            self.push_insn_id(block, insn_id); continue;
+                            // Current shape does not contain this ivar; do a shape transition.
+                            let current_shape_id = recv_type.shape();
+                            let class = recv_type.class();
+                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+                            assert!(recv_type.flags().is_t_object());
+                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
+                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+                            assert!(ivar_result, "New shape must have the ivar index");
+                            // If the VM ran out of shapes, or this class generated too many leaf,
+                            // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
+                            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
+                            // TODO(max): Is it OK to bail out here after making a shape transition?
+                            if new_shape_too_complex {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+                            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+                            // reallocate it.
+                            let needs_extension = next_capacity != current_capacity;
+                            if needs_extension {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            // Fall through to emitting the ivar write
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
@@ -2966,6 +2990,13 @@ impl Function {
                         };
                         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        if next_shape_id != recv_type.shape() {
+                            // Write the new shape ID
+                            assert_eq!(SHAPE_ID_NUM_BITS, 32);
+                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CUInt32(next_shape_id.0) });
+                            let shape_id_offset = unsafe { rb_shape_id_offset() };
+                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                        }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }

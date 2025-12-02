@@ -999,8 +999,9 @@ mod manual_defs {
     use super::*;
 
     pub const SIZEOF_VALUE: usize = 8;
+    pub const BITS_PER_BYTE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
-    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
+    pub const VALUE_BITS: u8 = BITS_PER_BYTE as u8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -1382,6 +1383,7 @@ pub(crate) mod ids {
         name: thread_ptr
         name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
+        name: _shape_id
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
