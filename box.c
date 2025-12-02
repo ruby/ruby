@@ -283,7 +283,8 @@ unload_library_in_box(VALUE path, VALUE handle_value, VALUE arg)
     const rb_box_t *box;
 #endif
 
-    dln_close((void *)NUM2SVALUE(handle_value));
+    // TODO: execute dln_close() when it becomes possible
+    // dln_close((void *)NUM2SVALUE(handle_value));
 
 #ifdef _WIN32
     box = (const rb_box_t *)arg;
