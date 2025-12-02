@@ -2395,13 +2395,24 @@ RUBY
 # When creating bmethods in Ractors, they should only be usable from their
 # defining ractor, even if it is GC'd
 assert_equal 'ok', <<~'RUBY'
-CLASSES = 1000.times.map do
-  Ractor.new do
-    Class.new do
-      define_method(:foo) {}
-    end
+CLASSES = 1000.times.map { Class.new }.freeze
+
+# This would be better to run in parallel, but there's a bug with lambda
+# creation and YJIT causing crashes in dev mode
+ractors = CLASSES.map do |klass|
+  Ractor.new(klass) do |klass|
+    Ractor.receive
+    klass.define_method(:foo) {}
   end
-end.map(&:value).freeze
+end
+
+ractors.each do |ractor|
+  ractor << nil
+  ractor.join
+end
+
+ractors.clear
+GC.start
 
 any = 1000.times.map do
   Ractor.new do
