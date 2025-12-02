@@ -3875,12 +3875,13 @@ AC_SUBST(INSTALL_STATIC_LIBRARY)
 
 [begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
+AC_CHECK_TOOL(CARGO, [cargo], [no])
 
-dnl check if rustc is recent enough to build YJIT/ZJIT (rustc >= 1.58.0)
+dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 JIT_RUSTC_OK=no
+JIT_TARGET_ARCH=
 AS_IF([test "$RUSTC" != "no"],
-    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT/ZJIT])
-    JIT_TARGET_ARCH=
+    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT])
     AS_CASE(["$target_cpu"],
         [arm64|aarch64], [JIT_TARGET_ARCH=aarch64],
         [x86_64], [JIT_TARGET_ARCH=x86_64],
@@ -3914,33 +3915,46 @@ AS_IF([test "$cross_compiling" = no],
     )
 )
 
-dnl build ZJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
-AC_ARG_ENABLE(zjit,
-    AS_HELP_STRING([--enable-zjit],
-    [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
-    [ZJIT_SUPPORT=$enableval],
-    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$YJIT_SUPPORT"],
-        [yes:yes:no], [
-            ZJIT_SUPPORT=yes
-        ],
-        [ZJIT_SUPPORT=no]
-    )]
-)
-
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$ZJIT_SUPPORT"],
-        [yes:yes:no], [
+    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK"],
+        [yes:yes], [
             YJIT_SUPPORT=yes
         ],
         [YJIT_SUPPORT=no]
     )]
 )
 
-CARGO=
+dnl build ZJIT in release mode if rustc >= 1.85.0 is present and we are on a supported platform
+ZJIT_SUPPORT=no
+AC_ARG_ENABLE(zjit,
+    AS_HELP_STRING([--enable-zjit],
+    [enable experimental JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.85.0+ is available]),
+    [ZJIT_SUPPORT=$enableval],
+    [AS_CASE(["$JIT_TARGET_OK"],
+        [yes], [
+            rb_zjit_build_possible=no
+            AC_MSG_CHECKING([possible to build ZJIT])dnl only checked when --enable-zjit is not specified
+            # Fails in case rustc target doesn't match ruby target. Can happen on Rosetta, for example.
+            # 1.85.0 is the first stable version that supports the 2024 edition.
+            AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
+                    $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
+                AS_IF([test "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no"], [
+                    # When only building ZJIT, we don't need cargo; it's required for YJIT+ZJIT build.
+                    # Assume that if rustc is new enough, then cargo is also.
+                    # TODO(alan): Get rid of dependency on cargo in YJIT+ZJIT build. Cargo's offline mode
+                    #             still too unreliable: https://github.com/rust-lang/cargo/issues/10352
+                    rb_zjit_build_possible=yes
+                ])
+            )
+            AC_MSG_RESULT($rb_zjit_build_possible)
+        ]
+    )]
+)
+
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
@@ -4019,9 +4033,8 @@ AS_CASE(["${ZJIT_SUPPORT}"],
 
 # if YJIT+ZJIT release build, or any build that requires Cargo
 AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
-    AC_CHECK_TOOL(CARGO, [cargo], [no])
     AS_IF([test x"$CARGO" = "xno"],
-        AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install]))
+        AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
 
     YJIT_LIBS=
     ZJIT_LIBS=
