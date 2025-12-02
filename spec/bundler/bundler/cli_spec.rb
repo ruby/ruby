@@ -90,7 +90,7 @@ RSpec.describe "bundle executable" do
     it "tries to installs by default but print help on missing Gemfile" do
       bundle "", raise_on_error: false
       expect(err).to include("Could not locate Gemfile")
-      expect(out).to include("In the feature version of Bundler")
+      expect(out).to include("In a future version of Bundler")
 
       expect(out).to include("Bundler version #{Bundler::VERSION}").
         and include("\n\nBundler commands:\n\n").
@@ -102,7 +102,7 @@ RSpec.describe "bundle executable" do
     it "runs bundle install when default_cli_command set to install" do
       bundle "config set default_cli_command install_or_cli_help"
       bundle "", raise_on_error: false
-      expect(out).to_not include("In the feature version of Bundler")
+      expect(out).to_not include("In a future version of Bundler")
       expect(err).to include("Could not locate Gemfile")
     end
   end
