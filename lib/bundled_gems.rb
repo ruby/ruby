@@ -122,6 +122,10 @@ module Gem::BUNDLED_GEMS # :nodoc:
       false
     end
 
+    if suppress_list = Thread.current[:__bundled_gems_warning_suppression]
+      return if suppress_list.include?(name) || suppress_list.include?(feature)
+    end
+
     return if specs.include?(name)
 
     # Don't warn if a hyphenated gem provides this feature
