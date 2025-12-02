@@ -823,4 +823,16 @@ class TestBox < Test::Unit::TestCase
       assert_equal 42, b.eval('1+2')
     end;
   end
+
+  def test_loaded_extension_deleted_in_user_box
+    require 'tmpdir'
+    Dir.mktmpdir do |tmpdir|
+      env = ENV_ENABLE_BOX.merge({'TMPDIR'=>tmpdir})
+      assert_ruby_status([env], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require "json"
+      end;
+      assert_empty(Dir.children(tmpdir))
+    end
+  end
 end
