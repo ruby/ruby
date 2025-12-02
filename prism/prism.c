@@ -22,6 +22,7 @@ pm_version(void) {
 /* Helpful node-related macros                                                */
 /******************************************************************************/
 
+#define FL PM_NODE_FLAGS
 #define UP PM_NODE_UPCAST
 
 #define PM_TOKEN_START(token_) ((token_)->start)
@@ -2845,7 +2846,7 @@ pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
     pm_call_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_and_write_node_t);
 
     *node = (pm_call_and_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_CALL_AND_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_CALL_AND_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .message_loc = target->message_loc,
@@ -2900,7 +2901,7 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_and_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_AND_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_AND_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .opening_loc = target->opening_loc,
@@ -2928,7 +2929,7 @@ pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, 
     pm_call_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_operator_write_node_t);
 
     *node = (pm_call_operator_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_CALL_OPERATOR_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_CALL_OPERATOR_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .message_loc = target->message_loc,
@@ -2960,7 +2961,7 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_operator_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_OPERATOR_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_OPERATOR_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .opening_loc = target->opening_loc,
@@ -2990,7 +2991,7 @@ pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const 
     pm_call_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_or_write_node_t);
 
     *node = (pm_call_or_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_CALL_OR_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_CALL_OR_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .message_loc = target->message_loc,
@@ -3022,7 +3023,7 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_or_write_node_t) {
-        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_OR_WRITE_NODE, target->base.flags, target, value),
+        .base = PM_NODE_INIT_NODES(parser, PM_INDEX_OR_WRITE_NODE, FL(target), target, value),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .opening_loc = target->opening_loc,
@@ -3050,7 +3051,7 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_call_target_node_t *node = PM_NODE_ALLOC(parser, pm_call_target_node_t);
 
     *node = (pm_call_target_node_t) {
-        .base = PM_NODE_INIT_NODE(parser, PM_CALL_TARGET_NODE, target->base.flags, target),
+        .base = PM_NODE_INIT_NODE(parser, PM_CALL_TARGET_NODE, FL(target), target),
         .receiver = target->receiver,
         .call_operator_loc = target->call_operator_loc,
         .name = target->name,
@@ -3072,13 +3073,12 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
 static pm_index_target_node_t *
 pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_index_target_node_t *node = PM_NODE_ALLOC(parser, pm_index_target_node_t);
-    pm_node_flags_t flags = target->base.flags;
 
     pm_index_arguments_check(parser, target->arguments, target->block);
-
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
+
     *node = (pm_index_target_node_t) {
-        .base = PM_NODE_INIT_NODE(parser, PM_INDEX_TARGET_NODE, flags | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE, target),
+        .base = PM_NODE_INIT_NODE(parser, PM_INDEX_TARGET_NODE, FL(target) | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE, target),
         .receiver = target->receiver,
         .opening_loc = target->opening_loc,
         .arguments = target->arguments,
@@ -4745,10 +4745,10 @@ pm_interpolated_regular_expression_node_closing_set(pm_parser_t *parser, pm_inte
 static inline void
 pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_t *part) {
 #define CLEAR_FLAGS(node) \
-    node->base.flags = (pm_node_flags_t) (node->base.flags & ~(PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE))
+    node->base.flags = (pm_node_flags_t) (FL(node) & ~(PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE))
 
 #define MUTABLE_FLAGS(node) \
-    node->base.flags = (pm_node_flags_t) ((node->base.flags | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE) & ~PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
+    node->base.flags = (pm_node_flags_t) ((FL(node) | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE) & ~PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
 
     if (node->parts.size == 0 && node->opening_loc.start == NULL) {
         node->base.location.start = part->location.start;
@@ -19674,7 +19674,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         parse_regular_expression_errors(parser, node);
                     }
 
-                    pm_node_flag_set(UP(node), parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, node->base.flags));
+                    pm_node_flag_set(UP(node), parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, FL(node)));
                     return UP(node);
                 }
 

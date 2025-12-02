@@ -152,9 +152,14 @@ typedef struct pm_node {
 #define PM_NODE_TYPE_P(node_, type_) (PM_NODE_TYPE(node_) == (type_))
 
 /**
+ * Return the flags associated with the given node.
+ */
+#define PM_NODE_FLAGS(node_) (PM_NODE_UPCAST(node_)->flags)
+
+/**
  * Return true if the given flag is set on the given node.
  */
-#define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_UPCAST(node_)->flags & (flag_)) != 0)
+#define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_FLAGS(node_) & (flag_)) != 0)
 <%- nodes.each do |node| -%>
 
 /**
