@@ -210,20 +210,19 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       port = tcps.connect_address.ip_port
 
       threads = []
+      sockets = []
       server_thread = Thread.new do
         Thread.current.report_on_exception = false
 
         loop do
           readable, = IO.select([tcps, stop_pipe_r])
           break if readable.include? stop_pipe_r
-          sock = tcps.accept
+          sockets << sock = tcps.accept
 
           th = Thread.new do
             Thread.current.report_on_exception = false
 
             server_proc.call(sock)
-          ensure
-            sock.close
           end
           threads << th
         end
@@ -254,6 +253,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         rescue Exception
         end
       }
+      sockets.each(&:close)
       raise pend if pend
       assert_join_threads(threads)
     end

@@ -491,7 +491,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     sctx.verify_mode =
       OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(sctx, ignore_listener_error: true) { |port|
-      assert_handshake_error {
+      # TLS 1.3 alert: certificate_required(116)
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /alert number 116/) {
         server_connect(port) { |ssl| ssl.puts("abc"); ssl.gets }
       }
     }
@@ -547,7 +548,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       # 1. Exception in client_cert_cb is suppressed
       # 2. No client certificate will be sent to the server
       # 3. SSL_VERIFY_FAIL_IF_NO_PEER_CERT causes the handshake to fail
-      assert_handshake_error {
+      assert_raise(OpenSSL::SSL::SSLError) {
         server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
       }
     end
@@ -1286,6 +1287,27 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_connect_systemcallerror
+    # SSL_connect() should fail with SSL_ERROR_SYSCALL and errno should be
+    # kept intact from the underlying recv(2)/send(2).
+    pend "AWS-LC does not preserve errno on SSL_ERROR_SYSCALL" if aws_lc?
+
+    server_proc = proc do |sock|
+      sock.setsockopt(:SOCKET, :LINGER, [1, 0].pack("ii"))
+      sock.read(1)
+      sock.close
+    end
+    start_server_proc(server_proc) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      assert_raise(Errno::ECONNRESET, Errno::EPIPE) {
+        ssl.connect
+      }
+    ensure
+      sock&.close
+    end
+  end
+
   def test_connect_certificate_verify_failed_exception_message
     start_server(ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
@@ -1338,7 +1360,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
           ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
         supported << ver
-      rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
+      rescue OpenSSL::SSL::SSLError
       end
     end
 
@@ -2106,7 +2128,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(sctx, ignore_listener_error: true) do |port|
       ctx1 = OpenSSL::SSL::SSLContext.new
       ctx1.add_certificate(@cli_cert, @cli_key) # RSA
-      assert_handshake_error {
+      assert_raise(OpenSSL::SSL::SSLError) {
         server_connect(port, ctx1) { |ssl|
           ssl.puts("abc"); ssl.gets
         }
@@ -2457,14 +2479,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     elsif sock
       sock.close
     end
-  end
-
-  def assert_handshake_error
-    # different OpenSSL versions react differently when facing a SSL/TLS version
-    # that has been marked as forbidden, therefore any of these may be raised
-    assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::EPIPE) {
-      yield
-    }
   end
 end
 
