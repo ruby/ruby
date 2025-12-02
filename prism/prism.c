@@ -19,17 +19,22 @@ pm_version(void) {
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 /******************************************************************************/
-/* Helpful node-related macros                                                */
+/* Helpful AST-related macros                                                */
 /******************************************************************************/
 
 #define FL PM_NODE_FLAGS
 #define UP PM_NODE_UPCAST
 
 #define PM_TOKEN_START(token_) ((token_)->start)
-#define PM_TOKEN_END(token_)   ((token_)->end)
+#define PM_TOKEN_END(token_) ((token_)->end)
 
 #define PM_NODE_START(node_) (UP(node_)->location.start)
-#define PM_NODE_END(node_)   (UP(node_)->location.end)
+#define PM_NODE_END(node_) (UP(node_)->location.end)
+
+#define PM_LOCATION_NULL_VALUE(parser_) ((pm_location_t) { .start = (parser_)->start, .end = (parser_)->start })
+#define PM_LOCATION_TOKEN_VALUE(token_) ((pm_location_t) { .start = PM_TOKEN_START(token_), .end = PM_TOKEN_END(token_) })
+#define PM_LOCATION_NODE_VALUE(node_) ((pm_location_t) { .start = PM_NODE_START(node_), .end = PM_NODE_END(node_) })
+#define PM_OPTIONAL_LOCATION_TOKEN_VALUE(token) ((token)->type == PM_TOKEN_NOT_PROVIDED ? ((pm_location_t) { 0 }) : PM_LOCATION_TOKEN_VALUE(token))
 
 /******************************************************************************/
 /* Lex mode manipulations                                                     */
@@ -1571,12 +1576,6 @@ static inline pm_token_t
 not_provided(pm_parser_t *parser) {
     return (pm_token_t) { .type = PM_TOKEN_NOT_PROVIDED, .start = parser->start, .end = parser->start };
 }
-
-#define PM_LOCATION_NULL_VALUE(parser) ((pm_location_t) { .start = (parser)->start, .end = (parser)->start })
-#define PM_LOCATION_TOKEN_VALUE(token) ((pm_location_t) { .start = (token)->start, .end = (token)->end })
-#define PM_LOCATION_NODE_VALUE(node) ((pm_location_t) { .start = (node)->location.start, .end = (node)->location.end })
-#define PM_LOCATION_NODE_BASE_VALUE(node) ((pm_location_t) { .start = (node)->base.location.start, .end = (node)->base.location.end })
-#define PM_OPTIONAL_LOCATION_TOKEN_VALUE(token) ((token)->type == PM_TOKEN_NOT_PROVIDED ? ((pm_location_t) { 0 }) : PM_LOCATION_TOKEN_VALUE(token))
 
 /**
  * This is a special out parameter to the parse_arguments_list function that
@@ -4662,7 +4661,7 @@ pm_instance_variable_write_node_create(pm_parser_t *parser, pm_instance_variable
     *node = (pm_instance_variable_write_node_t) {
         .base = PM_NODE_INIT_NODES(parser, PM_INSTANCE_VARIABLE_WRITE_NODE, flags, read_node, value),
         .name = read_node->name,
-        .name_loc = PM_LOCATION_NODE_BASE_VALUE(read_node),
+        .name_loc = PM_LOCATION_NODE_VALUE(read_node),
         .operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
@@ -7068,8 +7067,6 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
 
     return node;
 }
-
-#undef PM_NODE_ALLOC
 
 /**
  * Check if any of the currently visible scopes contain a local variable
@@ -22293,10 +22290,6 @@ pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
 #undef PM_CASE_OPERATOR
 #undef PM_CASE_WRITABLE
 #undef PM_STRING_EMPTY
-#undef PM_LOCATION_NODE_BASE_VALUE
-#undef PM_LOCATION_NODE_VALUE
-#undef PM_LOCATION_NULL_VALUE
-#undef PM_LOCATION_TOKEN_VALUE
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
