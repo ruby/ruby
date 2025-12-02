@@ -199,17 +199,14 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
     builder = Bundler::Dsl.new
 
-    if Bundler::SharedHelpers.in_bundle?
-      if Bundler.locked_gems
-        Bundler.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
-      elsif Bundler.definition.gemfiles.size > 0
-        Bundler.definition.gemfiles.each{|gemfile| builder.eval_gemfile(gemfile) }
-      end
+    if Bundler::SharedHelpers.in_bundle? && Bundler.definition.gemfiles.size > 0
+      Bundler.definition.gemfiles.each {|gemfile| builder.eval_gemfile(gemfile) }
     end
 
     builder.gem gem
 
-    definition = builder.to_definition(nil, true)
+    lockfile = Bundler.default_lockfile
+    definition = builder.to_definition(lockfile, nil)
     definition.validate_runtime!
 
     begin
