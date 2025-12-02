@@ -158,6 +158,17 @@
 #define GC_OLDMALLOC_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
+#ifndef GC_MALLOC_INCREASE_LOCAL_THRESHOLD
+#define GC_MALLOC_INCREASE_LOCAL_THRESHOLD (8 * 1024 /* 8KB */)
+#endif
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+#define USE_MALLOC_INCREASE_LOCAL 1
+static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
+#else
+#define USE_MALLOC_INCREASE_LOCAL 0
+#endif
+
 #ifndef GC_CAN_COMPILE_COMPACTION
 #if defined(__wasi__) /* WebAssembly doesn't support signals */
 # define GC_CAN_COMPILE_COMPACTION 0
@@ -7532,6 +7543,8 @@ ns_to_ms(uint64_t ns)
     return ns / (1000 * 1000);
 }
 
+static void malloc_increase_local_flush(rb_objspace_t *objspace);
+
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
@@ -7541,6 +7554,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     setup_gc_stat_symbols();
 
     ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
+    malloc_increase_local_flush(objspace);
 
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         hash = hash_or_sym;
@@ -8028,6 +8042,45 @@ objspace_malloc_gc_stress(rb_objspace_t *objspace)
     }
 }
 
+static void
+malloc_increase_commit(rb_objspace_t *objspace, size_t new_size, size_t old_size)
+{
+    if (new_size > old_size) {
+        RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
+#if RGENGC_ESTIMATE_OLDMALLOC
+        RUBY_ATOMIC_SIZE_ADD(objspace->malloc_counters.oldmalloc_increase, new_size - old_size);
+#endif
+    }
+    else {
+        atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
+#if RGENGC_ESTIMATE_OLDMALLOC
+        atomic_sub_nounderflow(&objspace->malloc_counters.oldmalloc_increase, old_size - new_size);
+#endif
+    }
+}
+
+#if USE_MALLOC_INCREASE_LOCAL
+static void
+malloc_increase_local_flush(rb_objspace_t *objspace)
+{
+    int delta = malloc_increase_local;
+    if (delta == 0) return;
+
+    malloc_increase_local = 0;
+    if (delta > 0) {
+        malloc_increase_commit(objspace, (size_t)delta, 0);
+    }
+    else {
+        malloc_increase_commit(objspace, 0, (size_t)(-delta));
+    }
+}
+#else
+static void
+malloc_increase_local_flush(rb_objspace_t *objspace)
+{
+}
+#endif
+
 static inline bool
 objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
@@ -8043,18 +8096,23 @@ objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_s
 static bool
 objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
-    if (new_size > old_size) {
-        RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
-#if RGENGC_ESTIMATE_OLDMALLOC
-        RUBY_ATOMIC_SIZE_ADD(objspace->malloc_counters.oldmalloc_increase, new_size - old_size);
-#endif
+#if USE_MALLOC_INCREASE_LOCAL
+    if (new_size < GC_MALLOC_INCREASE_LOCAL_THRESHOLD &&
+        old_size < GC_MALLOC_INCREASE_LOCAL_THRESHOLD) {
+        malloc_increase_local += (int)new_size - (int)old_size;
+
+        if (malloc_increase_local >= GC_MALLOC_INCREASE_LOCAL_THRESHOLD ||
+            malloc_increase_local <= -GC_MALLOC_INCREASE_LOCAL_THRESHOLD) {
+            malloc_increase_local_flush(objspace);
+        }
     }
     else {
-        atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
-#if RGENGC_ESTIMATE_OLDMALLOC
-        atomic_sub_nounderflow(&objspace->malloc_counters.oldmalloc_increase, old_size - new_size);
-#endif
+        malloc_increase_local_flush(objspace);
+        malloc_increase_commit(objspace, new_size, old_size);
     }
+#else
+    malloc_increase_commit(objspace, new_size, old_size);
+#endif
 
     if (type == MEMOP_TYPE_MALLOC && gc_allowed) {
       retry:
