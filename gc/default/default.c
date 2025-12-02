@@ -468,8 +468,14 @@ enum gc_mode {
 
 typedef struct rb_objspace {
     struct {
-        size_t limit;
         size_t increase;
+#if RGENGC_ESTIMATE_OLDMALLOC
+        size_t oldmalloc_increase;
+#endif
+    } malloc_counters;
+
+    struct {
+        size_t limit;
 #if MALLOC_ALLOCATED_SIZE
         size_t allocated_size;
         size_t allocations;
@@ -590,7 +596,6 @@ typedef struct rb_objspace {
         size_t old_objects_limit;
 
 #if RGENGC_ESTIMATE_OLDMALLOC
-        size_t oldmalloc_increase;
         size_t oldmalloc_increase_limit;
 #endif
 
@@ -864,7 +869,7 @@ RVALUE_AGE_SET(VALUE obj, int age)
 }
 
 #define malloc_limit		objspace->malloc_params.limit
-#define malloc_increase 	objspace->malloc_params.increase
+#define malloc_increase 	objspace->malloc_counters.increase
 #define malloc_allocated_size 	objspace->malloc_params.allocated_size
 #define heap_pages_lomem	objspace->heap_pages.range[0]
 #define heap_pages_himem	objspace->heap_pages.range[1]
@@ -4910,7 +4915,7 @@ gc_marks_check(rb_objspace_t *objspace, st_foreach_callback_func *checker_func, 
 {
     size_t saved_malloc_increase = objspace->malloc_params.increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
-    size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
+    size_t saved_oldmalloc_increase = objspace->malloc_counters.oldmalloc_increase;
 #endif
     VALUE already_disabled = rb_objspace_gc_disable(objspace);
 
@@ -4933,7 +4938,7 @@ gc_marks_check(rb_objspace_t *objspace, st_foreach_callback_func *checker_func, 
     if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
     objspace->malloc_params.increase = saved_malloc_increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
-    objspace->rgengc.oldmalloc_increase = saved_oldmalloc_increase;
+    objspace->malloc_counters.oldmalloc_increase = saved_oldmalloc_increase;
 #endif
 }
 #endif /* RGENGC_CHECK_MODE >= 4 */
@@ -6331,7 +6336,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
     /* reset oldmalloc info */
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (!full_mark) {
-        if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
+        if (objspace->malloc_counters.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
             gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
             objspace->rgengc.oldmalloc_increase_limit =
               (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
@@ -6344,13 +6349,13 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
         if (0) fprintf(stderr, "%"PRIdSIZE"\t%d\t%"PRIuSIZE"\t%"PRIuSIZE"\t%"PRIdSIZE"\n",
                        rb_gc_count(),
                        gc_needs_major_flags,
-                       objspace->rgengc.oldmalloc_increase,
+                       objspace->malloc_counters.oldmalloc_increase,
                        objspace->rgengc.oldmalloc_increase_limit,
                        gc_params.oldmalloc_limit_max);
     }
     else {
         /* major GC */
-        objspace->rgengc.oldmalloc_increase = 0;
+        objspace->malloc_counters.oldmalloc_increase = 0;
 
         if ((objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_BY_OLDMALLOC) == 0) {
             objspace->rgengc.oldmalloc_increase_limit =
@@ -7583,7 +7588,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
-    SET(oldmalloc_increase_bytes, objspace->rgengc.oldmalloc_increase);
+    SET(oldmalloc_increase_bytes, objspace->malloc_counters.oldmalloc_increase);
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
 
@@ -8040,13 +8045,13 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
     if (new_size > old_size) {
         RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
 #if RGENGC_ESTIMATE_OLDMALLOC
-        RUBY_ATOMIC_SIZE_ADD(objspace->rgengc.oldmalloc_increase, new_size - old_size);
+        RUBY_ATOMIC_SIZE_ADD(objspace->malloc_counters.oldmalloc_increase, new_size - old_size);
 #endif
     }
     else {
         atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
 #if RGENGC_ESTIMATE_OLDMALLOC
-        atomic_sub_nounderflow(&objspace->rgengc.oldmalloc_increase, old_size - new_size);
+        atomic_sub_nounderflow(&objspace->malloc_counters.oldmalloc_increase, old_size - new_size);
 #endif
     }
 
