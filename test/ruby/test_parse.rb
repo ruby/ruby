@@ -352,6 +352,21 @@ class TestParse < Test::Unit::TestCase
     assert_equal("foobar", b)
   end
 
+  def test_call_command
+    a = b = nil
+    o = Object.new
+    def o.m(*arg); proc {|a| arg.join + a }; end
+
+    assert_nothing_raised do
+      o.instance_eval <<-END, __FILE__, __LINE__+1
+        a = o.m "foo", "bar" do end.("buz")
+        b = o.m "foo", "bar" do end::("buz")
+      END
+    end
+    assert_equal("foobarbuz", a)
+    assert_equal("foobarbuz", b)
+  end
+
   def test_xstring
     assert_raise(Errno::ENOENT) do
       eval("``")
