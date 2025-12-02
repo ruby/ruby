@@ -4041,8 +4041,9 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     # if YJIT and ZJIT release mode
     AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
         JIT_CARGO_SUPPORT=release
+        CARGO_BUILD_ARGS="--frozen" # --locked and --offline
     ])
-    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features} ${CARGO_BUILD_ARGS}"
     AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
         RUST_LIB="target/debug/libruby.a"
     ], [
