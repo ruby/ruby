@@ -1995,6 +1995,10 @@ impl Function {
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
+        assert!(self.insns[insn.0].has_output(),
+                "Don't use make_equal_to for instruction with no output");
+        assert!(self.insns[replacement.0].has_output(),
+                "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
@@ -2960,9 +2964,8 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        let replacement = self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-                        self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -3520,11 +3523,9 @@ impl Function {
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
                 // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id {
+                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
                     self.make_equal_to(insn_id, replacement_id);
-                    if self.insns[replacement_id.0].has_output() {
-                        self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
-                    }
+                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
                 }
                 new_insns.push(replacement_id);
                 // If we've just folded an IfTrue into a Jump, for example, don't bother copying
