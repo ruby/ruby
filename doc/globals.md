@@ -10,74 +10,75 @@ To use the module:
 require 'English'
 ```
 
-## Summary
+## In Brief
 
 ### Exceptions
 
-| Variable    | English           | Contains                                           |
-|-------------|-------------------|----------------------------------------------------|
-| `$!`        | `$ERROR_INFO`     | Exception object; set by Kernel#raise.             |
-| `$@`        | `$ERROR_POSITION` | Array of backtrace positions; set by Kernel#raise. |
+|  Variable   |         \English         |  Initially   | Read-Only | Set By                                         |
+|:-----------:|:------------------------:|:------------:|:---------:|------------------------------------------------|
+| <tt>$!</tt> |   <tt>$ERROR_INFO</tt>   | <tt>nil</tt> |   Yes.    | Kernel#raise, to Exception object.             |
+| <tt>$@</tt> | <tt>$ERROR_POSITION</tt> | <tt>nil</tt> |   Yes.    | Kernel#raise, to array of backtrace positions. |
 
 ### Pattern Matching
 
-| Variable      | English             | Contains                                         |
-|---------------|---------------------|--------------------------------------------------|
-| `$~`          | `$LAST_MATCH_INFO`  | MatchData object; set by matcher method.         |
-| `$&`          | `$MATCH`            | Matched substring; set by matcher method.        |
-| `` $` ``      | `$PRE_MATCH`        | Substring left of match; set by matcher method.  |
-| `$'`          | `$POST_MATCH`       | Substring right of match; set by matcher method. |
-| `$+`          | `$LAST_PAREN_MATCH` | Last group matched; set by matcher method.       |
-| `$1`          |                     | First group matched; set by matcher method.      |
-| `$2`          |                     | Second group matched; set by matcher method.     |
-| <tt>$_n_</tt> |                     | <i>n</i>th group matched; set by matcher method. |
+|         Variable          |          \English          |  Initially   | Read-Only | Set By                                                       |
+|:-------------------------:|:--------------------------:|:------------:|:---------:|--------------------------------------------------------------|
+|        <tt>$~</tt>        | <tt>$LAST_MATCH_INFO</tt>  | <tt>nil</tt> |    No.    | Matcher method: to MatchData object or <tt>nil</tt>.         |
+|        <tt>$&</tt>        |      <tt>$MATCH</tt>       | <tt>nil</tt> |    No.    | Matcher method: to matched substring or <tt>nil</tt>.        |
+|        <tt>$`</tt>        |    <tt>$PRE_MATCH</tt>     | <tt>nil</tt> |    No.    | Matcher method: to substring left of match or <tt>nil</tt>.  |
+|        <tt>$'</tt>        |    <tt>$POST_MATCH</tt>    | <tt>nil</tt> |    No.    | Matcher method: to substring right of match or <tt>nil</tt>. |
+|        <tt>$+</tt>        | <tt>$LAST_PAREN_MATCH</tt> | <tt>nil</tt> |    No.    | Matcher method: to last group matched or <tt>nil</tt>.       |
+|        <tt>$1</tt>        |                            | <tt>nil</tt> |    No.    | Matcher method: to first group matched or <tt>nil</tt>.      |
+|        <tt>$2</tt>        |                            | <tt>nil</tt> |    No.    | Matcher method: to second group matched or <tt>nil</tt>.     |
+|       <tt>$_n_</tt>       |                            | <tt>nil</tt> |    No.    | Matcher method: to <i>n</i>th group matched or <tt>nil</tt>. |
 
 ### Separators
 
-| Variable | English                    | Contains                                   |
-|----------|----------------------------|--------------------------------------------|
-| `$/`     | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
-| `$\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
+|   Variable   |             \English              |  Initially   | Read-Only |
+|:------------:|:---------------------------------:|:------------:|:---------:|
+| <tt>$/</tt>  | <tt>$INPUT_RECORD_SEPARATOR</tt>  |   Newline.   |    No.    |
+|  <tt>$\</tt> | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | <tt>nil</tt> |    No.    |
 
 ### Streams
 
-| Variable  | English                     | Contains                                      |
-|-----------|-----------------------------|-----------------------------------------------|
-| `$stdin`  |                             | Standard input stream; initially `STDIN`.     |
-| `$stdout` |                             | Standard input stream; initially `STDIOUT`.   |
-| `$stderr` |                             | Standard input stream; initially `STDERR`.    |
-| `$<`      | `$DEFAULT_INPUT`            | Default standard input; `ARGF` or `$stdin`.   |
-| `$>`      | `$DEFAULT_OUTPUT`           | Default standard output; initially `$stdout`. |
-| `$.`      | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream.  |
-| `$_`      | `$LAST_READ_LINE`           | String from most recently read stream.        |
+|    Variable      |                 \English                  |       Initially       | Read-Only | Set By                |
+|:----------------:|:-----------------------------------------:|:---------------------:|:---------:|-----------------------|
+| <tt>$stdin</tt>  |                                           |    <tt>STDIN</tt>     |    No.    |                       |
+| <tt>$stdout</tt> |                                           |    <tt>STDOUT</tt>    |    No.    |                       |
+| <tt>$stderr</tt> |                                           |    <tt>STDERR</tt>    |    No.    |                       |
+|   <tt>$<</tt>    |          <tt>$DEFAULT_INPUT</tt>          |     <tt>ARGF</tt>     |   Yes.    |                       |
+|   <tt>$></tt>    |         <tt>$DEFAULT_OUTPUT</tt>          |    <tt>STDOUT</tt>    |    No.    |                       |
+|   <tt>$></tt>    |         <tt>$DEFAULT_OUTPUT</tt>          |   <tt>STDOUT </tt>    |    No.    |                       |
+|   <tt>$.</tt>    | <tt>$INPUT_LINE_NUMBER</tt>, <tt>$NR</tt> | Non-negative integer. |    No.    | Certain read methods. |
+|   <tt>$_</tt>    |         <tt>$LAST_READ_LINE</tt>          |     <tt>nil</tt>      |    No.    | Certain read methods. |
 
 ### Processes
 
-| Variable                  | English               | Contains                                               |
-|---------------------------|-----------------------|--------------------------------------------------------|
-| `$0`                      |                       | Initially, the name of the executing program.          |
-| `$*`                      | `$ARGV`               | Points to the `ARGV` array.                            |
-| `$$`                      | `$PROCESS_ID`, `$PID` | Process ID of the current process.                     |
-| `$?`                      | `$CHILD_STATUS`       | Process::Status of most recently exited child process. |
-| `$LOAD_PATH`, `$:`, `$-I` |                       | Array of paths to be searched.                         |
-| `$LOADED_FEATURES`, `$"`  |                       | Array of paths to loaded files.                        |
+|                    Variable                    |                     \English        |       Initially       | Read-Only |
+|:----------------------------------------------:|:-----------------------------------:|:---------------------:|:---------:|
+|                <tt>$0</tt>                     |                                     |     Program name.     |    No.    |
+|                  <tt>$*</tt>                   |           <tt>$ARGV</tt>            |     <tt>ARGV</tt>     |   Yes.    |
+|                  <tt>$$</tt>                   | <tt>$PROCESS_ID</tt>, <tt>$PID</tt> |     Process PID.      |   Yes.    |
+|                  <tt>$?</tt>                   |       <tt>$CHILD_STATUS</tt>        | Child process status. |   Yes.    |
+| <tt>$LOAD_PATH</tt>, <tt>$:</tt>, <tt>$-I</tt> |                                     |    Array of paths.    |   Yes.    |
+|     <tt>$LOADED_FEATURES</tt>, <tt>$"</tt>     |                                     |   Array of paths.     |   Yes.    |
 
 ### Debugging
 
-| Variable    | English | Contains                                               |
-|-------------|---------|--------------------------------------------------------|
-| `$FILENAME` |         | The value returned by method ARGF.filename.            |
-| `$DEBUG`    |         | Initially, whether option `-d` or `--debug` was given. |
-| `$VERBOSE`  |         | Initially, whether option `-V` or `-W` was given.      |
+|    Variable        | \English |                         Initially                         | Read-Only | Set By        |
+|:------------------:|:--------:|:---------------------------------------------------------:|:---------:|---------------|
+| <tt>$FILENAME</tt> |          |   The value returned by method <tt>ARGF#filename</tt>.    |   Yes.    | <tt>ARGF</tt> |
+|  <tt>$DEBUG</tt>   |          | Whether option <tt>-d</tt> or <tt>--debug</tt> was given. |    No.    |               |
+| <tt>$VERBOSE</tt>  |          |   Whether option <tt>-V</tt> or <tt>-W</tt> was given.    |    No.    |               |
 
 ### Other Variables
 
-| Variable | English | Contains                                       |
-|----------|---------|------------------------------------------------|
-| `$-a`    |         | Whether option `-a` was given.                 |
-| `$-i`    |         | Extension given with command-line option `-i`. |
-| `$-l`    |         | Whether option `-l` was given.                 |
-| `$-p`    |         | Whether option `-p` was given.                 |
+| Variable      | \English |                     Initially                         | Read-Only |
+|:-------------:|:--------:|:-----------------------------------------------------:|:---------:|
+| <tt>$-a</tt>  |          |         Whether option <tt>-a</tt> was given.         |   Yes.    |
+| <tt>$-i</tt>  |          | Extension given with command-line option <tt>-i</tt>. |    No.    |
+| <tt>$-l</tt>  |          |         Whether option <tt>-l</tt> was given.         |   Yes.    |
+| <tt>$-p</tt>  |          |         Whether option <tt>-p</tt> was given.         |   Yes.    |
 
 ## Exceptions
 
@@ -375,33 +376,33 @@ Whether command-line option `-p` was given; read-only.
 
 | Constant | Contains                |
 |----------|-------------------------|
-| `STDIN`  | Standard input stream.  |
-| `STDOUT` | Standard output stream. |
-| `STDERR` | Standard error stream.  |
+| <tt>STDIN</tt>  | Standard input stream.  |
+| <tt>STDOUT</tt> | Standard output stream. |
+| <tt>STDERR</tt> | Standard error stream.  |
 
 ### Environment
 
 | Constant              | Contains                                                                      |
 |-----------------------|-------------------------------------------------------------------------------|
-| `ENV`                 | Hash of current environment variable names and values.                        |
-| `ARGF`                | String concatenation of files given on the command line, or `$stdin` if none. |
-| `ARGV`                | Array of the given command-line arguments.                                    |
-| `TOPLEVEL_BINDING`    | Binding of the top level scope.                                               |
-| `RUBY_VERSION`        | String Ruby version.                                                          |
-| `RUBY_RELEASE_DATE`   | String Ruby release date.                                                     |
-| `RUBY_PLATFORM`       | String Ruby platform.                                                         |
-| `RUBY_PATCH_LEVEL`    | String Ruby patch level.                                                      |
-| `RUBY_REVISION`       | String Ruby revision.                                                         |
-| `RUBY_COPYRIGHT`      | String Ruby copyright.                                                        |
-| `RUBY_ENGINE`         | String Ruby engine.                                                           |
-| `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
-| `RUBY_DESCRIPTION`    | String Ruby description.                                                      |
+| <tt>ENV</tt>                 | Hash of current environment variable names and values.                        |
+| <tt>ARGF</tt>                | String concatenation of files given on the command line, or <tt>$stdin</tt> if none. |
+| <tt>ARGV</tt>                | Array of the given command-line arguments.                                    |
+| <tt>TOPLEVEL_BINDING</tt>    | Binding of the top level scope.                                               |
+| <tt>RUBY_VERSION</tt>        | String Ruby version.                                                          |
+| <tt>RUBY_RELEASE_DATE</tt>   | String Ruby release date.                                                     |
+| <tt>RUBY_PLATFORM</tt>       | String Ruby platform.                                                         |
+| <tt>RUBY_PATCH_LEVEL</tt>    | String Ruby patch level.                                                      |
+| <tt>RUBY_REVISION</tt>       | String Ruby revision.                                                         |
+| <tt>RUBY_COPYRIGHT</tt>      | String Ruby copyright.                                                        |
+| <tt>RUBY_ENGINE</tt>         | String Ruby engine.                                                           |
+| <tt>RUBY_ENGINE_VERSION</tt> | String Ruby engine version.                                                   |
+| <tt>RUBY_DESCRIPTION</tt>    | String Ruby description.                                                      |
 
 ### Embedded Data
 
-| Constant | Contains                                                           |
-|----------|--------------------------------------------------------------------|
-| `DATA`   | File containing embedded data (lines following `__END__`, if any). |
+| Constant      | Contains                                                                    |
+|---------------|-----------------------------------------------------------------------------|
+| <tt>DATA</tt> | File containing embedded data (lines following <tt>'__END__'</tt>, if any). |
 
 ## Streams
 
