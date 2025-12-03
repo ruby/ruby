@@ -230,7 +230,7 @@ shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
-shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
+shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
