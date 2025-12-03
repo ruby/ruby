@@ -550,6 +550,7 @@ module JSON
     :create_additions => nil,
   }
   # :call-seq:
+  #   JSON.unsafe_load(source, options = {}) -> object
   #   JSON.unsafe_load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -681,7 +682,12 @@ module JSON
   #
   def unsafe_load(source, proc = nil, options = nil)
     opts = if options.nil?
-      _unsafe_load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _unsafe_load_default_options
+      end
     else
       _unsafe_load_default_options.merge(options)
     end
@@ -709,6 +715,7 @@ module JSON
   end
 
   # :call-seq:
+  #   JSON.load(source, options = {}) -> object
   #   JSON.load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -845,8 +852,18 @@ module JSON
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
   def load(source, proc = nil, options = nil)
+    if proc && options.nil? && proc.is_a?(Hash)
+      options = proc
+      proc = nil
+    end
+
     opts = if options.nil?
-      _load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _load_default_options
+      end
     else
       _load_default_options.merge(options)
     end

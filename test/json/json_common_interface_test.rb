@@ -149,6 +149,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   def test_load_with_options
     json  = '{ "foo": NaN }'
     assert JSON.load(json, nil, :allow_nan => true)['foo'].nan?
+    assert JSON.load(json, :allow_nan => true)['foo'].nan?
   end
 
   def test_load_null
@@ -213,6 +214,12 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
       '{"foo":[1,2,3],"bar":{"baz":"plop"}}',
     ]
     assert_equal expected, visited
+  end
+
+  def test_unsafe_load_with_options
+    json  = '{ "foo": NaN }'
+    assert JSON.unsafe_load(json, nil, :allow_nan => true)['foo'].nan?
+    assert JSON.unsafe_load(json, :allow_nan => true)['foo'].nan?
   end
 
   def test_unsafe_load_default_options
