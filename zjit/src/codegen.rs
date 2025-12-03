@@ -1411,15 +1411,16 @@ fn gen_new_array(
 ) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
 
-    let length: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    let new_array = asm_ccall!(asm, rb_ary_new_capa, length.into());
-
-    for val in elements {
-        asm_ccall!(asm, rb_ary_push, new_array, val);
+    if elements.is_empty() {
+        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
+    } else {
+        let argv = gen_push_opnds(asm, &elements);
+        let new_array = asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
+        gen_pop_opnds(asm, &elements);
+        new_array
     }
-
-    new_array
 }
 
 /// Compile array access (`array[index]`)
