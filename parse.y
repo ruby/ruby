@@ -1393,7 +1393,6 @@ last_expr_node(NODE *expr)
 
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 static NODE* method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
-#define new_nil(loc) NEW_NIL(loc)
 static NODE *new_nil_at(struct parser_params *p, const rb_code_position_t *pos);
 static NODE *new_if(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *new_unless(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
@@ -4451,7 +4450,7 @@ primary		: inline_primary
                 }
             | keyword_not '(' rparen
                 {
-                    $$ = call_uni_op(p, method_cond(p, new_nil(&@2), &@2), METHOD_NOT, &@1, &@$);
+                    $$ = call_uni_op(p, method_cond(p, NEW_NIL(&@2), &@2), METHOD_NOT, &@1, &@$);
                 /*% ripper: unary!(ID2VAL(idNOT), Qnil) %*/
                 }
             | fcall brace_block
