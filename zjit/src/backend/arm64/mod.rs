@@ -500,15 +500,18 @@ impl Assembler {
                         let stack_opnds = &opnds[num_reg_args..];
                         let mut args: Vec<(Opnd, Opnd)> = Vec::with_capacity(stack_opnds.len());
 
+
+                        // Align stack to the next quadword.
+                        let offset = if num_stack_args % 2 == 0 { num_stack_args } else {num_stack_args + 1};
+                        // Make space on stack.
+                        asm.sub_into(NATIVE_STACK_PTR, (offset * 8).into());
+
                         for (i, opnd) in stack_opnds.iter().enumerate() {
                             args.push((Opnd::mem(64, NATIVE_STACK_PTR, -8 * (i + 1) as i32), *opnd));
                         }
 
+                        // Move registers onto stack.
                         asm.parallel_mov(args);
-
-                        // Align stack to the next quadword.
-                        let offset = if num_stack_args % 2 == 0 { num_stack_args } else {num_stack_args + 1};
-                        asm.sub_into(NATIVE_STACK_PTR, (offset * 8).into());
                     }
 
                     // Load each operand into the corresponding argument
