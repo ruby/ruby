@@ -88,7 +88,7 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
 #if JSON_CPU_LITTLE_ENDIAN_64BITS
 #if __has_builtin(__builtin_bswap64)
 #undef rstring_cache_memcmp
-static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
+ALWAYS_INLINE(static) int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
     // The libc memcmp has numerous complex optimizations, but in this particular case,
     // we know the string is small (JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH), so being able to
@@ -117,7 +117,7 @@ static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rpt
 #endif
 #endif
 
-static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+ALWAYS_INLINE(static) int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
 {
     const char *rstring_ptr;
     long rstring_length;
@@ -131,7 +131,7 @@ static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length,
     }
 }
 
-static ALWAYS_INLINE() VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+ALWAYS_INLINE(static) VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
     int low = 0;
     int high = cache->length - 1;
@@ -540,7 +540,7 @@ json_eat_comments(JSON_ParserState *state)
     }
 }
 
-static ALWAYS_INLINE() void
+ALWAYS_INLINE(static) void
 json_eat_whitespace(JSON_ParserState *state)
 {
     while (true) {
@@ -661,7 +661,7 @@ static inline const char *json_next_backslash(const char *pe, const char *string
     return NULL;
 }
 
-static NOINLINE() VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
+NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
 {
     bool intern = is_name || config->freeze;
     bool symbolize = is_name && config->symbolize_names;
@@ -946,7 +946,7 @@ static const bool string_scan_table[256] = {
 static SIMD_Implementation simd_impl = SIMD_NONE;
 #endif /* HAVE_SIMD */
 
-static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
+ALWAYS_INLINE(static) bool string_scan(JSON_ParserState *state)
 {
 #ifdef HAVE_SIMD
 #if defined(HAVE_SIMD_NEON)
@@ -1015,7 +1015,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
     return Qfalse;
 }
 
-static ALWAYS_INLINE() VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
 {
     state->cursor++;
     const char *start = state->cursor;

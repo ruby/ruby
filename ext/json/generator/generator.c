@@ -128,7 +128,7 @@ typedef struct _search_state {
 #endif /* HAVE_SIMD */
 } search_state;
 
-static ALWAYS_INLINE() void search_flush(search_state *search)
+ALWAYS_INLINE(static) void search_flush(search_state *search)
 {
     // Do not remove this conditional without profiling, specifically escape-heavy text.
     // escape_UTF8_char_basic will advance search->ptr and search->cursor (effectively a search_flush).
@@ -171,7 +171,7 @@ static inline unsigned char search_escape_basic(search_state *search)
     return 0;
 }
 
-static ALWAYS_INLINE() void escape_UTF8_char_basic(search_state *search)
+ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
 {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch) {
@@ -258,7 +258,7 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 #ifdef HAVE_SIMD
 
-static ALWAYS_INLINE() char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
+ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
@@ -281,7 +281,7 @@ static ALWAYS_INLINE() char *copy_remaining_bytes(search_state *search, unsigned
 
 #ifdef HAVE_SIMD_NEON
 
-static ALWAYS_INLINE() unsigned char neon_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char neon_next_match(search_state *search)
 {
     uint64_t mask = search->matches_mask;
     uint32_t index = trailing_zeros64(mask) >> 2;
@@ -395,7 +395,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
 
 #ifdef HAVE_SIMD_SSE2
 
-static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char sse2_next_match(search_state *search)
 {
     int mask = search->matches_mask;
     int index = trailing_zeros(mask);
@@ -419,7 +419,7 @@ static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
 #define TARGET_SSE2
 #endif
 
-static TARGET_SSE2 ALWAYS_INLINE() unsigned char search_escape_basic_sse2(search_state *search)
+ALWAYS_INLINE(static) TARGET_SSE2 unsigned char search_escape_basic_sse2(search_state *search)
 {
     if (RB_UNLIKELY(search->has_matches)) {
         // There are more matches if search->matches_mask > 0.
@@ -1123,8 +1123,7 @@ struct hash_foreach_arg {
     bool mixed_keys_encountered;
 };
 
-NOINLINE()
-static void
+NOINLINE(static) void
 json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
 {
     if (arg->mixed_keys_encountered) {
