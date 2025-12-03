@@ -8989,6 +8989,88 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_self_class() {
+        eval(r#"
+            class C; end
+            def test(o) = o.class
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          IncrCounter inline_iseq_optimized_send_count
+          v25:Class[C@0x1000] = Const Value(VALUE(0x1000))
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_class() {
+        eval(r#"
+            def test = 5.class
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1000, class@0x1008, cme:0x1010)
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Class[Integer@0x1000] = Const Value(VALUE(0x1000))
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_fold_singleton_class() {
+        eval(r#"
+            def test = self.class
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, class@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v22:Class[Object@0x1038] = Const Value(VALUE(0x1038))
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn no_load_from_ep_right_after_entrypoint() {
       let formatted = eval("
           def read_nil_local(a, _b, _c)
