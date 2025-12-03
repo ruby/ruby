@@ -639,12 +639,26 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 given_argc == ISEQ_BODY(iseq)->param.lead_num + (kw_flag ? 2 : 1) &&
                 !ISEQ_BODY(iseq)->param.flags.has_opt &&
                 !ISEQ_BODY(iseq)->param.flags.has_post &&
-                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
-                (!kw_flag ||
-                !ISEQ_BODY(iseq)->param.flags.has_kw ||
-                !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
-                !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg)) {
-            args->rest_dupped = true;
+                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords) {
+            if (kw_flag) {
+                if (ISEQ_BODY(iseq)->param.flags.has_kw ||
+                    ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                    args->rest_dupped = true;
+                }
+                else if (kw_flag & VM_CALL_KW_SPLAT) {
+                    VALUE kw_hash = locals[args->argc - 1];
+                    if (kw_hash == Qnil ||
+                            (RB_TYPE_P(kw_hash, T_HASH) && RHASH_EMPTY_P(kw_hash))) {
+                        args->rest_dupped = true;
+                    }
+                }
+
+            }
+            else if (!ISEQ_BODY(iseq)->param.flags.has_kw &&
+                    !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                    !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
+                args->rest_dupped = true;
+            }
         }
     }
 

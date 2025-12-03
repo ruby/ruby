@@ -508,6 +508,59 @@ class TestAllocation < Test::Unit::TestCase
       RUBY
     end
 
+    def test_anonymous_splat_parameter
+      only_block = block.empty? ? block : block[2..]
+      check_allocations(<<~RUBY)
+        def self.anon_splat(*#{block}); end
+
+        check_allocations(1, 1, "anon_splat(1, a: 2#{block})")
+        check_allocations(1, 1, "anon_splat(1, *empty_array, a: 2#{block})")
+        check_allocations(1, 1, "anon_splat(1, a:2, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(1, **empty_hash, a: 2#{block})")
+
+        check_allocations(1, 0, "anon_splat(1, **nil#{block})")
+        check_allocations(1, 0, "anon_splat(1, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(1, **hash1#{block})")
+        check_allocations(1, 1, "anon_splat(1, *empty_array, **hash1#{block})")
+        check_allocations(1, 1, "anon_splat(1, **hash1, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(1, **empty_hash, **hash1#{block})")
+
+        check_allocations(1, 0, "anon_splat(1, *empty_array#{block})")
+        check_allocations(1, 0, "anon_splat(1, *empty_array, *empty_array, **empty_hash#{block})")
+
+        check_allocations(1, 1, "anon_splat(*array1, a: 2#{block})")
+
+        check_allocations(1, 0, "anon_splat(*nil, **nill#{block})")
+        check_allocations(0, 0, "anon_splat(*array1, **nill#{block})")
+        check_allocations(0, 0, "anon_splat(*array1, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(*array1, **hash1#{block})")
+        check_allocations(1, 1, "anon_splat(*array1, *empty_array, **hash1#{block})")
+
+        check_allocations(1, 0, "anon_splat(*array1, *empty_array#{block})")
+        check_allocations(1, 0, "anon_splat(*array1, *empty_array, **empty_hash#{block})")
+
+        check_allocations(1, 1, "anon_splat(*array1, *empty_array, a: 2, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(*array1, *empty_array, **hash1, **empty_hash#{block})")
+
+        check_allocations(1, 0, "anon_splat(#{only_block})")
+        check_allocations(1, 1, "anon_splat(a: 2#{block})")
+        check_allocations(1, 0, "anon_splat(**empty_hash#{block})")
+
+        check_allocations(1, 1, "anon_splat(1, *empty_array, a: 2, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(1, *empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(1, 1, "anon_splat(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(1, 1, "anon_splat(*array1, **hash1, **empty_hash#{block})")
+
+        unless defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+          check_allocations(0, 0, "anon_splat(*array1, **nil#{block})")
+          check_allocations(1, 0, "anon_splat(*r2k_empty_array#{block})")
+          check_allocations(1, 1, "anon_splat(*r2k_array#{block})")
+          check_allocations(1, 0, "anon_splat(*r2k_empty_array1#{block})")
+          check_allocations(1, 1, "anon_splat(*r2k_array1#{block})")
+        end
+      RUBY
+    end
+
     def test_anonymous_splat_and_anonymous_keyword_splat_parameters
       check_allocations(<<~RUBY)
         def self.anon_splat_and_anon_keyword_splat(*, **#{block}); end
