@@ -19,8 +19,8 @@ YJIT_LIB_TOUCH = touch $@
 # the "target" dir in the source directory through VPATH.
 BUILD_YJIT_LIBS = $(TOP_BUILD_DIR)/$(YJIT_LIBS)
 
-# YJIT_SUPPORT=yes when `configure` gets `--enable-yjit`
-ifeq ($(YJIT_SUPPORT),yes)
+# In a YJIT-only build (no ZJIT)
+ifneq ($(strip $(YJIT_LIBS)),)
 yjit-libs: $(BUILD_YJIT_LIBS)
 $(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
