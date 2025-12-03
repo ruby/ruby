@@ -1137,7 +1137,7 @@ rb_obj_set_shareable_no_assert(VALUE obj)
 {
     FL_SET_RAW(obj, FL_SHAREABLE);
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         VALUE fields = rb_obj_fields_no_ractor_check(obj);
         if (imemo_type_p(fields, imemo_fields)) {
             // no recursive mark
@@ -1750,7 +1750,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     else if (data->replacement != _val)     { RB_OBJ_WRITE(parent_obj, &v, data->replacement); } \
 } while (0)
 
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
@@ -1984,7 +1984,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     rb_gc_writebarrier_remember(data->replacement);
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
 

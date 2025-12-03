@@ -1291,7 +1291,7 @@ rb_obj_fields(VALUE obj, ID field_name)
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         st_data_t key = (st_data_t)obj, value;
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
@@ -2218,7 +2218,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
     rb_check_frozen(dest);
 
-    if (!rb_obj_exivar_p(obj)) {
+    if (!rb_obj_gen_fields_p(obj)) {
         return;
     }
 

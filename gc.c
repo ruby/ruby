@@ -2061,7 +2061,7 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
     obj_free_object_id(obj);
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         rb_free_generic_ivar(obj);
     }
 
@@ -3116,7 +3116,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 {
     struct gc_mark_classext_foreach_arg foreach_args;
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         rb_mark_generic_ivar(obj);
     }
 

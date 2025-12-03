@@ -93,7 +93,7 @@ on_newobj_event(VALUE tpval, void *data)
 {
     VALUE obj = rb_tracearg_object(rb_tracearg_from_tracepoint(tpval));
     if (RB_TYPE_P(obj, T_STRING)) {
-        // Would fail !rb_obj_exivar_p(str) assertion in fstring_concurrent_set_create
+        // Would fail !rb_obj_gen_fields_p(str) assertion in fstring_concurrent_set_create
         return;
     }
     if (!rb_objspace_internal_object_p(obj)) rb_obj_id(obj);
