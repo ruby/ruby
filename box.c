@@ -696,8 +696,45 @@ escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize
     }
 }
 
+#if defined(_WIN32)
+HANDLE rb_w32_wopen_to_delete(const WCHAR *wfile);
+# define box_ext_cleanup_mark NULL
+#else
+static void
+box_ext_cleanup_mark(void *p)
+{
+    rb_gc_mark((VALUE)p);
+}
+#endif
+
+static void
+box_ext_cleanup_free(void *p)
+{
+#if defined(_WIN32)
+    HANDLE h = (HANDLE)p;
+    if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+#else
+    VALUE path = (VALUE)p;
+    unlink(RSTRING_PTR(path));
+#endif
+}
+
+static const rb_data_type_t box_ext_cleanup_type = {
+    "box_ext_cleanup",
+    {box_ext_cleanup_mark, box_ext_cleanup_free},
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+void
+rb_box_cleanup_local_extension(VALUE cleanup)
+{
+    void *p = DATA_PTR(cleanup);
+    DATA_PTR(cleanup) = NULL;
+    if (p) box_ext_cleanup_free(p);
+}
+
 VALUE
-rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
+rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
     int copy_error, wrote;
@@ -711,6 +748,8 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
     if (wrote >= (int)sizeof(ext_path)) {
         rb_bug("Extension file path in the box was too long");
     }
+    VALUE new_path = rb_str_new_cstr(ext_path);
+    *cleanup = TypedData_Wrap_Struct(0, &box_ext_cleanup_type, NULL);
     copy_error = copy_ext_file(src_path, ext_path);
     if (copy_error) {
         char message[1024];
@@ -721,8 +760,18 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
 #endif
         rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
     }
-    // TODO: register the path to be clean-uped
-    return rb_str_new_cstr(ext_path);
+#if defined(_WIN32)
+    WCHAR *w_ext = rb_w32_mbstr_to_wstr(CP_UTF8, ext_path, -1, NULL);
+    if (!w_ext) {
+        rb_w32_uunlink(ext_path);
+        rb_memerror();
+    }
+    DATA_PTR(*cleanup) = rb_w32_wopen_to_delete(w_ext);
+    free(w_ext);
+#else
+    DATA_PTR(*cleanup) = (void *)new_path;
+#endif
+    return new_path;
 }
 
 // TODO: delete it just after dln_load? or delay it?
