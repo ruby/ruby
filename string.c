@@ -549,7 +549,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!rb_obj_gen_fields_p(str));
+    RUBY_ASSERT(!rb_shape_obj_has_ivars(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));
 
