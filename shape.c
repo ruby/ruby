@@ -950,12 +950,10 @@ rb_shape_transition_add_ivar(VALUE obj, ID id)
 }
 
 shape_id_t
-rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id)
+rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id)
 {
-    shape_id_t original_shape_id = RBASIC_SHAPE_ID(obj);
     RUBY_ASSERT(!shape_frozen_p(original_shape_id));
 
-    VALUE klass = obj_get_owner_class(obj);
     rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, false);
     if (next_shape) {
         return shape_id(next_shape, original_shape_id);

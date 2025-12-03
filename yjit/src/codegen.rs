@@ -3101,7 +3101,9 @@ fn gen_set_ivar(
     let mut new_shape_too_complex = false;
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
-        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
+        // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
+        let klass = unsafe { rb_obj_class(comptime_receiver) };
+        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(klass, current_shape_id, ivar_name) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
