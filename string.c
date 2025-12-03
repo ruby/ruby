@@ -1449,6 +1449,15 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 
 static inline bool str_discarded_p(VALUE str);
 
+/*
+ * This function makes `str2` have the same content as `str`, and share if possible.
+ * If `str2` has enough embed capacity to hold the content of `str2`,
+ * it will turn `str2` into an embedded string and copy over the content.
+ * Otherwise, it will turn `str2` into an `STR_SHARED` string.
+ * If `str` is already `STR_SHARED`, `str2` will reuse its shared root;
+ * otherwise, it will create a new frozen string that has the same content as `str`,
+ * and use that as the shared root.
+ */
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
@@ -1460,10 +1469,17 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 
     RSTRING_GETMEM(str, ptr, len);
     if (str_embed_capa(str2) >= len + termlen) {
-        // if (!STR_EMBED_P(str2)) {
-        //     fprintf(stderr, "[debug] String %p is not embedded. ptr: %p\n",
-        //         (void*)str2, RSTRING(str2)->as.heap.ptr);
-        // }
+        // KUNSHAN: str2 must have been "discarded".
+        // For this reason, the code below simply sets str2 to embedded,
+        // ignoring the old value of RSTRING(str2)->as.heap.ptr
+        if (!STR_EMBED_P(str2) && RSTRING(str2)->as.heap.ptr != 0) {
+            // fprintf(stderr, "[debug] String %p is not embedded. ptr: %p, shared: %d, nofree: %d\n",
+            //     (void*)str2,
+            //     RSTRING(str2)->as.heap.ptr,
+            //     FL_TEST(str2, STR_SHARED) != 0,
+            //     FL_TEST(str2, STR_NOFREE) != 0);
+            RUBY_ASSERT(FL_TEST(str2, STR_SHARED|STR_NOFREE));
+        }
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str), len);
@@ -1482,11 +1498,15 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
         RUBY_ASSERT(OBJ_FROZEN(root));
 
         if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
+            // KUNSHAN: If str is already "discarded", `ptr` should have already become NULL.
+            // The `ruby_sized_xfree` below should be unreachable.
             if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
                 rb_fatal("about to free a possible shared root");
             }
             char *ptr2 = STR_HEAP_PTR(str2);
             if (ptr2 != ptr) {
+                RUBY_ASSERT(ptr2 == NULL);
+                // rb_bug("str2 should have already been discarded.  This should be unreachable!  ptr2: %p, ptr: %p", ptr2, ptr);
                 ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
             }
         }
@@ -1496,6 +1516,8 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     }
 
     STR_SET_LEN(str2, len);
+
+    RUBY_ASSERT(STR_EMBED_P(str2) || STR_SHARED_P(str2));
 
     return str2;
 }
@@ -2799,7 +2821,6 @@ str_discard(VALUE str)
 static inline bool
 str_discarded_p(VALUE str)
 {
-    str_modifiable(str);
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
         if (RSTRING(str)->as.heap.ptr == NULL) {
             RUBY_ASSERT(RSTRING(str)->len == 0);
