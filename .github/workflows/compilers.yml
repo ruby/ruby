@@ -132,11 +132,11 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 10', with: { tag: 'clang-10' }, timeout-minutes: 5 }
-        # llvm-objcopy<=9 doesn't have --wildcard. It compiles, but leaves Rust symbols in libyjit.o.
-      - { uses: './.github/actions/compilers', name: 'clang 9',  with: { tag: 'clang-9',   append_configure: '--disable-yjit' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'clang 8',  with: { tag: 'clang-8',   append_configure: '--disable-yjit' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'clang 7',  with: { tag: 'clang-7',   append_configure: '--disable-yjit' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'clang 6',  with: { tag: 'clang-6.0', append_configure: '--disable-yjit' }, timeout-minutes: 5 }
+        # llvm-objcopy<=9 doesn't have --wildcard. It compiles, but leaves Rust symbols in libyjit.o and fail `make test-leaked-globals`.
+      - { uses: './.github/actions/compilers', name: 'clang 9',  with: { tag: 'clang-9',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 8',  with: { tag: 'clang-8',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 7',  with: { tag: 'clang-7',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 6',  with: { tag: 'clang-6.0', append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
 
   compile5:
     name: 'omnibus compilations, #5'
