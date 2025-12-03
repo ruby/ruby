@@ -1074,7 +1074,7 @@ module JSON
     #
     # Serialize the given object into a \JSON document.
     def dump(object, io = nil)
-      @state.generate_new(object, io)
+      @state.generate(object, io)
     end
     alias_method :generate, :dump
 

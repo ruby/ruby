@@ -968,14 +968,16 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
 }
 
-static inline VALUE vstate_get(struct generate_json_data *data)
+static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(!data->vstate)) {
         vstate_spill(data);
     }
     GET_STATE(data->vstate);
     state->depth = data->depth;
-    return data->vstate;
+    VALUE tmp = rb_funcall(obj, i_to_json, 1, data->vstate);
+    // no need to restore state->depth, vstate is just a temporary State
+    return tmp;
 }
 
 static VALUE
@@ -1293,9 +1295,7 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
 {
     VALUE tmp;
     if (rb_respond_to(obj, i_to_json)) {
-        tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
-        GET_STATE(data->vstate);
-        data->depth = state->depth;
+        tmp = json_call_to_json(data, obj);
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
     } else {
@@ -1477,16 +1477,6 @@ static VALUE generate_json_try(VALUE d)
     return fbuffer_finalize(data->buffer);
 }
 
-// Preserves the deprecated behavior of State#depth being set.
-static VALUE generate_json_ensure_deprecated(VALUE d)
-{
-    struct generate_json_data *data = (struct generate_json_data *)d;
-    fbuffer_free(data->buffer);
-    data->state->depth = data->depth;
-
-    return Qundef;
-}
-
 static VALUE generate_json_ensure(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
@@ -1507,13 +1497,13 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
 
     struct generate_json_data data = {
         .buffer = &buffer,
-        .vstate = self,
+        .vstate = Qfalse, // don't use self as it may be frozen and its depth is mutated when calling to_json
         .state = state,
         .depth = state->depth,
         .obj = obj,
         .func = func
     };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure_deprecated, (VALUE)&data);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 /* call-seq:
@@ -1530,31 +1520,6 @@ static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
     VALUE obj = argv[0];
     VALUE io = argc > 1 ? argv[1] : Qnil;
     return cState_partial_generate(self, obj, generate_json, io);
-}
-
-static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 1, 2);
-    VALUE obj = argv[0];
-    VALUE io = argc > 1 ? argv[1] : Qnil;
-
-    GET_STATE(self);
-
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    FBuffer buffer = {
-        .io = RTEST(io) ? io : Qfalse,
-    };
-    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
-
-    struct generate_json_data data = {
-        .buffer = &buffer,
-        .vstate = Qfalse,
-        .state = state,
-        .depth = state->depth,
-        .obj = obj,
-        .func = generate_json
-    };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -2145,7 +2110,6 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
-    rb_define_method(cState, "generate_new", cState_generate_new, -1); // :nodoc:
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
