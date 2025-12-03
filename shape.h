@@ -437,7 +437,7 @@ rb_shape_obj_has_fields(VALUE obj)
 }
 
 static inline bool
-rb_obj_exivar_p(VALUE obj)
+rb_obj_gen_fields_p(VALUE obj)
 {
     switch (TYPE(obj)) {
         case T_NONE:
