@@ -296,6 +296,8 @@ AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
+FIRSTMAKEFILE=""
+
 # nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
 # In case we're working with llvm-nm, tell it to not worry about the bitcode.
 AS_IF([${NM} --help 2>&1 | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
@@ -470,6 +472,8 @@ AS_CASE(["$target_os"],
     # so wrap clang to insert our fake wasm-opt, which does nothing, in PATH.
     CC_WRAPPER=`cd -P "${tooldir}" && pwd`/wasm-clangw
     CC="$CC_WRAPPER $CC"
+
+    FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
   ])
 
 cc_version=
@@ -511,6 +515,8 @@ AS_CASE(["$target_os"],
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
     AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
     AS_CASE(["$target_alias"], [-*], [ target_alias="$target_cpu${target_alias}"])
+    # cygwin/GNUmakefile.in is not exclusively for cygwin.
+    FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
     AS_CASE(["$target_os"],
     [mingw*], [
 	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt
@@ -613,6 +619,22 @@ AS_IF([test -f conf$$.dir/src/cdcmd], [
 rm -fr conf$$.dir
 AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
+
+AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
+    AC_MSG_CHECKING([if ${MAKE-make} is GNU make])
+    mkdir conftest.dir
+    echo "all:; @echo yes" > conftest.dir/GNUmakefile
+    echo "all:; @echo no" > conftest.dir/Makefile
+    gnumake=`(cd conftest.dir; ${MAKE-make})`
+    rm -fr conftest.dir
+    AS_CASE(["$gnumake"],
+    [*yes*], [
+	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
+	gnumake=yes],
+    [
+	gnumake=no])
+    AC_MSG_RESULT($gnumake)
+])
 }
 
 [begin]_group "compiler section" && {
@@ -3512,7 +3534,6 @@ AC_SUBST(RUNRUBY)
 AC_SUBST(XRUBY)
 AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
 
-FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
@@ -3942,7 +3963,7 @@ AC_ARG_ENABLE(zjit,
             # 1.85.0 is the first stable version that supports the 2024 edition.
             AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
                     $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
-                AS_IF([test "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no"], [
+                AS_IF([test "$gnumake" = "yes" -a  \( "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no" \)], [
                     # When only building ZJIT, we don't need cargo; it's required for YJIT+ZJIT build.
                     # Assume that if rustc is new enough, then cargo is also.
                     # TODO(alan): Get rid of dependency on cargo in YJIT+ZJIT build. Cargo's offline mode
@@ -4200,7 +4221,6 @@ enum {
 	    PLATFORM_DIR=win32
 	    ])
 	LIBRUBY_ALIASES=''
-	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	AS_IF([test x"$enable_shared" = xyes], [
 	    LIBRUBY='lib$(RUBY_SO_NAME).dll.a'
 	], [
@@ -4210,7 +4230,6 @@ enum {
 	])
 	],
     [wasi*], [
-        FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
         AC_LIBOBJ([wasm/missing])
         AC_LIBOBJ([wasm/runtime])
         AC_LIBOBJ([wasm/fiber])
@@ -4227,21 +4246,6 @@ AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
        [AC_SUBST(ENABLE_DEBUG_ENV, yes)])
 
-AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
-    AC_MSG_CHECKING([if ${MAKE-make} is GNU make])
-    mkdir conftest.dir
-    echo "all:; @echo yes" > conftest.dir/GNUmakefile
-    echo "all:; @echo no" > conftest.dir/Makefile
-    gnumake=`(cd conftest.dir; ${MAKE-make})`
-    rm -fr conftest.dir
-    AS_CASE(["$gnumake"],
-    [*yes*], [
-	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
-	gnumake=yes],
-    [
-	gnumake=no])
-    AC_MSG_RESULT($gnumake)
-])
 AS_IF([test "$gnumake" = yes], [ NULLCMD=: ], [
     AC_MSG_CHECKING([for safe null command for ${MAKE-make}])
     mkdir conftest.dir
