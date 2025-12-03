@@ -62,17 +62,18 @@ class TestHash < Test::Unit::TestCase
     x.default = 5
     assert_equal(5, x[23])
 
+    z = nil
     x = Hash.new
-    def x.default(k)
-      $z = k
+    x.singleton_class.define_method(:default) do |k|
+      z = k
       self[k] = k*2
     end
-    $z = 0
+    z = 0
     assert_equal(44, x[22])
-    assert_equal(22, $z)
-    $z = 0
+    assert_equal(22, z)
+    z = 0
     assert_equal(44, x[22])
-    assert_equal(0, $z)
+    assert_equal(0, z)
   end
 
   # From rubicon

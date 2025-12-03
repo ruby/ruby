@@ -1563,12 +1563,12 @@ CODE
   end
 
   class C11492
-    define_method(:foo_return){
+    define_method(:foo_return, &Ractor.make_shareable(proc{
       return true
-    }
-    define_method(:foo_break){
+    }))
+    define_method(:foo_break, &Ractor.make_shareable(proc{
       break true
-    }
+    }))
   end
 
   def test_define_method_on_return
@@ -2103,29 +2103,29 @@ CODE
                  '[Bug #13369]'
   end
 
-  define_method(:f_last_defined) do
+  define_method(:f_last_defined, &Ractor.make_shareable(proc do
     :f_last_defined
-  end
+  end))
 
-  define_method(:f_return_defined) do
+  define_method(:f_return_defined, &Ractor.make_shareable(proc do
     return :f_return_defined
-  end
+  end))
 
-  define_method(:f_break_defined) do
+  define_method(:f_break_defined, &Ractor.make_shareable(proc do
     break :f_break_defined
-  end
+  end))
 
-  define_method(:f_raise_defined) do
+  define_method(:f_raise_defined, &Ractor.make_shareable(proc do
     raise
   rescue
     return :f_raise_defined
-  end
+  end))
 
-  define_method(:f_break_in_rescue_defined) do
+  define_method(:f_break_in_rescue_defined, &Ractor.make_shareable(proc do
     raise
   rescue
     break :f_break_in_rescue_defined
-  end
+  end))
 
   def test_return_value_with_rescue_and_defined_methods
     assert_equal [[:b_return, :f_last_defined, :f_last_defined],
@@ -2154,13 +2154,13 @@ CODE
                  '[Bug #13369]'
   end
 
-  define_method(:just_yield) do |&block|
+  define_method(:just_yield, &Ractor.make_shareable(proc do |&block|
     block.call
-  end
+  end))
 
-  define_method(:unwind_multiple_bmethods) do
+  define_method(:unwind_multiple_bmethods, &Ractor.make_shareable(proc do
     just_yield { return :unwind_multiple_bmethods }
-  end
+  end))
 
   def test_non_local_return_across_multiple_define_methods
     assert_equal [[:b_return, :unwind_multiple_bmethods, nil],

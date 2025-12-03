@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require_relative "envutil"
+
 module TracePointChecker
   STATE = {
     count: 0,
@@ -120,7 +122,7 @@ module TracePointChecker
 end if defined?(TracePoint.stat)
 
 class ::Test::Unit::TestCase
-  include TracePointChecker::ZombieTraceHunter
+  include TracePointChecker::ZombieTraceHunter unless EnvUtil.tests_with_ractors?
 end if defined?(TracePointChecker)
 
 # TracePointChecker.start verbose: false
