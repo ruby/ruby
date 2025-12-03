@@ -543,9 +543,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
           v26:StringExact = GuardType v9, StringExact
-          v30:BoolExact = CCallWithFrame v26, :BasicObject#!=@0x1040, v15
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v30:BoolExact = CCall v26, :String#==@0x1070, v15
+          v31:BoolExact = BoolNot v30
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
