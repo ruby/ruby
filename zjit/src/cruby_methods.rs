@@ -640,9 +640,9 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
             let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) });
             return Some(result);
         }
-        if fun.is_a(other, types::StringExact) && fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
+        if fun.is_a(other, types::String) && fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
             let recv = fun.coerce_to(block, recv, types::StringExact, state);
-            let other = fun.coerce_to(block, other, types::StringExact, state);
+            let other = fun.coerce_to(block, other, types::String, state);
             let return_type = types::BoolExact;
             let elidable = true;
             // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true

@@ -554,6 +554,41 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_neq_string_subclass() {
+        eval(r#"
+            class C < String; end
+            S = C.new("bar")
+            def test(s) = s != S
+            test "foo"
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, S)
+          v25:StringSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, !=@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v29:StringExact = GuardType v9, StringExact
+          PatchPoint MethodRedefined(String@0x1010, ==@0x1048, cme:0x1050)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v33:BoolExact = CCall v29, :String#==@0x1078, v25
+          v34:BoolExact = BoolNot v33
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
     fn test_optimize_string_neq_nil() {
         eval(r#"
             def test(s) = s != nil
