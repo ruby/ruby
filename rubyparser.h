@@ -388,6 +388,7 @@ typedef struct RNode_RESCUE {
     struct RNode *nd_head;
     struct RNode *nd_resq;
     struct RNode *nd_else;
+    rb_code_location_t keyword_loc;
 } rb_node_rescue_t;
 
 typedef struct RNode_RESBODY {
