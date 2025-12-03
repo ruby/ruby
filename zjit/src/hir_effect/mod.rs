@@ -6,20 +6,24 @@ use crate::hir::{PtrPrintMap};
 // NOTE: Effect very intentionally does not support Eq or PartialEq; we almost never want to check
 // bit equality of types in the compiler but instead check subtyping, intersection, union, etc.
 #[derive(Copy, Clone, Debug)]
-// TODO(Jacob): Update this comment
-/// The main work horse of intraprocedural type inference and specialization. The main interfaces
+/// The main work horse of effect inference and specialization. The main interfaces
 /// will look like:
 ///
 /// * is effect A a subset of effect B
 /// * union/meet effect A and effect B
 ///
 /// Most questions can be rewritten in terms of these operations.
-// TODO(Jacob): Convert from read_bits and write_bits to just bits
-// Rename this struct to be about a memory location, with another struct
-// of Effects that combines the two.
+
+// TODO(Jacob): Fix up comments for Effect and EffectPair
+// Make it clear why we need both of these. Effect handles all lattice operations
+// EffectPair is our typical use case because we care about having both read and write effects
 pub struct Effect {
+    bits: u64
+}
+
+pub struct EffectPair {
     /// Unlike ZJIT's type system, effects do not have a notion of subclasses.
-    /// Instead of specializations, the Effects struct contains two bitsets.
+    /// Instead of specializations, the Effects struct contains two Effect bitsets.
     /// We have read and write bitsets, both representing the same lattice.
     ///
     /// TODO(Jacob): Provide an example about why we split based on read / write
@@ -28,31 +32,37 @@ pub struct Effect {
     /// This should include top, bottom, and how you move up or down in between
     ///
     /// These fields should not be directly read or written except by internal `Effect` APIs.
-    read_bits: u64,
-    write_bits: u64
+    read_bits: Effect,
+    write_bits: Effect
 }
 
 include!("hir_effect.inc.rs");
 
-/// Print adaptor for [`Effect`]. See [`PtrPrintMap`].
+
+/// Print adaptor for [`BitSet`]. See [`PtrPrintMap`].
 pub struct EffectPrinter<'a> {
     inner: Effect,
     ptr_map: &'a PtrPrintMap,
 }
 
-// TODO(Jacob): Port from types to effects
 impl<'a> std::fmt::Display for EffectPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let ty = self.inner;
+        let effect = self.inner;
+        // TODO(Jacob): Is it better to have 2*n in terms of list traversals, or allocate 1 bitset?
+        // We could just remove this first loop through and make the function simpler. This seems better to me?
+        //
+        // If there's an exact match, write and return
         for (name, pattern) in bits::AllBitPatterns {
-            if ty.bits == pattern {
+            if effect.bits == pattern {
+                // TODO(Jacob): Figure out if this is horrible rust
                 write!(f, "{name}")?;
-                return write_spec(f, self);
+                return Ok(());
             }
         }
-        #TODO(Jacob): Convert to debug assert
-        assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
-        let mut bits = ty.bits;
+        // Otherwise, find the most descriptive sub-effect write it, and mask out the handled bits.
+        // Most descriptive means "highest number of bits set while remaining fully contained within `effect`"
+        debug_assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
+        let mut bits = effect.bits;
         let mut sep = "";
         for (name, pattern) in bits::AllBitPatterns {
             if bits == 0 { break; }
@@ -62,10 +72,13 @@ impl<'a> std::fmt::Display for EffectPrinter<'a> {
                 bits &= !pattern;
             }
         }
-        assert_eq!(bits, 0, "Should have eliminated all bits by iterating over all patterns");
-        write_spec(f, self)
+        debug_assert_eq!(bits, 0, "Should have eliminated all bits by iterating over all patterns");
+        Ok(())
     }
 }
+
+// TODO(Jacob): Add EffectPairPrinter that just calls out to EffectPrinter twice
+// TODO(Jacob): Add functions for effect pair. print differing effects in the pair
 
 impl std::fmt::Display for Effect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -76,48 +89,36 @@ impl std::fmt::Display for Effect {
 impl Effect {
     // TODO(Jacob): Double check this comment below that was pulled from types
     /// Private. Only for creating effect globals.
-    const fn from_bits(read_bits: u64, write_bits: u64) -> Effect {
+    const fn from_bits(bits: u64) -> Effect {
         Effect {
-            read_bits,
-            write_bits,
+            bits
         }
     }
 
     pub fn union(&self, other: Effect) -> Effect {
-        let read_bits = self.read_bits | other.read_bits;
-        let write_bits = self.write_bits | other.write_bits;
-        Effect::from_bits(read_bits, write_bits)
+        Effect::from_bits(self.bits | other.bits)
     }
 
-    pub fn intersection(&self, other: Effect) -> Effect {
-        let read_bits = self.read_bits & other.read_bits;
-        let write_bits = self.write_bits & other.write_bits;
-        Effect::from_bits(read_bits, write_bits)
+    pub fn intersect(&self, other: Effect) -> Effect {
+        Effect::from_bits(self.bits & other.bits)
     }
 
-    pub fn overlaps(&self, other: Effect) -> bool {
-        !self.intersection(other).bit_equal(effects::None)
+    pub fn exclude(&self, other: Effect) -> Effect {
+        Effect::from_bits(self.bits - (self.bits & other.bits))
     }
 
     // TODO(Jacob): Rewrite comment and see if this is intended to be used or not. We don't have subtypes...
     /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Effect::includes`].
     pub fn bit_equal(&self, other: Effect) -> bool {
-        self.read_bits == other.read_bits && self.write_bits == other.write_bits
+        self.bits == other.bits
     }
 
     pub fn includes(&self, other: Effect) -> bool {
-        let union = Effect::union(self, other);
-        Effect::bit_equal(self, union)
+        self.bit_equal(Effect::union(self, other))
     }
 
-    pub fn includes_read(&self, other: Effect) -> bool {
-        let union = Effect::union(self, other);
-        self.read_bits == union.read_bits
-    }
-
-    pub fn includes_write(&self, other: Effect) -> bool {
-        let union = Effect::union(self, other);
-        self.write_bits == union.write_bits
+    pub fn overlaps(&self, other: Effect) -> bool {
+        !self.intersect(other).bit_equal(effects::None)
     }
 
     pub fn print(self, ptr_map: &PtrPrintMap) -> EffectPrinter<'_> {
