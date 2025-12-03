@@ -2421,6 +2421,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_require_rubygems_with_auto_compact
+    omit("GC.auto_compact= support is required for this test") unless GC.respond_to?(:auto_compact=)
     assert_runs 'true', %q{
       GC.auto_compact = true
       require 'rubygems'
