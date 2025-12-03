@@ -1469,17 +1469,9 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 
     RSTRING_GETMEM(str, ptr, len);
     if (str_embed_capa(str2) >= len + termlen) {
-        // KUNSHAN: str2 must have been "discarded".
-        // For this reason, the code below simply sets str2 to embedded,
-        // ignoring the old value of RSTRING(str2)->as.heap.ptr
-        if (!STR_EMBED_P(str2) && RSTRING(str2)->as.heap.ptr != 0) {
-            // fprintf(stderr, "[debug] String %p is not embedded. ptr: %p, shared: %d, nofree: %d\n",
-            //     (void*)str2,
-            //     RSTRING(str2)->as.heap.ptr,
-            //     FL_TEST(str2, STR_SHARED) != 0,
-            //     FL_TEST(str2, STR_NOFREE) != 0);
-            RUBY_ASSERT(FL_TEST(str2, STR_SHARED|STR_NOFREE));
-        }
+        // Note: str2 must have been "discarded".
+        // For this reason, we simply sets str2 as embedded,
+        // ignoring the previous value of RSTRING(str2)->as.heap.ptr
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str), len);
@@ -1497,19 +1489,6 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
         }
         RUBY_ASSERT(OBJ_FROZEN(root));
 
-        if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
-            // KUNSHAN: If str is already "discarded", `ptr` should have already become NULL.
-            // The `ruby_sized_xfree` below should be unreachable.
-            if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
-                rb_fatal("about to free a possible shared root");
-            }
-            char *ptr2 = STR_HEAP_PTR(str2);
-            if (ptr2 != ptr) {
-                RUBY_ASSERT(ptr2 == NULL);
-                // rb_bug("str2 should have already been discarded.  This should be unreachable!  ptr2: %p, ptr: %p", ptr2, ptr);
-                ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
-            }
-        }
         FL_SET(str2, STR_NOEMBED);
         RSTRING(str2)->as.heap.ptr = ptr;
         STR_SET_SHARED(str2, root);
