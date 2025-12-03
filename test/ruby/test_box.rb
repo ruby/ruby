@@ -832,6 +832,7 @@ class TestBox < Test::Unit::TestCase
       begin;
         require "json"
       end;
+      sleep(1) if /mswin|mingw/ =~ RUBY_PLATFORM
       assert_empty(Dir.children(tmpdir))
     end
   end
