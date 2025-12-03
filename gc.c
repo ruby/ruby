@@ -3303,7 +3303,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_internal(ptr[i]);
         }
 
-        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+        if (rb_shape_obj_has_fields(obj) && !FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
             gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
         }
 
