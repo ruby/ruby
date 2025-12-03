@@ -3443,9 +3443,11 @@ CODE
 
   def test_uminus_no_embed_gc
     pad = "a"*2048
-    ("aa".."zz").each do |c|
-      fstr = -(c + pad).freeze
-      File.open(IO::NULL, "w").write(fstr)
+    File.open(IO::NULL, "w") do |dev_null|
+      ("aa".."zz").each do |c|
+        fstr = -(c + pad).freeze
+        dev_null.write(fstr)
+      end
     end
     GC.start
   end
