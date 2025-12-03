@@ -288,6 +288,33 @@ class TestObjSpace < Test::Unit::TestCase
     assert true # success
   end
 
+  def test_trace_object_allocations_with_other_tracepoint
+    # Test that ObjectSpace.trace_object_allocations isn't changed by changes
+    # to another tracepoint
+    line_tp = TracePoint.new(:line) { }
+
+    ObjectSpace.trace_object_allocations_start
+
+    obj1 = Object.new; line1 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj1)
+    assert_equal line1, ObjectSpace.allocation_sourceline(obj1)
+
+    line_tp.enable
+
+    obj2 = Object.new; line2 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj2)
+    assert_equal line2, ObjectSpace.allocation_sourceline(obj2)
+
+    line_tp.disable
+
+    obj3 = Object.new; line3 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj3)
+    assert_equal line3, ObjectSpace.allocation_sourceline(obj3)
+  ensure
+    ObjectSpace.trace_object_allocations_stop
+    ObjectSpace.trace_object_allocations_clear
+  end
+
   def test_trace_object_allocations_compaction
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
