@@ -216,12 +216,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal expected, visited
   end
 
-  def test_unsafe_load_with_options
-    json  = '{ "foo": NaN }'
-    assert JSON.unsafe_load(json, nil, :allow_nan => true)['foo'].nan?
-    assert JSON.unsafe_load(json, :allow_nan => true)['foo'].nan?
-  end
-
   def test_unsafe_load_default_options
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     assert JSON.unsafe_load(too_deep, nil).is_a?(Array)
@@ -237,6 +231,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, :allow_nan => false)['foo'].nan? }
     # make sure it still uses the defaults when something is provided
     assert JSON.unsafe_load(nan_json, nil, :allow_blank => true)['foo'].nan?
+    assert JSON.unsafe_load(nan_json, :allow_nan => true)['foo'].nan?
   end
 
   def test_unsafe_load_null
