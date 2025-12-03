@@ -2172,7 +2172,7 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *    File.owned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
- * effective used id of the calling process is the owner of
+ * effective user id of the calling process is the owner of
  * the file.
  *
  * _file_name_ can be an IO object.
