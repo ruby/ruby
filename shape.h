@@ -162,6 +162,12 @@ RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
 bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
 #endif
 
+static inline VALUE
+RSHAPE_COMBINE_IN_FLAGS(VALUE flags, shape_id_t shape_id)
+{
+    return (flags &SHAPE_FLAG_MASK) | (((VALUE)shape_id) << SHAPE_FLAG_SHIFT);
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 {
@@ -169,8 +175,7 @@ RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
     // Object shapes are occupying top bits
-    RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
-    RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
+    RBASIC(obj)->flags = RSHAPE_COMBINE_IN_FLAGS(RBASIC(obj)->flags, shape_id);
 #endif
 }
 
