@@ -107,6 +107,7 @@ fn main() {
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
         .allowlist_function("rb_class_inherited_p")
+        .allowlist_function("rb_class_real")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
         .allowlist_function("rb_hash_new_with_size")
