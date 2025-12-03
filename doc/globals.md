@@ -34,10 +34,10 @@ require 'English'
 
 ### Separators
 
-|   Variable   |             \English              |  Initially   | Read-Only |
-|:------------:|:---------------------------------:|:------------:|:---------:|
-| <tt>$/</tt>  | <tt>$INPUT_RECORD_SEPARATOR</tt>  |   Newline.   |    No.    |
-|  <tt>$\</tt> | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | <tt>nil</tt> |    No.    |
+|    Variable    |             \English              |  Initially   | Read-Only |
+|:--------------:|:---------------------------------:|:------------:|:---------:|
+|  <tt>$/</tt>   | <tt>$INPUT_RECORD_SEPARATOR</tt>  |   Newline.   |    No.    |
+| <tt>$\\\\</tt> | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | <tt>nil</tt> |    No.    |
 
 ### Streams
 
@@ -180,7 +180,7 @@ English - `$INPUT_RECORD_SEPARATOR`, `$RS`.
 
 Aliased as `$-0`.
 
-### `$\` (Output Record Separator)
+### `$\\\` (Output Record Separator)
 
 An output record separator, initially `nil`.
 
@@ -398,7 +398,7 @@ Whether command-line option `-p` was given; read-only.
 | <tt>RUBY_ENGINE_VERSION</tt> | String Ruby engine version.                                                   |
 | <tt>RUBY_DESCRIPTION</tt>    | String Ruby description.                                                      |
 
-### Embedded Data
+### Embedded \Data
 
 | Constant      | Contains                                                                    |
 |---------------|-----------------------------------------------------------------------------|
