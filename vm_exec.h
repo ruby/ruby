@@ -185,7 +185,7 @@ default:                        \
                 if (ec->tag->state) THROW_EXCEPTION(val); \
             } \
         } \
-        else if ((zjit_entry = rb_zjit_entry)) { \
+        else if ((zjit_entry = (rb_zjit_func_t)rb_zjit_entry)) { \
             rb_jit_func_t func = zjit_compile(ec); \
             if (func) { \
                 val = zjit_entry(ec, ec->cfp, func); \
