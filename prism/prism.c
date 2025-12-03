@@ -19299,18 +19299,52 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
             pm_token_t opening = parser->previous;
             pm_array_node_t *array = pm_array_node_create(parser, &opening);
+            pm_node_t *current = NULL;
 
             while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
                 accept1(parser, PM_TOKEN_WORDS_SEP);
                 if (match1(parser, PM_TOKEN_STRING_END)) break;
 
-                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                // Interpolation is not possible but nested heredocs can still lead to
+                // consecutive (disjoint) string tokens when the final newline is escaped.
+                while (match1(parser, PM_TOKEN_STRING_CONTENT)) {
                     pm_token_t opening = not_provided(parser);
                     pm_token_t closing = not_provided(parser);
-                    pm_array_node_elements_append(array, UP(pm_symbol_node_create_current_string(parser, &opening, &parser->current, &closing)));
+
+                    // Record the string node, moving to interpolation if needed.
+                    if (current == NULL) {
+                        current = UP(pm_symbol_node_create_current_string(parser, &opening, &parser->current, &closing));
+                        parser_lex(parser);
+                    } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
+                        pm_node_t *string = UP(pm_string_node_create_current_string(parser, &opening, &parser->current, &closing));
+                        parser_lex(parser);
+                        pm_interpolated_symbol_node_append((pm_interpolated_symbol_node_t *) current, string);
+                    } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
+                        pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
+                        pm_token_t bounds = not_provided(parser);
+
+                        pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = cast->value_loc.start, .end = cast->value_loc.end };
+                        pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, &bounds, &content, &bounds, &cast->unescaped));
+                        pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, &opening, &parser->previous, &closing));
+                        parser_lex(parser);
+
+                        pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
+                        pm_interpolated_symbol_node_append(interpolated, first_string);
+                        pm_interpolated_symbol_node_append(interpolated, second_string);
+
+                        xfree(current);
+                        current = UP(interpolated);
+                    } else {
+                        assert(false && "unreachable");
+                    }
                 }
 
-                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_LOWER_ELEMENT);
+                if (current) {
+                    pm_array_node_elements_append(array, current);
+                    current = NULL;
+                } else {
+                    expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
+                }
             }
 
             pm_token_t closing = parser->current;
@@ -19489,23 +19523,42 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
             pm_token_t opening = parser->previous;
             pm_array_node_t *array = pm_array_node_create(parser, &opening);
-
-            // skip all leading whitespaces
-            accept1(parser, PM_TOKEN_WORDS_SEP);
+            pm_node_t *current = NULL;
 
             while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
                 accept1(parser, PM_TOKEN_WORDS_SEP);
                 if (match1(parser, PM_TOKEN_STRING_END)) break;
 
-                if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+                // Interpolation is not possible but nested heredocs can still lead to
+                // consecutive (disjoint) string tokens when the final newline is escaped.
+                while (match1(parser, PM_TOKEN_STRING_CONTENT)) {
                     pm_token_t opening = not_provided(parser);
                     pm_token_t closing = not_provided(parser);
 
                     pm_node_t *string = UP(pm_string_node_create_current_string(parser, &opening, &parser->current, &closing));
-                    pm_array_node_elements_append(array, string);
+
+                    // Record the string node, moving to interpolation if needed.
+                    if (current == NULL) {
+                        current = string;
+                    } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
+                        pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, string);
+                    } else if (PM_NODE_TYPE_P(current, PM_STRING_NODE)) {
+                        pm_interpolated_string_node_t *interpolated = pm_interpolated_string_node_create(parser, &opening, NULL, &closing);
+                        pm_interpolated_string_node_append(interpolated, current);
+                        pm_interpolated_string_node_append(interpolated, string);
+                        current = UP(interpolated);
+                    } else {
+                        assert(false && "unreachable");
+                    }
+                    parser_lex(parser);
                 }
 
-                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
+                if (current) {
+                    pm_array_node_elements_append(array, current);
+                    current = NULL;
+                } else {
+                    expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
+                }
             }
 
             pm_token_t closing = parser->current;
