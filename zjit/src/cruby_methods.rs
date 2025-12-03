@@ -631,6 +631,28 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
         return result;
     }
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
+    if fun.likely_a(recv, types::StringExact, state) {
+        if fun.is_a(other, types::NilClass) && fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
+            fun.coerce_to(block, recv, types::StringExact, state);
+            let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) });
+            return Some(result);
+        }
+        if fun.is_a(other, types::StringExact) && fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
+            let recv = fun.coerce_to(block, recv, types::StringExact, state);
+            let other = fun.coerce_to(block, other, types::StringExact, state);
+            // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
+            let eq_result = fun.push_insn(block, hir::Insn::CCall {
+                cfunc: rb_yarv_str_eql_internal as *const u8,
+                recv,
+                args: vec![other],
+                name: ID!(string_eq),
+                return_type,
+                elidable,
+            });
+            let result = fun.push_insn(block, hir::Insn::BoolNot { val: eq_result });
+            return Some(result);
+        }
+    }
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
         return None;
     }

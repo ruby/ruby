@@ -522,6 +522,64 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_neq_string() {
+        eval(r#"
+            def test(s) = s != "bar"
+            test "foo"
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:StringExact = StringCopy v14
+          PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v26:StringExact = GuardType v9, StringExact
+          v30:BoolExact = CCallWithFrame v26, :BasicObject#!=@0x1040, v15
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_neq_nil() {
+        eval(r#"
+            def test(s) = s != nil
+            test "foo"
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(String@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v25:StringExact = GuardType v9, StringExact
+          PatchPoint MethodRedefined(String@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v29:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
     fn neq_with_side_effect_not_elided () {
         let result = eval("
             class CustomEq

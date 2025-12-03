@@ -333,6 +333,7 @@ fn main() {
         .allowlist_function("rb_get_alloc_func")
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_equal")
+        .allowlist_function("rb_str_equal")
         .allowlist_function("rb_class_new_instance_pass_kw")
         .allowlist_function("rb_obj_alloc")
         .allowlist_function("rb_obj_info")

@@ -1985,6 +1985,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
+    pub fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
     pub fn rb_mod_name(mod_: VALUE) -> VALUE;
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
