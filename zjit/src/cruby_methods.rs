@@ -634,6 +634,7 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
     if fun.likely_a(recv, types::StringExact, state) {
         // TODO(max): Figure out if we need more checks that NilClass doesn't define to_str and/or
         // NilClass#==(=) has not been overridden
+        // TODO(max): Use !could_be(String) instead of strict check on other
         if fun.is_a(other, types::NilClass) && fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
             fun.coerce_to(block, recv, types::StringExact, state);
             let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) });
