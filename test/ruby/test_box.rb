@@ -828,12 +828,11 @@ class TestBox < Test::Unit::TestCase
     require 'tmpdir'
     Dir.mktmpdir do |tmpdir|
       env = ENV_ENABLE_BOX.merge({'TMPDIR'=>tmpdir})
-      assert_separately([env], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+      assert_ruby_status([env], "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         require "json"
-        tmpdirname = ENV['TMPDIR']
-        assert_empty(Dir.children(tmpdirname))
       end;
+      assert_empty(Dir.children(tmpdir))
     end
   end
 end
