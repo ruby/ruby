@@ -60,7 +60,9 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_zjit_enable
-    assert_separately([], <<~'RUBY')
+    # --disable-all is important in case the build/environment has YJIT enabled by
+    # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
+    assert_separately(["--disable-all"], <<~'RUBY')
       refute_predicate RubyVM::ZJIT, :enabled?
       refute_predicate RubyVM::ZJIT, :stats_enabled?
       refute_includes RUBY_DESCRIPTION, "+ZJIT"
