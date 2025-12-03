@@ -239,21 +239,32 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 }
 
 static void
-mutex_set_owner(VALUE self, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 {
-    rb_mutex_t *mutex = mutex_ptr(self);
-
     mutex->thread = th->self;
     mutex->fiber_serial = rb_fiber_serial(fiber);
 }
 
 static void
-mutex_locked(rb_thread_t *th, rb_fiber_t *fiber, VALUE self)
+mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 {
-    rb_mutex_t *mutex = mutex_ptr(self);
-
-    mutex_set_owner(self, th, fiber);
+    mutex_set_owner(mutex, th, fiber);
     thread_mutex_insert(th, mutex);
+}
+
+static inline bool
+mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+{
+    if (mutex->fiber_serial == 0) {
+        RUBY_DEBUG_LOG("%p ok", mutex);
+
+        mutex_locked(mutex, th, fiber);
+        return true;
+    }
+    else {
+        RUBY_DEBUG_LOG("%p ng", mutex);
+        return false;
+    }
 }
 
 /*
@@ -266,21 +277,7 @@ mutex_locked(rb_thread_t *th, rb_fiber_t *fiber, VALUE self)
 VALUE
 rb_mutex_trylock(VALUE self)
 {
-    rb_mutex_t *mutex = mutex_ptr(self);
-
-    if (mutex->fiber_serial == 0) {
-        RUBY_DEBUG_LOG("%p ok", mutex);
-
-        rb_fiber_t *fiber = GET_EC()->fiber_ptr;
-        rb_thread_t *th = GET_THREAD();
-
-        mutex_locked(th, fiber, self);
-        return Qtrue;
-    }
-    else {
-        RUBY_DEBUG_LOG("%p ng", mutex);
-        return Qfalse;
-    }
+    return RBOOL(mutex_trylock(mutex_ptr(self), GET_THREAD(), GET_EC()->fiber_ptr));
 }
 
 static VALUE
@@ -321,7 +318,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
         rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
-    if (rb_mutex_trylock(self) == Qfalse) {
+    if (!mutex_trylock(mutex, th, fiber)) {
         if (mutex->fiber_serial == rb_fiber_serial(fiber)) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
@@ -342,7 +339,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
                 if (!mutex->fiber_serial) {
-                    mutex_set_owner(self, th, fiber);
+                    mutex_set_owner(mutex, th, fiber);
                 }
             }
             else {
@@ -383,7 +380,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 // unlocked by another thread while sleeping
                 if (!mutex->fiber_serial) {
-                    mutex_set_owner(self, th, fiber);
+                    mutex_set_owner(mutex, th, fiber);
                 }
 
                 rb_ractor_sleeper_threads_dec(th->ractor);
@@ -402,7 +399,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 }
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->fiber_serial) {
-                    mutex_set_owner(self, th, fiber);
+                    mutex_set_owner(mutex, th, fiber);
                 }
             }
             else {
@@ -421,7 +418,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
         }
 
         if (saved_ints) th->ec->interrupt_flag = saved_ints;
-        if (mutex->fiber_serial == rb_fiber_serial(fiber)) mutex_locked(th, fiber, self);
+        if (mutex->fiber_serial == rb_fiber_serial(fiber)) mutex_locked(mutex, th, fiber);
     }
 
     RUBY_DEBUG_LOG("%p locked", mutex);

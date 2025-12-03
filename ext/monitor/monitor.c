@@ -50,10 +50,10 @@ monitor_ptr(VALUE monitor)
     return mc;
 }
 
-static int
-mc_owner_p(struct rb_monitor *mc)
+static bool
+mc_owner_p(struct rb_monitor *mc, VALUE current_fiber)
 {
-    return mc->owner == rb_fiber_current();
+    return mc->owner == current_fiber;
 }
 
 /*
@@ -67,15 +67,42 @@ monitor_try_enter(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
 
-    if (!mc_owner_p(mc)) {
+    VALUE current_fiber = rb_fiber_current();
+    if (!mc_owner_p(mc, current_fiber)) {
         if (!rb_mutex_trylock(mc->mutex)) {
             return Qfalse;
         }
-        RB_OBJ_WRITE(monitor, &mc->owner, rb_fiber_current());
+        RB_OBJ_WRITE(monitor, &mc->owner, current_fiber);
         mc->count = 0;
     }
     mc->count += 1;
     return Qtrue;
+}
+
+
+struct monitor_args {
+    VALUE monitor;
+    struct rb_monitor *mc;
+    VALUE current_fiber;
+};
+
+static inline void
+monitor_args_init(struct monitor_args *args, VALUE monitor)
+{
+    args->monitor = monitor;
+    args->mc = monitor_ptr(monitor);
+    args->current_fiber = rb_fiber_current();
+}
+
+static void
+monitor_enter0(struct monitor_args *args)
+{
+    if (!mc_owner_p(args->mc, args->current_fiber)) {
+        rb_mutex_lock(args->mc->mutex);
+        RB_OBJ_WRITE(args->monitor, &args->mc->owner, args->current_fiber);
+        args->mc->count = 0;
+    }
+    args->mc->count++;
 }
 
 /*
@@ -87,25 +114,42 @@ monitor_try_enter(VALUE monitor)
 static VALUE
 monitor_enter(VALUE monitor)
 {
-    struct rb_monitor *mc = monitor_ptr(monitor);
-    if (!mc_owner_p(mc)) {
-        rb_mutex_lock(mc->mutex);
-        RB_OBJ_WRITE(monitor, &mc->owner, rb_fiber_current());
-        mc->count = 0;
-    }
-    mc->count++;
+    struct monitor_args args;
+    monitor_args_init(&args, monitor);
+    monitor_enter0(&args);
     return Qnil;
+}
+
+static inline void
+monitor_check_owner0(struct monitor_args *args)
+{
+    if (!mc_owner_p(args->mc, args->current_fiber)) {
+        rb_raise(rb_eThreadError, "current fiber not owner");
+    }
 }
 
 /* :nodoc: */
 static VALUE
 monitor_check_owner(VALUE monitor)
 {
-    struct rb_monitor *mc = monitor_ptr(monitor);
-    if (!mc_owner_p(mc)) {
-        rb_raise(rb_eThreadError, "current fiber not owner");
-    }
+    struct monitor_args args;
+    monitor_args_init(&args, monitor);
+    monitor_check_owner0(&args);
     return Qnil;
+}
+
+static void
+monitor_exit0(struct monitor_args *args)
+{
+    monitor_check_owner(args->monitor);
+
+    if (args->mc->count <= 0) rb_bug("monitor_exit: count:%d", (int)args->mc->count);
+    args->mc->count--;
+
+    if (args->mc->count == 0) {
+        RB_OBJ_WRITE(args->monitor, &args->mc->owner, Qnil);
+        rb_mutex_unlock(args->mc->mutex);
+    }
 }
 
 /*
@@ -117,17 +161,9 @@ monitor_check_owner(VALUE monitor)
 static VALUE
 monitor_exit(VALUE monitor)
 {
-    monitor_check_owner(monitor);
-
-    struct rb_monitor *mc = monitor_ptr(monitor);
-
-    if (mc->count <= 0) rb_bug("monitor_exit: count:%d", (int)mc->count);
-    mc->count--;
-
-    if (mc->count == 0) {
-        RB_OBJ_WRITE(monitor, &mc->owner, Qnil);
-        rb_mutex_unlock(mc->mutex);
-    }
+    struct monitor_args args;
+    monitor_args_init(&args, monitor);
+    monitor_exit0(&args);
     return Qnil;
 }
 
@@ -144,7 +180,7 @@ static VALUE
 monitor_owned_p(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
-    return (rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc)) ? Qtrue : Qfalse;
+    return rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc, rb_fiber_current()) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -210,9 +246,10 @@ monitor_sync_body(VALUE monitor)
 }
 
 static VALUE
-monitor_sync_ensure(VALUE monitor)
+monitor_sync_ensure(VALUE v_args)
 {
-    return monitor_exit(monitor);
+    monitor_exit0((struct monitor_args *)v_args);
+    return Qnil;
 }
 
 /*
@@ -226,8 +263,10 @@ monitor_sync_ensure(VALUE monitor)
 static VALUE
 monitor_synchronize(VALUE monitor)
 {
-    monitor_enter(monitor);
-    return rb_ensure(monitor_sync_body, monitor, monitor_sync_ensure, monitor);
+    struct monitor_args args;
+    monitor_args_init(&args, monitor);
+    monitor_enter0(&args);
+    return rb_ensure(monitor_sync_body, (VALUE)&args, monitor_sync_ensure, (VALUE)&args);
 }
 
 void
