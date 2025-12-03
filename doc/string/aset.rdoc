@@ -42,7 +42,7 @@ searches for a substring of size +length+ characters (as available)
 beginning at character offset specified by +start+.
 
 If argument +start+ is non-negative,
-the offset is +start':
+the offset is +start+:
 
   s = 'hello'
   s[0, 1] = 'foo'  # => "foo"
