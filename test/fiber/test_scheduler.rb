@@ -277,6 +277,6 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.join
     assert_equal 'blocking', fiber_blocking_state
   ensure
-    thread.kill rescue nil    
+    thread.kill rescue nil
   end
 end
