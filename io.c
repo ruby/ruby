@@ -2697,6 +2697,11 @@ static int
 io_fillbuf(rb_io_t *fptr)
 {
     ssize_t r;
+#if RUBY_CRLF_ENVIRONMENT
+    int last_cr_len = 0;
+#else
+    const int last_cr_len = 0;
+#endif
 
     if (fptr->rbuf.ptr == NULL) {
         fptr->rbuf.off = 0;
@@ -2707,13 +2712,21 @@ io_fillbuf(rb_io_t *fptr)
         fptr->rbuf.capa--;
 #endif
     }
-    if (fptr->rbuf.len == 0) {
+#if RUBY_CRLF_ENVIRONMENT
+    if (fptr->rbuf.len == 1 && fptr->rbuf.off == fptr->rbuf.capa - 1) {
+        fptr->rbuf.ptr[0] = fptr->rbuf.ptr[fptr->rbuf.off];
+        last_cr_len = 1;
+    }
+#endif
+    if (fptr->rbuf.len == 0 || last_cr_len) {
       retry:
-        r = rb_io_read_memory(fptr, fptr->rbuf.ptr, fptr->rbuf.capa);
+        fptr->rbuf.off = 0;
+        r = rb_io_read_memory(fptr, fptr->rbuf.ptr + last_cr_len, fptr->rbuf.capa - last_cr_len);
 
         if (r < 0) {
             if (fptr_wait_readable(fptr))
                 goto retry;
+            if (last_cr_len) return 0;
 
             int e = errno;
             VALUE path = rb_sprintf("fd:%d ", fptr->fd);
@@ -2724,9 +2737,8 @@ io_fillbuf(rb_io_t *fptr)
             rb_syserr_fail_path(e, path);
         }
         if (r > 0) rb_io_check_closed(fptr);
-        fptr->rbuf.off = 0;
-        fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
-        if (r == 0)
+        fptr->rbuf.len += (int)r; /* r should be <= rbuf_capa */
+        if (r + last_cr_len == 0)
             return -1; /* EOF */
     }
     return 0;

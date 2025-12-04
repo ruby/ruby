@@ -2834,4 +2834,17 @@ EOT
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_crlf_end_of_rbuf
+    with_tmpdir {
+      str = "\r\n" * 4097
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("\n" * 4095, 4095.times.map { f.getc }.join)
+        assert_equal("\n", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
