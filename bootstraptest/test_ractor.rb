@@ -1395,6 +1395,9 @@ assert_equal "ok", %Q{
     unless a[i].equal?(b[i])
       raise [a[i], b[i]].inspect
     end
+    unless a[i] == i.to_s
+      raise [i, a[i], b[i]].inspect
+    end
   end
   :ok
 }
