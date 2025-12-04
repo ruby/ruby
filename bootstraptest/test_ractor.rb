@@ -1203,6 +1203,28 @@ assert_equal '[:ok, "Proc\'s self is not shareable:"]', %q{
   end
 }
 
+# Ractor.make_sharable(Method/UnboundMethod)
+assert_equal 'true', %q{
+  # raise because receiver is unsharable
+  begin
+    _m0 = Ractor.make_shareable(self.method(:__id__))
+  rescue => e
+    raise e unless e.message =~ /can not make shareable object/
+  else
+    raise "no error"
+  end
+
+  # Method with sharable receiver
+  M1 = Ractor.make_shareable(Object.method(:__id__))
+
+  # UnboundMethod
+  M2 = Ractor.make_shareable(Object.instance_method(:__id__))
+
+  Ractor.new do
+    Object.__id__ == M1.call && M1.call == M2.bind_call(Object)
+  end.value
+}
+
 # Ractor.shareable?(recursive_objects)
 assert_equal '[false, false]', %q{
   y = []
