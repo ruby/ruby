@@ -2232,4 +2232,5 @@ unsafe extern "C" {
     );
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
+    pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
 }

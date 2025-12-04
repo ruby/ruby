@@ -350,6 +350,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Const { val: Const::CPtr(val) } => gen_const_cptr(val),
         &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
         &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
+        &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
@@ -475,7 +476,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadEC => gen_load_ec(),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
-        &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val))),
+        &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
@@ -1099,10 +1100,10 @@ fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd 
     asm.load(Opnd::mem(64, recv, offset))
 }
 
-fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd) {
+fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
     asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
     let recv = asm.load(recv);
-    asm.store(Opnd::mem(64, recv, offset), val);
+    asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }
 
 fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
@@ -1156,6 +1157,10 @@ fn gen_const_long(val: i64) -> lir::Opnd {
 }
 
 fn gen_const_uint16(val: u16) -> lir::Opnd {
+    Opnd::UImm(val as u64)
+}
+
+fn gen_const_uint32(val: u32) -> lir::Opnd {
     Opnd::UImm(val as u64)
 }
 
