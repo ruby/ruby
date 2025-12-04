@@ -1116,7 +1116,7 @@ static rb_node_dasgn_t *rb_node_dasgn_new(struct parser_params *p, ID nd_vid, NO
 static rb_node_gasgn_t *rb_node_gasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_iasgn_t *rb_node_iasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_cdecl_t *rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, enum rb_parser_shareability shareability, const YYLTYPE *loc);
-static rb_node_cvasgn_t *rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
+// static rb_node_cvasgn_t *rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_asgn1_t *rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *index, NODE *rvalue, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
 static rb_node_op_asgn2_t *rb_node_op_asgn2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, ID nd_vid, ID nd_mid, bool nd_aid, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *binary_operator_loc);
 static rb_node_op_asgn_or_t *rb_node_op_asgn_or_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
@@ -1222,9 +1222,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
 #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
 #define NEW_GASGN(v,val,loc) (NODE *)rb_node_gasgn_new(p,v,val,loc)
-#define NEW_IASGN(v,val,loc) (NODE *)rb_node_iasgn_new(p,v,val,loc)
+// #define NEW_IASGN(v,val,loc) (NODE *)rb_node_iasgn_new(p,v,val,loc)
 #define NEW_CDECL(v,val,path,share,loc) (NODE *)rb_node_cdecl_new(p,v,val,path,share,loc)
-#define NEW_CVASGN(v,val,loc) (NODE *)rb_node_cvasgn_new(p,v,val,loc)
+// #define NEW_CVASGN(v,val,loc) (NODE *)rb_node_cvasgn_new(p,v,val,loc)
 #define NEW_OP_ASGN1(r,id,idx,rval,loc,c_op_loc,o_loc,c_loc,b_op_loc) (NODE *)rb_node_op_asgn1_new(p,r,id,idx,rval,loc,c_op_loc,o_loc,c_loc,b_op_loc)
 #define NEW_OP_ASGN2(r,t,i,o,val,loc,c_op_loc,m_loc,b_op_loc) (NODE *)rb_node_op_asgn2_new(p,r,val,i,o,t,loc,c_op_loc,m_loc,b_op_loc)
 #define NEW_OP_ASGN_OR(i,val,loc) (NODE *)rb_node_op_asgn_or_new(p,i,val,loc)
@@ -1309,6 +1309,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc);
 static rb_statements_node_t *rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc);
 
+static rb_instance_variable_write_node_t *rb_new_node_instance_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_class_variable_write_node_t *rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+
 static rb_instance_variable_read_node_t *rb_new_node_instance_variable_read_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_constant_read_node_t *rb_new_node_constant_read_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_class_variable_read_node_t *rb_new_node_class_variable_read_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
@@ -1340,9 +1343,12 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
 
-#define NEW_RB_INSTANCE_VARIABLE_READ(v,loc) rb_new_node_instance_variable_read_new(p,v,loc)
-#define NEW_RB_CONSTANT_READ(v,loc) rb_new_node_constant_read_new(p,v,loc)
-#define NEW_RB_CLASS_VARIABLE_READ(v,loc) rb_new_node_class_variable_read_new(p,v,loc)
+#define NEW_RB_INSTANCE_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_instance_variable_write_new(p,v,val,loc)
+#define NEW_RB_CLASS_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_class_variable_write_new(p,v,val,loc)
+
+#define NEW_RB_INSTANCE_VARIABLE_READ(v,loc) (rb_node_t *)rb_new_node_instance_variable_read_new(p,v,loc)
+#define NEW_RB_CONSTANT_READ(v,loc) (rb_node_t *)rb_new_node_constant_read_new(p,v,loc)
+#define NEW_RB_CLASS_VARIABLE_READ(v,loc) (rb_node_t *)rb_new_node_class_variable_read_new(p,v,loc)
 
 #define NEW_RB_IF(c,t,e,loc,ik_loc,tk_loc,ek_loc) (rb_node_t *)rb_new_node_if_new(p,c,t,e,loc,ik_loc,tk_loc,ek_loc)
 #define NEW_RB_UNLESS(c,t,e,loc,k_loc,t_loc,e_loc) (rb_node_t *)rb_new_node_unless_new(p,c,t,e,loc,k_loc,t_loc,e_loc)
@@ -1384,7 +1390,7 @@ parser_node_name(int node)
       case NODE_EXITS:
         return "NODE_EXITS";
       default:
-        return ruby_node_name(node);
+        return rb_node_type_to_str(node);
     }
 }
 
@@ -1554,13 +1560,13 @@ static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
 static NODE *dsym_node(struct parser_params*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 
 static NODE *gettable(struct parser_params*,ID,const YYLTYPE*);
-static NODE *assignable(struct parser_params*,ID,NODE*,const YYLTYPE*);
+static rb_node_t *assignable(struct parser_params*,ID,rb_node_t*,const YYLTYPE*);
 
 static NODE *aryset(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 
 static VALUE rb_backref_error(struct parser_params*,NODE*);
-static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
+static rb_node_t *node_assign(struct parser_params*,rb_node_t*,rb_node_t*,struct lex_context,const YYLTYPE*);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
@@ -1995,32 +2001,32 @@ get_nd_value(struct parser_params *p, NODE *node)
 }
 
 static void
-set_nd_value(struct parser_params *p, NODE *node, NODE *rhs)
+set_nd_value(struct parser_params *p, rb_node_t *node, rb_node_t *rhs)
 {
-    switch (nd_type(node)) {
-      case NODE_CDECL:
-        RNODE_CDECL(node)->nd_value = rhs;
+    switch (RB_NODE_TYPE(node)) {
+      // case NODE_CDECL:
+      //   RNODE_CDECL(node)->nd_value = rhs;
+      //   break;
+      // case NODE_GASGN:
+      //   RNODE_GASGN(node)->nd_value = rhs;
+      //   break;
+      case RB_INSTANCE_VARIABLE_WRITE_NODE:
+        RB_NODE_INSTANCE_VARIABLE_WRITE(node)->value = rhs;
         break;
-      case NODE_GASGN:
-        RNODE_GASGN(node)->nd_value = rhs;
-        break;
-      case NODE_IASGN:
-        RNODE_IASGN(node)->nd_value = rhs;
-        break;
-      case NODE_LASGN:
-        RNODE_LASGN(node)->nd_value = rhs;
-        break;
-      case NODE_DASGN:
-        RNODE_DASGN(node)->nd_value = rhs;
-        break;
-      case NODE_MASGN:
-        RNODE_MASGN(node)->nd_value = rhs;
-        break;
-      case NODE_CVASGN:
-        RNODE_CVASGN(node)->nd_value = rhs;
+      // case NODE_LASGN:
+      //   RNODE_LASGN(node)->nd_value = rhs;
+      //   break;
+      // case NODE_DASGN:
+      //   RNODE_DASGN(node)->nd_value = rhs;
+      //   break;
+      // case NODE_MASGN:
+      //   RNODE_MASGN(node)->nd_value = rhs;
+      //   break;
+      case RB_CLASS_VARIABLE_WRITE_NODE:
+        RB_NODE_CLASS_VARIABLE_WRITE(node)->value = rhs;
         break;
       default:
-        compile_error(p, "set_nd_value: unexpected node: %s", parser_node_name(nd_type(node)));
+        compile_error(p, "set_nd_value: unexpected node: %s", parser_node_name(RB_NODE_TYPE(node)));
         break;
     }
 }
@@ -3023,7 +3029,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %rule asgn(rhs) <node>
                 : lhs '=' lex_ctxt rhs
                     {
-                        $$ = node_assign(p, (NODE *)$lhs, $rhs, $lex_ctxt, &@$);
+                        $$ = node_assign(p, (rb_node_t *)$lhs, $rhs, $lex_ctxt, &@$);
                     /*% ripper: assign!($:1, $:4) %*/
                     }
                 ;
@@ -3512,7 +3518,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                 | command_asgn
                 | mlhs[lhs] '=' lex_ctxt[ctxt] command_call_value[rhs]
                     {
-                        $$ = node_assign(p, (NODE *)$lhs, $rhs, $ctxt, &@$);
+                        $$ = node_assign(p, (rb_node_t *)$lhs, $rhs, $ctxt, &@$);
                     /*% ripper: massign!($:lhs, $:rhs) %*/
                     }
                 | asgn(mrhs)
@@ -3524,12 +3530,12 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                         $resbody = NEW_RESBODY(0, 0, remove_begin($resbody), 0, &loc);
                         loc.beg_pos = @mrhs_arg.beg_pos;
                         $mrhs_arg = NEW_RESCUE($mrhs_arg, $resbody, 0, &loc);
-                        $$ = node_assign(p, (NODE *)$lhs, $mrhs_arg, $lex_ctxt, &@$);
+                        $$ = node_assign(p, (rb_node_t *)$lhs, $mrhs_arg, $lex_ctxt, &@$);
                     /*% ripper: massign!($:lhs, rescue_mod!($:mrhs_arg, $:resbody)) %*/
                     }
                 | mlhs[lhs] '=' lex_ctxt[ctxt] mrhs_arg[rhs]
                     {
-                        $$ = node_assign(p, (NODE *)$lhs, $rhs, $ctxt, &@$);
+                        $$ = node_assign(p, (rb_node_t *)$lhs, $rhs, $ctxt, &@$);
                     /*% ripper: massign!($:lhs, $:rhs) %*/
                     }
                 | expr
@@ -4704,7 +4710,7 @@ primary		: inline_primary
                         m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                         break;
                       default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                        m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
+                        m->nd_next = node_assign(p, (rb_node_t *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
                     }
                     /* {|*internal_id| <m> = internal_id; ... } */
                     args = new_args(p, m, 0, id, 0, new_empty_args_tail(p, &@for_var), &@for_var);
@@ -11959,15 +11965,15 @@ rb_node_iasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLT
     return n;
 }
 
-static rb_node_cvasgn_t *
-rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc)
-{
-    rb_node_cvasgn_t *n = NODE_NEWNODE(NODE_CVASGN, rb_node_cvasgn_t, loc);
-    n->nd_vid = nd_vid;
-    n->nd_value = nd_value;
+// static rb_node_cvasgn_t *
+// rb_node_cvasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc)
+// {
+//     rb_node_cvasgn_t *n = NODE_NEWNODE(NODE_CVASGN, rb_node_cvasgn_t, loc);
+//     n->nd_vid = nd_vid;
+//     n->nd_value = nd_value;
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_op_asgn1_t *
 rb_node_op_asgn1_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *index, NODE *rvalue, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc)
@@ -12650,6 +12656,30 @@ rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_statements_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_STATEMENTS_NODE, rb_statements_node_t, loc);
     rb_node_list_init(&n->body);
+
+    return n;
+}
+
+static rb_instance_variable_write_node_t *
+rb_new_node_instance_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_instance_variable_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INSTANCE_VARIABLE_WRITE_NODE, rb_instance_variable_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_class_variable_write_node_t *
+rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_class_variable_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_VARIABLE_WRITE_NODE, rb_class_variable_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
 
     return n;
 }
@@ -14025,30 +14055,30 @@ assignable0(struct parser_params *p, ID id, const char **err)
         }
         break;
       case ID_GLOBAL: return NODE_GASGN;
-      case ID_INSTANCE: return NODE_IASGN;
+      case ID_INSTANCE: return RB_INSTANCE_VARIABLE_WRITE_NODE;
       case ID_CONST:
         if (!p->ctxt.in_def) return NODE_CDECL;
         *err = "dynamic constant assignment";
         return -1;
-      case ID_CLASS: return NODE_CVASGN;
+      case ID_CLASS: return RB_CLASS_VARIABLE_WRITE_NODE;
       default:
         compile_error(p, "identifier %"PRIsVALUE" is not valid to set", rb_id2str(id));
     }
     return -1;
 }
 
-static NODE*
-assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
+static rb_node_t*
+assignable(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc)
 {
     const char *err = 0;
     int node_type = assignable0(p, id, &err);
     switch (node_type) {
-      case NODE_DASGN: return NEW_DASGN(id, val, loc);
-      case NODE_LASGN: return NEW_LASGN(id, val, loc);
-      case NODE_GASGN: return NEW_GASGN(id, val, loc);
-      case NODE_IASGN: return NEW_IASGN(id, val, loc);
-      case NODE_CDECL: return NEW_CDECL(id, val, 0, p->ctxt.shareable_constant_value, loc);
-      case NODE_CVASGN: return NEW_CVASGN(id, val, loc);
+      // case NODE_DASGN: return NEW_DASGN(id, val, loc);
+      // case NODE_LASGN: return NEW_LASGN(id, val, loc);
+      // case NODE_GASGN: return NEW_GASGN(id, val, loc);
+      case RB_INSTANCE_VARIABLE_WRITE_NODE: return NEW_RB_INSTANCE_VARIABLE_WRITE(id, val, loc);
+      // case NODE_CDECL: return NEW_CDECL(id, val, 0, p->ctxt.shareable_constant_value, loc);
+      case RB_CLASS_VARIABLE_WRITE_NODE: return NEW_RB_CLASS_VARIABLE_WRITE(id, val, loc);
     }
 /* TODO: FIXME */
 #ifndef RIPPER
@@ -14293,31 +14323,31 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 
 static int is_static_content(NODE *node);
 
-static NODE *
-node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, struct lex_context ctxt, const YYLTYPE *loc)
+static rb_node_t *
+node_assign(struct parser_params *p, rb_node_t *lhs, rb_node_t *rhs, struct lex_context ctxt, const YYLTYPE *loc)
 {
     if (!lhs) return 0;
 
-    switch (nd_type(lhs)) {
-      case NODE_CDECL:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_MASGN:
-      case NODE_CVASGN:
+    switch (RB_NODE_TYPE(lhs)) {
+      // case NODE_CDECL:
+      // case NODE_GASGN:
+      case RB_INSTANCE_VARIABLE_WRITE_NODE:
+      // case NODE_LASGN:
+      // case NODE_DASGN:
+      // case NODE_MASGN:
+      case RB_CLASS_VARIABLE_WRITE_NODE:
         set_nd_value(p, lhs, rhs);
-        nd_set_loc(lhs, loc);
+        rb_nd_set_loc(lhs, loc);
         break;
 
-      case NODE_ATTRASGN:
-        RNODE_ATTRASGN(lhs)->nd_args = arg_append(p, RNODE_ATTRASGN(lhs)->nd_args, rhs, loc);
-        nd_set_loc(lhs, loc);
-        break;
+      // case NODE_ATTRASGN:
+      //   RNODE_ATTRASGN(lhs)->nd_args = arg_append(p, RNODE_ATTRASGN(lhs)->nd_args, rhs, loc);
+      //   nd_set_loc(lhs, loc);
+      //   break;
 
       default:
-        /* should not happen */
-        break;
+        rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(lhs)));
+        UNREACHABLE_RETURN(0);
     }
 
     return lhs;

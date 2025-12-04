@@ -11291,7 +11291,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-      // ... more nodes
       case RB_IF_NODE:
         // if foo then bar end
         // ^^^^^^^^^^^^^^^^^^^
@@ -11321,6 +11320,28 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+
+      case RB_INSTANCE_VARIABLE_WRITE_NODE: {
+        CHECK(COMPILE(ret, "lvalue", RB_NODE_INSTANCE_VARIABLE_WRITE(node)->value));
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN2(ret, node, setinstancevariable,
+                  ID2SYM(RB_NODE_INSTANCE_VARIABLE_WRITE(node)->name),
+                  get_ivar_ic_value(iseq, RB_NODE_INSTANCE_VARIABLE_WRITE(node)->name));
+        break;
+      }
+      case RB_CLASS_VARIABLE_WRITE_NODE: {
+        CHECK(COMPILE(ret, "cvasgn val", RB_NODE_CLASS_VARIABLE_WRITE(node)->value));
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN2(ret, node, setclassvariable,
+                  ID2SYM(RB_NODE_CLASS_VARIABLE_WRITE(node)->name),
+                  get_cvar_ic_value(iseq, RB_NODE_CLASS_VARIABLE_WRITE(node)->name));
+        break;
+      }
+
       case RB_INSTANCE_VARIABLE_READ_NODE: {
         debugi("name", RB_NODE_INSTANCE_VARIABLE_READ(node)->name);
         if (!popped) {
@@ -11359,6 +11380,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+
       case RB_SOURCE_LINE_NODE: {
         // __LINE__
         // ^^^^^^^^
