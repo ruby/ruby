@@ -2212,7 +2212,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::SetInstanceVariable { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => effects::Any,
             Insn::Const { val: Const::CBool(val) } => effects::Any,
@@ -2241,9 +2241,10 @@ impl Function {
             Insn::StringCopy { .. } => effects::Any,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
-            Insn::StringGetbyteFixnum { .. } => effects::Any,
+            Insn::StringGetbyte { .. } => effects::Any,
             Insn::StringSetbyteFixnum { .. } => effects::Any,
             Insn::StringAppend { .. } => effects::Any,
+            Insn::StringAppendCodepoint { .. } => effects::Any,
             Insn::ToRegexp { .. } => effects::Any,
             Insn::NewArray { .. } => effects::Any,
             Insn::ArrayDup { .. } => effects::Any,
@@ -2281,6 +2282,8 @@ impl Function {
             Insn::FixnumAnd  { .. } => effects::Any,
             Insn::FixnumOr   { .. } => effects::Any,
             Insn::FixnumXor  { .. } => effects::Any,
+            Insn::FixnumLShift { .. } => effects::Any,
+            Insn::FixnumRShift { .. } => effects::Any,
             Insn::PutSpecialObject { .. } => effects::Any,
             Insn::SendWithoutBlock { .. } => effects::Any,
             Insn::SendWithoutBlockDirect { .. } => effects::Any,
@@ -2297,9 +2300,11 @@ impl Function {
             Insn::ArrayMax { .. } => effects::Any,
             Insn::ArrayInclude { .. } => effects::Any,
             Insn::DupArrayInclude { .. } => effects::Any,
+            Insn::ArrayHash { .. } => effects::Any,
             Insn::GetGlobal { .. } => effects::Any,
             Insn::GetIvar { .. } => effects::Any,
             Insn::LoadPC => effects::Any,
+            Insn::LoadEC => effects::Any,
             Insn::LoadSelf => effects::Any,
             &Insn::LoadField { return_type, .. } => effects::Any,
             Insn::GetSpecialSymbol { .. } => effects::Any,
@@ -2314,6 +2319,7 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => effects::Any,
+            Insn::IsA { .. } => effects::Any,
         }
     }
 
