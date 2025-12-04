@@ -1216,7 +1216,7 @@ typedef struct parser_params rb_parser_t;
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 
-typedef NODE *(*rb_parser_assignable_func)(struct parser_params *p, ID id, NODE *val, const rb_code_location_t *loc);
+typedef rb_node_t *(*rb_parser_assignable_func)(struct parser_params *p, ID id, rb_node_t *val, const rb_code_location_t *loc);
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
