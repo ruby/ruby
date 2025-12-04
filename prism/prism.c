@@ -11612,6 +11612,13 @@ parser_lex(pm_parser_t *parser) {
                         LEX(PM_TOKEN_LABEL_END);
                     }
 
+                    // When the delimiter itself is a newline, we won't
+                    // get a chance to flush heredocs in the usual places since
+                    // the newline is already consumed.
+                    if (term == '\n' && parser->heredoc_end) {
+                        parser_flush_heredoc_end(parser);
+                    }
+
                     lex_state_set(parser, PM_LEX_STATE_END);
                     lex_mode_pop(parser);
                     LEX(PM_TOKEN_STRING_END);

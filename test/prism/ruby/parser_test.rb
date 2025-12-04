@@ -62,6 +62,9 @@ module Prism
       "alias.txt",
       "seattlerb/bug_215.txt",
 
+      # %Q with newline delimiter and heredoc interpolation
+      "heredoc_percent_q_newline_delimiter.txt",
+
       # 1.. && 2
       "ranges.txt",
 
