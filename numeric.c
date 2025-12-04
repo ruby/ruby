@@ -3572,7 +3572,7 @@ rb_numeric_to_int128(VALUE x)
                 rb_raise(rb_eRangeError, "bignum too big to convert into 'signed 128-bit integer'");
             }
             result.parts.low = unsigned_result.parts.low;
-            result.parts.high = 0;
+            result.parts.high = unsigned_result.parts.high;
         }
 #endif
         return result;
