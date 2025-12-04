@@ -98,7 +98,7 @@ proc_memsize(const void *ptr)
     return sizeof(rb_proc_t);
 }
 
-static const rb_data_type_t proc_data_type = {
+const rb_data_type_t ruby_proc_data_type = {
     "proc",
     {
         proc_mark_and_move,
@@ -108,6 +108,8 @@ static const rb_data_type_t proc_data_type = {
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
+
+#define proc_data_type ruby_proc_data_type
 
 VALUE
 rb_proc_alloc(VALUE klass)

@@ -237,7 +237,7 @@ typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 ID rb_get_symbol_id(VALUE namep);
 
 VALUE
-rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
