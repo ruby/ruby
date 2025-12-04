@@ -503,7 +503,18 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #define GetWriteIO(io) rb_io_get_write_io(io)
 
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+# define RUBY_CRLF_ENVIRONMENT 1
+#else
+# define RUBY_CRLF_ENVIRONMENT 0
+#endif
+
+#if RUBY_CRLF_ENVIRONMENT
+#define READ_DATA_PENDING(fptr) ((fptr)->rbuf.len && \
+  (NEED_READCONV(fptr) || !NEED_CRLF_EOF_CONV(fptr) || (fptr)->rbuf.ptr[(fptr)->rbuf.off] != CTRLZ))
+#else
 #define READ_DATA_PENDING(fptr) ((fptr)->rbuf.len)
+#endif
 #define READ_DATA_PENDING_COUNT(fptr) ((fptr)->rbuf.len)
 #define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf.ptr+(fptr)->rbuf.off)
 #define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
@@ -577,11 +588,6 @@ rb_sys_fail_on_write(rb_io_t *fptr)
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
-# define RUBY_CRLF_ENVIRONMENT 1
-#else
-# define RUBY_CRLF_ENVIRONMENT 0
-#endif
 
 #if RUBY_CRLF_ENVIRONMENT
 /* Windows */
@@ -3151,7 +3157,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
     long n = len;
     long c;
 
-    if (READ_DATA_PENDING(fptr) == 0) {
+    if (READ_DATA_PENDING_COUNT(fptr) == 0) {
         while (n > 0) {
           again:
             rb_io_check_closed(fptr);
