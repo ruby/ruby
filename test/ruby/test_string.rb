@@ -1883,9 +1883,13 @@ CODE
   def test_fs
     return unless @cls == String
 
-    assert_raise_with_message(TypeError, /\$;/) {
-      $; = []
-    }
+    begin
+      fs = $;
+      assert_deprecated_warning(/non-nil '\$;'/) {$; = "x"}
+      assert_raise_with_message(TypeError, /\$;/) {$; = []}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
     name = "\u{5206 5217}"
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;
@@ -2775,7 +2779,13 @@ CODE
   def test_rs
     return unless @cls == String
 
-    assert_raise(TypeError) { $/ = 1 }
+    begin
+      rs = $/
+      assert_deprecated_warning(/non-nil '\$\/'/) { $/ = "" }
+      assert_raise(TypeError) { $/ = 1 }
+    ensure
+      EnvUtil.suppress_warning { $/ = rs }
+    end
     name = "\u{5206 884c}"
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;

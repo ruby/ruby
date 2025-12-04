@@ -11378,7 +11378,7 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 static void
 nil_setter_warning(ID id)
 {
-    rb_warn_deprecated("'%"PRIsVALUE"'", NULL, rb_id2str(id));
+    rb_warn_deprecated("non-nil '%"PRIsVALUE"'", NULL, rb_id2str(id));
 }
 
 void

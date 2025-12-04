@@ -2907,10 +2907,10 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    EnvUtil.suppress_warning {
-      $, = ':'
-      $\ = "\n"
-    }
+    assert_deprecated_warning(/non-nil '\$,'/) {$, = ":"}
+    assert_raise(TypeError) {$, = 1}
+    assert_deprecated_warning(/non-nil '\$\\'/) {$\ = "\n"}
+    assert_raise(TypeError) {$/ = 1}
     pipe(proc do |w|
       w.print('a')
       EnvUtil.suppress_warning {w.print('a','b','c')}
