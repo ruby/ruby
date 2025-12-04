@@ -11321,6 +11321,44 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case RB_INSTANCE_VARIABLE_READ_NODE: {
+        debugi("name", RB_NODE_INSTANCE_VARIABLE_READ(node)->name);
+        if (!popped) {
+            ADD_INSN2(ret, node, getinstancevariable,
+                      ID2SYM(RB_NODE_INSTANCE_VARIABLE_READ(node)->name),
+                      get_ivar_ic_value(iseq, RB_NODE_INSTANCE_VARIABLE_READ(node)->name));
+        }
+        break;
+      }
+      case RB_CONSTANT_READ_NODE: {
+        debugi("nd_vid", RB_NODE_CONSTANT_READ(node)->name);
+
+        if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+            body->ic_size++;
+            VALUE segments = rb_ary_new_from_args(1, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
+            RB_OBJ_SET_FROZEN_SHAREABLE(segments);
+            ADD_INSN1(ret, node, opt_getconstant_path, segments);
+            RB_OBJ_WRITTEN(iseq, Qundef, segments);
+        }
+        else {
+            ADD_INSN(ret, node, putnil);
+            ADD_INSN1(ret, node, putobject, Qtrue);
+            ADD_INSN1(ret, node, getconstant, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
+        }
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+      case RB_CLASS_VARIABLE_READ_NODE: {
+        if (!popped) {
+            ADD_INSN2(ret, node, getclassvariable,
+                      ID2SYM(RB_NODE_CLASS_VARIABLE_READ(node)->name),
+                      get_cvar_ic_value(iseq, RB_NODE_CLASS_VARIABLE_READ(node)->name));
+        }
+        break;
+      }
       case RB_SOURCE_LINE_NODE: {
         // __LINE__
         // ^^^^^^^^
