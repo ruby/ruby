@@ -11958,8 +11958,10 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 #endif
     fptr->mode |= fmode;
 #if DEFAULT_TEXTMODE
-    if ((fptr2->mode & FMODE_TEXTMODE) && (fmode & FMODE_BINMODE)) {
+    if (!(fmode & FMODE_TEXTMODE) &&
+        fptr2->encs.ecflags & TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) {
         fptr2->mode &= ~FMODE_TEXTMODE;
+        fptr2->encs.ecflags &= ~TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
         setmode(fptr2->fd, O_BINARY);
     }
 #endif
