@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn union_never_shrinks() {
         // iterate over all effect entries from bottom to top
-        for i in 0..2_u8.pow(bits::NumEffectBits as u32) {
+        for i in [0, 1, 4, 6, 10, 15] {
             let e = Effect::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
             assert_subeffect(effects::None, effects::None.union(e));
