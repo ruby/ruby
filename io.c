@@ -1968,8 +1968,7 @@ do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
 #if RUBY_CRLF_ENVIRONMENT
 #define fmode (fptr->mode)
     else if (MODE_BTMODE(DEFAULT_TEXTMODE,0,1)) {
-        if ((fptr->mode & FMODE_READABLE) &&
-            !(fptr->encs.ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
+        if (!(fptr->encs.ecflags & ECONV_CRLF_NEWLINE_DECORATOR)) {
             setmode(fptr->fd, O_BINARY);
         }
         else {
