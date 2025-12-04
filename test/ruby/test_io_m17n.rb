@@ -2819,4 +2819,19 @@ EOT
       end
     end
   end
+
+  def test_read_long_and_eof
+    str1 = "a" * 64
+    eof = "\x1A"
+    str2 = "b" * 8192
+    with_tmpdir {
+      generate_file("tmp", str1 + eof + str2)
+      open("tmp", "r") do |f|
+        f.ungetbyte(f.getbyte) # allcate rbuf
+        assert_equal(str1, f.read)
+        assert_equal(eof, f.read(1))
+        assert_equal(str2, f.read)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
