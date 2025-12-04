@@ -872,6 +872,7 @@ class Ractor
   #   }.map(&:value).uniq.size #=> 1 and f() is called only once
   #
   def self.store_if_absent(sym)
+    Primitive.attr! :use_block
     Primitive.ractor_local_value_store_if_absent(sym)
   end
 
