@@ -197,6 +197,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
     require "bundler"
     Bundler.reset!
 
+    # Build and activate a temporary definition containing the original gems + the requested gem
     builder = Bundler::Dsl.new
 
     lockfile = nil
