@@ -5181,6 +5181,7 @@ compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
     return COMPILE_OK;
 }
 
+// TODO
 static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
@@ -7333,11 +7334,17 @@ optimized_range_item(const NODE *n)
     }
 }
 
-static int
-compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+static rb_node_t *
+unless_node_else_statements(const rb_unless_node_t *const node)
 {
-    const NODE *const node_body = type == NODE_IF ? RNODE_IF(node)->nd_body : RNODE_UNLESS(node)->nd_else;
-    const NODE *const node_else = type == NODE_IF ? RNODE_IF(node)->nd_else : RNODE_UNLESS(node)->nd_body;
+    return (node->else_clause == NULL) ? NULL : (rb_node_t *)node->else_clause->statements;
+}
+
+static int
+compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_node_t *const node, int popped, const enum rb_node_type type)
+{
+    const rb_node_t *const node_body = type == RB_IF_NODE ? RB_NODE_IF(node)->statements : unless_node_else_statements(RB_NODE_UNLESS(node));
+    const rb_node_t *const node_else = type == RB_IF_NODE ? RB_NODE_IF(node)->subsequent : RB_NODE_UNLESS(node)->statements;
 
     const int line = nd_line(node);
     const NODE *line_node = node;
@@ -7350,16 +7357,16 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    NODE *cond = RNODE_IF(node)->nd_cond;
-    if (nd_type(cond) == NODE_BLOCK) {
-        cond = RNODE_BLOCK(cond)->nd_head;
-    }
+    rb_node_t *cond = RB_NODE_IF(node)->predicate;
+    // if (nd_type(cond) == NODE_BLOCK) {
+    //     cond = RNODE_BLOCK(cond)->nd_head;
+    // }
 
     CHECK(compile_branch_condition(iseq, cond_seq, cond, then_label, else_label));
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
-        branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == NODE_IF ? "if" : "unless");
+        branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == RB_IF_NODE ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
@@ -7396,7 +7403,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
         CHECK(COMPILE_(else_seq, "else", node_else, popped));
 
         if (then_label->refcnt) {
-            const NODE *const coverage_node = node_else ? node_else : node;
+            const rb_node_t *const coverage_node = node_else ? node_else : node;
             add_trace_branch_coverage(
                 iseq,
                 ret,
@@ -11240,7 +11247,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         /* ignore */
     }
     else {
-        if (nd_fl_newline(node)) {
+        if (rb_node_fl_newline(node)) {
             int event = RUBY_EVENT_LINE;
             ISEQ_COMPILE_DATA(iseq)->last_line = line;
             if (line > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
@@ -11272,6 +11279,35 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       // ... more nodes
+      case RB_IF_NODE:
+        // if foo then bar end
+        // ^^^^^^^^^^^^^^^^^^^
+        //
+        // bar if foo
+        // ^^^^^^^^^^
+        //
+        // foo ? bar : baz
+        // ^^^^^^^^^^^^^^^
+      case RB_UNLESS_NODE: {
+        // unless foo; bar end
+        // ^^^^^^^^^^^^^^^^^^^
+        //
+        // bar unless foo
+        // ^^^^^^^^^^^^^^
+        CHECK(compile_if(iseq, ret, node, popped, type));
+        break;
+      }
+      case RB_ELSE_NODE: {
+        const rb_else_node_t *cast = (const rb_else_node_t *) node;
+
+        if (cast->statements) {
+            CHECK(COMPILE_(ret, "else", (const rb_node_t *) cast->statements, popped));
+        }
+        else if (!popped) {
+            ADD_SYNTHETIC_INSN(ret, nd_line(node), -1, putnil);
+        }
+        break;
+      }
       case RB_SELF_NODE: {
         // self
         // ^^^^
