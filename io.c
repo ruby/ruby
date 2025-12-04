@@ -2783,6 +2783,7 @@ VALUE
 rb_io_eof(VALUE io)
 {
     rb_io_t *fptr;
+    int r;
 
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
@@ -2791,11 +2792,17 @@ rb_io_eof(VALUE io)
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
 #if RUBY_CRLF_ENVIRONMENT
-    if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
-        return RBOOL(eof(fptr->fd));
+    setmode(fptr->fd, O_BINARY);
+#endif
+    r = io_fillbuf(fptr);
+#if RUBY_CRLF_ENVIRONMENT
+    if (!NEED_READCONV(fptr)) {
+        if ((fptr)->encs.ecflags & ECONV_NEWLINE_DECORATOR_MASK) {
+            return RBOOL(r < 0 || (fptr)->rbuf.ptr[(fptr)->rbuf.off] == CTRLZ);
+        }
     }
 #endif
-    return RBOOL(io_fillbuf(fptr) < 0);
+    return RBOOL(r < 0);
 }
 
 /*
