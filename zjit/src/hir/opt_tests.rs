@@ -8989,7 +8989,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_self_class() {
+    fn test_fold_kernel_class() {
         eval(r#"
             class C; end
             def test(o) = o.class
