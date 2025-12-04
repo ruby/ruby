@@ -170,6 +170,7 @@ VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigi
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(HAVE_INT128_T)
+VALUE rb_uint128t2big(uint128_t n);
 VALUE rb_int128t2big(int128_t n);
 #endif
 

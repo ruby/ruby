@@ -4575,7 +4575,7 @@ rb_ll2inum(LONG_LONG n)
 #endif  /* HAVE_LONG_LONG */
 
 #ifdef HAVE_INT128_T
-static VALUE
+VALUE
 rb_uint128t2big(uint128_t n)
 {
     long i;

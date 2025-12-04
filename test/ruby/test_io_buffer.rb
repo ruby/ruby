@@ -405,6 +405,11 @@ class TestIOBuffer < Test::Unit::TestCase
     :u64 => [0, 2**64-1],
     :s64 => [-2**63, 0, 2**63-1],
 
+    :U128 => [0, 2**64, 2**127-1, 2**128-1],
+    :S128 => [-2**127, -2**63-1, -1, 0, 2**63, 2**127-1],
+    :u128 => [0, 2**64, 2**127-1, 2**128-1],
+    :s128 => [-2**127, -2**63-1, -1, 0, 2**63, 2**127-1],
+
     :F32 => [-1.0, 0.0, 0.5, 1.0, 128.0],
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
   }
@@ -758,5 +763,73 @@ class TestIOBuffer < Test::Unit::TestCase
     GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
     assert_predicate buf, :valid?
+  end
+
+  def test_128_bit_integers
+    buffer = IO::Buffer.new(32)
+
+    # Test unsigned 128-bit integers
+    test_values_u128 = [
+      0,
+      1,
+      2**64 - 1,
+      2**64,
+      2**127 - 1,
+      2**128 - 1,
+    ]
+
+    test_values_u128.each do |value|
+      buffer.set_value(:u128, 0, value)
+      assert_equal value, buffer.get_value(:u128, 0), "u128: #{value}"
+
+      buffer.set_value(:U128, 0, value)
+      assert_equal value, buffer.get_value(:U128, 0), "U128: #{value}"
+    end
+
+    # Test signed 128-bit integers
+    test_values_s128 = [
+      -2**127,
+      -2**63 - 1,
+      -1,
+      0,
+      1,
+      2**63,
+      2**127 - 1,
+    ]
+
+    test_values_s128.each do |value|
+      buffer.set_value(:s128, 0, value)
+      assert_equal value, buffer.get_value(:s128, 0), "s128: #{value}"
+
+      buffer.set_value(:S128, 0, value)
+      assert_equal value, buffer.get_value(:S128, 0), "S128: #{value}"
+    end
+
+    # Test size_of
+    assert_equal 16, IO::Buffer.size_of(:u128)
+    assert_equal 16, IO::Buffer.size_of(:U128)
+    assert_equal 16, IO::Buffer.size_of(:s128)
+    assert_equal 16, IO::Buffer.size_of(:S128)
+    assert_equal 32, IO::Buffer.size_of([:u128, :u128])
+  end
+
+  def test_128_bit_integer_endianness
+    buffer = IO::Buffer.new(32)
+
+    # Test that little-endian and big-endian produce different byte patterns
+    # but round-trip correctly
+    value = 0x0123456789ABCDEF0123456789ABCDEF
+
+    buffer.set_value(:u128, 0, value)
+    result_le = buffer.get_value(:u128, 0)
+    assert_equal value, result_le
+
+    buffer.set_value(:U128, 0, value)
+    result_be = buffer.get_value(:U128, 0)
+    assert_equal value, result_be
+
+    # The values should be the same, but the byte representation differs
+    assert_equal value, result_le
+    assert_equal value, result_be
   end
 end

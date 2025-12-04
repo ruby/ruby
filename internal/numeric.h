@@ -127,6 +127,37 @@ VALUE rb_int_bit_length(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
 
+// Unified 128-bit integer structures that work with or without native support:
+struct rb_uint128_t {
+    union {
+        struct {
+            uint64_t low;
+            uint64_t high;
+        };
+#ifdef HAVE_UINT128_T
+        uint128_t value;
+#endif
+    };
+};
+
+struct rb_int128_t {
+    union {
+        struct {
+            uint64_t low;
+            uint64_t high;
+        };
+#ifdef HAVE_UINT128_T
+        int128_t value;
+#endif
+    };
+};
+
+// Conversion functions for 128-bit integers:
+struct rb_uint128_t rb_numeric_to_uint128(VALUE x);
+struct rb_int128_t rb_numeric_to_int128(VALUE x);
+VALUE rb_uint128_to_numeric(struct rb_uint128_t n);
+VALUE rb_int128_to_numeric(struct rb_int128_t n);
+
 static inline bool
 INT_POSITIVE_P(VALUE num)
 {
