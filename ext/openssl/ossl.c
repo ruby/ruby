@@ -254,12 +254,17 @@ ossl_to_der_if_possible(VALUE obj)
 /*
  * Errors
  */
+static ID id_i_errors;
+
+static void collect_errors_into(VALUE ary);
+
 VALUE
 ossl_make_error(VALUE exc, VALUE str)
 {
     unsigned long e;
     const char *data;
     int flags;
+    VALUE errors = rb_ary_new();
 
     if (NIL_P(str))
         str = rb_str_new(NULL, 0);
@@ -276,10 +281,12 @@ ossl_make_error(VALUE exc, VALUE str)
         rb_str_cat_cstr(str, msg ? msg : "(null)");
         if (flags & ERR_TXT_STRING && data)
             rb_str_catf(str, " (%s)", data);
-        ossl_clear_error();
+        collect_errors_into(errors);
     }
 
-    return rb_exc_new_str(exc, str);
+    VALUE obj = rb_exc_new_str(exc, str);
+    rb_ivar_set(obj, id_i_errors, errors);
+    return obj;
 }
 
 void
@@ -300,13 +307,12 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(ossl_make_error(exc, err));
 }
 
-void
-ossl_clear_error(void)
+static void
+collect_errors_into(VALUE ary)
 {
-    if (dOSSL == Qtrue) {
+    if (dOSSL == Qtrue || !NIL_P(ary)) {
         unsigned long e;
         const char *file, *data, *func, *lib, *reason;
-        char append[256] = "";
         int line, flags;
 
 #ifdef HAVE_ERR_GET_ERROR_ALL
@@ -318,18 +324,64 @@ ossl_clear_error(void)
             lib = ERR_lib_error_string(e);
             reason = ERR_reason_error_string(e);
 
+            VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
+                                   func ? func : "", reason ? reason : "");
             if (flags & ERR_TXT_STRING) {
                 if (!data)
                     data = "(null)";
-                snprintf(append, sizeof(append), " (%s)", data);
+                rb_str_catf(str, " (%s)", data);
             }
-            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
-                    func ? func : "", reason ? reason : "", append);
+
+            if (dOSSL == Qtrue)
+                rb_warn("error on stack: %"PRIsVALUE, str);
+            if (!NIL_P(ary))
+                rb_ary_push(ary, str);
         }
     }
     else {
         ERR_clear_error();
     }
+}
+
+void
+ossl_clear_error(void)
+{
+    collect_errors_into(Qnil);
+}
+
+/*
+ * call-seq:
+ *    ossl_error.detailed_message(**) -> string
+ *
+ * Returns the exception message decorated with the captured \OpenSSL error
+ * queue entries.
+ */
+static VALUE
+osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str;
+#ifdef HAVE_RB_CALL_SUPER_KW
+    // Ruby >= 3.2
+    if (RTEST(rb_funcall(rb_eException, rb_intern("method_defined?"), 1,
+                         ID2SYM(rb_intern("detailed_message")))))
+        str = rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+    else
+#endif
+        str = rb_funcall(self, rb_intern("message"), 0);
+    VALUE errors = rb_attr_get(self, id_i_errors);
+
+    // OpenSSLError was not created by ossl_make_error()
+    if (!RB_TYPE_P(errors, T_ARRAY))
+        return str;
+
+    str = rb_str_resurrect(str);
+    rb_str_catf(str, "\nOpenSSL error queue reported %ld errors:",
+                RARRAY_LEN(errors));
+    for (long i = 0; i < RARRAY_LEN(errors); i++) {
+        VALUE err = RARRAY_AREF(errors, i);
+        rb_str_catf(str, "\n%"PRIsVALUE, err);
+    }
+    return str;
 }
 
 /*
@@ -1009,10 +1061,26 @@ Init_openssl(void)
 
     rb_global_variable(&eOSSLError);
     /*
-     * Generic error,
-     * common for all classes under OpenSSL module
+     * Generic error class for OpenSSL. All error classes in this library
+     * inherit from this class.
+     *
+     * This class indicates that an error was reported by the underlying
+     * \OpenSSL library.
      */
-    eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    /*
+     * \OpenSSL error queue entries captured at the time the exception was
+     * raised. The same information is printed to stderr if OpenSSL.debug is
+     * set to +true+.
+     *
+     * This is an array of zero or more strings, ordered from the oldest to the
+     * newest. The format of the strings is not stable and may vary across
+     * versions of \OpenSSL or versions of this Ruby extension.
+     *
+     * See also the man page ERR_get_error(3).
+     */
+    rb_attr(eOSSLError, rb_intern_const("errors"), 1, 0, 0);
+    rb_define_method(eOSSLError, "detailed_message", osslerror_detailed_message, -1);
 
     /*
      * Init debug core
@@ -1028,6 +1096,7 @@ Init_openssl(void)
      * Get ID of to_der
      */
     ossl_s_to_der = rb_intern("to_der");
+    id_i_errors = rb_intern("@errors");
 
     /*
      * Init components
