@@ -726,6 +726,13 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
 }
 #define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
 
+/*
+ * The text mode reading with DEFAULT_TEXTMODE does CRLF to LF conversion and
+ * treating CTRLZ as an EOF character. This is intended legacy compatibility
+ * and only occers without encoding conversion.
+ */
+#define NEED_CRLF_EOF_CONV(fptr) ((fptr)->encs.ecflags & ECONV_NEWLINE_DECORATOR_MASK)
+#define CTRLZ '\x1A'
 #else
 /* Unix */
 # define DEFAULT_TEXTMODE 0
