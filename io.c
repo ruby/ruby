@@ -5087,8 +5087,19 @@ rb_io_each_codepoint(VALUE io)
             rb_io_check_char_readable(fptr);
         }
     }
-    NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    SET_BINARY_MODE(fptr);
     while (io_fillbuf(fptr) >= 0) {
+        #if RUBY_CRLF_ENVIRONMENT
+            if (NEED_CRLF_EOF_CONV(fptr)) {
+                if (fptr->rbuf.ptr[fptr->rbuf.off] == CTRLZ) break;
+                if (fptr->rbuf.len > 1 &&
+                    fptr->rbuf.ptr[fptr->rbuf.off] == '\r' &&
+                    fptr->rbuf.ptr[fptr->rbuf.off + 1] == '\n') {
+                    fptr->rbuf.off++;
+                    fptr->rbuf.len--;
+                }
+            }
+        #endif
         r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off,
                                   fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
         if (MBCLEN_CHARFOUND_P(r) &&
