@@ -9,9 +9,48 @@
  */
 #include "ossl.h"
 
-static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
-                               int depth, int yield, long *num_read);
-static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
+/********/
+/*
+ * ASN1 module
+ */
+#define ossl_asn1_get_value(o)           rb_attr_get((o),sivVALUE)
+#define ossl_asn1_get_tag(o)             rb_attr_get((o),sivTAG)
+#define ossl_asn1_get_tagging(o)         rb_attr_get((o),sivTAGGING)
+#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
+#define ossl_asn1_get_indefinite_length(o) rb_attr_get((o),sivINDEFINITE_LENGTH)
+
+#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
+#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
+#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
+#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
+#define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
+
+VALUE mASN1;
+static VALUE eASN1Error;
+
+VALUE cASN1Data;
+static VALUE cASN1Primitive;
+static VALUE cASN1Constructive;
+
+static VALUE cASN1EndOfContent;
+static VALUE cASN1Boolean;                           /* BOOLEAN           */
+static VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
+static VALUE cASN1BitString;                         /* BIT STRING        */
+static VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
+static VALUE cASN1NumericString, cASN1PrintableString;
+static VALUE cASN1T61String, cASN1VideotexString;
+static VALUE cASN1IA5String, cASN1GraphicString;
+static VALUE cASN1ISO64String, cASN1GeneralString;
+static VALUE cASN1UniversalString, cASN1BMPString;
+static VALUE cASN1Null;                              /* NULL              */
+static VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
+static VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
+static VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
+
+static VALUE sym_IMPLICIT, sym_EXPLICIT;
+static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
+static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
+static ID id_each;
 
 /*
  * DATE conversion
@@ -189,49 +228,6 @@ ossl_asn1obj_to_string_long_name(const ASN1_OBJECT *obj)
         return rb_str_new_cstr(OBJ_nid2ln(nid));
     return ossl_asn1obj_to_string_oid(obj);
 }
-
-/********/
-/*
- * ASN1 module
- */
-#define ossl_asn1_get_value(o)           rb_attr_get((o),sivVALUE)
-#define ossl_asn1_get_tag(o)             rb_attr_get((o),sivTAG)
-#define ossl_asn1_get_tagging(o)         rb_attr_get((o),sivTAGGING)
-#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
-#define ossl_asn1_get_indefinite_length(o) rb_attr_get((o),sivINDEFINITE_LENGTH)
-
-#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
-#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
-#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
-#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
-#define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
-
-VALUE mASN1;
-static VALUE eASN1Error;
-
-VALUE cASN1Data;
-static VALUE cASN1Primitive;
-static VALUE cASN1Constructive;
-
-static VALUE cASN1EndOfContent;
-static VALUE cASN1Boolean;                           /* BOOLEAN           */
-static VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
-static VALUE cASN1BitString;                         /* BIT STRING        */
-static VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
-static VALUE cASN1NumericString, cASN1PrintableString;
-static VALUE cASN1T61String, cASN1VideotexString;
-static VALUE cASN1IA5String, cASN1GraphicString;
-static VALUE cASN1ISO64String, cASN1GeneralString;
-static VALUE cASN1UniversalString, cASN1BMPString;
-static VALUE cASN1Null;                              /* NULL              */
-static VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
-static VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
-static VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
-
-static VALUE sym_IMPLICIT, sym_EXPLICIT;
-static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
-static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
-static ID id_each;
 
 /*
  * Ruby to ASN1 converters
@@ -776,6 +772,10 @@ ossl_asn1data_to_der(VALUE self)
         return ossl_asn1prim_to_der(self);
     }
 }
+
+static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
+                               int depth, int yield, long *num_read);
 
 static VALUE
 int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
