@@ -16,6 +16,7 @@ end
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "character_literal.txt",
       "encoding_euc_jp.txt",
       "regex_char_width.txt",
       "seattlerb/masgn_colon3.txt",
@@ -38,7 +39,6 @@ module Prism
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
-      "leading_logical.txt",
       "method_calls.txt",
       "methods.txt",
       "multi_write.txt",
@@ -57,6 +57,7 @@ module Prism
       "spanning_heredoc.txt",
       "symbols.txt",
       "tilde_heredocs.txt",
+      "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
       "whitequark/cond_eflipflop.txt",
@@ -76,8 +77,18 @@ module Prism
       "whitequark/ruby_bug_19281.txt",
       "whitequark/slash_newline_in_heredocs.txt",
 
-      # Ruby >= 3.5 specific syntax
-      "endless_methods_command_call.txt",
+      "3.3-3.3/block_args_in_array_assignment.txt",
+      "3.3-3.3/it_with_ordinary_parameter.txt",
+      "3.3-3.3/keyword_args_in_array_assignment.txt",
+      "3.3-3.3/return_in_sclass.txt",
+
+      "3.4/circular_parameters.txt",
+
+      "4.0/endless_methods_command_call.txt",
+      "4.0/leading_logical.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
     Fixture.each(except: failures) do |fixture|

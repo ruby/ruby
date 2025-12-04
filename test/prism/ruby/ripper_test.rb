@@ -8,32 +8,33 @@ module Prism
   class RipperTest < TestCase
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
-      # Not yet supported.
-      "leading_logical.txt",
-
       # Ripper incorrectly attributes the block to the keyword.
-      "seattlerb/block_break.txt",
-      "seattlerb/block_next.txt",
       "seattlerb/block_return.txt",
-      "whitequark/break_block.txt",
-      "whitequark/next_block.txt",
       "whitequark/return_block.txt",
-
-      # Ripper is not accounting for locals created by patterns using the **
-      # operator within an `in` clause.
-      "seattlerb/parse_pattern_058.txt",
 
       # Ripper cannot handle named capture groups in regular expressions.
       "regex.txt",
-      "regex_char_width.txt",
-      "whitequark/lvar_injecting_match.txt",
 
       # Ripper fails to understand some structures that span across heredocs.
       "spanning_heredoc.txt",
 
-      # https://bugs.ruby-lang.org/issues/17398#note-12
-      "endless_methods_command_call.txt",
+      # Ripper interprets circular keyword arguments as method calls.
+      "3.4/circular_parameters.txt",
+
+      # Ripper doesn't emit `args_add_block` when endless method is prefixed by modifier.
+      "4.0/endless_methods_command_call.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
+
+    if RUBY_VERSION.start_with?("3.3.")
+      incorrect += [
+        "whitequark/lvar_injecting_match.txt",
+        "seattlerb/parse_pattern_058.txt",
+        "regex_char_width.txt",
+      ]
+    end
 
     # Skip these tests that we haven't implemented yet.
     omitted = [
@@ -57,7 +58,7 @@ module Prism
       "whitequark/slash_newline_in_heredocs.txt"
     ]
 
-    Fixture.each(except: incorrect | omitted) do |fixture|
+    Fixture.each_for_current_ruby(except: incorrect | omitted) do |fixture|
       define_method(fixture.test_name) { assert_ripper(fixture.read) }
     end
 

@@ -24,11 +24,9 @@ module Prism
       except << "whitequark/ruby_bug_19281.txt"
     end
 
-    # Leaving these out until they are supported by parse.y.
-    except << "leading_logical.txt"
-    except << "endless_methods_command_call.txt"
+    except << "command_method_call_2.txt"
 
-    Fixture.each(except: except) do |fixture|
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }
     end
   end

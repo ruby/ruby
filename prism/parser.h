@@ -299,6 +299,9 @@ typedef enum {
     /** a rescue else statement within a do..end block */
     PM_CONTEXT_BLOCK_ELSE,
 
+    /** expressions in block parameters `foo do |...| end ` */
+    PM_CONTEXT_BLOCK_PARAMETERS,
+
     /** a rescue statement within a do..end block */
     PM_CONTEXT_BLOCK_RESCUE,
 

@@ -1,0 +1,27 @@
+def f x: = 1
+         ^ could not parse the endless method parameters
+
+def f ... = 1
+          ^ could not parse the endless method parameters
+
+def f * = 1
+        ^ could not parse the endless method parameters
+
+def f ** = 1
+         ^ could not parse the endless method parameters
+
+def f & = 1
+        ^ could not parse the endless method parameters
+
+def f *a = 1
+         ^ could not parse the endless method parameters
+
+def f **a = 1
+          ^ could not parse the endless method parameters
+
+def f &a = 1
+         ^ could not parse the endless method parameters
+
+def f a, (b) = 1
+             ^ could not parse the endless method parameters
+

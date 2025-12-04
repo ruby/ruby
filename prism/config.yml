@@ -60,6 +60,7 @@ errors:
   - CONDITIONAL_WHILE_PREDICATE
   - CONSTANT_PATH_COLON_COLON_CONSTANT
   - DEF_ENDLESS
+  - DEF_ENDLESS_PARAMETERS
   - DEF_ENDLESS_SETTER
   - DEF_NAME
   - DEF_PARAMS_TERM
@@ -218,6 +219,7 @@ errors:
   - PARAMETER_WILD_LOOSE_COMMA
   - PATTERN_ARRAY_MULTIPLE_RESTS
   - PATTERN_CAPTURE_DUPLICATE
+  - PATTERN_CAPTURE_IN_ALTERNATIVE
   - PATTERN_EXPRESSION_AFTER_BRACKET
   - PATTERN_EXPRESSION_AFTER_COMMA
   - PATTERN_EXPRESSION_AFTER_HROCKET
@@ -279,6 +281,7 @@ errors:
   - UNEXPECTED_INDEX_KEYWORDS
   - UNEXPECTED_LABEL
   - UNEXPECTED_MULTI_WRITE
+  - UNEXPECTED_PARAMETER_DEFAULT_VALUE
   - UNEXPECTED_RANGE_OPERATOR
   - UNEXPECTED_SAFE_NAVIGATION
   - UNEXPECTED_TOKEN_CLOSE_CONTEXT
@@ -355,6 +358,8 @@ tokens:
     comment: "a newline character outside of other tokens"
   - name: PARENTHESIS_RIGHT
     comment: ")"
+  - name: PIPE
+    comment: "|"
   - name: SEMICOLON
     comment: ";"
   # Tokens from here on are not used for lookup, and can be in any order.
@@ -588,8 +593,6 @@ tokens:
     comment: "%I"
   - name: PERCENT_UPPER_W
     comment: "%W"
-  - name: PIPE
-    comment: "|"
   - name: PIPE_EQUAL
     comment: "|="
   - name: PIPE_PIPE
@@ -1514,6 +1517,16 @@ nodes:
 
               foo(bar)
                      ^
+      - name: equal_loc
+        type: location?
+        comment: |
+          Represents the location of the equal sign, in the case that this is an attribute write.
+
+              foo.bar = value
+                      ^
+
+              foo[bar] = value
+                       ^
       - name: block
         type: node?
         kind:
@@ -1800,7 +1813,7 @@ nodes:
           Represents the predicate of the case statement. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               case true; when false; end
-              ^^^^
+                   ^^^^
       - name: conditions
         type: node[]
         kind: WhenNode
@@ -2615,11 +2628,18 @@ nodes:
       - name: block
         type: node?
         kind: BlockNode
+        comment: |
+          All other arguments are forwarded as normal, except the original block is replaced with the new block.
     comment: |
-      Represents the use of the `super` keyword without parentheses or arguments.
+      Represents the use of the `super` keyword without parentheses or arguments, but which might have a block.
 
           super
           ^^^^^
+
+          super { 123 }
+          ^^^^^^^^^^^^^
+
+      If it has any other arguments, it would be a `SuperNode` instead.
   - name: GlobalVariableAndWriteNode
     fields:
       - name: name
@@ -3286,6 +3306,9 @@ nodes:
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
           - on error: XStringNode # `<<`FOO` "bar"
+          - on error: InterpolatedXStringNode
+          - on error: SymbolNode
+          - on error: InterpolatedSymbolNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -4495,6 +4518,7 @@ nodes:
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: "Can be only `nil` when there are empty parentheses, like `super()`."
       - name: rparen_loc
         type: location?
       - name: block
@@ -4510,6 +4534,8 @@ nodes:
 
           super foo, bar
           ^^^^^^^^^^^^^^
+
+      If no arguments are provided (except for a block), it would be a `ForwardingSuperNode` instead.
   - name: SymbolNode
     flags: SymbolFlags
     fields:

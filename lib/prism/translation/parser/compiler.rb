@@ -217,7 +217,7 @@ module Prism
                 rescue_clause.exceptions.any? ? builder.array(nil, visit_all(rescue_clause.exceptions), nil) : nil,
                 token(rescue_clause.operator_loc),
                 visit(rescue_clause.reference),
-                srange_find(find_start_offset, find_end_offset, ";"),
+                srange_semicolon(find_start_offset, find_end_offset),
                 visit(rescue_clause.statements)
               )
             end until (rescue_clause = rescue_clause.subsequent).nil?
@@ -323,7 +323,7 @@ module Prism
                       visit_all(arguments),
                       token(node.closing_loc),
                     ),
-                    srange_find(node.message_loc.end_offset, node.arguments.arguments.last.location.start_offset, "="),
+                    token(node.equal_loc),
                     visit(node.arguments.arguments.last)
                   ),
                   block
@@ -340,7 +340,7 @@ module Prism
             if name.end_with?("=") && !message_loc.slice.end_with?("=") && node.arguments && block.nil?
               builder.assign(
                 builder.attr_asgn(visit(node.receiver), call_operator, token(message_loc)),
-                srange_find(message_loc.end_offset, node.arguments.location.start_offset, "="),
+                token(node.equal_loc),
                 visit(node.arguments.arguments.last)
               )
             else
@@ -789,7 +789,7 @@ module Prism
             if (do_keyword_loc = node.do_keyword_loc)
               token(do_keyword_loc)
             else
-              srange_find(node.collection.location.end_offset, (node.statements&.location || node.end_keyword_loc).start_offset, ";")
+              srange_semicolon(node.collection.location.end_offset, (node.statements&.location || node.end_keyword_loc).start_offset)
             end,
             visit(node.statements),
             token(node.end_keyword_loc)
@@ -921,7 +921,7 @@ module Prism
               if (then_keyword_loc = node.then_keyword_loc)
                 token(then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.subsequent&.location || node.end_keyword_loc).start_offset, ";")
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.subsequent&.location || node.end_keyword_loc).start_offset)
               end,
               visit(node.statements),
               case node.subsequent
@@ -987,7 +987,7 @@ module Prism
             if (then_loc = node.then_loc)
               token(then_loc)
             else
-              srange_find(node.pattern.location.end_offset, node.statements&.location&.start_offset, ";")
+              srange_semicolon(node.pattern.location.end_offset, node.statements&.location&.start_offset)
             end,
             visit(node.statements)
           )
@@ -1808,7 +1808,7 @@ module Prism
               if (then_keyword_loc = node.then_keyword_loc)
                 token(then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.else_clause&.location || node.end_keyword_loc).start_offset, ";")
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.else_clause&.location || node.end_keyword_loc).start_offset)
               end,
               visit(node.else_clause),
               token(node.else_clause&.else_keyword_loc),
@@ -1839,7 +1839,7 @@ module Prism
               if (do_keyword_loc = node.do_keyword_loc)
                 token(do_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, ";")
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset)
               end,
               visit(node.statements),
               token(node.closing_loc)
@@ -1863,7 +1863,7 @@ module Prism
             if (then_keyword_loc = node.then_keyword_loc)
               token(then_keyword_loc)
             else
-              srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset, ";")
+              srange_semicolon(node.conditions.last.location.end_offset, node.statements&.location&.start_offset)
             end,
             visit(node.statements)
           )
@@ -1883,7 +1883,7 @@ module Prism
               if (do_keyword_loc = node.do_keyword_loc)
                 token(do_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, ";")
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset)
               end,
               visit(node.statements),
               token(node.closing_loc)
@@ -2012,16 +2012,16 @@ module Prism
           Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])
         end
 
-        # Constructs a new source range by finding the given character between
-        # the given start offset and end offset. If the needle is not found, it
-        # returns nil. Importantly it does not search past newlines or comments.
+        # Constructs a new source range by finding a semicolon between the given
+        # start offset and end offset. If the semicolon is not found, it returns
+        # nil. Importantly it does not search past newlines or comments.
         #
         # Note that end_offset is allowed to be nil, in which case this will
         # search until the end of the string.
-        def srange_find(start_offset, end_offset, character)
-          if (match = source_buffer.source.byteslice(start_offset...end_offset)[/\A\s*#{character}/])
+        def srange_semicolon(start_offset, end_offset)
+          if (match = source_buffer.source.byteslice(start_offset...end_offset)[/\A\s*;/])
             final_offset = start_offset + match.bytesize
-            [character, Range.new(source_buffer, offset_cache[final_offset - character.bytesize], offset_cache[final_offset])]
+            [";", Range.new(source_buffer, offset_cache[final_offset - 1], offset_cache[final_offset])]
           end
         end
 

@@ -152,7 +152,7 @@ module Prism
         # ^^
         # ```
         def visit_back_reference_read_node(node)
-          s(node, :back_ref, node.name.name.delete_prefix("$").to_sym)
+          s(node, :back_ref, node.name.to_s.delete_prefix("$").to_sym)
         end
 
         # ```
