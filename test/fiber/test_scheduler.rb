@@ -228,6 +228,8 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_post_fork_scheduler_reset
+    skip if !Process.respond_to?(:fork)
+
     forked_scheduler_state = nil
     thread = Thread.new do
       r, w = IO.pipe
@@ -253,6 +255,8 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_post_fork_fiber_blocking
+    skip if !Process.respond_to?(:fork)
+
     fiber_blocking_state = nil
     thread = Thread.new do
       r, w = IO.pipe
