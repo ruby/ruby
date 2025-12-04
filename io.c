@@ -4142,7 +4142,6 @@ swallow(rb_io_t *fptr, int term)
     if (NEED_READCONV(fptr)) {
         rb_encoding *enc = io_read_encoding(fptr);
         int needconv = rb_enc_mbminlen(enc) != 1;
-        SET_BINARY_MODE(fptr);
         make_readconv(fptr, 0);
         do {
             size_t cnt;
@@ -4166,17 +4165,36 @@ swallow(rb_io_t *fptr, int term)
         return FALSE;
     }
 
-    NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
     do {
         size_t cnt;
         while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
             char buf[1024];
             const char *p = READ_DATA_PENDING_PTR(fptr);
             int i;
-            if (cnt > sizeof buf) cnt = sizeof buf;
+#if RUBY_CRLF_ENVIRONMENT
+            if (NEED_CRLF_EOF_CONV(fptr)) {
+                if (cnt >= 2 && p[0] == '\r' && p[1] == '\n') {
+                    if (p[1] != term) return TRUE;
+                }
+                else if (*p != term) return TRUE;
+                if (cnt > sizeof buf) cnt = sizeof buf;
+                i = (int)cnt;
+                while (--i) {
+                     if (i > 2 && p[1] == '\r' && p[2] == '\n') {
+                         --i;
+                         ++p;
+                     }
+                     if (*++p != term) break;
+                }
+            }
+            else
+#endif
             if (*p != term) return TRUE;
-            i = (int)cnt;
-            while (--i && *++p == term);
+            else {
+                if (cnt > sizeof buf) cnt = sizeof buf;
+                i = (int)cnt;
+                while (--i && *++p == term);
+            }
             if (!read_buffered_data(buf, cnt - i, fptr)) /* must not fail */
                 rb_sys_fail_path(fptr->pathv);
         }
