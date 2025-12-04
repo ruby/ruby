@@ -38,6 +38,7 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
+require_relative "support/windows_tag_group"
 
 $debug = false
 
@@ -56,6 +57,7 @@ RSpec.configure do |config|
   config.include Spec::Path
   config.include Spec::Platforms
   config.include Spec::Permissions
+  config.include Spec::WindowsTagGroup
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -128,5 +130,13 @@ RSpec.configure do |config|
     end
   ensure
     reset!
+  end
+
+  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+    file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
+
+    config.define_derived_metadata(file_path: file_pattern) do |metadata|
+      metadata[tag] = true
+    end
   end
 end
