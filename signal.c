@@ -1066,7 +1066,7 @@ signal_exec(VALUE cmd, int sig)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         VALUE signum = INT2NUM(sig);
-        rb_eval_cmd_kw(cmd, rb_ary_new3(1, signum), RB_NO_KEYWORDS);
+        rb_eval_cmd_call_kw(cmd, 1, &signum, RB_NO_KEYWORDS);
     }
     EC_POP_TAG();
     ec = GET_EC();
