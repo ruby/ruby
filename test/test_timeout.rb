@@ -280,4 +280,24 @@ class TestTimeout < Test::Unit::TestCase
       }.join
     end;
   end
+
+  def test_ractor
+    assert_separately(%w[-rtimeout -W0], <<-'end;')
+      r = Ractor.new do
+        Timeout.timeout(1) { 42 }
+      end.value
+
+      assert_equal 42, r
+
+      r = Ractor.new do
+        begin
+          Timeout.timeout(0.1) { sleep }
+        rescue Timeout::Error
+          :ok
+        end
+      end.value
+
+      assert_equal :ok, r
+    end;
+  end if Timeout.const_defined?(:RACTOR_SUPPORT)
 end
