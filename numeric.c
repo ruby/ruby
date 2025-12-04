@@ -3508,10 +3508,10 @@ rb_numeric_to_int128(VALUE x)
         result.value = (int128_t)value;
 #else
         if (value < 0) {
-            // Two's complement representation
-            uint64_t unsigned_value = (uint64_t)(-(value + 1)) + 1;
-            result.low = unsigned_value;
-            result.high = UINT64_MAX; // Sign extend
+            // Two's complement representation: for negative values, sign extend
+            // Convert to unsigned: for -1, we want all bits set
+            result.low = (uint64_t)value; // This will be the two's complement representation
+            result.high = UINT64_MAX; // Sign extend: all bits set for negative
         }
         else {
             result.low = (uint64_t)value;
