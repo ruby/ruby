@@ -1067,13 +1067,13 @@ parse.h: {$(VPATH)}parse.c
 	$(Q)$(BASERUBY) $(tooldir)/id2token.rb $(SRC_FILE) | \
 	$(LRAMA) $(YFLAGS) -o$@ -H$*.h - parse.y
 
-{$(VPATH)}parser_ast.h: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_ast.h.erb
+{$(VPATH)}parser_ast.h: $(tooldir)/parser_config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_ast.h.erb
 	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb parser_ast.h $@
 
-{$(VPATH)}node.inc: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/node.inc.erb
+{$(VPATH)}node.inc: $(tooldir)/parser_config.yml $(tooldir)/parser_template.rb $(srcdir)/template/node.inc.erb
 	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb node.inc $@
 
-{$(VPATH)}parser_prettyprint.c: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_prettyprint.c.erb
+{$(VPATH)}parser_prettyprint.c: $(tooldir)/parser_config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_prettyprint.c.erb
 	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb parser_prettyprint.c $@
 
 $(PLATFORM_D):

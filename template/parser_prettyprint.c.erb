@@ -71,6 +71,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t 
                 }
             <%- when Prism::Template::StringField -%>
                 pm_buffer_append_string(output_buffer, " \"", 2);
+                // TODO
                 // pm_buffer_append_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>), PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
             <%- when Prism::Template::NodeListField -%>
@@ -147,6 +148,10 @@ prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t 
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- when Prism::Template::DoubleField -%>
                 pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
+            <%- when Prism::Template::EncodingField -%>
+                // TODO
+                (void)cast;
+                pm_buffer_append_byte(output_buffer, '\n');
             <%- else -%>
             <%- raise -%>
             <%- end -%>
