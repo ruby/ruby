@@ -20241,6 +20241,7 @@ zjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/bits.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/box.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/class.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -20252,6 +20253,7 @@ zjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/string.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -20428,6 +20430,7 @@ zjit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20479,6 +20482,7 @@ zjit.$(OBJEXT): {$(VPATH)}vm_debug.h
 zjit.$(OBJEXT): {$(VPATH)}vm_insnhelper.h
 zjit.$(OBJEXT): {$(VPATH)}vm_opts.h
 zjit.$(OBJEXT): {$(VPATH)}vm_sync.h
+zjit.$(OBJEXT): {$(VPATH)}yjit.h
 zjit.$(OBJEXT): {$(VPATH)}zjit.c
 zjit.$(OBJEXT): {$(VPATH)}zjit.h
 zjit.$(OBJEXT): {$(VPATH)}zjit.rbinc
