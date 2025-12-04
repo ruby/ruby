@@ -1,5 +1,3 @@
-use std::mem::take;
-
 use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
@@ -390,11 +388,12 @@ impl Assembler {
         }
 
         let mut asm_local = Assembler::new_with_asm(&self);
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
         let asm = &mut asm_local;
 
         while let Some((index, mut insn)) = iterator.next(asm) {
+            let live_ranges = self.live_ranges();
+
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -1014,6 +1013,7 @@ impl Assembler {
                 Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
+                Target::Block(_) => todo!(),
             };
         }
 
@@ -1118,7 +1118,9 @@ impl Assembler {
 
         // For each instruction
         let mut insn_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insn_idx) {
+        let insns = self.linearize_instructions();
+
+        while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
             hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
 
@@ -1222,7 +1224,7 @@ impl Assembler {
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is JoMul with RShift created by arm64_scratch_split
-                    match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
+                    match (insns.get(insn_idx + 1), insns.get(insn_idx + 2)) {
                         (Some(Insn::RShift { out: out_sign, opnd: out_opnd, shift: out_shift }), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::EMIT_OPND, left.into(), right.into());
@@ -1482,6 +1484,7 @@ impl Assembler {
                         Target::SideExit { .. } => {
                             unreachable!("Target::SideExit should have been compiled by compile_exits")
                         },
+                        Target::Block(_) => todo!(),
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
@@ -1529,8 +1532,8 @@ impl Assembler {
                     let Some(Insn::Cmp {
                         left: status_reg @ Opnd::Reg(_),
                         right: Opnd::UImm(_) | Opnd::Imm(_),
-                    }) = self.insns.get(insn_idx + 1) else {
-                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", self.insns.get(insn_idx + 1));
+                    }) = insns.get(insn_idx + 1) else {
+                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", insns.get(insn_idx + 1));
                     };
 
                     // Attempt to increment a counter
@@ -1579,7 +1582,7 @@ impl Assembler {
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
-                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");

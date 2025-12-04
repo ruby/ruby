@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
+use crate::hir;
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
@@ -14,6 +15,126 @@ use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_coun
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::rb_zjit_record_exit_stack;
+
+/// LIR Block ID. Unique ID for each block, and also defined in LIR so
+/// we can differentiate it from HIR block ids.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct BlockId(pub usize);
+
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
+    }
+}
+
+impl std::fmt::Display for BlockId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "bb{}", self.0)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BranchEdge {
+    pub target: BlockId,
+    pub args: Vec<Opnd>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BasicBlock {
+    // Unique id for this block
+    pub id: BlockId,
+
+    pub hir_block_id: hir::BlockId,
+
+    pub entry: bool,
+
+    // Instructions in this basic block
+    pub insns: Vec<Insn>,
+
+    // Input parameters for this block
+    pub parameters: Vec<Opnd>,
+
+    /// Live range for each VReg indexed by its `idx``
+    pub(super) live_ranges: Vec<LiveRange>
+
+}
+
+pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
+
+impl BasicBlock {
+    fn new(id: BlockId, hir_block_id: hir::BlockId, entry: bool) -> Self {
+        Self {
+            id,
+            hir_block_id,
+            entry,
+            insns: vec![],
+            parameters: vec![],
+            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
+        }
+    }
+
+    pub fn add_parameter(&mut self, param: Opnd) {
+        self.parameters.push(param);
+    }
+
+    pub fn push_insn(&mut self, insn: Insn) {
+        // Index of this instruction
+        let insn_idx = self.insns.len();
+
+        // Initialize the live range of the output VReg to insn_idx..=insn_idx
+        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
+            assert!(*idx < self.live_ranges.len());
+            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
+            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
+        }
+
+        // If we find any VReg from previous instructions, extend the live range to insn_idx
+        let opnd_iter = insn.opnd_iter();
+        for opnd in opnd_iter {
+            match *opnd {
+                Opnd::VReg { idx, .. } |
+                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
+                    assert!(idx < self.live_ranges.len());
+                    assert_ne!(self.live_ranges[idx].end, None);
+                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
+                }
+                _ => {}
+            }
+        }
+
+        self.insns.push(insn);
+    }
+
+    pub(super) fn new_vreg(&mut self, name: usize, num_bits: u8) -> Opnd {
+        let vreg = Opnd::VReg { name: name, idx: self.live_ranges.len(), num_bits };
+        self.live_ranges.push(LiveRange { start: None, end: None });
+        vreg
+    }
+
+    pub fn resize_live_ranges(&mut self, size: usize) {
+        self.live_ranges.resize(size, LiveRange { start: None, end: None });
+    }
+
+    pub fn edges(&self) -> EdgePair {
+        let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
+            if let Some(Target::Block(edge)) = insn.target() {
+                Some(edge.clone())
+            } else {
+                None
+            }
+        };
+
+        match self.insns.as_slice() {
+            [] => panic!("empty block"),
+            [.., second_last, last] => {
+                EdgePair(extract_edge(second_last), extract_edge(last))
+            },
+            [.., last] => {
+                EdgePair(extract_edge(last), None)
+            }
+        }
+    }
+}
 
 pub use crate::backend::current::{
     mem_base_reg,
@@ -97,7 +218,7 @@ pub enum Opnd
     Value(VALUE),
 
     /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
-    VReg{ idx: usize, num_bits: u8 },
+    VReg{ name: usize, idx: usize, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -113,8 +234,8 @@ impl fmt::Display for Opnd {
             None => write!(f, "None"),
             Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
             Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "v{idx}"),
-            VReg { idx, num_bits } => write!(f, "VReg{num_bits}(v{idx})"),
+            VReg { name, idx: _, num_bits } if *num_bits == 64 => write!(f, "v{name}"),
+            VReg { name, idx: _, num_bits } => write!(f, "VReg{num_bits}(v{name})"),
             Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
             Imm(value) => write!(f, "Imm(0x{value:x})"),
             UImm(value) if *value < 10 => write!(f, "{value:x}"),
@@ -131,8 +252,8 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({idx})"),
-            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({idx})"),
+            VReg { name, idx: _, num_bits } if *num_bits == 64 => write!(fmt, "VReg({name})"),
+            VReg { name, idx: _, num_bits } => write!(fmt, "VReg{num_bits}({name})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -156,7 +277,7 @@ impl Opnd
                 })
             },
 
-            Opnd::VReg{idx, num_bits: out_num_bits } => {
+            Opnd::VReg{name: _, idx, num_bits: out_num_bits } => {
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
@@ -207,7 +328,7 @@ impl Opnd
         match *self {
             Opnd::Reg(reg) => Opnd::Reg(reg.with_num_bits(num_bits)),
             Opnd::Mem(Mem { base, disp, .. }) => Opnd::Mem(Mem { base, disp, num_bits }),
-            Opnd::VReg { idx, .. } => Opnd::VReg { idx, num_bits },
+            Opnd::VReg { name, idx, .. } => Opnd::VReg { name, idx, num_bits },
             _ => unreachable!("with_num_bits should not be used for: {self:?}"),
         }
     }
@@ -221,8 +342,8 @@ impl Opnd
     /// instructions.
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
-            Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: indices[idx], num_bits }
+            Opnd::VReg { name, idx, num_bits } => {
+                Opnd::VReg { name, idx: indices[idx], num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
                 Opnd::Mem(Mem { base: MemBase::VReg(indices[idx]), disp, num_bits })
@@ -316,6 +437,8 @@ pub enum Target
     CodePtr(CodePtr),
     /// A label within the generated code
     Label(Label),
+    /// An LIR branch edge
+    Block(BranchEdge),
     /// Side exit to the interpreter
     SideExit {
         /// Context used for compiling the side exit
@@ -1318,10 +1441,8 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 /// optimized and lowered
 #[derive(Clone)]
 pub struct Assembler {
-    pub(super) insns: Vec<Insn>,
-
-    /// Live range for each VReg indexed by its `idx``
-    pub(super) live_ranges: Vec<LiveRange>,
+    pub basic_blocks: Vec<BasicBlock>,
+    current_block_id: BlockId,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
@@ -1336,7 +1457,11 @@ pub struct Assembler {
     pub(super) stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
-    leaf_ccall_stack_size: Option<usize>
+    leaf_ccall_stack_size: Option<usize>,
+
+    /// The name of the next vreg. Right now this will be used for displaying
+    /// a name of the vreg (not for live range calculation)
+    next_vreg_id: usize,
 }
 
 impl Assembler
@@ -1344,12 +1469,13 @@ impl Assembler
     /// Create an Assembler with defaults
     pub fn new() -> Self {
         Self {
-            insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names: Vec::default(),
             accept_scratch_reg: false,
             stack_base_idx: 0,
+            next_vreg_id: 0,
             leaf_ccall_stack_size: None,
+            basic_blocks: Vec::default(),
+            current_block_id: BlockId(0),
         }
     }
 
@@ -1373,9 +1499,45 @@ impl Assembler
             stack_base_idx: old_asm.stack_base_idx,
             ..Self::new()
         };
-        // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
-        asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
+
+        // Initialize basic blocks from the old assembler, preserving hir_block_id and entry flag
+        // but with empty instruction lists
+        for old_block in &old_asm.basic_blocks {
+            //let block =
+            asm.new_block_from_old_block(&old_block);
+            // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
+            // FIXME: probably do this block.resize_live_ranges(block.live_ranges.len());
+        }
+
         asm
+    }
+
+    // Create a new LIR basic block.  Returns the newly created block
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let lir_bb = BasicBlock::new(bb_id, hir_block_id, entry);
+        self.basic_blocks.push(lir_bb);
+        self.set_current_block(bb_id);
+        bb_id
+    }
+
+    // Create a new LIR basic block from an old one.  This should only be used
+    // when creating new assemblers during passes when we want to translate
+    // one assembler to a new one.
+    pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let mut lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry);
+        lir_bb.live_ranges.resize(old_block.live_ranges.len(), LiveRange { start: None, end: None });
+        self.basic_blocks.push(lir_bb);
+        bb_id
+    }
+
+    pub fn set_current_block(&mut self, block_id: BlockId) {
+        self.current_block_id = block_id;
+    }
+
+    pub fn current_block(&mut self) -> &mut BasicBlock {
+        &mut self.basic_blocks[self.current_block_id.0]
     }
 
     /// Return true if `opnd` is or depends on `reg`
@@ -1388,12 +1550,24 @@ impl Assembler
     }
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
-        let insns = take(&mut self.insns);
+        let insns = take(&mut self.basic_blocks[0].insns);
         InsnIter {
             old_insns_iter: insns.into_iter(),
             peeked: None,
             index: 0,
         }
+    }
+
+    pub fn live_ranges(&mut self) -> &Vec<LiveRange> {
+        &self.current_block().live_ranges
+    }
+
+    pub fn linearize_instructions(&self) -> Vec<Insn> {
+        let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
+        for block in &self.basic_blocks {
+            insns.extend_from_slice(&block.insns);
+        }
+        insns
     }
 
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
@@ -1420,8 +1594,9 @@ impl Assembler
 
     /// Build an Opnd::VReg and initialize its LiveRange
     pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: self.live_ranges.len(), num_bits };
-        self.live_ranges.push(LiveRange { start: None, end: None });
+        let name = self.next_vreg_id;
+        let vreg = self.current_block().new_vreg(name, num_bits);
+        self.next_vreg_id += 1;
         vreg
     }
 
@@ -1429,30 +1604,6 @@ impl Assembler
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
-        // Index of this instruction
-        let insn_idx = self.insns.len();
-
-        // Initialize the live range of the output VReg to insn_idx..=insn_idx
-        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(*idx < self.live_ranges.len());
-            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
-            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
-        }
-
-        // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let opnd_iter = insn.opnd_iter();
-        for opnd in opnd_iter {
-            match *opnd {
-                Opnd::VReg { idx, .. } |
-                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx < self.live_ranges.len());
-                    assert_ne!(self.live_ranges[idx].end, None);
-                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
-                }
-                _ => {}
-            }
-        }
-
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
             let opnd_iter = insn.opnd_iter();
@@ -1461,7 +1612,7 @@ impl Assembler
             }
         }
 
-        self.insns.push(insn);
+        self.current_block().push_insn(insn);
     }
 
     /// Create a new label instance that we can jump to
@@ -1526,25 +1677,38 @@ impl Assembler
         // First, create the pool of registers.
         let mut pool = RegisterPool::new(regs.clone(), self.stack_base_idx);
 
-        // Mapping between VReg and register or stack slot for each VReg index.
-        // None if no register or stack slot has been allocated for the VReg.
-        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
-
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
 
         // Remember the indexes of Insn::FrameSetup to update the stack size later
-        let mut frame_setup_idxs: Vec<usize> = vec![];
+        let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
 
         // live_ranges is indexed by original `index` given by the iterator.
-        let mut asm = Assembler::new_with_asm(&self);
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm_local = Assembler::new_with_asm(&self);
 
-        while let Some((index, mut insn)) = iterator.next() {
+        // Mapping between VReg and register or stack slot for each VReg index.
+        // None if no register or stack slot has been allocated for the VReg.
+        // TODO: AARON make sure live ranges gets copied when initializing the new assembler
+        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; asm_local.current_block().live_ranges.len()];
+
+        let iterator = &mut self.instruction_iterator();
+
+        let asm = &mut asm_local;
+
+        let current_block_id = asm.current_block().id;
+
+        while let Some((index, mut insn)) = iterator.next(asm) {
+            let live_ranges = self.live_ranges();
+
+            if current_block_id != asm.current_block().id {
+                vreg_opnd.clear();
+                vreg_opnd.reserve(asm.current_block().live_ranges.len());
+            }
+
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
             if let Insn::FrameSetup { .. } = insn {
-                frame_setup_idxs.push(asm.insns.len());
+                assert!(asm.current_block().entry);
+                frame_setup_idxs.push((asm.current_block().id, asm.current_block().insns.len()));
             }
 
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
@@ -1661,7 +1825,7 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
-                    Opnd::VReg { idx, num_bits } => {
+                    Opnd::VReg { name: _, idx, num_bits } => {
                         *opnd = vreg_opnd[idx].unwrap().with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
@@ -1734,8 +1898,8 @@ impl Assembler
         }
 
         // Extend the stack space for spilled operands
-        for frame_setup_idx in frame_setup_idxs {
-            match &mut asm.insns[frame_setup_idx] {
+        for (block_id, frame_setup_idx) in frame_setup_idxs {
+            match &mut asm.basic_blocks[block_id.0].insns[frame_setup_idx] {
                 Insn::FrameSetup { slot_count, .. } => {
                     *slot_count += pool.stack_state.stack_size;
                 }
@@ -1744,7 +1908,7 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        Ok(asm)
+        Ok(asm_local)
     }
 
     /// Compile the instructions down to machine code.
@@ -1818,16 +1982,19 @@ impl Assembler
 
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
-        for (idx, insn) in self.insns.iter().enumerate() {
-            if let Some(target @ Target::SideExit { .. }) = insn.target() {
-                targets.insert(idx, target.clone());
+
+        for (block_id, block) in self.basic_blocks.iter().enumerate() {
+            for (idx, insn) in block.insns.iter().enumerate() {
+                if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                    targets.insert((block_id, idx), target.clone());
+                }
             }
         }
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
 
-        for (idx, target) in targets {
+        for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.
             if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
@@ -1880,7 +2047,7 @@ impl Assembler
                     new_exit
                 };
 
-                *self.insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
+                *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
         }
     }
@@ -1915,7 +2082,7 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for insn in self.insns.iter() {
+        for insn in self.linearize_instructions().iter() {
             match insn {
                 Insn::Comment(comment) => {
                     writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
@@ -1951,6 +2118,7 @@ impl fmt::Display for Assembler {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                             Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                            Target::Block(_) => todo!(),
                         }
                     }
 
@@ -1985,7 +2153,7 @@ impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(fmt, "Assembler")?;
 
-        for (idx, insn) in self.insns.iter().enumerate() {
+        for (idx, insn) in self.linearize_instructions().iter().enumerate() {
             writeln!(fmt, "    {idx:03} {insn:?}")?;
         }
 
