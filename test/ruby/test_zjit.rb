@@ -1129,6 +1129,34 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_duparray_send], call_threshold: 1
   end
 
+  def test_opt_newarray_send_pack_buffer
+    assert_compiles '["ABC", "ABC", "ABC", "ABC"]', %q{
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), test(66, buf), test(67, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer_redefined
+    assert_compiles '["b", "A"]', %q{
+      class Array
+        alias_method :old_pack, :pack
+        def pack(fmt, buffer: nil)
+          old_pack(fmt, buffer: buffer)
+          "b"
+        end
+      end
+
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
   def test_opt_newarray_send_hash
     assert_compiles 'Integer', %q{
       def test(x)
