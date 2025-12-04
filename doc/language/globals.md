@@ -21,16 +21,16 @@ require 'English'
 
 ### Pattern Matching
 
-|   Variable   |       \English       | Initially | Read-Only | Set By                                                    |
-|:------------:|:--------------------:|:---------:|:---------:|-----------------------------------------------------------|
-| `$~`         | `$LAST_MATCH_INFO`   |  `nil`    |    No.    | Matcher method: to MatchData object or `nil`.             |
-|     `$&`     |       `$MATCH`       |   `nil`   |    No.    | Matcher method: to matched substring or `nil`.            |
-|     `$``     |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
-|     `$'`     |    `$POST_MATCH`     |   `nil`   |    No.    | Matcher method: to substring right of match or `nil`.     |
-|     `$+`     | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
-|     `$1`     |                      |   `nil`   |    No.    | Matcher method: to first group matched or `nil`.          |
-|     `$2`     |                      |   `nil`   |    No.    | Matcher method: to second group matched or `nil`.         |
-|    `$_n_`    |                      |   `nil`   |    No.    | Matcher method: to <i>n</i>th group matched or `nil`. |
+| Variable |       \English       | Initially | Read-Only | Set By                                                    |
+|:--------:|:--------------------:|:---------:|:---------:|-----------------------------------------------------------|
+|   `$~`   | `$LAST_MATCH_INFO`   |  `nil`    |    No.    | Matcher method: to MatchData object or `nil`.             |
+|   `$&`   |       `$MATCH`       |   `nil`   |    No.    | Matcher method: to matched substring or `nil`.            |
+|   `$``   |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
+|   `$'`   |    `$POST_MATCH`     |   `nil`   |    No.    | Matcher method: to substring right of match or `nil`.     |
+|   `$+`   | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
+|   `$1`   |                      |   `nil`   |   Yes.    | Matcher method: to first group matched or `nil`.          |
+|   `$2`   |                      |   `nil`   |   Yes.    | Matcher method: to second group matched or `nil`.         |
+|  `$_n_`  |                      |   `nil`   |   Yes.    | Matcher method: to <i>n</i>th group matched or `nil`. |
 
 ### Separators
 
@@ -41,22 +41,21 @@ require 'English'
 
 ### Streams
 
-|  Variable  |          \English           |       Initially       | Read-Only | Set By                |
-|:----------:|:---------------------------:|:---------------------:|:---------:|-----------------------|
-| `$stdin`   |                             |        `STDIN`        |    No.    |                       |
-| `$stdout`  |                             |       `STDOUT`        |    No.    |                       |
-| `$stderr`  |                             |       `STDERR`        |    No.    |                       |
-|    `$<`    |  `$DEFAULT_INPUT`           |        `ARGF`         |   Yes.    |                       |
-|    `$>`    |      `$DEFAULT_OUTPUT`      |      `STDOUT`         |    No.    |                       |
-|    `$>`    |      `$DEFAULT_OUTPUT`      |       `STDOUT `       |    No.    |                       |
-|    `$.`    | `$INPUT_LINE_NUMBER`, `$NR` | Non-negative integer. |    No.    | Certain read methods. |
-|    `$_`    |      `$LAST_READ_LINE`      |         `nil`         |    No.    | Certain read methods. |
+|  Variable  |          \English           | Initially | Read-Only | Set By                |
+|:----------:|:---------------------------:|:---------:|:---------:|-----------------------|
+| `$stdin`   |                             |  `STDIN`  |    No.    |                       |
+| `$stdout`  |                             | `STDOUT`  |    No.    |                       |
+| `$stderr`  |                             | `STDERR`  |    No.    |                       |
+|    `$<`    |      `$DEFAULT_INPUT`       |  `ARGF`   |   Yes.    |                       |
+|    `$>`    |     `$DEFAULT_OUTPUT`       | `STDOUT ` |    No.    |                       |
+|    `$.`    | `$INPUT_LINE_NUMBER`, `$NR` |     0     |    No.    | Certain read methods. |
+|    `$_`    |      `$LAST_READ_LINE`      |   `nil`   |    No.    | Certain read methods. |
 
 ### Processes
 
 |         Variable          |        \English        |       Initially       | Read-Only |
 |:-------------------------:|:----------------------:|:---------------------:|:---------:|
-|    `$0`                   |                        |     Program name.     |    No.    |
+|   `$0`, `$PROGRAM_NAME`   |                        |     Program name.     |    No.    |
 |           `$*`            |        `$ARGV`         |      `ARGV`           |   Yes.    |
 |           `$$`            | `$PROCESS_ID`, `$PID`  |     Process PID.      |   Yes.    |
 |           `$?`            |    `$CHILD_STATUS`     | Child process status. |   Yes.    |
