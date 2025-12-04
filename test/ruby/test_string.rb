@@ -2068,6 +2068,10 @@ CODE
     # Test without modification
     assert_equal(S("abc"), S("abc").strip("-+"))
     assert_equal(S("abc"), S("abc").strip(""))
+
+    # Test with range
+    assert_equal(S("abc"), S("012abc345").strip("0-9"))
+    assert_equal(S("abc"), S("012abc345").strip("^a-z"))
   end
 
   def test_strip_bang_with_chars
@@ -2103,6 +2107,9 @@ CODE
 
     # Test without modification
     assert_equal(S("abc"), S("abc").lstrip("-"))
+
+    # Test with range
+    assert_equal(S("abc345"), S("012abc345").lstrip("0-9"))
   end
 
   def test_lstrip_bang_with_chars
@@ -2129,6 +2136,9 @@ CODE
 
     # Test without modification
     assert_equal(S("abc"), S("abc").rstrip("-"))
+
+    # Test with range
+    assert_equal(S("012abc"), S("012abc345").rstrip("0-9"))
   end
 
   def test_rstrip_bang_with_chars

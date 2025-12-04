@@ -10283,6 +10283,12 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
  *    s = "---abc+++"
  *    s.lstrip("-") # => "abc+++"
  *
+ *  +chars+ must be a valid character selector (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
+ *  and may use any of its valid forms, including negation, ranges, and escapes:
+ *
+ *    "012abc345".lstrip("0-9") # "abc345"
+ *    "012abc345".lstrip("^a-z") # "abc345"
+ *
  *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
@@ -10404,6 +10410,12 @@ rb_str_rstrip_bang(int argc, VALUE *argv, VALUE str)
  *    s = "---abc+++"
  *    s.rstrip("+") # => "---abc"
  *
+ *  +chars+ must be a valid character selector (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
+ *  and may use any of its valid forms, including negation, ranges, and escapes:
+ *
+ *    "012abc345".rstrip("0-9") # "012abc"
+ *    "012abc345".rstrip("^a-z") # "012abc345"
+ *
  *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
@@ -10485,6 +10497,12 @@ rb_str_strip_bang(int argc, VALUE *argv, VALUE str)
  *    s = "---abc+++"
  *    s.strip("-+") # => "abc"
  *    s.strip("+-") # => "abc"
+ *
+ *  +chars+ must be a valid character selector (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
+ *  and may use any of its valid forms, including negation, ranges, and escapes:
+ *
+ *    "012abc345".strip("0-9") # "abc"
+ *    "012abc345".strip("^a-z") # "abc"
  *
  *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
