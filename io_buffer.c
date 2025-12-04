@@ -1900,12 +1900,12 @@ ruby_swapf64(double value)
 
 // Structures and conversion functions are now in numeric.h/numeric.c
 // Unified swap function for 128-bit integers (works with both signed and unsigned)
-// Since both struct rb_uint128_t and struct rb_int128_t have the same memory layout,
+// Since both rb_uint128_t and rb_int128_t have the same memory layout,
 // we can use a union to make the swap function work with both types
-static inline struct rb_uint128_t
-ruby_swap128_uint(struct rb_uint128_t x)
+static inline rb_uint128_t
+ruby_swap128_uint(rb_uint128_t x)
 {
-    struct rb_uint128_t result;
+    rb_uint128_t result;
 #ifdef HAVE_UINT128_T
 #if __has_builtin(__builtin_bswap128)
     result.value = __builtin_bswap128(x.value);
@@ -1922,19 +1922,19 @@ ruby_swap128_uint(struct rb_uint128_t x)
     // For big-endian data on little-endian host (or vice versa):
     // 1. Swap bytes within each 64-bit part
     // 2. Swap the order of the parts (since big-endian stores high first, little-endian stores low first)
-    result.low = ruby_swap64(x.high);
-    result.high = ruby_swap64(x.low);
+    result.parts.low = ruby_swap64(x.parts.high);
+    result.parts.high = ruby_swap64(x.parts.low);
 #endif
     return result;
 }
 
-static inline struct rb_int128_t
-ruby_swap128_int(struct rb_int128_t x)
+static inline rb_int128_t
+ruby_swap128_int(rb_int128_t x)
 {
     // Cast to unsigned, swap, then cast back
-    struct rb_uint128_t u = *(struct rb_uint128_t*)&x;
-    struct rb_uint128_t swapped = ruby_swap128_uint(u);
-    return *(struct rb_int128_t*)&swapped;
+    rb_uint128_t u = *(rb_uint128_t*)&x;
+    rb_uint128_t swapped = ruby_swap128_uint(u);
+    return *(rb_int128_t*)&swapped;
 }
 
 #define IO_BUFFER_DECLARE_TYPE(name, type, endian, wrap, unwrap, swap) \
@@ -1983,10 +1983,10 @@ IO_BUFFER_DECLARE_TYPE(U64, uint64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_ULL2NUM, RB_NU
 IO_BUFFER_DECLARE_TYPE(s64, int64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
 IO_BUFFER_DECLARE_TYPE(S64, int64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
 
-IO_BUFFER_DECLARE_TYPE(u128, struct rb_uint128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
-IO_BUFFER_DECLARE_TYPE(U128, struct rb_uint128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
-IO_BUFFER_DECLARE_TYPE(s128, struct rb_int128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
-IO_BUFFER_DECLARE_TYPE(S128, struct rb_int128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
+IO_BUFFER_DECLARE_TYPE(u128, rb_uint128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
+IO_BUFFER_DECLARE_TYPE(U128, rb_uint128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
+IO_BUFFER_DECLARE_TYPE(s128, rb_int128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
+IO_BUFFER_DECLARE_TYPE(S128, rb_int128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
 
 IO_BUFFER_DECLARE_TYPE(f32, float, RB_IO_BUFFER_LITTLE_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
 IO_BUFFER_DECLARE_TYPE(F32, float, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
