@@ -2835,6 +2835,33 @@ EOT
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_pipe_read_crlf_end_of_rbuf
+    str1 = "a" * 64
+    eof = "\x1A"
+    str2 = "b" * 8192
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-"EOS"
+          STDOUT.write #{str1.dump} + #{eof.dump} + #{str2.dump}
+          STDOUT.flush
+          STDOUT.close
+        EOS
+        in_w.close
+        Process.wait pid
+        out_r.seek(0, :CUR) rescue nil
+        out_r.set_encoding("us-ascii", "us-ascii", textmode: true, universal_newline: false, newline: :crlf)
+        out_r.ungetbyte(out_r.getbyte) # allcate rbuf
+        assert_equal(str1, out_r.read)
+        assert_equal(eof, out_r.read(1))
+        assert_equal(str2, out_r.read)
+        out_r.close
+      end
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_crlf_end_of_rbuf
     with_tmpdir {
       str = "\r\n" * 4097

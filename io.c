@@ -3330,6 +3330,9 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     rb_encoding *enc;
     int cr;
     int shrinkable;
+#if RUBY_CRLF_ENVIRONMENT
+    bool is_pipe = false;
+#endif
 
     if (NEED_READCONV(fptr)) {
         int first = !NIL_P(str);
@@ -3364,10 +3367,24 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     enc = io_read_encoding(fptr);
     cr = 0;
 
+#if RUBY_CRLF_ENVIRONMENT
+    errno = 0;
+    is_pipe = (lseek(fptr->fd, 0, SEEK_CUR) < 0 && errno);
+#endif
+
     if (siz == 0) siz = BUFSIZ;
     shrinkable = io_setstrbuf(&str, siz);
     for (;;) {
         long bytes_raw;
+#if RUBY_CRLF_ENVIRONMENT
+        if (is_pipe) {
+            if (fptr->rbuf.capa &&
+                siz - bytes > fptr->rbuf.capa &&
+                NEED_CRLF_EOF_CONV(fptr)) {
+                siz = bytes + fptr->rbuf.capa;
+            }
+        }
+#endif
         READ_CHECK(fptr);
         n = io_fread(str, bytes, siz - bytes, fptr);
         if (n == 0 && bytes == 0) {
