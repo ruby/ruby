@@ -651,7 +651,9 @@ static inline const char *json_next_backslash(const char *pe, const char *string
         positions->size--;
         const char *next_position = positions->positions[0];
         positions->positions++;
-        return next_position;
+        if (next_position >= pe) {
+            return next_position;
+        }
     }
 
     if (positions->has_more) {
