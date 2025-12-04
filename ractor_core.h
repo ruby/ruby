@@ -9,6 +9,9 @@
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
+// experimental flag because it is not sure it is the common pattern
+#define RUBY_TYPED_FROZEN_SHAREABLE_NO_REC RUBY_FL_FINALIZE
+
 struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;

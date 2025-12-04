@@ -157,6 +157,12 @@ rbimpl_typeddata_flags {
      */
     RUBY_TYPED_FROZEN_SHAREABLE = RUBY_FL_SHAREABLE,
 
+    // experimental flag
+    // Similar to RUBY_TYPED_FROZEN_SHAREABLE, but doesn't make shareable
+    // reachable objects from this T_DATA object on the Ractor.make_shareable.
+    // If it refers to unsharable objects, simply raise an error.
+    // RUBY_TYPED_FROZEN_SHAREABLE_NO_REC = RUBY_FL_FINALIZE,
+
     /**
      * This flag  has something to do  with our garbage collector.   These days
      * ruby  objects are  "generational".  There  are those  who are  young and
