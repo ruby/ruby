@@ -5252,20 +5252,25 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_newarray_send => {
                     let count = get_arg(pc, 0).as_usize();
                     let method = get_arg(pc, 1).as_u32();
-                    let elements = state.stack_pop_n(count)?;
                     let (bop, insn) = match method {
-                        VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
-                        VM_OPT_NEWARRAY_SEND_HASH => (BOP_HASH, Insn::ArrayHash { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_MAX => {
+                            let elements = state.stack_pop_n(count)?;
+                            (BOP_MAX, Insn::ArrayMax { elements, state: exit_id })
+                        }
+                        VM_OPT_NEWARRAY_SEND_HASH => {
+                            let elements = state.stack_pop_n(count)?;
+                            (BOP_HASH, Insn::ArrayHash { elements, state: exit_id })
+                        }
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
-                            let target = elements[elements.len() - 1];
-                            let array_elements = elements[..elements.len() - 1].to_vec();
-                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements: array_elements, target, state: exit_id })
-                        },
+                            let target = state.stack_pop()?;
+                            let elements = state.stack_pop_n(count - 1)?;
+                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements, target, state: exit_id })
+                        }
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledNewarraySend(method) });
                             break;  // End the block
-                        },
+                        }
                     };
                     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
                         // If the basic operation is already redefined, we cannot optimize it.
