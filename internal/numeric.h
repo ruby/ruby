@@ -130,10 +130,17 @@ VALUE rb_int_comp(VALUE num);
 // Unified 128-bit integer structures that work with or without native support:
 struct rb_uint128_t {
     union {
+#ifdef WORDS_BIGENDIAN
+        struct {
+            uint64_t high;
+            uint64_t low;
+        };
+#else
         struct {
             uint64_t low;
             uint64_t high;
         };
+#endif
 #ifdef HAVE_UINT128_T
         uint128_t value;
 #endif
@@ -142,10 +149,17 @@ struct rb_uint128_t {
 
 struct rb_int128_t {
     union {
+#ifdef WORDS_BIGENDIAN
+        struct {
+            uint64_t high;
+            uint64_t low;
+        };
+#else
         struct {
             uint64_t low;
             uint64_t high;
         };
+#endif
 #ifdef HAVE_UINT128_T
         int128_t value;
 #endif
