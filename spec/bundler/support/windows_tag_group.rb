@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# This group classifies test files into 4 groups by running `bin/rspec --profile 10000`
+# to ensure balanced execution times. When adding new test files, it is recommended to
+# re-aggregate and adjust the groups to keep them balanced.
+# For now, please add new files to group 'windows_d'.
+
 module Spec
   module WindowsTagGroup
     EXAMPLE_MAPPINGS = {

@@ -139,4 +139,11 @@ RSpec.configure do |config|
       metadata[tag] = true
     end
   end
+
+  config.before(:context) do |example|
+    metadata = example.class.metadata
+    if metadata[:type] != :aruba && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    end
+  end
 end
