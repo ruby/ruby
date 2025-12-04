@@ -398,7 +398,21 @@ module Prism
       end
     end
 
-    # This class represents a node in the tree, configured by the config.yml file
+    class EncodingField < Field
+      # def rbs_class
+      #   "Float"
+      # end
+
+      # def rbi_class
+      #   "Float"
+      # end
+
+      # def java_type
+      #   "double"
+      # end
+    end
+
+    # This class represents a node in the tree, configured by the parser_config.yml file
     # in YAML format. It contains information about the name of the node and the
     # various child nodes it contains.
     class NodeType
@@ -446,7 +460,7 @@ module Prism
               options[:kind] = kinds
             else
               if type < NodeKindField
-                raise "Missing kind in config.yml for field #{@name}##{options.fetch(:name)}"
+                raise "Missing kind in parser_config.yml for field #{@name}##{options.fetch(:name)}"
               end
             end
 
@@ -493,6 +507,7 @@ module Prism
         when "uint32"     then UInt32Field
         when "integer"    then IntegerField
         when "double"     then DoubleField
+        when "encoding"   then EncodingField
         else raise("Unknown field type: #{name.inspect}")
         end
       end
@@ -538,7 +553,7 @@ module Prism
 
     class << self
       # This templates out a file using ERB with the given locals. The locals are
-      # derived from the config.yml file.
+      # derived from the parser_config.yml file.
       def render(name, write_to: nil)
         filepath = "../template/#{name}.erb"
         template = File.expand_path("#{filepath}", __dir__)
@@ -627,7 +642,7 @@ module Prism
       def locals
         @locals ||=
           begin
-            config = YAML.load_file(File.expand_path("../prism/config.yml", __dir__))
+            config = YAML.load_file(File.expand_path("../tool/parser_config.yml", __dir__))
             flags = config.fetch("flags").to_h { |flags| [flags["name"], Flags.new(flags)] }
 
             {

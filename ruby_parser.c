@@ -1031,10 +1031,10 @@ rb_node_str_string_val(const NODE *node)
 }
 
 VALUE
-rb_string_node_string_val(const rb_node_t *node)
+rb_node_str_string_val2(const rb_node_t *node)
 {
-    const rb_string_node_t *n = (const rb_string_node_t *)node;
-    return rb_str_new_parser_string(n->unescaped);
+    rb_parser_string_t *str = RB_NODE_STRING(node)->unescaped;
+    return rb_str_new_parser_string(str);
 }
 
 VALUE
@@ -1075,15 +1075,33 @@ rb_node_line_lineno_val(const NODE *node)
 }
 
 VALUE
+rb_node_line_lineno_val2(const rb_node_t *node)
+{
+    return INT2FIX(node->location.beg_pos.lineno);
+}
+
+VALUE
 rb_node_file_path_val(const NODE *node)
 {
     return rb_str_new_parser_string(RNODE_FILE(node)->path);
 }
 
 VALUE
+rb_node_file_path_val2(const rb_node_t *node)
+{
+    return rb_str_new_parser_string(RB_NODE_SOURCE_FILE(node)->filepath);
+}
+
+VALUE
 rb_node_encoding_val(const NODE *node)
 {
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
+}
+
+VALUE
+rb_node_encoding_val2(const rb_node_t *node)
+{
+    return rb_enc_from_encoding(RB_NODE_SOURCE_ENCODING(node)->enc);
 }
 
 static void

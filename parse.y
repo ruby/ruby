@@ -1192,8 +1192,8 @@ static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_arg
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
-static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
+// static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
+// static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_SCOPE(a,b,c,loc) (NODE *)rb_node_scope_new(p,a,b,c,loc)
@@ -1300,9 +1300,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
 #define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
-#define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
-#define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
-#define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
+// #define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
+// #define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
+// #define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 /* prism node */
@@ -1326,6 +1326,9 @@ static rb_break_node_t *rb_new_node_break_new(struct parser_params *p, struct rb
 static rb_next_node_t *rb_new_node_next_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_integer_node_t *rb_new_node_integer_new(struct parser_params *p, pm_integer_t *value, const YYLTYPE *loc);
 static rb_float_node_t *rb_new_node_float_new(struct parser_params *p, double value, const YYLTYPE *loc);
+static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_source_file_node_t *rb_new_node_source_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
+static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
@@ -1348,6 +1351,9 @@ static rb_float_node_t *rb_new_node_float_new(struct parser_params *p, double va
 #define NEW_RB_INTEGER(v,loc) rb_new_node_integer_new(p,v,loc)
 #define NEW_RB_FLOAT(v,loc) rb_new_node_float_new(p,v,loc)
 
+#define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
+#define NEW_RB_SOURCE_FILE(str,loc) (rb_node_t *)rb_new_node_source_file_new(p,str,loc)
+#define NEW_RB_SOURCE_ENCODING(loc) (rb_node_t *)rb_new_node_source_encoding_new(p,loc)
 
 enum internal_node_type {
     NODE_INTERNAL_ONLY = NODE_LAST,
@@ -12473,31 +12479,31 @@ rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE
     return n;
 }
 
-static rb_node_line_t *
-rb_node_line_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_node_line_t *n = NODE_NEWNODE(NODE_LINE, rb_node_line_t, loc);
+// static rb_node_line_t *
+// rb_node_line_new(struct parser_params *p, const YYLTYPE *loc)
+// {
+//     rb_node_line_t *n = NODE_NEWNODE(NODE_LINE, rb_node_line_t, loc);
 
-    return n;
-}
+//     return n;
+// }
 
-static rb_node_file_t *
-rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
-{
-    rb_node_file_t *n = NODE_NEWNODE(NODE_FILE, rb_node_file_t, loc);
-    n->path = rb_str_to_parser_string(p, str);
+// static rb_node_file_t *
+// rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
+// {
+//     rb_node_file_t *n = NODE_NEWNODE(NODE_FILE, rb_node_file_t, loc);
+//     n->path = rb_str_to_parser_string(p, str);
 
-    return n;
-}
+//     return n;
+// }
 
-static rb_node_encoding_t *
-rb_node_encoding_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_node_encoding_t *n = NODE_NEWNODE(NODE_ENCODING, rb_node_encoding_t, loc);
-    n->enc = p->enc;
+// static rb_node_encoding_t *
+// rb_node_encoding_new(struct parser_params *p, const YYLTYPE *loc)
+// {
+//     rb_node_encoding_t *n = NODE_NEWNODE(NODE_ENCODING, rb_node_encoding_t, loc);
+//     n->enc = p->enc;
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_cdecl_t *
 rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, enum rb_parser_shareability shareability, const YYLTYPE *loc)
@@ -12824,6 +12830,32 @@ rb_new_node_float_new(struct parser_params *p, double value, const YYLTYPE *loc)
 {
     rb_float_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_FLOAT_NODE, rb_float_node_t, loc);
     n->value = value;
+    return n;
+}
+
+static rb_source_line_node_t *
+rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_source_line_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SOURCE_LINE_NODE, rb_source_line_node_t, loc);
+
+    return n;
+}
+
+static rb_source_file_node_t *
+rb_new_node_source_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
+{
+    rb_source_file_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SOURCE_FILE_NODE, rb_source_file_node_t, loc);
+    n->filepath = rb_str_to_parser_string(p, str);
+
+    return n;
+}
+
+static rb_source_encoding_node_t *
+rb_new_node_source_encoding_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_source_encoding_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SOURCE_ENCODING_NODE, rb_source_encoding_node_t, loc);
+    n->enc = p->enc;
+
     return n;
 }
 
@@ -13423,13 +13455,13 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
             VALUE file = p->ruby_sourcefile_string;
             if (NIL_P(file))
                 file = rb_str_new(0, 0);
-            node = NEW_FILE(file, loc);
+            node = NEW_RB_SOURCE_FILE(file, loc);
         }
         return node;
       case keyword__LINE__:
-        return NEW_LINE(loc);
+        return NEW_RB_SOURCE_LINE(loc);
       case keyword__ENCODING__:
-        return NEW_ENCODING(loc);
+        return NEW_RB_SOURCE_ENCODING(loc);
 
     }
     switch (id_type(id)) {
@@ -14665,6 +14697,7 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return cond0(p, node, COND_IN_FF, loc, true);
 }
 
+// TODO
 static NODE*
 cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc, bool top)
 {

@@ -907,6 +907,19 @@ get_string_value(const NODE *node)
     }
 }
 
+static VALUE
+get_string_value2(const rb_node_t *node)
+{
+    switch (nd_type(node)) {
+      case RB_STRING_NODE:
+        return RB_OBJ_SET_SHAREABLE(rb_node_str_string_val2(node));
+      case RB_SOURCE_FILE_NODE:
+        return RB_OBJ_SET_SHAREABLE(rb_node_file_path_val2(node));
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 VALUE
 rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
@@ -11308,6 +11321,49 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case RB_SOURCE_LINE_NODE: {
+        // __LINE__
+        // ^^^^^^^^
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_line_lineno_val2(node));
+        }
+        break;
+      }
+      case RB_SOURCE_ENCODING_NODE: {
+        // __ENCODING__
+        // ^^^^^^^^
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_encoding_val2(node));
+        }
+        break;
+      }
+      case RB_SOURCE_FILE_NODE: {
+        debugp_param("nd_lit", get_string_value2(node));
+        if (!popped) {
+            VALUE lit = get_string_value2(node);
+            const rb_compile_option_t *option = ISEQ_COMPILE_DATA(iseq)->option;
+            if ((option->debug_frozen_string_literal || RTEST(ruby_debug)) &&
+                option->frozen_string_literal != ISEQ_FROZEN_STRING_LITERAL_DISABLED) {
+                lit = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), line);
+                RB_OBJ_SET_SHAREABLE(lit);
+            }
+            switch (option->frozen_string_literal) {
+              case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+                ADD_INSN1(ret, node, putchilledstring, lit);
+                break;
+              case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+                ADD_INSN1(ret, node, putstring, lit);
+                break;
+              case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+                ADD_INSN1(ret, node, putobject, lit);
+                break;
+              default:
+                rb_bug("invalid frozen_string_literal");
+            }
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
       case RB_SELF_NODE: {
         // self
         // ^^^^
@@ -11344,7 +11400,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case RB_STRING_NODE:{
         if (!popped) {
-            VALUE lit = rb_string_node_string_val(node);
+            VALUE lit = rb_node_str_string_val2(node);
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
