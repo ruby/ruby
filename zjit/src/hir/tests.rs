@@ -2154,7 +2154,51 @@ pub mod hir_build_tests {
           v36:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v37:StringExact = StringCopy v36
           v39:BasicObject = GetLocal :buf, l0, EP@3
-          SideExit UnhandledNewarraySend(PACK_BUFFER)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK)
+          v42:String = ArrayPackBuffer v15, v16, fmt: v37, buf: v39
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_pack_buffer_redefined() {
+        eval(r#"
+            class Array
+              def pack(fmt, buffer: nil) = 5
+            end
+            def test(a,b)
+              sum = a+b
+              buf = ""
+              [a,b].pack 'C', buffer: buf
+              buf
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@7
+          v3:BasicObject = GetLocal :b, l0, SP@6
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          v29:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v30:StringExact = StringCopy v29
+          v36:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v37:StringExact = StringCopy v36
+          v39:BasicObject = GetLocal :buf, l0, EP@3
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
         ");
     }
 
