@@ -51,6 +51,9 @@ pub struct Options {
     /// Print stats on exit (when stats is also true)
     pub print_stats: bool,
 
+    /// Print stats to file on exit (when stats is also true)
+    pub print_stats_file: Option<std::path::PathBuf>,
+
     /// Enable debug logging
     pub debug: bool,
 
@@ -103,6 +106,7 @@ impl Default for Options {
             num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
             print_stats: false,
+            print_stats_file: None,
             debug: false,
             disable: false,
             disable_hir_opt: false,
@@ -131,7 +135,8 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
-    ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
+    ("--zjit-stats[=quiet|=file]",
+                     "Collect ZJIT stats (=quiet to suppress output, or =file)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
@@ -311,6 +316,19 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.stats = true;
             options.print_stats = false;
         }
+        ("stats", path) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(path)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", path, e))
+                .ok();
+            let canonical_path = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.stats = true;
+            options.print_stats_file = Some(canonical_path);
+        }
 
         ("trace-exits", exits) => {
             options.trace_side_exits = match exits {
@@ -487,4 +505,15 @@ pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     } else {
         Qfalse
     }
+}
+
+/// Return path if stats should be printed at exit to a specified file, else Qnil.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if let Some(opts) = unsafe { OPTIONS.as_ref() } {
+        if let Some(ref path) = opts.print_stats_file {
+            return rust_str_to_ruby(path.as_os_str().to_str().unwrap());
+        }
+    }
+    Qnil
 }

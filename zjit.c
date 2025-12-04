@@ -311,6 +311,7 @@ VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_get_stats_file_path_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 
