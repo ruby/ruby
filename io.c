@@ -4919,10 +4919,21 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
         return str;
     }
 
-    NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    SET_BINARY_MODE(fptr);
     if (io_fillbuf(fptr) < 0) {
         return Qnil;
     }
+#if RUBY_CRLF_ENVIRONMENT
+    if (NEED_CRLF_EOF_CONV(fptr)) {
+        if (fptr->rbuf.ptr[fptr->rbuf.off] == CTRLZ) return Qnil;
+        if (fptr->rbuf.len > 1 &&
+            fptr->rbuf.ptr[fptr->rbuf.off] == '\r' &&
+            fptr->rbuf.ptr[fptr->rbuf.off + 1] == '\n') {
+            fptr->rbuf.off++;
+            fptr->rbuf.len--;
+        }
+    }
+#endif
     if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf.ptr[fptr->rbuf.off])) {
         str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, 1);
         fptr->rbuf.off += 1;
