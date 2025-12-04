@@ -674,6 +674,7 @@ pub enum Insn {
     ArrayHash { elements: Vec<InsnId>, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
+    ArrayPackBuffer { elements: Vec<InsnId>, fmt: InsnId, buffer: InsnId, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
@@ -1096,6 +1097,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     prefix = ", ";
                 }
                 write!(f, " | {target}")
+            }
+            Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
+                write!(f, "ArrayPackBuffer")?;
+                for element in elements {
+                    write!(f, "{element}, ")?;
+                }
+                write!(f, "fmt: {fmt}, buf: {buffer}")
             }
             Insn::DupArrayInclude { ary, target, .. } => {
                 write!(f, "DupArrayInclude {} | {}", ary.print(self.ptr_map), target)
@@ -1956,6 +1964,7 @@ impl Function {
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
+            &ArrayPackBuffer { ref elements, fmt, buffer, state } => ArrayPackBuffer { elements: find_vec!(elements), fmt: find!(fmt), buffer: find!(buffer), state: find!(state) },
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
             &ArrayHash { ref elements, state } => ArrayHash { elements: find_vec!(elements), state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
@@ -2110,6 +2119,7 @@ impl Function {
             Insn::FixnumBitCheck { .. } => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
+            Insn::ArrayPackBuffer { .. } => types::String,
             Insn::DupArrayInclude { .. } => types::BoolExact,
             Insn::ArrayHash { .. } => types::Fixnum,
             Insn::GetGlobal { .. } => types::BasicObject,
@@ -3624,6 +3634,12 @@ impl Function {
                 worklist.push_back(target);
                 worklist.push_back(state);
             }
+            &Insn::ArrayPackBuffer { ref elements, fmt, buffer, state } => {
+                worklist.extend(elements);
+                worklist.push_back(fmt);
+                worklist.push_back(buffer);
+                worklist.push_back(state);
+            }
             &Insn::DupArrayInclude { target, state, .. } => {
                 worklist.push_back(target);
                 worklist.push_back(state);
@@ -4380,6 +4396,14 @@ impl Function {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::ArrayPackBuffer { ref elements, fmt, buffer, .. } => {
+                self.assert_subtype(insn_id, fmt, types::BasicObject)?;
+                self.assert_subtype(insn_id, buffer, types::BasicObject)?;
+                for &element in elements {
+                    self.assert_subtype(insn_id, element, types::BasicObject)?;
                 }
                 Ok(())
             }
@@ -5218,20 +5242,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_newarray_send => {
                     let count = get_arg(pc, 0).as_usize();
                     let method = get_arg(pc, 1).as_u32();
-                    let elements = state.stack_pop_n(count)?;
                     let (bop, insn) = match method {
-                        VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
-                        VM_OPT_NEWARRAY_SEND_HASH => (BOP_HASH, Insn::ArrayHash { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_MAX => {
+                            let elements = state.stack_pop_n(count)?;
+                            (BOP_MAX, Insn::ArrayMax { elements, state: exit_id })
+                        }
+                        VM_OPT_NEWARRAY_SEND_HASH => {
+                            let elements = state.stack_pop_n(count)?;
+                            (BOP_HASH, Insn::ArrayHash { elements, state: exit_id })
+                        }
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
-                            let target = elements[elements.len() - 1];
-                            let array_elements = elements[..elements.len() - 1].to_vec();
-                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements: array_elements, target, state: exit_id })
-                        },
+                            let target = state.stack_pop()?;
+                            let elements = state.stack_pop_n(count - 1)?;
+                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements, target, state: exit_id })
+                        }
+                        VM_OPT_NEWARRAY_SEND_PACK_BUFFER => {
+                            let buffer = state.stack_pop()?;
+                            let fmt = state.stack_pop()?;
+                            let elements = state.stack_pop_n(count - 2)?;
+                            (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer, state: exit_id })
+                        }
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledNewarraySend(method) });
                             break;  // End the block
-                        },
+                        }
                     };
                     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
                         // If the basic operation is already redefined, we cannot optimize it.
