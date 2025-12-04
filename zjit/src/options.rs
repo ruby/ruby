@@ -135,8 +135,10 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
-    ("--zjit-stats[=quiet|=file]",
-                     "Collect ZJIT stats (=quiet to suppress output, or =file)."),
+    ("--zjit-stats-quiet",
+                     "Collect ZJIT stats and suppress output."),
+    ("--zjit-stats[=file]",
+                     "Collect ZJIT stats (=file to write to a file)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
@@ -308,13 +310,15 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+
+        ("stats-quiet", _) => {
+            options.stats = true;
+            options.print_stats = false;
+        }
+
         ("stats", "") => {
             options.stats = true;
             options.print_stats = true;
-        }
-        ("stats", "quiet") => {
-            options.stats = true;
-            options.print_stats = false;
         }
         ("stats", path) => {
             // Truncate the file if it exists
