@@ -521,6 +521,15 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
     }
 }
 
+// VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
+// bindgen can only grab one version of the constant and copy that to rust,
+// we make that the upper bound and this the accurate value.
+uint32_t
+rb_vm_instruction_size(void)
+{
+    return VM_INSTRUCTION_SIZE;
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
