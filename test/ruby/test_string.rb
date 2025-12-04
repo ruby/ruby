@@ -1886,6 +1886,17 @@ CODE
     assert_raise_with_message(TypeError, /\$;/) {
       $; = []
     }
+    name = "\u{5206 5217}"
+    assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
+    do;
+      alias $#{name} $;
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
+      assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
+    end;
+  end
+
+  def test_fs_gc
+    return unless @cls == String
 
     assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
@@ -2761,7 +2772,7 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
-  def test_fs_setter
+  def test_rs
     return unless @cls == String
 
     assert_raise(TypeError) { $/ = 1 }
@@ -2769,6 +2780,7 @@ CODE
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;
       alias $#{name} $/
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
       assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
     end;
   end

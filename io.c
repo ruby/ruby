@@ -8641,31 +8641,19 @@ rb_f_printf(int argc, VALUE *argv, VALUE _)
     return Qnil;
 }
 
-static void
-deprecated_str_setter(VALUE val, ID id, VALUE *var)
-{
-    rb_str_setter(val, id, &val);
-    if (!NIL_P(val)) {
-        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
-    }
-    *var = val;
-}
+extern void rb_deprecated_str_setter(VALUE val, ID id, VALUE *var);
 
 static void
 deprecated_rs_setter(VALUE val, ID id, VALUE *var)
 {
+    rb_deprecated_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        if (!RB_TYPE_P(val, T_STRING)) {
-            rb_raise(rb_eTypeError, "value of %"PRIsVALUE" must be String", rb_id2str(id));
-        }
         if (rb_str_equal(val, rb_default_rs)) {
             val = rb_default_rs;
         }
         else {
             val = rb_str_frozen_bare_string(val);
         }
-        rb_enc_str_coderange(val);
-        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
     }
     *var = val;
 }
@@ -15730,7 +15718,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
 
     rb_output_fs = Qnil;
-    rb_define_hooked_variable("$,", &rb_output_fs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_deprecated_str_setter);
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
     rb_vm_register_global_object(rb_default_rs);
@@ -15740,7 +15728,7 @@ Init_IO(void)
     rb_gvar_ractor_local("$/"); // not local but ractor safe
     rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$-0"); // not local but ractor safe
-    rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");

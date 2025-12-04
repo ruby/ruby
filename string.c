@@ -11376,6 +11376,21 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 }
 
 static void
+nil_setter_warning(ID id)
+{
+    rb_warn_deprecated("'%"PRIsVALUE"'", NULL, rb_id2str(id));
+}
+
+void
+rb_deprecated_str_setter(VALUE val, ID id, VALUE *var)
+{
+    rb_str_setter(val, id, var);
+    if (!NIL_P(*var)) {
+        nil_setter_warning(id);
+    }
+}
+
+static void
 rb_fs_setter(VALUE val, ID id, VALUE *var)
 {
     val = rb_fs_check(val);
@@ -11385,7 +11400,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
                  rb_id2str(id));
     }
     if (!NIL_P(val)) {
-        rb_warn_deprecated("'$;'", NULL);
+        nil_setter_warning(id);
     }
     *var = val;
 }
