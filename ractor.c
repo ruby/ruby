@@ -2366,7 +2366,7 @@ ractor_local_value_store_if_absent(rb_execution_context_t *ec, VALUE self, VALUE
     return rb_mutex_synchronize(cr->local_storage_store_lock, ractor_local_value_store_i, (VALUE)&data);
 }
 
-// sharable_proc
+// shareable_proc
 
 static VALUE
 ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_lambda)

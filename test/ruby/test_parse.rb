@@ -1544,7 +1544,7 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_simple
-    obj = [['unsharable_value']]
+    obj = [['unshareable_value']]
     a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
