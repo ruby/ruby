@@ -38,7 +38,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t 
             <%- end -%>
             pm_buffer_append_string(output_buffer, "@ <%= node.name %> (location: ", <%= node.name.length + 14 %>);
             prettyprint_location(output_buffer, &node->location);
-            pm_buffer_append_string(output_buffer, ")\n", 2);
+            pm_buffer_append_string(output_buffer, ")", 1);
+            if (rb_node_fl_newline(node)) pm_buffer_append_string(output_buffer, "*", 1);
+            pm_buffer_append_string(output_buffer, "\n", 1);
             <%- (fields = [*node.flags, *node.fields]).each_with_index do |field, index| -%>
             <%- preadd = index == fields.length - 1 ? "    " : "|   " -%>
 
