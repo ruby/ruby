@@ -4106,15 +4106,56 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
     int len = 0;
     long pos = 0;
     int cr = 0;
+    int chomplen = 0;
 
     do {
         int pending = READ_DATA_PENDING_COUNT(fptr);
 
         if (pending > 0) {
+#if RUBY_CRLF_ENVIRONMENT
+            char *p = READ_DATA_PENDING_PTR(fptr);
+            char *e;
+            long crlf_shrink = 0;
+#else
             const char *p = READ_DATA_PENDING_PTR(fptr);
             const char *e;
-            int chomplen = 0;
+            const long crlf_shrink = 0;
+#endif
 
+#if RUBY_CRLF_ENVIRONMENT
+            if (NEED_CRLF_EOF_CONV(fptr)) {
+                if (*p == CTRLZ) goto eof;
+
+                e = memchr(p, '\n', pending);
+                if (e) {
+                    if (e != p) {
+                        char *ctrlz = memchr(p, CTRLZ, e - p);
+                        if (ctrlz) {
+                            e = ctrlz - 1;
+                            chomp = 0;
+                        }
+                        else {
+                            if (e[-1] == '\r') {
+                                e[-1] = '\n';
+                                --e;
+                                crlf_shrink = 1;
+                            }
+                        }
+                    }
+                }
+                else {
+                    e = memchr(p, CTRLZ, pending);
+                    if (e) {
+                        --e;
+                        chomp = 0;
+                    }
+                    else if (pending - 1 > 0 && p[pending - 1] == '\r') {
+                        pending--;
+                    }
+                }
+            }
+            else
+#endif
             e = memchr(p, '\n', pending);
             if (e) {
                 pending = (int)(e - p + 1);
@@ -4124,14 +4165,14 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
             }
             if (NIL_P(str)) {
                 str = rb_str_new(p, pending - chomplen);
-                fptr->rbuf.off += pending;
-                fptr->rbuf.len -= pending;
+                fptr->rbuf.off += pending + crlf_shrink;
+                fptr->rbuf.len -= pending + crlf_shrink;
             }
             else {
                 rb_str_resize(str, len + pending - chomplen);
                 read_buffered_data(RSTRING_PTR(str)+len, pending - chomplen, fptr);
-                fptr->rbuf.off += chomplen;
-                fptr->rbuf.len -= chomplen;
+                fptr->rbuf.off += chomplen + crlf_shrink;
+                fptr->rbuf.len -= chomplen + crlf_shrink;
                 if (pending == 1 && chomplen == 1 && len > 0) {
                     if (RSTRING_PTR(str)[len-1] == '\r') {
                         rb_str_resize(str, --len);
@@ -4146,6 +4187,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
         }
         READ_CHECK(fptr);
     } while (io_fillbuf(fptr) >= 0);
+  eof:
     if (NIL_P(str)) return Qnil;
 
     str = io_enc_str(str, fptr);
@@ -4258,7 +4300,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
     }
     else if (rs == rb_default_rs && limit < 0 && !NEED_READCONV(fptr) &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
-        NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+        SET_BINARY_MODE(fptr);
         return rb_io_getline_fast(fptr, enc, chomp);
     }
     else {
