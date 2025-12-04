@@ -304,6 +304,7 @@ fn main() {
         .allowlist_function("rb_mod_name")
         .allowlist_function("rb_const_get")
         .allowlist_var("rb_vm_insn_count")
+        .allowlist_function("rb_vm_instruction_size")
         .allowlist_function("rb_get_alloc_func")
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_equal")
