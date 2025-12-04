@@ -607,7 +607,7 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.sharable_proc(self: nil){} -> sharable proc
+  #   Ractor.shareable_proc(self: nil){} -> shareable proc
   #
   # It returns shareable Proc object. The Proc object is
   # shareable and the self in a block will be replaced with
@@ -619,7 +619,7 @@ class Ractor
   #     Ractor.shareable_proc{ p a }
   #     #=> can not isolate a Proc because it accesses outer variables (a). (ArgumentError)
   #
-  # The `self` should be a sharable object
+  # The `self` should be a shareable object
   #
   #     Ractor.shareable_proc(self: self){}
   #     #=> self should be shareable: main (Ractor::IsolationError)
@@ -634,9 +634,9 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.sharable_proc{} -> sharable proc
+  #   Ractor.shareable_proc{} -> shareable proc
   #
-  # Same as Ractor.sharable_proc, but returns lambda proc.
+  # Same as Ractor.shareable_proc, but returns lambda proc.
   #
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block

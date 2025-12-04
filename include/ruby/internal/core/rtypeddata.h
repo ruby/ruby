@@ -160,7 +160,7 @@ rbimpl_typeddata_flags {
     // experimental flag
     // Similar to RUBY_TYPED_FROZEN_SHAREABLE, but doesn't make shareable
     // reachable objects from this T_DATA object on the Ractor.make_shareable.
-    // If it refers to unsharable objects, simply raise an error.
+    // If it refers to unshareable objects, simply raise an error.
     // RUBY_TYPED_FROZEN_SHAREABLE_NO_REC = RUBY_FL_FINALIZE,
 
     /**
