@@ -3986,8 +3986,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
     VALUE str = *strp;
     long limit = *lp;
 
+    SET_BINARY_MODE(fptr);
     if (NEED_READCONV(fptr)) {
-        SET_BINARY_MODE(fptr);
         make_readconv(fptr, 0);
         do {
             const char *p, *e;
@@ -4029,28 +4029,102 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
         return EOF;
     }
 
-    NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
     do {
         long pending = READ_DATA_PENDING_COUNT(fptr);
         if (pending > 0) {
+#if RUBY_CRLF_ENVIRONMENT
+            char *p = READ_DATA_PENDING_PTR(fptr);
+            const char *e;
+            char *np = p;
+            long crlf_shrink = 0;
+#else
             const char *p = READ_DATA_PENDING_PTR(fptr);
             const char *e;
+            const char* const np = p;
+            const long crlf_shrink = 0;
+#endif
             long last;
 
             if (limit > 0 && pending > limit) pending = limit;
-            e = search_delim(p, pending, delim, enc);
+          retry:
+            e = search_delim(np, pending - (np - p), delim, enc);
             if (e) pending = e - p;
+#if RUBY_CRLF_ENVIRONMENT
+            if (NEED_CRLF_EOF_CONV(fptr)) {
+                char *sp ,*dp, *ep;
+
+                if (!e && pending < READ_DATA_PENDING_COUNT(fptr)) {
+                    long frontier = READ_DATA_PENDING_COUNT(fptr) - pending;
+                    long crlf_found = 0;
+                    if (frontier > 0) {
+                        for (sp = np, ep = p + pending; sp < ep && frontier; sp++) {
+                            if (sp[0] == '\r' && sp[1] == '\n') {
+                                crlf_found++;
+                                frontier--;
+                            }
+                        }
+                        if (crlf_found) {
+                            np = p + pending;
+                            pending += crlf_found;
+                            goto retry;
+                        }
+                    }
+                }
+                if (pending >= 2) {
+                    if (p[0] == '\r' && p[1] == '\n') {
+                        p++;
+                        pending--;
+                        fptr->rbuf.off++;
+                        fptr->rbuf.len--;
+                    }
+                }
+                sp = dp = p;
+                while (pending >= 2) {
+                    if (*sp == CTRLZ) {
+                        goto eof;
+                    }
+                    if (sp[0] == '\r' && sp[1] == '\n') {
+                        *dp++ = '\n';
+                        sp += 2;
+                        pending -= 2;
+                    }
+                    else {
+                        *dp++ = *sp++;
+                        pending--;
+                    }
+                }
+                if (pending) {
+                    if (*sp == CTRLZ) {
+                        if (dp == p) break;
+                        goto eof;
+                    }
+                    if (*sp == '\r' && sp == fptr->rbuf.ptr && READ_DATA_PENDING_COUNT(fptr) == 1) {
+                        *dp++ = *sp++;
+                        pending--;
+                    }
+                    else {
+                        *dp++ = *sp++;
+                        pending--;
+                    }
+                }
+              eof:
+                pending = sp - p;
+                crlf_shrink = pending - (dp - p);
+            }
+#endif
             if (!NIL_P(str)) {
                 last = RSTRING_LEN(str);
-                rb_str_resize(str, last + pending);
+                rb_str_resize(str, last + pending - crlf_shrink);
             }
             else {
                 last = 0;
-                *strp = str = rb_str_buf_new(pending);
-                rb_str_set_len(str, pending);
+                *strp = str = rb_str_buf_new(pending - crlf_shrink);
+                rb_str_set_len(str, pending - crlf_shrink);
             }
-            read_buffered_data(RSTRING_PTR(str) + last, pending, fptr); /* must not fail */
-            limit -= pending;
+            read_buffered_data(RSTRING_PTR(str) + last, pending - crlf_shrink, fptr); /* must not fail */
+            fptr->rbuf.off += crlf_shrink;
+            fptr->rbuf.len -= crlf_shrink;
+            limit -= pending - crlf_shrink;
             *lp = limit;
             if (e) return delim;
             if (limit == 0)
