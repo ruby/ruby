@@ -14,71 +14,71 @@ require 'English'
 
 ### Exceptions
 
-|  Variable   |         \English         |  Initially   | Read-Only | Set By                                         |
-|:-----------:|:------------------------:|:------------:|:---------:|------------------------------------------------|
-| <tt>$!</tt> |   <tt>$ERROR_INFO</tt>   | <tt>nil</tt> |   Yes.    | Kernel#raise, to Exception object.             |
-| <tt>$@</tt> | <tt>$ERROR_POSITION</tt> | <tt>nil</tt> |   Yes.    | Kernel#raise, to array of backtrace positions. |
+| Variable |     \English      | Initially | Read-Only | Set By                                         |
+|:--------:|:-----------------:|:---------:|:---------:|------------------------------------------------|
+|  `$!`    |  `$ERROR_INFO`    |  `nil`    |   Yes.    | Kernel#raise, to Exception object.             |
+|   `$@`   | `$ERROR_POSITION` |   `nil`   |   Yes.    | Kernel#raise, to array of backtrace positions. |
 
 ### Pattern Matching
 
-|         Variable          |          \English          |  Initially   | Read-Only | Set By                                                       |
-|:-------------------------:|:--------------------------:|:------------:|:---------:|--------------------------------------------------------------|
-|        <tt>$~</tt>        | <tt>$LAST_MATCH_INFO</tt>  | <tt>nil</tt> |    No.    | Matcher method: to MatchData object or <tt>nil</tt>.         |
-|        <tt>$&</tt>        |      <tt>$MATCH</tt>       | <tt>nil</tt> |    No.    | Matcher method: to matched substring or <tt>nil</tt>.        |
-|        <tt>$`</tt>        |    <tt>$PRE_MATCH</tt>     | <tt>nil</tt> |    No.    | Matcher method: to substring left of match or <tt>nil</tt>.  |
-|        <tt>$'</tt>        |    <tt>$POST_MATCH</tt>    | <tt>nil</tt> |    No.    | Matcher method: to substring right of match or <tt>nil</tt>. |
-|        <tt>$+</tt>        | <tt>$LAST_PAREN_MATCH</tt> | <tt>nil</tt> |    No.    | Matcher method: to last group matched or <tt>nil</tt>.       |
-|        <tt>$1</tt>        |                            | <tt>nil</tt> |    No.    | Matcher method: to first group matched or <tt>nil</tt>.      |
-|        <tt>$2</tt>        |                            | <tt>nil</tt> |    No.    | Matcher method: to second group matched or <tt>nil</tt>.     |
-|       <tt>$_n_</tt>       |                            | <tt>nil</tt> |    No.    | Matcher method: to <i>n</i>th group matched or <tt>nil</tt>. |
+|   Variable   |       \English       | Initially | Read-Only | Set By                                                    |
+|:------------:|:--------------------:|:---------:|:---------:|-----------------------------------------------------------|
+| `$~`         | `$LAST_MATCH_INFO`   |  `nil`    |    No.    | Matcher method: to MatchData object or `nil`.             |
+|     `$&`     |       `$MATCH`       |   `nil`   |    No.    | Matcher method: to matched substring or `nil`.            |
+|     `$``     |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
+|     `$'`     |    `$POST_MATCH`     |   `nil`   |    No.    | Matcher method: to substring right of match or `nil`.     |
+|     `$+`     | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
+|     `$1`     |                      |   `nil`   |    No.    | Matcher method: to first group matched or `nil`.          |
+|     `$2`     |                      |   `nil`   |    No.    | Matcher method: to second group matched or `nil`.         |
+|    `$_n_`    |                      |   `nil`   |    No.    | Matcher method: to <i>n</i>th group matched or `nil`. |
 
 ### Separators
 
-|    Variable    |             \English              |  Initially   | Read-Only |
-|:--------------:|:---------------------------------:|:------------:|:---------:|
-|  <tt>$/</tt>   | <tt>$INPUT_RECORD_SEPARATOR</tt>  |   Newline.   |    No.    |
-| <tt>$\\\\</tt> | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | <tt>nil</tt> |    No.    |
+| Variable |          \English           | Initially | Read-Only |
+|:--------:|:---------------------------:|:---------:|:---------:|
+| `$/`     | `$INPUT_RECORD_SEPARATOR`   | Newline.  |    No.    |
+| `$\\\\`  | `$OUTPUT_RECORD_SEPARATOR`  |  `nil`    |    No.    |
 
 ### Streams
 
-|    Variable      |                 \English                  |       Initially       | Read-Only | Set By                |
-|:----------------:|:-----------------------------------------:|:---------------------:|:---------:|-----------------------|
-| <tt>$stdin</tt>  |                                           |    <tt>STDIN</tt>     |    No.    |                       |
-| <tt>$stdout</tt> |                                           |    <tt>STDOUT</tt>    |    No.    |                       |
-| <tt>$stderr</tt> |                                           |    <tt>STDERR</tt>    |    No.    |                       |
-|   <tt>$<</tt>    |          <tt>$DEFAULT_INPUT</tt>          |     <tt>ARGF</tt>     |   Yes.    |                       |
-|   <tt>$></tt>    |         <tt>$DEFAULT_OUTPUT</tt>          |    <tt>STDOUT</tt>    |    No.    |                       |
-|   <tt>$></tt>    |         <tt>$DEFAULT_OUTPUT</tt>          |   <tt>STDOUT </tt>    |    No.    |                       |
-|   <tt>$.</tt>    | <tt>$INPUT_LINE_NUMBER</tt>, <tt>$NR</tt> | Non-negative integer. |    No.    | Certain read methods. |
-|   <tt>$_</tt>    |         <tt>$LAST_READ_LINE</tt>          |     <tt>nil</tt>      |    No.    | Certain read methods. |
+|  Variable  |          \English           |       Initially       | Read-Only | Set By                |
+|:----------:|:---------------------------:|:---------------------:|:---------:|-----------------------|
+| `$stdin`   |                             |        `STDIN`        |    No.    |                       |
+| `$stdout`  |                             |       `STDOUT`        |    No.    |                       |
+| `$stderr`  |                             |       `STDERR`        |    No.    |                       |
+|    `$<`    |  `$DEFAULT_INPUT`           |        `ARGF`         |   Yes.    |                       |
+|    `$>`    |      `$DEFAULT_OUTPUT`      |      `STDOUT`         |    No.    |                       |
+|    `$>`    |      `$DEFAULT_OUTPUT`      |       `STDOUT `       |    No.    |                       |
+|    `$.`    | `$INPUT_LINE_NUMBER`, `$NR` | Non-negative integer. |    No.    | Certain read methods. |
+|    `$_`    |      `$LAST_READ_LINE`      |         `nil`         |    No.    | Certain read methods. |
 
 ### Processes
 
-|                    Variable                    |                     \English        |       Initially       | Read-Only |
-|:----------------------------------------------:|:-----------------------------------:|:---------------------:|:---------:|
-|                <tt>$0</tt>                     |                                     |     Program name.     |    No.    |
-|                  <tt>$*</tt>                   |           <tt>$ARGV</tt>            |     <tt>ARGV</tt>     |   Yes.    |
-|                  <tt>$$</tt>                   | <tt>$PROCESS_ID</tt>, <tt>$PID</tt> |     Process PID.      |   Yes.    |
-|                  <tt>$?</tt>                   |       <tt>$CHILD_STATUS</tt>        | Child process status. |   Yes.    |
-| <tt>$LOAD_PATH</tt>, <tt>$:</tt>, <tt>$-I</tt> |                                     |    Array of paths.    |   Yes.    |
-|     <tt>$LOADED_FEATURES</tt>, <tt>$"</tt>     |                                     |   Array of paths.     |   Yes.    |
+|         Variable          |        \English        |       Initially       | Read-Only |
+|:-------------------------:|:----------------------:|:---------------------:|:---------:|
+|    `$0`                   |                        |     Program name.     |    No.    |
+|           `$*`            |        `$ARGV`         |      `ARGV`           |   Yes.    |
+|           `$$`            | `$PROCESS_ID`, `$PID`  |     Process PID.      |   Yes.    |
+|           `$?`            |    `$CHILD_STATUS`     | Child process status. |   Yes.    |
+| `$LOAD_PATH`, `$:`, `$-I` |                        |    Array of paths.    |   Yes.    |
+| `$LOADED_FEATURES`, `$"`  |                        |    Array of paths.    |   Yes.    |
 
 ### Debugging
 
-|    Variable        | \English |                         Initially                         | Read-Only | Set By        |
-|:------------------:|:--------:|:---------------------------------------------------------:|:---------:|---------------|
-| <tt>$FILENAME</tt> |          |   The value returned by method <tt>ARGF#filename</tt>.    |   Yes.    | <tt>ARGF</tt> |
-|  <tt>$DEBUG</tt>   |          | Whether option <tt>-d</tt> or <tt>--debug</tt> was given. |    No.    |               |
-| <tt>$VERBOSE</tt>  |          |   Whether option <tt>-V</tt> or <tt>-W</tt> was given.    |    No.    |               |
+|   Variable   | \English |                   Initially                   | Read-Only | Set By  |
+|:------------:|:--------:|:---------------------------------------------:|:---------:|---------|
+| `$FILENAME`  |          | The value returned by method `ARGF#filename`. |   Yes.    | `ARGF`  |
+|   `$DEBUG`   |          | Whether option `-d` or `--debug` was given.   |    No.    |         |
+|  `$VERBOSE`  |          |    Whether option `-V` or `-W` was given.     |    No.    |         |
 
 ### Other Variables
 
-| Variable      | \English |                     Initially                         | Read-Only |
-|:-------------:|:--------:|:-----------------------------------------------------:|:---------:|
-| <tt>$-a</tt>  |          |         Whether option <tt>-a</tt> was given.         |   Yes.    |
-| <tt>$-i</tt>  |          | Extension given with command-line option <tt>-i</tt>. |    No.    |
-| <tt>$-l</tt>  |          |         Whether option <tt>-l</tt> was given.         |   Yes.    |
-| <tt>$-p</tt>  |          |         Whether option <tt>-p</tt> was given.         |   Yes.    |
+| Variable | \English |                   Initially                    | Read-Only |
+|:--------:|:--------:|:----------------------------------------------:|:---------:|
+| `$-a`    |          |         Whether option `-a` was given.         |   Yes.    |
+|  `$-i`   |          | Extension given with command-line option `-i`. |    No.    |
+|  `$-l`   |          |    Whether option `-l` was given.              |   Yes.    |
+|  `$-p`   |          |         Whether option `-p` was given.         |   Yes.    |
 
 ## Exceptions
 
@@ -166,7 +166,7 @@ English - `$LAST_PAREN_MATCH`.
 
 ### `$1`, `$2`, \Etc. (Matched Group)
 
-For <tt>$_n_</tt> the <i>n</i>th group of the match.
+For `$_n_` the <i>n</i>th group of the match.
 
 No \English.
 
@@ -271,9 +271,9 @@ by Kernel#load and Kernel#require.
 Singleton method `$LOAD_PATH.resolve_feature_path(feature)`
 returns:
 
-- <tt>[:rb, _path_]</tt>, where `path` is the path to the Ruby file to be
+- `[:rb, _path_]`, where `path` is the path to the Ruby file to be
   loaded for the given `feature`.
-- <tt>[:so, _path_]</tt>, where `path` is the path to the shared object file
+- `[:so, _path_]`, where `path` is the path to the shared object file
   to be loaded for the given `feature`.
 - `nil` if there is no such `feature` and `path`.
 
@@ -376,33 +376,33 @@ Whether command-line option `-p` was given; read-only.
 
 | Constant | Contains                |
 |----------|-------------------------|
-| <tt>STDIN</tt>  | Standard input stream.  |
-| <tt>STDOUT</tt> | Standard output stream. |
-| <tt>STDERR</tt> | Standard error stream.  |
+| `STDIN`  | Standard input stream.  |
+| `STDOUT` | Standard output stream. |
+| `STDERR` | Standard error stream.  |
 
 ### Environment
 
 | Constant              | Contains                                                                      |
 |-----------------------|-------------------------------------------------------------------------------|
-| <tt>ENV</tt>                 | Hash of current environment variable names and values.                        |
-| <tt>ARGF</tt>                | String concatenation of files given on the command line, or <tt>$stdin</tt> if none. |
-| <tt>ARGV</tt>                | Array of the given command-line arguments.                                    |
-| <tt>TOPLEVEL_BINDING</tt>    | Binding of the top level scope.                                               |
-| <tt>RUBY_VERSION</tt>        | String Ruby version.                                                          |
-| <tt>RUBY_RELEASE_DATE</tt>   | String Ruby release date.                                                     |
-| <tt>RUBY_PLATFORM</tt>       | String Ruby platform.                                                         |
-| <tt>RUBY_PATCH_LEVEL</tt>    | String Ruby patch level.                                                      |
-| <tt>RUBY_REVISION</tt>       | String Ruby revision.                                                         |
-| <tt>RUBY_COPYRIGHT</tt>      | String Ruby copyright.                                                        |
-| <tt>RUBY_ENGINE</tt>         | String Ruby engine.                                                           |
-| <tt>RUBY_ENGINE_VERSION</tt> | String Ruby engine version.                                                   |
-| <tt>RUBY_DESCRIPTION</tt>    | String Ruby description.                                                      |
+| `ENV`                 | Hash of current environment variable names and values.                        |
+| `ARGF`                | String concatenation of files given on the command line, or `$stdin` if none. |
+| `ARGV`                | Array of the given command-line arguments.                                    |
+| `TOPLEVEL_BINDING`    | Binding of the top level scope.                                               |
+| `RUBY_VERSION`        | String Ruby version.                                                          |
+| `RUBY_RELEASE_DATE`   | String Ruby release date.                                                     |
+| `RUBY_PLATFORM`       | String Ruby platform.                                                         |
+| `RUBY_PATCH_LEVEL`    | String Ruby patch level.                                                      |
+| `RUBY_REVISION`       | String Ruby revision.                                                         |
+| `RUBY_COPYRIGHT`      | String Ruby copyright.                                                        |
+| `RUBY_ENGINE`         | String Ruby engine.                                                           |
+| `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
+| `RUBY_DESCRIPTION`    | String Ruby description.                                                      |
 
 ### Embedded \Data
 
-| Constant      | Contains                                                                    |
-|---------------|-----------------------------------------------------------------------------|
-| <tt>DATA</tt> | File containing embedded data (lines following <tt>'__END__'</tt>, if any). |
+| Constant | Contains                                                              |
+|----------|-----------------------------------------------------------------------|
+| `DATA`   | File containing embedded data (lines following `'__END__'`, if any).  |
 
 ## Streams
 
