@@ -3,7 +3,7 @@
 #if USE_MN_THREADS
 
 static void timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags);
-static void timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th);
+static void timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial);
 
 static bool
 timer_thread_cancel_waiting(rb_thread_t *th)
@@ -15,9 +15,7 @@ timer_thread_cancel_waiting(rb_thread_t *th)
         if (th->sched.waiting_reason.flags) {
             canceled = true;
             ccan_list_del_init(&th->sched.waiting_reason.node);
-            if (th->sched.waiting_reason.flags & (thread_sched_waiting_io_read | thread_sched_waiting_io_write)) {
-                timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd, th->sched.waiting_reason.flags);
-            }
+            timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd, th->sched.waiting_reason.flags);
             th->sched.waiting_reason.flags = thread_sched_waiting_none;
         }
     }
@@ -57,7 +55,7 @@ ubf_event_waiting(void *ptr)
     thread_sched_unlock(sched, th);
 }
 
-static bool timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel);
+static bool timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial);
 
 // return true if timed out
 static bool
@@ -67,13 +65,15 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
     volatile bool timedout = false, need_cancel = false;
 
+    uint32_t event_serial = ++th->event_serial; // overflow is okay
+
     if (ubf_set(th, ubf_event_waiting, (void *)th)) {
         return false;
     }
 
     thread_sched_lock(sched, th);
     {
-        if (timer_thread_register_waiting(th, fd, events, rel)) {
+        if (timer_thread_register_waiting(th, fd, events, rel, event_serial)) {
             RUBY_DEBUG_LOG("wait fd:%d", fd);
 
             RB_VM_SAVE_MACHINE_CONTEXT(th);
@@ -81,9 +81,11 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
             if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
-                // already awaken
+                th->event_serial++;
+                // timer thread has dequeued us already, but it won't try to wake us because we bumped our serial
             }
             else if (RUBY_VM_INTERRUPTED(th->ec)) {
+                th->event_serial++; // make sure timer thread doesn't try to wake us
                 need_cancel = true;
             }
             else {
@@ -111,7 +113,8 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     }
     thread_sched_unlock(sched, th);
 
-    ubf_clear(th); // TODO: maybe it is already NULL?
+    // if ubf triggered between sched unlock and ubf clear, sched->running == th here
+    ubf_clear(th);
 
     VM_ASSERT(sched->running == th);
 
@@ -680,7 +683,7 @@ kqueue_already_registered(int fd)
 
 // return false if the fd is not waitable or not need to wait.
 static bool
-timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel)
+timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial)
 {
     RUBY_DEBUG_LOG("th:%u fd:%d flag:%d rel:%lu", rb_th_serial(th), fd, flags, rel ? (unsigned long)*rel : 0);
 
@@ -807,6 +810,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 th->sched.waiting_reason.data.timeout = abs;
                 th->sched.waiting_reason.data.fd = fd;
                 th->sched.waiting_reason.data.result = 0;
+                th->sched.waiting_reason.data.event_serial = event_serial;
             }
 
             if (abs == 0) { // no timeout
@@ -855,6 +859,10 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 static void
 timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags)
 {
+    if (!(th->sched.waiting_reason.flags & (thread_sched_waiting_io_read | thread_sched_waiting_io_write))) {
+        return;
+    }
+
     RUBY_DEBUG_LOG("th:%u fd:%d", rb_th_serial(th), fd);
 #if HAVE_SYS_EVENT_H
     kqueue_unregister_waiting(fd, flags);
@@ -885,7 +893,7 @@ timer_thread_setup_mn(void)
 #endif
     RUBY_DEBUG_LOG("comm_fds:%d/%d", timer_th.comm_fds[0], timer_th.comm_fds[1]);
 
-    timer_thread_register_waiting(NULL, timer_th.comm_fds[0], thread_sched_waiting_io_read | thread_sched_waiting_io_force, NULL);
+    timer_thread_register_waiting(NULL, timer_th.comm_fds[0], thread_sched_waiting_io_read | thread_sched_waiting_io_force, NULL, 0);
 }
 
 static int
@@ -986,8 +994,9 @@ timer_thread_polling(rb_vm_t *vm)
                         th->sched.waiting_reason.flags = thread_sched_waiting_none;
                         th->sched.waiting_reason.data.fd = -1;
                         th->sched.waiting_reason.data.result = filter;
+                        uint32_t event_serial = th->sched.waiting_reason.data.event_serial;
 
-                        timer_thread_wakeup_thread_locked(sched, th);
+                        timer_thread_wakeup_thread_locked(sched, th, event_serial);
                     }
                     else {
                         // already released
@@ -1031,8 +1040,9 @@ timer_thread_polling(rb_vm_t *vm)
                         th->sched.waiting_reason.flags = thread_sched_waiting_none;
                         th->sched.waiting_reason.data.fd = -1;
                         th->sched.waiting_reason.data.result = (int)events;
+                        uint32_t event_serial = th->sched.waiting_reason.data.event_serial;
 
-                        timer_thread_wakeup_thread_locked(sched, th);
+                        timer_thread_wakeup_thread_locked(sched, th, event_serial);
                     }
                     else {
                         // already released
