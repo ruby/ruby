@@ -1815,7 +1815,7 @@ id2ref_tbl_mark(void *data)
         // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
         rb_mark_set(table);
     }
-    // We purposedly don't mark values, as they are weak references.
+    // We purposely don't mark values, as they are weak references.
     // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
 }
 
