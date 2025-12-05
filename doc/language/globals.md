@@ -37,7 +37,7 @@ require 'English'
 | Variable |          \English           | Initially | Read-Only |
 |:--------:|:---------------------------:|:---------:|:---------:|
 | `$/`     | `$INPUT_RECORD_SEPARATOR`   | Newline.  |    No.    |
-| `$\\\\`  | `$OUTPUT_RECORD_SEPARATOR`  |  `nil`    |    No.    |
+| `$\`     | `$OUTPUT_RECORD_SEPARATOR`  |  `nil`    |    No.    |
 
 ### Streams
 
