@@ -289,25 +289,7 @@ typedef struct RNode_CASE {
     struct RNode *nd_body;
     rb_code_location_t case_keyword_loc;
     rb_code_location_t end_keyword_loc;
-} rb_node_case_t;
-
-typedef struct RNode_CASE2 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case2_t;
-
-typedef struct RNode_CASE3 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case3_t;
+} rb_node_case_t, rb_node_case2_t, rb_node_case3_t;
 
 typedef struct RNode_WHEN {
     NODE node;
