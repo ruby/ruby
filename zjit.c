@@ -307,6 +307,7 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 
 
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
+VALUE rb_zjit_str_uplus(VALUE str);
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

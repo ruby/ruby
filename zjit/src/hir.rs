@@ -645,7 +645,8 @@ pub enum Insn {
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param,
 
-    StringCopy { val: InsnId, chilled: bool, state: InsnId },
+    StringResurrect { val: InsnId, chilled: bool, state: InsnId },
+    StringDup { val: InsnId, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
@@ -966,7 +967,8 @@ impl Insn {
         match self {
             Insn::Const { .. } => false,
             Insn::Param => false,
-            Insn::StringCopy { .. } => false,
+            Insn::StringResurrect { .. } => false,
+            Insn::StringDup { .. } => false,
             Insn::NewArray { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
@@ -1108,7 +1110,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let class_name = get_class_name(class);
                 write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
             }
-            Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
+            Insn::StringResurrect { val, .. } => { write!(f, "StringResurrect {val}") }
+            Insn::StringDup { val, .. } => { write!(f, "StringDup {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
                 let mut prefix = " ";
@@ -1825,7 +1828,8 @@ impl Function {
             &Return { val } => Return { val: find!(val) },
             &FixnumBitCheck { val, index } => FixnumBitCheck { val: find!(val), index },
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
-            &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
+            &StringResurrect { val, chilled, state } => StringResurrect { val: find!(val), chilled, state },
+            &StringDup { val, state } => StringDup { val: find!(val), state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &StringGetbyte { string, index } => StringGetbyte { string: find!(string), index: find!(index) },
@@ -2049,7 +2053,8 @@ impl Function {
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { .. } => types::CInt64,
-            Insn::StringCopy { .. } => types::StringExact,
+            Insn::StringResurrect { .. } => types::StringExact,
+            Insn::StringDup { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::StringGetbyte { .. } => types::Fixnum,
@@ -3667,7 +3672,8 @@ impl Function {
             &Insn::SetGlobal { val, state, .. }
             | &Insn::Defined { v: val, state, .. }
             | &Insn::StringIntern { val, state }
-            | &Insn::StringCopy { val, state, .. }
+            | &Insn::StringResurrect { val, state, .. }
+            | &Insn::StringDup { val, state, .. }
             | &Insn::ObjectAlloc { val, state }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardTypeNot { val, state, .. }
@@ -4410,7 +4416,8 @@ impl Function {
                 Ok(())
             }
             // Instructions with String operands
-            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringResurrect { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringDup { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringAppend { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
@@ -5182,12 +5189,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_putstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::StringResurrect { val, chilled: false, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putchilledstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::StringResurrect { val, chilled: true, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putself => { state.stack_push(self_param); }
