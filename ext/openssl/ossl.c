@@ -122,7 +122,7 @@ ossl_buf2str(char *buf, int len)
 }
 
 void
-ossl_bin2hex(unsigned char *in, char *out, size_t inlen)
+ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
 {
     const char *hex = "0123456789abcdef";
     size_t i;
