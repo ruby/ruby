@@ -37,7 +37,7 @@ module GC
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore sweeping may not be completed before the return.
   #
-  # Note that these keword arguments are implementation- and version-dependent,
+  # Note that these keyword arguments are implementation- and version-dependent,
   # are not guaranteed to be future-compatible,
   # and may be ignored in some implementations.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
