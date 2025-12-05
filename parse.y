@@ -13839,7 +13839,9 @@ value_expr_check(struct parser_params *p, NODE *node)
           case NODE_RESCUE:
             /* void only if all children are void */
             vn = RNODE_RESCUE(node)->nd_head;
-            if (!vn || !(vn = value_expr_check(p, vn))) return NULL;
+            if (!vn || !(vn = value_expr_check(p, vn))) {
+                if (!RNODE_RESCUE(node)->nd_else) return NULL;
+            }
             if (!void_node) void_node = vn;
             for (NODE *r = RNODE_RESCUE(node)->nd_resq; r; r = RNODE_RESBODY(r)->nd_next) {
                 if (!nd_type_p(r, NODE_RESBODY)) {

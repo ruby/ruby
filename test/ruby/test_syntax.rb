@@ -2040,6 +2040,17 @@ eom
         return
       end
     };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.2")
+    {#
+      x = begin
+        foo
+      rescue
+        return
+      else
+        return
+      end
+    };
   end
 
   def test_tautological_condition
