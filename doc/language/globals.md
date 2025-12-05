@@ -270,9 +270,9 @@ by Kernel#load and Kernel#require.
 Singleton method `$LOAD_PATH.resolve_feature_path(feature)`
 returns:
 
-- `[:rb, _path_]`, where `path` is the path to the Ruby file to be
+- <tt>[:rb, _path_]</tt>, where `path` is the path to the Ruby file to be
   loaded for the given `feature`.
-- `[:so, _path_]`, where `path` is the path to the shared object file
+- <tt>[:so, _path_]</tt>, where `path` is the path to the shared object file
   to be loaded for the given `feature`.
 - `nil` if there is no such `feature` and `path`.
 
