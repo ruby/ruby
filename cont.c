@@ -3371,6 +3371,8 @@ rb_fiber_atfork(rb_thread_t *th)
             th->root_fiber = th->ec->fiber_ptr;
         }
         th->root_fiber->prev = 0;
+        th->root_fiber->blocking = 1;
+        th->blocking = 1;
     }
 }
 #endif
