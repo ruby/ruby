@@ -2021,6 +2021,15 @@ eom
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.4")
+    {#
+      x = if rand < 0.5
+        return
+      else
+        return
+      end
+    };
   end
 
   def test_value_expr_in_singleton
