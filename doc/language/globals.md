@@ -25,7 +25,7 @@ require 'English'
 |:--------:|:--------------------:|:---------:|:---------:|-----------------------------------------------------------|
 |   `$~`   | `$LAST_MATCH_INFO`   |  `nil`    |    No.    | Matcher method: to MatchData object or `nil`.             |
 |   `$&`   |       `$MATCH`       |   `nil`   |    No.    | Matcher method: to matched substring or `nil`.            |
-|   `$``   |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
+| `` $` `` |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
 |   `$'`   |    `$POST_MATCH`     |   `nil`   |    No.    | Matcher method: to substring right of match or `nil`.     |
 |   `$+`   | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
 |   `$1`   |                      |   `nil`   |   Yes.    | Matcher method: to first group matched or `nil`.          |
