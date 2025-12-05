@@ -956,8 +956,8 @@ impl Insn {
         }
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap) -> InsnPrinter<'a> {
-        InsnPrinter { inner: self.clone(), ptr_map }
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
+        InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
     /// Return true if the instruction needs to be kept around. For example, if the instruction
@@ -1020,6 +1020,30 @@ impl Insn {
 pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
+    iseq: Option<IseqPtr>,
+}
+
+/// Get the name of a local variable given iseq, level, and ep_offset.
+/// Returns
+/// - `":name"` if iseq is available and name is a real identifier,
+/// - `"<empty>"` for anonymous locals.
+/// - `None` if iseq is not available.
+///   (When `Insn` is printed in a panic/debug message the `Display::fmt` method is called, which can't access an iseq.)
+///
+/// This mimics local_var_name() from iseq.c.
+fn get_local_var_name_for_printer(iseq: Option<IseqPtr>, level: u32, ep_offset: u32) -> Option<String> {
+    let mut current_iseq = iseq?;
+    for _ in 0..level {
+        current_iseq = unsafe { rb_get_iseq_body_parent_iseq(current_iseq) };
+    }
+    let local_idx = ep_offset_to_local_idx(current_iseq, ep_offset);
+    let id: ID = unsafe { rb_zjit_local_id(current_iseq, local_idx.try_into().unwrap()) };
+
+    if id.0 == 0 || unsafe { rb_id2str(id) } == Qfalse {
+        return Some(String::from("<empty>"));
+    }
+
+    Some(format!(":{}", id.contents_lossy()))
 }
 
 static REGEXP_FLAGS: &[(u32, &str)] = &[
@@ -1302,9 +1326,18 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
-            &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => write!(f, "GetLocal l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" }),
-            &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => write!(f, "GetLocal l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" }),
-            Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "GetLocal {name}l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" })
+            },
+            &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "GetLocal {name}l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" })
+            },
+            &Insn::SetLocal { val, level, ep_offset } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
+            },
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::GetClassVar { id, .. } => write!(f, "GetClassVar :{}", id.contents_lossy()),
@@ -1346,7 +1379,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
 
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.print(&PtrPrintMap::identity()).fmt(f)
+        self.print(&PtrPrintMap::identity(), None).fmt(f)
     }
 }
 
@@ -4052,7 +4085,7 @@ impl Function {
                 };
 
 
-                let opcode = insn.print(&ptr_map).to_string();
+                let opcode = insn.print(&ptr_map, Some(self.iseq)).to_string();
 
                 // Traverse the worklist to get inputs for a given instruction.
                 let mut inputs = VecDeque::new();
@@ -4606,7 +4639,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
             }
         }
         Ok(())
@@ -4682,7 +4715,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
                 if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
                     edges.push((insn_id, target.target));
                 }
-                write_encoded!(f, "{}", insn.print(&self.ptr_map))?;
+                write_encoded!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
                 writeln!(f, "&nbsp;</TD></TR>")?;
             }
             writeln!(f, "</TABLE>>];")?;
@@ -6723,8 +6756,8 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@5&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :x, l0, SP@5&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal :y, l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v4">Jump bb2(v1, v2, v3)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v4 -> bb2:params:n;
@@ -6774,7 +6807,7 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :c, l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v3">Jump bb2(v1, v2)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v3 -> bb2:params:n;
