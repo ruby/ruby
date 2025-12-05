@@ -307,8 +307,9 @@ The following bundled gems are updated.
 * `Process::Status#&` and `Process::Status#>>` have been removed.
   They were deprecated in Ruby 3.3. [[Bug #19868]]
 
-* `rb_path_check` is now deprecated. This function was used for
-  `$SAFE` path checking which was removed in Ruby 2.7.
+* `rb_path_check` has been removed. This function was used for
+  `$SAFE` path checking which was removed in Ruby 2.7,
+  and was already deprecated,.
   [[Feature #20971]]
 
 ## Stdlib compatibility issues
