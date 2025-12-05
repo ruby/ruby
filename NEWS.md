@@ -407,6 +407,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
 [Feature #21389]: https://bugs.ruby-lang.org/issues/21389
+[Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
