@@ -813,23 +813,97 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 32, IO::Buffer.size_of([:u128, :u128])
   end
 
-  def test_128_bit_integer_endianness
-    buffer = IO::Buffer.new(32)
+  def test_integer_endianness_swapping
+    # Test that byte order is swapped correctly for all signed and unsigned integers > 1 byte
+    host_is_le = IO::Buffer::HOST_ENDIAN == IO::Buffer::LITTLE_ENDIAN
+    host_is_be = IO::Buffer::HOST_ENDIAN == IO::Buffer::BIG_ENDIAN
 
-    # Test that little-endian and big-endian produce different byte patterns
-    # but round-trip correctly
-    value = 0x0123456789ABCDEF0123456789ABCDEF
+    # Test values that will produce different byte patterns when swapped
+    # Format: [little_endian_type, big_endian_type, test_value, expected_swapped_value]
+    # expected_swapped_value is the result when writing as le_type and reading as be_type
+    # (or vice versa) on a little-endian host
+    test_cases = [
+      [:u16, :U16, 0x1234, 0x3412],
+      [:s16, :S16, 0x1234, 0x3412],
+      [:u32, :U32, 0x12345678, 0x78563412],
+      [:s32, :S32, 0x12345678, 0x78563412],
+      [:u64, :U64, 0x0123456789ABCDEF, 0xEFCDAB8967452301],
+      [:s64, :S64, 0x0123456789ABCDEF, -1167088121787636991],
+      [:u128, :U128, 0x0123456789ABCDEF0123456789ABCDEF, 0xEFCDAB8967452301EFCDAB8967452301],
+      [:u128, :U128, 0x0123456789ABCDEFFEDCBA9876543210, 0x1032547698BADCFEEFCDAB8967452301],
+      [:u128, :U128, 0xFEDCBA98765432100123456789ABCDEF, 0xEFCDAB89674523011032547698BADCFE],
+      [:u128, :U128, 0x123456789ABCDEF0FEDCBA9876543210, 0x1032547698BADCFEF0DEBC9A78563412],
+      [:s128, :S128, 0x0123456789ABCDEF0123456789ABCDEF, -21528975894082904073953971026863512831],
+      [:s128, :S128, 0x0123456789ABCDEFFEDCBA9876543210, 0x1032547698BADCFEEFCDAB8967452301],
+    ]
 
-    buffer.set_value(:u128, 0, value)
-    result_le = buffer.get_value(:u128, 0)
-    assert_equal value, result_le
+    test_cases.each do |le_type, be_type, value, expected_swapped|
+      buffer_size = IO::Buffer.size_of(le_type)
+      buffer = IO::Buffer.new(buffer_size * 2)
 
-    buffer.set_value(:U128, 0, value)
-    result_be = buffer.get_value(:U128, 0)
-    assert_equal value, result_be
+      # Test little-endian round-trip
+      buffer.set_value(le_type, 0, value)
+      result_le = buffer.get_value(le_type, 0)
+      assert_equal value, result_le, "#{le_type}: round-trip failed"
 
-    # The values should be the same, but the byte representation differs
-    assert_equal value, result_le
-    assert_equal value, result_be
+      # Test big-endian round-trip
+      buffer.set_value(be_type, buffer_size, value)
+      result_be = buffer.get_value(be_type, buffer_size)
+      assert_equal value, result_be, "#{be_type}: round-trip failed"
+
+      # Verify byte patterns are different when endianness differs from host
+      le_bytes = buffer.get_string(0, buffer_size)
+      be_bytes = buffer.get_string(buffer_size, buffer_size)
+
+      if host_is_le
+        # On little-endian host: le_type should match host, be_type should be swapped
+        # So the byte patterns should be different (unless value is symmetric)
+        # Read back with opposite endianness to verify swapping
+        result_le_read_as_be = buffer.get_value(be_type, 0)
+        result_be_read_as_le = buffer.get_value(le_type, buffer_size)
+
+        # The swapped reads should NOT equal the original value (unless it's symmetric)
+        # For most values, this will be different
+        if value != 0 && value != -1 && value.abs != 1
+          refute_equal value, result_le_read_as_be, "#{le_type} written, read as #{be_type} should be swapped on LE host"
+          refute_equal value, result_be_read_as_le, "#{be_type} written, read as #{le_type} should be swapped on LE host"
+        end
+
+        # Verify that reading back with correct endianness works
+        assert_equal value, buffer.get_value(le_type, 0), "#{le_type} should read correctly on LE host"
+        assert_equal value, buffer.get_value(be_type, buffer_size), "#{be_type} should read correctly on LE host (with swapping)"
+      elsif host_is_be
+        # On big-endian host: be_type should match host, le_type should be swapped
+        result_le_read_as_be = buffer.get_value(be_type, 0)
+        result_be_read_as_le = buffer.get_value(le_type, buffer_size)
+
+        # The swapped reads should NOT equal the original value (unless it's symmetric)
+        if value != 0 && value != -1 && value.abs != 1
+          refute_equal value, result_le_read_as_be, "#{le_type} written, read as #{be_type} should be swapped on BE host"
+          refute_equal value, result_be_read_as_le, "#{be_type} written, read as #{le_type} should be swapped on BE host"
+        end
+
+        # Verify that reading back with correct endianness works
+        assert_equal value, buffer.get_value(be_type, buffer_size), "#{be_type} should read correctly on BE host"
+        assert_equal value, buffer.get_value(le_type, 0), "#{le_type} should read correctly on BE host (with swapping)"
+      end
+
+      # Verify that when we write with one endianness and read with the opposite,
+      # we get the expected swapped value
+      buffer.set_value(le_type, 0, value)
+      swapped_value_le_to_be = buffer.get_value(be_type, 0)
+      assert_equal expected_swapped, swapped_value_le_to_be, "#{le_type} written, read as #{be_type} should produce expected swapped value"
+
+      # Also verify the reverse direction
+      buffer.set_value(be_type, buffer_size, value)
+      swapped_value_be_to_le = buffer.get_value(le_type, buffer_size)
+      assert_equal expected_swapped, swapped_value_be_to_le, "#{be_type} written, read as #{le_type} should produce expected swapped value"
+
+      # Verify that writing the swapped value back and reading with original endianness
+      # gives us the original value (double-swap should restore original)
+      buffer.set_value(be_type, 0, swapped_value_le_to_be)
+      round_trip_value = buffer.get_value(le_type, 0)
+      assert_equal value, round_trip_value, "#{le_type}/#{be_type}: double-swap should restore original value"
+    end
   end
 end
