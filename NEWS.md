@@ -94,8 +94,8 @@ Note: We're only listing outstanding class updates.
 * Proc
 
     * `Proc#parameters` now shows anonymous optional parameters as `[:opt]`
-      instead of `[:opt, nil]`, making the output consistent across all
-      parameter types. [[Bug #20974]]
+      instead of `[:opt, nil]`, making the output consistent with when the
+      anonymous parameter is required. [[Bug #20974]]
 
 * Ractor
 
