@@ -299,5 +299,5 @@ class TestTimeout < Test::Unit::TestCase
 
       assert_equal :ok, r
     end;
-  end if Timeout.const_defined?(:RACTOR_SUPPORT)
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
 end

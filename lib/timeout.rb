@@ -72,7 +72,7 @@ module Timeout
     end
 
     if defined?(Ractor.store_if_absent) &&
-       defined?(Ractor.shareble?) && Ractor.shareable?(GET_TIME)
+       defined?(Ractor.shareable?) && Ractor.shareable?(GET_TIME)
 
        # Ractor support if
        # 1. Ractor.store_if_absent is available
@@ -85,8 +85,6 @@ module Timeout
        def self.instance
          Ractor[:timeout_gem_state]
        end
-
-       ::Timeout::RACTOR_SUPPORT = true # for test
     else
       GLOBAL_STATE = State.new
 
