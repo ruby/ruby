@@ -13864,6 +13864,18 @@ value_expr_check(struct parser_params *p, NODE *node)
           case NODE_RETRY:
             goto found;
 
+          case NODE_CASE:
+          case NODE_CASE2:
+            for (node = RNODE_CASE(node)->nd_body;
+                 node && nd_type_p(node, NODE_WHEN);
+                 node = RNODE_WHEN(node)->nd_next) {
+                if (!(vn = value_expr_check(p, RNODE_WHEN(node)->nd_body))) {
+                    return NULL;
+                }
+                if (!void_node) void_node = vn;
+            }
+            break;
+
           case NODE_CASE3:
             if (!RNODE_CASE3(node)->nd_body || !nd_type_p(RNODE_CASE3(node)->nd_body, NODE_IN)) {
                 compile_error(p, "unexpected node");
