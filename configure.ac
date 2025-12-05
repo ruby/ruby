@@ -3972,6 +3972,7 @@ AC_ARG_ENABLE(zjit,
                 ])
             )
             AC_MSG_RESULT($rb_zjit_build_possible)
+            ZJIT_SUPPORT=$rb_zjit_build_possible
         ]
     )]
 )
