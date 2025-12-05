@@ -120,12 +120,14 @@ module Bundler
       self.class.send(:class_options_help, shell)
     end
 
-    desc "install_or_cli_help", "Tries to run bundle install but prints a summary of bundler commands if there is no Gemfile", hide: true
+    desc "install_or_cli_help", "Deprecated alias of install", hide: true
     def install_or_cli_help
+      Bundler.ui.warn <<~MSG
+        `bundle install_or_cli_help` is a deprecated alias of `bundle install`.
+        It might be called due to the 'default_cli_command' being set to 'install_or_cli_help',
+        if so fix that by running `bundle config set default_cli_command install --global`.
+      MSG
       invoke_other_command("install")
-    rescue GemfileNotFound => error
-      Bundler.ui.error error.message, wrap: true
-      invoke_other_command("cli_help")
     end
 
     def self.default_command(meth = nil)
@@ -136,12 +138,12 @@ module Bundler
           In a future version of Bundler, running `bundle` without argument will no longer run `bundle install`.
           Instead, the `cli_help` command will be displayed. Please use `bundle install` explicitly for scripts like CI/CD.
           You can use the future behavior now with `bundle config set default_cli_command cli_help --global`,
-          or you can continue to use the current behavior with `bundle config set default_cli_command install_or_cli_help --global`.
+          or you can continue to use the current behavior with `bundle config set default_cli_command install --global`.
           This message will be removed after a default_cli_command value is set.
         MSG
       end
 
-      Bundler.settings[:default_cli_command] || "install_or_cli_help"
+      Bundler.settings[:default_cli_command] || "install"
     end
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
@@ -287,6 +289,9 @@ module Bundler
       Bundler.settings.temporary(no_install: false) do
         Install.new(options).run
       end
+    rescue GemfileNotFound => error
+      invoke_other_command("cli_help")
+      raise error # re-raise to show the error and get a failing exit status
     end
 
     map aliases_for("install")

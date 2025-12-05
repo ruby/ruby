@@ -100,10 +100,11 @@ RSpec.describe "bundle executable" do
     end
 
     it "runs bundle install when default_cli_command set to install" do
-      bundle "config set default_cli_command install_or_cli_help"
+      bundle "config set default_cli_command install"
       bundle "", raise_on_error: false
       expect(out).to_not include("In a future version of Bundler")
       expect(err).to include("Could not locate Gemfile")
+      expect(exitstatus).to_not be_zero
     end
   end
 
