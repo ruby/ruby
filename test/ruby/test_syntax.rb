@@ -2015,6 +2015,16 @@ eom
 
   BUG_21669 = '[Bug #21669]'
 
+  def test_value_expr_in_block
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.1")
+    {#
+      x = begin
+        return
+        "NG"
+      end
+    };
+  end
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
@@ -2028,6 +2038,42 @@ eom
         return
       else
         return
+      end
+    };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.2")
+    {#
+      x = if rand < 0.5
+        return
+        "NG"
+      else
+        return
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 2.3")
+    {#
+      x = begin
+        return if true
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if true
+        return "NG"
+      else
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if false
+        "OK"
+      else
+        return "NG"
       end
     };
   end

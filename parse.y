@@ -13889,6 +13889,8 @@ value_expr_check(struct parser_params *p, NODE *node)
 
           case NODE_BLOCK:
             while (RNODE_BLOCK(node)->nd_next) {
+                vn = value_expr_check(p, RNODE_BLOCK(node)->nd_head);
+                if (vn) return vn;
                 node = RNODE_BLOCK(node)->nd_next;
             }
             node = RNODE_BLOCK(node)->nd_head;
