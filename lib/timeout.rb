@@ -45,8 +45,7 @@ module Timeout
 
   # :stopdoc:
 
-  # We keep a private reference so that time mocking libraries won't break
-  # Timeout.
+  # We keep a private reference so that time mocking libraries won't break Timeout.
   GET_TIME =
     if defined?(Ractor.make_shareable)
       begin
@@ -71,20 +70,15 @@ module Timeout
       @timeout_thread_mutex = Mutex.new
     end
 
-    if defined?(Ractor.store_if_absent) &&
-       defined?(Ractor.shareable?) && Ractor.shareable?(GET_TIME)
-
-       # Ractor support if
-       # 1. Ractor.store_if_absent is available
-       # 2. Method object can be shareable (4.0~)
-
-       Ractor.store_if_absent :timeout_gem_state do
-         State.new
-       end
-
-       def self.instance
-         Ractor[:timeout_gem_state]
-       end
+    if defined?(Ractor.store_if_absent) && defined?(Ractor.shareable?) && Ractor.shareable?(GET_TIME)
+      # Ractor support if
+      # 1. Ractor.store_if_absent is available
+      # 2. Method object can be shareable (4.0~)
+      def self.instance
+        Ractor.store_if_absent :timeout_gem_state do
+          State.new
+        end
+      end
     else
       GLOBAL_STATE = State.new
 
