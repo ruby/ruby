@@ -57,7 +57,6 @@ module Timeout
     else
       Process.method(:clock_gettime)
     end
-
   private_constant :GET_TIME
 
   class State
@@ -89,10 +88,10 @@ module Timeout
 
        ::Timeout::RACTOR_SUPPORT = true # for test
     else
-      @GLOBAL_STATE = State.new
+      GLOBAL_STATE = State.new
 
       def self.instance
-        @GLOBAL_STATE
+        GLOBAL_STATE
       end
     end
 
@@ -143,7 +142,6 @@ module Timeout
       end
     end
   end
-
   private_constant :State
 
   class Request
