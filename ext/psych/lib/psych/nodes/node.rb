@@ -46,7 +46,7 @@ module Psych
       #
       # See also Psych::Visitors::ToRuby
       def to_ruby(symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true)
-        Visitors::ToRuby.create(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer, parse_symbols: true).accept(self)
+        Visitors::ToRuby.create(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer, parse_symbols: parse_symbols).accept(self)
       end
       alias :transform :to_ruby
 

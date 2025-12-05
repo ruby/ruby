@@ -231,6 +231,16 @@ pub fn insn_len(opcode: usize) -> u32 {
     }
 }
 
+/// We avoid using bindgen for `rb_iseq_constant_body` since its definition changes depending
+/// on build configuration while we need one bindgen file that works for all configurations.
+/// Use an opaque type for it instead.
+/// See: <https://doc.rust-lang.org/nomicon/ffi.html#representing-opaque-structs>
+#[repr(C)]
+pub struct rb_iseq_constant_body {
+    _data: [u8; 0],
+    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
+}
+
 /// An object handle similar to VALUE in the C code. Our methods assume
 /// that this is a handle. Sometimes the C code briefly uses VALUE as
 /// an unsigned integer type and don't necessarily store valid handles but
@@ -683,7 +693,8 @@ pub trait IseqAccess {
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
-        unsafe { &(*(*self).body).param }
+        use crate::cast::IntoUsize;
+        unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
     }
 }
 

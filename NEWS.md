@@ -342,6 +342,12 @@ The following bundled gems are updated.
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
+* GVL
+
+    * `rb_thread_call_with_gvl` now works with or without the GVL.
+      This allows gems to avoid checking `ruby_thread_has_gvl_p`.
+      Please still be diligent about the GVL. [[Feature #20750]]
+
 * Set
 
     * A C API for `Set` has been added. The following methods are supported:
@@ -402,6 +408,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
+[Feature #20750]: https://bugs.ruby-lang.org/issues/20750
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20925]: https://bugs.ruby-lang.org/issues/20925
 [Feature #20971]: https://bugs.ruby-lang.org/issues/20971

@@ -280,4 +280,25 @@ class TestTimeout < Test::Unit::TestCase
       }.join
     end;
   end
+
+  def test_ractor
+    assert_separately(%w[-rtimeout -W0], <<-'end;')
+      r = Ractor.new do
+        Timeout.timeout(1) { 42 }
+      end.value
+
+      assert_equal 42, r
+
+      r = Ractor.new do
+        begin
+          Timeout.timeout(0.1) { sleep }
+        rescue Timeout::Error
+          :ok
+        end
+      end.value
+
+      assert_equal :ok, r
+    end;
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0' && !RUBY_PLATFORM.include?('x86_64-darwin')
+  # Exclude on x86_64-darwin as it failed 4 times out of 4 tries in the CI of ruby/ruby-dev-builder
 end
