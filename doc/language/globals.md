@@ -19,7 +19,7 @@ require 'English'
 | `$!`        | `$ERROR_INFO`     | Exception object; set by Kernel#raise.             |
 | `$@`        | `$ERROR_POSITION` | Array of backtrace positions; set by Kernel#raise. |
 
-### Pattern Matching
+### Regular Expression
 
 | Variable      | English             | Contains                                         |
 |---------------|---------------------|--------------------------------------------------|
@@ -125,7 +125,7 @@ Output:
 
 English - `$ERROR_POSITION`.
 
-## Pattern Matching
+## Regular Expression
 
 These global variables store information about the most recent
 successful match in the current scope.
