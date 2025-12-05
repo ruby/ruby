@@ -34,10 +34,10 @@ require 'English'
 
 ### Separators
 
-| Variable |          English           | Contains                                   |
-|:--------:|:--------------------------:|--------------------------------------------|
-|   `$/`   | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
-|   `$\`   | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
+|  Variable   |          English           | Contains                                   |
+|:-----------:|:--------------------------:|--------------------------------------------|
+| `$/`, `$-0` | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
+|    `$\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
 
 ### Streams
 
@@ -72,12 +72,13 @@ require 'English'
 
 ### Other Variables
 
-| Variable | English | Contains                                       |
-|:--------:|:-------:|------------------------------------------------|
-|  `$-a`   |         | Whether option `-a` was given.                 |
-|  `$-i`   |         | Extension given with command-line option `-i`. |
-|  `$-l`   |         | Whether option `-l` was given.                 |
-|  `$-p`   |         | Whether option `-p` was given.                 |
+|  Variable   | English | Contains                                       |
+|:-----------:|:-------:|------------------------------------------------|
+| `$-F`, `$;` |         | Separator given with command-line option `-F`. |
+|    `$-a`    |         | Whether option `-a` was given.                 |
+|    `$-i`    |         | Extension given with command-line option `-i`. |
+|    `$-l`    |         | Whether option `-l` was given.                 |
+|    `$-p`    |         | Whether option `-p` was given.                 |
 
 ## Exceptions
 
@@ -174,6 +175,10 @@ No \English.
 ### `$/` (Input Record Separator)
 
 An input record separator, initially newline.
+Set by the command-line option `-0`.
+
+Setting to non-nil value by other than the command-line option is
+deprecated.
 
 English - `$INPUT_RECORD_SEPARATOR`, `$RS`.
 
@@ -182,6 +187,10 @@ Aliased as `$-0`.
 ### `$\` (Output Record Separator)
 
 An output record separator, initially `nil`.
+Copied from `$/` when the command-line option `-l` is given.
+
+Setting to non-nil value by other than the command-line option is
+deprecated.
 
 English - `$OUTPUT_RECORD_SEPARATOR`, `$ORS`.
 
@@ -340,6 +349,16 @@ Aliased as `$-v` and `$-w`.
 
 ## Other Variables
 
+### `$-F`
+
+The default field separator in String#split; must be a String or a
+Regexp, and can be set with command-line option `-F`.
+
+Setting to non-nil value by other than the command-line option is
+deprecated.
+
+Aliased as `$;`.
+
 ### `$-a`
 
 Whether command-line option `-a` was given; read-only.
@@ -364,8 +383,6 @@ Whether command-line option `-p` was given; read-only.
 ### `$=`
 
 ### `$,`
-
-### `$;`
 
 # Pre-Defined Global Constants
 
@@ -401,7 +418,7 @@ Whether command-line option `-p` was given; read-only.
 
 | Constant | Contains                                                           |
 |:--------:|--------------------------------------------------------------------|
-| `DATA`   | File containing embedded data (lines following `__END__`, if any). |
+|  `DATA`  | File containing embedded data (lines following `__END__`, if any). |
 
 ## Streams
 
