@@ -14,70 +14,70 @@ require 'English'
 
 ### Exceptions
 
-| Variable    | English           | Contains                                           |
-|-------------|-------------------|----------------------------------------------------|
-| `$!`        | `$ERROR_INFO`     | Exception object; set by Kernel#raise.             |
-| `$@`        | `$ERROR_POSITION` | Array of backtrace positions; set by Kernel#raise. |
+| Variable |      English      | Contains                                           |
+|:--------:|:-----------------:|----------------------------------------------------|
+|   `$!`   |   `$ERROR_INFO`   | Exception object; set by Kernel#raise.             |
+|   `$@`   | `$ERROR_POSITION` | Array of backtrace positions; set by Kernel#raise. |
 
 ### Pattern Matching
 
-| Variable      | English             | Contains                                         |
-|---------------|---------------------|--------------------------------------------------|
-| `$~`          | `$LAST_MATCH_INFO`  | MatchData object; set by matcher method.         |
-| `$&`          | `$MATCH`            | Matched substring; set by matcher method.        |
-| `` $` ``      | `$PRE_MATCH`        | Substring left of match; set by matcher method.  |
-| `$'`          | `$POST_MATCH`       | Substring right of match; set by matcher method. |
-| `$+`          | `$LAST_PAREN_MATCH` | Last group matched; set by matcher method.       |
-| `$1`          |                     | First group matched; set by matcher method.      |
-| `$2`          |                     | Second group matched; set by matcher method.     |
+|   Variable    |       English       | Contains                                         |
+|:-------------:|:-------------------:|--------------------------------------------------|
+|     `$~`      | `$LAST_MATCH_INFO`  | MatchData object; set by matcher method.         |
+|     `$&`      |      `$MATCH`       | Matched substring; set by matcher method.        |
+|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match; set by matcher method.  |
+|     `$'`      |    `$POST_MATCH`    | Substring right of match; set by matcher method. |
+|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched; set by matcher method.       |
+|     `$1`      |                     | First group matched; set by matcher method.      |
+|     `$2`      |                     | Second group matched; set by matcher method.     |
 | <tt>$_n_</tt> |                     | <i>n</i>th group matched; set by matcher method. |
 
 ### Separators
 
-| Variable | English                    | Contains                                   |
-|----------|----------------------------|--------------------------------------------|
-| `$/`     | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
-| `$\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
+| Variable |          English           | Contains                                   |
+|:--------:|:--------------------------:|--------------------------------------------|
+|   `$/`   | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
+|   `$\`   | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
 
 ### Streams
 
-| Variable  | English                     | Contains                                      |
-|-----------|-----------------------------|-----------------------------------------------|
+| Variable  |           English           | Contains                                      |
+|:---------:|:---------------------------:|-----------------------------------------------|
 | `$stdin`  |                             | Standard input stream; initially `STDIN`.     |
 | `$stdout` |                             | Standard input stream; initially `STDIOUT`.   |
 | `$stderr` |                             | Standard input stream; initially `STDERR`.    |
-| `$<`      | `$DEFAULT_INPUT`            | Default standard input; `ARGF` or `$stdin`.   |
-| `$>`      | `$DEFAULT_OUTPUT`           | Default standard output; initially `$stdout`. |
-| `$.`      | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream.  |
-| `$_`      | `$LAST_READ_LINE`           | String from most recently read stream.        |
+|   `$<`    |      `$DEFAULT_INPUT`       | Default standard input; `ARGF` or `$stdin`.   |
+|   `$>`    |      `$DEFAULT_OUTPUT`      | Default standard output; initially `$stdout`. |
+|   `$.`    | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream.  |
+|   `$_`    |      `$LAST_READ_LINE`      | String from most recently read stream.        |
 
 ### Processes
 
-| Variable                  | English               | Contains                                               |
-|---------------------------|-----------------------|--------------------------------------------------------|
-| `$0`                      |                       | Initially, the name of the executing program.          |
-| `$*`                      | `$ARGV`               | Points to the `ARGV` array.                            |
-| `$$`                      | `$PROCESS_ID`, `$PID` | Process ID of the current process.                     |
-| `$?`                      | `$CHILD_STATUS`       | Process::Status of most recently exited child process. |
+|         Variable          |        English        | Contains                                               |
+|:-------------------------:|:---------------------:|--------------------------------------------------------|
+|           `$0`            |                       | Initially, the name of the executing program.          |
+|           `$*`            |        `$ARGV`        | Points to the `ARGV` array.                            |
+|           `$$`            | `$PROCESS_ID`, `$PID` | Process ID of the current process.                     |
+|           `$?`            |    `$CHILD_STATUS`    | Process::Status of most recently exited child process. |
 | `$LOAD_PATH`, `$:`, `$-I` |                       | Array of paths to be searched.                         |
 | `$LOADED_FEATURES`, `$"`  |                       | Array of paths to loaded files.                        |
 
 ### Debugging
 
-| Variable    | English | Contains                                               |
-|-------------|---------|--------------------------------------------------------|
+|  Variable   | English | Contains                                               |
+|:-----------:|:-------:|--------------------------------------------------------|
 | `$FILENAME` |         | The value returned by method ARGF.filename.            |
-| `$DEBUG`    |         | Initially, whether option `-d` or `--debug` was given. |
+|  `$DEBUG`   |         | Initially, whether option `-d` or `--debug` was given. |
 | `$VERBOSE`  |         | Initially, whether option `-V` or `-W` was given.      |
 
 ### Other Variables
 
 | Variable | English | Contains                                       |
-|----------|---------|------------------------------------------------|
-| `$-a`    |         | Whether option `-a` was given.                 |
-| `$-i`    |         | Extension given with command-line option `-i`. |
-| `$-l`    |         | Whether option `-l` was given.                 |
-| `$-p`    |         | Whether option `-p` was given.                 |
+|:--------:|:-------:|------------------------------------------------|
+|  `$-a`   |         | Whether option `-a` was given.                 |
+|  `$-i`   |         | Extension given with command-line option `-i`. |
+|  `$-l`   |         | Whether option `-l` was given.                 |
+|  `$-p`   |         | Whether option `-p` was given.                 |
 
 ## Exceptions
 
@@ -374,33 +374,33 @@ Whether command-line option `-p` was given; read-only.
 ### Streams
 
 | Constant | Contains                |
-|----------|-------------------------|
+|:--------:|-------------------------|
 | `STDIN`  | Standard input stream.  |
 | `STDOUT` | Standard output stream. |
 | `STDERR` | Standard error stream.  |
 
 ### Environment
 
-| Constant              | Contains                                                                      |
-|-----------------------|-------------------------------------------------------------------------------|
-| `ENV`                 | Hash of current environment variable names and values.                        |
-| `ARGF`                | String concatenation of files given on the command line, or `$stdin` if none. |
-| `ARGV`                | Array of the given command-line arguments.                                    |
-| `TOPLEVEL_BINDING`    | Binding of the top level scope.                                               |
-| `RUBY_VERSION`        | String Ruby version.                                                          |
-| `RUBY_RELEASE_DATE`   | String Ruby release date.                                                     |
-| `RUBY_PLATFORM`       | String Ruby platform.                                                         |
-| `RUBY_PATCH_LEVEL`    | String Ruby patch level.                                                      |
-| `RUBY_REVISION`       | String Ruby revision.                                                         |
-| `RUBY_COPYRIGHT`      | String Ruby copyright.                                                        |
-| `RUBY_ENGINE`         | String Ruby engine.                                                           |
+|       Constant        | Contains                                                                      |
+|:---------------------:|-------------------------------------------------------------------------------|
+|         `ENV`         | Hash of current environment variable names and values.                        |
+|        `ARGF`         | String concatenation of files given on the command line, or `$stdin` if none. |
+|        `ARGV`         | Array of the given command-line arguments.                                    |
+|  `TOPLEVEL_BINDING`   | Binding of the top level scope.                                               |
+|    `RUBY_VERSION`     | String Ruby version.                                                          |
+|  `RUBY_RELEASE_DATE`  | String Ruby release date.                                                     |
+|    `RUBY_PLATFORM`    | String Ruby platform.                                                         |
+|  `RUBY_PATCH_LEVEL`   | String Ruby patch level.                                                      |
+|    `RUBY_REVISION`    | String Ruby revision.                                                         |
+|   `RUBY_COPYRIGHT`    | String Ruby copyright.                                                        |
+|     `RUBY_ENGINE`     | String Ruby engine.                                                           |
 | `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
-| `RUBY_DESCRIPTION`    | String Ruby description.                                                      |
+|  `RUBY_DESCRIPTION`   | String Ruby description.                                                      |
 
 ### Embedded Data
 
 | Constant | Contains                                                           |
-|----------|--------------------------------------------------------------------|
+|:--------:|--------------------------------------------------------------------|
 | `DATA`   | File containing embedded data (lines following `__END__`, if any). |
 
 ## Streams
