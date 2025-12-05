@@ -30,7 +30,7 @@ require 'English'
 |   `$+`   | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
 |   `$1`   |                      |   `nil`   |   Yes.    | Matcher method: to first group matched or `nil`.          |
 |   `$2`   |                      |   `nil`   |   Yes.    | Matcher method: to second group matched or `nil`.         |
-|  `$_n_`  |                      |   `nil`   |   Yes.    | Matcher method: to <i>n</i>th group matched or `nil`. |
+|  <tt>$_n_</tt>  |                      |   `nil`   |   Yes.    | Matcher method: to <i>n</i>th group matched or `nil`. |
 
 ### Separators
 
