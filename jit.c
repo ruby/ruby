@@ -767,3 +767,9 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
+
+attr_index_t
+rb_jit_shape_capacity(shape_id_t shape_id)
+{
+    return RSHAPE_CAPACITY(shape_id);
+}

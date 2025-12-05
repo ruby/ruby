@@ -34,6 +34,7 @@ struct rb_box_struct {
     VALUE ruby_dln_libmap;
 
     VALUE gvar_tbl;
+    struct st_table *classext_cow_classes;
 
     bool is_user;
     bool is_optional;

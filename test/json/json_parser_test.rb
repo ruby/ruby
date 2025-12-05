@@ -325,6 +325,13 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
+  def test_unicode_followed_by_newline
+    # Ref: https://github.com/ruby/json/issues/912
+    assert_equal "🌌\n".bytes, JSON.parse('"\ud83c\udf0c\n"').bytes
+    assert_equal "🌌\n", JSON.parse('"\ud83c\udf0c\n"')
+    assert_predicate JSON.parse('"\ud83c\udf0c\n"'), :valid_encoding?
+  end
+
   def test_invalid_surogates
     assert_raise(JSON::ParserError) { parse('"\\uD800"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }

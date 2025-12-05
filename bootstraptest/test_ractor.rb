@@ -157,6 +157,16 @@ assert_equal '[:a, :b, :c, :d, :e]', %q{
   Ractor.shareable_proc(&closure).call
 }
 
+# Ractor.make_shareable makes a copy of given Proc
+assert_equal '[true, true]', %q{
+  pr1 = Proc.new do
+    self
+  end
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  [pr1.call == self, pr2.call == nil]
+}
+
 # Ractor::IsolationError cases
 assert_equal '3', %q{
   ok = 0
@@ -1201,6 +1211,28 @@ assert_equal '[:ok, "Proc\'s self is not shareable:"]', %q{
       :ok
     end
   end
+}
+
+# Ractor.make_shareable(Method/UnboundMethod)
+assert_equal 'true', %q{
+  # raise because receiver is unshareable
+  begin
+    _m0 = Ractor.make_shareable(self.method(:__id__))
+  rescue => e
+    raise e unless e.message =~ /can not make shareable object/
+  else
+    raise "no error"
+  end
+
+  # Method with shareable receiver
+  M1 = Ractor.make_shareable(Object.method(:__id__))
+
+  # UnboundMethod
+  M2 = Ractor.make_shareable(Object.instance_method(:__id__))
+
+  Ractor.new do
+    Object.__id__ == M1.call && M1.call == M2.bind_call(Object)
+  end.value
 }
 
 # Ractor.shareable?(recursive_objects)
@@ -2390,4 +2422,40 @@ assert_equal 'ok', <<~'RUBY'
   rescue NotImplementedError
     :ok
   end
+RUBY
+
+# When creating bmethods in Ractors, they should only be usable from their
+# defining ractor, even if it is GC'd
+assert_equal 'ok', <<~'RUBY'
+CLASSES = 1000.times.map { Class.new }.freeze
+
+# This would be better to run in parallel, but there's a bug with lambda
+# creation and YJIT causing crashes in dev mode
+ractors = CLASSES.map do |klass|
+  Ractor.new(klass) do |klass|
+    Ractor.receive
+    klass.define_method(:foo) {}
+  end
+end
+
+ractors.each do |ractor|
+  ractor << nil
+  ractor.join
+end
+
+ractors.clear
+GC.start
+
+any = 1000.times.map do
+  Ractor.new do
+    CLASSES.any? do |klass|
+      begin
+        klass.new.foo
+        true
+      rescue RuntimeError
+        false
+      end
+    end
+  end
+end.map(&:value).none? && :ok
 RUBY

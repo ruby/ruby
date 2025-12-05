@@ -255,6 +255,8 @@ make_counters! {
         setivar_fallback_too_complex,
         setivar_fallback_frozen,
         setivar_fallback_shape_transition,
+        setivar_fallback_new_shape_too_complex,
+        setivar_fallback_new_shape_needs_extension,
     }
 
     // Ivar fallback counters that are summed as dynamic_getivar_count

@@ -862,6 +862,7 @@ pub enum Insn {
     // Invoke a builtin function
     InvokeBuiltin {
         bf: rb_builtin_function,
+        recv: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
         leaf: bool,
@@ -1922,7 +1923,7 @@ impl Function {
                 state,
                 reason,
             },
-            &InvokeBuiltin { bf, ref args, state, leaf, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, leaf, return_type },
+            &InvokeBuiltin { bf, recv, ref args, state, leaf, return_type } => InvokeBuiltin { bf, recv: find!(recv), args: find_vec!(args), state, leaf, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
@@ -1995,6 +1996,10 @@ impl Function {
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
+        assert!(self.insns[insn.0].has_output(),
+                "Don't use make_equal_to for instruction with no output");
+        assert!(self.insns[replacement.0].has_output(),
+                "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
@@ -2807,6 +2812,7 @@ impl Function {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 let replacement = self.push_insn(block, Insn::InvokeBuiltin {
                                     bf,
+                                    recv,
                                     args: vec![recv],
                                     state,
                                     leaf: true,
@@ -2943,10 +2949,34 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let mut ivar_index: u16 = 0;
+                        let mut next_shape_id = recv_type.shape();
                         if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // TODO(max): Shape transition
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_shape_transition));
-                            self.push_insn_id(block, insn_id); continue;
+                            // Current shape does not contain this ivar; do a shape transition.
+                            let current_shape_id = recv_type.shape();
+                            let class = recv_type.class();
+                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+                            assert!(recv_type.flags().is_t_object());
+                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
+                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+                            assert!(ivar_result, "New shape must have the ivar index");
+                            // If the VM ran out of shapes, or this class generated too many leaf,
+                            // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
+                            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
+                            // TODO(max): Is it OK to bail out here after making a shape transition?
+                            if new_shape_too_complex {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+                            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+                            // reallocate it.
+                            let needs_extension = next_capacity != current_capacity;
+                            if needs_extension {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            // Fall through to emitting the ivar write
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
@@ -2960,9 +2990,15 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        let replacement = self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-                        self.make_equal_to(insn_id, replacement);
+                        if next_shape_id != recv_type.shape() {
+                            // Write the new shape ID
+                            assert_eq!(SHAPE_ID_NUM_BITS, 32);
+                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CUInt32(next_shape_id.0) });
+                            let shape_id_offset = unsafe { rb_shape_id_offset() };
+                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                        }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -3385,6 +3421,25 @@ impl Function {
                             continue;
                         }
                     }
+                    Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
+                        let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
+                        // Try inlining the cfunc into HIR
+                        let tmp_block = self.new_block(u32::MAX);
+                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                            // Copy contents of tmp_block to block
+                            assert_ne!(block, tmp_block);
+                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                            self.blocks[block.0].insns.extend(insns);
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            self.make_equal_to(insn_id, replacement);
+                            if self.type_of(replacement).bit_equal(types::Any) {
+                                // Not set yet; infer type
+                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                            }
+                            self.remove_block(tmp_block);
+                            continue;
+                        }
+                    }
                     _ => {}
                 }
                 self.push_insn_id(block, insn_id);
@@ -3520,11 +3575,9 @@ impl Function {
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
                 // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id {
+                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
                     self.make_equal_to(insn_id, replacement_id);
-                    if self.insns[replacement_id.0].has_output() {
-                        self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
-                    }
+                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
                 }
                 new_insns.push(replacement_id);
                 // If we've just folded an IfTrue into a Jump, for example, don't bother copying
@@ -3703,13 +3756,13 @@ impl Function {
             | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
+            | &Insn::InvokeBuiltin { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. }
-            | &Insn::InvokeBlock { ref args, state, .. } => {
+            &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
@@ -4164,11 +4217,13 @@ impl Function {
         // missing location.
         let mut assigned_in = vec![None; self.num_blocks()];
         let rpo = self.rpo();
-        // Begin with every block having every variable defined, except for the entry block, which
-        // starts with nothing defined.
-        assigned_in[self.entry_block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+        // Begin with every block having every variable defined, except for the entry blocks, which
+        // start with nothing defined.
+        let entry_blocks = self.entry_blocks();
         for &block in &rpo {
-            if block != self.entry_block {
+            if entry_blocks.contains(&block) {
+                assigned_in[block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+            } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
                 assigned_in[block.0] = Some(all_ones);
@@ -4320,6 +4375,7 @@ impl Function {
             | Insn::InvokeSuper { recv, ref args, .. }
             | Insn::CCallWithFrame { recv, ref args, .. }
             | Insn::CCallVariadic { recv, ref args, .. }
+            | Insn::InvokeBuiltin { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
@@ -4328,8 +4384,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with a Vec of Ruby objects
-            Insn::InvokeBuiltin { ref args, .. }
-            | Insn::InvokeBlock { ref args, .. }
+            Insn::InvokeBlock { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
@@ -5782,6 +5837,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
+                        recv: self_param,
                         args,
                         state: exit_id,
                         leaf,
@@ -5810,6 +5866,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
+                        recv: self_param,
                         args,
                         state: exit_id,
                         leaf,

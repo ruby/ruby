@@ -1344,16 +1344,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    // iseq_eval_in_box will be called with the loading box eventually
-                    if (BOX_OPTIONAL_P(box)) {
-                        // check with BOX_OPTIONAL_P (not BOX_USER_P) for NS1::xxx naming
-                        // it is not expected for the main box
-                        // TODO: no need to use load_wrapping() here?
-                        load_wrapping(saved.ec, path, box->box_object);
-                    }
-                    else {
-                        load_iseq_eval(saved.ec, path);
-                    }
+                    load_iseq_eval(saved.ec, path);
                     break;
 
                   case 's':

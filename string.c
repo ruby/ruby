@@ -549,7 +549,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!rb_obj_exivar_p(str));
+    RUBY_ASSERT(!rb_shape_obj_has_ivars(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));
 
@@ -11376,6 +11376,21 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 }
 
 static void
+nil_setter_warning(ID id)
+{
+    rb_warn_deprecated("non-nil '%"PRIsVALUE"'", NULL, rb_id2str(id));
+}
+
+void
+rb_deprecated_str_setter(VALUE val, ID id, VALUE *var)
+{
+    rb_str_setter(val, id, var);
+    if (!NIL_P(*var)) {
+        nil_setter_warning(id);
+    }
+}
+
+static void
 rb_fs_setter(VALUE val, ID id, VALUE *var)
 {
     val = rb_fs_check(val);
@@ -11385,7 +11400,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
                  rb_id2str(id));
     }
     if (!NIL_P(val)) {
-        rb_warn_deprecated("'$;'", NULL);
+        nil_setter_warning(id);
     }
     *var = val;
 }

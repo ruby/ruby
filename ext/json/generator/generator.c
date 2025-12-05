@@ -128,7 +128,7 @@ typedef struct _search_state {
 #endif /* HAVE_SIMD */
 } search_state;
 
-static ALWAYS_INLINE() void search_flush(search_state *search)
+ALWAYS_INLINE(static) void search_flush(search_state *search)
 {
     // Do not remove this conditional without profiling, specifically escape-heavy text.
     // escape_UTF8_char_basic will advance search->ptr and search->cursor (effectively a search_flush).
@@ -171,7 +171,7 @@ static inline unsigned char search_escape_basic(search_state *search)
     return 0;
 }
 
-static ALWAYS_INLINE() void escape_UTF8_char_basic(search_state *search)
+ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
 {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch) {
@@ -258,7 +258,7 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 #ifdef HAVE_SIMD
 
-static ALWAYS_INLINE() char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
+ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
@@ -281,7 +281,7 @@ static ALWAYS_INLINE() char *copy_remaining_bytes(search_state *search, unsigned
 
 #ifdef HAVE_SIMD_NEON
 
-static ALWAYS_INLINE() unsigned char neon_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char neon_next_match(search_state *search)
 {
     uint64_t mask = search->matches_mask;
     uint32_t index = trailing_zeros64(mask) >> 2;
@@ -395,7 +395,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
 
 #ifdef HAVE_SIMD_SSE2
 
-static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char sse2_next_match(search_state *search)
 {
     int mask = search->matches_mask;
     int index = trailing_zeros(mask);
@@ -419,7 +419,7 @@ static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
 #define TARGET_SSE2
 #endif
 
-static TARGET_SSE2 ALWAYS_INLINE() unsigned char search_escape_basic_sse2(search_state *search)
+ALWAYS_INLINE(static) TARGET_SSE2 unsigned char search_escape_basic_sse2(search_state *search)
 {
     if (RB_UNLIKELY(search->has_matches)) {
         // There are more matches if search->matches_mask > 0.
@@ -968,14 +968,16 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
 }
 
-static inline VALUE vstate_get(struct generate_json_data *data)
+static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(!data->vstate)) {
         vstate_spill(data);
     }
     GET_STATE(data->vstate);
     state->depth = data->depth;
-    return data->vstate;
+    VALUE tmp = rb_funcall(obj, i_to_json, 1, data->vstate);
+    // no need to restore state->depth, vstate is just a temporary State
+    return tmp;
 }
 
 static VALUE
@@ -1123,8 +1125,7 @@ struct hash_foreach_arg {
     bool mixed_keys_encountered;
 };
 
-NOINLINE()
-static void
+NOINLINE(static) void
 json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
 {
     if (arg->mixed_keys_encountered) {
@@ -1294,7 +1295,7 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
 {
     VALUE tmp;
     if (rb_respond_to(obj, i_to_json)) {
-        tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
+        tmp = json_call_to_json(data, obj);
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
     } else {
@@ -1476,16 +1477,6 @@ static VALUE generate_json_try(VALUE d)
     return fbuffer_finalize(data->buffer);
 }
 
-// Preserves the deprecated behavior of State#depth being set.
-static VALUE generate_json_ensure_deprecated(VALUE d)
-{
-    struct generate_json_data *data = (struct generate_json_data *)d;
-    fbuffer_free(data->buffer);
-    data->state->depth = data->depth;
-
-    return Qundef;
-}
-
 static VALUE generate_json_ensure(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
@@ -1506,13 +1497,13 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
 
     struct generate_json_data data = {
         .buffer = &buffer,
-        .vstate = self,
+        .vstate = Qfalse, // don't use self as it may be frozen and its depth is mutated when calling to_json
         .state = state,
         .depth = state->depth,
         .obj = obj,
         .func = func
     };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure_deprecated, (VALUE)&data);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 /* call-seq:
@@ -1529,31 +1520,6 @@ static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
     VALUE obj = argv[0];
     VALUE io = argc > 1 ? argv[1] : Qnil;
     return cState_partial_generate(self, obj, generate_json, io);
-}
-
-static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 1, 2);
-    VALUE obj = argv[0];
-    VALUE io = argc > 1 ? argv[1] : Qnil;
-
-    GET_STATE(self);
-
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    FBuffer buffer = {
-        .io = RTEST(io) ? io : Qfalse,
-    };
-    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
-
-    struct generate_json_data data = {
-        .buffer = &buffer,
-        .vstate = Qfalse,
-        .state = state,
-        .depth = state->depth,
-        .obj = obj,
-        .func = generate_json
-    };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -2144,7 +2110,6 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
-    rb_define_method(cState, "generate_new", cState_generate_new, -1); // :nodoc:
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 

@@ -1137,7 +1137,7 @@ rb_obj_set_shareable_no_assert(VALUE obj)
 {
     FL_SET_RAW(obj, FL_SHAREABLE);
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         VALUE fields = rb_obj_fields_no_ractor_check(obj);
         if (imemo_type_p(fields, imemo_fields)) {
             // no recursive mark
@@ -1428,6 +1428,26 @@ allow_frozen_shareable_p(VALUE obj)
 }
 
 static enum obj_traverse_iterator_result
+make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
+{
+    if (!RB_OBJ_FROZEN_RAW(obj)) {
+        rb_funcall(obj, idFreeze, 0);
+
+        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
+            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+        }
+
+        if (RB_OBJ_SHAREABLE_P(obj)) {
+            return traverse_skip;
+        }
+    }
+
+    return result;
+}
+
+static int obj_refer_only_shareables_p(VALUE obj);
+
+static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
@@ -1436,7 +1456,21 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        if (rb_obj_is_proc(obj)) {
+        VM_ASSERT(RB_TYPE_P(obj, T_DATA));
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
+            if (obj_refer_only_shareables_p(obj)) {
+                make_shareable_check_shareable_freeze(obj, traverse_skip);
+                RB_OBJ_SET_SHAREABLE(obj);
+                return traverse_skip;
+            }
+            else {
+                rb_raise(rb_eRactorError,
+                         "can not make shareable object for %+"PRIsVALUE" because it refers unshareable objects", obj);
+            }
+        }
+        else if (rb_obj_is_proc(obj)) {
             rb_proc_ractor_make_shareable(obj, Qundef);
             return traverse_cont;
         }
@@ -1466,19 +1500,7 @@ make_shareable_check_shareable(VALUE obj)
         break;
     }
 
-    if (!RB_OBJ_FROZEN_RAW(obj)) {
-        rb_funcall(obj, idFreeze, 0);
-
-        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
-        }
-
-        if (RB_OBJ_SHAREABLE_P(obj)) {
-            return traverse_skip;
-        }
-    }
-
-    return traverse_cont;
+    return make_shareable_check_shareable_freeze(obj, traverse_cont);
 }
 
 static enum obj_traverse_iterator_result
@@ -1750,7 +1772,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     else if (data->replacement != _val)     { RB_OBJ_WRITE(parent_obj, &v, data->replacement); } \
 } while (0)
 
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
@@ -1984,7 +2006,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     rb_gc_writebarrier_remember(data->replacement);
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
@@ -2344,7 +2366,7 @@ ractor_local_value_store_if_absent(rb_execution_context_t *ec, VALUE self, VALUE
     return rb_mutex_synchronize(cr->local_storage_store_lock, ractor_local_value_store_i, (VALUE)&data);
 }
 
-// sharable_proc
+// shareable_proc
 
 static VALUE
 ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_lambda)
@@ -2354,7 +2376,7 @@ ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_la
     }
     else {
         VALUE proc = is_lambda ? rb_block_lambda() : rb_block_proc();
-        return rb_proc_ractor_make_shareable(proc, replace_self);
+        return rb_proc_ractor_make_shareable(rb_proc_dup(proc), replace_self);
     }
 }
 

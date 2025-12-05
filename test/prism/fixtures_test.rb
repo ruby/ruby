@@ -24,23 +24,9 @@ module Prism
       except << "whitequark/ruby_bug_19281.txt"
     end
 
-    if RUBY_VERSION < "3.4.0"
-      except << "3.4/circular_parameters.txt"
-    end
-
-    # Valid only on Ruby 3.3
-    except << "3.3-3.3/block_args_in_array_assignment.txt"
-    except << "3.3-3.3/it_with_ordinary_parameter.txt"
-    except << "3.3-3.3/keyword_args_in_array_assignment.txt"
-    except << "3.3-3.3/return_in_sclass.txt"
-
-    # Leaving these out until they are supported by parse.y.
-    except << "4.0/leading_logical.txt"
-    except << "4.0/endless_methods_command_call.txt"
-    # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
 
-    Fixture.each(except: except) do |fixture|
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }
     end
   end

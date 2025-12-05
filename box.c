@@ -149,6 +149,7 @@ box_entry_initialize(rb_box_t *box)
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
+    box->classext_cow_classes = st_init_numtable();
 
     box->is_user = true;
     box->is_optional = true;
@@ -199,6 +200,9 @@ rb_box_entry_mark(void *ptr)
     }
     rb_gc_mark(box->ruby_dln_libmap);
     rb_gc_mark(box->gvar_tbl);
+    if (box->classext_cow_classes) {
+        rb_mark_tbl(box->classext_cow_classes);
+    }
 }
 
 static int
@@ -233,9 +237,36 @@ box_root_free(void *ptr)
     }
 }
 
+static int
+free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+{
+    rb_classext_t *ext;
+    VALUE obj = (VALUE)obj_value;
+    const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_class_classext_free(obj, ext, false);
+    }
+    else if (RB_TYPE_P(obj, T_ICLASS)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_iclass_classext_free(obj, ext, false);
+    }
+    else {
+        rb_bug("Invalid type of object in classext_cow_classes: %s", rb_type_str(BUILTIN_TYPE(obj)));
+    }
+    return ST_CONTINUE;
+}
+
 static void
 box_entry_free(void *ptr)
 {
+    const rb_box_t *box = (const rb_box_t *)ptr;
+
+    if (box->classext_cow_classes) {
+        st_foreach(box->classext_cow_classes, free_classext_for_box, (st_data_t)box);
+    }
+
     box_root_free(ptr);
     xfree(ptr);
 }
@@ -250,7 +281,7 @@ box_entry_memsize(const void *ptr)
 }
 
 const rb_data_type_t rb_box_data_type = {
-    "Namespace::Entry",
+    "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
         box_entry_free,
@@ -261,7 +292,7 @@ const rb_data_type_t rb_box_data_type = {
 };
 
 const rb_data_type_t rb_root_box_data_type = {
-    "Namespace::Root",
+    "Ruby::Box::Root",
     {
         rb_box_entry_mark,
         box_root_free,
@@ -750,6 +781,7 @@ initialize_root_box(void)
 
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
+    root->classext_cow_classes = NULL; // classext CoW never happen on the root box
 
     vm->root_box = root;
 

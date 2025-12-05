@@ -232,8 +232,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.0.beta2
-* bundler 4.0.0.beta2
+* RubyGems 4.0.0
+* bundler 4.0.0
 * date 3.5.0
 * digest 3.2.1
 * english 0.8.1
@@ -244,7 +244,7 @@ The following default gems are updated.
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.4.0.dev
-* json 2.16.0
+* json 2.17.1
 * net-http 0.8.0
 * openssl 4.0.0.pre
 * optparse 0.8.0

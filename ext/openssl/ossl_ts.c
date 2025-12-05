@@ -103,7 +103,7 @@ static  const rb_data_type_t ossl_ts_resp_type = {
 static void
 ossl_ts_token_info_free(void *ptr)
 {
-        TS_TST_INFO_free(ptr);
+    TS_TST_INFO_free(ptr);
 }
 
 static const rb_data_type_t ossl_ts_token_info_type = {
@@ -1226,7 +1226,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     if (rb_obj_is_kind_of(additional_certs, rb_cArray)) {
         inter_certs = ossl_protect_x509_ary2sk(additional_certs, &status);
         if (status)
-                goto end;
+            goto end;
 
         /* this dups the sk_X509 and ups each cert's ref count */
         TS_RESP_CTX_set_certs(ctx, inter_certs);
@@ -1281,7 +1281,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     SetTSResponse(tsresp, response);
     ret = tsresp;
 
-end:
+  end:
     ASN1_INTEGER_free(asn1_serial);
     ASN1_OBJECT_free(def_policy_id_obj);
     TS_RESP_CTX_free(ctx);

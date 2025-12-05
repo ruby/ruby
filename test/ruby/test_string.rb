@@ -1883,9 +1883,24 @@ CODE
   def test_fs
     return unless @cls == String
 
-    assert_raise_with_message(TypeError, /\$;/) {
-      $; = []
-    }
+    begin
+      fs = $;
+      assert_deprecated_warning(/non-nil '\$;'/) {$; = "x"}
+      assert_raise_with_message(TypeError, /\$;/) {$; = []}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
+    name = "\u{5206 5217}"
+    assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
+    do;
+      alias $#{name} $;
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
+      assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
+    end;
+  end
+
+  def test_fs_gc
+    return unless @cls == String
 
     assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
@@ -2761,14 +2776,21 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
-  def test_fs_setter
+  def test_rs
     return unless @cls == String
 
-    assert_raise(TypeError) { $/ = 1 }
+    begin
+      rs = $/
+      assert_deprecated_warning(/non-nil '\$\/'/) { $/ = "" }
+      assert_raise(TypeError) { $/ = 1 }
+    ensure
+      EnvUtil.suppress_warning { $/ = rs }
+    end
     name = "\u{5206 884c}"
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;
       alias $#{name} $/
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
       assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
     end;
   end
@@ -3443,9 +3465,11 @@ CODE
 
   def test_uminus_no_embed_gc
     pad = "a"*2048
-    ("aa".."zz").each do |c|
-      fstr = -(c + pad).freeze
-      File.open(IO::NULL, "w").write(fstr)
+    File.open(IO::NULL, "w") do |dev_null|
+      ("aa".."zz").each do |c|
+        fstr = -(c + pad).freeze
+        dev_null.write(fstr)
+      end
     end
     GC.start
   end

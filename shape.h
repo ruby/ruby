@@ -162,18 +162,31 @@ RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
 bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
 #endif
 
+static inline VALUE
+RSHAPE_COMBINE_IN_FLAGS(VALUE flags, shape_id_t shape_id)
+{
+    return (flags &SHAPE_FLAG_MASK) | (((VALUE)shape_id) << SHAPE_FLAG_SHIFT);
+}
+
+static inline void
+RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
+{
+#if RBASIC_SHAPE_ID_FIELD
+    RBASIC(obj)->shape_id = (VALUE)shape_id;
+#else
+    // Object shapes are occupying top bits
+    RBASIC(obj)->flags = RSHAPE_COMBINE_IN_FLAGS(RBASIC(obj)->flags, shape_id);
+#endif
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
-#if RBASIC_SHAPE_ID_FIELD
-    RBASIC(obj)->shape_id = (VALUE)shape_id;
-#else
-    // Object shapes are occupying top bits
-    RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
-    RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
-#endif
+
+    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
@@ -217,7 +230,7 @@ shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
-shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
+shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
@@ -429,7 +442,7 @@ rb_shape_obj_has_fields(VALUE obj)
 }
 
 static inline bool
-rb_obj_exivar_p(VALUE obj)
+rb_obj_gen_fields_p(VALUE obj)
 {
     switch (TYPE(obj)) {
         case T_NONE:

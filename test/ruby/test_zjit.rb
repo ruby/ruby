@@ -1081,20 +1081,20 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_duparray_send_include_p_redefined
-      assert_compiles '[:true, :false]', %q{
-        class Array
-          alias_method :old_include?, :include?
-          def include?(x)
-            old_include?(x) ? :true : :false
-          end
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
         end
+      end
 
-        def test(x)
-          [:y, 1].include?(x)
-        end
-        [test(1), test("n")]
-      }, insns: [:opt_duparray_send], call_threshold: 1
-    end
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
 
   def test_opt_newarray_send_hash
     assert_compiles 'Integer', %q{

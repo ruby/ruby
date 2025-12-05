@@ -816,17 +816,26 @@ rb_complex_uminus(VALUE self)
 }
 
 /*
- * call-seq:
- *   complex + numeric -> new_complex
+ *  call-seq:
+ *    self + other -> numeric
  *
- * Returns the sum of +self+ and +numeric+:
+ *  Returns the sum of +self+ and +other+:
  *
- *   Complex.rect(2, 3)  + Complex.rect(2, 3)  # => (4+6i)
- *   Complex.rect(900)   + Complex.rect(1)     # => (901+0i)
- *   Complex.rect(-2, 9) + Complex.rect(-9, 2) # => (-11+11i)
- *   Complex.rect(9, 8)  + 4                   # => (13+8i)
- *   Complex.rect(20, 9) + 9.8                 # => (29.8+9i)
+ *    Complex(1, 2) + 0  # => (1+2i)
+ *    Complex(1, 2) + 1  # => (2+2i)
+ *    Complex(1, 2) + -1 # => (0+2i)
  *
+ *    Complex(1, 2) + 1.0  # => (2.0+2i)
+ *
+ *    Complex(1, 2) + Complex(2, 1)     # => (3+3i)
+ *    Complex(1, 2) + Complex(2.0, 1.0) # => (3.0+3.0i)
+ *
+ *    Complex(1, 2) + Rational(1, 1) # => ((2/1)+2i)
+ *    Complex(1, 2) + Rational(1, 2) # => ((3/2)+2i)
+ *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    Complex(1, 2) + 3.14 # => (4.140000000000001+2i)
  */
 VALUE
 rb_complex_plus(VALUE self, VALUE other)

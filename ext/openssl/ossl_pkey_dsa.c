@@ -14,7 +14,7 @@
 #define GetPKeyDSA(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) { /* PARANOIA? */ \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
+        ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
     } \
 } while (0)
 #define GetDSA(obj, dsa) do { \
@@ -163,7 +163,7 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
                               (d2i_of_void *)d2i_DSAPrivateKey,
                               (char *)dsa);
     if (!dsa_new)
-	ossl_raise(ePKeyError, "ASN1_dup");
+        ossl_raise(ePKeyError, "ASN1_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa_new) != 1) {

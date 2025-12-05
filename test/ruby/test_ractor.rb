@@ -47,7 +47,7 @@ class TestRactor < Test::Unit::TestCase
     def x.to_s
       raise "this should not be called"
     end
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()> because it refers unshareable objects", exception: Ractor::Error)
   end
 
   def test_default_thread_group

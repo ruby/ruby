@@ -7,6 +7,7 @@
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
+#include "shape.h"
 #include "gc/mmtk/mmtk.h"
 
 #include "ccan/list/list.h"
@@ -603,7 +604,7 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 // Object allocation
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -625,7 +626,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     VALUE *alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size + 8, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
     alloc_obj++;
     alloc_obj[-1] = alloc_size;
-    alloc_obj[0] = flags;
+    alloc_obj[0] = RSHAPE_COMBINE_IN_FLAGS(flags, shape_id);;
     alloc_obj[1] = klass;
 
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);

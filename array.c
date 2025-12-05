@@ -2917,23 +2917,28 @@ rb_ary_join(VALUE ary, VALUE sep)
         StringValue(sep);
         len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
-    for (i=0; i<RARRAY_LEN(ary); i++) {
+    long len_memo = RARRAY_LEN(ary);
+    for (i=0; i < len_memo; i++) {
         val = RARRAY_AREF(ary, i);
-        tmp = rb_check_string_type(val);
-
-        if (NIL_P(tmp) || tmp != val) {
-            int first;
-            long n = RARRAY_LEN(ary);
-            if (i > n) i = n;
-            result = rb_str_buf_new(len + (n-i)*10);
-            rb_enc_associate(result, rb_usascii_encoding());
-            i = ary_join_0(ary, sep, i, result);
-            first = i == 0;
-            ary_join_1(ary, ary, sep, i, result, &first);
-            return result;
+        if (RB_UNLIKELY(!RB_TYPE_P(val, T_STRING))) {
+            tmp = rb_check_string_type(val);
+            if (NIL_P(tmp) || tmp != val) {
+                int first;
+                long n = RARRAY_LEN(ary);
+                if (i > n) i = n;
+                result = rb_str_buf_new(len + (n-i)*10);
+                rb_enc_associate(result, rb_usascii_encoding());
+                i = ary_join_0(ary, sep, i, result);
+                first = i == 0;
+                ary_join_1(ary, ary, sep, i, result, &first);
+                return result;
+            }
+            len += RSTRING_LEN(tmp);
+            len_memo = RARRAY_LEN(ary);
         }
-
-        len += RSTRING_LEN(tmp);
+        else {
+            len += RSTRING_LEN(val);
+        }
     }
 
     result = rb_str_new(0, len);

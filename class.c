@@ -86,6 +86,17 @@ cvar_table_free_i(VALUE value, void *ctx)
     return ID_TABLE_CONTINUE;
 }
 
+rb_classext_t *
+rb_class_unlink_classext(VALUE klass, const rb_box_t *box)
+{
+    st_data_t ext;
+    st_data_t key = (st_data_t)box->box_object;
+    VALUE obj_id = rb_obj_id(klass);
+    st_delete(box->classext_cow_classes, &obj_id, 0);
+    st_delete(RCLASS_CLASSEXT_TBL(klass), &key, &ext);
+    return (rb_classext_t *)ext;
+}
+
 void
 rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
 {
@@ -156,7 +167,7 @@ struct rb_class_set_box_classext_args {
 };
 
 static int
-rb_class_set_box_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
+set_box_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
 {
     struct rb_class_set_box_classext_args *args = (struct rb_class_set_box_classext_args *)a;
 
@@ -182,7 +193,10 @@ rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
         .ext = ext,
     };
 
-    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, rb_class_set_box_classext_update, (st_data_t)&args);
+    VM_ASSERT(BOX_USER_P(box));
+
+    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, set_box_classext_update, (st_data_t)&args);
+    st_insert(box->classext_cow_classes, (st_data_t)rb_obj_id(obj), obj);
 
     // FIXME: This is done here because this is the first time the objects in
     // the classext are exposed via this class. It's likely that if GC
@@ -720,8 +734,10 @@ class_detach_subclasses(VALUE klass, VALUE arg)
 static void
 class_switch_superclass(VALUE super, VALUE klass)
 {
-    class_detach_subclasses(klass, Qnil);
-    rb_class_subclass_add(super, klass);
+    RB_VM_LOCKING() {
+        class_detach_subclasses(klass, Qnil);
+        rb_class_subclass_add(super, klass);
+    }
 }
 
 /**

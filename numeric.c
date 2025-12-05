@@ -906,88 +906,6 @@ num_negative_p(VALUE num)
     return RBOOL(rb_num_negative_int_p(num));
 }
 
-
-/********************************************************************
- *
- *  Document-class: Float
- *
- *  A \Float object represents a sometimes-inexact real number using the native
- *  architecture's double-precision floating point representation.
- *
- *  Floating point has a different arithmetic and is an inexact number.
- *  So you should know its esoteric system. See following:
- *
- *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
- *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
- *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
- *
- *  You can create a \Float object explicitly with:
- *
- *  - A {floating-point literal}[rdoc-ref:syntax/literals.rdoc@Float+Literals].
- *
- *  You can convert certain objects to Floats with:
- *
- *  - Method #Float.
- *
- *  == What's Here
- *
- *  First, what's elsewhere. Class \Float:
- *
- *  - Inherits from
- *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *    and {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
- *
- *  Here, class \Float provides methods for:
- *
- *  - {Querying}[rdoc-ref:Float@Querying]
- *  - {Comparing}[rdoc-ref:Float@Comparing]
- *  - {Converting}[rdoc-ref:Float@Converting]
- *
- *  === Querying
- *
- *  - #finite?: Returns whether +self+ is finite.
- *  - #hash: Returns the integer hash code for +self+.
- *  - #infinite?: Returns whether +self+ is infinite.
- *  - #nan?: Returns whether +self+ is a NaN (not-a-number).
- *
- *  === Comparing
- *
- *  - #<: Returns whether +self+ is less than the given value.
- *  - #<=: Returns whether +self+ is less than or equal to the given value.
- *  - #<=>: Returns a number indicating whether +self+ is less than, equal
- *    to, or greater than the given value.
- *  - #== (aliased as #=== and #eql?): Returns whether +self+ is equal to
- *    the given value.
- *  - #>: Returns whether +self+ is greater than the given value.
- *  - #>=: Returns whether +self+ is greater than or equal to the given value.
- *
- *  === Converting
- *
- *  - #% (aliased as #modulo): Returns +self+ modulo the given value.
- *  - #*: Returns the product of +self+ and the given value.
- *  - #**: Returns the value of +self+ raised to the power of the given value.
- *  - #+: Returns the sum of +self+ and the given value.
- *  - #-: Returns the difference of +self+ and the given value.
- *  - #/: Returns the quotient of +self+ and the given value.
- *  - #ceil: Returns the smallest number greater than or equal to +self+.
- *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
- *    and +self+
- *  - #divmod: Returns a 2-element array containing the quotient and remainder
- *    results of dividing +self+ by the given value.
- *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
- *  - #floor: Returns the greatest number smaller than or equal to +self+.
- *  - #next_float: Returns the next-larger representable \Float.
- *  - #prev_float: Returns the next-smaller representable \Float.
- *  - #quo: Returns the quotient from dividing +self+ by the given value.
- *  - #round: Returns +self+ rounded to the nearest value, to a given precision.
- *  - #to_i (aliased as #to_int): Returns +self+ truncated to an Integer.
- *  - #to_s (aliased as #inspect): Returns a string containing the place-value
- *    representation of +self+ in the given radix.
- *  - #truncate: Returns +self+ truncated to a given precision.
- *
- */
-
 VALUE
 rb_float_new_in_heap(double d)
 {
@@ -1132,15 +1050,21 @@ rb_float_uminus(VALUE flt)
 
 /*
  *  call-seq:
- *    self + other -> numeric
+ *    self + other -> float or complex
  *
- *  Returns a new \Float which is the sum of +self+ and +other+:
+ *  Returns the sum of +self+ and +other+;
+ *  the result may be inexact (see Float):
  *
- *    f = 3.14
- *    f + 1                 # => 4.140000000000001
- *    f + 1.0               # => 4.140000000000001
- *    f + Rational(1, 1)    # => 4.140000000000001
- *    f + Complex(1, 0)     # => (4.140000000000001+0i)
+ *    3.14 + 0              # => 3.14
+ *    3.14 + 1              # => 4.140000000000001
+ *    -3.14 + 0             # => -3.14
+ *    -3.14 + 1             # => -2.14
+
+ *    3.14 + -3.14          # => 0.0
+ *    -3.14 + -3.14         # => -6.28
+ *
+ *    3.14 + Complex(1, 0)   # => (4.140000000000001+0i)
+ *    3.14 + Rational(1, 1)  # => 4.140000000000001
  *
  */
 
@@ -3999,17 +3923,20 @@ rb_fix_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self + numeric -> numeric_result
+ *    self + other -> numeric
  *
- *  Performs addition:
+ *  Returns the sum of +self+ and +other+:
  *
- *    2 + 2              # => 4
- *    -2 + 2             # => 0
- *    -2 + -2            # => -4
- *    2 + 2.0            # => 4.0
- *    2 + Rational(2, 1) # => (4/1)
- *    2 + Complex(2, 0)  # => (4+0i)
+ *    1 + 1               # => 2
+ *    1 + -1             # => 0
+ *    1 + 0              # => 1
+ *    1 + -2             # => -1
+ *    1 + Complex(1, 0)  # => (2+0i)
+ *    1 + Rational(1, 1) # => (2/1)
  *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    1 + 3.14           # => 4.140000000000001
  */
 
 VALUE
