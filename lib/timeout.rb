@@ -133,6 +133,7 @@ module Timeout
       end
     end
   end
+  private_class_method :ensure_timeout_thread_created
 
   # We keep a private reference so that time mocking libraries won't break
   # Timeout.
@@ -167,7 +168,7 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
+  def self.timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     raise ArgumentError, "Timeout sec must be a non-negative number" if 0 > sec
 
@@ -177,7 +178,7 @@ module Timeout
       return scheduler.timeout_after(sec, klass || Error, message, &block)
     end
 
-    Timeout.ensure_timeout_thread_created
+    ensure_timeout_thread_created
     perform = Proc.new do |exc|
       request = Request.new(Thread.current, sec, exc, message)
       QUEUE_MUTEX.synchronize do
@@ -197,5 +198,8 @@ module Timeout
       Error.handle_timeout(message, &perform)
     end
   end
-  module_function :timeout
+
+  private def timeout(*args, &block)
+    Timeout.timeout(*args, &block)
+  end
 end

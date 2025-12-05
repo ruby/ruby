@@ -4,6 +4,12 @@ require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
+  def test_public_methods
+    assert_equal [:timeout], Timeout.private_instance_methods(false)
+    assert_equal [], Timeout.public_instance_methods(false)
+    assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+  end
+
   def test_work_is_done_in_same_thread_as_caller
     assert_equal Thread.current, Timeout.timeout(10){ Thread.current }
   end
