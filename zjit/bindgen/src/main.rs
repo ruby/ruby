@@ -301,6 +301,7 @@ fn main() {
         .allowlist_function("rb_zjit_defined_ivar")
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
+        .allowlist_type("zjit_struct_offsets")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
@@ -428,6 +429,7 @@ fn main() {
         // We define these manually, don't import them
         .blocklist_type("VALUE")
         .blocklist_type("ID")
+        .blocklist_type("rb_iseq_constant_body")
 
         // Avoid binding to stuff we don't use
         .blocklist_item("rb_thread_struct.*")

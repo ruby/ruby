@@ -426,17 +426,28 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       OpenSSL::ASN1::UTCTime.new(Time.new(2049, 12, 31, 23, 0, 0, "-04:00")).to_der
     }
 
-    # not implemented
+    # UTC offset (BER): ASN1_TIME_to_tm() may or may not support it
     # decode_test B(%w{ 17 11 }) + "500908234339+0930".b,
     #   OpenSSL::ASN1::UTCTime.new(Time.new(1950, 9, 8, 23, 43, 39, "+09:30"))
     # decode_test B(%w{ 17 0F }) + "5009082343-0930".b,
     #   OpenSSL::ASN1::UTCTime.new(Time.new(1950, 9, 8, 23, 43, 0, "-09:30"))
-    # assert_raise(OpenSSL::ASN1::ASN1Error) {
-    #   OpenSSL::ASN1.decode(B(%w{ 17 0C }) + "500908234339".b)
-    # }
-    # assert_raise(OpenSSL::ASN1::ASN1Error) {
-    #   OpenSSL::ASN1.decode(B(%w{ 17 0D }) + "500908234339Y".b)
-    # }
+
+    # Seconds is omitted (BER)
+    # decode_test B(%w{ 18 0D }) + "201612081934Z".b,
+    #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
+
+    # Fractional seconds is not allowed in UTCTime
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 17 0F }) + "160908234339.5Z".b)
+    }
+
+    # Missing "Z"
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 17 0C }) + "500908234339".b)
+    }
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 17 0D }) + "500908234339Y".b)
+    }
   end
 
   def test_generalizedtime
@@ -444,24 +455,46 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 29))
     encode_decode_test B(%w{ 18 0F }) + "99990908234339Z".b,
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(9999, 9, 8, 23, 43, 39))
-    # not implemented
+
+    # Fractional seconds (DER). Not supported by ASN1_TIME_to_tm()
+    # because struct tm cannot store it.
+    # encode_decode_test B(%w{ 18 11 }) + "20161208193439.5Z".b,
+    #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 39.5))
+
+    # UTC offset (BER): ASN1_TIME_to_tm() may or may not support it
     # decode_test B(%w{ 18 13 }) + "20161208193439+0930".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.new(2016, 12, 8, 19, 34, 39, "+09:30"))
     # decode_test B(%w{ 18 11 }) + "201612081934-0930".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.new(2016, 12, 8, 19, 34, 0, "-09:30"))
     # decode_test B(%w{ 18 11 }) + "201612081934-09".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.new(2016, 12, 8, 19, 34, 0, "-09:00"))
+
+    # Minutes and seconds are omitted (BER)
+    # decode_test B(%w{ 18 0B }) + "2016120819Z".b,
+    #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 0, 0))
+    # Fractional hours (BER)
     # decode_test B(%w{ 18 0D }) + "2016120819.5Z".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 30, 0))
+    # Fractional hours with "," as the decimal separator (BER)
     # decode_test B(%w{ 18 0D }) + "2016120819,5Z".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 30, 0))
+
+    # Seconds is omitted (BER)
+    # decode_test B(%w{ 18 0D }) + "201612081934Z".b,
+    #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
+    # Fractional minutes (BER)
     # decode_test B(%w{ 18 0F }) + "201612081934.5Z".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 30))
-    # decode_test B(%w{ 18 11 }) + "20161208193439.5Z".b,
-    #   OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 39.5))
-    # assert_raise(OpenSSL::ASN1::ASN1Error) {
-    #   OpenSSL::ASN1.decode(B(%w{ 18 0D }) + "201612081934Y".b)
-    # }
+
+    # Missing "Z"
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 18 0F }) + "20161208193429Y".b)
+    }
+
+    # Encoding year out of range
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1::GeneralizedTime.new(Time.utc(10000, 9, 8, 23, 43, 39)).to_der
+    }
   end
 
   def test_basic_asn1data

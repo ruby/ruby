@@ -2377,6 +2377,10 @@ pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
  */
 size_t
 pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
@@ -2397,6 +2401,10 @@ pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
  */
 size_t
 pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
@@ -2417,6 +2425,10 @@ pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
  */
 bool
 pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     }
@@ -2435,7 +2447,8 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 static pm_unicode_codepoint_t
 pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
-    if (b[0] < 0x80) {
+
+    if ((n > 0) && (b[0] < 0x80)) {
         *width = 1;
         return (pm_unicode_codepoint_t) b[0];
     }
@@ -2474,6 +2487,10 @@ pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
 
 static size_t
 pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     size_t width;
     pm_cesu_8_codepoint(b, n, &width);
     return width;
@@ -2481,6 +2498,10 @@ pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_cesu_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
@@ -2497,6 +2518,10 @@ pm_encoding_cesu_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_cesu_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
@@ -2513,6 +2538,10 @@ pm_encoding_cesu_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
 
 static bool
 pm_encoding_cesu_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     }
@@ -3928,14 +3957,14 @@ static const uint8_t pm_encoding_windows_874_table[256] = {
 };
 
 #define PRISM_ENCODING_TABLE(name) \
-    static size_t pm_encoding_ ##name ## _alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHABETIC_BIT);           \
+    static size_t pm_encoding_ ##name ## _alpha_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHABETIC_BIT));           \
     }                                                                                                         \
-    static size_t pm_encoding_ ##name ## _alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0; \
+    static size_t pm_encoding_ ##name ## _alnum_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0; \
     }                                                                                                         \
-    static bool pm_encoding_ ##name ## _isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_UPPERCASE_BIT);            \
+    static bool pm_encoding_ ##name ## _isupper_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_UPPERCASE_BIT));            \
     }
 
 PRISM_ENCODING_TABLE(cp850)
@@ -4004,8 +4033,8 @@ PRISM_ENCODING_TABLE(windows_874)
  * means that if the top bit is not set, the character is 1 byte long.
  */
 static size_t
-pm_encoding_ascii_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return *b < 0x80 ? 1 : 0;
+pm_encoding_ascii_char_width(const uint8_t *b, ptrdiff_t n) {
+    return ((n > 0) && (*b < 0x80)) ? 1 : 0;
 }
 
 /**
@@ -4013,8 +4042,8 @@ pm_encoding_ascii_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  * alphabetical character.
  */
 static size_t
-pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT);
+pm_encoding_ascii_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    return (n > 0) ? (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) : 0;
 }
 
 /**
@@ -4024,7 +4053,7 @@ pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  */
 static size_t
 pm_encoding_ascii_alpha_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+    return ((n > 0) && (*b < 0x80)) ? pm_encoding_ascii_alpha_char(b, n) : 0;
 }
 
 /**
@@ -4032,8 +4061,8 @@ pm_encoding_ascii_alpha_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * alphanumeric character.
  */
 static size_t
-pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0;
+pm_encoding_ascii_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    return ((n > 0) && (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
 }
 
 /**
@@ -4043,7 +4072,7 @@ pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  */
 static size_t
 pm_encoding_ascii_alnum_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+    return ((n > 0) && (*b < 0x80)) ? pm_encoding_ascii_alnum_char(b, n) : 0;
 }
 
 /**
@@ -4051,8 +4080,8 @@ pm_encoding_ascii_alnum_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * character.
  */
 static bool
-pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT);
+pm_encoding_ascii_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    return (n > 0) && (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT);
 }
 
 /**
@@ -4071,7 +4100,7 @@ pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATT
 static size_t
 pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4115,6 +4144,9 @@ pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
  */
 static size_t
 pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
     // These are the single byte characters.
     if (b[0] < 0x80 || (b[0] >= 0xA1 && b[0] <= 0xDF)) {
         return 1;
@@ -4178,7 +4210,7 @@ pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
  */
 static bool
 pm_encoding_ascii_isupper_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
+    return (n > 0) && (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
 }
 
 /**
@@ -4188,7 +4220,7 @@ pm_encoding_ascii_isupper_char_7bit(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4207,7 +4239,7 @@ pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters
-    if (*b <= 0x80) {
+    if ((n > 0) && (*b <= 0x80)) {
         return 1;
     }
 
@@ -4226,7 +4258,7 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the 1 byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4269,7 +4301,7 @@ pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4288,7 +4320,7 @@ pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4312,7 +4344,7 @@ pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the 1 byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4336,7 +4368,7 @@ pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b <= 0x80) {
+    if ((n > 0) && (*b <= 0x80)) {
         return 1;
     }
 

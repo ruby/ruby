@@ -73,7 +73,8 @@ jobs:
 
           - test_task: 'zjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--enable-zjit=dev --with-gcc=clang-16'
+            # Build with YJIT+ZJIT for output that works in the most number of configurations
+            configure: '--enable-zjit=dev --enable-yjit --with-gcc=clang-16'
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
 

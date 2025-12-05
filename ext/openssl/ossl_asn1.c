@@ -9,64 +9,81 @@
  */
 #include "ossl.h"
 
-static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
-                               int depth, int yield, long *num_read);
-static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
+/********/
+/*
+ * ASN1 module
+ */
+#define ossl_asn1_get_value(o)           rb_attr_get((o),sivVALUE)
+#define ossl_asn1_get_tag(o)             rb_attr_get((o),sivTAG)
+#define ossl_asn1_get_tagging(o)         rb_attr_get((o),sivTAGGING)
+#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
+#define ossl_asn1_get_indefinite_length(o) rb_attr_get((o),sivINDEFINITE_LENGTH)
+
+#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
+#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
+#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
+#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
+#define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
+
+VALUE mASN1;
+static VALUE eASN1Error;
+
+VALUE cASN1Data;
+static VALUE cASN1Primitive;
+static VALUE cASN1Constructive;
+
+static VALUE cASN1EndOfContent;
+static VALUE cASN1Boolean;                           /* BOOLEAN           */
+static VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
+static VALUE cASN1BitString;                         /* BIT STRING        */
+static VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
+static VALUE cASN1NumericString, cASN1PrintableString;
+static VALUE cASN1T61String, cASN1VideotexString;
+static VALUE cASN1IA5String, cASN1GraphicString;
+static VALUE cASN1ISO64String, cASN1GeneralString;
+static VALUE cASN1UniversalString, cASN1BMPString;
+static VALUE cASN1Null;                              /* NULL              */
+static VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
+static VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
+static VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
+
+static VALUE sym_IMPLICIT, sym_EXPLICIT;
+static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
+static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
+static ID id_each;
 
 /*
  * DATE conversion
  */
+static VALUE
+time_utc_new(VALUE args)
+{
+    return rb_funcallv(rb_cTime, rb_intern("utc"), 6, (VALUE *)args);
+}
+
+static VALUE
+time_utc_new_rescue(VALUE args, VALUE exc)
+{
+    rb_raise(eASN1Error, "invalid time");
+}
+
 VALUE
 asn1time_to_time(const ASN1_TIME *time)
 {
     struct tm tm;
-    VALUE argv[6];
-    int count;
+    if (!ASN1_TIME_to_tm(time, &tm))
+        ossl_raise(eASN1Error, "ASN1_TIME_to_tm");
 
-    memset(&tm, 0, sizeof(struct tm));
-
-    switch (time->type) {
-      case V_ASN1_UTCTIME:
-        count = sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ",
-                       &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
-                       &tm.tm_sec);
-
-        if (count == 5) {
-            tm.tm_sec = 0;
-        } else if (count != 6) {
-            ossl_raise(rb_eTypeError, "bad UTCTIME format: \"%s\"",
-                       time->data);
-        }
-        if (tm.tm_year < 50) {
-            tm.tm_year += 2000;
-        } else {
-            tm.tm_year += 1900;
-        }
-        break;
-      case V_ASN1_GENERALIZEDTIME:
-        count = sscanf((const char *)time->data, "%4d%2d%2d%2d%2d%2dZ",
-                       &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
-                       &tm.tm_sec);
-        if (count == 5) {
-            tm.tm_sec = 0;
-        }
-        else if (count != 6) {
-            ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format: \"%s\"",
-                       time->data);
-        }
-        break;
-      default:
-        rb_warning("unknown time format");
-        return Qnil;
-    }
-    argv[0] = INT2NUM(tm.tm_year);
-    argv[1] = INT2NUM(tm.tm_mon);
-    argv[2] = INT2NUM(tm.tm_mday);
-    argv[3] = INT2NUM(tm.tm_hour);
-    argv[4] = INT2NUM(tm.tm_min);
-    argv[5] = INT2NUM(tm.tm_sec);
-
-    return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
+    VALUE args[] = {
+        INT2NUM(tm.tm_year + 1900),
+        INT2NUM(tm.tm_mon + 1),
+        INT2NUM(tm.tm_mday),
+        INT2NUM(tm.tm_hour),
+        INT2NUM(tm.tm_min),
+        INT2NUM(tm.tm_sec),
+    };
+    return rb_rescue2(time_utc_new, (VALUE)args, time_utc_new_rescue, Qnil,
+                      rb_eArgError, 0);
 }
 
 static VALUE
@@ -189,49 +206,6 @@ ossl_asn1obj_to_string_long_name(const ASN1_OBJECT *obj)
         return rb_str_new_cstr(OBJ_nid2ln(nid));
     return ossl_asn1obj_to_string_oid(obj);
 }
-
-/********/
-/*
- * ASN1 module
- */
-#define ossl_asn1_get_value(o)           rb_attr_get((o),sivVALUE)
-#define ossl_asn1_get_tag(o)             rb_attr_get((o),sivTAG)
-#define ossl_asn1_get_tagging(o)         rb_attr_get((o),sivTAGGING)
-#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
-#define ossl_asn1_get_indefinite_length(o) rb_attr_get((o),sivINDEFINITE_LENGTH)
-
-#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
-#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
-#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
-#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
-#define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
-
-VALUE mASN1;
-static VALUE eASN1Error;
-
-VALUE cASN1Data;
-static VALUE cASN1Primitive;
-static VALUE cASN1Constructive;
-
-static VALUE cASN1EndOfContent;
-static VALUE cASN1Boolean;                           /* BOOLEAN           */
-static VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
-static VALUE cASN1BitString;                         /* BIT STRING        */
-static VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
-static VALUE cASN1NumericString, cASN1PrintableString;
-static VALUE cASN1T61String, cASN1VideotexString;
-static VALUE cASN1IA5String, cASN1GraphicString;
-static VALUE cASN1ISO64String, cASN1GeneralString;
-static VALUE cASN1UniversalString, cASN1BMPString;
-static VALUE cASN1Null;                              /* NULL              */
-static VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
-static VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
-static VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
-
-static VALUE sym_IMPLICIT, sym_EXPLICIT;
-static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
-static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
-static ID id_each;
 
 /*
  * Ruby to ASN1 converters
@@ -776,6 +750,10 @@ ossl_asn1data_to_der(VALUE self)
         return ossl_asn1prim_to_der(self);
     }
 }
+
+static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
+                               int depth, int yield, long *num_read);
 
 static VALUE
 int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,

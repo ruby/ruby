@@ -595,40 +595,6 @@ pub type rb_jit_func_t = ::std::option::Option<
     ) -> VALUE,
 >;
 #[repr(C)]
-pub struct rb_iseq_constant_body {
-    pub type_: rb_iseq_type,
-    pub iseq_size: ::std::os::raw::c_uint,
-    pub iseq_encoded: *mut VALUE,
-    pub param: rb_iseq_constant_body_rb_iseq_parameters,
-    pub location: rb_iseq_location_t,
-    pub insns_info: rb_iseq_constant_body_iseq_insn_info,
-    pub local_table: *const ID,
-    pub lvar_states: *mut rb_iseq_constant_body_lvar_state,
-    pub catch_table: *mut iseq_catch_table,
-    pub parent_iseq: *const rb_iseq_struct,
-    pub local_iseq: *mut rb_iseq_struct,
-    pub is_entries: *mut iseq_inline_storage_entry,
-    pub call_data: *mut rb_call_data,
-    pub variable: rb_iseq_constant_body__bindgen_ty_1,
-    pub local_table_size: ::std::os::raw::c_uint,
-    pub ic_size: ::std::os::raw::c_uint,
-    pub ise_size: ::std::os::raw::c_uint,
-    pub ivc_size: ::std::os::raw::c_uint,
-    pub icvarc_size: ::std::os::raw::c_uint,
-    pub ci_size: ::std::os::raw::c_uint,
-    pub stack_max: ::std::os::raw::c_uint,
-    pub builtin_attrs: ::std::os::raw::c_uint,
-    pub prism: bool,
-    pub mark_bits: rb_iseq_constant_body__bindgen_ty_2,
-    pub outer_variables: *mut rb_id_table,
-    pub mandatory_only_iseq: *const rb_iseq_t,
-    pub jit_entry: rb_jit_func_t,
-    pub jit_entry_calls: ::std::os::raw::c_ulong,
-    pub jit_exception: rb_jit_func_t,
-    pub jit_exception_calls: ::std::os::raw::c_ulong,
-    pub zjit_payload: *mut ::std::os::raw::c_void,
-}
-#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters {
     pub flags: rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1,
@@ -1866,6 +1832,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
+pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;

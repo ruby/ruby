@@ -1674,30 +1674,7 @@ module Net   #:nodoc:
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
       begin
-        s =
-          case @tcpsocket_supports_open_timeout
-          when nil, true
-            begin
-              # Use built-in timeout in TCPSocket.open if available
-              sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
-              @tcpsocket_supports_open_timeout = true
-              sock
-            rescue ArgumentError => e
-              raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
-              @tcpsocket_supports_open_timeout = false
-
-              # Fallback to Timeout.timeout if TCPSocket.open does not support open_timeout
-              Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-                TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-              }
-            end
-          when false
-            # The current Ruby is known to not support TCPSocket(open_timeout:).
-            # Directly fall back to Timeout.timeout to avoid performance penalty incured by rescue.
-            Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-              TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-            }
-          end
+        s = timeouted_connect(conn_addr, conn_port)
       rescue => e
         e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) # for compatibility with previous versions
         raise e, "Failed to open TCP connection to " +
@@ -1794,6 +1771,29 @@ module Net   #:nodoc:
       raise
     end
     private :connect
+
+    def timeouted_connect(conn_addr, conn_port)
+      if @tcpsocket_supports_open_timeout == nil || @tcpsocket_supports_open_timeout == true
+        # Try to use built-in open_timeout in TCPSocket.open if:
+        #   - The current Ruby runtime is known to support it, or
+        #   - It is unknown whether the current Ruby runtime supports it (so we'll try).
+        begin
+          sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+          @tcpsocket_supports_open_timeout = true
+          return sock
+        rescue ArgumentError => e
+          raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
+          @tcpsocket_supports_open_timeout = false
+        end
+      end
+
+      # This Ruby runtime is known not to support `TCPSocket(open_timeout:)`.
+      # Directly fall back to Timeout.timeout to avoid performance penalty incured by rescue.
+      Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+      }
+    end
+    private :timeouted_connect
 
     def on_connect
     end

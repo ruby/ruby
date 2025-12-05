@@ -665,20 +665,6 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
     return extension;
 }
 
-static VALUE
-ossl_x509_inspect(VALUE self)
-{
-    return rb_sprintf("#<%"PRIsVALUE": subject=%+"PRIsVALUE", "
-                      "issuer=%+"PRIsVALUE", serial=%+"PRIsVALUE", "
-                      "not_before=%+"PRIsVALUE", not_after=%+"PRIsVALUE">",
-                      rb_obj_class(self),
-                      ossl_x509_get_subject(self),
-                      ossl_x509_get_issuer(self),
-                      ossl_x509_get_serial(self),
-                      ossl_x509_get_not_before(self),
-                      ossl_x509_get_not_after(self));
-}
-
 /*
  * call-seq:
  *    cert1 == cert2 -> true | false
@@ -1013,7 +999,6 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "extensions", ossl_x509_get_extensions, 0);
     rb_define_method(cX509Cert, "extensions=", ossl_x509_set_extensions, 1);
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
-    rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
     rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
     rb_define_method(cX509Cert, "tbs_bytes", ossl_x509_tbs_bytes, 0);
 }

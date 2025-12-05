@@ -157,6 +157,16 @@ assert_equal '[:a, :b, :c, :d, :e]', %q{
   Ractor.shareable_proc(&closure).call
 }
 
+# Ractor.make_shareable makes a copy of given Proc
+assert_equal '[true, true]', %q{
+  pr1 = Proc.new do
+    self
+  end
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  [pr1.call == self, pr2.call == nil]
+}
+
 # Ractor::IsolationError cases
 assert_equal '3', %q{
   ok = 0

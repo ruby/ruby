@@ -145,5 +145,5 @@ RSpec.configure do |config|
     if metadata[:type] != :aruba && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
       warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
     end
-  end
+  end unless Spec::Path.ruby_core?
 end
