@@ -13877,15 +13877,25 @@ value_expr_check(struct parser_params *p, NODE *node)
             break;
 
           case NODE_CASE3:
-            if (!RNODE_CASE3(node)->nd_body || !nd_type_p(RNODE_CASE3(node)->nd_body, NODE_IN)) {
-                compile_error(p, "unexpected node");
-                return NULL;
+            {
+                NODE *in = RNODE_CASE3(node)->nd_body;
+                if (!in || !nd_type_p(in, NODE_IN)) {
+                    compile_error(p, "unexpected node");
+                    return NULL;
+                }
+                if (!RNODE_IN(in)->nd_body) {
+                    /* single line pattern matching with "=>" operator */
+                    goto found;
+                }
+                do {
+                    vn = value_expr_check(p, RNODE_IN(in)->nd_body);
+                    if (!vn) return NULL;
+                    if (!void_node) void_node = vn;
+                    in = RNODE_IN(in)->nd_next;
+                } while (in && nd_type_p(in, NODE_IN));
+                node = in;  /* else */
             }
-            if (RNODE_IN(RNODE_CASE3(node)->nd_body)->nd_body) {
-                return NULL;
-            }
-            /* single line pattern matching with "=>" operator */
-            goto found;
+            break;
 
           case NODE_BLOCK:
             while (RNODE_BLOCK(node)->nd_next) {

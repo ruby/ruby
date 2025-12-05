@@ -2132,6 +2132,18 @@ eom
     };
   end
 
+  def test_value_expr_in_case3
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case a
+        in 1; return
+        in 2; return
+        else return
+        end
+    };
+  end
+
   def test_tautological_condition
     assert_valid_syntax("def f() return if false and invalid; nil end")
     assert_valid_syntax("def f() return unless true or invalid; nil end")
