@@ -160,7 +160,7 @@ Note: We're only listing outstanding class updates.
       Ruby-related constants. This module was reserved in Ruby 3.4
       and is now officially defined. [[Feature #20884]]
 
-* `Set`
+* Set
 
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
@@ -342,6 +342,20 @@ The following bundled gems are updated.
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
+* Set
+
+    * A C API for `Set` has been added. The following methods are supported:
+      [[Feature #21459]]
+
+        * `rb_set_foreach`
+        * `rb_set_new`
+        * `rb_set_new_capa`
+        * `rb_set_lookup`
+        * `rb_set_add`
+        * `rb_set_clear`
+        * `rb_set_delete`
+        * `rb_set_size`
+
 ## Implementation improvements
 
 ### Ractor
@@ -409,6 +423,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
 [Feature #21389]: https://bugs.ruby-lang.org/issues/21389
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21459]: https://bugs.ruby-lang.org/issues/21459
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
