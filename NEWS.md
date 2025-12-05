@@ -175,7 +175,7 @@ Note: We're only listing outstanding class updates.
 
 * Socket
 
-    * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
+    * `Socket.tcp` & `TCPSocket.new` accepts an `open_timeout` keyword argument to specify
       the timeout for the initial connection. [[Feature #21347]]
 
 * String
