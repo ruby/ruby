@@ -170,6 +170,9 @@ Note: We're only listing outstanding class updates.
       `#<Set: {1, 2, 3}>`). This makes it consistent with other core
       collection classes like Array and Hash. [[Feature #21389]]
 
+    * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
+      [[Feature #21390]]
+
 * Socket
 
     * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
