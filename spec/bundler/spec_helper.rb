@@ -116,6 +116,9 @@ RSpec.configure do |config|
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
 
+    # Disable retry delays in tests to speed them up
+    Bundler::Retry.default_base_delay = 0
+
     # Simulate bundler has not yet been loaded
     ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
