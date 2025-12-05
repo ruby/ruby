@@ -2013,6 +2013,8 @@ eom
     assert_equal(1, b.new.foo(1), bug21256)
   end
 
+  BUG_21669 = '[Bug #21669]'
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
@@ -2024,6 +2026,20 @@ eom
   def test_value_expr_in_singleton
     mesg = /void value expression/
     assert_syntax_error("class << (return); end", mesg)
+  end
+
+  def test_value_expr_in_rescue
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 1.1")
+    {#
+      x = begin
+        raise
+        return
+      rescue
+        "OK"
+      else
+        return
+      end
+    };
   end
 
   def test_tautological_condition

@@ -13847,8 +13847,7 @@ value_expr_check(struct parser_params *p, NODE *node)
                     return NULL;
                 }
                 if (!(vn = value_expr_check(p, RNODE_RESBODY(r)->nd_body))) {
-                    void_node = 0;
-                    break;
+                    return NULL;
                 }
                 if (!void_node) void_node = vn;
             }
