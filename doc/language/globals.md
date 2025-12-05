@@ -179,7 +179,7 @@ English - `$INPUT_RECORD_SEPARATOR`, `$RS`.
 
 Aliased as `$-0`.
 
-### `$\\\` (Output Record Separator)
+### `$\` (Output Record Separator)
 
 An output record separator, initially `nil`.
 
@@ -399,9 +399,9 @@ Whether command-line option `-p` was given; read-only.
 
 ### Embedded \Data
 
-| Constant | Contains                                                              |
-|----------|-----------------------------------------------------------------------|
-| `DATA`   | File containing embedded data (lines following `'__END__'`, if any).  |
+| Constant | Contains                                                            |
+|----------|---------------------------------------------------------------------|
+| `DATA`   | File containing embedded data (lines following `__END__`, if any).  |
 
 ## Streams
 
