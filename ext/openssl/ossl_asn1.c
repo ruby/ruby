@@ -114,7 +114,8 @@ ossl_time_split(VALUE time, time_t *sec, int *days)
 VALUE
 asn1str_to_str(const ASN1_STRING *str)
 {
-    return rb_str_new((const char *)str->data, str->length);
+    return rb_str_new((const char *)ASN1_STRING_get0_data(str),
+                      ASN1_STRING_length(str));
 }
 
 /*
@@ -129,7 +130,7 @@ asn1integer_to_num(const ASN1_INTEGER *ai)
     if (!ai) {
         ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
-    if (ai->type == V_ASN1_ENUMERATED)
+    if (ASN1_STRING_type(ai) == V_ASN1_ENUMERATED)
         /* const_cast: workaround for old OpenSSL */
         bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
     else
