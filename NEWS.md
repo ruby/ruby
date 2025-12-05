@@ -88,7 +88,7 @@ Note: We're only listing outstanding class updates.
       `UnboundMethod#source_location` now return extended location
       information with 5 elements: `[path, start_line, start_column,
       end_line, end_column]`. The previous 2-element format `[path,
-      line]` can still be obtained by calling `#take(2)` on the result.
+      line]` can still be obtained by calling `.take(2)` on the result.
       [[Feature #6012]]
 
 * Proc
