@@ -79,6 +79,7 @@ require 'English'
 |    `$-i`    |         | Extension given with command-line option `-i`. |
 |    `$-l`    |         | Whether option `-l` was given.                 |
 |    `$-p`    |         | Whether option `-p` was given.                 |
+|    `$F`     |         | Array of `$_` split by `$-F`.                  |
 
 ## Exceptions
 
@@ -377,6 +378,12 @@ Whether command-line option `-l` was set; read-only.
 ### `$-p`
 
 Whether command-line option `-p` was given; read-only.
+
+### `$F`
+
+If the command line option `-a` is given, the array obtained by
+splitting `$_` by `$-F` is assigned at the start of each `-l`/`-p`
+loop.
 
 ## Deprecated
 
