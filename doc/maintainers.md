@@ -259,7 +259,7 @@ consensus on ruby-core/ruby-dev.
 
 #### lib/timeout.rb
 
-* Yukihiro Matsumoto ([matz])
+* Benoit Daloze ([eregon])
 * https://github.com/ruby/timeout
 * https://rubygems.org/gems/timeout
 
@@ -571,6 +571,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 
 #### benchmark
 
+* Benoit Daloze ([eregon])
 * https://github.com/ruby/benchmark
 * https://rubygems.org/gems/benchmark
 
@@ -677,6 +678,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [duerst]: https://github.com/duerst
 [eban]: https://github.com/eban
 [eileencodes]: https://github.com/eileencodes
+[eregon]: https://github.com/eregon
 [hasumikin]: https://github.com/hasumikin
 [hsbt]: https://github.com/hsbt
 [ima1zumi]: https://github.com/ima1zumi
