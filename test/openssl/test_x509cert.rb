@@ -298,6 +298,14 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     assert_equal false, cert3 == cert4
   end
 
+  def test_inspect
+    cacert = issue_cert(@ca, @rsa1, 1, [], nil, nil)
+    assert_include(cacert.inspect, "subject=#{@ca.inspect}")
+
+    # Do not raise an exception for an invalid certificate
+    assert_instance_of(String, OpenSSL::X509::Certificate.new.inspect)
+  end
+
   def test_marshal
     now = Time.now
     cacert = issue_cert(@ca, @rsa1, 1, [], nil, nil,
