@@ -165,7 +165,7 @@ English - `$LAST_PAREN_MATCH`.
 
 ### `$1`, `$2`, \Etc. (Matched Group)
 
-For `$_n_` the <i>n</i>th group of the match.
+For <tt>$_n_</tt> the <i>n</i>th group of the match.
 
 No \English.
 
