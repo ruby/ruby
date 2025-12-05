@@ -46,16 +46,11 @@ module Timeout
   # :stopdoc:
 
   # We keep a private reference so that time mocking libraries won't break Timeout.
-  GET_TIME =
-    if defined?(Ractor.make_shareable)
-      begin
-        Ractor.make_shareable(Process.method(:clock_gettime))
-      rescue # failed on Ruby 3.4
-        Process.method(:clock_gettime)
-      end
-    else
-      Process.method(:clock_gettime)
-    end
+  GET_TIME = Process.method(:clock_gettime)
+  if defined?(Ractor.make_shareable)
+    # Ractor.make_shareable(Method) only works on Ruby 4+
+    Ractor.make_shareable(GET_TIME) rescue nil
+  end
   private_constant :GET_TIME
 
   class State
