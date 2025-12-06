@@ -127,9 +127,15 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         rb_clear_bf_ccs();
     }
 
-    ruby_vm_event_flags = new_events;
-    ruby_vm_event_enabled_global_flags |= new_events;
-    rb_objspace_set_event_hook(new_events);
+    // FIXME: Which flags are enabled globally comes from multiple lists, one
+    // per-ractor and a global list.
+    // This incorrectly assumes the lists have mutually exclusive flags set.
+    // This is true for the global (objspace) events, but not for ex. multiple
+    // Ractors listening for the same iseq events.
+    rb_event_flag_t new_events_global = (ruby_vm_event_flags & ~prev_events) | new_events;
+    ruby_vm_event_flags = new_events_global;
+    ruby_vm_event_enabled_global_flags |= new_events_global;
+    rb_objspace_set_event_hook(new_events_global);
 
     // Invalidate JIT code as needed
     if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
