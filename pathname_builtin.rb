@@ -195,9 +195,6 @@ class Pathname
 
   # :stopdoc:
 
-  # to_path is implemented so Pathname objects are usable with File.open, etc.
-  TO_PATH = :to_path
-
   SAME_PATHS = if File::FNM_SYSCASE.nonzero?
     # Avoid #zero? here because #casecmp can return nil.
     proc {|a, b| a.casecmp(b) == 0}
@@ -264,7 +261,7 @@ class Pathname
   end
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.
-  alias_method TO_PATH, :to_s
+  alias to_path to_s
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
