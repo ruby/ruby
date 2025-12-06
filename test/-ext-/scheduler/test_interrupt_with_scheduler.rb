@@ -13,6 +13,8 @@ class TestSchedulerInterruptHandling < Test::Unit::TestCase
   def test_without_handle_interrupt_signal_works
     IO.pipe do |input, output|
       pid = fork do
+        STDERR.reopen(output)
+
         scheduler = Scheduler.new
         Fiber.set_scheduler scheduler
 
@@ -33,7 +35,7 @@ class TestSchedulerInterruptHandling < Test::Unit::TestCase
       assert_equal "ready\n", input.gets
 
       sleep 0.1 # Ensure the child is in the blocking loop
-      $stderr.puts "Sending interrupt"
+      # $stderr.puts "Sending interrupt"
       Process.kill(:INT, pid)
 
       reaper = Thread.new do
