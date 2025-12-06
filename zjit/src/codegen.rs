@@ -1336,6 +1336,20 @@ fn gen_send_without_block_direct(
         specval,
     });
 
+    // Write keyword bits to the callee's frame if the callee accepts keywords.
+    // This is a synthetic local that the callee reads via checkkeyword to determine
+    // which optional keyword arguments need their defaults evaluated.
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        let bits_start = unsafe { (*keyword).bits_start } as usize;
+        // Currently we only support required keywords, so all bits are 0 (all keywords specified).
+        // TODO: When supporting optional keywords, calculate actual unspecified_bits here.
+        let unspecified_bits = VALUE::fixnum_from_usize(0);
+        let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
+        asm_comment!(asm, "write keyword bits to callee frame");
+        asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
+    }
+
     asm_comment!(asm, "switch to new SP register");
     let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
@@ -1355,8 +1369,11 @@ fn gen_send_without_block_direct(
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = params.lead_num as u32;
         let opt_num = params.opt_num as u32;
-        assert!(args.len() as u32 <= lead_num + opt_num);
-        let num_optionals_passed = args.len() as u32 - lead_num;
+        let keyword = params.keyword;
+        let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } } as u32;
+        let req_num = lead_num + kw_req_num;
+        assert!(args.len() as u32 <= req_num + opt_num);
+        let num_optionals_passed = args.len() as u32 - req_num;
         num_optionals_passed
     } else {
         0
