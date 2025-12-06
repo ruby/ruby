@@ -1045,6 +1045,13 @@ rb_node_sym_string_val(const NODE *node)
 }
 
 VALUE
+rb_node_sym_string_val2(const rb_node_t *node)
+{
+    rb_parser_string_t *str = RB_NODE_SYMBOL(node)->unescaped;
+    return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
 rb_node_dstr_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_DSTR(node)->string;

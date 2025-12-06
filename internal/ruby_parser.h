@@ -30,6 +30,7 @@ rb_parser_string_t *rb_parser_lex_get_str(struct parser_params *p, struct lex_po
 VALUE rb_node_str_string_val(const NODE *);
 VALUE rb_node_str_string_val2(const rb_node_t *);
 VALUE rb_node_sym_string_val(const NODE *);
+VALUE rb_node_sym_string_val2(const rb_node_t *);
 VALUE rb_node_dstr_string_val(const NODE *);
 VALUE rb_node_regx_string_val(const NODE *);
 VALUE rb_node_dregx_string_val(const NODE *);

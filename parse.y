@@ -1185,7 +1185,7 @@ static rb_node_dot3_t *rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, N
 static rb_node_errinfo_t *rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_defined_t *rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
-static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
+// static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
@@ -1293,7 +1293,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ERRINFO(loc) (NODE *)rb_node_errinfo_new(p,loc)
 #define NEW_DEFINED(e,loc,k_loc) (NODE *)rb_node_defined_new(p,e,loc, k_loc)
 #define NEW_POSTEXE(b,loc,k_loc,o_loc,c_loc) (NODE *)rb_node_postexe_new(p,b,loc,k_loc,o_loc,c_loc)
-#define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
+// #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
 #define NEW_ATTRASGN(r,m,a,loc) (NODE *)rb_node_attrasgn_new(p,r,m,a,loc)
 #define NEW_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (NODE *)rb_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
@@ -12196,14 +12196,14 @@ rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_a
     return n;
 }
 
-static rb_node_sym_t *
-rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
-{
-    rb_node_sym_t *n = NODE_NEWNODE(NODE_SYM, rb_node_sym_t, loc);
-    n->string = rb_str_to_parser_string(p, str);
+// static rb_node_sym_t *
+// rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
+// {
+//     rb_node_sym_t *n = NODE_NEWNODE(NODE_SYM, rb_node_sym_t, loc);
+//     n->string = rb_str_to_parser_string(p, str);
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_dsym_t *
 rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
