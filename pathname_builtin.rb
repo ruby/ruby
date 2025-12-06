@@ -200,9 +200,9 @@ class Pathname
 
   SAME_PATHS = if File::FNM_SYSCASE.nonzero?
     # Avoid #zero? here because #casecmp can return nil.
-    proc {|a, b| a.casecmp(b) == 0}
+    Ractor.shareable_proc {|a, b| a.casecmp(b) == 0}
   else
-    proc {|a, b| a == b}
+    Ractor.shareable_proc {|a, b| a == b}
   end
 
   attr_reader :path
