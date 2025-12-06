@@ -10,6 +10,9 @@
 #define RB_NODE_LIST_FOREACH(list, index, node) \
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
+#define RB_NODE_LIST_EMPTY_P(list) ((list)->size == 0)
+#define RB_NODE_LIST_LEN(list) ((list)->size)
+
 void rb_node_list_init(rb_node_list2_t *list);
 
 /**
