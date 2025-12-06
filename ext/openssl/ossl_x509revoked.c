@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509Rev(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509rev_type, 0)
-#define SetX509Rev(obj, rev) do { \
-    if (!(rev)) { \
-        ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (rev); \
-} while (0)
 #define GetX509Rev(obj, rev) do { \
     TypedData_Get_Struct((obj), X509_REVOKED, &ossl_x509rev_type, (rev)); \
     if (!(rev)) { \
@@ -44,6 +36,12 @@ static const rb_data_type_t ossl_x509rev_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509revoked_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509rev_type, NULL);
+}
+
 /*
  * PUBLIC
  */
@@ -53,12 +51,12 @@ ossl_x509revoked_new(const X509_REVOKED *rev)
     X509_REVOKED *new;
     VALUE obj;
 
-    obj = NewX509Rev(cX509Rev);
+    obj = ossl_x509revoked_alloc(cX509Rev);
     /* OpenSSL 1.1.1 takes a non-const pointer */
     new = X509_REVOKED_dup((X509_REVOKED *)rev);
     if (!new)
         ossl_raise(eX509RevError, "X509_REVOKED_dup");
-    SetX509Rev(obj, new);
+    RTYPEDDATA_DATA(obj) = new;
 
     return obj;
 }
@@ -76,28 +74,20 @@ DupX509RevokedPtr(VALUE obj)
     return new;
 }
 
-/*
- * PRIVATE
- */
-static VALUE
-ossl_x509revoked_alloc(VALUE klass)
-{
-    X509_REVOKED *rev;
-    VALUE obj;
-
-    obj = NewX509Rev(klass);
-    if (!(rev = X509_REVOKED_new())) {
-        ossl_raise(eX509RevError, NULL);
-    }
-    SetX509Rev(obj, rev);
-
-    return obj;
-}
-
 static VALUE
 ossl_x509revoked_initialize(int argc, VALUE *argv, VALUE self)
 {
-    /* EMPTY */
+    X509_REVOKED *rev;
+
+    if (argc != 0)
+        rb_warn("OpenSSL::X509::Revoked.new does not take any arguments");
+    ossl_want_uninitialized(self, &ossl_x509rev_type);
+
+    rev = X509_REVOKED_new();
+    if (!rev)
+        ossl_raise(eX509RevError, "X509_REVOKED_new");
+    RTYPEDDATA_DATA(self) = rev;
+
     return self;
 }
 
@@ -105,18 +95,15 @@ ossl_x509revoked_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509revoked_initialize_copy(VALUE self, VALUE other)
 {
-    X509_REVOKED *rev, *rev_other, *rev_new;
+    X509_REVOKED *rev_other, *rev_new;
 
-    rb_check_frozen(self);
-    GetX509Rev(self, rev);
+    ossl_want_uninitialized(self, &ossl_x509rev_type);
     GetX509Rev(other, rev_other);
 
     rev_new = X509_REVOKED_dup(rev_other);
     if (!rev_new)
         ossl_raise(eX509RevError, "X509_REVOKED_dup");
-
-    SetX509Rev(self, rev_new);
-    X509_REVOKED_free(rev);
+    RTYPEDDATA_DATA(self) = rev_new;
 
     return self;
 }
