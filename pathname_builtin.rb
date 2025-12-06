@@ -195,14 +195,12 @@ class Pathname
 
   # :stopdoc:
 
-  SAME_PATHS = if File::FNM_SYSCASE.nonzero?
+  if File::FNM_SYSCASE.nonzero?
     # Avoid #zero? here because #casecmp can return nil.
-    proc {|a, b| a.casecmp(b) == 0}
+    private def same_paths?(a, b) a.casecmp(b) == 0 end
   else
-    proc {|a, b| a == b}
+    private def same_paths?(a, b) a == b end
   end
-  SAME_PATHS.freeze
-  private_constant :SAME_PATHS
 
   attr_reader :path
   protected :path
@@ -836,12 +834,12 @@ class Pathname
       base_prefix, basename = r
       base_names.unshift basename if basename != '.'
     end
-    unless SAME_PATHS[dest_prefix, base_prefix]
+    unless same_paths?(dest_prefix, base_prefix)
       raise ArgumentError, "different prefix: #{dest_prefix.inspect} and #{base_directory.inspect}"
     end
     while !dest_names.empty? &&
           !base_names.empty? &&
-          SAME_PATHS[dest_names.first, base_names.first]
+          same_paths?(dest_names.first, base_names.first)
       dest_names.shift
       base_names.shift
     end
