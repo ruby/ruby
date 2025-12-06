@@ -1905,7 +1905,9 @@ object_id0(VALUE obj)
     RUBY_ASSERT(rb_shape_obj_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        RB_VM_LOCKING() {
+            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        }
     }
     return id;
 }

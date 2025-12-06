@@ -1116,6 +1116,23 @@ assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
   end.value
 RUBY
 
+# Inserting into the id2ref table should be Ractor-safe
+assert_equal 'ok', <<~'RUBY'
+  # Force all calls to Kernel#object_id to insert into the id2ref table
+  ObjectSpace._id2ref(Object.new.object_id)
+
+  10.times.map do
+    Ractor.new do
+      10_000.times do
+        a = Object.new
+        a.object_id
+      end
+    end
+  end.map(&:value)
+
+  :ok
+RUBY
+
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   class C
