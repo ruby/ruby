@@ -1,0 +1,27 @@
+prelude: |
+  # frozen_string_literal: true
+  # Benchmark for localtime cache performance in forked processes
+  # This specifically tests the macOS fork performance issue
+
+  require 'benchmark'
+
+  def benchmark_localtime(count)
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    count.times do |i|
+      Time.at(1609459200 + i % 10).localtime
+    end
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+  end
+
+benchmark:
+  # Direct localtime calls (parent process)
+  parent_process: |
+    1000.times { |i| Time.at(1609459200 + i % 10).localtime }
+
+  # Localtime calls after fork (where cache provides most benefit)
+  forked_process: |
+    pid = fork do
+      # Perform localtime calls in child process
+      1000.times { |i| Time.at(1609459200 + i % 10).localtime }
+    end
+    Process.wait(pid)
