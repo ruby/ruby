@@ -1864,6 +1864,9 @@ io_buffer_validate_type(size_t size, size_t offset)
 // :u64, :U64 | unsigned 64-bit integer.
 // :s64, :S64 | signed 64-bit integer.
 //
+// :u128, :U128 | unsigned 128-bit integer.
+// :s128, :S128 | signed 128-bit integer.
+//
 // :f32, :F32 | 32-bit floating point number.
 // :f64, :F64 | 64-bit floating point number.
 
@@ -1893,6 +1896,45 @@ ruby_swapf64(double value)
     union swapf64 swap = {.value = value};
     swap.integral = ruby_swap64(swap.integral);
     return swap.value;
+}
+
+// Structures and conversion functions are now in numeric.h/numeric.c
+// Unified swap function for 128-bit integers (works with both signed and unsigned)
+// Since both rb_uint128_t and rb_int128_t have the same memory layout,
+// we can use a union to make the swap function work with both types
+static inline rb_uint128_t
+ruby_swap128_uint(rb_uint128_t x)
+{
+    rb_uint128_t result;
+#ifdef HAVE_UINT128_T
+#if __has_builtin(__builtin_bswap128)
+    result.value = __builtin_bswap128(x.value);
+#else
+    // Manual byte swap for 128-bit integers
+    uint64_t low = (uint64_t)x.value;
+    uint64_t high = (uint64_t)(x.value >> 64);
+    low = ruby_swap64(low);
+    high = ruby_swap64(high);
+    result.value = ((uint128_t)low << 64) | high;
+#endif
+#else
+    // Fallback swap function using two 64-bit integers
+    // For big-endian data on little-endian host (or vice versa):
+    // 1. Swap bytes within each 64-bit part
+    // 2. Swap the order of the parts (since big-endian stores high first, little-endian stores low first)
+    result.parts.low = ruby_swap64(x.parts.high);
+    result.parts.high = ruby_swap64(x.parts.low);
+#endif
+    return result;
+}
+
+static inline rb_int128_t
+ruby_swap128_int(rb_int128_t x)
+{
+    // Cast to unsigned, swap, then cast back
+    rb_uint128_t u = *(rb_uint128_t*)&x;
+    rb_uint128_t swapped = ruby_swap128_uint(u);
+    return *(rb_int128_t*)&swapped;
 }
 
 #define IO_BUFFER_DECLARE_TYPE(name, type, endian, wrap, unwrap, swap) \
@@ -1941,6 +1983,11 @@ IO_BUFFER_DECLARE_TYPE(U64, uint64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_ULL2NUM, RB_NU
 IO_BUFFER_DECLARE_TYPE(s64, int64_t, RB_IO_BUFFER_LITTLE_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
 IO_BUFFER_DECLARE_TYPE(S64, int64_t, RB_IO_BUFFER_BIG_ENDIAN, RB_LL2NUM, RB_NUM2LL, ruby_swap64)
 
+IO_BUFFER_DECLARE_TYPE(u128, rb_uint128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
+IO_BUFFER_DECLARE_TYPE(U128, rb_uint128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_uint128_to_numeric, rb_numeric_to_uint128, ruby_swap128_uint)
+IO_BUFFER_DECLARE_TYPE(s128, rb_int128_t, RB_IO_BUFFER_LITTLE_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
+IO_BUFFER_DECLARE_TYPE(S128, rb_int128_t, RB_IO_BUFFER_BIG_ENDIAN, rb_int128_to_numeric, rb_numeric_to_int128, ruby_swap128_int)
+
 IO_BUFFER_DECLARE_TYPE(f32, float, RB_IO_BUFFER_LITTLE_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
 IO_BUFFER_DECLARE_TYPE(F32, float, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf32)
 IO_BUFFER_DECLARE_TYPE(f64, double, RB_IO_BUFFER_LITTLE_ENDIAN, DBL2NUM, NUM2DBL, ruby_swapf64)
@@ -1965,6 +2012,10 @@ io_buffer_buffer_type_size(ID buffer_type)
     IO_BUFFER_DATA_TYPE_SIZE(U64)
     IO_BUFFER_DATA_TYPE_SIZE(s64)
     IO_BUFFER_DATA_TYPE_SIZE(S64)
+    IO_BUFFER_DATA_TYPE_SIZE(u128)
+    IO_BUFFER_DATA_TYPE_SIZE(U128)
+    IO_BUFFER_DATA_TYPE_SIZE(s128)
+    IO_BUFFER_DATA_TYPE_SIZE(S128)
     IO_BUFFER_DATA_TYPE_SIZE(f32)
     IO_BUFFER_DATA_TYPE_SIZE(F32)
     IO_BUFFER_DATA_TYPE_SIZE(f64)
@@ -2021,6 +2072,11 @@ rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *of
     IO_BUFFER_GET_VALUE(s64)
     IO_BUFFER_GET_VALUE(S64)
 
+    IO_BUFFER_GET_VALUE(u128)
+    IO_BUFFER_GET_VALUE(U128)
+    IO_BUFFER_GET_VALUE(s128)
+    IO_BUFFER_GET_VALUE(S128)
+
     IO_BUFFER_GET_VALUE(f32)
     IO_BUFFER_GET_VALUE(F32)
     IO_BUFFER_GET_VALUE(f64)
@@ -2050,6 +2106,10 @@ rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *of
  *  * +:U64+: unsigned integer, 8 bytes, big-endian
  *  * +:s64+: signed integer, 8 bytes, little-endian
  *  * +:S64+: signed integer, 8 bytes, big-endian
+ *  * +:u128+: unsigned integer, 16 bytes, little-endian
+ *  * +:U128+: unsigned integer, 16 bytes, big-endian
+ *  * +:s128+: signed integer, 16 bytes, little-endian
+ *  * +:S128+: signed integer, 16 bytes, big-endian
  *  * +:f32+: float, 4 bytes, little-endian
  *  * +:F32+: float, 4 bytes, big-endian
  *  * +:f64+: double, 8 bytes, little-endian
@@ -2286,6 +2346,11 @@ rb_io_buffer_set_value(const void* base, size_t size, ID buffer_type, size_t *of
     IO_BUFFER_SET_VALUE(U64);
     IO_BUFFER_SET_VALUE(s64);
     IO_BUFFER_SET_VALUE(S64);
+
+    IO_BUFFER_SET_VALUE(u128);
+    IO_BUFFER_SET_VALUE(U128);
+    IO_BUFFER_SET_VALUE(s128);
+    IO_BUFFER_SET_VALUE(S128);
 
     IO_BUFFER_SET_VALUE(f32);
     IO_BUFFER_SET_VALUE(F32);
@@ -3858,6 +3923,11 @@ Init_IO_Buffer(void)
     IO_BUFFER_DEFINE_DATA_TYPE(U64);
     IO_BUFFER_DEFINE_DATA_TYPE(s64);
     IO_BUFFER_DEFINE_DATA_TYPE(S64);
+
+    IO_BUFFER_DEFINE_DATA_TYPE(u128);
+    IO_BUFFER_DEFINE_DATA_TYPE(U128);
+    IO_BUFFER_DEFINE_DATA_TYPE(s128);
+    IO_BUFFER_DEFINE_DATA_TYPE(S128);
 
     IO_BUFFER_DEFINE_DATA_TYPE(f32);
     IO_BUFFER_DEFINE_DATA_TYPE(F32);
