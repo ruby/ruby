@@ -5,14 +5,6 @@
 #include "ossl.h"
 
 #ifdef OSSL_USE_PROVIDER
-#define NewProvider(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_provider_type, 0)
-#define SetProvider(obj, provider) do { \
-    if (!(provider)) { \
-        ossl_raise(rb_eRuntimeError, "Provider wasn't initialized."); \
-    } \
-    RTYPEDDATA_DATA(obj) = (provider); \
-} while(0)
 #define GetProvider(obj, provider) do { \
     TypedData_Get_Struct((obj), OSSL_PROVIDER, &ossl_provider_type, (provider)); \
     if (!(provider)) { \
@@ -52,17 +44,16 @@ static VALUE eProviderError;
 static VALUE
 ossl_provider_s_load(VALUE klass, VALUE name)
 {
-    OSSL_PROVIDER *provider = NULL;
-    VALUE obj;
-
+    OSSL_PROVIDER *provider;
+    VALUE obj = TypedData_Wrap_Struct(klass, &ossl_provider_type, NULL);
     const char *provider_name_ptr = StringValueCStr(name);
 
     provider = OSSL_PROVIDER_load(NULL, provider_name_ptr);
     if (provider == NULL) {
-        ossl_raise(eProviderError, "Failed to load %s provider", provider_name_ptr);
+        ossl_raise(eProviderError, "Failed to load %"PRIsVALUE" provider",
+                   name);
     }
-    obj = NewProvider(klass);
-    SetProvider(obj, provider);
+    RTYPEDDATA_DATA(obj) = provider;
 
     return obj;
 }
