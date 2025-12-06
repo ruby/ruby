@@ -7,7 +7,10 @@ class TestTimeout < Test::Unit::TestCase
   def test_public_methods
     assert_equal [:timeout], Timeout.private_instance_methods(false)
     assert_equal [], Timeout.public_instance_methods(false)
+
     assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+
+    assert_equal [:Error, :ExitException, :VERSION], Timeout.constants.sort
   end
 
   def test_work_is_done_in_same_thread_as_caller
