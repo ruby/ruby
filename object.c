@@ -2238,8 +2238,10 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     obj = (*allocator)(klass);
 
-    if (rb_obj_class(obj) != rb_class_real(klass)) {
-        rb_raise(rb_eTypeError, "wrong instance allocation");
+    if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
+        if (rb_obj_class(obj) != rb_class_real(klass)) {
+            rb_raise(rb_eTypeError, "wrong instance allocation");
+        }
     }
     return obj;
 }
