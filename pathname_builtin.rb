@@ -201,6 +201,8 @@ class Pathname
   else
     proc {|a, b| a == b}
   end
+  SAME_PATHS.freeze
+  private_constant :SAME_PATHS
 
   attr_reader :path
   protected :path
@@ -307,6 +309,9 @@ class Pathname
     SEPARATOR_LIST = Regexp.quote File::SEPARATOR
     SEPARATOR_PAT = /#{SEPARATOR_LIST}/
   end
+  SEPARATOR_LIST.freeze
+  SEPARATOR_PAT.freeze
+  private_constant :SEPARATOR_LIST, :SEPARATOR_LIST
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
     # Regexp that matches an absolute path.
@@ -314,6 +319,7 @@ class Pathname
   else
     ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
   end
+  ABSOLUTE_PATH.freeze
   private_constant :ABSOLUTE_PATH
 
   # :startdoc:
