@@ -72,15 +72,17 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
 
-    if (rb_current_execution_context(false)) {
-        VM_ASSERT(!GET_RACTOR()->malloc_gc_disabled);
-        GET_RACTOR()->malloc_gc_disabled = true;
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        VM_ASSERT(!cr->malloc_gc_disabled);
+        cr->malloc_gc_disabled = true;
     }
 
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL) {
-        rb_ractor_t *cr = rb_current_ractor_raw(false);
-        r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
+    if (ec != NULL) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        r->sync.locked_by = rb_ractor_self(cr);
     }
 #endif
 
@@ -105,9 +107,11 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
     r->sync.locked_by = Qnil;
 #endif
 
-    if (rb_current_execution_context(false)) {
-        VM_ASSERT(GET_RACTOR()->malloc_gc_disabled);
-        GET_RACTOR()->malloc_gc_disabled = false;
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        VM_ASSERT(cr->malloc_gc_disabled);
+        cr->malloc_gc_disabled = false;
     }
 
     rb_native_mutex_unlock(&r->sync.lock);
