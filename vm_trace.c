@@ -103,44 +103,67 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 void rb_clear_attr_ccs(void);
 void rb_clear_bf_ccs(void);
 
-static void
-update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events)
+static bool iseq_trace_set_all_needed(rb_event_flag_t prev_events, rb_event_flag_t new_events)
 {
     rb_event_flag_t new_iseq_events = new_events & ISEQ_TRACE_EVENTS;
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
     bool first_time_iseq_events_p = new_iseq_events & ~enabled_iseq_events;
+    return first_time_iseq_events_p;
+
+}
+
+/* if c_call or c_return is activated */
+static bool clear_attr_ccs_needed(rb_event_flag_t prev_events, rb_event_flag_t new_events)
+{
     bool enable_c_call   = (prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL);
     bool enable_c_return = (prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN);
-    bool enable_call     = (prev_events & RUBY_EVENT_CALL)     == 0 && (new_events & RUBY_EVENT_CALL);
-    bool enable_return   = (prev_events & RUBY_EVENT_RETURN)   == 0 && (new_events & RUBY_EVENT_RETURN);
+    return enable_c_call || enable_c_return;
+}
 
-    // Modify ISEQs or CCs to enable tracing
-    if (first_time_iseq_events_p) {
-        // write all ISeqs only when new events are added for the first time
-        rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
-    }
-    // if c_call or c_return is activated
-    else if (enable_c_call || enable_c_return) {
-        rb_clear_attr_ccs();
-    }
-    else if (enable_call || enable_return) {
-        rb_clear_bf_ccs();
-    }
+/* If the events are internal events (e.g. gc hooks), it updates them globally for all ractors. Otherwise
+ * they are ractor local. You cannot listen to internal events through set_trace_func or TracePoint.
+ * Some ractor-local tracepoint events cause global level iseq changes, so are still called `global events`.
+ */
+static void
+update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_event_flag_t new_events)
+{
+    rb_event_flag_t new_iseq_events = new_events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
+    bool first_time_iseq_events_p = iseq_trace_set_all_needed(prev_events, new_events);
+    bool enable_call     = (prev_events & RUBY_EVENT_CALL)   == 0 && (new_events & RUBY_EVENT_CALL);
+    bool enable_return   = (prev_events & RUBY_EVENT_RETURN) == 0 && (new_events & RUBY_EVENT_RETURN);
+    bool clear_attr_ccs_p = clear_attr_ccs_needed(prev_events, new_events);
 
-    ruby_vm_event_flags = new_events;
-    ruby_vm_event_enabled_global_flags |= new_events;
-    rb_objspace_set_event_hook(new_events);
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
-    // Invalidate JIT code as needed
-    if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
-        // Invalidate all code when ISEQs are modified to use trace_* insns above.
-        // Also invalidate when enabling c_call or c_return because generated code
-        // never fires these events.
-        // Internal events fire inside C routines so don't need special handling.
-        // Do this after event flags updates so other ractors see updated vm events
-        // when they wake up.
-        rb_yjit_tracing_invalidate_all();
-        rb_zjit_tracing_invalidate_all();
+        // Modify ISEQs or CCs to enable tracing
+        if (first_time_iseq_events_p) {
+            // write all ISeqs only when new events are added for the first time
+            rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
+        }
+        else if (clear_attr_ccs_p) {
+            rb_clear_attr_ccs();
+        }
+        else if (enable_call || enable_return) {
+            rb_clear_bf_ccs();
+        }
+
+        ruby_vm_event_enabled_global_flags |= new_events;
+        if (new_events & RUBY_INTERNAL_EVENT_MASK) {
+            ruby_vm_event_flags |= new_events;
+            rb_objspace_set_event_hook(new_events);
+        }
+
+        // Invalidate JIT code as needed
+        if (first_time_iseq_events_p || clear_attr_ccs_p) {
+            // Invalidate all code when ISEQs are modified to use trace_* insns above.
+            // Also invalidate when enabling c_call or c_return because generated code
+            // never fires these events.
+            // Internal events fire inside C routines so don't need special handling.
+            rb_yjit_tracing_invalidate_all();
+            rb_zjit_tracing_invalidate_all();
+        }
     }
 }
 
@@ -177,8 +200,7 @@ hook_list_connect(VALUE list_owner, rb_hook_list_t *list, rb_event_hook_t *hook,
     list->events |= hook->events;
 
     if (global_p) {
-        /* global hooks are root objects at GC mark. */
-        update_global_event_hook(prev_events, list->events);
+        update_global_event_hooks(list, prev_events, list->events);
     }
     else {
         RB_OBJ_WRITTEN(list_owner, Qundef, hook->data);
@@ -256,7 +278,7 @@ clean_hooks(rb_hook_list_t *list)
         }
     }
     else {
-        update_global_event_hook(prev_events, list->events);
+        update_global_event_hooks(list, prev_events, list->events);
     }
 }
 
@@ -430,7 +452,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 
             ec->trace_arg = trace_arg;
             /* only global hooks */
-            exec_hooks_unprotected(ec, rb_ec_ractor_hooks(ec), trace_arg);
+            exec_hooks_unprotected(ec, hooks, trace_arg);
             ec->trace_arg = prev_trace_arg;
         }
     }
@@ -1189,7 +1211,7 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
         (*tp->func)(tpval, tp->data);
     }
     else {
-        if (tp->ractor == NULL || tp->ractor == GET_RACTOR()) {
+        if (tp->ractor == GET_RACTOR()) {
             rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
         }
     }
@@ -1260,42 +1282,45 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     VM_ASSERT(tp->local_target_set == Qfalse);
     RB_OBJ_WRITE(tpval, &tp->local_target_set, rb_obj_hide(rb_ident_hash_new()));
 
-    /* bmethod */
-    if (rb_obj_is_method(target)) {
-        rb_method_definition_t *def = (rb_method_definition_t *)rb_method_def(target);
-        if (def->type == VM_METHOD_TYPE_BMETHOD &&
-            (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
-            if (def->body.bmethod.hooks == NULL) {
-                def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
-                def->body.bmethod.hooks->is_local = true;
+    RB_VM_LOCKING() {
+        // Rewriting iseq instructions across ractors is not safe unless they are stopped.
+        rb_vm_barrier();
+
+        /* bmethod */
+        if (rb_obj_is_method(target)) {
+            rb_method_definition_t *def = (rb_method_definition_t *)rb_method_def(target);
+            if (def->type == VM_METHOD_TYPE_BMETHOD && (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
+                if (def->body.bmethod.hooks == NULL) {
+                    def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+                    def->body.bmethod.hooks->is_local = true;
+                }
+                rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
+                rb_hash_aset(tp->local_target_set, target, Qfalse); // Qfalse means not an iseq
+                target_bmethod = true;
+                n++;
             }
-            rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
-            rb_hash_aset(tp->local_target_set, target, Qfalse);
-            target_bmethod = true;
-
-            n++;
         }
-    }
 
-    /* iseq */
-    n += rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line, target_bmethod);
-    rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
+        /* iseq */
+        n += rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line, target_bmethod);
+        if (n > 0) {
+            rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
-    if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
-        rb_clear_bf_ccs();
+            if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
+                iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
+                rb_clear_bf_ccs();
+            }
+
+            rb_yjit_tracing_invalidate_all();
+            rb_zjit_tracing_invalidate_all();
+            ruby_vm_event_local_num++;
+            tp->tracing = 1;
+        }
     }
 
     if (n == 0) {
         rb_raise(rb_eArgError, "can not enable any hooks");
     }
-
-    rb_yjit_tracing_invalidate_all();
-    rb_zjit_tracing_invalidate_all();
-
-    ruby_vm_event_local_num++;
-
-    tp->tracing = 1;
 
     return Qnil;
 }
@@ -1303,6 +1328,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
 static int
 disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
 {
+    ASSERT_vm_locking_with_barrier();
     if (iseq_p) {
         rb_iseq_remove_local_tracepoint_recursively((rb_iseq_t *)target, tpval);
     }
@@ -1328,10 +1354,14 @@ rb_tracepoint_disable(VALUE tpval)
 
     tp = tpptr(tpval);
 
-    if (tp->local_target_set) {
-        rb_hash_foreach(tp->local_target_set, disable_local_event_iseq_i, tpval);
-        RB_OBJ_WRITE(tpval, &tp->local_target_set, Qfalse);
-        ruby_vm_event_local_num--;
+    if (RTEST(tp->local_target_set)) {
+        RB_VM_LOCKING() {
+            rb_vm_barrier();
+
+            rb_hash_foreach(tp->local_target_set, disable_local_event_iseq_i, tpval);
+            RB_OBJ_WRITE(tpval, &tp->local_target_set, Qfalse);
+            ruby_vm_event_local_num--;
+        }
     }
     else {
         if (tp->target_th) {
@@ -1346,6 +1376,7 @@ rb_tracepoint_disable(VALUE tpval)
     return Qundef;
 }
 
+// connect a local tracepoint to the hook list for the current ractor
 void
 rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line)
 {
@@ -1468,7 +1499,7 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
     TypedData_Get_Struct(tpval, rb_tp_t, &tp_data_type, tp);
 
     RB_OBJ_WRITE(tpval, &tp->proc, proc);
-    tp->ractor = rb_ractor_shareable_p(proc) ? NULL : GET_RACTOR();
+    tp->ractor = GET_RACTOR();
     tp->func = func;
     tp->data = data;
     tp->events = events;
@@ -1484,9 +1515,6 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
 
     if (RTEST(target_thval)) {
         target_th = rb_thread_ptr(target_thval);
-        /* TODO: Test it!
-         * Warning: This function is not tested.
-         */
     }
     return tracepoint_new(rb_cTracePoint, target_th, events, func, data, Qundef);
 }

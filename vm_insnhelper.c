@@ -4809,7 +4809,7 @@ NOINLINE(static VALUE vm_call_optimized(rb_execution_context_t *ec, rb_control_f
                                         const struct rb_callinfo *ci, const struct rb_callcache *cc));
 
 #define VM_CALL_METHOD_ATTR(var, func, nohook) \
-    if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
+    if (UNLIKELY(GET_RACTOR()->pub.hooks.events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
                         vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
         var = func; \
@@ -7238,9 +7238,11 @@ static void
 vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
     const VALUE *pc = reg_cfp->pc;
-    rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
-    rb_event_flag_t global_events = enabled_flags;
+    rb_ractor_t *r = rb_ec_ractor_ptr(ec);
+    rb_event_flag_t enabled_flags = r->pub.hooks.events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t ractor_events = enabled_flags;
 
+    // no ractor-local events OR targeted events
     if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
         return;
     }
@@ -7291,7 +7293,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
             /* Note, not considering iseq local events here since the same
              * iseq could be used in multiple bmethods. */
-            rb_event_flag_t bmethod_events = global_events | bmethod_local_events;
+            rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
                 ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
