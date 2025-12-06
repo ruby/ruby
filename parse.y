@@ -6385,11 +6385,7 @@ f_args		: f_arg ',' f_opt_arg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
 
 args_forward	: tBDOT3
                     {
-#ifdef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-                        $$ = 0;
-#else
                         $$ = idFWD_KWREST;
-#endif
                     /*% ripper: args_forward! %*/
                     }
                 ;
@@ -14434,11 +14430,7 @@ new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_
 
     args->opt_args       = opt_args;
 
-#ifdef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-    args->ruby2_keywords = args->forwarding;
-#else
     args->ruby2_keywords = 0;
-#endif
 
     nd_set_loc(RNODE(tail), loc);
 
@@ -15049,9 +15041,7 @@ static void
 add_forwarding_args(struct parser_params *p)
 {
     arg_var(p, idFWD_REST);
-#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     arg_var(p, idFWD_KWREST);
-#endif
     arg_var(p, idFWD_BLOCK);
     arg_var(p, idFWD_ALL);
 }
@@ -15094,15 +15084,11 @@ static NODE *
 new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
 {
     NODE *rest = NEW_LVAR(idFWD_REST, loc);
-#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
-#endif
     rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), argsloc, &NULL_LOC);
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc, &NULL_LOC);
     block->forwarding = TRUE;
-#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     args = arg_append(p, args, new_hash(p, kwrest, loc), argsloc);
-#endif
     return arg_blk_pass(args, block);
 }
 
