@@ -1888,7 +1888,7 @@ strio_truncate(VALUE self, VALUE len)
  *   external_encoding -> encoding or nil
  *
  * Returns an Encoding object that represents the encoding of the string;
- * see {Encoding}[rdoc-ref:Encoding]:
+ * see {Encodings}[rdoc-ref:StringIO@Encodings]:
  *
  *   strio = StringIO.new('foo')
  *   strio.external_encoding # => #<Encoding:UTF-8>
