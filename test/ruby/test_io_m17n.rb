@@ -2819,4 +2819,59 @@ EOT
       end
     end
   end
+
+  def test_read_long_and_eof
+    str1 = "a" * 64
+    eof = "\x1A"
+    str2 = "b" * 8192
+    with_tmpdir {
+      generate_file("tmp", str1 + eof + str2)
+      open("tmp", "r") do |f|
+        f.ungetbyte(f.getbyte) # allcate rbuf
+        assert_equal(str1, f.read)
+        assert_equal(eof, f.read(1))
+        assert_equal(str2, f.read)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_pipe_read_crlf_end_of_rbuf
+    str1 = "a" * 64
+    eof = "\x1A"
+    str2 = "b" * 8192
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-"EOS"
+          STDOUT.write #{str1.dump} + #{eof.dump} + #{str2.dump}
+          STDOUT.flush
+          STDOUT.close
+        EOS
+        in_w.close
+        Process.wait pid
+        out_r.seek(0, :CUR) rescue nil
+        out_r.set_encoding("us-ascii", "us-ascii", textmode: true, universal_newline: false, newline: :crlf)
+        out_r.ungetbyte(out_r.getbyte) # allcate rbuf
+        assert_equal(str1, out_r.read)
+        assert_equal(eof, out_r.read(1))
+        assert_equal(str2, out_r.read)
+        out_r.close
+      end
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_crlf_end_of_rbuf
+    with_tmpdir {
+      str = "\r\n" * 4097
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("\n" * 4095, 4095.times.map { f.getc }.join)
+        assert_equal("\n", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
