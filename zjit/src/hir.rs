@@ -6239,12 +6239,29 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
 
+    // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.
+    let kw_bits_idx: Option<usize> = if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        if !keyword.is_null() {
+            Some(unsafe { (*keyword).bits_start } as usize)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
             // Omitted optionals are locals, so they start as nils before their code run
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+        } else if Some(local_idx) == kw_bits_idx {
+            // We currently only support required keywords so the unspecified bits will always be zero.
+            // TODO: Make this a parameter when we start writing anything other than zero.
+            let unspecified_bits = VALUE::fixnum_from_usize(0);
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(unspecified_bits) }));
         } else if local_idx < param_size {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {

@@ -384,9 +384,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::TooManyArgsForLir),
-        // Give up SendWithoutBlockDirect for 5+ args (plus 1 arg for keyword bits) since asm.ccall() doesn't support it.
-        Insn::SendWithoutBlockDirect { cd, state, args, iseq, .. } if args.len() + 2 > C_ARG_OPNDS.len() && unsafe { rb_get_iseq_flags_has_kw(*iseq) } => // +1 for self +1 for keyword bits
-            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::TooManyArgsForLir),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1367,13 +1364,6 @@ fn gen_send_without_block_direct(
     // Set up arguments
     let mut c_args = vec![recv];
     c_args.extend(&args);
-
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
-        // Currently we only get to this point if all the accepted keyword args are required.
-        let unspecified_bits = 0;
-        // For each optional keyword that isn't passed we would `unspecified_bits |= (0x01 << idx)`.
-        c_args.push(VALUE::fixnum_from_usize(unspecified_bits).into());
-    }
 
     let params = unsafe { iseq.params() };
     let num_optionals_passed = if params.flags.has_opt() != 0 {
