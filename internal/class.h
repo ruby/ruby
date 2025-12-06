@@ -658,8 +658,8 @@ RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined)
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
-    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-    if (RCLASS_SINGLETON_P(klass) || RB_TYPE_P(klass, T_ICLASS)) {
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
         return 0;
     }
     return RCLASS_EXT_PRIME(klass)->as.class.allocator;

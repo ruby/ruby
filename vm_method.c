@@ -1635,10 +1635,20 @@ rb_undef_alloc_func(VALUE klass)
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
-    Check_Type(klass, T_CLASS);
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-    for (; klass; klass = RCLASS_SUPER(klass)) {
-        rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    if (allocator == UNDEF_ALLOC_FUNC) return 0;
+    if (allocator) return allocator;
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        klass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+        allocator = RCLASS_ALLOCATOR(klass);
         if (allocator == UNDEF_ALLOC_FUNC) break;
         if (allocator) return allocator;
     }
