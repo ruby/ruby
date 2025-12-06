@@ -9496,6 +9496,7 @@ Init_date_core(void)
     sym_zone = ID2SYM(rb_intern_const("zone"));
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
+    rb_gc_register_mark_object(half_days_in_day);
 
 #if (LONG_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
     day_in_nanoseconds = LONG2NUM((long)DAY_IN_SECONDS *
@@ -9507,8 +9508,6 @@ Init_date_core(void)
     day_in_nanoseconds = f_mul(INT2FIX(DAY_IN_SECONDS),
 			       INT2FIX(SECOND_IN_NANOSECONDS));
 #endif
-
-    rb_gc_register_mark_object(half_days_in_day);
     rb_gc_register_mark_object(day_in_nanoseconds);
 
     positive_inf = +INFINITY;
