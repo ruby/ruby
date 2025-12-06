@@ -11321,6 +11321,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_GLOBAL_VARIABLE_WRITE_NODE: {
+        CHECK(COMPILE(ret, "lvalue", RB_NODE_GLOBAL_VARIABLE_WRITE(node)->value));
+
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN1(ret, node, setglobal, ID2SYM(RB_NODE_GLOBAL_VARIABLE_WRITE(node)->name));
+        break;
+      }
       case RB_INSTANCE_VARIABLE_WRITE_NODE: {
         CHECK(COMPILE(ret, "lvalue", RB_NODE_INSTANCE_VARIABLE_WRITE(node)->value));
         if (!popped) {
@@ -11342,6 +11351,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_GLOBAL_VARIABLE_READ_NODE: {
+        ADD_INSN1(ret, node, getglobal, ID2SYM(RB_NODE_GLOBAL_VARIABLE_READ(node)->name));
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
       case RB_INSTANCE_VARIABLE_READ_NODE: {
         debugi("name", RB_NODE_INSTANCE_VARIABLE_READ(node)->name);
         if (!popped) {
