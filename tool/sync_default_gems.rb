@@ -266,6 +266,7 @@ module SyncDefaultGems
       ["ext/stringio", "ext/stringio"],
       ["test/stringio", "test/stringio"],
       ["stringio.gemspec", "ext/stringio/stringio.gemspec"],
+      ["doc/stringio", "doc/stringio"],
     ], exclude: [
       "ext/stringio/README.md",
     ]),
