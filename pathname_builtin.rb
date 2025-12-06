@@ -212,17 +212,7 @@ class Pathname
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    unless String === path
-      path = path.to_path if path.respond_to? :to_path
-      path = path.to_str if path.respond_to? :to_str
-      raise TypeError, "Pathname.new requires a String, #to_path or #to_str" unless String === path
-    end
-
-    if path.include?("\0")
-      raise ArgumentError, "pathname contains \\0: #{path.inspect}"
-    end
-
-    @path = path.dup
+    @path = File.path(path).dup
   end
 
   def freeze
