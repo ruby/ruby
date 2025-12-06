@@ -10,7 +10,11 @@ static VALUE build_exception(VALUE self, VALUE klass, VALUE mesg)
 {
     VALUE e = rb_obj_alloc(klass);
 
+#ifdef TRUFFLERUBY
+    rb_exc_set_message(e, mesg);
+#else
     rb_iv_set(e, "mesg", mesg);
+#endif
 
     return e;
 }
@@ -24,12 +28,9 @@ static VALUE path2class(VALUE self, VALUE path)
     return rb_path_to_class(path);
 }
 
-static VALUE init_struct(VALUE self, VALUE data, VALUE attrs)
+static VALUE init_data(VALUE self, VALUE data, VALUE values)
 {
-    VALUE args = rb_ary_new2(1);
-    rb_ary_push(args, attrs);
-    rb_struct_initialize(data, args);
-
+    rb_struct_initialize(data, values);
     return data;
 }
 
@@ -42,7 +43,7 @@ void Init_psych_to_ruby(void)
     VALUE visitor   = rb_define_class_under(visitors, "Visitor", rb_cObject);
     cPsychVisitorsToRuby = rb_define_class_under(visitors, "ToRuby", visitor);
 
-    rb_define_private_method(cPsychVisitorsToRuby, "init_struct", init_struct, 2);
+    rb_define_private_method(cPsychVisitorsToRuby, "init_data", init_data, 2);
     rb_define_private_method(cPsychVisitorsToRuby, "build_exception", build_exception, 2);
     rb_define_private_method(class_loader, "path2class", path2class, 1);
 }

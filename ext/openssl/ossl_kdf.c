@@ -41,10 +41,10 @@ kdf_pbkdf2_hmac(int argc, VALUE *argv, VALUE self)
     const EVP_MD *md;
 
     if (!kwargs_ids[0]) {
-	kwargs_ids[0] = rb_intern_const("salt");
-	kwargs_ids[1] = rb_intern_const("iterations");
-	kwargs_ids[2] = rb_intern_const("length");
-	kwargs_ids[3] = rb_intern_const("hash");
+        kwargs_ids[0] = rb_intern_const("salt");
+        kwargs_ids[1] = rb_intern_const("iterations");
+        kwargs_ids[2] = rb_intern_const("length");
+        kwargs_ids[3] = rb_intern_const("hash");
     }
     rb_scan_args(argc, argv, "1:", &pass, &opts);
     rb_get_kwargs(opts, kwargs_ids, 4, 0, kwargs);
@@ -57,10 +57,10 @@ kdf_pbkdf2_hmac(int argc, VALUE *argv, VALUE self)
 
     str = rb_str_new(0, len);
     if (!PKCS5_PBKDF2_HMAC(RSTRING_PTR(pass), RSTRING_LENINT(pass),
-			   (unsigned char *)RSTRING_PTR(salt),
-			   RSTRING_LENINT(salt), iters, md, len,
-			   (unsigned char *)RSTRING_PTR(str)))
-	ossl_raise(eKDF, "PKCS5_PBKDF2_HMAC");
+                           (unsigned char *)RSTRING_PTR(salt),
+                           RSTRING_LENINT(salt), iters, md, len,
+                           (unsigned char *)RSTRING_PTR(str)))
+        ossl_raise(eKDF, "PKCS5_PBKDF2_HMAC");
 
     return str;
 }
@@ -107,11 +107,11 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
     uint64_t N, r, p, maxmem;
 
     if (!kwargs_ids[0]) {
-	kwargs_ids[0] = rb_intern_const("salt");
-	kwargs_ids[1] = rb_intern_const("N");
-	kwargs_ids[2] = rb_intern_const("r");
-	kwargs_ids[3] = rb_intern_const("p");
-	kwargs_ids[4] = rb_intern_const("length");
+        kwargs_ids[0] = rb_intern_const("salt");
+        kwargs_ids[1] = rb_intern_const("N");
+        kwargs_ids[2] = rb_intern_const("r");
+        kwargs_ids[3] = rb_intern_const("p");
+        kwargs_ids[4] = rb_intern_const("length");
     }
     rb_scan_args(argc, argv, "1:", &pass, &opts);
     rb_get_kwargs(opts, kwargs_ids, 5, 0, kwargs);
@@ -131,9 +131,9 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
 
     str = rb_str_new(0, len);
     if (!EVP_PBE_scrypt(RSTRING_PTR(pass), RSTRING_LEN(pass),
-			(unsigned char *)RSTRING_PTR(salt), RSTRING_LEN(salt),
-			N, r, p, maxmem, (unsigned char *)RSTRING_PTR(str), len))
-	ossl_raise(eKDF, "EVP_PBE_scrypt");
+                        (unsigned char *)RSTRING_PTR(salt), RSTRING_LEN(salt),
+                        N, r, p, maxmem, (unsigned char *)RSTRING_PTR(str), len))
+        ossl_raise(eKDF, "EVP_PBE_scrypt");
 
     return str;
 }
@@ -180,10 +180,10 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
     EVP_PKEY_CTX *pctx;
 
     if (!kwargs_ids[0]) {
-	kwargs_ids[0] = rb_intern_const("salt");
-	kwargs_ids[1] = rb_intern_const("info");
-	kwargs_ids[2] = rb_intern_const("length");
-	kwargs_ids[3] = rb_intern_const("hash");
+        kwargs_ids[0] = rb_intern_const("salt");
+        kwargs_ids[1] = rb_intern_const("info");
+        kwargs_ids[2] = rb_intern_const("length");
+        kwargs_ids[3] = rb_intern_const("hash");
     }
     rb_scan_args(argc, argv, "1:", &ikm, &opts);
     rb_get_kwargs(opts, kwargs_ids, 4, 0, kwargs);
@@ -196,39 +196,39 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
     infolen = RSTRING_LENINT(info);
     len = (size_t)NUM2LONG(kwargs[2]);
     if (len > LONG_MAX)
-	rb_raise(rb_eArgError, "length must be non-negative");
+        rb_raise(rb_eArgError, "length must be non-negative");
     md = ossl_evp_md_fetch(kwargs[3], &md_holder);
 
     str = rb_str_new(NULL, (long)len);
     pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     if (!pctx)
-	ossl_raise(eKDF, "EVP_PKEY_CTX_new_id");
+        ossl_raise(eKDF, "EVP_PKEY_CTX_new_id");
     if (EVP_PKEY_derive_init(pctx) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_derive_init");
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_derive_init");
     }
     if (EVP_PKEY_CTX_set_hkdf_md(pctx, md) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_md");
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_md");
     }
     if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, (unsigned char *)RSTRING_PTR(salt),
-				    saltlen) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_salt");
+                                    saltlen) <= 0) {
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_salt");
     }
     if (EVP_PKEY_CTX_set1_hkdf_key(pctx, (unsigned char *)RSTRING_PTR(ikm),
-				   ikmlen) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_key");
+                                   ikmlen) <= 0) {
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_key");
     }
     if (EVP_PKEY_CTX_add1_hkdf_info(pctx, (unsigned char *)RSTRING_PTR(info),
-				    infolen) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_info");
+                                    infolen) <= 0) {
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_info");
     }
     if (EVP_PKEY_derive(pctx, (unsigned char *)RSTRING_PTR(str), &len) <= 0) {
-	EVP_PKEY_CTX_free(pctx);
-	ossl_raise(eKDF, "EVP_PKEY_derive");
+        EVP_PKEY_CTX_free(pctx);
+        ossl_raise(eKDF, "EVP_PKEY_derive");
     }
     rb_str_set_len(str, (long)len);
     EVP_PKEY_CTX_free(pctx);
@@ -239,11 +239,6 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
 void
 Init_ossl_kdf(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * Document-module: OpenSSL::KDF
      *

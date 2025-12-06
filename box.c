@@ -149,6 +149,7 @@ box_entry_initialize(rb_box_t *box)
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
+    box->classext_cow_classes = st_init_numtable();
 
     box->is_user = true;
     box->is_optional = true;
@@ -199,6 +200,9 @@ rb_box_entry_mark(void *ptr)
     }
     rb_gc_mark(box->ruby_dln_libmap);
     rb_gc_mark(box->gvar_tbl);
+    if (box->classext_cow_classes) {
+        rb_mark_tbl(box->classext_cow_classes);
+    }
 }
 
 static int
@@ -233,9 +237,36 @@ box_root_free(void *ptr)
     }
 }
 
+static int
+free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+{
+    rb_classext_t *ext;
+    VALUE obj = (VALUE)obj_value;
+    const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_class_classext_free(obj, ext, false);
+    }
+    else if (RB_TYPE_P(obj, T_ICLASS)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_iclass_classext_free(obj, ext, false);
+    }
+    else {
+        rb_bug("Invalid type of object in classext_cow_classes: %s", rb_type_str(BUILTIN_TYPE(obj)));
+    }
+    return ST_CONTINUE;
+}
+
 static void
 box_entry_free(void *ptr)
 {
+    const rb_box_t *box = (const rb_box_t *)ptr;
+
+    if (box->classext_cow_classes) {
+        st_foreach(box->classext_cow_classes, free_classext_for_box, (st_data_t)box);
+    }
+
     box_root_free(ptr);
     xfree(ptr);
 }
@@ -250,7 +281,7 @@ box_entry_memsize(const void *ptr)
 }
 
 const rb_data_type_t rb_box_data_type = {
-    "Namespace::Entry",
+    "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
         box_entry_free,
@@ -261,7 +292,7 @@ const rb_data_type_t rb_box_data_type = {
 };
 
 const rb_data_type_t rb_root_box_data_type = {
-    "Namespace::Root",
+    "Ruby::Box::Root",
     {
         rb_box_entry_mark,
         box_root_free,
@@ -514,16 +545,22 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *s
     switch (copy_retvalue) {
       case 1:
         snprintf(message, size, "can't open the extension path: %s", src_path);
+        break;
       case 2:
         snprintf(message, size, "can't open the file to write: %s", dst_path);
+        break;
       case 3:
         snprintf(message, size, "failed to read the extension path: %s", src_path);
+        break;
       case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
+        break;
       case 5:
         snprintf(message, size, "failed to stat the extension path to copy permissions: %s", src_path);
+        break;
       case 6:
         snprintf(message, size, "failed to set permissions to the copied extension path: %s", dst_path);
+        break;
       default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
@@ -744,6 +781,7 @@ initialize_root_box(void)
 
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
+    root->classext_cow_classes = NULL; // classext CoW never happen on the root box
 
     vm->root_box = root;
 
@@ -796,7 +834,7 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/box.md for known issues, etc.");
+                         "See doc/language/box.md for known issues, etc.");
         box_experimental_warned = 1;
     }
 
@@ -1047,9 +1085,8 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
 /*
  *  Document-class: Ruby::Box
  *
- *  Ruby::Box is designed to provide separated spaces in a Ruby
- *  process, to isolate applications and libraries.
- *  See {Ruby::Box}[rdoc-ref:box.md].
+ *  :markup: markdown
+ *  :include: doc/language/box.md
  */
 void
 Init_Box(void)
@@ -1057,7 +1094,7 @@ Init_Box(void)
     tmp_dir = system_tmpdir();
     tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
-    VALUE mRuby = rb_path2class("Ruby");
+    VALUE mRuby = rb_define_module("Ruby");
 
     rb_cBox = rb_define_class_under(mRuby, "Box", rb_cModule);
     rb_define_method(rb_cBox, "initialize", box_initialize, 0);

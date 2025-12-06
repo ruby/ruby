@@ -510,8 +510,6 @@ extern ID tcp_fast_fallback;
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 #endif

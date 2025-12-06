@@ -7,6 +7,7 @@
 #
 # See Gem::OptionParser for documentation.
 #
+require 'set' unless defined?(Set)
 
 #--
 # == Developer Documentation (not for RDoc output)
@@ -142,7 +143,7 @@
 # Used:
 #
 #   $ ruby optparse-test.rb -r
-#   optparse-test.rb:9:in `<main>': missing argument: -r (Gem::OptionParser::MissingArgument)
+#   optparse-test.rb:9:in '<main>': missing argument: -r (Gem::OptionParser::MissingArgument)
 #   $ ruby optparse-test.rb -r my-library
 #   You required my-library!
 #
@@ -235,7 +236,7 @@
 #   $ ruby optparse-test.rb --user 2
 #   #<struct User id=2, name="Gandalf">
 #   $ ruby optparse-test.rb --user 3
-#   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
+#   optparse-test.rb:15:in 'block in find_user': No User Found for id 3 (RuntimeError)
 #
 # === Store options to a Hash
 #
@@ -425,7 +426,8 @@
 #
 class Gem::OptionParser
   # The version string
-  Gem::OptionParser::Version = "0.6.0"
+  VERSION = "0.8.0"
+  Version = VERSION # for compatibility
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -459,6 +461,10 @@ class Gem::OptionParser
         candidates << [k, v, kn]
       end
       candidates
+    end
+
+    def self.completable?(key)
+      String.try_convert(key) or defined?(key.id2name)
     end
 
     def candidate(key, icase = false, pat = nil, &_)
@@ -496,14 +502,12 @@ class Gem::OptionParser
     end
   end
 
-
   #
   # Map from option/keyword string to object with completion.
   #
   class OptionMap < Hash
     include Completion
   end
-
 
   #
   # Individual switch class.  Not important to the user.
@@ -546,11 +550,11 @@ class Gem::OptionParser
 
     def initialize(pattern = nil, conv = nil,
                    short = nil, long = nil, arg = nil,
-                   desc = ([] if short or long), block = nil, &_block)
+                   desc = ([] if short or long), block = nil, values = nil, &_block)
       raise if Array === pattern
       block ||= _block
-      @pattern, @conv, @short, @long, @arg, @desc, @block =
-        pattern, conv, short, long, arg, desc, block
+      @pattern, @conv, @short, @long, @arg, @desc, @block, @values =
+        pattern, conv, short, long, arg, desc, block, values
     end
 
     #
@@ -583,10 +587,14 @@ class Gem::OptionParser
     # exception.
     #
     def conv_arg(arg, val = []) # :nodoc:
+      v, = *val
       if conv
         val = conv.call(*val)
       else
         val = proc {|v| v}.call(*val)
+      end
+      if @values
+        @values.include?(val) or raise InvalidArgument, v
       end
       return arg, block, val
     end
@@ -668,7 +676,7 @@ class Gem::OptionParser
 
       (sopts+lopts).each do |opt|
         # "(-x -c -r)-l[left justify]"
-        if /^--\[no-\](.+)$/ =~ opt
+        if /\A--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
           yield("--no-#{o}", desc.join(""))
@@ -1032,7 +1040,6 @@ class Gem::OptionParser
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
-
   COMPSYS_HEADER = <<'XXX'      # :nodoc:
 
 typeset -A opt_args
@@ -1051,16 +1058,16 @@ XXX
   end
 
   def help_exit
-    if STDOUT.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
+    if $stdout.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
       less = ENV["LESS"]
-      args = [{"LESS" => "#{!less || less.empty? ? '-' : less}Fe"}, pager, "w"]
+      args = [{"LESS" => "#{less} -Fe"}, pager, "w"]
       print = proc do |f|
         f.puts help
       rescue Errno::EPIPE
         # pager terminated
       end
       if Process.respond_to?(:fork) and false
-        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call(STDOUT)}
+        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call($stdout)}
         # unreachable
       end
       IO.popen(*args, &print)
@@ -1102,7 +1109,7 @@ XXX
   #
   Officious['*-completion-zsh'] = proc do |parser|
     Switch::OptionalArgument.new do |arg|
-      parser.compsys(STDOUT, arg)
+      parser.compsys($stdout, arg)
       exit
     end
   end
@@ -1288,7 +1295,15 @@ XXX
   # to $0.
   #
   def program_name
-    @program_name || File.basename($0, '.*')
+    @program_name || strip_ext(File.basename($0))
+  end
+
+  private def strip_ext(name)  # :nodoc:
+    exts = /#{
+      require "rbconfig"
+      Regexp.union(*RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split(" "))
+    }\z/o
+    name.sub(exts, "")
   end
 
   # for experimental cascading :-)
@@ -1467,6 +1482,7 @@ XXX
     klass = nil
     q, a = nil
     has_arg = false
+    values = nil
 
     opts.each do |o|
       # argument class
@@ -1480,7 +1496,7 @@ XXX
       end
 
       # directly specified pattern(any object possible to match)
-      if (!(String === o || Symbol === o)) and o.respond_to?(:match)
+      if !Completion.completable?(o) and o.respond_to?(:match)
         pattern = notwice(o, pattern, 'pattern')
         if pattern.respond_to?(:convert)
           conv = pattern.method(:convert).to_proc
@@ -1494,7 +1510,12 @@ XXX
       case o
       when Proc, Method
         block = notwice(o, block, 'block')
-      when Array, Hash
+      when Array, Hash, Set
+        if Array === o
+          o, v = o.partition {|v,| Completion.completable?(v)}
+          values = notwice(v, values, 'values') unless v.empty?
+          next if o.empty?
+        end
         case pattern
         when CompletingHash
         when nil
@@ -1504,11 +1525,13 @@ XXX
           raise ArgumentError, "argument pattern given twice"
         end
         o.each {|pat, *v| pattern[pat] = v.fetch(0) {pat}}
+      when Range
+        values = notwice(o, values, 'values')
       when Module
         raise ArgumentError, "unsupported argument type: #{o}", ParseError.filter_backtrace(caller(4))
       when *ArgumentStyle.keys
         style = notwice(ArgumentStyle[o], style, 'style')
-      when /^--no-([^\[\]=\s]*)(.+)?/
+      when /\A--no-([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         not_pattern, not_conv = search(:atype, o) unless not_style
@@ -1519,7 +1542,7 @@ XXX
         (q = q.downcase).tr!('_', '-')
         long << "no-#{q}"
         nolong << q
-      when /^--\[no-\]([^\[\]=\s]*)(.+)?/
+      when /\A--\[no-\]([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         if a
@@ -1532,7 +1555,7 @@ XXX
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
         not_style = Switch::NoArgument
         nolong << "no-#{o}"
-      when /^--([^\[\]=\s]*)(.+)?/
+      when /\A--([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1542,7 +1565,7 @@ XXX
         ldesc << "--#{q}"
         (o = q.downcase).tr!('_', '-')
         long << o
-      when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
+      when /\A-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
         q, a = $1, $2
         o = notwice(Object, klass, 'type')
         if a
@@ -1553,7 +1576,7 @@ XXX
         end
         sdesc << "-#{q}"
         short << Regexp.new(q)
-      when /^-(.)(.+)?/
+      when /\A-(.)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1562,7 +1585,7 @@ XXX
         end
         sdesc << "-#{q}"
         short << q
-      when /^=/
+      when /\A=/
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
@@ -1571,12 +1594,18 @@ XXX
     end
 
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
+    if Range === values and klass
+      unless (!values.begin or klass === values.begin) and
+            (!values.end or klass === values.end)
+        raise ArgumentError, "range does not match class"
+      end
+    end
     if !(short.empty? and long.empty?)
       if has_arg and default_style == Switch::NoArgument
         default_style = Switch::RequiredArgument
       end
       s = (style || default_style).new(pattern || default_pattern,
-                                       conv, sdesc, ldesc, arg, desc, block)
+                                       conv, sdesc, ldesc, arg, desc, block, values)
     elsif !block
       if style or pattern
         raise ArgumentError, "no switch given", ParseError.filter_backtrace(caller)
@@ -1585,7 +1614,7 @@ XXX
     else
       short << pattern
       s = (style || default_style).new(pattern,
-                                       conv, nil, nil, arg, desc, block)
+                                       conv, nil, nil, arg, desc, block, values)
     end
     return s, short, long,
       (not_style.new(not_pattern, not_conv, sdesc, ldesc, nil, desc, block) if not_style),
@@ -1827,7 +1856,7 @@ XXX
   #
   def permute!(argv = default_argv, **keywords)
     nonopts = []
-    order!(argv, **keywords, &nonopts.method(:<<))
+    order!(argv, **keywords) {|nonopt| nonopts << nonopt}
     argv[0, 0] = nonopts
     argv
   end
@@ -1880,13 +1909,16 @@ XXX
     single_options, *long_options = *args
 
     result = {}
+    setter = (symbolize_names ?
+                ->(name, val) {result[name.to_sym] = val}
+              : ->(name, val) {result[name] = val})
 
     single_options.scan(/(.)(:)?/) do |opt, val|
       if val
-        result[opt] = nil
+        setter[opt, nil]
         define("-#{opt} VAL")
       else
-        result[opt] = false
+        setter[opt, false]
         define("-#{opt}")
       end
     end if single_options
@@ -1895,16 +1927,16 @@ XXX
       arg, desc = arg.split(';', 2)
       opt, val = arg.split(':', 2)
       if val
-        result[opt] = val.empty? ? nil : val
+        setter[opt, (val unless val.empty?)]
         define("--#{opt}=#{result[opt] || "VAL"}", *[desc].compact)
       else
-        result[opt] = false
+        setter[opt, false]
         define("--#{opt}", *[desc].compact)
       end
     end
 
-    parse_in_order(argv, result.method(:[]=), **keywords)
-    symbolize_names ? result.transform_keys(&:to_sym) : result
+    parse_in_order(argv, setter, **keywords)
+    result
   end
 
   #
@@ -1954,7 +1986,7 @@ XXX
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
     }
     exc = ambiguous ? AmbiguousOption : InvalidOption
-    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
+    raise exc.new(opt, additional: proc {|o| additional_message(typ, o)})
   end
   private :complete
 
@@ -2019,19 +2051,27 @@ XXX
   def load(filename = nil, **keywords)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options'), **keywords) rescue nil
+      return true if load(File.expand_path("~/.options/#{basename}"), **keywords) rescue nil
       basename << ".options"
+      if !(xdg = ENV['XDG_CONFIG_HOME']) or xdg.empty?
+        # https://specifications.freedesktop.org/basedir-spec/latest/#variables
+        #
+        # If $XDG_CONFIG_HOME is either not set or empty, a default
+        # equal to $HOME/.config should be used.
+        xdg = ['~/.config', true]
+      end
       return [
-        # XDG
-        ENV['XDG_CONFIG_HOME'],
-        '~/.config',
+        xdg,
+
         *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
 
         # Haiku
-        '~/config/settings',
-      ].any? {|dir|
+        ['~/config/settings', true],
+      ].any? {|dir, expand|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir), **keywords) rescue nil
+        filename = File.join(dir, basename)
+        filename = File.expand_path(filename) if expand
+        load(filename, **keywords) rescue nil
       }
     end
     begin
@@ -2237,9 +2277,10 @@ XXX
       argv
     end
 
+    DIR = File.join(__dir__, '')
     def self.filter_backtrace(array)
       unless $DEBUG
-        array.delete_if(&%r"\A#{Regexp.quote(__FILE__)}:"o.method(:=~))
+        array.delete_if {|bt| bt.start_with?(DIR)}
       end
       array
     end

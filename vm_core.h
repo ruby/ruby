@@ -317,6 +317,8 @@ struct rb_calling_info {
 #define VM_ARGC_STACK_MAX 128
 #endif
 
+#define VM_KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
+
 # define CALLING_ARGC(calling) ((calling)->heap_argv ? RARRAY_LENINT((calling)->heap_argv) : (calling)->argc)
 
 struct rb_execution_context_struct;
@@ -429,7 +431,7 @@ struct rb_iseq_constant_body {
      *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
      */
 
-    struct {
+    struct rb_iseq_parameters {
         struct {
             unsigned int has_lead   : 1;
             unsigned int has_opt    : 1;
@@ -1102,6 +1104,10 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
 
+// Close an execution context and free related resources that are no longer needed.
+// @param ec the execution context to close.
+void rb_ec_close(rb_execution_context_t *ec);
+
 struct rb_ext_config {
     bool ractor_safe;
 };
@@ -1121,6 +1127,7 @@ typedef struct rb_thread_struct {
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
+    uint32_t event_serial;
 
     VALUE last_status; /* $? */
 

@@ -41,7 +41,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - run: cargo clippy --all-targets --all-features
         working-directory: zjit
@@ -61,13 +61,20 @@ jobs:
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit --enable-zjit=dev'
             rust_version: '1.85.0'
 
           - test_task: 'zjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--enable-zjit=dev --with-gcc=clang-16'
+            # Build with YJIT+ZJIT for output that works in the most number of configurations
+            configure: '--enable-zjit=dev --enable-yjit --with-gcc=clang-16'
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
 
@@ -97,7 +104,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -222,7 +229,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - uses: ./.github/actions/setup/ubuntu
 
@@ -238,7 +245,7 @@ jobs:
       - run: make install
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           repository: ruby/ruby-bench
           path: ruby-bench

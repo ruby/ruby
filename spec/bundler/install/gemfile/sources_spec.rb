@@ -570,7 +570,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       bundle :install, artifice: "compact_index"
 
       # And then we add some new versions...
-      update_repo4 do
+      build_repo4 do
         build_gem "foo", "0.2"
         build_gem "bar", "0.3"
       end

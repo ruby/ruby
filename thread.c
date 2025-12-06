@@ -442,8 +442,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         th->keeping_mutexes = mutex->next_mutex;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->fiber);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
+        VM_ASSERT(mutex->fiber_serial);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, NULL);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
@@ -1013,7 +1013,7 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         .args = args,
         .proc = proc,
     };
-    return thread_create_core(rb_thread_alloc(rb_cThread), &params);;
+    return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
 
 
@@ -2042,6 +2042,9 @@ rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, voi
  *       created as Ruby thread (created by Thread.new or so).  In other
  *       words, this function *DOES NOT* associate or convert a NON-Ruby
  *       thread to a Ruby thread.
+ *
+ * NOTE: If this thread has already acquired the GVL, then the method call
+ *       is performed without acquiring or releasing the GVL (from Ruby 4.0).
  */
 void *
 rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
@@ -2065,7 +2068,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     prev_unblock = th->unblock;
 
     if (brb == 0) {
-        rb_bug("rb_thread_call_with_gvl: called by a thread which has GVL.");
+        /* the GVL is already acquired, call method directly */
+        return (*func)(data1);
     }
 
     blocking_region_end(th, brb);
@@ -4979,6 +4983,9 @@ static void
 terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 {
     if (th != current_th) {
+        // Clear the scheduler as it is no longer operational:
+        th->scheduler = Qnil;
+
         rb_native_mutex_initialize(&th->interrupt_lock);
         rb_mutex_abandon_keeping_mutexes(th);
         rb_mutex_abandon_locking_mutex(th);
@@ -4994,6 +5001,7 @@ rb_thread_atfork(void)
     rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
+    th->scheduler = Qnil;
     rb_fiber_atfork(th);
 
     /* We don't want reproduce CVE-2003-0900. */
@@ -5263,7 +5271,7 @@ rb_thread_shield_owned(VALUE self)
 
     rb_mutex_t *m = mutex_ptr(mutex);
 
-    return m->fiber == GET_EC()->fiber_ptr;
+    return m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr);
 }
 
 /*
@@ -5282,7 +5290,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber == GET_EC()->fiber_ptr) return Qnil;
+    if (m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr)) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5799,8 +5807,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-                        (void *)mutex->fiber, rb_mutex_num_waiting(mutex));
+            rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
+                        (unsigned long long)mutex->fiber_serial, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5840,7 +5848,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !ccan_list_empty(&mutex->waitq))) {
+            if (mutex->fiber_serial == rb_fiber_serial(th->ec->fiber_ptr) || (!mutex->fiber_serial && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }

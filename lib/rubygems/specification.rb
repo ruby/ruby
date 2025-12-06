@@ -2517,7 +2517,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Set the version to +version+.
 
   def version=(version)
-    @version = Gem::Version.create(version)
+    @version = version.nil? ? version : Gem::Version.create(version)
   end
 
   def stubbed?

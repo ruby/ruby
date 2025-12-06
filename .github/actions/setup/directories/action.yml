@@ -19,6 +19,13 @@ inputs:
       Where binaries and other generated contents go.  This will be
       created if absent.
 
+  make-command:
+    required: false
+    type: string
+    default: 'make'
+    description: >-
+      The command of `make`.
+
   makeup:
     required: false
     type: boolean
@@ -88,7 +95,7 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
@@ -169,7 +176,7 @@ runs:
       shell: bash
       id: clean
       run: |
-        echo distclean='make -C ${{ inputs.builddir }} distclean' >> $GITHUB_OUTPUT
+        echo distclean='cd ${{ inputs.builddir }} && ${{ inputs.make-command }} distclean' >> $GITHUB_OUTPUT
         echo remained-files='find ${{ inputs.builddir }} -ls' >> $GITHUB_OUTPUT
         [ "${{ inputs.builddir }}" = "${{ inputs.srcdir }}" ] ||
         echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT

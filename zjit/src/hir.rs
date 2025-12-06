@@ -6,10 +6,10 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -39,7 +39,7 @@ impl std::fmt::Display for InsnId {
 }
 
 /// The index of a [`Block`], which effectively acts like a pointer.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
 impl From<BlockId> for usize {
@@ -217,21 +217,40 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 }
                 write!(f, ", ")?;
                 match bop {
-                    BOP_PLUS  => write!(f, "BOP_PLUS")?,
-                    BOP_MINUS => write!(f, "BOP_MINUS")?,
-                    BOP_MULT  => write!(f, "BOP_MULT")?,
-                    BOP_DIV   => write!(f, "BOP_DIV")?,
-                    BOP_MOD   => write!(f, "BOP_MOD")?,
-                    BOP_EQ    => write!(f, "BOP_EQ")?,
-                    BOP_NEQ   => write!(f, "BOP_NEQ")?,
-                    BOP_LT    => write!(f, "BOP_LT")?,
-                    BOP_LE    => write!(f, "BOP_LE")?,
-                    BOP_GT    => write!(f, "BOP_GT")?,
-                    BOP_GE    => write!(f, "BOP_GE")?,
-                    BOP_FREEZE => write!(f, "BOP_FREEZE")?,
-                    BOP_UMINUS => write!(f, "BOP_UMINUS")?,
-                    BOP_MAX    => write!(f, "BOP_MAX")?,
-                    BOP_AREF   => write!(f, "BOP_AREF")?,
+                    BOP_PLUS     => write!(f, "BOP_PLUS")?,
+                    BOP_MINUS    => write!(f, "BOP_MINUS")?,
+                    BOP_MULT     => write!(f, "BOP_MULT")?,
+                    BOP_DIV      => write!(f, "BOP_DIV")?,
+                    BOP_MOD      => write!(f, "BOP_MOD")?,
+                    BOP_EQ       => write!(f, "BOP_EQ")?,
+                    BOP_EQQ      => write!(f, "BOP_EQQ")?,
+                    BOP_LT       => write!(f, "BOP_LT")?,
+                    BOP_LE       => write!(f, "BOP_LE")?,
+                    BOP_LTLT     => write!(f, "BOP_LTLT")?,
+                    BOP_AREF     => write!(f, "BOP_AREF")?,
+                    BOP_ASET     => write!(f, "BOP_ASET")?,
+                    BOP_LENGTH   => write!(f, "BOP_LENGTH")?,
+                    BOP_SIZE     => write!(f, "BOP_SIZE")?,
+                    BOP_EMPTY_P  => write!(f, "BOP_EMPTY_P")?,
+                    BOP_NIL_P    => write!(f, "BOP_NIL_P")?,
+                    BOP_SUCC     => write!(f, "BOP_SUCC")?,
+                    BOP_GT       => write!(f, "BOP_GT")?,
+                    BOP_GE       => write!(f, "BOP_GE")?,
+                    BOP_NOT      => write!(f, "BOP_NOT")?,
+                    BOP_NEQ      => write!(f, "BOP_NEQ")?,
+                    BOP_MATCH    => write!(f, "BOP_MATCH")?,
+                    BOP_FREEZE   => write!(f, "BOP_FREEZE")?,
+                    BOP_UMINUS   => write!(f, "BOP_UMINUS")?,
+                    BOP_MAX      => write!(f, "BOP_MAX")?,
+                    BOP_MIN      => write!(f, "BOP_MIN")?,
+                    BOP_HASH     => write!(f, "BOP_HASH")?,
+                    BOP_CALL     => write!(f, "BOP_CALL")?,
+                    BOP_AND      => write!(f, "BOP_AND")?,
+                    BOP_OR       => write!(f, "BOP_OR")?,
+                    BOP_CMP      => write!(f, "BOP_CMP")?,
+                    BOP_DEFAULT  => write!(f, "BOP_DEFAULT")?,
+                    BOP_PACK     => write!(f, "BOP_PACK")?,
+                    BOP_INCLUDE_P => write!(f, "BOP_INCLUDE_P")?,
                     _ => write!(f, "{bop}")?,
                 }
                 write!(f, ")")
@@ -466,6 +485,7 @@ pub enum SideExitReason {
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
+    FixnumLShiftOverflow,
     GuardType(Type),
     GuardTypeNot(Type),
     GuardShape(ShapeId),
@@ -629,9 +649,10 @@ pub enum Insn {
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
-    StringGetbyteFixnum { string: InsnId, index: InsnId },
+    StringGetbyte { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -650,6 +671,7 @@ pub enum Insn {
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
+    ArrayHash { elements: Vec<InsnId>, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
@@ -700,6 +722,9 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
+    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
+    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    IsA { val: InsnId, class: InsnId },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -707,20 +732,24 @@ pub enum Insn {
     SetGlobal { id: ID, val: InsnId, state: InsnId },
 
     //NewObject?
-    /// Get an instance variable `id` from `self_val`
-    GetIvar { self_val: InsnId, id: ID, state: InsnId },
-    /// Set `self_val`'s instance variable `id` to `val`
-    SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
-    /// Set `self_val`'s instance variable `id` to `val` using the interpreter inline cache
-    SetInstanceVariable { self_val: InsnId, id: ID, ic: *const iseq_inline_constant_cache, val: InsnId, state: InsnId },
+    /// Get an instance variable `id` from `self_val`, using the inline cache `ic` if present
+    GetIvar { self_val: InsnId, id: ID, ic: *const iseq_inline_iv_cache_entry, state: InsnId },
+    /// Set `self_val`'s instance variable `id` to `val`, using the inline cache `ic` if present
+    SetIvar { self_val: InsnId, id: ID, val: InsnId, ic: *const iseq_inline_iv_cache_entry, state: InsnId },
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
     /// Load cfp->pc
     LoadPC,
+    /// Load EC
+    LoadEC,
     /// Load cfp->self
     LoadSelf,
     LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
+    /// Write `val` at an offset of `recv`.
+    /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
+    StoreField { recv: InsnId, id: ID, offset: i32, val: InsnId },
+    WriteBarrier { recv: InsnId, val: InsnId },
 
     /// Get a local variable from a higher scope or the heap.
     /// If `use_sp` is true, it uses the SP register to optimize the read.
@@ -750,12 +779,13 @@ pub enum Insn {
 
     /// Call a C function without pushing a frame
     /// `name` is for printing purposes only
-    CCall { cfunc: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+    CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
     CCallWithFrame {
         cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
         cfunc: *const u8,
+        recv: InsnId,
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
         name: ID,
@@ -776,6 +806,7 @@ pub enum Insn {
         state: InsnId,
         return_type: Type,
         elidable: bool,
+        blockiseq: Option<IseqPtr>,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -831,6 +862,7 @@ pub enum Insn {
     // Invoke a builtin function
     InvokeBuiltin {
         bf: rb_builtin_function,
+        recv: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
         leaf: bool,
@@ -844,7 +876,7 @@ pub enum Insn {
     /// Non-local control flow. See the throw YARV instruction
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
-    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^
+    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^, <<
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
     FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMult { left: InsnId, right: InsnId, state: InsnId },
@@ -859,6 +891,8 @@ pub enum Insn {
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
+    FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
+    FixnumRShift { left: InsnId, right: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
@@ -874,8 +908,9 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
-    /// Side-exit if val is frozen.
-    GuardNotFrozen { val: InsnId, state: InsnId },
+    /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
+    /// a heap object.
+    GuardNotFrozen { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -908,7 +943,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::SetInstanceVariable { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. } => false,
             _ => true,
         }
     }
@@ -921,8 +956,8 @@ impl Insn {
         }
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap) -> InsnPrinter<'a> {
-        InsnPrinter { inner: self.clone(), ptr_map }
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
+        InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
     /// Return true if the instruction needs to be kept around. For example, if the instruction
@@ -955,9 +990,12 @@ impl Insn {
             Insn::FixnumAnd  { .. } => false,
             Insn::FixnumOr   { .. } => false,
             Insn::FixnumXor  { .. } => false,
+            Insn::FixnumLShift { .. } => false,
+            Insn::FixnumRShift { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
+            Insn::LoadEC => false,
             Insn::LoadSelf => false,
             Insn::LoadField { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
@@ -967,9 +1005,12 @@ impl Insn {
             // but we don't have type information here in `impl Insn`. See rb_range_new().
             Insn::NewRange { .. } => true,
             Insn::NewRangeFixnum { .. } => false,
-            Insn::StringGetbyteFixnum { .. } => false,
+            Insn::StringGetbyte { .. } => false,
             Insn::IsBlockGiven => false,
             Insn::BoxFixnum { .. } => false,
+            Insn::BoxBool { .. } => false,
+            Insn::IsBitEqual { .. } => false,
+            Insn::IsA { .. } => false,
             _ => true,
         }
     }
@@ -979,6 +1020,30 @@ impl Insn {
 pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
+    iseq: Option<IseqPtr>,
+}
+
+/// Get the name of a local variable given iseq, level, and ep_offset.
+/// Returns
+/// - `":name"` if iseq is available and name is a real identifier,
+/// - `"<empty>"` for anonymous locals.
+/// - `None` if iseq is not available.
+///   (When `Insn` is printed in a panic/debug message the `Display::fmt` method is called, which can't access an iseq.)
+///
+/// This mimics local_var_name() from iseq.c.
+fn get_local_var_name_for_printer(iseq: Option<IseqPtr>, level: u32, ep_offset: u32) -> Option<String> {
+    let mut current_iseq = iseq?;
+    for _ in 0..level {
+        current_iseq = unsafe { rb_get_iseq_body_parent_iseq(current_iseq) };
+    }
+    let local_idx = ep_offset_to_local_idx(current_iseq, ep_offset);
+    let id: ID = unsafe { rb_zjit_local_id(current_iseq, local_idx.try_into().unwrap()) };
+
+    if id.0 == 0 || unsafe { rb_id2str(id) } == Qfalse {
+        return Some(String::from("<empty>"));
+    }
+
+    Some(format!(":{}", id.contents_lossy()))
 }
 
 static REGEXP_FLAGS: &[(u32, &str)] = &[
@@ -1038,6 +1103,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
+            Insn::ArrayHash { elements, .. } => {
+                write!(f, "ArrayHash")?;
+                let mut prefix = " ";
+                for element in elements {
+                    write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
             Insn::ArrayInclude { elements, target, .. } => {
                 write!(f, "ArrayInclude")?;
                 let mut prefix = " ";
@@ -1069,14 +1143,17 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
 
                 Ok(())
             }
-            Insn::StringGetbyteFixnum { string, index, .. } => {
-                write!(f, "StringGetbyteFixnum {string}, {index}")
+            Insn::StringGetbyte { string, index, .. } => {
+                write!(f, "StringGetbyte {string}, {index}")
             }
             Insn::StringSetbyteFixnum { string, index, value, .. } => {
                 write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
             }
             Insn::StringAppend { recv, other, .. } => {
                 write!(f, "StringAppend {recv}, {other}")
+            }
+            Insn::StringAppendCodepoint { recv, other, .. } => {
+                write!(f, "StringAppendCodepoint {recv}, {other}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -1135,8 +1212,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::SendForward { cd, args, blockiseq, .. } => {
-                write!(f, "SendForward {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+            Insn::SendForward { recv, cd, args, blockiseq, .. } => {
+                write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1182,27 +1259,29 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
+            Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
+            Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
-            Insn::GuardNotFrozen { val, .. } => write!(f, "GuardNotFrozen {val}"),
+            Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
-            Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
-                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => {
+                write!(f, "CCall {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallWithFrame { cfunc, args, name, blockiseq, .. } => {
-                write!(f, "CCallWithFrame {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCallWithFrame { cfunc, recv, args, name, blockiseq, .. } => {
+                write!(f, "CCallWithFrame {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1211,8 +1290,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfunc,  recv, args, name, .. } => {
-                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCallVariadic { cfunc, recv, args, name, .. } => {
+                write!(f, "CCallVariadic {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1239,15 +1318,26 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
+            Insn::LoadEC => write!(f, "LoadEC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
+            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:p}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
+            &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
-            Insn::SetInstanceVariable { self_val, id, val, .. } => write!(f, "SetInstanceVariable {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
-            &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => write!(f, "GetLocal l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" }),
-            &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => write!(f, "GetLocal l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" }),
-            Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "GetLocal {name}l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" })
+            },
+            &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "GetLocal {name}l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" })
+            },
+            &Insn::SetLocal { val, level, ep_offset } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
+            },
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::GetClassVar { id, .. } => write!(f, "GetClassVar :{}", id.contents_lossy()),
@@ -1282,13 +1372,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
         }
     }
 }
 
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.print(&PtrPrintMap::identity()).fmt(f)
+        self.print(&PtrPrintMap::identity(), None).fmt(f)
     }
 }
 
@@ -1465,24 +1556,24 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         can_send = false;
         function.push_insn(block, Insn::IncrCounter(counter));
     };
+    let params = unsafe { iseq.params() };
 
     use Counter::*;
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_post(iseq) }    { count_failure(complex_arg_pass_param_post) }
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
-    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
-    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
-    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
+    if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
+    if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
+    if 0 != params.flags.has_kw()      { count_failure(complex_arg_pass_param_kw) }
+    if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
+    if 0 != params.flags.has_block()   { count_failure(complex_arg_pass_param_block) }
+    if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
         return false;
     }
 
-    // Check argument count against callee's parameters. Note that correctness for this calculation
-    // relies on rejecting features above.
-    let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
+    let lead_num = params.lead_num;
+    let opt_num = params.opt_num;
     can_send = c_int::try_from(args.len())
         .as_ref()
         .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
@@ -1685,6 +1776,15 @@ impl Function {
         self.blocks.len()
     }
 
+    pub fn assume_single_ractor_mode(&mut self, block: BlockId, state: InsnId) -> bool {
+        if unsafe { rb_jit_multi_ractor_p() } {
+            false
+        } else {
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+            true
+        }
+    }
+
     /// Return a copy of the instruction where the instruction and its operands have been read from
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
@@ -1741,6 +1841,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
+                    | LoadEC
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
@@ -1760,9 +1861,10 @@ impl Function {
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
-            &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
+            &StringGetbyte { string, index } => StringGetbyte { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
+            &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1780,7 +1882,7 @@ impl Function {
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
-            &GuardNotFrozen { val, state } => GuardNotFrozen { val: find!(val), state },
+            &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
@@ -1797,6 +1899,8 @@ impl Function {
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
+            &FixnumLShift { left, right, state } => FixnumLShift { left: find!(left), right: find!(right), state },
+            &FixnumRShift { left, right } => FixnumRShift { left: find!(left), right: find!(right) },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
                 cd,
@@ -1852,16 +1956,17 @@ impl Function {
                 state,
                 reason,
             },
-            &InvokeBuiltin { bf, ref args, state, leaf, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, leaf, return_type },
+            &InvokeBuiltin { bf, recv, ref args, state, leaf, return_type } => InvokeBuiltin { bf, recv: find!(recv), args: find_vec!(args), state, leaf, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallWithFrame {
+            &CCall { cfunc, recv, ref args, name, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, return_type, elidable },
+            &CCallWithFrame { cd, cfunc, recv, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallWithFrame {
                 cd,
                 cfunc,
+                recv: find!(recv),
                 args: find_vec!(args),
                 cme,
                 name,
@@ -1870,8 +1975,8 @@ impl Function {
                 elidable,
                 blockiseq,
             },
-            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
-                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable, blockiseq
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1885,11 +1990,13 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
+            &ArrayHash { ref elements, state } => ArrayHash { elements: find_vec!(elements), state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
-            &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &GetIvar { self_val, id, ic, state } => GetIvar { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
-            &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
-            &SetInstanceVariable { self_val, id, ic, val, state } => SetInstanceVariable { self_val: find!(self_val), id, ic, val: find!(val), state },
+            &StoreField { recv, id, offset, val } => StoreField { recv: find!(recv), id, offset, val: find!(val) },
+            &WriteBarrier { recv, val } => WriteBarrier { recv: find!(recv), val: find!(val) },
+            &SetIvar { self_val, id, ic, val, state } => SetIvar { self_val: find!(self_val), id, ic, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
@@ -1900,6 +2007,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &IsA { val, class } => IsA { val: find!(val), class: find!(class) },
         }
     }
 
@@ -1921,6 +2029,10 @@ impl Function {
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
+        assert!(self.insns[insn.0].has_output(),
+                "Don't use make_equal_to for instruction with no output");
+        assert!(self.insns[replacement.0].has_output(),
+                "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
@@ -1944,8 +2056,8 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::SetInstanceVariable { .. } =>
-                panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
+                panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
@@ -1973,9 +2085,10 @@ impl Function {
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
-            Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
+            Insn::StringGetbyte { .. } => types::Fixnum,
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
+            Insn::StringAppendCodepoint { .. } => types::StringExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -1996,7 +2109,7 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { val, .. } => self.type_of(*val),
+            Insn::GuardNotFrozen { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -2013,6 +2126,8 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
+            Insn::FixnumLShift { .. } => types::Fixnum,
+            Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
@@ -2029,9 +2144,11 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
             Insn::DupArrayInclude { .. } => types::BoolExact,
+            Insn::ArrayHash { .. } => types::Fixnum,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
+            Insn::LoadEC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -2046,14 +2163,16 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::IsA { .. } => types::BoolExact,
         }
     }
 
     /// Set self.param_types. They are copied to the param types of jit_entry_blocks.
     fn set_param_types(&mut self) {
         let iseq = self.iseq;
-        let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-        let rest_param_idx = iseq_rest_param_idx(iseq);
+        let params = unsafe { iseq.params() };
+        let param_size = params.size.to_usize();
+        let rest_param_idx = iseq_rest_param_idx(params);
 
         self.param_types.push(types::BasicObject); // self
         for local_idx in 0..param_size {
@@ -2305,6 +2424,17 @@ impl Function {
         }
     }
 
+    fn is_metaclass(&self, object: VALUE) -> bool {
+        unsafe {
+            if RB_TYPE_P(object, RUBY_T_CLASS) && rb_zjit_singleton_class_p(object) {
+                let attached = rb_class_attached_object(object);
+                RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE)
+            } else {
+                false
+            }
+        }
+    }
+
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
     /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
@@ -2411,9 +2541,9 @@ impl Function {
 
                             // Patch points:
                             // Check for "defined with an un-shareable Proc in a different Ractor"
-                            if !procv.shareable_p() {
+                            if !procv.shareable_p() && !self.assume_single_ractor_mode(block, state) {
                                 // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                                self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
@@ -2426,6 +2556,12 @@ impl Function {
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
                                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
@@ -2435,81 +2571,84 @@ impl Function {
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if unsafe { rb_zjit_singleton_class_p(klass) } {
-                                let attached = unsafe { rb_class_attached_object(klass) };
-                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
-                                }
-                            }
-                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
+                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
                         } else if let (VM_METHOD_TYPE_ATTRSET, &[val]) = (def_type, args.as_slice()) {
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_setivar, so it's unsafe to raise for multi-ractor mode.
-                            if unsafe { rb_zjit_singleton_class_p(klass) } {
-                                let attached = unsafe { rb_class_attached_object(klass) };
-                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
-                                }
-                            }
-                            self.push_insn(block, Insn::SetIvar { self_val: recv, id, val, state });
+                            self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             self.make_equal_to(insn_id, val);
                         } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
-                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
-                            if opt_type == OPTIMIZED_METHOD_TYPE_STRUCT_AREF {
-                                if unsafe { vm_ci_argc(ci) } != 0 {
-                                    self.push_insn_id(block, insn_id); continue;
-                                }
-                                let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
-                                                .try_into()
-                                                .unwrap();
-                                // We are going to use an encoding that takes a 4-byte immediate which
-                                // limits the offset to INT32_MAX.
-                                {
-                                    let native_index = (index as i64) * (SIZEOF_VALUE as i64);
-                                    if native_index > (i32::MAX as i64) {
-                                        self.push_insn_id(block, insn_id); continue;
+                            let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
+                            match (opt_type, args.as_slice()) {
+                                (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
+                                    let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
+                                                    .try_into()
+                                                    .unwrap();
+                                    // We are going to use an encoding that takes a 4-byte immediate which
+                                    // limits the offset to INT32_MAX.
+                                    {
+                                        let native_index = (index as i64) * (SIZEOF_VALUE as i64);
+                                        if native_index > (i32::MAX as i64) {
+                                            self.push_insn_id(block, insn_id); continue;
+                                        }
                                     }
-                                }
-                                // Get the profiled type to check if the fields is embedded or heap allocated.
-                                let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
-                                    // No (monomorphic/skewed polymorphic) profile info
+                                    // Get the profiled type to check if the fields is embedded or heap allocated.
+                                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                        // No (monomorphic/skewed polymorphic) profile info
+                                        self.push_insn_id(block, insn_id); continue;
+                                    };
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    if klass.instance_can_have_singleton_class() {
+                                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                                    }
+                                    if let Some(profiled_type) = profiled_type {
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                    }
+                                    // All structs from the same Struct class should have the same
+                                    // length. So if our recv is embedded all runtime
+                                    // structs of the same class should be as well, and the same is
+                                    // true of the converse.
+                                    //
+                                    // No need for a GuardShape.
+                                    if let OptimizedMethodType::StructAset = opt_type {
+                                        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
+                                        recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
+                                    }
+
+                                    let (target, offset) = if is_embedded {
+                                        let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
+                                        (recv, offset)
+                                    } else {
+                                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                        let offset = SIZEOF_VALUE_I32 * index;
+                                        (as_heap, offset)
+                                    };
+
+                                    let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
+                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
+                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                                        val
+                                    } else { // StructAref
+                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
+                                    };
+                                    self.make_equal_to(insn_id, replacement);
+                                },
+                                _ => {
+                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
                                     self.push_insn_id(block, insn_id); continue;
-                                };
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                if klass.instance_can_have_singleton_class() {
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
-                                }
-                                if let Some(profiled_type) = profiled_type {
-                                    recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                                }
-                                // All structs from the same Struct class should have the same
-                                // length. So if our recv is embedded all runtime
-                                // structs of the same class should be as well, and the same is
-                                // true of the converse.
-                                //
-                                // No need for a GuardShape.
-                                let replacement = if is_embedded {
-                                    let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
-                                    self.push_insn(block, Insn::LoadField { recv, id: mid, offset, return_type: types::BasicObject })
-                                } else {
-                                    let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
-                                    let offset = SIZEOF_VALUE_I32 * index;
-                                    self.push_insn(block, Insn::LoadField { recv: as_heap, id: mid, offset, return_type: types::BasicObject })
-                                };
-                                self.make_equal_to(insn_id, replacement);
-                            } else {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                                },
+                            };
                         } else {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
@@ -2572,12 +2711,9 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        let multi_ractor_mode = unsafe { rb_jit_multi_ractor_p() };
-                        if cref_sensitive || multi_ractor_mode {
+                        if cref_sensitive || !self.assume_single_ractor_mode(block, state) {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        // Assume single-ractor mode.
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
@@ -2603,8 +2739,8 @@ impl Function {
                             self.insn_types[guard.0] = self.infer_type(guard);
                             self.make_equal_to(insn_id, guard);
                         } else {
-                            self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state, reason: ObjToStringNotString });
+                            let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv, cd, args: vec![], state, reason: ObjToStringNotString });
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -2709,6 +2845,7 @@ impl Function {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 let replacement = self.push_insn(block, Insn::InvokeBuiltin {
                                     bf,
+                                    recv,
                                     args: vec![recv],
                                     state,
                                     leaf: true,
@@ -2731,23 +2868,22 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, state } => {
+                    Insn::GetIvar { self_val, id, ic: _, state } => {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn_id(block, insn_id); continue;
-                        }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -2758,6 +2894,17 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        } else if !recv_type.flags().is_t_object() {
+                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                            // getinstancevariable does assume_single_ractor_mode()
+                            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            self.push_insn(block, Insn::CCall {
+                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                recv: self_val,
+                                args: vec![ivar_index_insn],
+                                name: ID!(rb_ivar_get_at_no_ractor_check),
+                                return_type: types::BasicObject,
+                                elidable: true })
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
@@ -2769,6 +2916,122 @@ impl Function {
                             self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
                         self.make_equal_to(insn_id, replacement);
+                    }
+                    Insn::DefinedIvar { self_val, id, pushval, state } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_immediate));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let _ = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let mut ivar_index: u16 = 0;
+                        let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                        } else {
+                            // If there is no IVAR index, then the ivar was undefined when we
+                            // entered the compiler.  That means we can just return nil for this
+                            // shape + iv name
+                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        };
+                        self.make_equal_to(insn_id, replacement);
+                    }
+                    Insn::SetIvar { self_val, id, val, state, ic: _ } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic/skewed polymorphic) profile info
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_frozen() {
+                            // Can't set ivars on frozen objects
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let mut ivar_index: u16 = 0;
+                        let mut next_shape_id = recv_type.shape();
+                        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            // Current shape does not contain this ivar; do a shape transition.
+                            let current_shape_id = recv_type.shape();
+                            let class = recv_type.class();
+                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+                            assert!(recv_type.flags().is_t_object());
+                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
+                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+                            assert!(ivar_result, "New shape must have the ivar index");
+                            // If the VM ran out of shapes, or this class generated too many leaf,
+                            // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
+                            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
+                            // TODO(max): Is it OK to bail out here after making a shape transition?
+                            if new_shape_too_complex {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+                            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+                            // reallocate it.
+                            let needs_extension = next_capacity != current_capacity;
+                            if needs_extension {
+                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            // Fall through to emitting the ivar write
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        // Current shape contains this ivar
+                        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
+                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            (self_val, offset)
+                        } else {
+                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                            (as_heap, offset)
+                        };
+                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        if next_shape_id != recv_type.shape() {
+                            // Write the new shape ID
+                            assert_eq!(SHAPE_ID_NUM_BITS, 32);
+                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CUInt32(next_shape_id.0) });
+                            let shape_id_offset = unsafe { rb_shape_id_offset() };
+                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                        }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -2797,7 +3060,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, blockiseq, mut args, state, .. } = send else {
+            let Insn::Send { mut recv, cd, blockiseq, args, state, .. } = send else {
                 return Err(());
             };
 
@@ -2828,25 +3091,29 @@ impl Function {
                 return Err(());
             }
 
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
+            let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+            // When seeing &block argument, fall back to dynamic dispatch for now
+            // TODO: Support block forwarding
+            if unspecializable_call_type(ci_flags) {
+                fun.count_complex_call_features(block, ci_flags);
+                fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
+                return Err(());
+            }
+
+            let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
+            // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+
             match cfunc_argc {
                 0.. => {
                     // (self, arg0, arg1, ..., argc) form
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(());
-                    }
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
-
-                    // When seeing &block argument, fall back to dynamic dispatch for now
-                    // TODO: Support block forwarding
-                    if unspecializable_call_type(ci_flags) {
-                        fun.count_complex_call_features(block, ci_flags);
-                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     }
 
@@ -2862,19 +3129,17 @@ impl Function {
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
-                    let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
-
                     // Emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                    let mut cfunc_args = vec![recv];
-                    cfunc_args.append(&mut args);
 
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                     let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                         cd,
                         cfunc,
-                        args: cfunc_args,
+                        recv,
+                        args,
                         cme,
-                        name: method_id,
+                        name,
                         state,
                         return_type: types::BasicObject,
                         elidable: false,
@@ -2885,9 +3150,37 @@ impl Function {
                 }
                 // Variadic method
                 -1 => {
+                    // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
-                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncVariadic);
-                    Err(())
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+
+                    if recv_class.instance_can_have_singleton_class() {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                    }
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                    }
+
+                    if get_option!(stats) {
+                        count_not_inlined_cfunc(fun, block, cme);
+                    }
+
+                    let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                        cfunc: cfunc_ptr,
+                        recv,
+                        args,
+                        cme,
+                        name: method_id,
+                        state,
+                        return_type: types::BasicObject,
+                        elidable: false,
+                        blockiseq
+                    });
+
+                    fun.make_equal_to(send_insn_id, ccall);
+                    Ok(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
@@ -2906,7 +3199,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
+            let Insn::SendWithoutBlock { mut recv, cd, args, state, .. } = send else {
                 return Err(());
             };
 
@@ -2998,14 +3291,13 @@ impl Function {
 
                     // No inlining; emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                    let mut cfunc_args = vec![recv];
-                    cfunc_args.append(&mut args);
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                     let return_type = props.return_type;
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
@@ -3014,9 +3306,10 @@ impl Function {
                         let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                             cd,
                             cfunc,
-                            args: cfunc_args,
+                            recv,
+                            args,
                             cme,
-                            name: method_id,
+                            name,
                             state,
                             return_type,
                             elidable,
@@ -3079,15 +3372,17 @@ impl Function {
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
+                        let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfunc,
                             recv,
                             args,
                             cme,
-                            name: method_id,
+                            name,
                             state,
                             return_type,
                             elidable,
+                            blockiseq: None,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
@@ -3159,6 +3454,25 @@ impl Function {
                             continue;
                         }
                     }
+                    Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
+                        let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
+                        // Try inlining the cfunc into HIR
+                        let tmp_block = self.new_block(u32::MAX);
+                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                            // Copy contents of tmp_block to block
+                            assert_ne!(block, tmp_block);
+                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                            self.blocks[block.0].insns.extend(insns);
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            self.make_equal_to(insn_id, replacement);
+                            if self.type_of(replacement).bit_equal(types::Any) {
+                                // Not set yet; infer type
+                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                            }
+                            self.remove_block(tmp_block);
+                            continue;
+                        }
+                    }
                     _ => {}
                 }
                 self.push_insn_id(block, insn_id);
@@ -3201,6 +3515,11 @@ impl Function {
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
+                        continue;
+                    }
+                    Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
+                        self.make_equal_to(insn_id, str);
+                        // Don't bother re-inferring the type of str; we already know it.
                         continue;
                     }
                     Insn::FixnumAdd { left, right, .. } => {
@@ -3289,11 +3608,9 @@ impl Function {
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
                 // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id {
+                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
                     self.make_equal_to(insn_id, replacement_id);
-                    if self.insns[replacement_id.0].has_output() {
-                        self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
-                    }
+                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
                 }
                 new_insns.push(replacement_id);
                 // If we've just folded an IfTrue into a Jump, for example, don't bother copying
@@ -3312,6 +3629,7 @@ impl Function {
             | &Insn::Param
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
+            | &Insn::LoadEC
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
@@ -3328,6 +3646,7 @@ impl Function {
                 worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
+            | &Insn::ArrayHash { ref elements, state }
             | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
@@ -3352,7 +3671,7 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            &Insn::StringGetbyteFixnum { string, index } => {
+            &Insn::StringGetbyte { string, index } => {
                 worklist.push_back(string);
                 worklist.push_back(index);
             }
@@ -3361,7 +3680,9 @@ impl Function {
                 worklist.push_back(index);
                 worklist.push_back(value);
             }
-            &Insn::StringAppend { recv, other, state } => {
+            &Insn::StringAppend { recv, other, state }
+            | &Insn::StringAppendCodepoint { recv, other, state }
+            => {
                 worklist.push_back(recv);
                 worklist.push_back(other);
                 worklist.push_back(state);
@@ -3385,7 +3706,7 @@ impl Function {
             | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
-            | &Insn::GuardNotFrozen { val, state }
+            | &Insn::GuardNotFrozen { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -3413,6 +3734,7 @@ impl Function {
             | &Insn::FixnumDiv { left, right, state }
             | &Insn::FixnumMod { left, right, state }
             | &Insn::ArrayExtend { left, right, state }
+            | &Insn::FixnumLShift { left, right, state }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -3427,6 +3749,7 @@ impl Function {
             | &Insn::FixnumAnd { left, right }
             | &Insn::FixnumOr { left, right }
             | &Insn::FixnumXor { left, right }
+            | &Insn::FixnumRShift { left, right }
             | &Insn::IsBitEqual { left, right }
             | &Insn::IsBitNotEqual { left, right }
             => {
@@ -3464,25 +3787,27 @@ impl Function {
             | &Insn::SendForward { recv, ref args, state, .. }
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
             | &Insn::CCallVariadic { recv, ref args, state, .. }
+            | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
+            | &Insn::InvokeBuiltin { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::CCallWithFrame { ref args, state, .. }
-            | &Insn::InvokeBuiltin { ref args, state, .. }
-            | &Insn::InvokeBlock { ref args, state, .. } => {
+            &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
-            Insn::CCall { args, .. } => worklist.extend(args),
+            &Insn::CCall { recv, ref args, .. } => {
+                worklist.push_back(recv);
+                worklist.extend(args);
+            }
             &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
             }
-            &Insn::SetIvar { self_val, val, state, .. }
-            | &Insn::SetInstanceVariable { self_val, val, state, .. } => {
+            &Insn::SetIvar { self_val, val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(val);
                 worklist.push_back(state);
@@ -3511,6 +3836,11 @@ impl Function {
             &Insn::LoadField { recv, .. } => {
                 worklist.push_back(recv);
             }
+            &Insn::StoreField { recv, val, .. }
+            | &Insn::WriteBarrier { recv, val } => {
+                worklist.push_back(recv);
+                worklist.push_back(val);
+            }
             &Insn::GuardBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
@@ -3518,6 +3848,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::IsA { val, class } => {
+                worklist.push_back(val);
+                worklist.push_back(class);
+            }
         }
     }
 
@@ -3659,23 +3993,171 @@ impl Function {
         }
     }
 
+    /// Helper function to make an Iongraph JSON "instruction".
+    /// `uses`, `memInputs` and `attributes` are left empty for now, but may be populated
+    /// in the future.
+    fn make_iongraph_instr(id: InsnId, inputs: Vec<Json>, opcode: &str, ty: &str) -> Json {
+        Json::object()
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
+            .insert("opcode", opcode)
+            .insert("attributes", Json::empty_array())
+            .insert("inputs", Json::Array(inputs))
+            .insert("uses", Json::empty_array())
+            .insert("memInputs", Json::empty_array())
+            .insert("type", ty)
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "block".
+    fn make_iongraph_block(id: BlockId, predecessors: Vec<BlockId>, successors: Vec<BlockId>, instructions: Vec<Json>, attributes: Vec<&str>, loop_depth: u32) -> Json {
+        Json::object()
+            // Add an offset of 0x1000 to avoid the `ptr` being 0x0, which iongraph rejects.
+            .insert("ptr", id.0 + 0x1000)
+            .insert("id", id.0)
+            .insert("loopDepth", loop_depth)
+            .insert("attributes", Json::array(attributes))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("instructions", Json::array(instructions))
+            .build()
+    }
+
+    /// Helper function to make an Iongraph JSON "function".
+    /// Note that `lir` is unpopulated right now as ZJIT doesn't use its functionality.
+    fn make_iongraph_function(pass_name: &str, hir_blocks: Vec<Json>) -> Json {
+        Json::object()
+            .insert("name", pass_name)
+            .insert("mir", Json::object()
+                .insert("blocks", Json::array(hir_blocks))
+                .build()
+            )
+            .insert("lir", Json::object()
+                .insert("blocks", Json::empty_array())
+                .build()
+            )
+            .build()
+    }
+
+    /// Generate an iongraph JSON pass representation for this function.
+    pub fn to_iongraph_pass(&self, pass_name: &str) -> Json {
+        let mut ptr_map = PtrPrintMap::identity();
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
+
+        let mut hir_blocks = Vec::new();
+        let cfi = ControlFlowInfo::new(self);
+        let dominators = Dominators::new(self);
+        let loop_info = LoopInfo::new(&cfi, &dominators);
+
+        // Push each block from the iteration in reverse post order to `hir_blocks`.
+        for block_id in self.rpo() {
+            // Create the block with instructions.
+            let block = &self.blocks[block_id.0];
+            let predecessors = cfi.predecessors(block_id).collect();
+            let successors = cfi.successors(block_id).collect();
+            let mut instructions = Vec::new();
+
+            // Process all instructions (parameters and body instructions).
+            // Parameters are currently guaranteed to be Parameter instructions, but in the future
+            // they might be refined to other instruction kinds by the optimizer.
+            for insn_id in block.params.iter().chain(block.insns.iter()) {
+                let insn_id = self.union_find.borrow().find_const(*insn_id);
+                let insn = self.find(insn_id);
+
+                // Snapshots are not serialized, so skip them.
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+
+                // Instructions with no output or an empty type should have an empty type field.
+                let type_str = if insn.has_output() {
+                    let insn_type = self.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        String::new()
+                    } else {
+                        insn_type.print(&ptr_map).to_string()
+                    }
+                } else {
+                    String::new()
+                };
+
+
+                let opcode = insn.print(&ptr_map, Some(self.iseq)).to_string();
+
+                // Traverse the worklist to get inputs for a given instruction.
+                let mut inputs = VecDeque::new();
+                self.worklist_traverse_single_insn(&insn, &mut inputs);
+                let inputs: Vec<Json> = inputs.into_iter().map(|x| x.0.into()).collect();
+
+                instructions.push(
+                    Self::make_iongraph_instr(
+                        insn_id,
+                        inputs,
+                        &opcode,
+                        &type_str
+                    )
+                );
+            }
+
+            let mut attributes = vec![];
+            if loop_info.is_back_edge_source(block_id) {
+                attributes.push("backedge");
+            }
+            if loop_info.is_loop_header(block_id) {
+                attributes.push("loopheader");
+            }
+            let loop_depth = loop_info.loop_depth(block_id);
+
+            hir_blocks.push(Self::make_iongraph_block(
+                block_id,
+                predecessors,
+                successors,
+                instructions,
+                attributes,
+                loop_depth,
+            ));
+        }
+
+        Self::make_iongraph_function(pass_name, hir_blocks)
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
+        let mut passes: Vec<Json> = Vec::new();
+        let should_dump = get_option!(dump_hir_iongraph);
+
+        macro_rules! run_pass {
+            ($name:ident) => {
+                self.$name();
+                #[cfg(debug_assertions)] self.assert_validates();
+                if should_dump {
+                    passes.push(
+                        self.to_iongraph_pass(stringify!($name))
+                    );
+                }
+            }
+        }
+
+        if should_dump {
+            passes.push(self.to_iongraph_pass("unoptimized"));
+        }
+
         // Function is assumed to have types inferred already
-        self.type_specialize();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.inline();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_getivar();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_c_calls();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.fold_constants();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.clean_cfg();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.eliminate_dead_code();
-        #[cfg(debug_assertions)] self.assert_validates();
+        run_pass!(type_specialize);
+        run_pass!(inline);
+        run_pass!(optimize_getivar);
+        run_pass!(optimize_c_calls);
+        run_pass!(fold_constants);
+        run_pass!(clean_cfg);
+        run_pass!(eliminate_dead_code);
+
+        if should_dump {
+            let iseq_name = iseq_get_location(self.iseq, 0);
+            self.dump_iongraph(&iseq_name, passes);
+        }
     }
 
     /// Dump HIR passed to codegen if specified by options.
@@ -3694,6 +4176,32 @@ impl Function {
             let mut file = OpenOptions::new().append(true).open(filename).unwrap();
             writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
         }
+    }
+
+    pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
+        fn sanitize_for_filename(name: &str) -> String {
+            name.chars()
+                .map(|c| {
+                    if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                        c
+                    } else {
+                        '_'
+                    }
+                })
+                .collect()
+        }
+
+        use std::io::Write;
+        let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
+        std::fs::create_dir_all(&dir).expect("Unable to create directory.");
+        let sanitized = sanitize_for_filename(function_name);
+        let path = format!("{dir}/func_{sanitized}.json");
+        let mut file = std::fs::File::create(path).unwrap();
+        let json = Json::object()
+            .insert("name", function_name)
+            .insert("passes", passes)
+            .build();
+        writeln!(file, "{}", json).unwrap();
     }
 
     /// Validates the following:
@@ -3742,11 +4250,13 @@ impl Function {
         // missing location.
         let mut assigned_in = vec![None; self.num_blocks()];
         let rpo = self.rpo();
-        // Begin with every block having every variable defined, except for the entry block, which
-        // starts with nothing defined.
-        assigned_in[self.entry_block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+        // Begin with every block having every variable defined, except for the entry blocks, which
+        // start with nothing defined.
+        let entry_blocks = self.entry_blocks();
         for &block in &rpo {
-            if block != self.entry_block {
+            if entry_blocks.contains(&block) {
+                assigned_in[block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+            } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
                 assigned_in[block.0] = Some(all_ones);
@@ -3828,33 +4338,141 @@ impl Function {
         let insn_id = self.union_find.borrow().find_const(insn_id);
         let insn = self.find(insn_id);
         match insn {
-            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
-            Insn::StringAppend { recv, other, .. } => {
-                self.assert_subtype(insn_id, recv, types::StringExact)?;
-                self.assert_subtype(insn_id, other, types::String)
+            // Instructions with no InsnId operands (except state) or nothing to assert
+            Insn::Const { .. }
+            | Insn::Param
+            | Insn::PutSpecialObject { .. }
+            | Insn::LoadField { .. }
+            | Insn::GetConstantPath { .. }
+            | Insn::IsBlockGiven
+            | Insn::GetGlobal { .. }
+            | Insn::LoadPC
+            | Insn::LoadEC
+            | Insn::LoadSelf
+            | Insn::Snapshot { .. }
+            | Insn::Jump { .. }
+            | Insn::EntryPoint { .. }
+            | Insn::GuardBlockParamProxy { .. }
+            | Insn::PatchPoint { .. }
+            | Insn::SideExit { .. }
+            | Insn::IncrCounter { .. }
+            | Insn::IncrCounterPtr { .. }
+            | Insn::CheckInterrupts { .. }
+            | Insn::GetClassVar { .. }
+            | Insn::GetSpecialNumber { .. }
+            | Insn::GetSpecialSymbol { .. }
+            | Insn::GetLocal { .. }
+            | Insn::StoreField { .. } => {
+                Ok(())
+            }
+            // Instructions with 1 Ruby object operand
+            Insn::Test { val }
+            | Insn::IsNil { val }
+            | Insn::IsMethodCfunc { val, .. }
+            | Insn::GuardShape { val, .. }
+            | Insn::SetGlobal { val, .. }
+            | Insn::SetLocal { val, .. }
+            | Insn::SetClassVar { val, .. }
+            | Insn::Return { val }
+            | Insn::Throw { val, .. }
+            | Insn::ObjToString { val, .. }
+            | Insn::GuardType { val, .. }
+            | Insn::GuardTypeNot { val, .. }
+            | Insn::ToArray { val, .. }
+            | Insn::ToNewArray { val, .. }
+            | Insn::Defined { v: val, .. }
+            | Insn::ObjectAlloc { val, .. }
+            | Insn::DupArrayInclude { target: val, .. }
+            | Insn::GetIvar { self_val: val, .. }
+            | Insn::CCall { recv: val, .. }
+            | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
+            | Insn::DefinedIvar { self_val: val, .. } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            Insn::GuardNotFrozen { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::HeapBasicObject)
+            }
+            // Instructions with 2 Ruby object operands
+            Insn::SetIvar { self_val: left, val: right, .. }
+            | Insn::NewRange { low: left, high: right, .. }
+            | Insn::AnyToString { val: left, str: right, .. }
+            | Insn::WriteBarrier { recv: left, val: right } => {
+                self.assert_subtype(insn_id, left, types::BasicObject)?;
+                self.assert_subtype(insn_id, right, types::BasicObject)
+            }
+            // Instructions with recv and a Vec of Ruby objects
+            Insn::SendWithoutBlock { recv, ref args, .. }
+            | Insn::SendWithoutBlockDirect { recv, ref args, .. }
+            | Insn::Send { recv, ref args, .. }
+            | Insn::SendForward { recv, ref args, .. }
+            | Insn::InvokeSuper { recv, ref args, .. }
+            | Insn::CCallWithFrame { recv, ref args, .. }
+            | Insn::CCallVariadic { recv, ref args, .. }
+            | Insn::InvokeBuiltin { recv, ref args, .. }
+            | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
+                self.assert_subtype(insn_id, recv, types::BasicObject)?;
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            // Instructions with a Vec of Ruby objects
+            Insn::InvokeBlock { ref args, .. }
+            | Insn::NewArray { elements: ref args, .. }
+            | Insn::ArrayHash { elements: ref args, .. }
+            | Insn::ArrayMax { elements: ref args, .. } => {
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
             }
             Insn::NewHash { ref elements, .. } => {
                 if elements.len() % 2 != 0 {
                     return Err(ValidationError::MiscValidationError(insn_id, "NewHash elements length is not even".to_string()));
                 }
+                for &element in elements {
+                    self.assert_subtype(insn_id, element, types::BasicObject)?;
+                }
                 Ok(())
             }
-            Insn::NewRangeFixnum { low, high, .. } => {
-                self.assert_subtype(insn_id, low, types::Fixnum)?;
-                self.assert_subtype(insn_id, high, types::Fixnum)
+            Insn::StringConcat { ref strings, .. }
+            | Insn::ToRegexp { values: ref strings, .. } => {
+                for &string in strings {
+                    self.assert_subtype(insn_id, string, types::String)?;
+                }
+                Ok(())
             }
+            // Instructions with String operands
+            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringAppend { recv, other, .. } => {
+                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, other, types::String)
+            }
+            Insn::StringAppendCodepoint { recv, other, .. } => {
+                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, other, types::Fixnum)
+            }
+            // Instructions with Array operands
+            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
             Insn::ArrayExtend { left, right, .. } => {
                 // TODO(max): Do left and right need to be ArrayExact?
                 self.assert_subtype(insn_id, left, types::Array)?;
                 self.assert_subtype(insn_id, right, types::Array)
             }
-            Insn::ArrayPush { array, .. } => self.assert_subtype(insn_id, array, types::Array),
-            Insn::ArrayPop { array, .. } => self.assert_subtype(insn_id, array, types::Array),
-            Insn::ArrayLength { array, .. } => self.assert_subtype(insn_id, array, types::Array),
+            Insn::ArrayPush { array, .. }
+            | Insn::ArrayPop { array, .. }
+            | Insn::ArrayLength { array, .. } => {
+                self.assert_subtype(insn_id, array, types::Array)
+            }
+            Insn::ArrayArefFixnum { array, index } => {
+                self.assert_subtype(insn_id, array, types::Array)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
+            }
+            // Instructions with Hash operands
             Insn::HashAref { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
+            // Other
             Insn::ObjectAllocClass { class, .. } => {
                 let has_leaf_allocator = unsafe { rb_zjit_class_has_default_allocator(class) } || class_has_leaf_allocator(class);
                 if !has_leaf_allocator {
@@ -3862,9 +4480,6 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::Test { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IsNil { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IsMethodCfunc { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
                 if self.is_a(left, types::CInt) && self.is_a(right, types::CInt) {
@@ -3878,41 +4493,15 @@ impl Function {
                     return Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()));
                 }
             }
-            Insn::BoxBool { val } => self.assert_subtype(insn_id, val, types::CBool),
+            Insn::BoxBool { val }
+            | Insn::IfTrue { val, .. }
+            | Insn::IfFalse { val, .. } => {
+                self.assert_subtype(insn_id, val, types::CBool)
+            }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
-            Insn::UnboxFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
-            Insn::SetGlobal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GetIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::SetIvar { self_val, val, .. } => {
-                self.assert_subtype(insn_id, self_val, types::BasicObject)?;
-                self.assert_subtype(insn_id, val, types::BasicObject)
+            Insn::UnboxFixnum { val } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
             }
-            Insn::DefinedIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::SetLocal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::SetClassVar { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::IfTrue { val, .. } | Insn::IfFalse { val, .. } => self.assert_subtype(insn_id, val, types::CBool),
-            Insn::SendWithoutBlock { recv, ref args, .. }
-            | Insn::SendWithoutBlockDirect { recv, ref args, .. }
-            | Insn::Send { recv, ref args, .. }
-            | Insn::SendForward { recv, ref args, .. }
-            | Insn::InvokeSuper { recv, ref args, .. }
-            | Insn::CCallVariadic { recv, ref args, .. } => {
-                self.assert_subtype(insn_id, recv, types::BasicObject)?;
-                for &arg in args {
-                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
-                }
-                Ok(())
-            }
-            Insn::CCallWithFrame { ref args, .. }
-            | Insn::InvokeBuiltin { ref args, .. }
-            | Insn::InvokeBlock { ref args, .. } => {
-                for &arg in args {
-                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
-                }
-                Ok(())
-            }
-            Insn::Return { val } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::Throw { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::FixnumAdd { left, right, .. }
             | Insn::FixnumSub { left, right, .. }
             | Insn::FixnumMult { left, right, .. }
@@ -3927,17 +4516,26 @@ impl Function {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::NewRangeFixnum { low: left, high: right, .. }
             => {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
             }
-            Insn::ObjToString { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::AnyToString { val, str, .. } => {
-                self.assert_subtype(insn_id, val, types::BasicObject)?;
-                self.assert_subtype(insn_id, str, types::BasicObject)
+            Insn::FixnumLShift { left, right, .. }
+            | Insn::FixnumRShift { left, right, .. } => {
+                self.assert_subtype(insn_id, left, types::Fixnum)?;
+                self.assert_subtype(insn_id, right, types::Fixnum)?;
+                let Some(obj) = self.type_of(right).fixnum_value() else {
+                    return Err(ValidationError::MismatchedOperandType(insn_id, right, "<a compile-time constant>".into(), "<unknown>".into()));
+                };
+                if obj < 0 {
+                    return Err(ValidationError::MismatchedOperandType(insn_id, right, "<positive>".into(), format!("{obj}")));
+                }
+                if obj > 63 {
+                    return Err(ValidationError::MismatchedOperandType(insn_id, right, "<less than 64>".into(), format!("{obj}")));
+                }
+                Ok(())
             }
-            Insn::GuardType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardTypeNot { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GuardBitEquals { val, expected, .. } => {
                 match expected {
                     Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
@@ -3954,22 +4552,24 @@ impl Function {
                     Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
                 }
             }
-            Insn::GuardShape { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardNotFrozen { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
-            Insn::GuardLess { left, right, .. } | Insn::GuardGreaterEq { left, right, .. } => {
+            Insn::GuardLess { left, right, .. }
+            | Insn::GuardGreaterEq { left, right, .. } => {
                 self.assert_subtype(insn_id, left, types::CInt64)?;
                 self.assert_subtype(insn_id, right, types::CInt64)
             },
-            Insn::StringGetbyteFixnum { string, index } => {
+            Insn::StringGetbyte { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
-                self.assert_subtype(insn_id, index, types::Fixnum)
+                self.assert_subtype(insn_id, index, types::CInt64)
             },
             Insn::StringSetbyteFixnum { string, index, value } => {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
             }
-            _ => Ok(()),
+            Insn::IsA { val, class } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)?;
+                self.assert_subtype(insn_id, class, types::Class)
+            }
         }
     }
 
@@ -3996,7 +4596,13 @@ impl Function {
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
-        let iseq_name = iseq_get_location(fun.iseq, 0);
+        // In tests, there may not be an iseq to get location from.
+        let iseq_name = if fun.iseq.is_null() {
+            String::from("<manual>")
+        } else {
+            iseq_get_location(fun.iseq, 0)
+        };
+
         // In tests, strip the line number for builtin ISEQs to make tests stable across line changes
         let iseq_name = if cfg!(test) && iseq_name.contains("@<internal:") {
             iseq_name[..iseq_name.rfind(':').unwrap()].to_string()
@@ -4033,7 +4639,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
             }
         }
         Ok(())
@@ -4109,7 +4715,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
                 if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
                     edges.push((insn_id, target.target));
                 }
-                write_encoded!(f, "{}", insn.print(&self.ptr_map))?;
+                write_encoded!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
                 writeln!(f, "&nbsp;</TD></TR>")?;
             }
             writeln!(f, "</TABLE>>];")?;
@@ -4298,11 +4904,12 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 /// List of insn_idx that starts a JIT entry block
 pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
     // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    let params = unsafe { iseq.params() };
+    let opt_num = params.opt_num;
     if opt_num > 0 {
         let mut result = vec![];
 
-        let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) }; // `opt_num + 1` entries
+        let opt_table = params.opt_table; // `opt_num + 1` entries
         for opt_idx in 0..=opt_num as isize {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
             result.push(insn_idx);
@@ -4453,8 +5060,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let jit_entry_insns = jit_entry_insns(iseq);
     let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq, &jit_entry_insns);
 
-    // Make all empty basic blocks. The ordering of the BBs matters as it is taken as a schedule
-    // in the backend without a scheduling pass. TODO: Higher quality scheduling during lowering.
+    // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
+    // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
@@ -4535,6 +5142,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // for profiling purposes: there is no operand on the stack to look up; we have
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_setinstancevariable || opcode == YARVINSN_trace_setinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
                 profiles.profile_self(&exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
                 if get_option!(stats) {
@@ -4643,6 +5254,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let elements = state.stack_pop_n(count)?;
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_HASH => (BOP_HASH, Insn::ArrayHash { elements, state: exit_id }),
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = elements[elements.len() - 1];
                             let array_elements = elements[..elements.len() - 1].to_vec();
@@ -4759,8 +5371,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // When a keyword is unspecified past index 32, a hash will be used instead.
                     // This can only happen in iseqs taking more than 32 keywords.
                     // In this case, we side exit to the interpreter.
-                    // TODO(Jacob): Replace the magic number 32 with a named constant. (Can be completed after PR 15039)
-                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= 32} {
+                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap()} {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyKeywordParameters });
                         break;
                     }
@@ -4858,19 +5469,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                    if !local_inval {
+                        // The FrameState is the source of truth for locals until invalidated.
+                        // In case of JIT-to-JIT send locals might never end up in EP memory.
+                        let val = state.getlocal(ep_offset);
+                        state.stack_push(val);
+                    } else if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
                         // Read the local using EP
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        if local_inval {
-                            // If there has been any non-leaf call since JIT entry or the last patch point,
-                            // add a patch point to make sure locals have not been escaped.
-                            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
-                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                            local_inval = false;
-                        }
+                        assert!(local_inval); // if check above
+                        // There has been some non-leaf call since JIT entry or the last patch point,
+                        // so add a patch point to make sure locals have not been escaped.
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                        local_inval = false;
+
                         // Read the local from FrameState
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
@@ -5180,11 +5796,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
+                    let ic = get_arg(pc, 1).as_ptr();
                     // ic is in arg 1
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
                     // TODO: We only really need this if self_val is a class/module
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
-                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, state: exit_id });
+                    if !fun.assume_single_ractor_mode(block, exit_id) {
+                        // gen_getivar assumes single Ractor; side-exit into the interpreter
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
+                        break;  // End the block
+                    }
+                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
                     state.stack_push(result);
                 }
                 YARVINSN_setinstancevariable => {
@@ -5192,9 +5813,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ic = get_arg(pc, 1).as_ptr();
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
                     // TODO: We only really need this if self_val is a class/module
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
+                    if !fun.assume_single_ractor_mode(block, exit_id) {
+                        // gen_setivar assumes single Ractor; side-exit into the interpreter
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
+                        break;  // End the block
+                    }
                     let val = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SetInstanceVariable { self_val: self_param, id, ic, val, state: exit_id });
+                    fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
                 }
                 YARVINSN_getclassvariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -5245,6 +5870,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
+                        recv: self_param,
                         args,
                         state: exit_id,
                         leaf,
@@ -5273,6 +5899,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
+                        recv: self_param,
                         args,
                         state: exit_id,
                         leaf,
@@ -5416,8 +6043,9 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let rest_param_idx = iseq_rest_param_idx(iseq);
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let rest_param_idx = iseq_rest_param_idx(params);
 
     let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
     let mut entry_state = FrameState::new(iseq);
@@ -5449,9 +6077,10 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
 /// Compile params and initial locals for a jit_entry_block
 fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_entry_idx: usize) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
-    let opt_num: usize = unsafe { get_iseq_body_param_opt_num(iseq) }.try_into().expect("iseq param opt_num >= 0");
-    let lead_num: usize = unsafe { get_iseq_body_param_lead_num(iseq) }.try_into().expect("iseq param lead_num >= 0");
+    let params = unsafe { iseq.params() };
+    let param_size = params.size.to_usize();
+    let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
+    let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
@@ -5467,6 +6096,265 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         }
     }
     (self_param, entry_state)
+}
+
+pub struct Dominators<'a> {
+    f: &'a Function,
+    dominators: Vec<Vec<BlockId>>,
+}
+
+impl<'a> Dominators<'a> {
+    pub fn new(f: &'a Function) -> Self {
+        let mut cfi = ControlFlowInfo::new(f);
+        Self::with_cfi(f, &mut cfi)
+    }
+
+    pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
+        let block_ids = f.rpo();
+        let mut dominators = vec![vec![]; f.blocks.len()];
+
+        // Compute dominators for each node using fixed point iteration.
+        // Approach can be found in Figure 1 of:
+        // https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
+        //
+        // Initially we set:
+        //
+        // dom(entry) = {entry} for each entry block
+        // dom(b != entry) = {all nodes}
+        //
+        // Iteratively, apply:
+        //
+        // dom(b) = {b} union intersect(dom(p) for p in predecessors(b))
+        //
+        // When we've run the algorithm and the dominator set no longer changes
+        // between iterations, then we have found the dominator sets.
+
+        // Set up entry blocks.
+        // Entry blocks are only dominated by themselves.
+        for entry_block in &f.entry_blocks() {
+            dominators[entry_block.0] = vec![*entry_block];
+        }
+
+        // Setup the initial dominator sets.
+        for block_id in &block_ids {
+            if !f.entry_blocks().contains(block_id) {
+                // Non entry blocks are initially dominated by all other blocks.
+                dominators[block_id.0] = block_ids.clone();
+            }
+        }
+
+        let mut changed = true;
+        while changed {
+            changed = false;
+
+            for block_id in &block_ids {
+                if *block_id == f.entry_block {
+                    continue;
+                }
+
+                // Get all predecessors for a given block.
+                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
+                if block_preds.is_empty() {
+                    continue;
+                }
+
+                let mut new_doms = dominators[block_preds[0].0].clone();
+
+                // Compute the intersection of predecessor dominator sets into `new_doms`.
+                for pred_id in &block_preds[1..] {
+                    let pred_doms = &dominators[pred_id.0];
+                    // Only keep a dominator in `new_doms` if it is also found in pred_doms
+                    new_doms.retain(|d| pred_doms.contains(d));
+                }
+
+                // Insert sorted into `new_doms`.
+                match new_doms.binary_search(block_id) {
+                    Ok(_) => {}
+                    Err(pos) => new_doms.insert(pos, *block_id)
+                }
+
+                // If we have computed a new dominator set, then we can update
+                // the dominators and mark that we need another iteration.
+                if dominators[block_id.0] != new_doms {
+                    dominators[block_id.0] = new_doms;
+                    changed = true;
+                }
+            }
+        }
+
+        Self { f, dominators }
+    }
+
+
+    pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.dominators(left).any(|&b| b == right)
+    }
+
+    pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
+        self.dominators[block.0].iter()
+    }
+}
+
+pub struct ControlFlowInfo<'a> {
+    function: &'a Function,
+    successor_map: HashMap<BlockId, Vec<BlockId>>,
+    predecessor_map: HashMap<BlockId, Vec<BlockId>>,
+}
+
+impl<'a> ControlFlowInfo<'a> {
+    pub fn new(function: &'a Function) -> Self {
+        let mut successor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
+        let uf = function.union_find.borrow();
+
+        for block_id in function.rpo() {
+            let block = &function.blocks[block_id.0];
+
+            // Since ZJIT uses extended basic blocks, one must check all instructions
+            // for their ability to jump to another basic block, rather than just
+            // the instructions at the end of a given basic block.
+            //
+            // Use BTreeSet to avoid duplicates and maintain an ordering. Also
+            // `BTreeSet<BlockId>` provides conversion trivially back to an `Vec<BlockId>`.
+            // Ordering is important so that the expect tests that serialize the predecessors
+            // and successors don't fail intermittently.
+            // todo(aidenfoxivey): Use `BlockSet` in lieu of `BTreeSet<BlockId>`
+            let successors: BTreeSet<BlockId> = block
+                .insns
+                .iter()
+                .map(|&insn_id| uf.find_const(insn_id))
+                .filter_map(|insn_id| {
+                    Self::extract_jump_target(&function.insns[insn_id.0])
+                })
+                .collect();
+
+            // Update predecessors for successor blocks.
+            for &succ_id in &successors {
+                predecessor_map
+                    .entry(succ_id)
+                    .or_default()
+                    .push(block_id);
+            }
+
+            // Store successors for this block.
+            // Convert successors from a `BTreeSet<BlockId>` to a `Vec<BlockId>`.
+            successor_map.insert(block_id, successors.iter().copied().collect());
+        }
+
+        Self {
+            function,
+            successor_map,
+            predecessor_map,
+        }
+    }
+
+    pub fn is_succeeded_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.successor_map.get(&right).is_some_and(|set| set.contains(&left))
+    }
+
+    pub fn is_preceded_by(&self, left: BlockId, right: BlockId) -> bool {
+        self.predecessor_map.get(&right).is_some_and(|set| set.contains(&left))
+    }
+
+    pub fn predecessors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.predecessor_map.get(&block).into_iter().flatten().copied()
+    }
+
+    pub fn successors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
+        self.successor_map.get(&block).into_iter().flatten().copied()
+    }
+
+    /// Helper function to extract the target of a jump instruction.
+    fn extract_jump_target(insn: &Insn) -> Option<BlockId> {
+        match insn {
+            Insn::Jump(target)
+            | Insn::IfTrue { target, .. }
+            | Insn::IfFalse { target, .. } => Some(target.target),
+            _ => None,
+        }
+    }
+}
+
+pub struct LoopInfo<'a> {
+    cfi: &'a ControlFlowInfo<'a>,
+    dominators: &'a Dominators<'a>,
+    loop_depths: HashMap<BlockId, u32>,
+    loop_headers: BlockSet,
+    back_edge_sources: BlockSet,
+}
+
+impl<'a> LoopInfo<'a> {
+    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
+        let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+        let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
+        let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+        let rpo = cfi.function.rpo();
+
+        for &block in &rpo {
+            loop_depths.insert(block, 0);
+        }
+
+        // Collect loop headers.
+        for &block in &rpo {
+            // Initialize the loop depths.
+            for predecessor in cfi.predecessors(block) {
+                if dominators.is_dominated_by(predecessor, block) {
+                    // Found a loop header, so then identify the natural loop.
+                    loop_headers.insert(block);
+                    back_edge_sources.insert(predecessor);
+                    let loop_blocks = Self::find_natural_loop(cfi, block, predecessor);
+                    // Increment the loop depth.
+                    for loop_block in &loop_blocks {
+                        *loop_depths.get_mut(loop_block).expect("Loop block should be populated.") += 1;
+                    }
+                }
+            }
+        }
+
+        Self {
+            cfi,
+            dominators,
+            loop_depths,
+            loop_headers,
+            back_edge_sources,
+        }
+    }
+
+    fn find_natural_loop(
+        cfi: &ControlFlowInfo,
+        header: BlockId,
+        back_edge_source: BlockId,
+    ) -> HashSet<BlockId> {
+        // todo(aidenfoxivey): Reimplement using BlockSet
+        let mut loop_blocks = HashSet::new();
+        let mut stack = vec![back_edge_source];
+
+        loop_blocks.insert(header);
+        loop_blocks.insert(back_edge_source);
+
+        while let Some(block) = stack.pop() {
+            for pred in cfi.predecessors(block) {
+                // Pushes to stack only if `pred` wasn't already in `loop_blocks`.
+                if loop_blocks.insert(pred) {
+                    stack.push(pred)
+                }
+            }
+        }
+
+        loop_blocks
+    }
+
+    pub fn loop_depth(&self, block: BlockId) -> u32 {
+        self.loop_depths.get(&block).copied().unwrap_or(0)
+    }
+
+    pub fn is_back_edge_source(&self, block: BlockId) -> bool {
+        self.back_edge_sources.get(block)
+    }
+
+    pub fn is_loop_header(&self, block: BlockId) -> bool {
+        self.loop_headers.get(block)
+    }
 }
 
 #[cfg(test)]
@@ -5868,8 +6756,8 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@5&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :x, l0, SP@5&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal :y, l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v4">Jump bb2(v1, v2, v3)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v4 -> bb2:params:n;
@@ -5919,7 +6807,7 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :c, l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v3">Jump bb2(v1, v2)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v3 -> bb2:params:n;

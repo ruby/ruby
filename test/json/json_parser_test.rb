@@ -325,6 +325,13 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
+  def test_unicode_followed_by_newline
+    # Ref: https://github.com/ruby/json/issues/912
+    assert_equal "🌌\n".bytes, JSON.parse('"\ud83c\udf0c\n"').bytes
+    assert_equal "🌌\n", JSON.parse('"\ud83c\udf0c\n"')
+    assert_predicate JSON.parse('"\ud83c\udf0c\n"'), :valid_encoding?
+  end
+
   def test_invalid_surogates
     assert_raise(JSON::ParserError) { parse('"\\uD800"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
@@ -510,8 +517,8 @@ class JSONParserTest < Test::Unit::TestCase
     data = ['"']
     assert_equal data, parse(json)
     #
-    json = '["\\\'"]'
-    data = ["'"]
+    json = '["\\/"]'
+    data = ["/"]
     assert_equal data, parse(json)
 
     json = '["\/"]'
@@ -818,6 +825,14 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_parse_whitespace_after_newline
     assert_equal [], JSON.parse("[\n#{' ' * (8 + 8 + 4 + 3)}]")
+  end
+
+  def test_frozen
+    parser_config = JSON::Parser::Config.new({}).freeze
+    omit "JRuby failure in CI" if RUBY_ENGINE == "jruby"
+    assert_raise FrozenError do
+      parser_config.send(:initialize, {})
+    end
   end
 
   private

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "lockfile_parser"
+require_relative "worker"
 
 module Bundler
   class Definition
@@ -8,6 +9,8 @@ module Bundler
       # Do not create or modify a lockfile (Makes #lock a noop)
       attr_accessor :no_lock
     end
+
+    attr_writer :lockfile
 
     attr_reader(
       :dependencies,
@@ -379,7 +382,7 @@ module Bundler
     end
 
     def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock || file.nil?
+      return if Definition.no_lock || !lockfile || file.nil?
 
       contents = to_lock
 
@@ -536,6 +539,8 @@ module Bundler
     end
 
     def add_checksums
+      require "rubygems/package"
+
       @locked_checksums = true
 
       setup_domain!(add_checksums: true)
@@ -1100,7 +1105,23 @@ module Bundler
       @source_requirements ||= find_source_requirements
     end
 
+    def preload_git_source_worker
+      @preload_git_source_worker ||= Bundler::Worker.new(5, "Git source preloading", ->(source, _) { source.specs })
+    end
+
+    def preload_git_sources
+      sources.git_sources.each {|source| preload_git_source_worker.enq(source) }
+    ensure
+      preload_git_source_worker.stop
+    end
+
     def find_source_requirements
+      if Gem.ruby_version >= Gem::Version.new("3.3")
+        # Ruby 3.2 has a bug that incorrectly triggers a circular dependency warning. This version will continue to
+        # fetch git repositories one by one.
+        preload_git_sources
+      end
+
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)

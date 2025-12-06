@@ -369,18 +369,26 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       point2.to_octet_string(:uncompressed)
     assert_equal point2.to_octet_string(:uncompressed),
       point3.to_octet_string(:uncompressed)
+  end
 
+  def test_small_curve
     begin
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
       generator = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
       group.set_generator(generator, 19, 1)
-      point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     rescue OpenSSL::PKey::EC::Group::Error
       pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
       raise
     end
+    assert_equal 17.to_bn.num_bits, group.degree
+    assert_equal B(%w{ 04 05 01 }),
+      group.generator.to_octet_string(:uncompressed)
+    assert_equal 19.to_bn, group.order
+    assert_equal 1.to_bn, group.cofactor
+    assert_nil group.curve_name
 
+    point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     assert_equal 0x040603.to_bn, point.to_bn
     assert_equal 0x040603.to_bn, point.to_bn(:uncompressed)
     assert_equal 0x0306.to_bn, point.to_bn(:compressed)

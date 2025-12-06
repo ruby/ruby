@@ -1,7 +1,7 @@
 #include "ruby.h"
 #include "rubyspec.h"
 
-#ifdef RUBY_VERSION_IS_3_5
+#ifdef RUBY_VERSION_IS_4_0
 #ifdef __cplusplus
 extern "C" {
 #endif

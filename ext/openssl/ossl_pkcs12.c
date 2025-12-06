@@ -42,7 +42,7 @@ ossl_pkcs12_free(void *ptr)
 static const rb_data_type_t ossl_pkcs12_type = {
     "OpenSSL/PKCS12",
     {
-	0, ossl_pkcs12_free,
+        0, ossl_pkcs12_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -72,7 +72,7 @@ ossl_pkcs12_initialize_copy(VALUE self, VALUE other)
 
     p12_new = ASN1_dup((i2d_of_void *)i2d_PKCS12, (d2i_of_void *)d2i_PKCS12, (char *)p12);
     if (!p12_new)
-	ossl_raise(ePKCS12Error, "ASN1_dup");
+        ossl_raise(ePKCS12Error, "ASN1_dup");
 
     SetPKCS12(self, p12_new);
     PKCS12_free(p12_old);
@@ -122,11 +122,11 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
 /* TODO: make a VALUE to nid function */
     if (!NIL_P(key_nid)) {
         if ((nkey = OBJ_txt2nid(StringValueCStr(key_nid))) == NID_undef)
-	    ossl_raise(rb_eArgError, "Unknown PBE algorithm %"PRIsVALUE, key_nid);
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %"PRIsVALUE, key_nid);
     }
     if (!NIL_P(cert_nid)) {
         if ((ncert = OBJ_txt2nid(StringValueCStr(cert_nid))) == NID_undef)
-	    ossl_raise(rb_eArgError, "Unknown PBE algorithm %"PRIsVALUE, cert_nid);
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %"PRIsVALUE, cert_nid);
     }
     if (!NIL_P(key_iter))
         kiter = NUM2INT(key_iter);
@@ -209,18 +209,18 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 
     pkey = cert = ca = Qnil;
     if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
-	ossl_raise(ePKCS12Error, "PKCS12_parse");
+        ossl_raise(ePKCS12Error, "PKCS12_parse");
     if (key) {
-	pkey = rb_protect(ossl_pkey_wrap_i, (VALUE)key, &st);
-	if (st) goto err;
+        pkey = rb_protect(ossl_pkey_wrap_i, (VALUE)key, &st);
+        if (st) goto err;
     }
     if (x509) {
-	cert = rb_protect(ossl_x509_new_i, (VALUE)x509, &st);
-	if (st) goto err;
+        cert = rb_protect(ossl_x509_new_i, (VALUE)x509, &st);
+        if (st) goto err;
     }
     if (x509s) {
-	ca = rb_protect(ossl_x509_sk2ary_i, (VALUE)x509s, &st);
-	if (st) goto err;
+        ca = rb_protect(ossl_x509_sk2ary_i, (VALUE)x509s, &st);
+        if (st) goto err;
     }
 
   err:
@@ -244,11 +244,11 @@ ossl_pkcs12_to_der(VALUE self)
 
     GetPKCS12(self, p12);
     if((len = i2d_PKCS12(p12, NULL)) <= 0)
-	ossl_raise(ePKCS12Error, NULL);
+        ossl_raise(ePKCS12Error, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_PKCS12(p12, &p) <= 0)
-	ossl_raise(ePKCS12Error, NULL);
+        ossl_raise(ePKCS12Error, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -300,11 +300,6 @@ void
 Init_ossl_pkcs12(void)
 {
 #undef rb_intern
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * Defines a file format commonly used to store private keys with
      * accompanying public key certificates, protected with a password-based

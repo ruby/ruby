@@ -132,7 +132,7 @@ Init_version(void)
      * The constants defined here are aliased in the toplevel with
      * +RUBY_+ prefix.
      */
-    VALUE mRuby = rb_path2class("Ruby");
+    VALUE mRuby = rb_define_module("Ruby");
 
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
     VALUE version = MKSTR(version);
@@ -274,6 +274,15 @@ ruby_set_yjit_description(void)
     rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
     rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
     define_ruby_description(YJIT_DESCRIPTION);
+}
+
+void
+ruby_set_zjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(ZJIT_DESCRIPTION);
 }
 
 void

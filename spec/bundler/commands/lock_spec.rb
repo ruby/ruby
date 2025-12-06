@@ -834,7 +834,7 @@ RSpec.describe "bundle lock" do
     bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
     expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
 
-    update_repo4 do
+    build_repo4 do
       build_gem "bundler", "99"
     end
 
@@ -1456,7 +1456,7 @@ RSpec.describe "bundle lock" do
     before do
       gemfile_with_rails_weakling_and_foo_from_repo4
 
-      update_repo4 do
+      build_repo4 do
         build_gem "foo", "2.0"
       end
 
@@ -2029,6 +2029,56 @@ RSpec.describe "bundle lock" do
 
       DEPENDENCIES
         nokogiri
+      #{checksums}
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+  end
+
+  it "adds checksums when source is not specified" do
+    system_gems(%w[myrack-1.0.0], path: default_bundle_path)
+
+    gemfile <<-G
+      gem "myrack"
+    G
+
+    lockfile <<~L
+      GEM
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        myrack
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-checksums"
+    end
+
+    # myrack is coming from gem_repo1
+    # but it's simulated to install in the system gems path
+    checksums = checksums_section do |c|
+      c.checksum gem_repo1, "myrack", "1.0.0"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        myrack
       #{checksums}
       BUNDLED WITH
         #{Bundler::VERSION}

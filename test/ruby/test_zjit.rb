@@ -59,6 +59,46 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_zjit_enable
+    # --disable-all is important in case the build/environment has YJIT enabled by
+    # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
+    assert_separately(["--disable-all"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      refute_predicate RubyVM::ZJIT, :stats_enabled?
+      refute_includes RUBY_DESCRIPTION, "+ZJIT"
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      refute_predicate RubyVM::ZJIT, :stats_enabled?
+      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_disable
+    assert_separately(["--zjit", "--zjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+ZJIT"
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_enable_respects_existing_options
+    assert_separately(['--zjit-disable', '--zjit-stats=quiet'], <<~RUBY)
+      refute_predicate RubyVM::ZJIT, :enabled?
+      assert_predicate RubyVM::ZJIT, :stats_enabled?
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      assert_predicate RubyVM::ZJIT, :stats_enabled?
+    RUBY
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
@@ -485,6 +525,21 @@ class TestZJIT < Test::Unit::TestCase
       def test = [1, 2].map(&:to_s)
       test
     }
+  end
+
+  def test_send_variadic_with_block
+    assert_compiles '[[1, "a"], [2, "b"], [3, "c"]]', %q{
+      A = [1, 2, 3]
+      B = ["a", "b", "c"]
+
+      def test
+        result = []
+        A.zip(B) { |x, y| result << [x, y] }
+        result
+      end
+
+      test; test
+    }, call_threshold: 2
   end
 
   def test_send_splat
@@ -945,7 +1000,7 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new]
   end
 
-  def test_opt_new_with_redefinition
+  def test_opt_new_with_redefined
     assert_compiles '"foo"', %q{
       class Foo
         def self.new = "foo"
@@ -1002,6 +1057,22 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_newarray_send], call_threshold: 1
   end
 
+  def test_opt_newarray_send_include_p_redefined
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
+        end
+      end
+
+      def test(x)
+        [:y, 1, Object.new].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
   def test_opt_duparray_send_include_p
     assert_compiles '[true, false]', %q{
       def test(x)
@@ -1009,6 +1080,63 @@ class TestZJIT < Test::Unit::TestCase
       end
       [test(1), test("n")]
     }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
+  def test_opt_duparray_send_include_p_redefined
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
+        end
+      end
+
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_hash
+    assert_compiles 'Integer', %q{
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20).class
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_hash_redefined
+    assert_compiles '42', %q{
+      Array.class_eval { def hash = 42 }
+
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20)
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max
+    assert_compiles '[20, 40]', %q{
+      def test(a,b) = [a,b].max
+      [test(10, 20), test(40, 30)]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max_redefined
+    assert_compiles '[60, 90]', %q{
+      class Array
+        alias_method :old_max, :max
+        def max
+          old_max * 2
+        end
+      end
+
+      def test(a,b) = [a,b].max
+      [test(15, 30), test(45, 35)]
+    }, insns: [:opt_newarray_send], call_threshold: 1
   end
 
   def test_new_hash_empty
@@ -2295,6 +2423,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_require_rubygems_with_auto_compact
+    omit("GC.auto_compact= support is required for this test") unless GC.respond_to?(:auto_compact=)
     assert_runs 'true', %q{
       GC.auto_compact = true
       require 'rubygems'
@@ -2377,7 +2506,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_bop_redefinition
+  def test_bop_redefined
     assert_runs '[3, :+, 100]', %q{
       def test
         1 + 2
@@ -2388,7 +2517,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_bop_redefinition_with_adjacent_patch_points
+  def test_bop_redefined_with_adjacent_patch_points
     assert_runs '[15, :+, 100]', %q{
       def test
         1 + 2 + 3 + 4 + 5
@@ -2401,7 +2530,7 @@ class TestZJIT < Test::Unit::TestCase
 
   # ZJIT currently only generates a MethodRedefined patch point when the method
   # is called on the top-level self.
-  def test_method_redefinition_with_top_self
+  def test_method_redefined_with_top_self
     assert_runs '["original", "redefined"]', %q{
       def foo
         "original"
@@ -2424,7 +2553,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_method_redefinition_with_module
+  def test_method_redefined_with_module
     assert_runs '["original", "redefined"]', %q{
       module Foo
         def self.foo = "original"
@@ -2891,7 +3020,35 @@ class TestZJIT < Test::Unit::TestCase
       test
 
       Ractor.new { test }.value
-    }
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_already_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+      r = Ractor.new {
+        Ractor.receive
+        Foo.bar
+      }
+
+      Foo.bar
+      Foo.bar
+
+      r << :go
+      r.value
+    }, call_threshold: 2
   end
 
   def test_ivar_set_with_multi_ractor_mode
@@ -2917,6 +3074,25 @@ class TestZJIT < Test::Unit::TestCase
 
       Ractor.new { test }.value
     }
+  end
+
+  def test_struct_set
+    assert_compiles '[42, 42, :frozen_error]', %q{
+      C = Struct.new(:foo).new(1)
+
+      def test
+        C.foo = Object.new
+        42
+      end
+
+      r = [test, test]
+      C.freeze
+      r << begin
+        test
+      rescue FrozenError
+        :frozen_error
+      end
+    }, call_threshold: 2
   end
 
   def test_global_tracepoint

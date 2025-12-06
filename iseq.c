@@ -1652,7 +1652,7 @@ iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
  *  real path and first line number of the ruby code in +source+ which are
  *  metadata attached to the returned +iseq+.
  *
- *  +file+ is used for `__FILE__` and exception backtrace. +path+ is used for
+ *  +file+ is used for +__FILE__+ and exception backtrace. +path+ is used for
  *  +require_relative+ base. It is recommended these should be the same full
  *  path.
  *
@@ -1694,7 +1694,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
  *  real path and first line number of the ruby code in +source+ which are
  *  metadata attached to the returned +iseq+.
  *
- *  +file+ is used for `__FILE__` and exception backtrace. +path+ is used for
+ *  +file+ is used for +__FILE__+ and exception backtrace. +path+ is used for
  *  +require_relative+ base. It is recommended these should be the same full
  *  path.
  *
@@ -1736,7 +1736,7 @@ iseqw_s_compile_parsey(int argc, VALUE *argv, VALUE self)
  *  real path and first line number of the ruby code in +source+ which are
  *  metadata attached to the returned +iseq+.
  *
- *  +file+ is used for `__FILE__` and exception backtrace. +path+ is used for
+ *  +file+ is used for +__FILE__+ and exception backtrace. +path+ is used for
  *  +require_relative+ base. It is recommended these should be the same full
  *  path.
  *

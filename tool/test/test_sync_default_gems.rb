@@ -319,6 +319,9 @@ module Test_SyncDefaultGems
     end
 
     def test_squash_merge
+      if RUBY_PLATFORM =~ /s390x/
+        omit("git 2.43.0 bug on s390x ubuntu 24.04: BUG: log-tree.c:1058: did a remerge diff without remerge_objdir?!?")
+      end
       #   2---.   <- branch
       #  /     \
       # 1---3---3'<- merge commit with conflict resolution

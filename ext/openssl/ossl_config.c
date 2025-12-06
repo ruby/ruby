@@ -413,11 +413,6 @@ Init_ossl_config(void)
     char *path;
     VALUE path_str;
 
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /* Document-class: OpenSSL::Config
      *
      * Configuration for the openssl library.

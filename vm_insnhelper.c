@@ -1680,6 +1680,7 @@ rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID 
     vm_setclassvariable(iseq, cfp, id, val, ic);
 }
 
+ALWAYS_INLINE(static VALUE vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic));
 static inline VALUE
 vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {
@@ -1721,6 +1722,12 @@ void
 rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {
     vm_setinstancevariable(iseq, obj, id, val, ic);
+}
+
+VALUE
+rb_vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
+{
+    return vm_getinstancevariable(iseq, obj, id, ic);
 }
 
 static VALUE
@@ -2518,15 +2525,6 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         double a = RFLOAT_VALUE(recv);
         double b = RFLOAT_VALUE(obj);
 
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a)) {
-            return Qfalse;
-        }
-        else if (isnan(b)) {
-            return Qfalse;
-        }
-        else
-#endif
         return RBOOL(a == b);
     }
     else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
@@ -2624,37 +2622,27 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 }
 
 
-#if MSC_VERSION_BEFORE(1300)
-#define CHECK_CMP_NAN(a, b) if (isnan(a) || isnan(b)) return Qfalse;
-#else
-#define CHECK_CMP_NAN(a, b) /* do nothing */
-#endif
-
 static inline VALUE
 double_cmp_lt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a < b);
 }
 
 static inline VALUE
 double_cmp_le(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a <= b);
 }
 
 static inline VALUE
 double_cmp_gt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a > b);
 }
 
 static inline VALUE
 double_cmp_ge(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a >= b);
 }
 
@@ -4133,7 +4121,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4156,7 +4144,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -5177,7 +5165,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     if (!klass) {
         /* bound instance method of module */
-        cc = vm_cc_new(klass, NULL, vm_call_method_missing, cc_type_super);
+        cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
     }
     else {
@@ -5808,7 +5796,7 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
 
     if (FIXNUM_P(kw_bits)) {
         unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
-        if ((idx < KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
+        if ((idx < VM_KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
             return Qfalse;
     }
     else {
@@ -6060,11 +6048,14 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 }
 
 // Return the untagged block handler:
+// * If it's VM_BLOCK_HANDLER_NONE, return nil
 // * If it's an ISEQ or an IFUNC, fetch it from its rb_captured_block
 // * If it's a PROC or SYMBOL, return it as is
 static VALUE
 rb_vm_untag_block_handler(VALUE block_handler)
 {
+    if (VM_BLOCK_HANDLER_NONE == block_handler) return Qnil;
+
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
       case block_handler_type_ifunc: {
@@ -6360,15 +6351,15 @@ rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE 
 }
 
 static VALUE
-vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) > 0) {
@@ -6379,26 +6370,26 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_max(ec, num, ptr);
+    return vm_opt_newarray_max(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MIN, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) < 0) {
@@ -6409,63 +6400,63 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_min(ec, num, ptr);
+    return vm_opt_newarray_min(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     // If Array#hash is _not_ monkeypatched, use the optimized call
     if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
-        return rb_ary_hash_values(num, ptr);
+        return rb_ary_hash_values(array_len, ptr);
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_hash(ec, num, ptr);
+    return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
 VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
-vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ary_includes(ary, target);
     }
     else {
         VALUE args[1] = {target};
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
-    return vm_opt_newarray_include_p(ec, num, ptr, target);
+    return vm_opt_newarray_include_p(ec, array_len, ptr, target);
 }
 
 static VALUE
-vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
     else {
@@ -6483,20 +6474,20 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALU
             argc++;
         }
 
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idPack, argc, args, kw_splat);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idPack, argc, args, kw_splat);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, buffer);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
 VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt)
+rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, Qundef);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
 }
 
 #undef id_cmp
@@ -6878,7 +6869,6 @@ vm_opt_lt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
     else {
@@ -6903,7 +6893,6 @@ vm_opt_le(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
     }
     else {
@@ -6928,7 +6917,6 @@ vm_opt_gt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
     else {
@@ -6953,7 +6941,6 @@ vm_opt_ge(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
     }
     else {

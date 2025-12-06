@@ -31,6 +31,10 @@
 
 #include <errno.h>
 
+enum zjit_struct_offsets {
+    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
+};
+
 #define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
 
 // For a given raw_sample (frame), set the hash with the caller's
@@ -305,6 +309,7 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
+VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);

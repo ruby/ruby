@@ -1733,6 +1733,62 @@ wrong number of arguments (given 1, expected 2) (ArgumentError)
     assert_equal expected_spot, actual_spot
   end
 
+  module SingletonMethodWithSpacing
+    LINENO = __LINE__ + 1
+    def self . baz(x:)
+      x
+    end
+  end
+
+  def test_singleton_method_with_spacing_missing_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keyword: :x (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       SingletonMethodWithSpacing.baz
+                                      ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodWithSpacing::LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|     def self . baz(x:)
+                   ^^^^^" :
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
+   }
+    END
+
+      SingletonMethodWithSpacing.baz
+    end
+  end
+
+  module SingletonMethodMultipleKwargs
+    LINENO = __LINE__ + 1
+    def self.run(shop_id:, param1:)
+      shop_id + param1
+    end
+  end
+
+  def test_singleton_method_multiple_missing_keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keywords: :shop_id, :param1 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       SingletonMethodMultipleKwargs.run
+                                         ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodMultipleKwargs::LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|     def self.run(shop_id:, param1:)
+                  ^^^^" :
+   "(cannot highlight method definition; try Ruby 4.0 or later)"
+   }
+    END
+
+      SingletonMethodMultipleKwargs.run
+    end
+  end
+
   private
 
   def find_node_by_id(node, node_id)

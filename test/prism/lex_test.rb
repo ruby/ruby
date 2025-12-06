@@ -7,19 +7,13 @@ require_relative "test_helper"
 module Prism
   class LexTest < TestCase
     except = [
-      # It seems like there are some oddities with nested heredocs and ripper.
-      # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
-      "seattlerb/heredoc_nested.txt",
-      "whitequark/dedenting_heredoc.txt",
-      # Ripper seems to have a bug that the regex portions before and after
-      # the heredoc are combined into a single token. See
-      # https://bugs.ruby-lang.org/issues/19838.
+      # https://bugs.ruby-lang.org/issues/21756
       "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt",
-      # Prism emits a single :on_tstring_content in <<- style heredocs when there
-      # is a line continuation preceded by escaped backslashes. It should emit two, same
-      # as if the backslashes are not present.
+      # Prism emits a single string in some cases when ripper splits them up
+      "whitequark/dedenting_heredoc.txt",
       "heredocs_with_fake_newlines.txt",
+      # Prism emits BEG for `on_regexp_end`
+      "spanning_heredoc_newlines.txt",
     ]
 
     if RUBY_VERSION < "3.3.0"
@@ -42,17 +36,11 @@ module Prism
       except << "whitequark/ruby_bug_19281.txt"
     end
 
-    # https://bugs.ruby-lang.org/issues/20925
-    except << "4.0/leading_logical.txt"
-
-    # https://bugs.ruby-lang.org/issues/17398#note-12
-    except << "4.0/endless_methods_command_call.txt"
-
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
 
-    Fixture.each_with_version(except: except) do |fixture, version|
-      define_method(fixture.test_name(version)) { assert_lex(fixture, version) }
+    Fixture.each_for_current_ruby(except: except) do |fixture|
+      define_method(fixture.test_name) { assert_lex(fixture) }
     end
 
     def test_lex_file
@@ -97,12 +85,10 @@ module Prism
 
     private
 
-    def assert_lex(fixture, version)
-      return unless current_major_minor == version
-
+    def assert_lex(fixture)
       source = fixture.read
 
-      result = Prism.lex_compat(source, version: version)
+      result = Prism.lex_compat(source, version: "current")
       assert_equal [], result.errors
 
       Prism.lex_ripper(source).zip(result.value).each do |(ripper, prism)|

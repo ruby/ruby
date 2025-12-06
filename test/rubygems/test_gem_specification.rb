@@ -1247,12 +1247,37 @@ dependencies: []
   end
 
   def test_initialize_nil_version
-    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
-    actual_stdout, actual_stderr = capture_output do
-      Gem::Specification.new.version = nil
+    spec = Gem::Specification.new
+    spec.name = "test-name"
+
+    assert_nil spec.version
+    spec.version = nil
+    assert_nil spec.version
+
+    spec.summary = "test gem"
+    spec.authors = ["test author"]
+    e = assert_raise Gem::InvalidSpecificationException do
+      spec.validate
     end
-    assert_empty actual_stdout
-    assert_equal(expected, actual_stderr)
+    assert_match("missing value for attribute version", e.message)
+  end
+
+  def test_set_version_to_nil_after_setting_version
+    spec = Gem::Specification.new
+    spec.name = "test-name"
+
+    assert_nil spec.version
+    spec.version = "1.0.0"
+    assert_equal "1.0.0", spec.version.to_s
+    spec.version = nil
+    assert_nil spec.version
+
+    spec.summary = "test gem"
+    spec.authors = ["test author"]
+    e = assert_raise Gem::InvalidSpecificationException do
+      spec.validate
+    end
+    assert_match("missing value for attribute version", e.message)
   end
 
   def test__dump

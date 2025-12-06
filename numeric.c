@@ -595,8 +595,8 @@ num_uminus(VALUE num)
  *    fdiv(other) -> float
  *
  *  Returns the quotient <tt>self/other</tt> as a float,
- *  using method +/+ in the derived class of +self+.
- *  (\Numeric itself does not define method +/+.)
+ *  using method +/+ as defined in the subclass of \Numeric.
+ *  (\Numeric itself does not define +/+.)
  *
  *  Of the Core and Standard Library classes,
  *  only BigDecimal uses this implementation.
@@ -614,8 +614,8 @@ num_fdiv(VALUE x, VALUE y)
  *    div(other) -> integer
  *
  *  Returns the quotient <tt>self/other</tt> as an integer (via +floor+),
- *  using method +/+ in the derived class of +self+.
- *  (\Numeric itself does not define method +/+.)
+ *  using method +/+ as defined in the subclass of \Numeric.
+ *  (\Numeric itself does not define +/+.)
  *
  *  Of the Core and Standard Library classes,
  *  Only Float and Rational use this implementation.
@@ -633,7 +633,7 @@ num_div(VALUE x, VALUE y)
  *  call-seq:
  *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
@@ -847,7 +847,8 @@ num_nonzero_p(VALUE num)
  *    to_int -> integer
  *
  *  Returns +self+ as an integer;
- *  converts using method +to_i+ in the derived class.
+ *  converts using method +to_i+ in the subclass of \Numeric.
+ *  (\Numeric itself does not define +to_i+.)
  *
  *  Of the Core and Standard Library classes,
  *  only Rational and Complex use this implementation.
@@ -904,88 +905,6 @@ num_negative_p(VALUE num)
 {
     return RBOOL(rb_num_negative_int_p(num));
 }
-
-
-/********************************************************************
- *
- *  Document-class: Float
- *
- *  A \Float object represents a sometimes-inexact real number using the native
- *  architecture's double-precision floating point representation.
- *
- *  Floating point has a different arithmetic and is an inexact number.
- *  So you should know its esoteric system. See following:
- *
- *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
- *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
- *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
- *
- *  You can create a \Float object explicitly with:
- *
- *  - A {floating-point literal}[rdoc-ref:syntax/literals.rdoc@Float+Literals].
- *
- *  You can convert certain objects to Floats with:
- *
- *  - Method #Float.
- *
- *  == What's Here
- *
- *  First, what's elsewhere. Class \Float:
- *
- *  - Inherits from
- *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *    and {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
- *
- *  Here, class \Float provides methods for:
- *
- *  - {Querying}[rdoc-ref:Float@Querying]
- *  - {Comparing}[rdoc-ref:Float@Comparing]
- *  - {Converting}[rdoc-ref:Float@Converting]
- *
- *  === Querying
- *
- *  - #finite?: Returns whether +self+ is finite.
- *  - #hash: Returns the integer hash code for +self+.
- *  - #infinite?: Returns whether +self+ is infinite.
- *  - #nan?: Returns whether +self+ is a NaN (not-a-number).
- *
- *  === Comparing
- *
- *  - #<: Returns whether +self+ is less than the given value.
- *  - #<=: Returns whether +self+ is less than or equal to the given value.
- *  - #<=>: Returns a number indicating whether +self+ is less than, equal
- *    to, or greater than the given value.
- *  - #== (aliased as #=== and #eql?): Returns whether +self+ is equal to
- *    the given value.
- *  - #>: Returns whether +self+ is greater than the given value.
- *  - #>=: Returns whether +self+ is greater than or equal to the given value.
- *
- *  === Converting
- *
- *  - #% (aliased as #modulo): Returns +self+ modulo the given value.
- *  - #*: Returns the product of +self+ and the given value.
- *  - #**: Returns the value of +self+ raised to the power of the given value.
- *  - #+: Returns the sum of +self+ and the given value.
- *  - #-: Returns the difference of +self+ and the given value.
- *  - #/: Returns the quotient of +self+ and the given value.
- *  - #ceil: Returns the smallest number greater than or equal to +self+.
- *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
- *    and +self+
- *  - #divmod: Returns a 2-element array containing the quotient and remainder
- *    results of dividing +self+ by the given value.
- *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
- *  - #floor: Returns the greatest number smaller than or equal to +self+.
- *  - #next_float: Returns the next-larger representable \Float.
- *  - #prev_float: Returns the next-smaller representable \Float.
- *  - #quo: Returns the quotient from dividing +self+ by the given value.
- *  - #round: Returns +self+ rounded to the nearest value, to a given precision.
- *  - #to_i (aliased as #to_int): Returns +self+ truncated to an Integer.
- *  - #to_s (aliased as #inspect): Returns a string containing the place-value
- *    representation of +self+ in the given radix.
- *  - #truncate: Returns +self+ truncated to a given precision.
- *
- */
 
 VALUE
 rb_float_new_in_heap(double d)
@@ -1131,15 +1050,21 @@ rb_float_uminus(VALUE flt)
 
 /*
  *  call-seq:
- *    self + other -> numeric
+ *    self + other -> float or complex
  *
- *  Returns a new \Float which is the sum of +self+ and +other+:
+ *  Returns the sum of +self+ and +other+;
+ *  the result may be inexact (see Float):
  *
- *    f = 3.14
- *    f + 1                 # => 4.140000000000001
- *    f + 1.0               # => 4.140000000000001
- *    f + Rational(1, 1)    # => 4.140000000000001
- *    f + Complex(1, 0)     # => (4.140000000000001+0i)
+ *    3.14 + 0              # => 3.14
+ *    3.14 + 1              # => 4.140000000000001
+ *    -3.14 + 0             # => -3.14
+ *    -3.14 + 1             # => -2.14
+
+ *    3.14 + -3.14          # => 0.0
+ *    -3.14 + -3.14         # => -6.28
+ *
+ *    3.14 + Complex(1, 0)   # => (4.140000000000001+0i)
+ *    3.14 + Rational(1, 1)  # => 4.140000000000001
  *
  */
 
@@ -1195,13 +1120,14 @@ rb_float_minus(VALUE x, VALUE y)
  *  call-seq:
  *    self * other -> numeric
  *
- *  Returns a new \Float which is the product of +self+ and +other+:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    f = 3.14
  *    f * 2              # => 6.28
  *    f * 2.0            # => 6.28
  *    f * Rational(1, 2) # => 1.57
  *    f * Complex(2, 0)  # => (6.28+0.0i)
+ *
  */
 
 VALUE
@@ -1358,7 +1284,7 @@ ruby_float_mod(double x, double y)
  *  call-seq:
  *    self % other -> float
  *
- *  Returns +self+ modulo +other+ as a float.
+ *  Returns +self+ modulo +other+ as a \Float.
  *
  *  For float +f+ and real number +r+, these expressions are equivalent:
  *
@@ -1591,17 +1517,11 @@ rb_float_equal(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a == b);
 }
 
@@ -1734,16 +1654,10 @@ rb_float_gt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '>');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a > b);
 }
 
@@ -1777,16 +1691,10 @@ flo_ge(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idGE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a >= b);
 }
 
@@ -1819,16 +1727,10 @@ flo_lt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '<');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a < b);
 }
 
@@ -1862,16 +1764,10 @@ flo_le(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idLE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a <= b);
 }
 
@@ -1899,10 +1795,7 @@ rb_float_eql(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
         double a = RFLOAT_VALUE(x);
         double b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a) || isnan(b)) return Qfalse;
-#endif
-    return RBOOL(a == b);
+        return RBOOL(a == b);
     }
     return Qfalse;
 }
@@ -4030,17 +3923,20 @@ rb_fix_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self + numeric -> numeric_result
+ *    self + other -> numeric
  *
- *  Performs addition:
+ *  Returns the sum of +self+ and +other+:
  *
- *    2 + 2              # => 4
- *    -2 + 2             # => 0
- *    -2 + -2            # => -4
- *    2 + 2.0            # => 4.0
- *    2 + Rational(2, 1) # => (4/1)
- *    2 + Complex(2, 0)  # => (4+0i)
+ *    1 + 1               # => 2
+ *    1 + -1             # => 0
+ *    1 + 0              # => 1
+ *    1 + -2             # => -1
+ *    1 + Complex(1, 0)  # => (2+0i)
+ *    1 + Rational(1, 1) # => (2/1)
  *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    1 + 3.14           # => 4.140000000000001
  */
 
 VALUE
@@ -4131,16 +4027,17 @@ fix_mul(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self * numeric -> numeric_result
+ *    self * other -> numeric
  *
- *  Performs multiplication:
+ * Returns the numeric product of +self+ and +other+:
  *
  *    4 * 2              # => 8
- *    4 * -2             # => -8
  *    -4 * 2             # => -8
+ *    4 * -2             # => -8
  *    4 * 2.0            # => 8.0
  *    4 * Rational(1, 3) # => (4/3)
  *    4 * Complex(2, 0)  # => (8+0i)
+ *
  */
 
 VALUE
@@ -4349,9 +4246,9 @@ fix_mod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self % other -> real_number
+ *    self % other -> real_numeric
  *
- *  Returns +self+ modulo +other+ as a real number.
+ *  Returns +self+ modulo +other+ as a real numeric (\Integer, \Float, or \Rational).
  *
  *  For integer +n+ and real number +r+, these expressions are equivalent:
  *
@@ -4623,17 +4520,48 @@ fix_pow(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** numeric -> numeric_result
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +numeric+:
+ *  Returns the value of base +self+ raised to the power +exponent+;
+ *  see {Exponentiation}[https://en.wikipedia.org/wiki/Exponentiation]:
  *
- *    2 ** 3              # => 8
- *    2 ** -3             # => (1/8)
- *    -2 ** 3             # => -8
- *    -2 ** -3            # => (-1/8)
- *    2 ** 3.3            # => 9.849155306759329
- *    2 ** Rational(3, 1) # => (8/1)
- *    2 ** Complex(3, 0)  # => (8+0i)
+ *    # Result for non-negative Integer exponent is Integer.
+ *    2 ** 0   # => 1
+ *    2 ** 1   # => 2
+ *    2 ** 2   # => 4
+ *    2 ** 3   # => 8
+ *    -2 ** 3  # => -8
+ *    # Result for negative Integer exponent is Rational, not Float.
+ *    2 ** -3  # => (1/8)
+ *    -2 ** -3 # => (-1/8)
+ *
+ *    # Result for Float exponent is Float.
+ *    2 ** 0.0   # => 1.0
+ *    2 ** 1.0   # => 2.0
+ *    2 ** 2.0   # => 4.0
+ *    2 ** 3.0   # => 8.0
+ *    -2 ** 3.0  # => -8.0
+ *    2 ** -3.0  # => 0.125
+ *    -2 ** -3.0 # => -0.125
+ *
+ *    # Result for non-negative Complex exponent is Complex with Integer parts.
+ *    2 ** Complex(0, 0)   # => (1+0i)
+ *    2 ** Complex(1, 0)   # => (2+0i)
+ *    2 ** Complex(2, 0)   # => (4+0i)
+ *    2 ** Complex(3, 0)   # => (8+0i)
+ *    -2 ** Complex(3, 0) # => (-8+0i)
+ *    # Result for negative Complex exponent is Complex with Rational parts.
+ *    2 ** Complex(-3, 0)  # => ((1/8)+(0/1)*i)
+ *    -2 ** Complex(-3, 0) # => ((-1/8)+(0/1)*i)
+ *
+ *    # Result for Rational exponent is Rational.
+ *    2 ** Rational(0, 1)   # => (1/1)
+ *    2 ** Rational(1, 1)   # => (2/1)
+ *    2 ** Rational(2, 1)   # => (4/1)
+ *    2 ** Rational(3, 1)   # => (8/1)
+ *    -2 ** Rational(3, 1)  # => (-8/1)
+ *    2 ** Rational(-3, 1)  # => (1/8)
+ *    -2 ** Rational(-3, 1) # => (-1/8)
  *
  */
 VALUE

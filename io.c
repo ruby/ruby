@@ -7820,7 +7820,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  If no block is given, returns the new stream,
  *  which depending on given +mode+ may be open for reading, writing, or both.
@@ -8079,7 +8079,12 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     int write_pair[2];
 # endif
 
-    int result = rb_cloexec_pipe(write_pair);
+#ifdef HAVE_PIPE2
+    int result = pipe2(write_pair, O_CLOEXEC);
+#else
+    int result = pipe(write_pair);
+#endif
+
     *pid = -1;
     if (result == 0) {
 # ifdef HAVE_WORKING_FORK
@@ -8219,7 +8224,7 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
  *  Creates an IO object connected to the given file.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  With no block given, file stream is returned:
  *
@@ -8572,7 +8577,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
  *  Formats and writes +objects+ to the stream.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/format_specifications.rdoc].
  *
  */
 
@@ -8593,7 +8598,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  *    io.write(sprintf(format_string, *objects))
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/format_specifications.rdoc].
  *
  *  With the single argument +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to $stdout:
@@ -8636,31 +8641,19 @@ rb_f_printf(int argc, VALUE *argv, VALUE _)
     return Qnil;
 }
 
-static void
-deprecated_str_setter(VALUE val, ID id, VALUE *var)
-{
-    rb_str_setter(val, id, &val);
-    if (!NIL_P(val)) {
-        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
-    }
-    *var = val;
-}
+extern void rb_deprecated_str_setter(VALUE val, ID id, VALUE *var);
 
 static void
 deprecated_rs_setter(VALUE val, ID id, VALUE *var)
 {
+    rb_deprecated_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        if (!RB_TYPE_P(val, T_STRING)) {
-            rb_raise(rb_eTypeError, "value of %"PRIsVALUE" must be String", rb_id2str(id));
-        }
         if (rb_str_equal(val, rb_default_rs)) {
             val = rb_default_rs;
         }
         else {
             val = rb_str_frozen_bare_string(val);
         }
-        rb_enc_str_coderange(val);
-        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
     }
     *var = val;
 }
@@ -10616,7 +10609,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *  sets global variable <tt>$?</tt> to the process status.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Examples:
  *
@@ -12030,7 +12023,7 @@ io_s_foreach(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12133,7 +12126,7 @@ io_s_readlines(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12222,7 +12215,7 @@ seek_before_access(VALUE argp)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12293,7 +12286,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -12397,7 +12390,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12447,7 +12440,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -15725,7 +15718,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
 
     rb_output_fs = Qnil;
-    rb_define_hooked_variable("$,", &rb_output_fs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_deprecated_str_setter);
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
     rb_vm_register_global_object(rb_default_rs);
@@ -15735,7 +15728,7 @@ Init_IO(void)
     rb_gvar_ractor_local("$/"); // not local but ractor safe
     rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$-0"); // not local but ractor safe
-    rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");

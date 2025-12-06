@@ -14,7 +14,7 @@
 #define GetHMAC(obj, ctx) do { \
     TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+        ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
 } while (0)
 
@@ -41,7 +41,7 @@ ossl_hmac_free(void *ctx)
 static const rb_data_type_t ossl_hmac_type = {
     "OpenSSL/HMAC",
     {
-	0, ossl_hmac_free,
+        0, ossl_hmac_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -74,17 +74,17 @@ ossl_hmac_alloc(VALUE klass)
  *
  * === Example
  *
- *	key = 'key'
- * 	instance = OpenSSL::HMAC.new(key, 'SHA1')
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
- * 	instance.class
- * 	#=> OpenSSL::HMAC
+ *      key = 'key'
+ *      instance = OpenSSL::HMAC.new(key, 'SHA1')
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      instance.class
+ *      #=> OpenSSL::HMAC
  *
  * === A note about comparisons
  *
  * Two instances can be securely compared with #== in constant time:
  *
- *	other_instance = OpenSSL::HMAC.new('key', 'SHA1')
+ *      other_instance = OpenSSL::HMAC.new('key', 'SHA1')
  *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *  instance == other_instance
  *  #=> true
@@ -142,13 +142,13 @@ ossl_hmac_copy(VALUE self, VALUE other)
  *
  * === Example
  *
- *	first_chunk = 'The quick brown fox jumps '
- * 	second_chunk = 'over the lazy dog'
+ *      first_chunk = 'The quick brown fox jumps '
+ *      second_chunk = 'over the lazy dog'
  *
- * 	instance.update(first_chunk)
- * 	#=> 5b9a8038a65d571076d97fe783989e52278a492a
- * 	instance.update(second_chunk)
- * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ *      instance.update(first_chunk)
+ *      #=> 5b9a8038a65d571076d97fe783989e52278a492a
+ *      instance.update(second_chunk)
+ *      #=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
  *
  */
 static VALUE
@@ -226,14 +226,14 @@ ossl_hmac_hexdigest(VALUE self)
  *
  * === Example
  *
- *	data = "The quick brown fox jumps over the lazy dog"
- * 	instance = OpenSSL::HMAC.new('key', 'SHA1')
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      data = "The quick brown fox jumps over the lazy dog"
+ *      instance = OpenSSL::HMAC.new('key', 'SHA1')
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *
- * 	instance.update(data)
- * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
- * 	instance.reset
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      instance.update(data)
+ *      #=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ *      instance.reset
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *
  */
 static VALUE
@@ -256,11 +256,6 @@ ossl_hmac_reset(VALUE self)
 void
 Init_ossl_hmac(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * Document-class: OpenSSL::HMAC
      *

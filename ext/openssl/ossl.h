@@ -92,10 +92,10 @@ extern VALUE eOSSLError;
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) do {\
-  if (!rb_obj_is_kind_of((obj), (klass))) {\
-    ossl_raise(rb_eTypeError, "wrong argument (%"PRIsVALUE")! (Expected kind of %"PRIsVALUE")",\
-               rb_obj_class(obj), (klass));\
-  }\
+    if (!rb_obj_is_kind_of((obj), (klass))) {\
+        ossl_raise(rb_eTypeError, "wrong argument (%"PRIsVALUE")! (Expected kind of %"PRIsVALUE")",\
+                   rb_obj_class(obj), (klass));\
+    }\
 } while (0)
 
 /*
@@ -174,11 +174,11 @@ VALUE ossl_to_der_if_possible(VALUE);
 extern VALUE dOSSL;
 
 #define OSSL_Debug(...) do { \
-  if (dOSSL == Qtrue) { \
-    fprintf(stderr, "OSSL_DEBUG: "); \
-    fprintf(stderr, __VA_ARGS__); \
-    fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
-  } \
+    if (dOSSL == Qtrue) { \
+        fprintf(stderr, "OSSL_DEBUG: "); \
+        fprintf(stderr, __VA_ARGS__); \
+        fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
+    } \
 } while (0)
 
 /*

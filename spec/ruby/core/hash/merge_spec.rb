@@ -93,6 +93,29 @@ describe "Hash#merge" do
     merged.should eql(hash)
     merged.should_not equal(hash)
   end
+
+  it "retains the default value" do
+    h = Hash.new(1)
+    h.merge(b: 1, d: 2).default.should == 1
+  end
+
+  it "retains the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.merge(b: 1, d: 2).default_proc.should == pr
+  end
+
+  it "retains compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.merge(b: 1, d: 2)
+    h2.compare_by_identity?.should == true
+  end
+
+  it "ignores compare_by_identity flag of an argument" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = { b: 1, d: 2 }.merge(h)
+    h2.compare_by_identity?.should == false
+  end
 end
 
 describe "Hash#merge!" do

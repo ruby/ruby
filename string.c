@@ -549,7 +549,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!rb_obj_exivar_p(str));
+    RUBY_ASSERT(!rb_shape_obj_has_ivars(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));
 
@@ -1935,8 +1935,8 @@ str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
     long len = RSTRING_LEN(str);
 
     RUBY_ASSERT(STR_EMBED_P(dup));
-    RUBY_ASSERT(str_embed_capa(dup) >= len + 1);
-    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
+    RUBY_ASSERT(str_embed_capa(dup) >= len + TERM_LEN(str));
+    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + TERM_LEN(str));
     STR_SET_LEN(dup, RSTRING_LEN(str));
     return str_duplicate_setup_encoding(str, dup, flags);
 }
@@ -2618,7 +2618,7 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Returns the result of formatting +object+ into the format specifications
  *  contained in +self+
- *  (see {Format Specifications}[rdoc-ref:format_specifications.rdoc]):
+ *  (see {Format Specifications}[rdoc-ref:language/format_specifications.rdoc]):
  *
  *    '%05d' % 123 # => "00123"
  *
@@ -5463,33 +5463,7 @@ str_upto_i(VALUE str, VALUE arg)
  *    upto(other_string, exclusive = false) {|string| ... } -> self
  *    upto(other_string, exclusive = false) -> new_enumerator
  *
- *  With a block given, calls the block with each +String+ value
- *  returned by successive calls to String#succ;
- *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
- *  the sequence terminates when value +other_string+ is reached;
- *  returns +self+:
- *
- *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5 b6
- *
- *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
- *
- *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
- *
- *  Output:
- *
- *    a8 a9 b0 b1 b2 b3 b4 b5
- *
- *  If +other_string+ would not be reached, does not call the block:
- *
- *    '25'.upto('5') {|s| fail s }
- *    'aa'.upto('a') {|s| fail s }
- *
- *  With no block given, returns a new Enumerator:
- *
- *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+ *  :include: doc/string/upto.rdoc
  *
  */
 
@@ -7628,17 +7602,11 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
 
 /*
  *  call-seq:
- *    undump -> string
+ *    undump -> new_string
  *
- *  Returns an unescaped version of +self+:
+ *  Inverse of String#dump; returns a copy of +self+ with changes of the kinds made by String#dump "undone."
  *
- *    s_orig = "\f\x00\xff\\\""    # => "\f\u0000\xFF\\\""
- *    s_dumped = s_orig.dump       # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *    s_undumped = s_dumped.undump # => "\f\u0000\xFF\\\""
- *    s_undumped == s_orig         # => true
- *
- *  Related: String#dump (inverse of String#undump).
- *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -7965,19 +7933,12 @@ upcase_single(VALUE str)
  *  call-seq:
  *    upcase!(mapping) -> self or nil
  *
- *  Upcases the characters in +self+;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#upcase, except that:
  *
- *    s = 'Hello World!' # => "Hello World!"
- *    s.upcase!          # => "HELLO WORLD!"
- *    s                  # => "HELLO WORLD!"
- *    s.upcase!          # => nil
+ *  - Changes character casings in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase, String#downcase, String#downcase!.
- *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -8007,16 +7968,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    upcase(mapping) -> string
  *
- *  Returns a string containing the upcased characters in +self+:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.upcase           # => "HELLO WORLD!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#upcase!, String#downcase, String#downcase!.
- *
+ *  :include: doc/string/upcase.rdoc
  */
 
 static VALUE
@@ -11424,6 +11376,21 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 }
 
 static void
+nil_setter_warning(ID id)
+{
+    rb_warn_deprecated("non-nil '%"PRIsVALUE"'", NULL, rb_id2str(id));
+}
+
+void
+rb_deprecated_str_setter(VALUE val, ID id, VALUE *var)
+{
+    rb_str_setter(val, id, var);
+    if (!NIL_P(*var)) {
+        nil_setter_warning(id);
+    }
+}
+
+static void
 rb_fs_setter(VALUE val, ID id, VALUE *var)
 {
     val = rb_fs_check(val);
@@ -11433,7 +11400,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
                  rb_id2str(id));
     }
     if (!NIL_P(val)) {
-        rb_warn_deprecated("'$;'", NULL);
+        nil_setter_warning(id);
     }
     *var = val;
 }
@@ -11517,11 +11484,8 @@ rb_str_b(VALUE str)
  *  call-seq:
  *    valid_encoding? -> true or false
  *
- *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
+ *  :include: doc/string/valid_encoding_p.rdoc
  *
- *    "\xc2\xa1".force_encoding(Encoding::UTF_8).valid_encoding? # => true
- *    "\xc2".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
- *    "\x80".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
  */
 
 static VALUE
@@ -11932,34 +11896,8 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  call-seq:
  *    unicode_normalize(form = :nfc) -> string
  *
- *  Returns a copy of +self+ with
- *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
+ *  :include: doc/string/unicode_normalize.rdoc
  *
- *  Argument +form+ must be one of the following symbols
- *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
- *
- *  - +:nfc+: Canonical decomposition, followed by canonical composition.
- *  - +:nfd+: Canonical decomposition.
- *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
- *  - +:nfkd+: Compatibility decomposition.
- *
- *  The encoding of +self+ must be one of:
- *
- *  - Encoding::UTF_8
- *  - Encoding::UTF_16BE
- *  - Encoding::UTF_16LE
- *  - Encoding::UTF_32BE
- *  - Encoding::UTF_32LE
- *  - Encoding::GB18030
- *  - Encoding::UCS_2BE
- *  - Encoding::UCS_4BE
- *
- *  Examples:
- *
- *    "a\u0300".unicode_normalize      # => "a"
- *    "\u00E0".unicode_normalize(:nfd) # => "a "
- *
- *  Related: String#unicode_normalize!, String#unicode_normalized?.
  */
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
@@ -12657,9 +12595,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 void
-rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint)
 {
     if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
         ssize_t code = RB_NUM2SSIZE(codepoint);

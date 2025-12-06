@@ -95,6 +95,7 @@ VALUE rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv);
  */
 VALUE rb_check_funcall_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat);
 
+#ifdef RBIMPL_ATTR_DEPRECATED_INTERNAL
 /**
  * This API  is practically a  variant of rb_proc_call_kw()  now.  Historically
  * when there  still was a  concept called `$SAFE`, this  was an API  for that.
@@ -109,7 +110,9 @@ VALUE rb_check_funcall_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int k
  *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
  * @return     What the command evaluates to.
  */
+RBIMPL_ATTR_DEPRECATED_INTERNAL(4.0)
 VALUE rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat);
+#endif
 
 /**
  * Identical to rb_funcallv(), except it takes Ruby's array instead of C's.

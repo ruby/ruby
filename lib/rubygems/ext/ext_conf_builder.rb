@@ -40,6 +40,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       end
 
       ENV["DESTDIR"] = nil
+      unless RUBY_PLATFORM.include?("mswin") && RbConfig::CONFIG["configure_args"]&.include?("nmake")
+        ENV["MAKEFLAGS"] ||= "-j#{Etc.nprocessors + 1}"
+      end
 
       make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig
 

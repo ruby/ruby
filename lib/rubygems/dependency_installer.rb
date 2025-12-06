@@ -7,14 +7,12 @@ require_relative "installer"
 require_relative "spec_fetcher"
 require_relative "user_interaction"
 require_relative "available_set"
-require_relative "deprecate"
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
 
 class Gem::DependencyInstaller
   include Gem::UserInteraction
-  extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
     env_shebang: false,

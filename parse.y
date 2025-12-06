@@ -1393,7 +1393,6 @@ last_expr_node(NODE *expr)
 
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
 static NODE* method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
-#define new_nil(loc) NEW_NIL(loc)
 static NODE *new_nil_at(struct parser_params *p, const rb_code_position_t *pos);
 static NODE *new_if(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *new_unless(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
@@ -1402,10 +1401,9 @@ static NODE *logop(struct parser_params*,ID,NODE*,NODE*,const YYLTYPE*,const YYL
 static NODE *newline_node(NODE*);
 static void fixpos(NODE*,NODE*);
 
-static int value_expr_gen(struct parser_params*,NODE*);
+static int value_expr(struct parser_params*,NODE*);
 static void void_expr(struct parser_params*,NODE*);
 static NODE *remove_begin(NODE*);
-#define value_expr(node) value_expr_gen(p, (node))
 static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
 static void block_dup_check(struct parser_params*,NODE*,NODE*);
@@ -3103,39 +3101,39 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %rule range_expr(range) <node>
                 : range tDOT2 range
                     {
-                        value_expr($1);
-                        value_expr($3);
+                        value_expr(p, $1);
+                        value_expr(p, $3);
                         $$ = NEW_DOT2($1, $3, &@$, &@2);
                     /*% ripper: dot2!($:1, $:3) %*/
                     }
                 | range tDOT3 range
                     {
-                        value_expr($1);
-                        value_expr($3);
+                        value_expr(p, $1);
+                        value_expr(p, $3);
                         $$ = NEW_DOT3($1, $3, &@$, &@2);
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
                 | range tDOT2
                     {
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = NEW_DOT2($1, new_nil_at(p, &@2.end_pos), &@$, &@2);
                     /*% ripper: dot2!($:1, Qnil) %*/
                     }
                 | range tDOT3
                     {
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$, &@2);
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
                 | tBDOT2 range
                     {
-                        value_expr($2);
+                        value_expr(p, $2);
                         $$ = NEW_DOT2(new_nil_at(p, &@1.beg_pos), $2, &@$, &@1);
                     /*% ripper: dot2!(Qnil, $:2) %*/
                     }
                 | tBDOT3 range
                     {
-                        value_expr($2);
+                        value_expr(p, $2);
                         $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$, &@1);
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
@@ -3144,7 +3142,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %rule value_expr(value) <node>
                 : value
                     {
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = $1;
                     }
                 ;
@@ -3467,7 +3465,7 @@ expr		: command_call
                     }
                 | arg tASSOC
                     {
-                        value_expr($arg);
+                        value_expr(p, $arg);
                     }
                   p_in_kwarg[ctxt] p_pvtbl p_pktbl
                   p_top_expr_body[body]
@@ -3482,7 +3480,7 @@ expr		: command_call
                     }
                 | arg keyword_in
                     {
-                        value_expr($arg);
+                        value_expr(p, $arg);
                     }
                   p_in_kwarg[ctxt] p_pvtbl p_pktbl
                   p_top_expr_body[body]
@@ -4059,7 +4057,7 @@ arg		: asgn(arg_rhs)
 
 ternary		: arg '?' arg '\n'? ':' arg
                     {
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = new_if(p, $1, $3, $6, &@$, &NULL_LOC, &@5, &NULL_LOC);
                         fixpos($$, $1);
                     /*% ripper: ifop!($:1, $:3, $:6) %*/
@@ -4138,13 +4136,13 @@ aref_args	: none
 
 arg_rhs 	: arg   %prec tOP_ASGN
                     {
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = $1;
                     }
                 | arg modifier_rescue after_rescue arg
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
-                        value_expr($1);
+                        value_expr(p, $1);
                         $$ = rescued_expr(p, $1, $4, &@1, &@2, &@4);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
@@ -4452,7 +4450,7 @@ primary		: inline_primary
                 }
             | keyword_not '(' rparen
                 {
-                    $$ = call_uni_op(p, method_cond(p, new_nil(&@2), &@2), METHOD_NOT, &@1, &@$);
+                    $$ = call_uni_op(p, method_cond(p, NEW_NIL(&@2), &@2), METHOD_NOT, &@1, &@$);
                 /*% ripper: unary!(ID2VAL(idNOT), Qnil) %*/
                 }
             | fcall brace_block
@@ -5468,11 +5466,6 @@ p_top_expr_body	: p_expr
                 ;
 
 p_expr		: p_as
-                    {
-                        p->ctxt.in_alt_pattern = 0;
-                        p->ctxt.capture_in_pattern = 0;
-                        $$ = $1;
-                    }
                 ;
 
 p_as		: p_expr tASSOC p_variable
@@ -5494,6 +5487,7 @@ p_alt		: p_alt[left] '|'[alt]
                         if (p->ctxt.capture_in_pattern) {
                             yyerror1(&@alt, "alternative pattern after variable capture");
                         }
+                        p->ctxt.in_alt_pattern = 0;
                         $$ = NEW_OR($left, $right, &@$, &@alt);
                     /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
@@ -12824,8 +12818,8 @@ call_bin_op(struct parser_params *p, NODE *recv, ID id, NODE *arg1,
                 const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
     NODE *expr;
-    value_expr(recv);
-    value_expr(arg1);
+    value_expr(p, recv);
+    value_expr(p, arg1);
     expr = NEW_OPCALL(recv, id, NEW_LIST(arg1, &arg1->nd_loc), loc);
     nd_set_line(expr, op_loc->beg_pos.lineno);
     return expr;
@@ -12835,7 +12829,7 @@ static NODE *
 call_uni_op(struct parser_params *p, NODE *recv, ID id, const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
     NODE *opcall;
-    value_expr(recv);
+    value_expr(p, recv);
     opcall = NEW_OPCALL(recv, id, 0, loc);
     nd_set_line(opcall, op_loc->beg_pos.lineno);
     return opcall;
@@ -12885,8 +12879,8 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
     NODE *n;
     int line = op_loc->beg_pos.lineno;
 
-    value_expr(node1);
-    value_expr(node2);
+    value_expr(p, node1);
+    value_expr(p, node2);
 
     if ((n = last_expr_once_body(node1)) != 0) {
         switch (nd_type(n)) {
@@ -13926,7 +13920,7 @@ value_expr_check(struct parser_params *p, NODE *node)
 }
 
 static int
-value_expr_gen(struct parser_params *p, NODE *node)
+value_expr(struct parser_params *p, NODE *node)
 {
     NODE *void_node = value_expr_check(p, node);
     if (void_node) {
@@ -14195,7 +14189,7 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     if (node == 0) return 0;
 
     type = nd_type(node);
-    value_expr(node);
+    value_expr(p, node);
     if (type == NODE_INTEGER) {
         if (!e_option_supplied(p)) rb_warn0L(nd_line(node), "integer literal in flip-flop");
         ID lineno = rb_intern("$.");
@@ -14332,7 +14326,7 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
 {
     enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
     NODE *op;
-    value_expr(left);
+    value_expr(p, left);
     if (left && nd_type_p(left, type)) {
         NODE *node = left, *second;
         while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {

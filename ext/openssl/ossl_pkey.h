@@ -22,7 +22,7 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 #define GetPKey(obj, pkey) do {\
     TypedData_Get_Struct((obj), EVP_PKEY, &ossl_evp_pkey_type, (pkey)); \
     if (!(pkey)) { \
-	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!");\
+        rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!");\
     } \
 } while (0)
 
@@ -45,7 +45,7 @@ VALUE ossl_pkey_export_spki(VALUE self, int to_der);
  * #to_der.
  */
 VALUE ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self,
-				   int to_der);
+                                   int to_der);
 
 void Init_ossl_pkey(void);
 
@@ -74,120 +74,120 @@ extern VALUE cEC;
 VALUE ossl_ec_new(EVP_PKEY *);
 void Init_ossl_ec(void);
 
-#define OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, _name, _get)		\
-/*									\
- *  call-seq:								\
- *     _keytype##.##_name -> aBN					\
- */									\
-static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
-{									\
-	const _type *obj;						\
-	const BIGNUM *bn;						\
-									\
-	Get##_type(self, obj);						\
-	_get;								\
-	if (bn == NULL)							\
-		return Qnil;						\
-	return ossl_bn_new(bn);						\
+#define OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, _name, _get)          \
+/*                                                                      \
+ *  call-seq:                                                           \
+ *     _keytype##.##_name -> aBN                                        \
+ */                                                                     \
+static VALUE ossl_##_keytype##_get_##_name(VALUE self)                  \
+{                                                                       \
+        const _type *obj;                                               \
+        const BIGNUM *bn;                                               \
+                                                                        \
+        Get##_type(self, obj);                                          \
+        _get;                                                           \
+        if (bn == NULL)                                                 \
+                return Qnil;                                            \
+        return ossl_bn_new(bn);                                         \
 }
 
-#define OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
-	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,			\
-		_type##_get0_##_group(obj, &bn, NULL, NULL))		\
-	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
-		_type##_get0_##_group(obj, NULL, &bn, NULL))		\
-	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a3,			\
-		_type##_get0_##_group(obj, NULL, NULL, &bn))
+#define OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)   \
+        OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,                   \
+                _type##_get0_##_group(obj, &bn, NULL, NULL))            \
+        OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,                   \
+                _type##_get0_##_group(obj, NULL, &bn, NULL))            \
+        OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a3,                   \
+                _type##_get0_##_group(obj, NULL, NULL, &bn))
 
-#define OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
-	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,			\
-		_type##_get0_##_group(obj, &bn, NULL))			\
-	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
-		_type##_get0_##_group(obj, NULL, &bn))
+#define OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)       \
+        OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,                   \
+                _type##_get0_##_group(obj, &bn, NULL))                  \
+        OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,                   \
+                _type##_get0_##_group(obj, NULL, &bn))
 
 #ifndef OSSL_HAVE_IMMUTABLE_PKEY
-#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
-/*									\
- *  call-seq:								\
- *     _keytype##.set_##_group(a1, a2, a3) -> self			\
- */									\
+#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)   \
+/*                                                                      \
+ *  call-seq:                                                           \
+ *     _keytype##.set_##_group(a1, a2, a3) -> self                      \
+ */                                                                     \
 static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALUE v3) \
-{									\
-	_type *obj;							\
-	BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
-	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
-	BIGNUM *bn3 = NULL, *orig_bn3 = NIL_P(v3) ? NULL : GetBNPtr(v3);\
-									\
-	Get##_type(self, obj);						\
-        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
-            (orig_bn2 && !(bn2 = BN_dup(orig_bn2))) ||			\
-            (orig_bn3 && !(bn3 = BN_dup(orig_bn3)))) {			\
-		BN_clear_free(bn1);					\
-		BN_clear_free(bn2);					\
-		BN_clear_free(bn3);					\
-		ossl_raise(ePKeyError, "BN_dup");			\
-	}								\
-									\
-	if (!_type##_set0_##_group(obj, bn1, bn2, bn3)) {		\
-		BN_clear_free(bn1);					\
-		BN_clear_free(bn2);					\
-		BN_clear_free(bn3);					\
-		ossl_raise(ePKeyError, #_type"_set0_"#_group);		\
-	}								\
-	return self;							\
+{                                                                       \
+        _type *obj;                                                     \
+        BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
+        BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
+        BIGNUM *bn3 = NULL, *orig_bn3 = NIL_P(v3) ? NULL : GetBNPtr(v3);\
+                                                                        \
+        Get##_type(self, obj);                                          \
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||                  \
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2))) ||                  \
+            (orig_bn3 && !(bn3 = BN_dup(orig_bn3)))) {                  \
+                BN_clear_free(bn1);                                     \
+                BN_clear_free(bn2);                                     \
+                BN_clear_free(bn3);                                     \
+                ossl_raise(ePKeyError, "BN_dup");                       \
+        }                                                               \
+                                                                        \
+        if (!_type##_set0_##_group(obj, bn1, bn2, bn3)) {               \
+                BN_clear_free(bn1);                                     \
+                BN_clear_free(bn2);                                     \
+                BN_clear_free(bn3);                                     \
+                ossl_raise(ePKeyError, #_type"_set0_"#_group);          \
+        }                                                               \
+        return self;                                                    \
 }
 
-#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
-/*									\
- *  call-seq:								\
- *     _keytype##.set_##_group(a1, a2) -> self				\
- */									\
+#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)       \
+/*                                                                      \
+ *  call-seq:                                                           \
+ *     _keytype##.set_##_group(a1, a2) -> self                          \
+ */                                                                     \
 static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
-{									\
-	_type *obj;							\
-	BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
-	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
-									\
-	Get##_type(self, obj);						\
-        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
-            (orig_bn2 && !(bn2 = BN_dup(orig_bn2)))) {			\
-		BN_clear_free(bn1);					\
-		BN_clear_free(bn2);					\
-		ossl_raise(ePKeyError, "BN_dup");			\
-	}								\
-									\
-	if (!_type##_set0_##_group(obj, bn1, bn2)) {			\
-		BN_clear_free(bn1);					\
-		BN_clear_free(bn2);					\
-		ossl_raise(ePKeyError, #_type"_set0_"#_group);		\
-	}								\
-	return self;							\
+{                                                                       \
+        _type *obj;                                                     \
+        BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
+        BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
+                                                                        \
+        Get##_type(self, obj);                                          \
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||                  \
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2)))) {                  \
+                BN_clear_free(bn1);                                     \
+                BN_clear_free(bn2);                                     \
+                ossl_raise(ePKeyError, "BN_dup");                       \
+        }                                                               \
+                                                                        \
+        if (!_type##_set0_##_group(obj, bn1, bn2)) {                    \
+                BN_clear_free(bn1);                                     \
+                BN_clear_free(bn2);                                     \
+                ossl_raise(ePKeyError, #_type"_set0_"#_group);          \
+        }                                                               \
+        return self;                                                    \
 }
 #else
-#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
+#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)   \
 static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALUE v3) \
-{									\
-        rb_raise(ePKeyError,						\
+{                                                                       \
+        rb_raise(ePKeyError,                                            \
                  #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
 }
 
-#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
+#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)       \
 static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
-{									\
-        rb_raise(ePKeyError,						\
+{                                                                       \
+        rb_raise(ePKeyError,                                            \
                  #_keytype"#set_"#_group"= is incompatible with OpenSSL 3.0"); \
 }
 #endif
 
-#define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
-	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
-	OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)
+#define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)          \
+        OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)   \
+        OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)
 
-#define OSSL_PKEY_BN_DEF2(_keytype, _type, _group, a1, a2)		\
-	OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
-	OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)
+#define OSSL_PKEY_BN_DEF2(_keytype, _type, _group, a1, a2)              \
+        OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)       \
+        OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)
 
-#define DEF_OSSL_PKEY_BN(class, keytype, name)				\
-	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0)
+#define DEF_OSSL_PKEY_BN(class, keytype, name)                          \
+        rb_define_method((class), #name, ossl_##keytype##_get_##name, 0)
 
 #endif /* OSSL_PKEY_H */

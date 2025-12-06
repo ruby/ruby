@@ -11,7 +11,7 @@ describe "Random.new" do
   it "returns Random instances initialized with different seeds" do
     first = Random.new
     second = Random.new
-    (0..20).map { first.rand } .should_not == (0..20).map { second.rand }
+    (0..20).map { first.rand }.should_not == (0..20).map { second.rand }
   end
 
   it "accepts an Integer seed value as an argument" do

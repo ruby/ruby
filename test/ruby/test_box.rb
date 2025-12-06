@@ -5,7 +5,7 @@ require 'test/unit'
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNINGS = [
     "warning: Ruby::Box is experimental, and the behavior may change in the future!",
-    "See doc/box.md for known issues, etc."
+    "See doc/language/box.md for known issues, etc."
   ].join("\n")
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
@@ -808,6 +808,23 @@ class TestBox < Test::Unit::TestCase
       require "securerandom"
       expected = 1
       assert_equal expected, 1
+    end;
+  end
+
+  def test_mark_box_object_referred_only_from_binding
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval('class Integer; def +(*)=42; end')
+      b = box.eval('binding')
+      box = nil # remove direct reference to the box
+
+      assert_equal 42, b.eval('1+2')
+
+      GC.stress = true
+      GC.start
+
+      assert_equal 42, b.eval('1+2')
     end;
   end
 end

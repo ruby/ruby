@@ -88,8 +88,9 @@ _end_of_pem_
     assert_raise(TypeError) { req.version = nil }
     assert_raise(TypeError) { req.version = "foo" }
 
-    req.algorithm = "SHA1"
+    req.algorithm = "sha1"
     assert_equal("SHA1", req.algorithm)
+    assert_equal("SHA1", OpenSSL::ASN1.ObjectId("SHA1").sn)
     assert_raise(TypeError) { req.algorithm = nil }
     assert_raise(OpenSSL::ASN1::ASN1Error) { req.algorithm = "xxx" }
 

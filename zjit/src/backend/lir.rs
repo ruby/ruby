@@ -1399,6 +1399,15 @@ impl Assembler
         }
     }
 
+    pub fn instruction_iterator(&mut self) -> InsnIter {
+        let insns = take(&mut self.insns);
+        InsnIter {
+            old_insns_iter: insns.into_iter(),
+            peeked: None,
+            index: 0,
+        }
+    }
+
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
         self.leaf_ccall_stack_size = Some(stack_size);
     }
@@ -1998,6 +2007,44 @@ impl fmt::Debug for Assembler {
     }
 }
 
+pub struct InsnIter {
+    old_insns_iter: std::vec::IntoIter<Insn>,
+    peeked: Option<(usize, Insn)>,
+    index: usize,
+}
+
+impl InsnIter {
+    // We're implementing our own peek() because we don't want peek to
+    // cross basic blocks as we're iterating.
+    pub fn peek(&mut self) -> Option<&(usize, Insn)> {
+        // If we don't have a peeked value, get one
+        if self.peeked.is_none() {
+            let insn = self.old_insns_iter.next()?;
+            let idx = self.index;
+            self.index += 1;
+            self.peeked = Some((idx, insn));
+        }
+        // Return a reference to the peeked value
+        self.peeked.as_ref()
+    }
+
+    // Get the next instruction.  Right now we're passing the "new" assembler
+    // (the assembler we're copying in to) as a parameter.  Once we've
+    // introduced basic blocks to LIR, we'll use the to set the correct BB
+    // on the new assembler, but for now it is unused.
+    pub fn next(&mut self, _new_asm: &mut Assembler) -> Option<(usize, Insn)> {
+        // If we have a peeked value, return it
+        if let Some(item) = self.peeked.take() {
+            return Some(item);
+        }
+        // Otherwise get the next from underlying iterator
+        let insn = self.old_insns_iter.next()?;
+        let idx = self.index;
+        self.index += 1;
+        Some((idx, insn))
+    }
+}
+
 impl Assembler {
     #[must_use]
     pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
@@ -2063,6 +2110,17 @@ impl Assembler {
             out,
         });
         out
+    }
+
+    pub fn count_call_to(&mut self, fn_name: &str) {
+        // We emit ccalls while initializing the JIT. Unfortunately, we skip those because
+        // otherwise we have no counter pointers to read.
+        if crate::state::ZJITState::has_instance() && get_option!(stats) {
+            let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
+            let counter_ptr = ccall_counter_pointers.entry(fn_name.to_string()).or_insert_with(|| Box::new(0));
+            let counter_ptr: &mut u64 = counter_ptr.as_mut();
+            self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
+        }
     }
 
     pub fn cmp(&mut self, left: Opnd, right: Opnd) {
@@ -2389,6 +2447,7 @@ pub(crate) use asm_comment;
 macro_rules! asm_ccall {
     [$asm: ident, $fn_name:ident, $($args:expr),* ] => {{
         $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
+        $asm.count_call_to(stringify!($fn_name));
         $asm.ccall($fn_name as *const u8, vec![$($args),*])
     }};
 }

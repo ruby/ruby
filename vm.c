@@ -2444,6 +2444,7 @@ vm_init_redefined_flag(void)
     OP(GT, GT), (C(Integer), C(Float));
     OP(GE, GE), (C(Integer), C(Float));
     OP(LTLT, LTLT), (C(String), C(Array));
+    OP(GTGT, GTGT), (C(Integer));
     OP(AREF, AREF), (C(Array), C(Hash), C(Integer));
     OP(ASET, ASET), (C(Array), C(Hash));
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
@@ -3677,6 +3678,13 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
+            if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
+                const rb_box_t *box = VM_ENV_BOX(ep);
+                if (BOX_USER_P(box)) {
+                    rb_gc_mark_movable(box->box_object);
+                }
+            }
+
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
@@ -3881,6 +3889,13 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
     rb_ec_set_vm_stack(ec, NULL, 0);
+}
+
+void
+rb_ec_close(rb_execution_context_t *ec)
+{
+    // Fiber storage is not accessible from outside the running fiber, so it is safe to clear it here.
+    ec->storage = Qnil;
 }
 
 static void
@@ -4713,12 +4728,6 @@ Init_vm_objects(void)
     vm->ci_table = st_init_table(&vm_ci_hashtype);
     vm->cc_refinement_table = rb_set_init_numtable();
 }
-
-#if USE_ZJIT
-extern VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self);
-#else
-static VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
-#endif
 
 // Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.
 #include "jit_hook.rbinc"

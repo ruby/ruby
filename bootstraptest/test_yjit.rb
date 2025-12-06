@@ -2680,6 +2680,22 @@ assert_equal '[1, 2]', %q{
   expandarray_redefined_nilclass
 }
 
+assert_equal 'not_array', %q{
+  def expandarray_not_array(obj)
+    a, = obj
+    a
+  end
+
+  obj = Object.new
+  def obj.method_missing(m, *args, &block)
+    return [:not_array] if m == :to_ary
+    super
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
+}
+
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
     a, b, c = [1, 2]
@@ -4079,6 +4095,26 @@ assert_equal '1', %q{
 
   bar { }
   bar { }
+}
+
+# unshareable bmethod call through Method#to_proc#call
+assert_equal '1000', %q{
+  define_method(:bmethod) do
+    self
+  end
+
+  Ractor.new do
+    errors = 0
+    1000.times do
+      p = method(:bmethod).to_proc
+      begin
+        p.call
+      rescue RuntimeError
+        errors += 1
+      end
+    end
+    errors
+  end.value
 }
 
 # test for return stub lifetime issue

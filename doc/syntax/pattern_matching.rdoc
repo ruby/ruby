@@ -253,11 +253,11 @@ The "rest" part of a pattern also can be bound to a variable:
 
   case {a: 1, b: 2}
   in {a: } | Array
+    # ^ SyntaxError (variable capture in alternative pattern)
     "matched: #{a}"
   else
     "not matched"
   end
-  # SyntaxError (illegal variable in alternative pattern (a))
 
 Variables that start with <code>_</code> are the only exclusions from this rule:
 

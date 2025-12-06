@@ -4,6 +4,12 @@ require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
+  def test_public_methods
+    assert_equal [:timeout], Timeout.private_instance_methods(false)
+    assert_equal [], Timeout.public_instance_methods(false)
+    assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+  end
+
   def test_work_is_done_in_same_thread_as_caller
     assert_equal Thread.current, Timeout.timeout(10){ Thread.current }
   end
@@ -250,7 +256,7 @@ class TestTimeout < Test::Unit::TestCase
   end
 
   def test_threadgroup
-    assert_separately(%w[-W0 -rtimeout], <<-'end;')
+    assert_separately(%w[-rtimeout], <<-'end;')
       tg = ThreadGroup.new
       thr = Thread.new do
         tg.add(Thread.current)
@@ -263,7 +269,7 @@ class TestTimeout < Test::Unit::TestCase
 
   # https://github.com/ruby/timeout/issues/24
   def test_handling_enclosed_threadgroup
-    assert_separately(%w[-W0 -rtimeout], <<-'end;')
+    assert_separately(%w[-rtimeout], <<-'end;')
       Thread.new {
         t = Thread.current
         group = ThreadGroup.new
@@ -274,4 +280,25 @@ class TestTimeout < Test::Unit::TestCase
       }.join
     end;
   end
+
+  def test_ractor
+    assert_separately(%w[-rtimeout -W0], <<-'end;')
+      r = Ractor.new do
+        Timeout.timeout(1) { 42 }
+      end.value
+
+      assert_equal 42, r
+
+      r = Ractor.new do
+        begin
+          Timeout.timeout(0.1) { sleep }
+        rescue Timeout::Error
+          :ok
+        end
+      end.value
+
+      assert_equal :ok, r
+    end;
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0' && !RUBY_PLATFORM.include?('x86_64-darwin')
+  # Exclude on x86_64-darwin as it failed 4 times out of 4 tries in the CI of ruby/ruby-dev-builder
 end

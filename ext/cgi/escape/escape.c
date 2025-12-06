@@ -45,6 +45,7 @@ escaped_length(VALUE str)
 static VALUE
 optimized_escape_html(VALUE str)
 {
+    VALUE escaped;
     VALUE vbuf;
     char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
     const char *cstr = RSTRING_PTR(str);
@@ -63,7 +64,6 @@ optimized_escape_html(VALUE str)
         }
     }
 
-    VALUE escaped;
     if (RSTRING_LEN(str) < (dest - buf)) {
         escaped = rb_str_new(buf, dest - buf);
         preserve_original_state(str, escaped);

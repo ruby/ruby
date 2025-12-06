@@ -268,6 +268,8 @@ struct rb_fiber_struct {
 
     unsigned int killed : 1;
 
+    rb_serial_t serial;
+
     struct coroutine_context context;
     struct fiber_pool_stack stack;
 };
@@ -1008,6 +1010,13 @@ rb_thread_t*
 rb_fiber_threadptr(const rb_fiber_t *fiber)
 {
     return fiber->cont.saved_ec.thread_ptr;
+}
+
+rb_serial_t
+rb_fiber_serial(const rb_fiber_t *fiber)
+{
+    VM_ASSERT(fiber->serial >= 1);
+    return fiber->serial;
 }
 
 static VALUE
@@ -1995,6 +2004,12 @@ fiber_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
 }
 
+static rb_serial_t
+next_fiber_serial(rb_ractor_t *cr)
+{
+    return cr->next_fiber_serial++;
+}
+
 static rb_fiber_t*
 fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 {
@@ -2011,6 +2026,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     fiber->cont.type = FIBER_CONTEXT;
     fiber->blocking = blocking;
     fiber->killed = 0;
+    fiber->serial = next_fiber_serial(th->ractor);
     cont_init(&fiber->cont, th);
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
@@ -2563,6 +2579,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.thread_ptr = th;
     fiber->blocking = 1;
     fiber->killed = 0;
+    fiber->serial = next_fiber_serial(th->ractor);
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
     cont_init_jit_cont(&fiber->cont);
@@ -2890,6 +2907,7 @@ void
 rb_fiber_close(rb_fiber_t *fiber)
 {
     fiber_status_set(fiber, FIBER_TERMINATED);
+    rb_ec_close(&fiber->cont.saved_ec);
 }
 
 static void
@@ -3353,6 +3371,8 @@ rb_fiber_atfork(rb_thread_t *th)
             th->root_fiber = th->ec->fiber_ptr;
         }
         th->root_fiber->prev = 0;
+        th->root_fiber->blocking = 1;
+        th->blocking = 1;
     }
 }
 #endif

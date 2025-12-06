@@ -37,7 +37,7 @@ Some examples here assume that certain helper methods are defined:
 - `match_values_cleared?(scanner)`:
   Returns whether the scanner's [match values][9] are cleared.
 
-See examples at [helper methods](doc/strscan/helper_methods.md).
+See examples at [helper methods](helper_methods.md).
 
 ## The `StringScanner` \Object
 
@@ -417,7 +417,7 @@ Each of these methods returns a captured match value:
 | Method          | Return After Match                      | Return After No Match |
 |-----------------|-----------------------------------------|-----------------------|
 | #size           | Count of captured substrings.           | +nil+.                |
-| #[](n)          | <tt>n</tt>th captured substring.        | +nil+.                |
+| #\[\](n)        | <tt>n</tt>th captured substring.        | +nil+.                |
 | #captures       | Array of all captured substrings.       | +nil+.                |
 | #values_at(*n)  | Array of specified captured substrings. | +nil+.                |
 | #named_captures | Hash of named captures.                 | <tt>{}</tt>.          |
