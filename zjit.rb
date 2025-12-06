@@ -10,6 +10,9 @@ module RubyVM::ZJIT
   # Blocks that are called when YJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
+  if Primitive.rb_zjit_get_stats_file_path_p
+    at_exit { print_stats_file }
+  end
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
   end
@@ -331,6 +334,14 @@ class << RubyVM::ZJIT
   # Print ZJIT stats
   def print_stats
     $stderr.write stats_string
+  end
+
+  # Print ZJIT stats to file
+  def print_stats_file
+    filename = Primitive.rb_zjit_get_stats_file_path_p
+    File.open(filename, "wb") do |file|
+      file.write stats_string
+    end
   end
 
   def dump_locations # :nodoc:
