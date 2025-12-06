@@ -29,3 +29,12 @@ dln_symbol(void *handle, const char *symbol)
 
     UNREACHABLE_RETURN(NULL);
 }
+
+NORETURN(void dln_close(void *));
+void
+dln_close(void *handle)
+{
+    rb_loaderror("this executable file can't load extension libraries");
+
+    UNREACHABLE_RETURN(NULL);
+}
