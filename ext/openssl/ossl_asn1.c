@@ -131,8 +131,7 @@ asn1integer_to_num(const ASN1_INTEGER *ai)
         ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
     if (ASN1_STRING_type(ai) == V_ASN1_ENUMERATED)
-        /* const_cast: workaround for old OpenSSL */
-        bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
+        bn = ASN1_ENUMERATED_to_BN(ai, NULL);
     else
         bn = ASN1_INTEGER_to_BN(ai, NULL);
 
