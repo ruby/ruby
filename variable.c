@@ -1195,9 +1195,9 @@ IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
     }
 }
 
-#define CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() \
+#define CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id) \
   if (UNLIKELY(!rb_ractor_main_p())) { \
-      rb_raise(rb_eRactorIsolationError, "can not access class variables from non-main Ractors"); \
+      rb_raise(rb_eRactorIsolationError, "can not access class variable %s from non-main Ractors", rb_id2name((id))); \
   }
 
 static inline void
@@ -4201,9 +4201,9 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
         } \
     }
 
-#define CVAR_LOOKUP(v,r) do {\
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(); \
-    if (cvar_lookup_at(klass, id, (v))) {r;}\
+#define CVAR_LOOKUP(id, v, r) do {\
+    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR((id)); \
+    if (cvar_lookup_at(klass, (id), (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
 
@@ -4211,7 +4211,7 @@ static VALUE
 find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 {
     VALUE v = Qundef;
-    CVAR_LOOKUP(&v, {
+    CVAR_LOOKUP(id, &v, {
         if (!*front) {
             *front = klass;
         }
@@ -4240,7 +4240,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
-    CVAR_LOOKUP(0, {if (!front) front = klass; target = klass;});
+    CVAR_LOOKUP(id, 0, {if (!front) front = klass; target = klass;});
     if (target) {
         cvar_overtaken(front, target, id);
     }
@@ -4316,7 +4316,7 @@ VALUE
 rb_cvar_defined(VALUE klass, ID id)
 {
     if (!klass) return Qfalse;
-    CVAR_LOOKUP(0,return Qtrue);
+    CVAR_LOOKUP(id, 0, return Qtrue);
     return Qfalse;
 }
 
