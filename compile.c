@@ -37,6 +37,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "parser_node_list.h"
 #include "ruby/ractor.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
@@ -947,7 +948,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         iseq_set_local_table(iseq, 0, 0);
     }
     /* assume node is T_NODE */
-    else if (nd_type_p(node, RB_PROGRAM_NODE)) {
+    else if (nd_type_p(node, RB_PROGRAM_NODE) ||
+             nd_type_p(node, RB_DEF_NODE)) {
         const rb_ast_id_table_t *locals = NULL;
         const NODE *args = NULL;
         const NODE *body = NULL;
@@ -979,6 +981,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             }
           case RB_DEF_NODE:
             {
+                const rb_def_node_t *cast = (const rb_def_node_t *) node;
+                locals = cast->locals;
+                args = cast->parameters;
+                body = (NODE *) cast->body;
                 break;
             }
           case RB_RESCUE_NODE:
@@ -995,10 +1001,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             }
           case RB_BLOCK_NODE:
             {
+                // args = cast->parameters;
                 break;
             }
           case RB_LAMBDA_NODE:
             {
+                // args = cast->parameters;
                 break;
             }
           case RB_FOR_NODE:
@@ -2140,9 +2148,9 @@ iseq_calc_param_size(rb_iseq_t *iseq)
 
 static int
 iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
-                            const struct rb_args_info *args, int arg_size)
+                            const rb_parameters_node_t *args, int arg_size)
 {
-    const rb_node_kw_arg_t *node = args->kw_args;
+    const rb_node_list2_t *keywords = &args->keywords;
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     struct rb_iseq_param_keyword *keyword;
     const VALUE default_values = rb_ary_hidden_new(1);
@@ -2152,75 +2160,77 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     body->param.flags.has_kw = TRUE;
     body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
 
-    while (node) {
-        kw++;
-        node = node->nd_next;
-    }
+    kw += RB_NODE_LIST_LEN(keywords);
     if (kw > VM_CALL_KW_LEN_MAX) {
-        COMPILE_ERROR(ERROR_ARGS_AT(RNODE(args->kw_args)) "too many keyword parameters (%d, maximum is %d)",
+        COMPILE_ERROR(ERROR_ARGS_AT(keywords->nodes[0]) "too many keyword parameters (%d, maximum is %d)",
                       kw, (int)VM_CALL_KW_LEN_MAX);
     }
     arg_size += kw;
     keyword->bits_start = arg_size++;
 
-    node = args->kw_args;
-    while (node) {
-        const NODE *val_node = get_nd_value(node->nd_body);
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(keywords); i++) {
+        const rb_node_t *node = keywords->nodes[i];
         VALUE dv;
 
-        if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
+        switch (nd_type(node)) {
+          case RB_REQUIRED_KEYWORD_PARAMETER_NODE:
             ++rkw;
-        }
-        else {
+            break;
+          case RB_OPTIONAL_KEYWORD_PARAMETER_NODE: {
+            const NODE *val_node = RB_NODE_OPTIONAL_KEYWORD_PARAMETER(node)->value;
+
             switch (nd_type(val_node)) {
-              case NODE_SYM:
+              case RB_SYMBOL_NODE:
                 dv = rb_node_sym_string_val(val_node);
                 break;
-              case NODE_REGX:
+              case RB_REGULAR_EXPRESSION_NODE:
                 dv = rb_node_regx_string_val(val_node);
                 break;
-              case NODE_LINE:
+              case RB_SOURCE_LINE_NODE:
                 dv = rb_node_line_lineno_val(val_node);
                 break;
-              case NODE_INTEGER:
+              case RB_INTEGER_NODE:
                 dv = rb_node_integer_literal_val(val_node);
                 break;
-              case NODE_FLOAT:
+              case RB_FLOAT_NODE:
                 dv = rb_node_float_literal_val(val_node);
                 break;
-              case NODE_RATIONAL:
+              case RB_RATIONAL_NODE:
                 dv = rb_node_rational_literal_val(val_node);
                 break;
-              case NODE_IMAGINARY:
+              case RB_IMAGINARY_NODE:
                 dv = rb_node_imaginary_literal_val(val_node);
                 break;
-              case NODE_ENCODING:
+              case RB_SOURCE_ENCODING_NODE:
                 dv = rb_node_encoding_val(val_node);
                 break;
-              case NODE_NIL:
+              case RB_NIL_NODE:
                 dv = Qnil;
                 break;
-              case NODE_TRUE:
+              case RB_TRUE_NODE:
                 dv = Qtrue;
                 break;
-              case NODE_FALSE:
+              case RB_FALSE_NODE:
                 dv = Qfalse;
                 break;
               default:
-                NO_CHECK(COMPILE_POPPED(optargs, "kwarg", RNODE(node))); /* nd_type_p(node, NODE_KW_ARG) */
+                NO_CHECK(COMPILE_POPPED(optargs, "kwarg", RNODE(node)));
                 dv = complex_mark;
             }
 
             keyword->num = ++di;
             rb_ary_push(default_values, dv);
-        }
 
-        node = node->nd_next;
+            break;
+          }
+          default:
+            rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        }
     }
 
     keyword->num = kw;
 
-    if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
+    if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE)) {
         ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
         keyword->rest_start = arg_size++;
         body->param.flags.has_kwrest = TRUE;
@@ -2261,6 +2271,8 @@ iseq_set_use_block(rb_iseq_t *iseq)
     }
 }
 
+#define NODE_ARG_FORWARDING_P(args) ((args)->keyword_rest && nd_type_p((args)->keyword_rest, RB_FORWARDING_PARAMETER_NODE))
+
 static int
 iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *const node_args)
 {
@@ -2268,45 +2280,46 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        const struct rb_args_info *const args = &RNODE_ARGS(node_args)->nd_ainfo;
-        ID rest_id = 0;
+        rb_parameters_node_t *args = RB_NODE_PARAMETERS(node_args);
+        rb_node_t *rest = 0;
         int last_comma = 0;
-        ID block_id = 0;
+        rb_block_parameter_node_t *block = 0;
         int arg_size;
 
-        EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
+        EXPECT_NODE("iseq_set_arguments", node_args, RB_PARAMETERS_NODE, COMPILE_NG);
 
-        body->param.lead_num = arg_size = (int)args->pre_args_num;
+        // body->param.flags.ruby2_keywords = args->ruby2_keywords;
+        body->param.lead_num = arg_size = (int)RB_NODE_LIST_LEN(&args->requireds);
         if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
         debugs("  - argc: %d\n", body->param.lead_num);
 
-        rest_id = args->rest_arg;
-        if (rest_id == NODE_SPECIAL_EXCESSIVE_COMMA) {
+        rest = args->rest;
+        if (rest && nd_type_p(rest, RB_IMPLICIT_REST_NODE)) {
             last_comma = 1;
-            rest_id = 0;
+            rest = 0;
         }
-        block_id = args->block_arg;
+        block = args->block;
 
-        bool optimized_forward = (args->forwarding && args->pre_args_num == 0 && !args->opt_args);
+        bool optimized_forward = (NODE_ARG_FORWARDING_P(args) && RB_NODE_LIST_EMPTY_P(&args->requireds) && RB_NODE_LIST_EMPTY_P(&args->optionals));
 
         if (optimized_forward) {
-            rest_id = 0;
-            block_id = 0;
+            rest = 0;
+            block = 0;
         }
 
-        if (args->opt_args) {
-            const rb_node_opt_arg_t *node = args->opt_args;
+        if (RB_NODE_LIST_LEN(&args->optionals)) {
+            const rb_node_list2_t *list = &args->optionals;
             LABEL *label;
             VALUE labels = rb_ary_hidden_new(1);
             VALUE *opt_table;
             int i = 0, j;
 
-            while (node) {
-                label = NEW_LABEL(nd_line(RNODE(node)));
+            for (size_t k = 0; k < list->size; k++) {
+                rb_node_t *node = list->nodes[k];
+                label = NEW_LABEL(nd_line(node));
                 rb_ary_push(labels, (VALUE)label | 1);
                 ADD_LABEL(optargs, label);
-                NO_CHECK(COMPILE_POPPED(optargs, "optarg", node->nd_body));
-                node = node->nd_next;
+                NO_CHECK(COMPILE_POPPED(optargs, "optarg", node));
                 i += 1;
             }
 
@@ -2329,28 +2342,29 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             arg_size += i;
         }
 
-        if (rest_id) {
+        if (rest) {
+            EXPECT_NODE("iseq_set_arguments/rest", rest, RB_REST_PARAMETER_NODE, COMPILE_NG);
             body->param.rest_start = arg_size++;
             body->param.flags.has_rest = TRUE;
-            if (rest_id == '*') body->param.flags.anon_rest = TRUE;
+            if (RB_NODE_REST_PARAMETER(rest)->name == '*') body->param.flags.anon_rest = TRUE;
             RUBY_ASSERT(body->param.rest_start != -1);
         }
 
-        if (args->first_post_arg) {
+        if (RB_NODE_LIST_LEN(&args->posts)) {
             body->param.post_start = arg_size;
-            body->param.post_num = args->post_args_num;
+            body->param.post_num = RB_NODE_LIST_LEN(&args->posts);
             body->param.flags.has_post = TRUE;
-            arg_size += args->post_args_num;
+            arg_size += RB_NODE_LIST_LEN(&args->posts);
 
             if (body->param.flags.has_rest) { /* TODO: why that? */
                 body->param.post_start = body->param.rest_start + 1;
             }
         }
 
-        if (args->kw_args) {
+        if (RB_NODE_LIST_LEN(&args->keywords)) {
             arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
         }
-        else if (args->kw_rest_arg && !optimized_forward) {
+        else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE) && !optimized_forward) {
             ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
             struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
             keyword->rest_start = arg_size++;
@@ -2361,14 +2375,14 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             if (!anon_kwrest) anon_kwrest = rb_intern("**");
             if (kw_id == anon_kwrest) body->param.flags.anon_kwrest = TRUE;
         }
-        else if (args->no_kwarg) {
+        else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_NO_KEYWORDS_PARAMETER_NODE)) {
             body->param.flags.accepts_no_kwarg = TRUE;
         }
 
-        if (args->no_blockarg) {
+        if (block && block->name == idNil) {
             body->param.flags.accepts_no_block = TRUE;
         }
-        else if (block_id) {
+        else if (block) {
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
             iseq_set_use_block(iseq);
@@ -2384,12 +2398,13 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         iseq_calc_param_size(iseq);
         body->param.size = arg_size;
 
-        if (args->pre_init) { /* m_init */
-            NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
-        }
-        if (args->post_init) { /* p_init */
-            NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
-        }
+        // TODO: def m4((a, b), c, (d, e), f = false, (g, h)); end
+        // if (args->pre_init) { /* m_init */
+        //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
+        // }
+        // if (args->post_init) { /* p_init */
+        //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
+        // }
 
         if (body->type == ISEQ_TYPE_BLOCK) {
             if (body->param.flags.has_opt    == FALSE &&
@@ -5516,20 +5531,21 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 static int
 compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped, bool first_chunk)
 {
+    EXPECT_NODE("compile_array", node, RB_ARRAY_NODE, -1);
     const NODE *line_node = node;
+    const rb_array_node_t *cast = RB_NODE_ARRAY(node);
+    const rb_node_list2_t *list = &cast->elements;
 
-    if (nd_type_p(node, NODE_ZLIST)) {
+    if (list->size == 0) {
         if (!popped) {
             ADD_INSN1(ret, line_node, newarray, INT2FIX(0));
         }
         return 0;
     }
 
-    EXPECT_NODE("compile_array", node, NODE_LIST, -1);
-
     if (popped) {
-        for (; node; node = RNODE_LIST(node)->nd_next) {
-            NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, popped));
+        for (size_t i = 0; i < list->size; i++) {
+            NO_CHECK(COMPILE_(ret, "array element", list->nodes[i], popped));
         }
         return 1;
     }
@@ -10766,23 +10782,19 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 {
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     LABEL *end_label = NEW_LABEL(nd_line(node));
-    const NODE *default_value = get_nd_value(RNODE_KW_ARG(node)->nd_body);
+    const rb_optional_keyword_parameter_node_t *cast = RB_NODE_OPTIONAL_KEYWORD_PARAMETER(node);
+    const NODE *default_value = cast->value;
 
-    if (default_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
-        /* required argument. do nothing */
-        COMPILE_ERROR(ERROR_ARGS "unreachable");
-        return COMPILE_NG;
-    }
-    else if (nd_type_p(default_value, NODE_SYM) ||
-             nd_type_p(default_value, NODE_REGX) ||
-             nd_type_p(default_value, NODE_LINE) ||
-             nd_type_p(default_value, NODE_INTEGER) ||
-             nd_type_p(default_value, NODE_FLOAT) ||
-             nd_type_p(default_value, NODE_RATIONAL) ||
-             nd_type_p(default_value, NODE_IMAGINARY) ||
-             nd_type_p(default_value, NODE_NIL) ||
-             nd_type_p(default_value, NODE_TRUE) ||
-             nd_type_p(default_value, NODE_FALSE)) {
+    if (nd_type_p(default_value, RB_SYMBOL_NODE) ||
+        nd_type_p(default_value, RB_REGULAR_EXPRESSION_NODE) ||
+        nd_type_p(default_value, RB_SOURCE_LINE_NODE) ||
+        nd_type_p(default_value, RB_INTEGER_NODE) ||
+        nd_type_p(default_value, RB_FLOAT_NODE) ||
+        nd_type_p(default_value, RB_RATIONAL_NODE) ||
+        nd_type_p(default_value, RB_IMAGINARY_NODE) ||
+        nd_type_p(default_value, RB_NIL_NODE) ||
+        nd_type_p(default_value, RB_TRUE_NODE) ||
+        nd_type_p(default_value, RB_FALSE_NODE)) {
         COMPILE_ERROR(ERROR_ARGS "unreachable");
         return COMPILE_NG;
     }
@@ -10796,7 +10808,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
         ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
         ADD_INSNL(ret, node, branchif, end_label);
-        CHECK(COMPILE_POPPED(ret, "keyword default argument", RNODE_KW_ARG(node)->nd_body));
+        // CHECK(COMPILE_POPPED(ret, "keyword default argument", RNODE_KW_ARG(node)->nd_body));
         ADD_LABEL(ret, end_label);
     }
     return COMPILE_OK;
@@ -11351,6 +11363,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_ARRAY_NODE: {
+        CHECK(compile_array(iseq, ret, node, popped, TRUE) >= 0);
+        break;
+      }
+
       case RB_GLOBAL_VARIABLE_READ_NODE: {
         ADD_INSN1(ret, node, getglobal, ID2SYM(RB_NODE_GLOBAL_VARIABLE_READ(node)->name));
         if (popped) {
@@ -11431,10 +11448,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             }
             switch (option->frozen_string_literal) {
               case ISEQ_FROZEN_STRING_LITERAL_UNSET:
-                ADD_INSN1(ret, node, putchilledstring, lit);
+                ADD_INSN1(ret, node, dupchilledstring, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-                ADD_INSN1(ret, node, putstring, lit);
+                ADD_INSN1(ret, node, dupstring, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
                 ADD_INSN1(ret, node, putobject, lit);
@@ -11446,6 +11463,30 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+
+      case RB_DEF_NODE: {
+        ID mid = RB_NODE_DEF(node)->name;
+        const rb_iseq_t *method_iseq = NEW_ISEQ(node,
+                                                rb_id2str(mid),
+                                                ISEQ_TYPE_METHOD, line);
+
+        debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
+        if (RB_NODE_DEF(node)->receiver) {
+            // singleton method definition
+            CHECK(COMPILE(ret, "defs: recv", RB_NODE_DEF(node)->receiver));
+            ADD_INSN2(ret, node, definesmethod, ID2SYM(mid), method_iseq);
+        } else {
+            ADD_INSN2(ret, node, definemethod, ID2SYM(mid), method_iseq);
+        }
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)method_iseq);
+
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, ID2SYM(mid));
+        }
+
+        break;
+      }
+
       case RB_SELF_NODE: {
         // self
         // ^^^^
@@ -11479,26 +11520,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             VALUE lit = rb_node_str_string_val2(node);
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
-        }
-        break;
-      }
-      case RB_ARRAY_NODE: {
-        const rb_array_node_t *cast = (const rb_array_node_t *) node;
-        const rb_node_list2_t *elements = &cast->elements;
-
-        // Simple implementation: compile each element and create array
-        for (size_t index = 0; index < elements->size; index++) {
-            COMPILE(ret, "array element", elements->nodes[index]);
-        }
-
-        if (!popped) {
-            ADD_INSN1(ret, node, newarray, INT2FIX(elements->size));
-        }
-        else if (elements->size > 0) {
-            // Pop all elements if array is popped
-            for (size_t index = 0; index < elements->size; index++) {
-                ADD_INSN(ret, node, pop);
-            }
         }
         break;
       }
@@ -11814,6 +11835,25 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       // NODE
+      case RB_OPTIONAL_PARAMETER_NODE: {
+        // TODO: These codes are same with `RB_LOCAL_VARIABLE_WRITE_NODE`
+        ID id = RB_NODE_OPTIONAL_PARAMETER(node)->name;
+        int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
+
+        debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
+        CHECK(COMPILE(ret, "rvalue", RB_NODE_OPTIONAL_PARAMETER(node)->value));
+
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+        break;
+      }
+      case RB_OPTIONAL_KEYWORD_PARAMETER_NODE: {
+        CHECK(compile_kw_arg(iseq, ret, node, popped));
+        break;
+      }
+
       // case NODE_BLOCK:
       //   CHECK(compile_block(iseq, ret, node, popped));
       //   break;
@@ -12185,10 +12225,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       //       }
       //       switch (option->frozen_string_literal) {
       //         case ISEQ_FROZEN_STRING_LITERAL_UNSET:
-      //           ADD_INSN1(ret, node, putchilledstring, lit);
+      //           ADD_INSN1(ret, node, dupchilledstring, lit);
       //           break;
       //         case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-      //           ADD_INSN1(ret, node, putstring, lit);
+      //           ADD_INSN1(ret, node, dupstring, lit);
       //           break;
       //         case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
       //           ADD_INSN1(ret, node, putobject, lit);
