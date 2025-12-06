@@ -498,6 +498,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_initialize_nul
+    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(ArgumentError) { Pathname.new("a\0") }
   end
 
@@ -625,6 +626,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_null_character
+    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(ArgumentError) { Pathname.new("\0") }
   end
 
