@@ -835,7 +835,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  *   pos -> stream_position
  *
  * Returns the current position (in bytes);
- * see {Position}[rdoc-ref:IO@Position].
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_get_pos(VALUE self)
