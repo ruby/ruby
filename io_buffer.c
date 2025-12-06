@@ -1928,13 +1928,19 @@ ruby_swap128_uint(rb_uint128_t x)
     return result;
 }
 
+union uint128_int128_conversion {
+    rb_uint128_t uint128;
+    rb_int128_t int128;
+};
+
 static inline rb_int128_t
 ruby_swap128_int(rb_int128_t x)
 {
-    // Cast to unsigned, swap, then cast back
-    rb_uint128_t u = *(rb_uint128_t*)&x;
-    rb_uint128_t swapped = ruby_swap128_uint(u);
-    return *(rb_int128_t*)&swapped;
+    union uint128_int128_conversion conversion = {
+        .int128 = x
+    };
+    conversion.uint128 = ruby_swap128_uint(conversion.uint128);
+    return conversion.int128;
 }
 
 #define IO_BUFFER_DECLARE_TYPE(name, type, endian, wrap, unwrap, swap) \
