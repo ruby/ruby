@@ -747,7 +747,7 @@ strio_copy(VALUE copy, VALUE orig)
  *   lineno -> current_line_number
  *
  * Returns the current line number in +self+;
- * see {Line Number}[rdoc-ref:IO@Line+Number].
+ * see {Line Number}[rdoc-ref:StringIO@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
