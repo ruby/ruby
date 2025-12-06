@@ -770,6 +770,9 @@ typedef struct rb_vm_struct {
         VALUE cmd[RUBY_NSIG];
     } trap_list;
 
+    /* hook (for internal events: NEWOBJ, FREEOBJ, GC events, etc.) */
+    rb_hook_list_t global_hooks;
+
     /* postponed_job (async-signal-safe, and thread-safe) */
     struct rb_postponed_job_queue *postponed_job_queue;
 
@@ -2311,11 +2314,31 @@ rb_ec_ractor_hooks(const rb_execution_context_t *ec)
     return &cr_pub->hooks;
 }
 
+static inline rb_hook_list_t *
+rb_vm_global_hooks(const rb_execution_context_t *ec)
+{
+    return &rb_ec_vm_ptr(ec)->global_hooks;
+}
+
+static inline rb_hook_list_t *
+rb_ec_hooks(const rb_execution_context_t *ec, rb_event_flag_t event)
+{
+    // Should be a single bit set
+    VM_ASSERT(event != 0 && ((event - 1) & event) == 0);
+
+    if (event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK) {
+        return rb_vm_global_hooks(ec);
+    }
+    else {
+        return rb_ec_ractor_hooks(ec);
+    }
+}
+
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_hooks(ec_, flag_), flag_, self_, id_, called_id_, klass_, data_, 0)
 
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_hooks(ec_, flag_), flag_, self_, id_, called_id_, klass_, data_, 1)
 
 static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)
