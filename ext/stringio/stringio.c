@@ -848,7 +848,7 @@ strio_get_pos(VALUE self)
  *   pos = new_position -> new_position
  *
  * Sets the current position (in bytes);
- * see {Position}[rdoc-ref:IO@Position].
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
