@@ -1590,26 +1590,24 @@ ossl_ssl_s_alloc(VALUE klass)
 }
 
 static VALUE
-peer_ip_address(VALUE self)
+peer_ip_address(VALUE io)
 {
-    VALUE remote_address = rb_funcall(rb_attr_get(self, id_i_io), rb_intern("remote_address"), 0);
+    VALUE remote_address = rb_funcall(io, rb_intern("remote_address"), 0);
 
     return rb_funcall(remote_address, rb_intern("inspect_sockaddr"), 0);
 }
 
 static VALUE
-fallback_peer_ip_address(VALUE self, VALUE args)
+fallback_peer_ip_address(VALUE self, VALUE exc)
 {
     return rb_str_new_cstr("(null)");
 }
 
 static VALUE
-peeraddr_ip_str(VALUE self)
+peeraddr_ip_str(VALUE io)
 {
-    VALUE rb_mErrno = rb_const_get(rb_cObject, rb_intern("Errno"));
-    VALUE rb_eSystemCallError = rb_const_get(rb_mErrno, rb_intern("SystemCallError"));
-
-    return rb_rescue2(peer_ip_address, self, fallback_peer_ip_address, (VALUE)0, rb_eSystemCallError, NULL);
+    return rb_rescue2(peer_ip_address, io, fallback_peer_ip_address, Qnil,
+                      rb_eSystemCallError, (VALUE)0);
 }
 
 /*
@@ -1856,7 +1854,7 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
                          code == SSL_ERROR_SYSCALL ? " SYSCALL" : "",
                          code,
                          saved_errno,
-                         peeraddr_ip_str(self),
+                         peeraddr_ip_str(io),
                          SSL_state_string_long(ssl),
                          error_append);
           }
