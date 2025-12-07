@@ -22,7 +22,7 @@ prism/$(HAVE_BASERUBY:yes=.srcs.mk.time): \
 
 distclean-prism-srcs::
 	$(RM) prism/.srcs.mk.time
-	$(RMDIR) prism
+	$(RMDIRS) prism || $(NULLCMD)
 
 distclean-srcs-local:: distclean-prism-srcs
 
