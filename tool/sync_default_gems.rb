@@ -194,6 +194,12 @@ module SyncDefaultGems
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
     },
+    pathname: repo("ruby/pathname", [
+      ["ext/pathname/pathname.c", "pathname.c"],
+      ["lib/pathname_builtin.rb", "pathname_builtin.rb"],
+      ["lib/pathname.rb", "lib/pathname.rb"],
+      ["test/pathname", "test/pathname"],
+    ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
     prism: repo(["ruby/prism", "main"], [
