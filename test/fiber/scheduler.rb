@@ -255,6 +255,13 @@ class Scheduler
     end.value
   end
 
+  # This hook is invoked by `IO#close`. Using a separate IO object
+  # demonstrates that the close operation is asynchronous.
+  def io_close(descriptor)
+    Fiber.blocking{IO.for_fd(descriptor.to_i).close}
+    return true
+  end
+
   # This hook is invoked by `Kernel#sleep` and `Thread::Mutex#sleep`.
   def kernel_sleep(duration = nil)
     # $stderr.puts [__method__, duration, Fiber.current].inspect

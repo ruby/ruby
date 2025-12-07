@@ -5551,17 +5551,8 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 
-    // wait for blocking operations to ensure they do not hit EBADF:
+    // Wait for blocking operations to ensure they do not hit EBADF:
     rb_thread_io_close_wait(fptr);
-
-    // Disable for now.
-    // if (!done && fd >= 0) {
-    //     VALUE scheduler = rb_fiber_scheduler_current();
-    //     if (scheduler != Qnil) {
-    //         VALUE result = rb_fiber_scheduler_io_close(scheduler, fptr->self);
-    //         if (!UNDEF_P(result)) done = 1;
-    //     }
-    // }
 
     if (!done && stdio_file) {
         // stdio_file is deallocated anyway even if fclose failed.
@@ -5572,6 +5563,15 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
         }
 
         done = 1;
+    }
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (!done && fd >= 0 && scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_close(scheduler, RB_INT2NUM(fd));
+
+        if (!UNDEF_P(result)) {
+            done = RTEST(result);
+        }
     }
 
     if (!done && fd >= 0) {
@@ -5724,10 +5724,12 @@ io_close_fptr(VALUE io)
     if (!fptr) return 0;
     if (fptr->fd < 0) return 0;
 
+    // This guards against multiple threads closing the same IO object:
     if (rb_thread_io_close_interrupt(fptr)) {
         /* calls close(fptr->fd): */
         fptr_finalize_flush(fptr, FALSE, KEEPGVL);
     }
+
     rb_io_fptr_cleanup(fptr, FALSE);
     return fptr;
 }
