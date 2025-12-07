@@ -215,6 +215,9 @@ class Pathname
     @path = File.path(path).dup
   end
 
+  #
+  # Freze self.
+  #
   def freeze
     super
     @path.freeze
