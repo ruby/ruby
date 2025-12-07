@@ -72,4 +72,11 @@
 # define RBIMPL_ATTR_DEPRECATED_EXT(msg) RBIMPL_ATTR_DEPRECATED(msg)
 #endif
 
+#define RBIMPL_ATTR_DEPRECATED_SINCE(ver) \
+    RBIMPL_ATTR_DEPRECATED(("since " #ver))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL(ver) \
+    RBIMPL_ATTR_DEPRECATED(("since "#ver", also internal"))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY() \
+    RBIMPL_ATTR_DEPRECATED(("only for internal use"))
+
 #endif /* RBIMPL_ATTR_DEPRECATED_H */
