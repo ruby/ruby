@@ -28,9 +28,6 @@ struct timeval rb_time_timeval(VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* time.c (export) */
 void ruby_reset_leap_second_info(void);
-#ifdef RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY
-RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY()
-#endif
 void ruby_reset_timezone(const char *);
 RUBY_SYMBOL_EXPORT_END
 
