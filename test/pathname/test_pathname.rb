@@ -486,7 +486,7 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(p1, p2)
 
     obj = Object.new
-    assert_raise(TypeError) { Pathname.new(obj) }
+    assert_raise_with_message(TypeError, /#to_path or #to_str/) { Pathname.new(obj) }
 
     obj = Object.new
     def obj.to_path; "a/path"; end

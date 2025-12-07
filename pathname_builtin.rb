@@ -213,6 +213,8 @@ class Pathname
   #
   def initialize(path)
     @path = File.path(path).dup
+  rescue TypeError => e
+    raise e.class, "Pathname.new requires a String, #to_path or #to_str", cause: nil
   end
 
   #
