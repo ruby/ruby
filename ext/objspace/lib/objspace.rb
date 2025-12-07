@@ -132,4 +132,55 @@ module ObjectSpace
     return nil if output == :stdout
     ret
   end
+
+  # call-seq:
+  #    ObjectSpace.find_paths_to_unshareable_objects(obj) {|path| ... } -> nil
+  #    ObjectSpace.find_paths_to_unshareable_objects(obj) -> enumerator
+  #
+  # Finds all unshareable objects reachable from +obj+.
+  #
+  # When called with a block, yields an array representing the path from +obj+ to
+  # each unshareable object found. The path includes all intermediate objects
+  # traversed, ending with the unshareable object itself.
+  #
+  # If +obj+ itself is shareable, no paths are yielded.
+  #
+  # Example:
+  #
+  #   class Container
+  #     attr_reader :value
+  #     def initialize(value)
+  #       @value = value
+  #     end
+  #   end
+  #
+  #   mutable_string = "hello"
+  #   container = Container.new(mutable_string)
+  #
+  #   pp ObjectSpace.find_paths_to_unshareable_objects(container).to_a
+  #     #=> [
+  #       [#<Container:0x00007fc35843e388 @value="hello">],
+  #       [#<Container:0x00007fc35843e388 @value="hello">, "hello"]
+  #     ]
+  def find_paths_to_unshareable_objects(obj)
+    return to_enum(__method__, obj) if !block_given?
+
+    queue = [[obj, []]]
+    visited = Set.new
+
+    while current = queue.shift
+      current_obj, current_path = current
+      visited.add(current_obj.object_id)
+
+      if !Ractor.shareable?(current_obj)
+        yield current_path + [current_obj]
+
+        ObjectSpace.reachable_objects_from(current_obj).each do |reachable|
+          if !reachable.is_a?(ObjectSpace::InternalObjectWrapper) && !visited.include?(reachable.object_id)
+            queue.push([reachable, current_path + [current_obj]])
+          end
+        end
+      end
+    end
+  end
 end
