@@ -1209,6 +1209,17 @@ rb_gc_handle_weak_references(VALUE obj)
            rb_bug("rb_gc_handle_weak_references: unknown T_DATA");
         }
         break;
+
+      case T_IMEMO: {
+        GC_ASSERT(imemo_type(obj) == imemo_callcache);
+
+        struct rb_callcache *cc = (struct rb_callcache *)obj;
+        if (!rb_gc_handle_weak_references_alive_p(cc->klass)) {
+            vm_cc_invalidate(cc);
+        }
+
+        break;
+      }
       default:
         rb_bug("rb_gc_handle_weak_references: type not supported\n");
     }
