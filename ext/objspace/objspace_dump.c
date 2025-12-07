@@ -47,7 +47,8 @@ struct dump_config {
     size_t cur_obj_references;
     unsigned int roots: 1;
     unsigned int full_heap: 1;
-    unsigned int partial_dump;
+    unsigned int partial_dump: 1;
+    unsigned int dump_string_value: 1;
     size_t since;
     size_t shapes_since;
     unsigned long buffer_len;
@@ -341,7 +342,7 @@ dump_string_ascii_only(const char *str, long size)
 }
 
 static void
-dump_append_string_content(struct dump_config *dc, VALUE obj)
+dump_append_string_content(struct dump_config *dc, VALUE obj, bool dump_value)
 {
     dump_append(dc, ", \"bytesize\":");
     dump_append_ld(dc, RSTRING_LEN(obj));
@@ -350,7 +351,7 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
         dump_append_sizet(dc, rb_str_capacity(obj));
     }
 
-    if (RSTRING_LEN(obj) && rb_enc_asciicompat(rb_enc_from_index(ENCODING_GET(obj)))) {
+    if (dump_value && RSTRING_LEN(obj) && rb_enc_asciicompat(rb_enc_from_index(ENCODING_GET(obj)))) {
         int cr = ENC_CODERANGE(obj);
         if (cr == RUBY_ENC_CODERANGE_UNKNOWN) {
             if (dump_string_ascii_only(RSTRING_PTR(obj), RSTRING_LEN(obj))) {
@@ -473,7 +474,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_SYMBOL:
-        dump_append_string_content(dc, rb_sym2str(obj));
+        dump_append_string_content(dc, rb_sym2str(obj), true);
         break;
 
       case T_STRING:
@@ -486,7 +487,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         if (STR_SHARED_P(obj))
             dump_append(dc, ", \"shared\":true");
         else
-            dump_append_string_content(dc, obj);
+            dump_append_string_content(dc, obj, dc->dump_string_value);
 
         if (!ENCODING_IS_ASCII8BIT(obj)) {
             dump_append(dc, ", \"encoding\":\"");
@@ -709,7 +710,7 @@ root_obj_i(const char *category, VALUE obj, void *data)
 }
 
 static void
-dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
+dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes, VALUE string_value)
 {
     dc->given_output = output;
     dc->full_heap = 0;
@@ -755,6 +756,7 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE
     }
 
     dc->shapes_since = RTEST(shapes) ? NUM2SIZET(shapes) : 0;
+    dc->dump_string_value = string_value == Qfalse ? 0 : 1;
 }
 
 static VALUE
@@ -780,7 +782,7 @@ objspace_dump(VALUE os, VALUE obj, VALUE output)
         dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
     }
 
-    dump_output(&dc, output, Qnil, Qnil, Qnil);
+    dump_output(&dc, output, Qnil, Qnil, Qnil, Qnil);
 
     dump_object(obj, &dc);
 
@@ -837,10 +839,10 @@ shape_id_i(shape_id_t shape_id, void *data)
 
 /* :nodoc: */
 static VALUE
-objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
+objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes, VALUE string_value)
 {
     struct dump_config dc = {0,};
-    dump_output(&dc, output, full, since, shapes);
+    dump_output(&dc, output, full, since, shapes, string_value);
 
     if (!dc.partial_dump || dc.since == 0) {
         /* dump roots */
@@ -863,7 +865,7 @@ static VALUE
 objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
 {
     struct dump_config dc = {0,};
-    dump_output(&dc, output, Qfalse, Qnil, shapes);
+    dump_output(&dc, output, Qfalse, Qnil, shapes, Qnil);
 
     if (RTEST(shapes)) {
         rb_shape_each_shape_id(shape_id_i, &dc);
@@ -880,6 +882,6 @@ Init_objspace_dump(VALUE rb_mObjSpace)
 #endif
 
     rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);
-    rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 4);
+    rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 5);
     rb_define_module_function(rb_mObjSpace, "_dump_shapes", objspace_dump_shapes, 2);
 }
