@@ -164,6 +164,11 @@ union rb_int128 {
 };
 typedef union rb_int128 rb_int128_t;
 
+union uint128_int128_conversion {
+    rb_uint128_t uint128;
+    rb_int128_t int128;
+};
+
 // Conversion functions for 128-bit integers:
 rb_uint128_t rb_numeric_to_uint128(VALUE x);
 rb_int128_t rb_numeric_to_int128(VALUE x);
