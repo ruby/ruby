@@ -1928,11 +1928,6 @@ ruby_swap128_uint(rb_uint128_t x)
     return result;
 }
 
-union uint128_int128_conversion {
-    rb_uint128_t uint128;
-    rb_int128_t int128;
-};
-
 static inline rb_int128_t
 ruby_swap128_int(rb_int128_t x)
 {

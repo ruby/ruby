@@ -3638,7 +3638,10 @@ rb_int128_to_numeric(rb_int128_t n)
     }
     else {
         // Positive value
-        return rb_uint128_to_numeric(*(rb_uint128_t*)&n);
+        union uint128_int128_conversion conversion = {
+            .int128 = n
+        };
+        return rb_uint128_to_numeric(conversion.uint128);
     }
 #endif
 }
