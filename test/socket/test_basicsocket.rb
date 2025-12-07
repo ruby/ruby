@@ -225,4 +225,17 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       assert_equal "hello", csock.read(5)
     end
   end
+
+  def test_sendmsg
+    socks do |sserv, ssock, csock|
+      # string message
+      ssock.sendmsg("hello")
+      assert_equal "hello", csock.read(5)
+
+      # multi string message
+      ssock.sendmsg(["hello,", " world!"])
+      assert_equal "hello, world!", csock.read(13)
+      ssock.close
+    end
+  end
 end if defined?(BasicSocket)
