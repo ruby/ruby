@@ -59,7 +59,6 @@
 #define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)         /**< @old{RUBY_FL_WB_PROTECTED} */
 #define FL_PROMOTED     RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED)             /**< @old{RUBY_FL_PROMOTED} */
 #define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)             /**< @old{RUBY_FL_FINALIZE} */
-#define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)                /**< @old{RUBY_FL_TAINT} */
 #define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)            /**< @old{RUBY_FL_SHAREABLE} */
 #define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)            /**< @old{RUBY_FL_UNTRUSTED} */
 #define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)               /**< @old{RUBY_FL_EXIVAR} */
@@ -238,21 +237,6 @@ ruby_fl_type {
     RUBY_FL_FINALIZE     = (1<<7),
 
     /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_TAINT
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_TAINT)
-#endif
-
-                         = 0,
-
-    /**
      * @deprecated  This flag was an implementation detail that should never have
      *              no been exposed. Exists  here for  backwards
      *              compatibility only.  You can safely forget about it.
@@ -278,21 +262,6 @@ ruby_fl_type {
      * would better not use it.
      */
     RUBY_FL_SHAREABLE    = (1<<8),
-
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_UNTRUSTED
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_UNTRUSTED)
-#endif
-
-                         = 0,
 
    /**
     * This object weakly refers to other objects.
@@ -733,128 +702,6 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
     if (RB_FL_ABLE(obj)) {
         RB_FL_REVERSE_RAW(obj, flags);
     }
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTABLE(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline VALUE
-RB_OBJ_TAINTED_RAW(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTED(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT_RAW(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
