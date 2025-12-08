@@ -48,7 +48,8 @@ static const int DEBUG = 0;
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
 
-static const rb_data_type_t cont_data_type, fiber_data_type;
+static const rb_data_type_t cont_data_type;
+const rb_data_type_t rb_fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
@@ -994,7 +995,7 @@ fiber_ptr(VALUE obj)
 {
     rb_fiber_t *fiber;
 
-    TypedData_Get_Struct(obj, rb_fiber_t, &fiber_data_type, fiber);
+    TypedData_Get_Struct(obj, rb_fiber_t, &rb_fiber_data_type, fiber);
     if (!fiber) rb_raise(rb_eFiberError, "uninitialized fiber");
 
     return fiber;
@@ -1220,7 +1221,7 @@ fiber_memsize(const void *ptr)
 VALUE
 rb_obj_is_fiber(VALUE obj)
 {
-    return RBOOL(rb_typeddata_is_kind_of(obj, &fiber_data_type));
+    return RBOOL(rb_typeddata_is_kind_of(obj, &rb_fiber_data_type));
 }
 
 static void
@@ -1992,16 +1993,33 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *
  */
 
-static const rb_data_type_t fiber_data_type = {
+const rb_data_type_t rb_fiber_data_type = {
     "fiber",
     {fiber_mark, fiber_free, fiber_memsize, fiber_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+void
+rb_fiber_handle_weak_references(VALUE obj)
+{
+    rb_fiber_t *fiber;
+    TypedData_Get_Struct(obj, rb_fiber_t, &rb_fiber_data_type, fiber);
+
+    if (!fiber) return;
+
+    if (!rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
+        fiber->cont.saved_ec.gen_fields_cache.obj = Qundef;
+        fiber->cont.saved_ec.gen_fields_cache.fields_obj = Qundef;
+    }
+}
+
 static VALUE
 fiber_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
+    VALUE obj = TypedData_Wrap_Struct(klass, &rb_fiber_data_type, 0);
+    rb_gc_declare_weak_references(obj);
+    return obj;
 }
 
 static rb_serial_t

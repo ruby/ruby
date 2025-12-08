@@ -1184,6 +1184,9 @@ void rb_wmap_handle_weak_references(VALUE obj);
 extern const rb_data_type_t rb_weakkeymap_type;
 void rb_wkmap_handle_weak_references(VALUE obj);
 
+extern const rb_data_type_t rb_fiber_data_type;
+void rb_fiber_handle_weak_references(VALUE obj);
+
 void
 rb_gc_handle_weak_references(VALUE obj)
 {
@@ -1192,7 +1195,10 @@ rb_gc_handle_weak_references(VALUE obj)
         if (RTYPEDDATA_P(obj)) {
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
-            if (type == &rb_weakmap_type) {
+            if (type == &rb_fiber_data_type) {
+                rb_fiber_handle_weak_references(obj);
+            }
+            else if (type == &rb_weakmap_type) {
                 rb_wmap_handle_weak_references(obj);
             }
             else if (type == &rb_weakkeymap_type) {
