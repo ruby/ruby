@@ -231,6 +231,11 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    // These 4 are all aliases for rb_hash_has_key, which can call #hash and #eql? on the key
+    annotate!(rb_cHash, "key?", types::BoolExact);
+    annotate!(rb_cHash, "has_key?", types::BoolExact);
+    annotate!(rb_cHash, "include?", types::BoolExact);
+    annotate!(rb_cHash, "member?", types::BoolExact);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
