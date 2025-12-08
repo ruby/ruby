@@ -12540,7 +12540,10 @@ pm_node_unreference_each(const pm_node_t *node, void *data) {
                         );
                     }
                     parser->current_block_exits->size--;
-                    return false;
+
+                    /* Note returning true here because these nodes could have
+                     * arguments that are themselves block exits. */
+                    return true;
                 }
 
                 index++;
