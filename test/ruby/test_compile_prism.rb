@@ -1040,16 +1040,19 @@ module Prism
     end
 
     def test_ForNode
-      assert_prism_eval("for i in [1,2] do; i; end")
-      assert_prism_eval("for @i in [1,2] do; @i; end")
-      assert_prism_eval("for $i in [1,2] do; $i; end")
+      assert_prism_eval("r = []; for i in [1,2] do; r << i; end; r")
+      assert_prism_eval("r = []; for @i in [1,2] do; r << @i; end; r")
+      assert_prism_eval("r = []; for $i in [1,2] do; r << $i; end; r")
 
-      assert_prism_eval("for foo, in  [1,2,3] do end")
+      assert_prism_eval("r = []; for foo, in  [1,2,3] do r << foo end; r")
 
-      assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+      assert_prism_eval("r = []; for i, j in {a: 'b'} do; r << [i, j]; end; r")
 
       # Test splat node as index in for loop
-      assert_prism_eval("for *x in [[1,2], [3,4]] do; x; end")
+      assert_prism_eval("r = []; for *x in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for * in [[1,2], [3,4]] do; r << 'ok'; end; r")
+      assert_prism_eval("r = []; for x, * in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for x, *y in [[1,2], [3,4]] do; r << [x, y]; end; r")
     end
 
     ############################################################################
