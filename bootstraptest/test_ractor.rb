@@ -150,14 +150,14 @@ assert_equal "42", %q{
   Ractor.shareable_lambda{ a }.call
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
+# Ractor.shareable_proc issue for locals in proc [Bug #18023]
 assert_equal '[:a, :b, :c, :d, :e]', %q{
   v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
   closure = Proc.new { [v1, v2, v3, v4, v5] }
   Ractor.shareable_proc(&closure).call
 }
 
-# Ractor.make_shareable makes a copy of given Proc
+# Ractor.shareable_proc makes a copy of given Proc
 assert_equal '[true, true]', %q{
   pr1 = Proc.new do
     self
