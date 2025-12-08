@@ -384,7 +384,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 * ZJIT
-    * Introduce an experimental method-based JIT compiler.
+    * Introduce an [experimental method-based JIT compiler](https://docs.ruby-lang.org/en/master/jit/zjit_md.html).
       To enable `--zjit` support, build Ruby with Rust 1.85.0 or later.
     * As of Ruby 4.0.0, ZJIT is faster than the interpreter, but not yet as fast as YJIT.
       We encourage experimentation with ZJIT, but advise against deploying it in production for now.

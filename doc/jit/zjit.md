@@ -1,6 +1,48 @@
 # ZJIT: ADVANCED RUBY JIT PROTOTYPE
 
+ZJIT is a method-based just-in-time (JIT) compiler for Ruby. It uses profile
+information from the interpreter to guide optimization in the compiler.
+
+ZJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
+This project is open source and falls under the same license as CRuby.
+
+## Current Limitations
+
+ZJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs. ZJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
+You can change how much executable memory is allocated using [ZJIT's command-line options](#command-line-options).
+
 ## Build Instructions
+
+### For normal use
+
+To build ZJIT on macOS:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc \
+    --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+
+make -j miniruby
+```
+
+To build ZJIT on Linux:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc
+
+make -j miniruby
+```
+
+### For development
 
 To build ZJIT on macOS:
 
