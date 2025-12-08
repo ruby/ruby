@@ -1270,7 +1270,7 @@ console_cursor_pos(VALUE io)
     if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
-    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y), UINT2NUM(ws.dwCursorPosition.X));
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y - ws.srWindow.Top), UINT2NUM(ws.dwCursorPosition.X));
 #else
     static const struct query_args query = {"\033[6n", 0};
     VALUE resp = console_vt_response(0, 0, io, &query);
