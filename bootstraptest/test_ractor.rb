@@ -167,6 +167,25 @@ assert_equal '[true, true]', %q{
   [pr1.call == self, pr2.call == nil]
 }
 
+# Ractor.shareable_proc keeps the original Proc intact
+assert_equal '[SyntaxError, [Object, 43, 43], Binding]', %q{
+  a = 42
+  pr1 = Proc.new do
+    [self.class, eval("a"), binding.local_variable_get(:a)]
+  end
+  a += 1
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  r = []
+  begin
+    pr2.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  r << pr1.call << pr1.binding.class
+}
+
 # Ractor::IsolationError cases
 assert_equal '3', %q{
   ok = 0
