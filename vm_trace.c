@@ -1958,33 +1958,6 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
 }
 
-
-static int
-pjob_register_legacy_impl(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    /* We _know_ calling preregister from a signal handler like this is racy; what is
-     * and is not promised is very exhaustively documented in debug.h */
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, func, data);
-    if (h == POSTPONED_JOB_HANDLE_INVALID) {
-        return 0;
-    }
-    rb_postponed_job_trigger(h);
-    return 1;
-}
-
-int
-rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
-int
-rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
-
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
