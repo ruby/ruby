@@ -190,33 +190,6 @@ rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, void_type *
 /// @name Exceptions and tag jumps
 /// @{
 
-// RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
-RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Old way to implement iterators.
-/// @param[in]   q  A function that can yield.
-/// @param[in]   w  Passed to `q`.
-/// @param[in]   e  What is to be yielded.
-/// @param[in]   r  Passed to `e`.
-/// @return      The return value of `q`.
-/// @note        `e` can be nullptr.
-/// @deprecated  This function is obsoleted since  long before 2.x era.  Do not
-///              use it any longer.  rb_block_call() is provided instead.
-inline VALUE
-rb_iterate(onearg_type *q, VALUE w, type *e, VALUE r)
-{
-    rb_block_call_func_t t = reinterpret_cast<rb_block_call_func_t>(e);
-    return backward::rb_iterate_deprecated(q, w, t, r);
-}
-
-#ifdef HAVE_NULLPTR
-RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
-inline VALUE
-rb_iterate(onearg_type *q, VALUE w, std::nullptr_t e, VALUE r)
-{
-    return backward::rb_iterate_deprecated(q, w, e, r);
-}
-#endif
-
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       Call a method with a block.
 /// @param[in]   q  The self.
