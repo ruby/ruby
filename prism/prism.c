@@ -4096,8 +4096,8 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
 
     if (elements->size > 0) {
         if (rest) {
-            start = elements->nodes[0]->location.start;
-            end = rest->location.end;
+            start = MIN(rest->location.start, elements->nodes[0]->location.start);
+            end = MAX(rest->location.end, elements->nodes[elements->size - 1]->location.end);
         } else {
             start = elements->nodes[0]->location.start;
             end = elements->nodes[elements->size - 1]->location.end;
@@ -4117,11 +4117,7 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
         .closing_loc = { 0 }
     };
 
-    pm_node_t *element;
-    PM_NODE_LIST_FOREACH(elements, index, element) {
-        pm_node_list_append(&node->elements, element);
-    }
-
+    pm_node_list_concat(&node->elements, elements);
     return node;
 }
 
