@@ -3077,6 +3077,17 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
         .message_loc = target->message_loc
     };
 
+    /* It is possible to get here where we have parsed an invalid syntax tree
+     * where the call operator was not present. In that case we will have a
+     * problem because it is a required location. In this case we need to fill
+     * it in with a fake location so that the syntax tree remains valid. */
+    if (node->call_operator_loc.start == NULL) {
+        node->call_operator_loc = (pm_location_t) {
+            .start = target->base.location.start,
+            .end = target->base.location.start
+        };
+    }
+
     // Here we're going to free the target, since it is no longer necessary.
     // However, we don't want to call `pm_node_destroy` because we want to keep
     // around all of its children since we just reused them.
