@@ -761,6 +761,12 @@ rb_jit_fix_mod_fix(VALUE recv, VALUE obj)
     return rb_fix_mod_fix(recv, obj);
 }
 
+VALUE
+rb_jit_fix_div_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_div_fix(recv, obj);
+}
+
 // YJIT/ZJIT need this function to never allocate and never raise
 VALUE
 rb_yarv_str_eql_internal(VALUE str1, VALUE str2)

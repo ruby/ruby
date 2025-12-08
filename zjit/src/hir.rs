@@ -501,6 +501,7 @@ pub enum SideExitReason {
     BlockParamProxyNotIseqOrIfunc,
     StackOverflow,
     FixnumModByZero,
+    FixnumDivByZero,
     BoxFixnumOverflow,
 }
 
