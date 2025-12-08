@@ -5139,7 +5139,8 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Hash@0x1000, key?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Hash@0x1000)
           v26:HashExact = GuardType v11, HashExact
-          v27:BoolExact = CCallWithFrame v26, :Hash#key?@0x1038, v12
+          v27:BoolExact = HashKeyP v26, v12
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v27
         ");

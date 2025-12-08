@@ -1397,6 +1397,46 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_hash_key_p
+    assert_compiles 'true', %q{
+      def test(h, k) = h.key?(k)
+      test({a: 1, b: 2}, :a)
+      test({a: 1, b: 2}, :a)
+    }, call_threshold: 2
+  end
+
+  def test_opt_hash_key_p_false
+    assert_compiles 'false', %q{
+      def test(h, k) = h.key?(k)
+      test({a: 1, b: 2}, :c)
+      test({a: 1, b: 2}, :c)
+    }, call_threshold: 2
+  end
+
+  def test_opt_hash_has_key
+    assert_compiles 'true', %q{
+      def test(h, k) = h.has_key?(k)
+      test({a: 1}, :a)
+      test({a: 1}, :a)
+    }, call_threshold: 2
+  end
+
+  def test_opt_hash_include
+    assert_compiles 'true', %q{
+      def test(h, k) = h.include?(k)
+      test({a: 1}, :a)
+      test({a: 1}, :a)
+    }, call_threshold: 2
+  end
+
+  def test_opt_hash_member
+    assert_compiles 'true', %q{
+      def test(h, k) = h.member?(k)
+      test({a: 1}, :a)
+      test({a: 1}, :a)
+    }, call_threshold: 2
+  end
+
   def test_new_range_inclusive
     assert_compiles '1..5', %q{
       def test(a, b) = a..b

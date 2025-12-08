@@ -118,6 +118,7 @@ fn main() {
         .allowlist_type("st_retval")
         .allowlist_function("rb_hash_aset")
         .allowlist_function("rb_hash_aref")
+        .allowlist_function("rb_hash_has_key")
         .allowlist_function("rb_hash_bulk_insert")
         .allowlist_function("rb_hash_stlike_lookup")
         .allowlist_function("rb_ary_new_capa")
