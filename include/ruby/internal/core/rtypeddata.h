@@ -188,11 +188,6 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag is used to distinguish RTypedData from deprecated RData objects.
-     */
-    RUBY_TYPED_FL_IS_TYPED_DATA = RUBY_FL_USERPRIV0,
-
-    /**
      * This flag determines whether marking and compaction should be carried out
      * using the dmark/dcompact callback functions or whether we should mark
      * declaratively using a list of references defined inside the data struct we're wrapping
@@ -386,9 +381,21 @@ struct RTypedData {
     void *data;
 };
 
-#if !defined(__cplusplus) || __cplusplus >= 201103L
-RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
-#endif
+/**
+ * Convenient casting macro for backward compatibility.
+ *
+ * @param   obj  An object, which is in fact an ::RData.
+ * @return  The passed object casted to ::RData.
+ */
+#define RDATA(obj)                RTYPEDDATA(obj)
+
+/**
+ * Convenient casting macro for backward compatibility.
+ *
+ * @param   obj  An object, which is in fact an ::RData.
+ * @return  The passed object's ::RTypedData::data field.
+ */
+#define DATA_PTR(obj)             RTYPEDDATA_DATA(obj)
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((3))
@@ -607,14 +614,13 @@ RBIMPL_ATTR_ARTIFICIAL()
  * directly.
  *
  * @param[in]  obj    Object in question
- * @retval     true   `obj` is an instance of ::RTypedData.
- * @retval     false  `obj` is an instance of ::RData.
+ * @retval     true
  * @pre        `obj` must be a Ruby object of ::RUBY_T_DATA.
  */
 static inline bool
 rbimpl_rtypeddata_p(VALUE obj)
 {
-    return FL_TEST_RAW(obj, RUBY_TYPED_FL_IS_TYPED_DATA);
+    return true;
 }
 
 RBIMPL_ATTR_PURE()
@@ -641,11 +647,10 @@ rbimpl_obj_typeddata_p(VALUE obj)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * Checks whether the passed object is ::RTypedData or ::RData.
+ * Checks whether the passed object is ::RTypedData.
  *
  * @param[in]  obj    Object in question
- * @retval     true   `obj` is an instance of ::RTypedData.
- * @retval     false  `obj` is an instance of ::RData.
+ * @retval     true
  * @pre        `obj` must be a Ruby object of ::RUBY_T_DATA.
  */
 static inline bool
