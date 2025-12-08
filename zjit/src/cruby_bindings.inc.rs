@@ -286,10 +286,8 @@ pub const RUBY_FL_WB_PROTECTED: ruby_fl_type = 32;
 pub const RUBY_FL_PROMOTED: ruby_fl_type = 32;
 pub const RUBY_FL_USERPRIV0: ruby_fl_type = 64;
 pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
-pub const RUBY_FL_TAINT: ruby_fl_type = 0;
 pub const RUBY_FL_EXIVAR: ruby_fl_type = 0;
 pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
-pub const RUBY_FL_UNTRUSTED: ruby_fl_type = 0;
 pub const RUBY_FL_UNUSED9: ruby_fl_type = 512;
 pub const RUBY_FL_UNUSED10: ruby_fl_type = 1024;
 pub const RUBY_FL_FREEZE: ruby_fl_type = 2048;
@@ -1866,7 +1864,6 @@ unsafe extern "C" {
     pub fn rb_gc_disable() -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
-    pub static mut rb_cObject: VALUE;
     pub fn rb_funcallv(
         recv: VALUE,
         mid: ID,
@@ -1875,6 +1872,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
+    pub static mut rb_cObject: VALUE;
     pub static mut rb_cArray: VALUE;
     pub static mut rb_cClass: VALUE;
     pub static mut rb_cFalseClass: VALUE;
