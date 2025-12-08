@@ -89,7 +89,7 @@ make zjit-bindgen
 
 ## Documentation
 
-<h3 id="command-line-options">Command-Line Options</h3>
+### Command-Line Options
 
 - `--zjit`: enable ZJIT (disabled by default)
 - `--zjit-mem-size=N`: soft limit on ZJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + zjit_alloc_size`
