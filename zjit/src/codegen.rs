@@ -652,6 +652,9 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
+        // TODO(max): Make this WriteBarrier conditional on if the EP flags has
+        // VM_ENV_FLAG_WB_REQUIRED set.
+        // TODO(max): Find a way to avoid explicitly checking that flag at run-time.
         let local_index = -local_ep_offset;
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
@@ -1124,6 +1127,7 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
+        // TODO(max): Check at run-time if val is an immediate and if so skip the write barrier.
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
     }
 }
