@@ -302,6 +302,5 @@ class TestTimeout < Test::Unit::TestCase
 
       assert_equal :ok, r
     end;
-  end if defined?(::Ractor) && RUBY_VERSION >= '4.0' && !RUBY_PLATFORM.include?('x86_64-darwin')
-  # Exclude on x86_64-darwin as it failed 4 times out of 4 tries in the CI of ruby/ruby-dev-builder
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
 end
