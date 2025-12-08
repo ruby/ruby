@@ -1306,6 +1306,79 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "parallel make" do
+    before do
+      unless Gem::Installer.private_method_defined?(:build_jobs)
+        skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
+      end
+
+      @old_makeflags = ENV["MAKEFLAGS"]
+      @gemspec = nil
+
+      extconf_code = <<~CODE
+        require "mkmf"
+        create_makefile("foo")
+      CODE
+
+      build_repo4 do
+        build_gem "mypsych", "4.0.6" do |s|
+          @gemspec = s
+          extension = "ext/mypsych/extconf.rb"
+          s.extensions = extension
+
+          s.write(extension, extconf_code)
+        end
+      end
+    end
+
+    after do
+      if @old_makeflags
+        ENV["MAKEFLAGS"] = @old_makeflags
+      else
+        ENV.delete("MAKEFLAGS")
+      end
+    end
+
+    it "doesn't pass down -j to make when MAKEFLAGS is set" do
+      ENV["MAKEFLAGS"] = "-j1"
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).not_to include("make -j8")
+    end
+
+    it "pass down the BUNDLE_JOBS to RubyGems when running the compilation of an extension" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j8")
+    end
+
+    it "uses nprocessors by default" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G)
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j#{Etc.nprocessors + 1}")
+    end
+  end
+
   describe "when configured path is UTF-8 and a file inside a gem package too" do
     let(:app_path) do
       path = tmp("♥")
