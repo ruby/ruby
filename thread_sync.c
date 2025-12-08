@@ -599,6 +599,8 @@ mutex_sleep_begin(VALUE _arguments)
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
+    rb_execution_context_t *ec = GET_EC();
+
     if (!NIL_P(timeout)) {
         // Validate the argument:
         rb_time_interval(timeout);
@@ -614,7 +616,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 
     VALUE woken = rb_ensure(mutex_sleep_begin, (VALUE)&arguments, mutex_lock_uninterruptible, self);
 
-    RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
+    RUBY_VM_CHECK_INTS_BLOCKING(ec);
     if (!woken) return Qnil;
     time_t end = time(0) - beg;
     return TIMET2NUM(end);
