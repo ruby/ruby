@@ -840,6 +840,9 @@ console_winsize(VALUE io)
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
 
+static VALUE console_scroll(VALUE io, int line);
+static VALUE console_goto(VALUE io, VALUE y, VALUE x);
+
 /*
  * call-seq:
  *   io.winsize = [rows, columns]
@@ -856,6 +859,8 @@ console_set_winsize(VALUE io, VALUE size)
 #if defined _WIN32
     HANDLE wh;
     int newrow, newcol;
+    COORD oldsize;
+    SMALL_RECT oldwindow;
     BOOL ret;
 #endif
     VALUE row, col, xpixel, ypixel;
@@ -891,18 +896,62 @@ console_set_winsize(VALUE io, VALUE size)
     if (!GetConsoleScreenBufferInfo(wh, &ws)) {
 	rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
     }
-    ws.dwSize.X = newcol;
-    ret = SetConsoleScreenBufferSize(wh, ws.dwSize);
-    ws.srWindow.Left = 0;
-    ws.srWindow.Top = 0;
-    ws.srWindow.Right = newcol-1;
-    ws.srWindow.Bottom = newrow-1;
-    if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
-	rb_syserr_fail(LAST_ERROR, "SetConsoleWindowInfo");
+    oldsize = ws.dwSize;
+    oldwindow = ws.srWindow;
+    if (ws.srWindow.Right + 1 < newcol) {
+        ws.dwSize.X = newcol;
     }
-    /* retry when shrinking buffer after shrunk window */
-    if (!ret && !SetConsoleScreenBufferSize(wh, ws.dwSize)) {
-	rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
+    if (ws.dwSize.Y < newrow) {
+        ws.dwSize.Y = newrow;
+    }
+    /* expand screen buffer first if needed */
+    if (!SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+        rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
+    }
+    /* refresh ws for new dwMaximumWindowSize */
+    if (!GetConsoleScreenBufferInfo(wh, &ws)) {
+        rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
+    }
+    /* check new size before modifying buffer content */
+    if (newrow <= 0 || newcol <= 0 ||
+        newrow > ws.dwMaximumWindowSize.Y ||
+        newcol > ws.dwMaximumWindowSize.X) {
+        SetConsoleScreenBufferSize(wh, oldsize);
+        /* remove scrollbar if possible */
+        SetConsoleWindowInfo(wh, TRUE, &oldwindow);
+        rb_raise(rb_eArgError, "out of range winsize: [%d, %d]", newrow, newcol);
+    }
+    /* shrink screen buffer width */
+    ws.dwSize.X = newcol;
+    /* shrink screen buffer height if window height were the same */
+    if (oldsize.Y == ws.srWindow.Bottom - ws.srWindow.Top + 1) {
+        ws.dwSize.Y = newrow;
+    }
+    ws.srWindow.Left = 0;
+    ws.srWindow.Right = newcol - 1;
+    ws.srWindow.Bottom = ws.srWindow.Top + newrow -1;
+    if (ws.dwCursorPosition.Y > ws.srWindow.Bottom) {
+        console_scroll(io, ws.dwCursorPosition.Y - ws.srWindow.Bottom);
+        ws.dwCursorPosition.Y = ws.srWindow.Bottom;
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X)); 
+    }
+    if (ws.srWindow.Bottom > ws.dwSize.Y - 1) {
+        console_scroll(io, ws.srWindow.Bottom - (ws.dwSize.Y - 1));
+        ws.dwCursorPosition.Y -= ws.srWindow.Bottom - (ws.dwSize.Y - 1);
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X)); 
+	ws.srWindow.Bottom = ws.dwSize.Y - 1;
+    }
+    ws.srWindow.Top = ws.srWindow.Bottom - (newrow - 1);
+    /* perform changes to winsize */
+    if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
+        int last_error = LAST_ERROR;
+        SetConsoleScreenBufferSize(wh, oldsize);
+	rb_syserr_fail(last_error, "SetConsoleWindowInfo");
+    }
+    /* perform screen buffer shrinking if necessary */
+    if ((ws.dwSize.Y < oldsize.Y || ws.dwSize.X < oldsize.X) &&
+        !SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+        rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
     }
     /* remove scrollbar if possible */
     if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
