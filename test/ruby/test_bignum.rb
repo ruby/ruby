@@ -778,6 +778,9 @@ class TestBignum < Test::Unit::TestCase
     assert_equal([7215, 2413, 6242], T1024P.digits(10_000).first(3))
     assert_equal([11], 11.digits(T1024P))
     assert_equal([T1024P - 1, 1], (T1024P + T1024P - 1).digits(T1024P))
+    bug21680 = '[ruby-core:123769] [Bug #21680]'
+    assert_equal([0] * 64 + [1], (2**512).digits(256), bug21680)
+    assert_equal([0] * 128 + [1], (123**128).digits(123), bug21680)
   end
 
   def test_digits_for_negative_numbers

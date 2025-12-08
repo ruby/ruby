@@ -5552,7 +5552,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     }
 
     bases = rb_ary_new();
-    for (VALUE b = base; int_lt(b, num) == Qtrue; b = rb_int_mul(b, b)) {
+    for (VALUE b = base; int_le(b, num) == Qtrue; b = rb_int_mul(b, b)) {
         rb_ary_push(bases, b);
     }
     digits = rb_ary_new_from_args(1, num);
