@@ -182,6 +182,15 @@ reg_value(VALUE self, VALUE name)
     e = RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type, NULL, &size);
     if (e == ERROR_FILE_NOT_FOUND) return Qnil;
     w32error_check(e);
+# define get_value_2nd(data, dsize) do { \
+        DWORD type2 = type; \
+        w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type2, data, dsize)); \
+        if (type != type2) { \
+            rb_raise(rb_eRuntimeError, "registry value type changed %lu -> %lu", \
+                     (unsigned long)type, (unsigned long)type2); \
+        } \
+    } while (0)
+
     switch (type) {
       case REG_DWORD: case REG_DWORD_BIG_ENDIAN:
         {
@@ -201,30 +210,30 @@ reg_value(VALUE self, VALUE name)
       case REG_SZ: case REG_MULTI_SZ: case REG_EXPAND_SZ:
         if (size % sizeof(WCHAR)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", (unsigned long)size);
         buffer = ALLOCV_N(char, value_buffer, size);
+        get_value_2nd(buffer, &size);
+        if (type == REG_MULTI_SZ) {
+            const WCHAR *w = (WCHAR *)buffer;
+            result = rb_ary_new();
+            size /= sizeof(WCHAR);
+            size -= 1;
+            for (size_t i = 0; i < size; ++i) {
+                int n = lstrlenW(w+i);
+                rb_ary_push(result, wchar_to_utf8(w+i, n));
+                i += n;
+            }
+        }
+        else {
+            result = wchar_to_utf8((WCHAR *)buffer, lstrlenW((WCHAR *)buffer));
+        }
+        ALLOCV_END(value_buffer);
         break;
       default:
         result = rb_str_new(0, size);
-        buffer = RSTRING_PTR(result);
+        get_value_2nd(RSTRING_PTR(result), &size);
+        rb_str_set_len(result, size);
+        break;
     }
-    w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type, buffer, &size));
-    switch (type) {
-      case REG_MULTI_SZ: {
-        const WCHAR *w = (WCHAR *)buffer;
-        result = rb_ary_new();
-        size /= sizeof(WCHAR);
-        size -= 1;
-        for (size_t i = 0; i < size; ++i) {
-            int n = lstrlenW(w+i);
-            rb_ary_push(result, wchar_to_utf8(w+i, n));
-            i += n;
-        }
-        return result;
-      }
-      case REG_SZ: case REG_EXPAND_SZ:
-        return wchar_to_utf8((WCHAR *)buffer, lstrlenW((WCHAR *)buffer));
-      default:
-        return result;
-    }
+    return result;
 }
 
 void
