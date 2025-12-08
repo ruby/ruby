@@ -852,9 +852,6 @@ class TestIOBuffer < Test::Unit::TestCase
       assert_equal value, result_be, "#{be_type}: round-trip failed"
 
       # Verify byte patterns are different when endianness differs from host
-      le_bytes = buffer.get_string(0, buffer_size)
-      be_bytes = buffer.get_string(buffer_size, buffer_size)
-
       if host_is_le
         # On little-endian host: le_type should match host, be_type should be swapped
         # So the byte patterns should be different (unless value is symmetric)
