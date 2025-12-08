@@ -1303,11 +1303,17 @@ static VALUE
 console_goto(VALUE io, VALUE y, VALUE x)
 {
 #ifdef _WIN32
-    COORD pos;
-    int fd = GetWriteFD(io);
-    pos.X = NUM2UINT(x);
-    pos.Y = NUM2UINT(y);
-    if (!SetConsoleCursorPosition((HANDLE)rb_w32_get_osfhandle(fd), pos)) {
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X = NUM2UINT(x);
+    pos->Y = ws.srWindow.Top + NUM2UINT(y);
+    if (!SetConsoleCursorPosition(h, *pos)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
