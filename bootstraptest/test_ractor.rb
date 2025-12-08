@@ -186,6 +186,37 @@ assert_equal '[SyntaxError, [Object, 43, 43], Binding]', %q{
   r << pr1.call << pr1.binding.class
 }
 
+# Ractor.make_shareable mutates the original Proc
+# This is the current behavior, it's currently considered safe enough
+# because in most cases it would raise anyway due to not-shared self or not-shared captured variable value
+assert_equal '[[42, 42], Binding, true, SyntaxError, "Can\'t create Binding from isolated Proc"]', %q{
+  a = 42
+  pr1 = nil.instance_exec do
+    Proc.new do
+      [eval("a"), binding.local_variable_get(:a)]
+    end
+  end
+
+  r = [pr1.call, pr1.binding.class]
+
+  pr2 = Ractor.make_shareable(pr1)
+  r << pr1.equal?(pr2)
+
+  begin
+    pr1.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  begin
+    r << pr1.binding
+  rescue ArgumentError
+    r << $!.message
+  end
+
+  r
+}
+
 # Ractor::IsolationError cases
 assert_equal '3', %q{
   ok = 0
