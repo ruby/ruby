@@ -1126,9 +1126,19 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
     // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
+        // TODO(max): Only emit the run-time check if we couldn't prove the value is a HeapBasicObject.
+        let skip_wb = asm.new_label("skip_wb");
+        // If the value we're writing is an immediate, we don't need to WB
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(skip_wb.clone());
+        // If the value we're writing is nil or false, we don't need to WB
+        asm.cmp(val, Qfalse.into());
+        asm.je(skip_wb.clone());
+
         let recv = asm.load(recv);
-        // TODO(max): Check at run-time if val is an immediate and if so skip the write barrier.
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+
+        asm.write_label(skip_wb);
     }
 }
 
