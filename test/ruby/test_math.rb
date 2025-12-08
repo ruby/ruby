@@ -301,11 +301,21 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([Math.log(6),                1], Math.lgamma(4))
 
     assert_raise_with_message(Math::DomainError, /\blgamma\b/) { Math.lgamma(-Float::INFINITY) }
+
+    x, sign = Math.lgamma(+0.0)
+    mesg = "Math.lgamma(+0.0) should be [INF, +1]"
+    assert_infinity(x, mesg)
+    assert_equal(+1, sign, mesg)
+
     x, sign = Math.lgamma(-0.0)
     mesg = "Math.lgamma(-0.0) should be [INF, -1]"
     assert_infinity(x, mesg)
     assert_equal(-1, sign, mesg)
-    x, sign = Math.lgamma(Float::NAN)
+
+    x, = Math.lgamma(-1)
+    assert_infinity(x, "Math.lgamma(-1) should be +INF")
+
+    x, = Math.lgamma(Float::NAN)
     assert_nan(x)
   end
 
