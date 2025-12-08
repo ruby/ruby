@@ -7,7 +7,10 @@ class TestTimeout < Test::Unit::TestCase
   def test_public_methods
     assert_equal [:timeout], Timeout.private_instance_methods(false)
     assert_equal [], Timeout.public_instance_methods(false)
+
     assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+
+    assert_equal [:Error, :ExitException, :VERSION], Timeout.constants.sort
   end
 
   def test_work_is_done_in_same_thread_as_caller
@@ -299,6 +302,5 @@ class TestTimeout < Test::Unit::TestCase
 
       assert_equal :ok, r
     end;
-  end if defined?(::Ractor) && RUBY_VERSION >= '4.0' && !RUBY_PLATFORM.include?('x86_64-darwin')
-  # Exclude on x86_64-darwin as it failed 4 times out of 4 tries in the CI of ruby/ruby-dev-builder
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
 end

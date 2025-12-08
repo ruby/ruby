@@ -7966,7 +7966,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(mapping) -> string
+ *    upcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/upcase.rdoc
  */
@@ -8052,7 +8052,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(mapping) -> string
+ *    downcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/downcase.rdoc
  *
@@ -8118,29 +8118,10 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(mapping = :ascii) -> string
+ *    capitalize(mapping = :ascii) -> new_string
  *
- *  Returns a string containing the characters in +self+,
- *  each with possibly changed case:
+ *  :include: doc/string/capitalize.rdoc
  *
- *  - The first character is upcased.
- *  - All other characters are downcased.
- *
- *  Examples:
- *
- *    'hello world'.capitalize # => "Hello world"
- *    'HELLO WORLD'.capitalize # => "Hello world"
- *
- *  Some characters do not have upcase and downcase, and so are not changed;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
- *
- *    '1, 2, 3, ...'.capitalize # => "1, 2, 3, ..."
- *
- *  The casing is affected by the given +mapping+,
- *  which may be +:ascii+, +:fold+, or +:turkic+;
- *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
- *
- *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -8197,7 +8178,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping) -> new_string
+ *    swapcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/swapcase.rdoc
  *

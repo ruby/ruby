@@ -176,7 +176,7 @@ No \English.
 ### `$/` (Input Record Separator)
 
 An input record separator, initially newline.
-Set by the command-line option `-0`.
+Set by the [command-line option `-0`].
 
 Setting to non-nil value by other than the command-line option is
 deprecated.
@@ -188,7 +188,9 @@ Aliased as `$-0`.
 ### `$\` (Output Record Separator)
 
 An output record separator, initially `nil`.
-Copied from `$/` when the command-line option `-l` is given.
+
+Copied from `$/` when the [command-line option `-l`] is
+given.
 
 Setting to non-nil value by other than the command-line option is
 deprecated.
@@ -328,8 +330,8 @@ The value returned by method ARGF.filename.
 
 ### `$DEBUG`
 
-Initially `true` if command-line option `-d` or `--debug` is given,
-otherwise initially `false`;
+Initially `true` if [command-line option `-d`] or
+[`--debug`][command-line option `-d`] is given, otherwise initially `false`;
 may be set to either value in the running program.
 
 When `true`, prints each raised exception to `$stderr`.
@@ -338,8 +340,8 @@ Aliased as `$-d`.
 
 ### `$VERBOSE`
 
-Initially `true` if command-line option `-v` or `-w` is given,
-otherwise initially `false`;
+Initially `true` if [command-line option `-v`] or
+[`-w`][command-line option `-w`] is given, otherwise initially `false`;
 may be set to either value, or to `nil`, in the running program.
 
 When `true`, enables Ruby warnings.
@@ -353,7 +355,7 @@ Aliased as `$-v` and `$-w`.
 ### `$-F`
 
 The default field separator in String#split; must be a String or a
-Regexp, and can be set with command-line option `-F`.
+Regexp, and can be set with [command-line option `-F`].
 
 Setting to non-nil value by other than the command-line option is
 deprecated.
@@ -362,28 +364,28 @@ Aliased as `$;`.
 
 ### `$-a`
 
-Whether command-line option `-a` was given; read-only.
+Whether [command-line option `-a`] was given; read-only.
 
 ### `$-i`
 
-Contains the extension given with command-line option `-i`,
+Contains the extension given with [command-line option `-i`],
 or `nil` if none.
 
 An alias of ARGF.inplace_mode.
 
 ### `$-l`
 
-Whether command-line option `-l` was set; read-only.
+Whether [command-line option `-l`] was set; read-only.
 
 ### `$-p`
 
-Whether command-line option `-p` was given; read-only.
+Whether [command-line option `-p`] was given; read-only.
 
 ### `$F`
 
-If the command line option `-a` is given, the array obtained by
-splitting `$_` by `$-F` is assigned at the start of each `-l`/`-p`
-loop.
+If the [command-line option `-a`] is given, the array
+obtained by splitting `$_` by `$-F` is assigned at the start of each
+`-l`/`-p` loop.
 
 ## Deprecated
 
@@ -594,3 +596,14 @@ Output:
 "Bar\n"
 "Baz\n"
 ```
+
+
+[command-line option `-0`]: rdoc-ref:language/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29
+[command-line option `-F`]: rdoc-ref:language/options.md@F-3A+Set+Input+Field+Separator
+[command-line option `-a`]: rdoc-ref:language/options.md@a-3A+Split+Input+Lines+into+Fields
+[command-line option `-d`]: rdoc-ref:language/options.md@d-3A+Set+-24DEBUG+to+true
+[command-line option `-i`]: rdoc-ref:language/options.md@i-3A+Set+ARGF+In-Place+Mode
+[command-line option `-l`]: rdoc-ref:language/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines
+[command-line option `-p`]: rdoc-ref:language/options.md@p-3A+-n-2C+with+Printing
+[command-line option `-v`]: rdoc-ref:language/options.md@v-3A+Print+Version-3B+Set+-24VERBOSE
+[command-line option `-w`]: rdoc-ref:language/options.md@w-3A+Synonym+for+-W1

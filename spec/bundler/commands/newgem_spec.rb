@@ -1681,6 +1681,13 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
       end
 
+      it "generates native extension loading code" do
+        expect(bundled_app("#{gem_name}/lib/#{gem_name}.rb").read).to include(<<~RUBY)
+          require_relative "test_gem/version"
+          require "#{gem_name}/#{gem_name}"
+        RUBY
+      end
+
       it "includes rake-compiler, but no Rust related changes" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
 

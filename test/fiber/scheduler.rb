@@ -65,69 +65,79 @@ class Scheduler
     end
   end
 
-  def run
-    # $stderr.puts [__method__, Fiber.current].inspect
-
+  def run_once
     readable = writable = nil
 
-    while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
-      # May only handle file descriptors up to 1024...
-      begin
-        readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
-      rescue IOError
-        # Ignore - this can happen if the IO is closed while we are waiting.
+    begin
+      readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
+    rescue IOError
+      # Ignore - this can happen if the IO is closed while we are waiting.
+    end
+
+    # puts "readable: #{readable}" if readable&.any?
+    # puts "writable: #{writable}" if writable&.any?
+
+    selected = {}
+
+    readable&.each do |io|
+      if fiber = @readable.delete(io)
+        @writable.delete(io) if @writable[io] == fiber
+        selected[fiber] = IO::READABLE
+      elsif io == @urgent.first
+        @urgent.first.read_nonblock(1024)
       end
+    end
 
-      # puts "readable: #{readable}" if readable&.any?
-      # puts "writable: #{writable}" if writable&.any?
-
-      selected = {}
-
-      readable&.each do |io|
-        if fiber = @readable.delete(io)
-          @writable.delete(io) if @writable[io] == fiber
-          selected[fiber] = IO::READABLE
-        elsif io == @urgent.first
-          @urgent.first.read_nonblock(1024)
-        end
+    writable&.each do |io|
+      if fiber = @writable.delete(io)
+        @readable.delete(io) if @readable[io] == fiber
+        selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
       end
+    end
 
-      writable&.each do |io|
-        if fiber = @writable.delete(io)
-          @readable.delete(io) if @readable[io] == fiber
-          selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
-        end
-      end
+    selected.each do |fiber, events|
+      fiber.transfer(events)
+    end
 
-      selected.each do |fiber, events|
-        fiber.transfer(events)
-      end
+    if @waiting.any?
+      time = current_time
+      waiting, @waiting = @waiting, {}
 
-      if @waiting.any?
-        time = current_time
-        waiting, @waiting = @waiting, {}
-
-        waiting.each do |fiber, timeout|
-          if fiber.alive?
-            if timeout <= time
-              fiber.transfer
-            else
-              @waiting[fiber] = timeout
-            end
+      waiting.each do |fiber, timeout|
+        if fiber.alive?
+          if timeout <= time
+            fiber.transfer
+          else
+            @waiting[fiber] = timeout
           end
         end
       end
+    end
 
-      if @ready.any?
-        ready = nil
+    if @ready.any?
+      ready = nil
 
-        @lock.synchronize do
-          ready, @ready = @ready, []
-        end
+      @lock.synchronize do
+        ready, @ready = @ready, []
+      end
 
-        ready.each do |fiber|
-          fiber.transfer if fiber.alive?
-        end
+      ready.each do |fiber|
+        fiber.transfer if fiber.alive?
+      end
+    end
+  end
+
+  def run
+    # $stderr.puts [__method__, Fiber.current].inspect
+
+    # Use Thread.handle_interrupt like Async::Scheduler does
+    # This defers signal processing, which is the root cause of the gRPC bug
+    # See: https://github.com/socketry/async/blob/main/lib/async/scheduler.rb
+    Thread.handle_interrupt(::SignalException => :never) do
+      while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
+        run_once
+
+        break if Thread.pending_interrupt?
       end
     end
   end
@@ -243,6 +253,13 @@ class Scheduler
     Thread.new do
       IO.select(...)
     end.value
+  end
+
+  # This hook is invoked by `IO#close`. Using a separate IO object
+  # demonstrates that the close operation is asynchronous.
+  def io_close(descriptor)
+    Fiber.blocking{IO.for_fd(descriptor.to_i).close}
+    return true
   end
 
   # This hook is invoked by `Kernel#sleep` and `Thread::Mutex#sleep`.

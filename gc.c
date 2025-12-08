@@ -1905,7 +1905,9 @@ object_id0(VALUE obj)
     RUBY_ASSERT(rb_shape_obj_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        RB_VM_LOCKING() {
+            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        }
     }
     return id;
 }
@@ -4839,11 +4841,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                         APPEND_F("(too_complex) len:%zu", hash_len);
                     }
                     else {
-                        APPEND_F("(embed) len:%d", ROBJECT_FIELDS_CAPACITY(obj));
+                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
                     }
                 }
                 else {
-                    APPEND_F("len:%d ptr:%p", ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
+                    APPEND_F("len:%d capa:%d ptr:%p", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
                 }
             }
             break;

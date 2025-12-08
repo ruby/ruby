@@ -746,6 +746,8 @@ get_tzname(int dst)
 }
 #endif
 
+static void ruby_reset_leap_second_info(void);
+
 void
 ruby_reset_timezone(const char *val)
 {

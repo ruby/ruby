@@ -402,7 +402,7 @@ ossl_x509ext_get_value_der(VALUE obj)
     if ((value = X509_EXTENSION_get_data(ext)) == NULL)
         ossl_raise(eX509ExtError, NULL);
 
-    return rb_str_new((const char *)value->data, value->length);
+    return asn1str_to_str(value);
 }
 
 static VALUE

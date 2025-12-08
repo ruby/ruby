@@ -1,6 +1,9 @@
 Returns a new string containing the upcased characters in +self+:
 
-   'Hello, World!'.upcase     # => "HELLO, WORLD!"
+  'hello'.upcase        # => "HELLO"
+  'straße'.upcase       # => "STRASSE"
+  'привет'.upcase       # => "ПРИВЕТ"
+  'RubyGems.org'.upcase # => "RUBYGEMS.ORG"
 
 The sizes of +self+ and the upcased result may differ:
 
@@ -9,12 +12,16 @@ The sizes of +self+ and the upcased result may differ:
    s.upcase      # => "STRASSE"
    s.upcase.size # => 7
 
-Some characters (and some character sets) do not have upcased and downcased versions:
+Some characters (and some character sets) do not have upcase and downcase versions;
+see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
 
-   s = 'よろしくお願いします'
+   s = '1, 2, 3, ...'
+   s.upcase == s # => true
+   s = 'こんにちは'
    s.upcase == s # => true
 
-The casing may be affected by the given +mapping+;
-see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+The casing is affected by the given +mapping+,
+which may be +:ascii+, +:fold+, or +:turkic+;
+see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

@@ -213,7 +213,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.5.0
 * logger 1.7.0
-* rdoc 6.16.1
+* rdoc 6.17.0
 * win32ole 1.9.2
 * irb 1.15.3
 * reline 0.6.3
@@ -254,7 +254,7 @@ The following default gems are updated.
 * resolv 0.6.3
 * stringio 3.1.9.dev
 * strscan 3.1.6.dev
-* timeout 0.4.4
+* timeout 0.5.0
 * uri 1.1.1
 * weakref 0.1.4
 * zlib 3.2.2
@@ -383,18 +383,19 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+* ZJIT
+    * Introduce an [experimental method-based JIT compiler](https://docs.ruby-lang.org/en/master/jit/zjit_md.html).
+      To enable `--zjit` support, build Ruby with Rust 1.85.0 or later.
+    * As of Ruby 4.0.0, ZJIT is faster than the interpreter, but not yet as fast as YJIT.
+      We encourage experimentation with ZJIT, but advise against deploying it in production for now.
+    * Our goal is to make ZJIT faster than YJIT and production-ready in Ruby 4.1.
 * YJIT
-    * YJIT stats
+    * `RubyVM::YJIT.runtime_stats`
         * `ratio_in_yjit` no longer works in the default build.
           Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
         * Add `invalidate_everything` to default stats, which is
           incremented when every code is invalidated by TracePoint.
     * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
-* ZJIT
-    * Add an experimental method-based JIT compiler.
-      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
-    * As of Ruby 4.0.0-preview1, ZJIT is not yet ready for speeding up most benchmarks.
-      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 4.0 release.
 * RJIT
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.

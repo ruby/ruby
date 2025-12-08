@@ -1,6 +1,48 @@
 # ZJIT: ADVANCED RUBY JIT PROTOTYPE
 
+ZJIT is a method-based just-in-time (JIT) compiler for Ruby. It uses profile
+information from the interpreter to guide optimization in the compiler.
+
+ZJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
+This project is open source and falls under the same license as CRuby.
+
+## Current Limitations
+
+ZJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs. ZJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
+You can change how much executable memory is allocated using [ZJIT's command-line options](rdoc-ref:@Command-Line+Options).
+
 ## Build Instructions
+
+### For normal use
+
+To build ZJIT on macOS:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc \
+    --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+
+make -j miniruby
+```
+
+To build ZJIT on Linux:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc
+
+make -j miniruby
+```
+
+### For development
 
 To build ZJIT on macOS:
 
@@ -46,6 +88,35 @@ make zjit-bindgen
 ```
 
 ## Documentation
+
+### Command-Line Options
+
+See `ruby --help` for ZJIT-specific command-line options:
+
+```
+$ ruby --help
+...
+ZJIT options:
+  --zjit-mem-size=num
+                  Max amount of memory that ZJIT can use in MiB (default: 128).
+  --zjit-call-threshold=num
+                  Number of calls to trigger JIT (default: 30).
+  --zjit-num-profiles=num
+                  Number of profiled calls before JIT (default: 5).
+  --zjit-stats[=quiet]
+                  Enable collecting ZJIT statistics (=quiet to suppress output).
+  --zjit-disable  Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable.
+  --zjit-perf     Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf.
+  --zjit-log-compiled-iseqs=path
+                  Log compiled ISEQs to the file. The file will be truncated.
+  --zjit-trace-exits[=counter]
+                  Record source on side-exit. `Counter` picks specific counter.
+  --zjit-trace-exits-sample-rate=num
+                  Frequency at which to record side exits. Must be `usize`.
+$
+```
+
+### Source level documentation
 
 You can generate and open the source level documentation in your browser using:
 

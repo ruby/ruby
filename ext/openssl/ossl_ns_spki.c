@@ -230,13 +230,12 @@ ossl_spki_get_challenge(VALUE self)
     NETSCAPE_SPKI *spki;
 
     GetSPKI(self, spki);
-    if (spki->spkac->challenge->length <= 0) {
+    if (ASN1_STRING_length(spki->spkac->challenge) <= 0) {
         OSSL_Debug("Challenge.length <= 0?");
         return rb_str_new(0, 0);
     }
 
-    return rb_str_new((const char *)spki->spkac->challenge->data,
-                      spki->spkac->challenge->length);
+    return asn1str_to_str(spki->spkac->challenge);
 }
 
 /*

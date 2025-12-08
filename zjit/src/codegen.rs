@@ -790,7 +790,7 @@ fn gen_ccall_with_frame(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
-    gen_prepare_call_with_gc(asm, state, false);
+    gen_save_pc_for_gc(asm, state);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -875,7 +875,7 @@ fn gen_ccall_variadic(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
-    gen_prepare_call_with_gc(asm, state, false);
+    gen_save_pc_for_gc(asm, state);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1304,8 +1304,8 @@ fn gen_send_without_block_direct(
     gen_stack_overflow_check(jit, asm, state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame
-    gen_prepare_call_with_gc(asm, state, false);
-    // Special SP math. Can't use gen_prepare_non_leaf_call
+    // Can't use gen_prepare_non_leaf_call because we need special SP math.
+    gen_save_pc_for_gc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
 
     gen_spill_locals(jit, asm, state);
@@ -2008,6 +2008,18 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
     }
 }
 
+/// Save only the PC to CFP. Use this when you need to call gen_save_sp()
+/// immediately after with a custom stack size (e.g., gen_ccall_with_frame
+/// adjusts SP to exclude receiver and arguments).
+fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
+    let opcode: usize = state.get_opcode().try_into().unwrap();
+    let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
+
+    gen_incr_counter(asm, Counter::vm_write_pc_count);
+    asm_comment!(asm, "save PC to CFP");
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
+}
+
 /// Save the current PC on the CFP as a preparation for calling a C function
 /// that may allocate objects and trigger GC. Use gen_prepare_non_leaf_call()
 /// if it may raise exceptions or call arbitrary methods.
@@ -2017,13 +2029,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 /// However, to avoid marking uninitialized stack slots, this also updates SP,
 /// which may have cfp->sp for a past frame or a past non-leaf call.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool) {
-    let opcode: usize = state.get_opcode().try_into().unwrap();
-    let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
-
-    gen_incr_counter(asm, Counter::vm_write_pc_count);
-    asm_comment!(asm, "save PC to CFP");
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
-
+    gen_save_pc_for_gc(asm, state);
     gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());

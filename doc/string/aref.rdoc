@@ -8,7 +8,7 @@ returns the 1-character substring found in self at character offset index:
   'hello'[0]    # => "h"
   'hello'[4]    # => "o"
   'hello'[5]    # => nil
-  'тест'[2]     # => "с"
+  'Привет'[2]   # => "и"
   'こんにちは'[4] # => "は"
 
 With negative integer argument +index+ given,
@@ -92,7 +92,7 @@ returns the matching substring of +self+, if found:
   'hello'['ell']      # => "ell"
   'hello'['']         # => ""
   'hello'['nosuch']   # => nil
-  'тест'['ес']        # => "ес"
+  'Привет'['ив']      # => "ив"
   'こんにちは'['んにち'] # => "んにち"
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

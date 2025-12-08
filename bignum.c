@@ -4515,7 +4515,7 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
 
 #if HAVE_LONG_LONG
 
-static VALUE
+VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
     long i;
@@ -4537,7 +4537,7 @@ rb_ull2big(unsigned LONG_LONG n)
     return big;
 }
 
-static VALUE
+VALUE
 rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
@@ -4575,7 +4575,7 @@ rb_ll2inum(LONG_LONG n)
 #endif  /* HAVE_LONG_LONG */
 
 #ifdef HAVE_INT128_T
-static VALUE
+VALUE
 rb_uint128t2big(uint128_t n)
 {
     long i;

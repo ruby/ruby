@@ -131,7 +131,7 @@ do{\
  * Convert binary string to hex string. The caller is responsible for
  * ensuring out has (2 * len) bytes of capacity.
  */
-void ossl_bin2hex(unsigned char *in, char *out, size_t len);
+void ossl_bin2hex(const unsigned char *in, char *out, size_t len);
 
 /*
  * Our default PEM callback
