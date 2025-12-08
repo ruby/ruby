@@ -222,7 +222,7 @@ enc_check_encoding(VALUE obj)
     if (!is_obj_encoding(obj)) {
         return -1;
     }
-    return check_encoding(RDATA(obj)->data);
+    return check_encoding(RTYPEDDATA_GET_DATA(obj));
 }
 
 NORETURN(static void not_encoding(VALUE enc));
@@ -328,7 +328,7 @@ str_to_encoding(VALUE enc)
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     return str_to_encoding(enc);
 }
 
@@ -336,7 +336,7 @@ rb_encoding *
 rb_find_encoding(VALUE enc)
 {
     int idx;
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     idx = str_find_encindex(enc);
     if (idx < 0) return NULL;
     return rb_enc_from_index(idx);
