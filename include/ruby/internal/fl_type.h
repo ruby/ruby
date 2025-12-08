@@ -363,23 +363,6 @@ ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER1,
 };
 
-enum {
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_DUPPED
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_DUPPED)
-#endif
-
-    = (int)RUBY_T_MASK
-};
-
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
