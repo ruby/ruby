@@ -9,7 +9,7 @@ This project is open source and falls under the same license as CRuby.
 ## Current Limitations
 
 ZJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs. ZJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
-You can change how much executable memory is allocated using [ZJIT's command-line options](#command-line-options).
+You can change how much executable memory is allocated using [ZJIT's command-line options](rdoc-ref:@Command-Line+Options).
 
 ## Build Instructions
 
