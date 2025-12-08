@@ -343,37 +343,39 @@ describe "C-API Array function" do
     end
   end
 
-  describe "rb_iterate" do
-    it "calls an callback function as a block passed to an method" do
-      s = [1,2,3,4]
-      s2 = @s.rb_iterate(s)
+  ruby_version_is ""..."4.0" do
+    describe "rb_iterate" do
+      it "calls an callback function as a block passed to an method" do
+        s = [1,2,3,4]
+        s2 = @s.rb_iterate(s)
 
-      s2.should == s
+        s2.should == s
 
-      # Make sure they're different objects
-      s2.equal?(s).should be_false
-    end
-
-    it "calls a function with the other function available as a block" do
-      h = {a: 1, b: 2}
-
-      @s.rb_iterate_each_pair(h).sort.should == [1,2]
-    end
-
-    it "calls a function which can yield into the original block" do
-      s2 = []
-
-      o = Object.new
-      def o.each
-        yield 1
-        yield 2
-        yield 3
-        yield 4
+        # Make sure they're different objects
+        s2.equal?(s).should be_false
       end
 
-      @s.rb_iterate_then_yield(o) { |x| s2 << x }
+      it "calls a function with the other function available as a block" do
+        h = {a: 1, b: 2}
 
-      s2.should == [1,2,3,4]
+        @s.rb_iterate_each_pair(h).sort.should == [1,2]
+      end
+
+      it "calls a function which can yield into the original block" do
+        s2 = []
+
+        o = Object.new
+        def o.each
+          yield 1
+          yield 2
+          yield 3
+          yield 4
+        end
+
+        @s.rb_iterate_then_yield(o) { |x| s2 << x }
+
+        s2.should == [1,2,3,4]
+      end
     end
   end
 
