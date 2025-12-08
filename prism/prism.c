@@ -12031,7 +12031,10 @@ parser_lex(pm_parser_t *parser) {
                                     // string content.
                                     if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
                                         const uint8_t *end = parser->current.end;
-                                        pm_newline_list_append(&parser->newline_list, end);
+
+                                        if (parser->heredoc_end == NULL) {
+                                            pm_newline_list_append(&parser->newline_list, end);
+                                        }
 
                                         // Here we want the buffer to only
                                         // include up to the backslash.
