@@ -33,7 +33,8 @@ module Prism
 
       # Leaving these out until they are supported by parse.y.
       "leading_logical.txt",
-      "endless_methods_command_call.txt"
+      "endless_methods_command_call.txt",
+      "command_method_call_2.txt"
     ]
 
     Fixture.each(except: except) do |fixture|

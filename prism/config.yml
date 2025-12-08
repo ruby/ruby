@@ -60,6 +60,7 @@ errors:
   - CONDITIONAL_WHILE_PREDICATE
   - CONSTANT_PATH_COLON_COLON_CONSTANT
   - DEF_ENDLESS
+  - DEF_ENDLESS_PARAMETERS
   - DEF_ENDLESS_SETTER
   - DEF_NAME
   - DEF_PARAMS_TERM
@@ -1800,7 +1801,7 @@ nodes:
           Represents the predicate of the case statement. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               case true; when false; end
-              ^^^^
+                   ^^^^
       - name: conditions
         type: node[]
         kind: WhenNode
