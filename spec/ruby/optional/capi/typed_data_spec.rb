@@ -92,9 +92,11 @@ describe "CApiWrappedTypedStruct" do
       @s.RTYPEDDATA_P(a).should == true
     end
 
-    it "returns false for an untyped data object" do
-      a = @s.untyped_wrap_struct(1024)
-      @s.RTYPEDDATA_P(a).should == false
+    ruby_version_is ""..."4.1" do
+      it "returns false for an untyped data object" do
+        a = @s.untyped_wrap_struct(1024)
+        @s.RTYPEDDATA_P(a).should == false
+      end
     end
   end
 end
