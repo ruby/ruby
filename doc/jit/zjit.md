@@ -89,6 +89,16 @@ make zjit-bindgen
 
 ## Documentation
 
+<h3 id="command-line-options">Command-Line Options</h3>
+
+- `--zjit`: enable ZJIT (disabled by default)
+- `--zjit-mem-size=N`: soft limit on ZJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + zjit_alloc_size`
+- `--zjit-exec-mem-size=N`: hard limit on executable memory block in MiB. Limits `code_region_size`
+- `--zjit-call-threshold=N`: number of calls after which ZJIT begins to compile a function.
+  It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
+
+### Source level documentation
+
 You can generate and open the source level documentation in your browser using:
 
 ```bash
