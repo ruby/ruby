@@ -1885,6 +1885,25 @@ RSpec.describe "bundle install with gem sources" do
     expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
   end
 
+  it "prevents removing binstubs when BUNDLE_CLEAN is set" do
+    build_repo4 do
+      build_gem "kamal", "4.0.6" do |s|
+        s.executables = ["kamal"]
+      end
+    end
+
+    gemfile = <<~G
+      source "https://gem.repo4"
+      gem "kamal"
+    G
+
+    install_gemfile(gemfile, env: { "BUNDLE_CLEAN" => "true", "BUNDLE_PATH" => "vendor/bundle" })
+
+    expected_executables = [vendored_gems("bin/kamal").to_s]
+    expected_executables << vendored_gems("bin/kamal.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
+
   it "preserves lockfile versions conservatively" do
     build_repo4 do
       build_gem "mypsych", "4.0.6" do |s|
