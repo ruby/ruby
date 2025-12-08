@@ -2437,17 +2437,20 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+static void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
+
 // Clear tracing event flags and turn off tracing for a given instruction as needed.
 // This is currently used after updating a one-shot line coverage for the current instruction.
 void
 rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset)
 {
-    struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
-    if (entry) {
-        entry->events &= ~reset;
-        if (!(entry->events & iseq->aux.exec.global_trace_events)) {
-            void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
-            rb_iseq_trace_flag_cleared(iseq, pos);
+    RB_VM_LOCKING() {
+        struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
+        if (entry) {
+            entry->events &= ~reset;
+            if (!(entry->events & iseq->aux.exec.global_trace_events)) {
+                rb_iseq_trace_flag_cleared(iseq, pos);
+            }
         }
     }
 }
@@ -3931,6 +3934,7 @@ rb_vm_insn_decode(const VALUE encoded)
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
+    ASSERT_vm_locking();
     st_data_t key = (st_data_t)*iseq_encoded_insn;
     st_data_t val;
 
@@ -3947,7 +3951,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, 
 }
 
 // Turn off tracing for an instruction at pos after tracing event flags are cleared
-void
+static void
 rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
@@ -3981,6 +3985,7 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
 
     VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
+    ASSERT_vm_locking_with_barrier();
 
     for (pc=0; pc<body->iseq_size;) {
         const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
@@ -4030,6 +4035,7 @@ iseq_add_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
 int
 rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod)
 {
+    ASSERT_vm_locking_with_barrier();
     struct trace_set_local_events_struct data;
     if (target_bmethod) {
         turnon_events = add_bmethod_events(turnon_events);
@@ -4040,7 +4046,7 @@ rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t 
     data.n = 0;
 
     iseq_add_local_tracepoint_i(iseq, (void *)&data);
-    if (0) rb_funcall(Qnil, rb_intern("puts"), 1, rb_iseq_disasm(iseq)); /* for debug */
+    if (0) fprintf(stderr, "Iseq disasm:\n:%s", RSTRING_PTR(rb_iseq_disasm(iseq))); /* for debug */
     return data.n;
 }
 
@@ -4048,6 +4054,7 @@ static int
 iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
 {
     int n = 0;
+    ASSERT_vm_locking_with_barrier();
 
     if (iseq->aux.exec.local_hooks) {
         unsigned int pc;
@@ -4056,7 +4063,7 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
         rb_event_flag_t local_events = 0;
 
         rb_hook_list_remove_tracepoint(iseq->aux.exec.local_hooks, tpval);
-        local_events = iseq->aux.exec.local_hooks->events;
+        local_events = iseq->aux.exec.local_hooks->events; // remaining events
 
         if (local_events == 0) {
             rb_hook_list_free(iseq->aux.exec.local_hooks);
@@ -4089,6 +4096,7 @@ int
 rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval)
 {
     struct trace_clear_local_events_struct data;
+    ASSERT_vm_locking_with_barrier();
     data.tpval = tpval;
     data.n = 0;
 
@@ -4108,8 +4116,10 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         return;
     }
     else {
+        // NOTE: this does not need VM barrier if it's a new ISEQ
         unsigned int pc;
         const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
         VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
         rb_event_flag_t enabled_events;
         rb_event_flag_t local_events = iseq->aux.exec.local_hooks ? iseq->aux.exec.local_hooks->events : 0;
@@ -4128,6 +4138,7 @@ void rb_vm_cc_general(const struct rb_callcache *cc);
 static bool
 clear_attr_cc(VALUE v)
 {
+    ASSERT_vm_locking_with_barrier();
     if (imemo_type_p(v, imemo_callcache) && vm_cc_ivar_p((const struct rb_callcache *)v)) {
         rb_vm_cc_general((struct rb_callcache *)v);
         return true;
@@ -4140,6 +4151,7 @@ clear_attr_cc(VALUE v)
 static bool
 clear_bf_cc(VALUE v)
 {
+    ASSERT_vm_locking_with_barrier();
     if (imemo_type_p(v, imemo_callcache) && vm_cc_bf_p((const struct rb_callcache *)v)) {
         rb_vm_cc_general((struct rb_callcache *)v);
         return true;
@@ -4165,7 +4177,10 @@ clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_clear_attr_ccs(void)
 {
-    rb_objspace_each_objects(clear_attr_ccs_i, NULL);
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
+        rb_objspace_each_objects(clear_attr_ccs_i, NULL);
+    }
 }
 
 static int
@@ -4184,6 +4199,7 @@ clear_bf_ccs_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_clear_bf_ccs(void)
 {
+    ASSERT_vm_locking_with_barrier();
     rb_objspace_each_objects(clear_bf_ccs_i, NULL);
 }
 
@@ -4213,7 +4229,10 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
 {
-    rb_objspace_each_objects(trace_set_i, &turnon_events);
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
+        rb_objspace_each_objects(trace_set_i, &turnon_events);
+    }
 }
 
 VALUE
