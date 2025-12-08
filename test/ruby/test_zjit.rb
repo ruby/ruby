@@ -966,7 +966,6 @@ class TestZJIT < Test::Unit::TestCase
       def test(n) = C / n
       test(4)
       test(4)
-      test(4)
     }, call_threshold: 2, insns: [:opt_div]
   end
 
@@ -974,7 +973,6 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '0', %q{
       C = 3
       def test(n) = C / n
-      test(4)
       test(4)
       test(4)
     }, call_threshold: 2, insns: [:opt_div]
@@ -988,7 +986,6 @@ class TestZJIT < Test::Unit::TestCase
         e.message
       end
 
-      test(0)
       test(0)
       test(0)
     }, call_threshold: 2, insns: [:opt_div]
