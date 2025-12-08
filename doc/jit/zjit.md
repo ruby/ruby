@@ -91,13 +91,30 @@ make zjit-bindgen
 
 ### Command-Line Options
 
-- `--zjit`: enable ZJIT (disabled by default)
-- `--zjit-mem-size=N`: soft limit on ZJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + zjit_alloc_size`
-- `--zjit-exec-mem-size=N`: hard limit on executable memory block in MiB. Limits `code_region_size`
-- `--zjit-call-threshold=N`: number of calls after which ZJIT begins to compile a function.
-  <!-- TODO(max): Is this true? Should we do this? -->
-  It defaults to 30<!-- , and it's then increased to 120 when the number of ISEQs in the process reaches 40,000 -->.
-- `--zjit-perf`: enable frame pointers and profiling with the `perf` tool
+See `ruby --help` for ZJIT-specific command-line options:
+
+```
+$ ruby --help
+...
+ZJIT options:
+  --zjit-mem-size=num
+                  Max amount of memory that ZJIT can use in MiB (default: 128).
+  --zjit-call-threshold=num
+                  Number of calls to trigger JIT (default: 30).
+  --zjit-num-profiles=num
+                  Number of profiled calls before JIT (default: 5).
+  --zjit-stats[=quiet]
+                  Enable collecting ZJIT statistics (=quiet to suppress output).
+  --zjit-disable  Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable.
+  --zjit-perf     Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf.
+  --zjit-log-compiled-iseqs=path
+                  Log compiled ISEQs to the file. The file will be truncated.
+  --zjit-trace-exits[=counter]
+                  Record source on side-exit. `Counter` picks specific counter.
+  --zjit-trace-exits-sample-rate=num
+                  Frequency at which to record side exits. Must be `usize`.
+$
+```
 
 ### Source level documentation
 
