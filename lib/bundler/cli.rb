@@ -134,12 +134,13 @@ module Bundler
       return super if meth
 
       unless Bundler.settings[:default_cli_command]
-        Bundler.ui.info <<-MSG
+        Bundler.ui.info <<~MSG
           In a future version of Bundler, running `bundle` without argument will no longer run `bundle install`.
           Instead, the `cli_help` command will be displayed. Please use `bundle install` explicitly for scripts like CI/CD.
           You can use the future behavior now with `bundle config set default_cli_command cli_help --global`,
           or you can continue to use the current behavior with `bundle config set default_cli_command install --global`.
           This message will be removed after a default_cli_command value is set.
+
         MSG
       end
 
