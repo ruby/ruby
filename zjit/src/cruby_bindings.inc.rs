@@ -1855,7 +1855,6 @@ unsafe extern "C" {
     pub fn rb_gc_disable() -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
-    pub static mut rb_cObject: VALUE;
     pub fn rb_funcallv(
         recv: VALUE,
         mid: ID,
@@ -1864,6 +1863,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
+    pub static mut rb_cObject: VALUE;
     pub static mut rb_cArray: VALUE;
     pub static mut rb_cClass: VALUE;
     pub static mut rb_cFalseClass: VALUE;
