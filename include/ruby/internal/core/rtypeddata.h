@@ -670,12 +670,4 @@ rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap,
     return result;
 }
 
-RBIMPL_ATTR_DEPRECATED(("by: rb_data_typed_object_wrap"))
-/** @deprecated  This function was renamed to rb_data_typed_object_wrap(). */
-static inline VALUE
-rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
-{
-    return rb_data_typed_object_wrap(klass, datap, type);
-}
-
 #endif /* RBIMPL_RTYPEDDATA_H */
