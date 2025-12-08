@@ -16,6 +16,7 @@ end
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "character_literal.txt",
       "encoding_euc_jp.txt",
       "regex_char_width.txt",
       "seattlerb/masgn_colon3.txt",
@@ -78,6 +79,9 @@ module Prism
 
       # Ruby >= 3.5 specific syntax
       "endless_methods_command_call.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
     Fixture.each(except: failures) do |fixture|

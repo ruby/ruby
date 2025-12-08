@@ -2622,10 +2622,11 @@ pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 // There are certain flags that we want to use internally but don't want to
 // expose because they are not relevant beyond parsing. Therefore we'll define
 // them here and not define them in config.yml/a header file.
-static const pm_node_flags_t PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY = 0x4;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = 0x40;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x80;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x100;
+static const pm_node_flags_t PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY = (1 << 2);
+
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = ((PM_CALL_NODE_FLAGS_LAST - 1) << 1);
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = ((PM_CALL_NODE_FLAGS_LAST - 1) << 2);
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = ((PM_CALL_NODE_FLAGS_LAST - 1) << 3);
 
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL or
@@ -5279,6 +5280,12 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
+            // If inner string is not frozen, it stops being a static literal. We should *not* clear other flags,
+            // because concatenating two frozen strings (`'foo' 'bar'`) is still frozen. This holds true for
+            // as long as this interpolation only consists of other string literals.
+            if (!PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
+                pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
+            }
             part->flags = (pm_node_flags_t) ((part->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
             break;
         case PM_INTERPOLATED_STRING_NODE:
@@ -14443,6 +14450,17 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             if (accepted_newline) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
+
+            // If this is a command call and an argument takes a block,
+            // there can be no further arguments. For example,
+            // `foo(bar 1 do end, 2)` should be rejected.
+            if (PM_NODE_TYPE_P(argument, PM_CALL_NODE)) {
+                pm_call_node_t *call = (pm_call_node_t *) argument;
+                if (call->opening_loc.start == NULL && call->arguments != NULL && call->block != NULL) {
+                    pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+                    break;
+                }
+            }
         } else {
             // If there is no comma at the end of the argument list then we're
             // done parsing arguments and can break out of this loop.
@@ -14595,6 +14613,18 @@ update_parameter_state(pm_parser_t *parser, pm_token_t *token, pm_parameters_ord
 }
 
 /**
+ * Ensures that after parsing a parameter, the next token is not `=`.
+ * Some parameters like `def(* = 1)` cannot become optional. When no parens
+ * are present like in `def * = 1`, this creates ambiguity with endless method definitions.
+ */
+static inline void
+refute_optional_parameter(pm_parser_t *parser) {
+    if (match1(parser, PM_TOKEN_EQUAL)) {
+        pm_parser_err_previous(parser, PM_ERR_DEF_ENDLESS_PARAMETERS);
+    }
+}
+
+/**
  * Parse a list of parameters on a method definition.
  */
 static pm_parameters_node_t *
@@ -14646,6 +14676,10 @@ parse_parameters(
                     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_BLOCK;
                 }
 
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
+                }
+
                 pm_block_parameter_node_t *param = pm_block_parameter_node_create(parser, &name, &operator);
                 if (repeated) {
                     pm_node_flag_set_repeated_parameter((pm_node_t *)param);
@@ -14666,6 +14700,10 @@ parse_parameters(
 
                 bool succeeded = update_parameter_state(parser, &parser->current, &order);
                 parser_lex(parser);
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
+                }
 
                 parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_ALL;
                 pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
@@ -14848,6 +14886,10 @@ parse_parameters(
                         context_pop(parser);
                         pm_parameters_node_keywords_append(params, param);
 
+                        if (!uses_parentheses) {
+                            refute_optional_parameter(parser);
+                        }
+
                         // If parsing the value of the parameter resulted in error recovery,
                         // then we can put a missing node in its place and stop parsing the
                         // parameters entirely now.
@@ -14877,6 +14919,10 @@ parse_parameters(
                 } else {
                     name = not_provided(parser);
                     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS;
+                }
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
                 }
 
                 pm_node_t *param = (pm_node_t *) pm_rest_parameter_node_create(parser, &operator, &name);
@@ -14925,6 +14971,10 @@ parse_parameters(
                     if (repeated) {
                         pm_node_flag_set_repeated_parameter(param);
                     }
+                }
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
                 }
 
                 if (params->keyword_rest == NULL) {
@@ -18491,19 +18541,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_CHARACTER_LITERAL: {
-            parser_lex(parser);
-
-            pm_token_t opening = parser->previous;
-            opening.type = PM_TOKEN_STRING_BEGIN;
-            opening.end = opening.start + 1;
-
-            pm_token_t content = parser->previous;
-            content.type = PM_TOKEN_STRING_CONTENT;
-            content.start = content.start + 1;
-
             pm_token_t closing = not_provided(parser);
-            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(
+                parser,
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_BEGIN,
+                    .start = parser->current.start,
+                    .end = parser->current.start + 1
+                },
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_CONTENT,
+                    .start = parser->current.start + 1,
+                    .end = parser->current.end
+                },
+                &closing
+            );
+
             pm_node_flag_set(node, parse_unescaped_encoding(parser));
+
+            // Skip past the character literal here, since now we have handled
+            // parser->explicit_encoding correctly.
+            parser_lex(parser);
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
@@ -20901,7 +20959,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     bool permitted = true;
     if (previous_binding_power != PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_USTAR)) permitted = false;
 
-    pm_node_t *value = parse_starred_expression(parser, binding_power, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH, diag_id, (uint16_t) (depth + 1));
+    pm_node_t *value = parse_starred_expression(parser, binding_power, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MODIFIER, diag_id, (uint16_t) (depth + 1));
     if (!permitted) pm_parser_err_node(parser, value, PM_ERR_UNEXPECTED_MULTI_WRITE);
 
     parse_assignment_value_local(parser, value);
@@ -22498,8 +22556,9 @@ parse_program(pm_parser_t *parser) {
         statements = wrap_statements(parser, statements);
     } else {
         flush_block_exits(parser, previous_block_exits);
-        pm_node_list_free(&current_block_exits);
     }
+
+    pm_node_list_free(&current_block_exits);
 
     // If this is an empty file, then we're still going to parse all of the
     // statements in order to gather up all of the comments and such. Here we'll

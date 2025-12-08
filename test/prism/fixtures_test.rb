@@ -27,6 +27,8 @@ module Prism
     # Leaving these out until they are supported by parse.y.
     except << "leading_logical.txt"
     except << "endless_methods_command_call.txt"
+    # https://bugs.ruby-lang.org/issues/21168#note-5
+    except << "command_method_call_2.txt"
 
     Fixture.each(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }

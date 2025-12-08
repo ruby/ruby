@@ -33,6 +33,9 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/17398#note-12
       "endless_methods_command_call.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
     # Skip these tests that we haven't implemented yet.
