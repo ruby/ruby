@@ -325,9 +325,6 @@ rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
     return ST_CONTINUE;
 }
 
-// Here for backward compat.
-void rb_clear_constant_cache(void) {}
-
 void
 rb_clear_constant_cache_for_id(ID id)
 {
