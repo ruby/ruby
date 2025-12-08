@@ -95,7 +95,9 @@ make zjit-bindgen
 - `--zjit-mem-size=N`: soft limit on ZJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + zjit_alloc_size`
 - `--zjit-exec-mem-size=N`: hard limit on executable memory block in MiB. Limits `code_region_size`
 - `--zjit-call-threshold=N`: number of calls after which ZJIT begins to compile a function.
-  It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
+  <!-- TODO(max): Is this true? Should we do this? -->
+  It defaults to 30<!-- , and it's then increased to 120 when the number of ISEQs in the process reaches 40,000 -->.
+- `--zjit-perf`: enable frame pointers and profiling with the `perf` tool
 
 ### Source level documentation
 
