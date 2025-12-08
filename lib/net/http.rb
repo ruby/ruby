@@ -1772,26 +1772,24 @@ module Net   #:nodoc:
     end
     private :connect
 
-    def timeouted_connect(conn_addr, conn_port)
-      if @tcpsocket_supports_open_timeout == nil || @tcpsocket_supports_open_timeout == true
-        # Try to use built-in open_timeout in TCPSocket.open if:
-        #   - The current Ruby runtime is known to support it, or
-        #   - It is unknown whether the current Ruby runtime supports it (so we'll try).
-        begin
-          sock = TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
-          @tcpsocket_supports_open_timeout = true
-          return sock
-        rescue ArgumentError => e
-          raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
-          @tcpsocket_supports_open_timeout = false
-        end
-      end
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
 
-      # This Ruby runtime is known not to support `TCPSocket(open_timeout:)`.
-      # Directly fall back to Timeout.timeout to avoid performance penalty incured by rescue.
-      Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-      }
+    def timeouted_connect(conn_addr, conn_port)
+      if TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+      else
+        Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        }
+      end
     end
     private :timeouted_connect
 
