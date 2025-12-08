@@ -200,9 +200,9 @@ assert_equal '3', %q{
 
   begin
     cond = false
-    a = 1
-    a = 2 if cond
-    Ractor.shareable_proc{a}
+    b = 1
+    b = 2 if cond
+    Ractor.shareable_proc{b}
   rescue Ractor::IsolationError => e
     ok += 1
   end
