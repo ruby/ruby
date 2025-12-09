@@ -32,6 +32,7 @@
 #include "darray.h"
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
+#include "internal/box.h"
 
 #ifndef BUILDING_MODULAR_GC
 # include "probes.h"
@@ -3033,6 +3034,11 @@ rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _da
     return ST_DELETE;
 }
 
+struct gc_deferred_box_link {
+    VALUE box_entry;
+    struct gc_deferred_box_link *next;
+};
+
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
@@ -3070,7 +3076,16 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     unsigned int lock_lev;
     gc_enter(objspace, gc_enter_event_finalizer, &lock_lev);
 
+#define FREE_OBJECT(obj) \
+    if (rb_gc_obj_free(objspace, obj)) { \
+        RBASIC(obj)->flags = 0; \
+    };
+
     /* run data/file object's finalizers */
+    struct gc_deferred_box_link *head, *current, *next;
+    VALUE root_box_entry = (VALUE)NULL;
+    head = malloc(sizeof(struct gc_deferred_box_link));
+    current = head;
     for (size_t i = 0; i < rb_darray_size(objspace->heap_pages.sorted); i++) {
         struct heap_page *page = rb_darray_get(objspace->heap_pages.sorted, i);
         short stride = page->slot_size;
@@ -3080,14 +3095,37 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         for (; p < pend; p += stride) {
             VALUE vp = (VALUE)p;
             asan_unpoisoning_object(vp) {
-                if (rb_gc_shutdown_call_finalizer_p(vp)) {
+                // Objects on pages can be instance of classes defined with data_type
+                // from extensions in boxes. Freeing box entries triggers freeing extensions.
+                // So freeing boxes should be done after freeing other objects.
+                if (rb_obj_is_user_box_entry(vp)) {
+                    next = malloc(sizeof(struct gc_deferred_box_link));
+                    next->box_entry = vp;
+                    current->next = next;
+                    current = next;
+                    next = NULL;
+                }
+                else if (rb_obj_is_root_box_entry(vp)) {
+                    root_box_entry = vp;
+                }
+                else if (rb_gc_shutdown_call_finalizer_p(vp)) {
                     rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC(vp)->flags = 0;
-                    }
+                    FREE_OBJECT(vp);
                 }
             }
         }
+    }
+    current = head;
+    while (current) {
+        if (current->box_entry) {
+            FREE_OBJECT(current->box_entry);
+        }
+        next = current->next;
+        free(current);
+        current = next;
+    }
+    if (root_box_entry) {
+        FREE_OBJECT(root_box_entry);
     }
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
