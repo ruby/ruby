@@ -14,12 +14,6 @@ ZJIT_SRC_FILES = $(wildcard \
 
 $(RUST_LIB): $(ZJIT_SRC_FILES)
 
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-ZJIT_LIB_TOUCH = touch $@
-
 # Absolute path to match RUST_LIB rules to avoid picking
 # the "target" dir in the source directory through VPATH.
 BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
@@ -28,8 +22,7 @@ BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
 ifneq ($(strip $(ZJIT_LIBS)),)
 $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
-	+$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
-	$(ZJIT_LIB_TOUCH)
+	$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
 endif
 
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
