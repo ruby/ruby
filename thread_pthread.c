@@ -1459,7 +1459,7 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
         vm->ractor.sync.lock_owner = cr;
     }
 
-    // do not release ractor_sched_lock and threre is no newly added (resumed) thread
+    // do not release ractor_sched_lock and there is no newly added (resumed) thread
     // thread_sched_setup_running_threads
 }
 
