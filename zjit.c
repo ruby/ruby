@@ -23,14 +23,6 @@
 #include "ruby/debug.h"
 #include "internal/cont.h"
 
-// For mmapp(), sysconf()
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
-
-#include <errno.h>
-
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
