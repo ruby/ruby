@@ -62,6 +62,7 @@ bool ruby_box_crashed = false; // extern, changed only in vm.c
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_box_inspect(VALUE obj);
+static void cleanup_all_local_extensions(VALUE libmap);
 
 void
 rb_box_init_done(void)
@@ -273,6 +274,8 @@ box_entry_free(void *ptr)
     if (box->classext_cow_classes) {
         st_foreach(box->classext_cow_classes, free_classext_for_box, (st_data_t)box);
     }
+
+    cleanup_all_local_extensions(box->ruby_dln_libmap);
 
     box_root_free(ptr);
     xfree(ptr);
@@ -724,8 +727,57 @@ escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize
     }
 }
 
+static void
+box_ext_cleanup_mark(void *p)
+{
+    rb_gc_mark((VALUE)p);
+}
+
+static void
+box_ext_cleanup_free(void *p)
+{
+    VALUE path = (VALUE)p;
+    unlink(RSTRING_PTR(path));
+}
+
+static const rb_data_type_t box_ext_cleanup_type = {
+    "box_ext_cleanup",
+    {box_ext_cleanup_mark, box_ext_cleanup_free},
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+void
+rb_box_cleanup_local_extension(VALUE cleanup)
+{
+    void *p = DATA_PTR(cleanup);
+    DATA_PTR(cleanup) = NULL;
+#ifndef _WIN32
+    if (p) box_ext_cleanup_free(p);
+#endif
+}
+
+static int
+cleanup_local_extension_i(VALUE key, VALUE value, VALUE arg)
+{
+#if defined(_WIN32)
+    HMODULE h = (HMODULE)NUM2SVALUE(value);
+    WCHAR module_path[MAXPATHLEN];
+    DWORD len = GetModuleFileNameW(h, module_path, numberof(module_path));
+
+    FreeLibrary(h);
+    if (len > 0 && len < numberof(module_path)) DeleteFileW(module_path);
+#endif
+    return ST_DELETE;
+}
+
+static void
+cleanup_all_local_extensions(VALUE libmap)
+{
+    rb_hash_foreach(libmap, cleanup_local_extension_i, 0);
+}
+
 VALUE
-rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
+rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
     int wrote;
@@ -739,14 +791,16 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
     if (wrote >= (int)sizeof(ext_path)) {
         rb_bug("Extension file path in the box was too long");
     }
+    VALUE new_path = rb_str_new_cstr(ext_path);
+    *cleanup = TypedData_Wrap_Struct(0, &box_ext_cleanup_type, NULL);
     enum copy_error_type copy_error = copy_ext_file(src_path, ext_path);
     if (copy_error) {
         char message[1024];
         copy_ext_file_error(message, sizeof(message), copy_error);
         rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %"PRIsVALUE"): %s", ext_path, path, message);
     }
-    // TODO: register the path to be clean-uped
-    return rb_str_new_cstr(ext_path);
+    DATA_PTR(*cleanup) = (void *)new_path;
+    return new_path;
 }
 
 // TODO: delete it just after dln_load? or delay it?
