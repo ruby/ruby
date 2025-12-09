@@ -210,13 +210,14 @@ static void ractor_sync_init(rb_ractor_t *r);
 static int
 mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 {
-    VALUE obj = (VALUE)key; // method def for bmethod or iseq
     rb_hook_list_t *hook_list = (rb_hook_list_t*)value;
 
-    if (rb_gc_pointer_to_heap_p(obj)) {
-        rb_gc_mark(obj); // iseq
-    } else {
-        rb_method_definition_t *def = (rb_method_definition_t*)obj;
+    if (hook_list->type == hook_list_type_iseq) {
+        rb_gc_mark((VALUE)key);
+    }
+    else {
+        rb_method_definition_t *def = (rb_method_definition_t*)key;
+        RUBY_ASSERT(hook_list->type == hook_list_type_def);
         rb_gc_mark(def->body.bmethod.proc);
     }
     rb_hook_list_mark(hook_list);
@@ -262,7 +263,7 @@ ractor_mark(void *ptr)
 }
 
 static int
-free_hook_lists(st_data_t key, st_data_t val, st_data_t _arg)
+free_targeted_hook_lists(st_data_t key, st_data_t val, st_data_t _arg)
 {
     rb_hook_list_t *hook_list = (rb_hook_list_t*)val;
     rb_hook_list_free(hook_list);
@@ -272,7 +273,7 @@ free_hook_lists(st_data_t key, st_data_t val, st_data_t _arg)
 static void
 free_targeted_hooks(st_table *hooks_tbl)
 {
-    st_foreach(hooks_tbl, free_hook_lists, 0);
+    st_foreach(hooks_tbl, free_targeted_hook_lists, 0);
 }
 
 static void
@@ -280,13 +281,13 @@ ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
+    free_targeted_hooks(r->pub.targeted_hooks);
     rb_native_mutex_destroy(&r->sync.lock);
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.wakeup_cond);
 #endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
-    free_targeted_hooks(r->pub.targeted_hooks);
     st_free_table(r->pub.targeted_hooks);
 
     if (r->newobj_cache) {
@@ -526,6 +527,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
     ractor_sync_init(r);
     r->pub.targeted_hooks = st_init_numtable();
+    r->pub.hooks.type = hook_list_type_ractor_local;
 
     // thread management
     rb_thread_sched_init(&r->threads.sched, false);

@@ -169,9 +169,11 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     st_data_t val;
     if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)iseq, &val)) {
         hook_list = (rb_hook_list_t*)val;
-    } else if (create) {
+        RUBY_ASSERT(hook_list->type == hook_list_type_iseq);
+    }
+    else if (create) {
         hook_list = RB_ZALLOC(rb_hook_list_t);
-        hook_list->is_local = true;
+        hook_list->type = hook_list_type_iseq;
         st_insert(rb_ractor_targeted_hooks(r), (st_data_t)iseq, (st_data_t)hook_list);
     }
     return hook_list;
@@ -2454,6 +2456,8 @@ void
 rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset)
 {
     RB_VM_LOCKING() {
+        rb_vm_barrier();
+
         struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
         if (entry) {
             entry->events &= ~reset;
@@ -3941,7 +3945,7 @@ rb_vm_insn_decode(const VALUE encoded)
 
 // Turn on or off tracing for a given instruction address
 static inline int
-encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
+encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_traced)
 {
     ASSERT_vm_locking();
     st_data_t key = (st_data_t)*iseq_encoded_insn;
@@ -3949,7 +3953,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, 
 
     if (st_lookup(encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
-        if (remain_current_trace && key == (st_data_t)e->trace_encoded_insn) {
+        if (remain_traced && key == (st_data_t)e->trace_encoded_insn) {
             turnon = 1;
         }
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
@@ -4064,10 +4068,15 @@ static int
 iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r)
 {
     int n = 0;
-    ASSERT_vm_locking_with_barrier();
+    unsigned int num_hooks_left;
+    unsigned int pc;
+    const struct rb_iseq_constant_body *body;
     rb_iseq_t *iseq_mut = (rb_iseq_t*)iseq;
+    rb_hook_list_t *hook_list;
+    VALUE *iseq_encoded;
+    ASSERT_vm_locking_with_barrier();
 
-    rb_hook_list_t *hook_list = rb_iseq_local_hooks(iseq, r, false);
+    hook_list = rb_iseq_local_hooks(iseq, r, false);
 
     if (hook_list) {
         rb_event_flag_t local_events = 0;
@@ -4076,23 +4085,25 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r)
         if (rb_hook_list_remove_local_tracepoint(hook_list, tpval)) {
             RUBY_ASSERT(iseq->aux.exec.local_hooks_cnt > 0);
             iseq_mut->aux.exec.local_hooks_cnt--;
-            local_events = hook_list->events; // remaining events
+            local_events = hook_list->events; // remaining events for this ractor
+            num_hooks_left = rb_hook_list_count(hook_list);
             if (local_events == 0 && prev_events != 0) {
                 st_delete(rb_ractor_targeted_hooks(r), (st_data_t*)&iseq, NULL);
                 rb_hook_list_free(hook_list);
             }
+
+            if (iseq->aux.exec.local_hooks_cnt == num_hooks_left) {
+                body = ISEQ_BODY(iseq);
+                iseq_encoded = (VALUE *)body->iseq_encoded;
+                local_events = add_bmethod_events(local_events);
+                for (pc = 0; pc<body->iseq_size;) {
+                    rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+                    pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);
+                }
+            }
+
             n++;
         }
-
-        // TODO: add ability to turn off tracing for this targeted iseq if no ractors are currently targeting it and global iseq tracepoints are off.
-        /*unsigned int pc;*/
-        /*VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;*/
-        /*const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);*/
-        /*local_events = add_bmethod_events(local_events);*/
-        /*for (pc = 0; pc<body->iseq_size;) {*/
-            /*rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);*/
-            /*pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);*/
-        /*}*/
     }
     return n;
 }

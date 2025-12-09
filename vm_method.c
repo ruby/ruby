@@ -957,7 +957,8 @@ method_definition_addref(rb_method_definition_t *def, bool complemented)
 }
 
 void
-rb_method_definition_addref(rb_method_definition_t *def) {
+rb_method_definition_addref(rb_method_definition_t *def)
+{
     method_definition_addref(def, false);
 }
 
