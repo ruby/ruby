@@ -292,12 +292,6 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
     return rb_ary_subseq(ary, beg, len);
 }
 
-VALUE
-rb_yjit_fix_div_fix(VALUE recv, VALUE obj)
-{
-    return rb_fix_div_fix(recv, obj);
-}
-
 // Return non-zero when `obj` is an array and its last item is a
 // `ruby2_keywords` hash. We don't support this kind of splat.
 size_t

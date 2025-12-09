@@ -960,6 +960,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_mult]
   end
 
+  def test_fixnum_div
+    assert_compiles '12', %q{
+      C = 48
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_floor
+    assert_compiles '0', %q{
+      C = 3
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_div_zero
+    assert_runs '"divided by 0"', %q{
+      def test(n)
+        n / 0
+      rescue ZeroDivisionError => e
+        e.message
+      end
+
+      test(0)
+      test(0)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
