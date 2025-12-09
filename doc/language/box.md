@@ -12,7 +12,6 @@ Ruby Box is designed to provide separated spaces in a Ruby process, to isolate a
 ## TODOs
 
 * Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
-* Delete per-box extension files (.dll) lazily or process exit (on Windows)
 * Assign its own TOPLEVEL_BINDING in boxes
 * Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
 * Make an internal data container class `Ruby::Box::Entry` invisible
