@@ -643,6 +643,40 @@ pub enum SendFallbackReason {
     Uncategorized(ruby_vminsn_type),
 }
 
+impl Display for SendFallbackReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            SendWithoutBlockPolymorphic => write!(f, "SendWithoutBlock: polymorphic call site"),
+            SendWithoutBlockMegamorphic => write!(f, "SendWithoutBlock: megamorphic call site"),
+            SendWithoutBlockNoProfiles => write!(f, "SendWithoutBlock: no profile data available"),
+            SendWithoutBlockCfuncNotVariadic => write!(f, "SendWithoutBlock: C function is not variadic"),
+            SendWithoutBlockCfuncArrayVariadic => write!(f, "SendWithoutBlock: C function expects array variadic"),
+            SendWithoutBlockNotOptimizedMethodType(method_type) => write!(f, "SendWithoutBlock: unsupported method type {:?}", method_type),
+            SendWithoutBlockNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "SendWithoutBlock: unsupported optimized method type {:?}", opt_type),
+            SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
+            SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
+            SendWithoutBlockDirectKeywordMismatch => write!(f, "SendWithoutBlockDirect: keyword mismatch"),
+            SendWithoutBlockDirectOptionalKeywords => write!(f, "SendWithoutBlockDirect: optional keywords"),
+            SendWithoutBlockDirectKeywordCountMismatch => write!(f, "SendWithoutBlockDirect: keyword count mismatch"),
+            SendWithoutBlockDirectMissingKeyword => write!(f, "SendWithoutBlockDirect: missing keyword"),
+            SendPolymorphic => write!(f, "Send: polymorphic call site"),
+            SendMegamorphic => write!(f, "Send: megamorphic call site"),
+            SendNoProfiles => write!(f, "Send: no profile data available"),
+            SendCfuncVariadic => write!(f, "Send: C function is variadic"),
+            SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
+            SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
+            CCallWithFrameTooManyArgs => write!(f, "CCallWithFrame: too many arguments"),
+            ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
+            TooManyArgsForLir => write!(f, "Too many arguments for LIR"),
+            BmethodNonIseqProc => write!(f, "Bmethod: Proc object is not defined by an ISEQ"),
+            ArgcParamMismatch => write!(f, "Argument count does not match parameter count"),
+            ComplexArgPass => write!(f, "Complex argument passing"),
+            UnexpectedKeywordArgs => write!(f, "Unexpected Keyword Args"),
+            Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
+        }
+    }
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -1203,11 +1237,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
-            Insn::SendWithoutBlock { recv, cd, args, .. } => {
+            Insn::SendWithoutBlock { recv, cd, args, reason, .. } => {
                 write!(f, "SendWithoutBlock {recv}, :{}", ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
+                write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::SendWithoutBlockDirect { recv, cd, iseq, args, .. } => {
@@ -1217,7 +1252,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::Send { recv, cd, args, blockiseq, .. } => {
+            Insn::Send { recv, cd, args, blockiseq, reason, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
@@ -1225,27 +1260,31 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
+                write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
-            Insn::SendForward { recv, cd, args, blockiseq, .. } => {
+            Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
                 write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
+                write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
-            Insn::InvokeSuper { recv, blockiseq, args, .. } => {
+            Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
+                write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
-            Insn::InvokeBlock { args, .. } => {
+            Insn::InvokeBlock { args, reason, .. } => {
                 write!(f, "InvokeBlock")?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
+                write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
@@ -2044,7 +2083,7 @@ impl Function {
     /// Update DynamicSendReason for the instruction at insn_id
     fn set_dynamic_send_reason(&mut self, insn_id: InsnId, dynamic_send_reason: SendFallbackReason) {
         use Insn::*;
-        if get_option!(stats) {
+        if get_option!(stats) || get_option!(dump_hir_opt).is_some() || cfg!(test) {
             match self.insns.get_mut(insn_id.0).unwrap() {
                 Send { reason, .. }
                 | SendForward { reason, .. }
