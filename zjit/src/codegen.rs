@@ -13,7 +13,7 @@ use crate::invariants::{
     track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
 };
 use crate::gc::append_gc_offsets;
-use crate::payload::{get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqCodePtrs, IseqPayload, IseqStatus};
+use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -24,6 +24,9 @@ use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
 use crate::cast::IntoUsize;
+
+/// At the moment, we support recompiling each ISEQ only once.
+pub const MAX_ISEQ_VERSIONS: usize = 2;
 
 /// Sentinel program counter stored in C frames when runtime checks are enabled.
 const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
@@ -36,6 +39,9 @@ const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
 struct JITState {
     /// Instruction sequence for the method being compiled
     iseq: IseqPtr,
+
+    /// ISEQ version that is being compiled, which will be used by PatchPoint
+    version: IseqVersionRef,
 
     /// Low-level IR Operands indexed by High-level IR's Instruction ID
     opnds: Vec<Option<Opnd>>,
@@ -52,9 +58,10 @@ struct JITState {
 
 impl JITState {
     /// Create a new JITState instance
-    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize) -> Self {
+    fn new(iseq: IseqPtr, version: IseqVersionRef, num_insns: usize, num_blocks: usize) -> Self {
         JITState {
             iseq,
+            version,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
             jit_entries: Vec::default(),
@@ -134,11 +141,10 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 }
 
 /// Stub a branch for a JIT-to-JIT call
-fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
+pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     // Compile a function stub
     let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
-        debug!("{err:?}: gen_function_stub failed: {} -> {}",
-               iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.iseq.get(), 0));
+        debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
     })?;
 
     // Update the JIT-to-JIT call to call the stub
@@ -197,29 +203,36 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> Result<IseqCodePtrs, CompileError> {
     // Return an existing pointer if it's already compiled
     let payload = get_or_create_iseq_payload(iseq);
-    match &payload.status {
-        IseqStatus::Compiled(code_ptrs) => return Ok(code_ptrs.clone()),
-        IseqStatus::CantCompile(err) => return Err(err.clone()),
-        IseqStatus::NotCompiled => {},
+    let last_status = payload.versions.last().map(|version| &unsafe { version.as_ref() }.status);
+    match last_status {
+        Some(IseqStatus::Compiled(code_ptrs)) => return Ok(code_ptrs.clone()),
+        Some(IseqStatus::CantCompile(err)) => return Err(err.clone()),
+        _ => {},
+    }
+    // If the ISEQ already hax MAX_ISEQ_VERSIONS, do not compile a new version.
+    if payload.versions.len() == MAX_ISEQ_VERSIONS {
+        return Err(CompileError::IseqHasMaxVersions);
     }
 
     // Compile the ISEQ
-    let code_ptrs = gen_iseq_body(cb, iseq, function, payload);
+    let mut version = IseqVersion::new(iseq);
+    let code_ptrs = gen_iseq_body(cb, iseq, version, function);
     match &code_ptrs {
         Ok(code_ptrs) => {
-            payload.status = IseqStatus::Compiled(code_ptrs.clone());
+            unsafe { version.as_mut() }.status = IseqStatus::Compiled(code_ptrs.clone());
             incr_counter!(compiled_iseq_count);
         }
         Err(err) => {
-            payload.status = IseqStatus::CantCompile(err.clone());
+            unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());
             incr_counter!(failed_iseq_count);
         }
     }
+    payload.versions.push(version);
     code_ptrs
 }
 
 /// Compile an ISEQ into machine code
-fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>, payload: &mut IseqPayload) -> Result<IseqCodePtrs, CompileError> {
+fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef, function: Option<&Function>) -> Result<IseqCodePtrs, CompileError> {
     // If we ran out of code region, we shouldn't attempt to generate new code.
     if cb.has_dropped_bytes() {
         return Err(CompileError::OutOfMemory);
@@ -232,23 +245,23 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, version, function)?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
-        gen_iseq_call(cb, iseq, iseq_call)?;
+        gen_iseq_call(cb, iseq_call)?;
     }
 
     // Prepare for GC
-    payload.iseq_calls.extend(iseq_calls);
-    append_gc_offsets(iseq, &gc_offsets);
+    unsafe { version.as_mut() }.outgoing.extend(iseq_calls);
+    append_gc_offsets(iseq, version, &gc_offsets);
     Ok(iseq_code_ptrs)
 }
 
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
-    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks());
+    let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
     // Compile each basic block
@@ -723,17 +736,16 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) {
-    let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
     let invariant = *invariant;
     let exit = build_side_exit(jit, state);
 
     // Let compile_exits compile a side exit. Let scratch_split lower it with split_patch_point.
-    asm.patch_point(Target::SideExit { exit, reason: PatchPoint(invariant) }, invariant, payload_ptr);
+    asm.patch_point(Target::SideExit { exit, reason: PatchPoint(invariant) }, invariant, jit.version);
 }
 
 /// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
 /// It's called at scratch_split so that we can use the Label after side-exit deduplication in compile_exits.
-pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invariant, payload_ptr: *mut IseqPayload) {
+pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invariant, version: IseqVersionRef) {
     let Target::Label(exit_label) = *target else {
         unreachable!("PatchPoint's target should have been lowered to Target::Label by compile_exits: {target:?}");
     };
@@ -746,25 +758,25 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
         let side_exit_ptr = cb.resolve_label(exit_label);
         match invariant {
             Invariant::BOPRedefined { klass, bop } => {
-                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr, payload_ptr);
+                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr, version);
             }
             Invariant::MethodRedefined { klass: _, method: _, cme } => {
-                track_cme_assumption(cme, code_ptr, side_exit_ptr, payload_ptr);
+                track_cme_assumption(cme, code_ptr, side_exit_ptr, version);
             }
             Invariant::StableConstantNames { idlist } => {
-                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, payload_ptr);
+                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, version);
             }
             Invariant::NoTracePoint => {
-                track_no_trace_point_assumption(code_ptr, side_exit_ptr, payload_ptr);
+                track_no_trace_point_assumption(code_ptr, side_exit_ptr, version);
             }
             Invariant::NoEPEscape(iseq) => {
-                track_no_ep_escape_assumption(iseq, code_ptr, side_exit_ptr, payload_ptr);
+                track_no_ep_escape_assumption(iseq, code_ptr, side_exit_ptr, version);
             }
             Invariant::SingleRactorMode => {
-                track_single_ractor_assumption(code_ptr, side_exit_ptr, payload_ptr);
+                track_single_ractor_assumption(code_ptr, side_exit_ptr, version);
             }
             Invariant::NoSingletonClass { klass } => {
-                track_no_singleton_class_assumption(klass, code_ptr, side_exit_ptr, payload_ptr);
+                track_no_singleton_class_assumption(klass, code_ptr, side_exit_ptr, version);
             }
         }
     });
@@ -2327,8 +2339,9 @@ c_callable! {
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
             let payload = get_or_create_iseq_payload(iseq);
-            let compile_error = match &payload.status {
-                IseqStatus::CantCompile(err) => Some(err),
+            let last_status = payload.versions.last().map(|version| &unsafe { version.as_ref() }.status);
+            let compile_error = match last_status {
+                Some(IseqStatus::CantCompile(err)) => Some(err),
                 _ if cb.has_dropped_bytes() => Some(&CompileError::OutOfMemory),
                 _ => None,
             };
@@ -2342,7 +2355,15 @@ c_callable! {
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
             let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
+            if code_ptr.is_ok() {
+                if let Some(version) = payload.versions.last_mut() {
+                    unsafe { version.as_mut() }.incoming.push(iseq_call);
+                }
+            }
             let code_ptr = code_ptr.unwrap_or_else(|compile_error| {
+                // We'll use this Rc again, so increment the ref count decremented by from_raw.
+                unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
+
                 prepare_for_exit(iseq, cfp, sp, &compile_error);
                 ZJITState::get_exit_trampoline_with_counter()
             });

@@ -9,7 +9,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::{Invariant, SideExitReason};
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
-use crate::payload::IseqPayload;
+use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -531,7 +531,7 @@ pub enum Insn {
     Or { left: Opnd, right: Opnd, out: Opnd },
 
     /// Patch point that will be rewritten to a jump to a side exit on invalidation.
-    PatchPoint { target: Target, invariant: Invariant, payload: *mut IseqPayload },
+    PatchPoint { target: Target, invariant: Invariant, version: IseqVersionRef },
 
     /// Make sure the last PatchPoint has enough space to insert a jump.
     /// We insert this instruction at the end of each block so that the jump
@@ -2358,8 +2358,8 @@ impl Assembler {
         out
     }
 
-    pub fn patch_point(&mut self, target: Target, invariant: Invariant, payload: *mut IseqPayload) {
-        self.push_insn(Insn::PatchPoint { target, invariant, payload });
+    pub fn patch_point(&mut self, target: Target, invariant: Invariant, version: IseqVersionRef) {
+        self.push_insn(Insn::PatchPoint { target, invariant, version });
     }
 
     pub fn pad_patch_point(&mut self) {
