@@ -825,6 +825,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_loaded_extension_deleted_in_user_box
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # deleting .dll files doesn't work well on Windows now
     require 'tmpdir'
     Dir.mktmpdir do |tmpdir|
       env = ENV_ENABLE_BOX.merge({'TMPDIR'=>tmpdir})
