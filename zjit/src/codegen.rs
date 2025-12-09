@@ -279,6 +279,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Compile each basic block
     for &block_id in reverse_post_order.iter() {
+        // Set the current block to the LIR block that corresponds to this
+        // HIR block.
+        // let lir_block_id = hir_to_lir[&block_id];
         asm.set_current_block(lir::BlockId(0));
 
         // Write a label to jump to the basic block
@@ -2629,6 +2632,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+    asm.new_block(BlockId(usize::MAX), true);
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
@@ -2910,6 +2914,7 @@ impl IseqCall {
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
         cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
             let mut asm = Assembler::new();
+            asm.new_block(BlockId(usize::MAX), true);
             callback(&mut asm);
             asm.compile(cb).unwrap();
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
