@@ -167,14 +167,14 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
     struct concurrent_set *new_set = RTYPEDDATA_GET_DATA(new_set_obj);
 
     for (int i = 0; i < old_capacity; i++) {
-        struct concurrent_set_entry *entry = &old_entries[i];
-        VALUE key = rbimpl_atomic_value_exchange(&entry->key, CONCURRENT_SET_MOVED, RBIMPL_ATOMIC_ACQUIRE);
+        struct concurrent_set_entry *old_entry = &old_entries[i];
+        VALUE key = rbimpl_atomic_value_exchange(&old_entry->key, CONCURRENT_SET_MOVED, RBIMPL_ATOMIC_ACQUIRE);
         RUBY_ASSERT(key != CONCURRENT_SET_MOVED);
 
         if (key < CONCURRENT_SET_SPECIAL_VALUE_COUNT) continue;
         if (!RB_SPECIAL_CONST_P(key) && rb_objspace_garbage_object_p(key)) continue;
 
-        VALUE hash = rbimpl_atomic_value_load(&entry->hash, RBIMPL_ATOMIC_RELAXED) & CONCURRENT_SET_HASH_MASK;
+        VALUE hash = rbimpl_atomic_value_load(&old_entry->hash, RBIMPL_ATOMIC_RELAXED) & CONCURRENT_SET_HASH_MASK;
         RUBY_ASSERT(hash != 0);
         RUBY_ASSERT(hash == concurrent_set_hash(old_set, key));
 
