@@ -6,6 +6,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
+use std::collections::HashMap;
 
 use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
@@ -265,9 +266,21 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
-    // Compile each basic block
+    // Create a hash table mapping HIR block IDs to LIR block IDs
+    let mut hir_to_lir: HashMap<BlockId, lir::BlockId> = HashMap::new();
+
     let reverse_post_order = function.rpo();
+
+    // Create all LIR basic blocks corresponding to HIR basic blocks
     for &block_id in reverse_post_order.iter() {
+        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id));
+        hir_to_lir.insert(block_id, lir_block_id);
+    }
+
+    // Compile each basic block
+    for &block_id in reverse_post_order.iter() {
+        asm.set_current_block(lir::BlockId(0));
+
         // Write a label to jump to the basic block
         let label = jit.get_label(&mut asm, block_id);
         asm.write_label(label);
