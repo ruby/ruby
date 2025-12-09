@@ -9,12 +9,6 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/jit/src/lib.rs \
 	)
 
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-YJIT_LIB_TOUCH = touch $@
-
 # Absolute path to match RUST_LIB rules to avoid picking
 # the "target" dir in the source directory through VPATH.
 BUILD_YJIT_LIBS = $(TOP_BUILD_DIR)/$(YJIT_LIBS)
@@ -24,8 +18,7 @@ ifneq ($(strip $(YJIT_LIBS)),)
 yjit-libs: $(BUILD_YJIT_LIBS)
 $(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
-	+$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
-	$(YJIT_LIB_TOUCH)
+	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 endif
 
 ifneq ($(YJIT_SUPPORT),no)
