@@ -30,6 +30,31 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 	    MACOSX_DEPLOYMENT_TARGET=11.0 \
 	    $(CARGO) $(CARGO_VERBOSE) build --manifest-path '$(top_srcdir)/Cargo.toml' $(CARGO_BUILD_ARGS)
 	$(RUST_LIB_TOUCH)
+else ifneq ($(strip $(RLIB_DIR)),) # combo build
+
+$(RUST_LIB): $(srcdir)/ruby.rs
+	$(ECHO) 'building $(@F)'
+	$(Q) $(RUSTC) --edition=2024 \
+	    '-L$(@D)' \
+	    --extern=yjit \
+	    --extern=zjit \
+	    --crate-type=staticlib \
+	    --cfg 'feature="yjit"' \
+	    --cfg 'feature="zjit"' \
+	    '--out-dir=$(@D)' \
+	    '$(top_srcdir)/ruby.rs'
+
+# Absolute path to avoid VPATH ambiguity
+JIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libjit.rlib
+$(YJIT_RLIB): $(JIT_RLIB)
+$(ZJIT_RLIB): $(JIT_RLIB)
+$(JIT_RLIB):
+	$(ECHO) 'building $(@F)'
+	$(Q) $(RUSTC) --crate-name=jit \
+	    --edition=2024 \
+	    $(JIT_RUST_FLAGS) \
+	    '--out-dir=$(@D)' \
+	    '$(top_srcdir)/jit/src/lib.rs'
 endif # ifneq ($(JIT_CARGO_SUPPORT),no)
 
 RUST_LIB_SYMBOLS = $(RUST_LIB:.a=).symbols
