@@ -1,17 +1,17 @@
 # Make recipes that deal with the rust code of YJIT and ZJIT.
 
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-RUST_LIB_TOUCH = touch $@
-
 ifneq ($(JIT_CARGO_SUPPORT),no)
 
 # Show Cargo progress when doing `make V=1`
 CARGO_VERBOSE_0 = -q
 CARGO_VERBOSE_1 =
 CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
+
+# Because of Cargo cache, if the actual binary is not changed from the
+# previous build, the mtime is preserved as the cached file.
+# This means the target is not updated actually, and it will need to
+# rebuild at the next build.
+RUST_LIB_TOUCH = touch $@
 
 # NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
 #    ld: warning: object file (target/debug/libjit.a(<libcapstone object>)) was built for
@@ -30,7 +30,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 	    MACOSX_DEPLOYMENT_TARGET=11.0 \
 	    $(CARGO) $(CARGO_VERBOSE) build --manifest-path '$(top_srcdir)/Cargo.toml' $(CARGO_BUILD_ARGS)
 	$(RUST_LIB_TOUCH)
-endif
+endif # ifneq ($(JIT_CARGO_SUPPORT),no)
 
 RUST_LIB_SYMBOLS = $(RUST_LIB:.a=).symbols
 $(RUST_LIBOBJ): $(RUST_LIB)
