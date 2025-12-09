@@ -812,7 +812,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = SendWithoutBlock v6, :foo
+          v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: SendWithoutBlock: unsupported method type Null
           CheckInterrupts
           Return v11
         ");
@@ -2444,7 +2444,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[0] = Const Value(0)
-          v14:BasicObject = SendWithoutBlock v10, :itself, v12
+          v14:BasicObject = SendWithoutBlock v10, :itself, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -2670,7 +2670,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = Send v6, 0x1000, :foo
+          v11:BasicObject = Send v6, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
           CheckInterrupts
           Return v11
         ");
@@ -2702,7 +2702,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           SetLocal :a, l0, EP@3, v13
-          v19:BasicObject = Send v8, 0x1000, :foo
+          v19:BasicObject = Send v8, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
           v20:BasicObject = GetLocal :a, l0, EP@3
           v24:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
@@ -2730,7 +2730,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_rest
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -2755,7 +2755,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[10] = Const Value(10)
           IncrCounter complex_arg_pass_param_post
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -2871,7 +2871,7 @@ mod hir_opt_tests {
           v11:Fixnum[0] = Const Value(0)
           v13:Fixnum[2] = Const Value(2)
           IncrCounter complex_arg_pass_param_kw_opt
-          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13
+          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v15
         ");
@@ -2936,7 +2936,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[2] = Const Value(2)
           IncrCounter complex_arg_pass_param_kw_opt
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -2962,7 +2962,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_param_kwrest
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11
+          v13:BasicObject = SendWithoutBlock v6, :foo, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -2987,7 +2987,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           IncrCounter complex_arg_pass_param_kw_opt
-          v11:BasicObject = SendWithoutBlock v6, :foo
+          v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v11
         ");
@@ -3012,7 +3012,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           IncrCounter complex_arg_pass_param_kwrest
-          v11:BasicObject = SendWithoutBlock v6, :foo
+          v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v11
         ");
@@ -3038,7 +3038,7 @@ mod hir_opt_tests {
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v11
           v14:Fixnum[1] = Const Value(1)
-          v16:BasicObject = SendWithoutBlock v6, :sprintf, v12, v14
+          v16:BasicObject = SendWithoutBlock v6, :sprintf, v12, v14 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v16
         ");
@@ -3072,7 +3072,7 @@ mod hir_opt_tests {
           SetLocal :a, l0, EP@3, v16
           v22:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
-          v24:BasicObject = Send v11, 0x1000, :each_line, v22
+          v24:BasicObject = Send v11, 0x1000, :each_line, v22 # SendFallbackReason: Complex argument passing
           v25:BasicObject = GetLocal :s, l0, EP@4
           v26:BasicObject = GetLocal :a, l0, EP@3
           v30:BasicObject = GetLocal :a, l0, EP@3
@@ -3337,7 +3337,7 @@ mod hir_opt_tests {
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           IncrCounter complex_arg_pass_param_block
           IncrCounter complex_arg_pass_param_kw_opt
-          v20:BasicObject = SendWithoutBlock v46, :initialize
+          v20:BasicObject = SendWithoutBlock v46, :initialize # SendFallbackReason: Complex argument passing
           CheckInterrupts
           CheckInterrupts
           Return v46
@@ -3541,7 +3541,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           GuardBlockParamProxy l0
           v15:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
-          v17:BasicObject = Send v8, 0x1008, :tap, v15
+          v17:BasicObject = Send v8, 0x1008, :tap, v15 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v17
         ");
@@ -4018,7 +4018,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Hash@0x1000)
           v22:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = SendWithoutBlock v22, :freeze
+          v14:BasicObject = SendWithoutBlock v22, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v14
         ");
@@ -4041,7 +4041,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:HashExact = NewHash
           v12:NilClass = Const Value(nil)
-          v14:BasicObject = SendWithoutBlock v10, :freeze, v12
+          v14:BasicObject = SendWithoutBlock v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -4111,7 +4111,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v22:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = SendWithoutBlock v22, :freeze
+          v14:BasicObject = SendWithoutBlock v22, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v14
         ");
@@ -4134,7 +4134,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:ArrayExact = NewArray
           v12:NilClass = Const Value(nil)
-          v14:BasicObject = SendWithoutBlock v10, :freeze, v12
+          v14:BasicObject = SendWithoutBlock v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -4205,7 +4205,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
           v23:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = SendWithoutBlock v23, :freeze
+          v15:BasicObject = SendWithoutBlock v23, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
@@ -4229,7 +4229,7 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
           v13:NilClass = Const Value(nil)
-          v15:BasicObject = SendWithoutBlock v11, :freeze, v13
+          v15:BasicObject = SendWithoutBlock v11, :freeze, v13 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v15
         ");
@@ -4300,7 +4300,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
           v23:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = SendWithoutBlock v23, :-@
+          v15:BasicObject = SendWithoutBlock v23, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
@@ -4805,7 +4805,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[100] = Const Value(100)
-          v13:BasicObject = SendWithoutBlock v6, :identity, v11
+          v13:BasicObject = SendWithoutBlock v6, :identity, v11 # SendFallbackReason: Bmethod: Proc object is not defined by an ISEQ
           CheckInterrupts
           Return v13
         ");
@@ -4828,7 +4828,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = Send v6, 0x1000, :bmethod
+          v11:BasicObject = Send v6, 0x1000, :bmethod # SendFallbackReason: Send: unsupported method type Bmethod
           CheckInterrupts
           Return v11
         ");
@@ -5667,7 +5667,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = SendWithoutBlock v6, :foo
+          v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v11
         ");
@@ -5710,7 +5710,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = SendWithoutBlock v9, :foo
+          v14:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v14
         ");
@@ -5844,7 +5844,7 @@ mod hir_opt_tests {
           GuardBlockParamProxy l0
           v16:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           IncrCounter complex_arg_pass_caller_blockarg
-          v18:BasicObject = Send v13, 0x1008, :map, v16
+          v18:BasicObject = Send v13, 0x1008, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v18
         ");
@@ -5870,7 +5870,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = Send v6, 0x1000, :foo
+          v11:BasicObject = Send v6, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
           CheckInterrupts
           Return v11
         ");
@@ -7589,7 +7589,7 @@ mod hir_opt_tests {
           v12:Fixnum[3] = Const Value(3)
           v14:Fixnum[3] = Const Value(3)
           v16:Fixnum[3] = Const Value(3)
-          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16
+          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16 # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v18
         ");
@@ -7639,7 +7639,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
-          v12:BasicObject = SendWithoutBlock v10, :foo
+          v12:BasicObject = SendWithoutBlock v10, :foo # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v12
         ");
@@ -7662,7 +7662,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[4] = Const Value(4)
           v12:Fixnum[1] = Const Value(1)
-          v14:BasicObject = SendWithoutBlock v10, :succ, v12
+          v14:BasicObject = SendWithoutBlock v10, :succ, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -7816,7 +7816,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v17:BasicObject = SendWithoutBlock v11, :^
+          v17:BasicObject = SendWithoutBlock v11, :^ # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v17
         ");
@@ -8491,17 +8491,17 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           v19:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v21:BasicObject = SendWithoutBlock v8, :foo, v19
+          v21:BasicObject = SendWithoutBlock v8, :foo, v19 # SendFallbackReason: Complex argument passing
           v25:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v26:StringExact = StringCopy v25
           PatchPoint NoEPEscape(test)
           v31:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v33:BasicObject = SendWithoutBlock v26, :display, v31
+          v33:BasicObject = SendWithoutBlock v26, :display, v31 # SendFallbackReason: Complex argument passing
           PatchPoint NoEPEscape(test)
           v41:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v43:BasicObject = SendWithoutBlock v8, :itself, v41
+          v43:BasicObject = SendWithoutBlock v8, :itself, v41 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v43
         ");
@@ -9186,7 +9186,7 @@ mod hir_opt_tests {
           IncrCounter complex_arg_pass_param_block
           IncrCounter complex_arg_pass_param_kwrest
           IncrCounter complex_arg_pass_param_kw_opt
-          v13:BasicObject = SendWithoutBlock v6, :fancy, v11
+          v13:BasicObject = SendWithoutBlock v6, :fancy, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -9210,7 +9210,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           IncrCounter complex_arg_pass_param_forwardable
-          v11:BasicObject = SendWithoutBlock v6, :forwardable
+          v11:BasicObject = SendWithoutBlock v6, :forwardable # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v11
         ");
