@@ -45,9 +45,11 @@ end
 # Start at Any. All types are subtypes of Any.
 any = Type.new "Any"
 # Build the effect universe.
-world = any.subtype "World"
-other = world.subtype "Other"
-frame = world.subtype "Frame"
+allocator = any.subtype "Allocator"
+control = any.subtype "Control"
+memory = any.subtype "Memory"
+other = memory.subtype "Other"
+frame = memory.subtype "Frame"
 pc = frame.subtype "PC"
 locals = frame.subtype "Locals"
 stack = frame.subtype "Stack"
@@ -84,8 +86,8 @@ end
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
-$bits = {"None" => ["0#{$int_label}"]}
-$numeric_bits = {"None" => 0}
+$bits = {"Empty" => ["0#{$int_label}"]}
+$numeric_bits = {"Empty" => 0}
 Set[any, *any.all_subtypes].sort_by(&:name).each {|type|
   subtypes = type.subtypes
   if subtypes.empty?

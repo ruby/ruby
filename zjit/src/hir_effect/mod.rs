@@ -1,7 +1,6 @@
 //! High-level intermediate representation effects.
 
 // TODO(Jacob): Replace Effect with EffectSet and EffectPair with Effect
-//
 
 #![allow(non_upper_case_globals)]
 use crate::hir::{PtrPrintMap};
@@ -58,25 +57,22 @@ pub struct EffectPrinter<'a> {
 impl<'a> std::fmt::Display for EffectPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let effect = self.inner;
-        // If there's an exact match, write and return
-        for (name, pattern) in bits::AllBitPatterns {
-            if effect.bits == pattern {
-                write!(f, "{name}")?;
-                return Ok(());
-            }
-        }
-        // Otherwise, find the most descriptive sub-effect write it, and mask out the handled bits.
-        // Most descriptive means "highest number of bits set while remaining fully contained within `effect`"
-        debug_assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
         let mut bits = effect.bits;
         let mut sep = "";
+        // First, make sure patterns are sorted from higher order bits to lower order.
+        // For each match where `bits` contains the pattern, we mask off the matched bits
+        // and continue searching for matches until bits == 0.
+        // Our first match could be exact and may not require a separator, but all subsequent
+        // matches do.
+        debug_assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
         for (name, pattern) in bits::AllBitPatterns {
-            if bits == 0 { break; }
             if (bits & pattern) == pattern {
                 write!(f, "{sep}{name}")?;
                 sep = "|";
                 bits &= !pattern;
             }
+            // The `sep != ""` check allows us to handle the effects::None case gracefully.
+            if (bits == 0) & (sep != "") { break; }
         }
         debug_assert_eq!(bits, 0, "Should have eliminated all bits by iterating over all patterns");
         Ok(())
@@ -89,6 +85,7 @@ impl std::fmt::Display for Effect {
     }
 }
 
+// TODO(Jacob): Modify union and effect to work on an arbitrary number of args
 impl Effect {
     const fn from_bits(bits: EffectBits) -> Effect {
         Effect { bits }
@@ -116,7 +113,7 @@ impl Effect {
     }
 
     pub fn overlaps(&self, other: Effect) -> bool {
-        !self.intersect(other).bit_equal(effects::None)
+        !self.intersect(other).bit_equal(effects::Empty)
     }
 
     pub fn print(self, ptr_map: &PtrPrintMap) -> EffectPrinter<'_> {
@@ -145,24 +142,22 @@ mod tests {
 
     #[test]
     fn none_is_subeffect_of_everything() {
-        assert_subeffect(effects::None, effects::None);
-        assert_subeffect(effects::None, effects::Any);
-        assert_subeffect(effects::None, effects::World);
-        assert_subeffect(effects::None, effects::Frame);
-        assert_subeffect(effects::None, effects::Other);
-        assert_subeffect(effects::None, effects::Stack);
-        assert_subeffect(effects::None, effects::Locals);
-        assert_subeffect(effects::None, effects::PC);
+        assert_subeffect(effects::Empty, effects::Empty);
+        assert_subeffect(effects::Empty, effects::Any);
+        assert_subeffect(effects::Empty, effects::Control);
+        assert_subeffect(effects::Empty, effects::Frame);
+        assert_subeffect(effects::Empty, effects::Stack);
+        assert_subeffect(effects::Empty, effects::Locals);
+        assert_subeffect(effects::Empty, effects::Allocator);
     }
 
     #[test]
     fn everything_is_subeffect_of_any() {
-        assert_subeffect(effects::None, effects::Any);
+        assert_subeffect(effects::Empty, effects::Any);
         assert_subeffect(effects::Any, effects::Any);
-        assert_subeffect(effects::World, effects::Any);
+        assert_subeffect(effects::Control, effects::Any);
         assert_subeffect(effects::Frame, effects::Any);
-        assert_subeffect(effects::Other, effects::Any);
-        assert_subeffect(effects::Stack, effects::Any);
+        assert_subeffect(effects::Memory, effects::Any);
         assert_subeffect(effects::Locals, effects::Any);
         assert_subeffect(effects::PC, effects::Any);
     }
@@ -173,7 +168,7 @@ mod tests {
         for i in [0, 1, 4, 6, 10, 15] {
             let e = Effect::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effects::None, effects::None.union(e));
+            assert_subeffect(effects::Empty, effects::Empty.union(e));
             assert_subeffect(effects::Any, effects::Any.union(e));
             assert_subeffect(effects::Frame, effects::Frame.union(e));
         }
@@ -185,7 +180,7 @@ mod tests {
         for i in [0, 3, 6, 8, 15] {
             let e = Effect::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effects::None.intersect(e), effects::None);
+            assert_subeffect(effects::Empty.intersect(e), effects::Empty);
             assert_subeffect(effects::Any.intersect(e), effects::Any);
             assert_subeffect(effects::Frame.intersect(e), effects::Frame);
         }
@@ -194,8 +189,8 @@ mod tests {
     #[test]
     fn self_is_included() {
         assert!(effects::Stack.includes(effects::Stack));
-        assert!(effects::Other.includes(effects::Other));
-        assert!(effects::Stack.includes(effects::Stack));
+        assert!(effects::Any.includes(effects::Any));
+        assert!(effects::Empty.includes(effects::Empty));
     }
 
     #[test]
@@ -212,29 +207,28 @@ mod tests {
     }
 
     #[test]
-    fn world_includes_other() {
-        assert_subeffect(effects::Other, effects::World);
-    }
-
-    #[test]
-    fn any_includes_world_and_frame() {
-        assert_subeffect(effects::World, effects::Any);
+    fn any_includes_some_subeffects() {
+        assert_subeffect(effects::Allocator, effects::Any);
         assert_subeffect(effects::Frame, effects::Any);
+        assert_subeffect(effects::Memory, effects::Any);
     }
 
     #[test]
     fn display_exact_bits_match() {
-        assert_eq!(format!("{}", effects::None), "None");
+        assert_eq!(format!("{}", effects::Empty), "Empty");
         assert_eq!(format!("{}", effects::PC), "PC");
-        assert_eq!(format!("{}", effects::Other), "Other");
-    }
-
-    // TODO(Jacob): Figure out why these last two comments cause test failures
-    #[test]
-    fn display_multiple_bits() {
+        assert_eq!(format!("{}", effects::Any), "Any");
         assert_eq!(format!("{}", effects::Frame), "Frame");
         assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame");
-        // assert_eq!(format!("{}", effects::Stack.union(effects::Locals)), "Locals|Stack");
-        // assert_eq!(format!("{}", effects::Any), "Any");
+    }
+
+    #[test]
+    fn display_multiple_bits() {
+        let union = effects::Stack.union(effects::Locals);
+        assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame");
+        println!("{}", union);
+        println!("{}", effects::Stack.union(effects::Locals.union(effects::PC)));
+        assert_eq!(format!("{}", effects::Stack.union(effects::Locals)), "Stack|Locals");
+        assert_eq!(format!("{}", effects::PC.union(effects::Allocator)), "PC|Allocator");
     }
 }
