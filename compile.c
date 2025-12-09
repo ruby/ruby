@@ -11333,6 +11333,19 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_LOCAL_VARIABLE_WRITE_NODE: {
+        ID id = RB_NODE_LOCAL_VARIABLE_WRITE(node)->name;
+        int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
+
+        debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
+        CHECK(COMPILE(ret, "rvalue", RB_NODE_LOCAL_VARIABLE_WRITE(node)->value));
+
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+        break;
+      }
       case RB_GLOBAL_VARIABLE_WRITE_NODE: {
         CHECK(COMPILE(ret, "lvalue", RB_NODE_GLOBAL_VARIABLE_WRITE(node)->value));
 
@@ -11368,6 +11381,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_LOCAL_VARIABLE_READ_NODE: {
+        if (!popped) {
+            compile_lvar(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_READ(node)->name);
+        }
+        break;
+      }
       case RB_GLOBAL_VARIABLE_READ_NODE: {
         ADD_INSN1(ret, node, getglobal, ID2SYM(RB_NODE_GLOBAL_VARIABLE_READ(node)->name));
         if (popped) {
