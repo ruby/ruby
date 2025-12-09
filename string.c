@@ -437,6 +437,8 @@ rb_fstring(VALUE str)
     fstr = register_fstring(str, false, false);
 
     if (!bare) {
+        // str may be unmodifiable and still own malloc buffer.
+        // We need to discard it before calling str_replace_shared_without_enc.
         str_discard_no_modifiable(str);
         str_replace_shared_without_enc(str, fstr);
         OBJ_FREEZE(str);
@@ -2799,7 +2801,7 @@ str_may_own_malloc_p(VALUE str)
 {
     RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
 
-    return !STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE);
+    return !STR_EMBED_P(str) && !FL_TEST_RAW(str, STR_SHARED|STR_NOFREE);
 }
 
 /*
