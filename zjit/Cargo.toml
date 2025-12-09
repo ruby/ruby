@@ -6,8 +6,8 @@ rust-version = "1.85.0" # Minimally supported rust version
 publish = false         # Don't publish to crates.io
 
 [dependencies]
-# No required dependencies to simplify build process. TODO: Link to yet to be
-# written rationale. Optional For development and testing purposes
+# No required dependencies to simplify build process.
+# Optional For development and testing purposes.
 capstone = { version = "0.13.0", optional = true }
 jit = { version = "0.1.0", path = "../jit" }
 

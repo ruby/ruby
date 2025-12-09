@@ -23,7 +23,16 @@ ifneq ($(strip $(ZJIT_LIBS)),)
 $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
 	$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
-endif
+else ifneq ($(strip $(RLIB_DIR)),) # combo build
+# Absolute path to avoid VPATH ambiguity
+ZJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libzjit.rlib
+
+$(ZJIT_RLIB): $(ZJIT_SRC_FILES)
+	$(ECHO) 'building $(@F)'
+	$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
+
+$(RUST_LIB): $(ZJIT_RLIB)
+endif # ifneq ($(strip $(ZJIT_LIBS)),)
 
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
 ZJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems
