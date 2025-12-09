@@ -1323,7 +1323,7 @@ module Net   #:nodoc:
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
 
-    # Sets wheter the proxy uses SSL;
+    # Sets whether the proxy uses SSL;
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 

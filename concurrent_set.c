@@ -129,7 +129,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
         new_capacity = old_capacity;
     }
 
-    // May cause GC and therefore deletes, so must hapen first.
+    // May cause GC and therefore deletes, so must happen first.
     VALUE new_set_obj = rb_concurrent_set_new(old_set->funcs, new_capacity);
     struct concurrent_set *new_set = RTYPEDDATA_GET_DATA(new_set_obj);
 

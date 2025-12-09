@@ -103,7 +103,7 @@ rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int
 
         // Loop through the length of samples_len and add data to the
         // frames hash. Also push the current value onto the raw_samples
-        // and line_samples arrary respectively.
+        // and line_samples array respectively.
         for (int o = 0; o < num; o++) {
             rb_zjit_add_frame(frames, zjit_raw_samples[idx]);
             rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));

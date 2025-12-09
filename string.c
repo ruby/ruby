@@ -3979,7 +3979,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
 
   clear_cr:
     // If no fast path was hit, we clear the coderange.
-    // append_as_bytes is predominently meant to be used in
+    // append_as_bytes is predominantly meant to be used in
     // buffering situation, hence it's likely the coderange
     // will never be scanned, so it's not worth spending time
     // precomputing the coderange except for simple and common
