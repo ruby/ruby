@@ -26,14 +26,14 @@ mod bits {
 }
 pub mod effects {
   use super::*;
-  pub const Allocator: Effect = Effect::from_bits(bits::Allocator);
-  pub const Any: Effect = Effect::from_bits(bits::Any);
-  pub const Control: Effect = Effect::from_bits(bits::Control);
-  pub const Empty: Effect = Effect::from_bits(bits::Empty);
-  pub const Frame: Effect = Effect::from_bits(bits::Frame);
-  pub const Locals: Effect = Effect::from_bits(bits::Locals);
-  pub const Memory: Effect = Effect::from_bits(bits::Memory);
-  pub const Other: Effect = Effect::from_bits(bits::Other);
-  pub const PC: Effect = Effect::from_bits(bits::PC);
-  pub const Stack: Effect = Effect::from_bits(bits::Stack);
+  pub const Allocator: EffectSet = EffectSet::from_bits(bits::Allocator);
+  pub const Any: EffectSet = EffectSet::from_bits(bits::Any);
+  pub const Control: EffectSet = EffectSet::from_bits(bits::Control);
+  pub const Empty: EffectSet = EffectSet::from_bits(bits::Empty);
+  pub const Frame: EffectSet = EffectSet::from_bits(bits::Frame);
+  pub const Locals: EffectSet = EffectSet::from_bits(bits::Locals);
+  pub const Memory: EffectSet = EffectSet::from_bits(bits::Memory);
+  pub const Other: EffectSet = EffectSet::from_bits(bits::Other);
+  pub const PC: EffectSet = EffectSet::from_bits(bits::PC);
+  pub const Stack: EffectSet = EffectSet::from_bits(bits::Stack);
 }
