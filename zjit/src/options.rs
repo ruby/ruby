@@ -71,7 +71,7 @@ pub struct Options {
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
-    pub dump_hir_iongraph: bool,
+    pub dump_hir_iongraph: Option<std::path::PathBuf>,
 
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
@@ -109,7 +109,7 @@ impl Default for Options {
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: None,
-            dump_hir_iongraph: false,
+            dump_hir_iongraph: None,
             dump_lir: None,
             dump_disasm: false,
             trace_side_exits: None,
@@ -357,7 +357,16 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.dump_hir_graphviz = Some(opt_val);
         }
 
-        ("dump-hir-iongraph", "") => options.dump_hir_iongraph = true,
+        ("dump-hir-iongraph", "") => options.dump_hir_iongraph = Some("/tmp".into()),
+        ("dump-hir-iongraph", _) => {
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            if !opt_val.is_dir() {
+                return None;
+            } else {
+                std::fs::create_dir_all(&opt_val).unwrap();
+                options.dump_hir_iongraph = Some(opt_val);
+            }
+        }
 
         ("dump-lir", "") => options.dump_lir = Some(HashSet::from([DumpLIR::init])),
         ("dump-lir", filters) => {

@@ -4144,13 +4144,13 @@ impl Function {
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
-        let should_dump = get_option!(dump_hir_iongraph);
+        let should_dump = &get_option!(dump_hir_iongraph);
 
         macro_rules! run_pass {
             ($name:ident) => {
                 self.$name();
                 #[cfg(debug_assertions)] self.assert_validates();
-                if should_dump {
+                if should_dump.is_some() {
                     passes.push(
                         self.to_iongraph_pass(stringify!($name))
                     );
@@ -4158,7 +4158,7 @@ impl Function {
             }
         }
 
-        if should_dump {
+        if should_dump.is_some() {
             passes.push(self.to_iongraph_pass("unoptimized"));
         }
 
@@ -4171,7 +4171,7 @@ impl Function {
         run_pass!(clean_cfg);
         run_pass!(eliminate_dead_code);
 
-        if should_dump {
+        if should_dump.is_some() {
             let iseq_name = iseq_get_location(self.iseq, 0);
             self.dump_iongraph(&iseq_name, passes);
         }
@@ -4209,11 +4209,13 @@ impl Function {
         }
 
         use std::io::Write;
-        let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
+        // SAFETY: `dump_iongraph` should always be called with an `.is_some()` guard.
+        let mut dir = get_option!(dump_hir_iongraph).clone().unwrap();
+        dir.push(format!("zjit-iongraph-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("Unable to create directory.");
         let sanitized = sanitize_for_filename(function_name);
-        let path = format!("{dir}/func_{sanitized}.json");
-        let mut file = std::fs::File::create(path).unwrap();
+        dir.push(format!("func_{sanitized}.json"));
+        let mut file = std::fs::File::create(dir).unwrap();
         let json = Json::object()
             .insert("name", function_name)
             .insert("passes", passes)
