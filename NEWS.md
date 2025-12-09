@@ -160,6 +160,12 @@ Note: We're only listing outstanding class updates.
       Ruby-related constants. This module was reserved in Ruby 3.4
       and is now officially defined. [[Feature #20884]]
 
+* Ruby::Box
+
+    * A new (experimental) feature to provide separation about definitions.
+      For the detail of "Ruby Box", see [doc/language/box.md](doc/language/box.md).
+      [[Feature #21311]] [[Misc #21385]]
+
 * Set
 
     * `Set` is now a core class, instead of an autoloaded stdlib class.
@@ -427,8 +433,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
+[Feature #21311]: https://bugs.ruby-lang.org/issues/21311
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Misc #21385]:    https://bugs.ruby-lang.org/issues/21385
 [Feature #21389]: https://bugs.ruby-lang.org/issues/21389
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21459]: https://bugs.ruby-lang.org/issues/21459

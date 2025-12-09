@@ -1,6 +1,6 @@
 # Ruby Box - Ruby's in-process separation of Classes and Modules
 
-Ruby Box is designed to provide separated spaces in a Ruby process, to isolate applications and libraries.
+Ruby Box is designed to provide separated spaces in a Ruby process, to isolate application codes, libraries and monkey patches.
 
 ## Known issues
 
@@ -12,13 +12,11 @@ Ruby Box is designed to provide separated spaces in a Ruby process, to isolate a
 ## TODOs
 
 * Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
-* Delete per-box extension files (.so) lazily or process exit
-* Collect `rb_classext_t` entries for a box when GC collects the box
+* Delete per-box extension files (.so) lazily or process exit (on Windows)
 * Assign its own TOPLEVEL_BINDING in boxes
 * Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
-* Make an internal data container `Ruby::Box::Entry` invisible
+* Make an internal data container class `Ruby::Box::Entry` invisible
 * More test cases about `$LOAD_PATH` and `$LOADED_FEATURES`
-* Return classpath and nesting without the namespace prefix in the namespace itself [#21316](https://bugs.ruby-lang.org/issues/21316), [#21318](https://bugs.ruby-lang.org/issues/21318)
 
 ## How to use
 
