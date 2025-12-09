@@ -139,6 +139,6 @@ puts "  pub const NumEffectBits: #{$int_label} = #{num_bits};
 puts "pub mod effects {
   use super::*;"
 $bits.keys.sort.map {|type_name|
-    puts "  pub const #{type_name}: Effect = Effect::from_bits(bits::#{type_name});"
+    puts "  pub const #{type_name}: EffectSet = EffectSet::from_bits(bits::#{type_name});"
 }
 puts "}"
