@@ -607,7 +607,6 @@ RTYPEDDATA_TYPE(VALUE obj)
     return (const struct rb_data_type_struct *)(RTYPEDDATA(obj)->type & TYPED_DATA_PTR_MASK);
 }
 
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
