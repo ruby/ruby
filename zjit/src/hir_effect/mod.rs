@@ -30,6 +30,7 @@ pub struct EffectSet {
 
 // TODO(Jacob): Add tests for Effect
 // TODO(Jacob): Modify ruby generation of effects to include nice labels for Effects instead of just EffectSets
+// TODO(Jacob): Modify these labels to be callected effect_sets in the inc.rs, and create others called effects
 pub struct Effect {
     /// Unlike ZJIT's type system, effects do not have a notion of subclasses.
     /// Instead of specializations, the EffectPair struct contains two Effect bitsets.
@@ -88,7 +89,7 @@ impl std::fmt::Display for EffectSet {
 // TODO(Jacob): Modify union and effect to work on an arbitrary number of args
 // TODO(Jacob): These `from_bits` functions used to be `const fn` not `pub fn`. Have I done something bad by making them public?
 impl EffectSet {
-    pub fn from_bits(bits: EffectBits) -> EffectSet {
+    const fn from_bits(bits: EffectBits) -> EffectSet {
         EffectSet { bits }
     }
 
@@ -114,7 +115,7 @@ impl EffectSet {
     }
 
     pub fn overlaps(&self, other: EffectSet) -> bool {
-        !self.intersect(other).bit_equal(effects::Empty)
+        !self.intersect(other).bit_equal(effect_sets::Empty)
     }
 
     pub fn print(self, ptr_map: &PtrPrintMap) -> EffectSetPrinter<'_> {
@@ -152,7 +153,7 @@ impl Effect {
     }
 
     pub fn overlaps(&self, other: Effect) -> bool {
-        let empty = Effect::from_bits(effects::Empty, effects::Empty);
+        let empty = Effect::from_bits(effect_sets::Empty, effect_sets::Empty);
         !self.intersect(other).bit_equal(empty)
     }
 }
@@ -178,24 +179,24 @@ mod tests {
 
     #[test]
     fn none_is_subeffect_of_everything() {
-        assert_subeffect(effects::Empty, effects::Empty);
-        assert_subeffect(effects::Empty, effects::Any);
-        assert_subeffect(effects::Empty, effects::Control);
-        assert_subeffect(effects::Empty, effects::Frame);
-        assert_subeffect(effects::Empty, effects::Stack);
-        assert_subeffect(effects::Empty, effects::Locals);
-        assert_subeffect(effects::Empty, effects::Allocator);
+        assert_subeffect(effect_sets::Empty, effect_sets::Empty);
+        assert_subeffect(effect_sets::Empty, effect_sets::Any);
+        assert_subeffect(effect_sets::Empty, effect_sets::Control);
+        assert_subeffect(effect_sets::Empty, effect_sets::Frame);
+        assert_subeffect(effect_sets::Empty, effect_sets::Stack);
+        assert_subeffect(effect_sets::Empty, effect_sets::Locals);
+        assert_subeffect(effect_sets::Empty, effect_sets::Allocator);
     }
 
     #[test]
     fn everything_is_subeffect_of_any() {
-        assert_subeffect(effects::Empty, effects::Any);
-        assert_subeffect(effects::Any, effects::Any);
-        assert_subeffect(effects::Control, effects::Any);
-        assert_subeffect(effects::Frame, effects::Any);
-        assert_subeffect(effects::Memory, effects::Any);
-        assert_subeffect(effects::Locals, effects::Any);
-        assert_subeffect(effects::PC, effects::Any);
+        assert_subeffect(effect_sets::Empty, effect_sets::Any);
+        assert_subeffect(effect_sets::Any, effect_sets::Any);
+        assert_subeffect(effect_sets::Control, effect_sets::Any);
+        assert_subeffect(effect_sets::Frame, effect_sets::Any);
+        assert_subeffect(effect_sets::Memory, effect_sets::Any);
+        assert_subeffect(effect_sets::Locals, effect_sets::Any);
+        assert_subeffect(effect_sets::PC, effect_sets::Any);
     }
 
     #[test]
@@ -204,9 +205,9 @@ mod tests {
         for i in [0, 1, 4, 6, 10, 15] {
             let e = EffectSet::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effects::Empty, effects::Empty.union(e));
-            assert_subeffect(effects::Any, effects::Any.union(e));
-            assert_subeffect(effects::Frame, effects::Frame.union(e));
+            assert_subeffect(effect_sets::Empty, effect_sets::Empty.union(e));
+            assert_subeffect(effect_sets::Any, effect_sets::Any.union(e));
+            assert_subeffect(effect_sets::Frame, effect_sets::Frame.union(e));
         }
     }
 
@@ -216,55 +217,55 @@ mod tests {
         for i in [0, 3, 6, 8, 15] {
             let e = EffectSet::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effects::Empty.intersect(e), effects::Empty);
-            assert_subeffect(effects::Any.intersect(e), effects::Any);
-            assert_subeffect(effects::Frame.intersect(e), effects::Frame);
+            assert_subeffect(effect_sets::Empty.intersect(e), effect_sets::Empty);
+            assert_subeffect(effect_sets::Any.intersect(e), effect_sets::Any);
+            assert_subeffect(effect_sets::Frame.intersect(e), effect_sets::Frame);
         }
     }
 
     #[test]
     fn self_is_included() {
-        assert!(effects::Stack.includes(effects::Stack));
-        assert!(effects::Any.includes(effects::Any));
-        assert!(effects::Empty.includes(effects::Empty));
+        assert!(effect_sets::Stack.includes(effect_sets::Stack));
+        assert!(effect_sets::Any.includes(effect_sets::Any));
+        assert!(effect_sets::Empty.includes(effect_sets::Empty));
     }
 
     #[test]
     fn frame_includes_stack_locals_and_pc() {
-        assert_subeffect(effects::Stack, effects::Frame);
-        assert_subeffect(effects::Locals, effects::Frame);
-        assert_subeffect(effects::PC, effects::Frame);
+        assert_subeffect(effect_sets::Stack, effect_sets::Frame);
+        assert_subeffect(effect_sets::Locals, effect_sets::Frame);
+        assert_subeffect(effect_sets::PC, effect_sets::Frame);
     }
 
     #[test]
     fn frame_is_stack_locals_and_pc() {
-        let union = effects::Stack.union(effects::Locals.union(effects::PC));
-        assert_bit_equal(effects::Frame, union);
+        let union = effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC));
+        assert_bit_equal(effect_sets::Frame, union);
     }
 
     #[test]
     fn any_includes_some_subeffects() {
-        assert_subeffect(effects::Allocator, effects::Any);
-        assert_subeffect(effects::Frame, effects::Any);
-        assert_subeffect(effects::Memory, effects::Any);
+        assert_subeffect(effect_sets::Allocator, effect_sets::Any);
+        assert_subeffect(effect_sets::Frame, effect_sets::Any);
+        assert_subeffect(effect_sets::Memory, effect_sets::Any);
     }
 
     #[test]
     fn display_exact_bits_match() {
-        assert_eq!(format!("{}", effects::Empty), "Empty");
-        assert_eq!(format!("{}", effects::PC), "PC");
-        assert_eq!(format!("{}", effects::Any), "Any");
-        assert_eq!(format!("{}", effects::Frame), "Frame");
-        assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame");
+        assert_eq!(format!("{}", effect_sets::Empty), "Empty");
+        assert_eq!(format!("{}", effect_sets::PC), "PC");
+        assert_eq!(format!("{}", effect_sets::Any), "Any");
+        assert_eq!(format!("{}", effect_sets::Frame), "Frame");
+        assert_eq!(format!("{}", effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC))), "Frame");
     }
 
     #[test]
     fn display_multiple_bits() {
-        let union = effects::Stack.union(effects::Locals);
-        assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame");
+        let union = effect_sets::Stack.union(effect_sets::Locals);
+        assert_eq!(format!("{}", effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC))), "Frame");
         println!("{}", union);
-        println!("{}", effects::Stack.union(effects::Locals.union(effects::PC)));
-        assert_eq!(format!("{}", effects::Stack.union(effects::Locals)), "Stack|Locals");
-        assert_eq!(format!("{}", effects::PC.union(effects::Allocator)), "PC|Allocator");
+        println!("{}", effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC)));
+        assert_eq!(format!("{}", effect_sets::Stack.union(effect_sets::Locals)), "Stack|Locals");
+        assert_eq!(format!("{}", effect_sets::PC.union(effect_sets::Allocator)), "PC|Allocator");
     }
 }
