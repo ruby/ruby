@@ -405,6 +405,8 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
     return str;
 }
 
+static inline void str_discard_no_modifiable(VALUE str);
+
 VALUE
 rb_fstring(VALUE str)
 {
@@ -435,6 +437,7 @@ rb_fstring(VALUE str)
     fstr = register_fstring(str, false, false);
 
     if (!bare) {
+        str_discard_no_modifiable(str);
         str_replace_shared_without_enc(str, fstr);
         OBJ_FREEZE(str);
         return str;
@@ -2786,15 +2789,28 @@ str_modify_keep_cr(VALUE str)
         ENC_CODERANGE_CLEAR(str);
 }
 
+/*
+ * Like str_discard, but does not require str to be modifiable.
+ * This function can only be called directly if the string will soon be made to
+ * have the same value as before (e.g. becoming embedded or shared), which will
+ * appear to the application as if the string has not been modified.
+ */
 static inline void
-str_discard(VALUE str)
+str_discard_no_modifiable(VALUE str)
 {
-    str_modifiable(str);
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
         ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         RSTRING(str)->as.heap.ptr = 0;
         STR_SET_LEN(str, 0);
     }
+}
+
+/* Free the malloc memory of a String instance if it is owning one. */
+static inline void
+str_discard(VALUE str)
+{
+    str_modifiable(str);
+    str_discard_no_modifiable(str);
 }
 
 static inline bool
