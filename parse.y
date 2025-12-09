@@ -14430,8 +14430,6 @@ new_args(struct parser_params *p, rb_node_args_aux_t *pre_args, rb_node_opt_arg_
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = 0;
-
     nd_set_loc(RNODE(tail), loc);
 
     return tail;
