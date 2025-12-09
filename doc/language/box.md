@@ -5,14 +5,14 @@ Ruby Box is designed to provide separated spaces in a Ruby process, to isolate a
 ## Known issues
 
 * Experimental warning is shown when ruby starts with `RUBY_BOX=1` (specify `-W:no-experimental` option to hide it)
-* `bundle install` may fail
-* `require 'active_support'` may fail
-* A wrong current namespace detection happens sometimes in the root namespace
+* Installing native extensions may fail under `RUBY_BOX=1` because of stack level too deep in extconf.rb
+* `require 'active_support/core_ext'` may fail under `RUBY_BOX=1`
+* Defined methods in a box may not be referred by built-in methods written in Ruby
 
 ## TODOs
 
 * Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
-* Delete per-box extension files (.so) lazily or process exit (on Windows)
+* Delete per-box extension files (.dll) lazily or process exit (on Windows)
 * Assign its own TOPLEVEL_BINDING in boxes
 * Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
 * Make an internal data container class `Ruby::Box::Entry` invisible
@@ -258,6 +258,16 @@ Ruby Box works in file scope. One `.rb` file runs in a single box.
 
 Once a file is loaded in a box `box`, all methods/procs defined/created in the file run in `box`.
 
+### Utility methods
+
+Several methods are available for trying/testing Ruby Box.
+
+* `Ruby::Box.current` returns the current box
+* `Ruby::Box.enabled?` returns true/false to represent `RUBY_BOX=1` is specified or not
+* `Ruby::Box.root` returns the root box
+* `Ruby::Box.main` returns the main box
+* `Ruby::Box#eval` evaluates a Ruby code (String) in the receiver box, just like calling `#load` with a file
+
 ## Implementation details
 
 #### ISeq inline method/constant cache
@@ -293,6 +303,10 @@ But with boxes, `Hash#map` runs in the root box. Ruby users can define `Hash#eac
 It is a breaking change.
 
 Users can define methods using `Ruby::Box.root.eval(...)`, but it's clearly not ideal API.
+
+#### Assigning values to global variables used by builtin methods
+
+Similar to monkey patching methods, global variables assigned in a box is separated from the root box. Methods defined in the root box referring a global variable can't find the re-assigned one.
 
 #### Context of `$LOAD_PATH` and `$LOADED_FEATURES`
 
