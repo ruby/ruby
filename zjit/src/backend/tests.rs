@@ -37,7 +37,7 @@ fn test_alloc_regs() {
     let _ = asm.add(out3, Opnd::UImm(6));
 
     // Here we're going to allocate the registers.
-    let result = asm.alloc_regs(Assembler::get_alloc_regs()).unwrap();
+    let result = &asm.alloc_regs(Assembler::get_alloc_regs()).unwrap().basic_blocks[0];
 
     // Now we're going to verify that the out field has been appropriately
     // updated for each of the instructions that needs it.
