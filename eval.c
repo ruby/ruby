@@ -1133,12 +1133,11 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
     enum ruby_tag_type state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
-    rb_execution_context_t * volatile ec = GET_EC();
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = (*b_proc) (data1);
@@ -1153,6 +1152,12 @@ rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE dat
     if (state)
         EC_JUMP_TAG(ec, state);
     return result;
+}
+
+VALUE
+rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+{
+    return rb_ec_ensure(GET_EC(), b_proc, data1, e_proc, data2);
 }
 
 static ID
