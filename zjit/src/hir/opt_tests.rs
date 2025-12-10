@@ -9501,4 +9501,435 @@ mod hir_opt_tests {
          Return v65
        ");
     }
+
+    #[test]
+    fn test_fold_load_field_frozen_constant_object() {
+        // Basic case: frozen constant object with attr_accessor
+        eval("
+            class TestFrozen
+              attr_accessor :a
+              def initialize
+                @a = 1
+              end
+            end
+
+            FROZEN_OBJ = TestFrozen.new.freeze
+
+            def test = FROZEN_OBJ.a
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_OBJ)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestFrozen@0x1010, a@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestFrozen@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_multiple_ivars() {
+        // Frozen object with multiple instance variables
+        eval("
+            class TestMultiIvars
+              attr_accessor :a, :b, :c
+              def initialize
+                @a = 10
+                @b = 20
+                @c = 30
+              end
+            end
+
+            MULTI_FROZEN = TestMultiIvars.new.freeze
+
+            def test = MULTI_FROZEN.b
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:13:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, MULTI_FROZEN)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestMultiIvars@0x1010, b@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestMultiIvars@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:Fixnum[20] = Const Value(20)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_string_value() {
+        // Frozen object with a string ivar
+        eval(r#"
+            class TestFrozenStr
+              attr_accessor :name
+              def initialize
+                @name = "hello"
+              end
+            end
+
+            FROZEN_STR = TestFrozenStr.new.freeze
+
+            def test = FROZEN_STR.name
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_STR)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestFrozenStr@0x1010, name@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestFrozenStr@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:StringExact[VALUE(0x1050)] = Const Value(VALUE(0x1050))
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_nil_value() {
+        // Frozen object with nil ivar
+        eval("
+            class TestFrozenNil
+              attr_accessor :value
+              def initialize
+                @value = nil
+              end
+            end
+
+            FROZEN_NIL = TestFrozenNil.new.freeze
+
+            def test = FROZEN_NIL.value
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_NIL)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestFrozenNil@0x1010, value@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestFrozenNil@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_load_field_unfrozen_object() {
+        // Non-frozen object should NOT be folded
+        eval("
+            class TestUnfrozen
+              attr_accessor :a
+              def initialize
+                @a = 1
+              end
+            end
+
+            UNFROZEN_OBJ = TestUnfrozen.new
+
+            def test = UNFROZEN_OBJ.a
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, UNFROZEN_OBJ)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestUnfrozen@0x1010, a@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestUnfrozen@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v26:BasicObject = LoadField v25, :@a@0x1049
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_with_attr_reader() {
+        // Using attr_reader instead of attr_accessor
+        eval("
+            class TestAttrReader
+              attr_reader :value
+              def initialize(v)
+                @value = v
+              end
+            end
+
+            FROZEN_READER = TestAttrReader.new(42).freeze
+
+            def test = FROZEN_READER.value
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_READER)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestAttrReader@0x1010, value@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestAttrReader@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:Fixnum[42] = Const Value(42)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_symbol_value() {
+        // Frozen object with a symbol ivar
+        eval("
+            class TestFrozenSym
+              attr_accessor :sym
+              def initialize
+                @sym = :hello
+              end
+            end
+
+            FROZEN_SYM = TestFrozenSym.new.freeze
+
+            def test = FROZEN_SYM.sym
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_SYM)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestFrozenSym@0x1010, sym@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestFrozenSym@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:StaticSymbol[:hello] = Const Value(VALUE(0x1050))
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_true_false() {
+        // Frozen object with boolean ivars
+        eval("
+            class TestFrozenBool
+              attr_accessor :flag
+              def initialize
+                @flag = true
+              end
+            end
+
+            FROZEN_TRUE = TestFrozenBool.new.freeze
+
+            def test = FROZEN_TRUE.flag
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, FROZEN_TRUE)
+          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestFrozenBool@0x1010, flag@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestFrozenBool@0x1010)
+          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
+          v27:TrueClass = Const Value(true)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_load_field_dynamic_receiver() {
+        // Dynamic receiver (not a constant) should NOT be folded even if object is frozen
+        eval("
+            class TestDynamic
+              attr_accessor :val
+              def initialize
+                @val = 99
+              end
+            end
+
+            def test(obj) = obj.val
+            o = TestDynamic.new.freeze
+            test o
+            test o
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :obj, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(TestDynamic@0x1000, val@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(TestDynamic@0x1000)
+          v21:HeapObject[class_exact:TestDynamic] = GuardType v9, HeapObject[class_exact:TestDynamic]
+          v24:HeapObject[class_exact:TestDynamic] = GuardShape v21, 0x1038
+          v25:BasicObject = LoadField v24, :@val@0x1039
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_load_field_frozen_nested_access() {
+        // Accessing multiple fields from frozen constant in sequence
+        eval("
+            class TestNestedAccess
+              attr_accessor :x, :y
+              def initialize
+                @x = 100
+                @y = 200
+              end
+            end
+
+            NESTED_FROZEN = TestNestedAccess.new.freeze
+
+            def test = NESTED_FROZEN.x + NESTED_FROZEN.y
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:12:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, NESTED_FROZEN)
+          v28:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
+          v39:HeapObject[VALUE(0x1008)] = GuardShape v28, 0x1048
+          v50:Fixnum[100] = Const Value(100)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
+          v34:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
+          PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
+          v42:HeapObject[VALUE(0x1008)] = GuardShape v34, 0x1048
+          v51:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Integer@0x1088, +@0x1090, cme:0x1098)
+          v52:Fixnum[300] = Const Value(300)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v52
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_load_field_with_primitive_return_type() {
+        eval(r#"
+            S = "abc".freeze
+            def test = S.bytesize
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, S)
+          v20:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, bytesize@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v24:CInt64 = LoadField v20, :len@0x1048
+          v25:Fixnum = BoxFixnum v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
 }
