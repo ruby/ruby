@@ -49,6 +49,19 @@ class TestZJIT < Test::Unit::TestCase
     assert_success(out, err, status)
     refute_includes(err, stats_header)
     assert_equal("true\n", out)
+
+    # With --zjit-stats=<path>, stats should be printed to the path
+    Tempfile.create("zjit-stats-") {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+      assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
+    }
   end
 
   def test_enable_through_env
