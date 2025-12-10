@@ -7606,6 +7606,7 @@ iseq.$(OBJEXT): {$(VPATH)}onigmo.h
 iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
 iseq.$(OBJEXT): {$(VPATH)}prism_compile.h
 iseq.$(OBJEXT): {$(VPATH)}ractor.h
+iseq.$(OBJEXT): {$(VPATH)}ractor_core.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_assert.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 iseq.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -19760,6 +19761,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_trace.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm_trace.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_trace.$(OBJEXT): {$(VPATH)}ractor.h
+vm_trace.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}rubyparser.h
