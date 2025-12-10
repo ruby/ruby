@@ -1661,7 +1661,7 @@ assert_equal 'true', %q{
 }
 
 # check experimental warning
-assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor API is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
   eval("Ractor.new{}.value", nil, "test_ractor.rb", 1)

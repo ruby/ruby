@@ -230,8 +230,8 @@ class Ractor
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
     if __builtin_cexpr!("RBOOL(ruby_single_main_ractor)")
-      Kernel.warn("Ractor is experimental, and the behavior may change in future versions of Ruby! " \
-           "Also there are many implementation issues.", uplevel: 0, category: :experimental)
+      Kernel.warn("Ractor API is experimental and may change in future versions of Ruby.",
+                  uplevel: 0, category: :experimental)
     end
     loc = caller_locations(1, 1).first
     loc = "#{loc.path}:#{loc.lineno}"
