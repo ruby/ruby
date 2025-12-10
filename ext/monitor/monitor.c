@@ -4,28 +4,35 @@
 
 struct rb_monitor {
     long count;
-    const VALUE owner;
-    const VALUE mutex;
+    VALUE owner;
+    VALUE mutex;
 };
 
 static void
 monitor_mark(void *ptr)
 {
     struct rb_monitor *mc = ptr;
-    rb_gc_mark(mc->owner);
-    rb_gc_mark(mc->mutex);
+    rb_gc_mark_movable(mc->owner);
+    rb_gc_mark_movable(mc->mutex);
 }
 
-static size_t
-monitor_memsize(const void *ptr)
+static void
+monitor_compact(void *ptr)
 {
-    return sizeof(struct rb_monitor);
+    struct rb_monitor *mc = ptr;
+    mc->owner = rb_gc_location(mc->owner);
+    mc->mutex = rb_gc_location(mc->mutex);
 }
 
 static const rb_data_type_t monitor_data_type = {
-    "monitor",
-    {monitor_mark, RUBY_TYPED_DEFAULT_FREE, monitor_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "monitor",
+    .function = {
+        .dmark = monitor_mark,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = NULL, // Fully embeded
+        .dcompact = monitor_compact,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
