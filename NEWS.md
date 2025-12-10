@@ -234,7 +234,7 @@ releases.
 
 The following default gem is added.
 
-* win32-registry 0.1.1
+* win32-registry 0.1.2
 
 The following default gems are updated.
 
