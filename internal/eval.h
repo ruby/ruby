@@ -11,6 +11,7 @@
  *             header (related to this file, but not the same role).
  */
 #include "ruby/ruby.h"          /* for ID */
+#include "vm_core.h"          /* for ID */
 
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
@@ -30,6 +31,7 @@ VALUE rb_exception_setup(int argc, VALUE *argv);
 void rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass);
 void rb_vm_using_module(VALUE module);
 VALUE rb_top_main_class(const char *method);
+VALUE rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2);
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);
