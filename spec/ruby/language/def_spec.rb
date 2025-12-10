@@ -97,7 +97,7 @@ describe "An instance method" do
         def foo; end
       end
     }.should raise_error(FrozenError) { |e|
-      msg_class = RUBY_VERSION >= "4" ? "Module" : "module"
+      msg_class = ruby_version_is("4.0") ? "Module" : "module"
       e.message.should == "can't modify frozen #{msg_class}: #{e.receiver}"
     }
 
@@ -107,7 +107,7 @@ describe "An instance method" do
         def foo; end
       end
     }.should raise_error(FrozenError){ |e|
-      msg_class = RUBY_VERSION >= "4" ? "Class" : "class"
+      msg_class = ruby_version_is("4.0") ? "Class" : "class"
       e.message.should == "can't modify frozen #{msg_class}: #{e.receiver}"
     }
   end
@@ -285,7 +285,7 @@ describe "A singleton method definition" do
   it "raises FrozenError with the correct class name" do
     obj = Object.new
     obj.freeze
-    msg_class = RUBY_VERSION >= "4" ? "Object" : "object"
+    msg_class = ruby_version_is("4.0") ? "Object" : "object"
     -> { def obj.foo; end }.should raise_error(FrozenError, "can't modify frozen #{msg_class}: #{obj}")
 
     obj = Object.new

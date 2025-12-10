@@ -26,7 +26,7 @@ describe "FrozenError#message" do
     object = Object.new
     object.freeze
 
-    msg_class = RUBY_VERSION >= "4" ? "Object" : "object"
+    msg_class = ruby_version_is("4.0") ? "Object" : "object"
 
     -> {
       def object.x; end
