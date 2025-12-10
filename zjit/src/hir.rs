@@ -3682,14 +3682,14 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) => {
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                            u32::try_from(offset).is_ok() => {
+                        let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr = recv_obj.as_ptr() as *const VALUE;
-                                // Rust pointer .add() scales by size_of::<T>() and offset is
-                                // already scaled by SIZEOF_VALUE, so undo that.
-                                let val = unsafe { *recv_ptr.add(offset as usize / SIZEOF_VALUE) };
+                                let val = unsafe { recv_ptr.byte_add(offset).read() };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
                             }
                             _ => insn_id,
