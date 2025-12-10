@@ -986,7 +986,7 @@ pub fn rb_bug_panic_hook() {
         // You may also use ZJIT_RB_BUG=1 to trigger this on dev builds.
         if release_build || env::var("ZJIT_RB_BUG").is_ok() {
             // Abort with rb_bug(). It has a length limit on the message.
-            let panic_message = &format!("{}", panic_info)[..];
+            let panic_message = &format!("{panic_info}")[..];
             let len = std::cmp::min(0x100, panic_message.len()) as c_int;
             unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
         } else {

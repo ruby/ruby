@@ -176,7 +176,7 @@ impl From<u32> for SpecialObjectType {
             VM_SPECIAL_OBJECT_VMCORE => SpecialObjectType::VMCore,
             VM_SPECIAL_OBJECT_CBASE => SpecialObjectType::CBase,
             VM_SPECIAL_OBJECT_CONST_BASE => SpecialObjectType::ConstBase,
-            _ => panic!("Invalid special object type: {}", value),
+            _ => panic!("Invalid special object type: {value}"),
         }
     }
 }
@@ -337,7 +337,7 @@ impl std::fmt::Display for RangeType {
 
 impl std::fmt::Debug for RangeType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
@@ -346,7 +346,7 @@ impl From<u32> for RangeType {
         match flag {
             0 => RangeType::Inclusive,
             1 => RangeType::Exclusive,
-            _ => panic!("Invalid range flag: {}", flag),
+            _ => panic!("Invalid range flag: {flag}"),
         }
     }
 }
@@ -369,7 +369,7 @@ impl TryFrom<u8> for SpecialBackrefSymbol {
             '`' => Ok(SpecialBackrefSymbol::PreMatch),
             '\'' => Ok(SpecialBackrefSymbol::PostMatch),
             '+' => Ok(SpecialBackrefSymbol::LastGroup),
-            c => Err(format!("invalid backref symbol: '{}'", c)),
+            c => Err(format!("invalid backref symbol: '{c}'")),
         }
     }
 }
@@ -574,7 +574,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnhandledNewarraySend(PACK)"),
             SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnhandledNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnhandledNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnhandledNewarraySend(INCLUDE_P)"),
-            SideExitReason::UnhandledDuparraySend(method_id) => write!(f, "UnhandledDuparraySend({})", method_id),
+            SideExitReason::UnhandledDuparraySend(method_id) => write!(f, "UnhandledDuparraySend({method_id})"),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
@@ -3533,10 +3533,10 @@ impl Function {
             // rb_zjit_singleton_class_p also checks if it's a class
             if unsafe { rb_zjit_singleton_class_p(class) } {
                 let class_name = get_class_name(unsafe { rb_class_attached_object(class) });
-                format!("{}.{}", class_name, method_name)
+                format!("{class_name}.{method_name}")
             } else {
                 let class_name = get_class_name(class);
-                format!("{}#{}", class_name, method_name)
+                format!("{class_name}#{method_name}")
             }
         }
 
@@ -4333,7 +4333,7 @@ impl Function {
             .insert("name", function_name)
             .insert("passes", passes)
             .build();
-        writeln!(file, "{}", json).unwrap();
+        writeln!(file, "{json}").unwrap();
     }
 
     /// Validates the following:
@@ -4461,7 +4461,7 @@ impl Function {
     fn assert_subtype(&self, user: InsnId, operand: InsnId, expected: Type) -> Result<(), ValidationError> {
         let actual = self.type_of(operand);
         if !actual.is_subtype(expected) {
-            return Err(ValidationError::MismatchedOperandType(user, operand, format!("{}", expected), format!("{}", actual)));
+            return Err(ValidationError::MismatchedOperandType(user, operand, format!("{expected}"), format!("{actual}")));
         }
         Ok(())
     }

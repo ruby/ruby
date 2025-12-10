@@ -354,7 +354,7 @@ impl fmt::LowerHex for CodeBlock {
         for pos in 0..self.write_pos {
             let mem_block = &*self.mem_block.borrow();
             let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
-            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+            fmtr.write_fmt(format_args!("{byte:02x}"))?;
         }
         Ok(())
     }
