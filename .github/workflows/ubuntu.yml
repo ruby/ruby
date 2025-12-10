@@ -202,6 +202,56 @@ jobs:
 
     steps: *make-steps
 
+  # Separated from `make` job to avoid making it a required status check
+  ruby-bench:
+    strategy:
+      matrix:
+        include:
+          # Using the same setup as ZJIT jobs
+          - bench_opts: '--warmup=1 --bench=1'
+
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --prefix="$(pwd)/install"
+
+      - run: make install
+
+      - name: Checkout ruby-bench
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: ruby/ruby-bench
+          path: ruby-bench
+
+      - name: Run ruby-bench
+        run: ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
+        working-directory: ruby-bench
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ruby-bench ${{ matrix.bench_opts }} ${{ matrix.ruby_opts }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
