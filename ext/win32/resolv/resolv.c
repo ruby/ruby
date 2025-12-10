@@ -21,7 +21,7 @@ w32error_make_error(DWORD e)
                        FORMAT_MESSAGE_IGNORE_INSERTS, &source, e,
                        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                        buffer, sizeof(buffer), NULL)) {
-        snprintf(buffer, sizeof(buffer), "Unknown Error %u", (unsigned long)e);
+        snprintf(buffer, sizeof(buffer), "Unknown Error %lu", (unsigned long)e);
     }
     p = buffer;
     while ((p = strpbrk(p, "\r\n")) != NULL) {
@@ -149,7 +149,6 @@ reg_each_key(VALUE self)
 {
     WCHAR wname[256];
     HKEY hkey = DATA_PTR(self);
-    rb_encoding *utf8 = rb_utf8_encoding();
     VALUE k = TypedData_Wrap_Struct(CLASS_OF(self), &hkey_type, NULL);
     DWORD i, e, n;
     for (i = 0; n = numberof(wname), (e = RegEnumKeyExW(hkey, i, wname, &n, NULL, NULL, NULL, NULL)) == ERROR_SUCCESS; i++) {
@@ -183,11 +182,20 @@ reg_value(VALUE self, VALUE name)
     e = RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type, NULL, &size);
     if (e == ERROR_FILE_NOT_FOUND) return Qnil;
     w32error_check(e);
+# define get_value_2nd(data, dsize) do { \
+        DWORD type2 = type; \
+        w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type2, data, dsize)); \
+        if (type != type2) { \
+            rb_raise(rb_eRuntimeError, "registry value type changed %lu -> %lu", \
+                     (unsigned long)type, (unsigned long)type2); \
+        } \
+    } while (0)
+
     switch (type) {
       case REG_DWORD: case REG_DWORD_BIG_ENDIAN:
         {
             DWORD d;
-            if (size != sizeof(d)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", size);
+            if (size != sizeof(d)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", (unsigned long)size);
             w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_REG_DWORD, &type, &d, &size));
             if (type == REG_DWORD_BIG_ENDIAN) d = swap_dw(d);
             return ULONG2NUM(d);
@@ -195,38 +203,37 @@ reg_value(VALUE self, VALUE name)
       case REG_QWORD:
         {
             QWORD q;
-            if (size != sizeof(q)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", size);
+            if (size != sizeof(q)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", (unsigned long)size);
             w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_REG_QWORD, &type, &q, &size));
             return ULL2NUM(q);
         }
       case REG_SZ: case REG_MULTI_SZ: case REG_EXPAND_SZ:
-        if (size % sizeof(WCHAR)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", size);
+        if (size % sizeof(WCHAR)) rb_raise(rb_eRuntimeError, "invalid size returned: %lu", (unsigned long)size);
         buffer = ALLOCV_N(char, value_buffer, size);
+        get_value_2nd(buffer, &size);
+        if (type == REG_MULTI_SZ) {
+            const WCHAR *w = (WCHAR *)buffer;
+            result = rb_ary_new();
+            size /= sizeof(WCHAR);
+            size -= 1;
+            for (size_t i = 0; i < size; ++i) {
+                int n = lstrlenW(w+i);
+                rb_ary_push(result, wchar_to_utf8(w+i, n));
+                i += n;
+            }
+        }
+        else {
+            result = wchar_to_utf8((WCHAR *)buffer, lstrlenW((WCHAR *)buffer));
+        }
+        ALLOCV_END(value_buffer);
         break;
       default:
         result = rb_str_new(0, size);
-        buffer = RSTRING_PTR(result);
+        get_value_2nd(RSTRING_PTR(result), &size);
+        rb_str_set_len(result, size);
+        break;
     }
-    w32error_check(RegGetValueW(hkey, NULL, wname, RRF_RT_ANY, &type, buffer, &size));
-    switch (type) {
-      case REG_MULTI_SZ: {
-        const WCHAR *w = (WCHAR *)buffer;
-        rb_encoding *utf8 = rb_utf8_encoding();
-        result = rb_ary_new();
-        size /= sizeof(WCHAR);
-        size -= 1;
-        for (size_t i = 0; i < size; ++i) {
-            int n = lstrlenW(w+i);
-            rb_ary_push(result, wchar_to_utf8(w+i, n));
-            i += n;
-        }
-        return result;
-      }
-      case REG_SZ: case REG_EXPAND_SZ:
-        return wchar_to_utf8((WCHAR *)buffer, lstrlenW((WCHAR *)buffer));
-      default:
-        return result;
-    }
+    return result;
 }
 
 void

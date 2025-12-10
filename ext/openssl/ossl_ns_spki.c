@@ -13,14 +13,14 @@
     TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, 0)
 #define SetSPKI(obj, spki) do { \
     if (!(spki)) { \
-	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
     RTYPEDDATA_DATA(obj) = (spki); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
     TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
     if (!(spki)) { \
-	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
 } while (0)
 
@@ -48,7 +48,7 @@ ossl_netscape_spki_free(void *spki)
 static const rb_data_type_t ossl_netscape_spki_type = {
     "OpenSSL/NETSCAPE_SPKI",
     {
-	0, ossl_netscape_spki_free,
+        0, ossl_netscape_spki_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -61,7 +61,7 @@ ossl_spki_alloc(VALUE klass)
 
     obj = NewSPKI(klass);
     if (!(spki = NETSCAPE_SPKI_new())) {
-	ossl_raise(eSPKIError, NULL);
+        ossl_raise(eSPKIError, NULL);
     }
     SetSPKI(obj, spki);
 
@@ -83,15 +83,15 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     const unsigned char *p;
 
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
-	return self;
+        return self;
     }
     StringValue(buffer);
     if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), RSTRING_LENINT(buffer)))) {
-	ossl_clear_error();
-	p = (unsigned char *)RSTRING_PTR(buffer);
-	if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
-	    ossl_raise(eSPKIError, NULL);
-	}
+        ossl_clear_error();
+        p = (unsigned char *)RSTRING_PTR(buffer);
+        if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
+            ossl_raise(eSPKIError, NULL);
+        }
     }
     NETSCAPE_SPKI_free(DATA_PTR(self));
     SetSPKI(self, spki);
@@ -140,7 +140,7 @@ ossl_spki_to_pem(VALUE self)
 
     GetSPKI(self, spki);
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
-	ossl_raise(eSPKIError, NULL);
+        ossl_raise(eSPKIError, NULL);
     }
     str = ossl_buf2str(data, rb_long2int(strlen(data)));
 
@@ -162,11 +162,11 @@ ossl_spki_print(VALUE self)
 
     GetSPKI(self, spki);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eSPKIError, NULL);
+        ossl_raise(eSPKIError, NULL);
     }
     if (!NETSCAPE_SPKI_print(out, spki)) {
-	BIO_free(out);
-	ossl_raise(eSPKIError, NULL);
+        BIO_free(out);
+        ossl_raise(eSPKIError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -187,7 +187,7 @@ ossl_spki_get_public_key(VALUE self)
 
     GetSPKI(self, spki);
     if (!(pkey = NETSCAPE_SPKI_get_pubkey(spki))) { /* adds an reference */
-	ossl_raise(eSPKIError, NULL);
+        ossl_raise(eSPKIError, NULL);
     }
 
     return ossl_pkey_wrap(pkey);
@@ -214,7 +214,7 @@ ossl_spki_set_public_key(VALUE self, VALUE key)
     pkey = GetPKeyPtr(key);
     ossl_pkey_check_public_key(pkey);
     if (!NETSCAPE_SPKI_set_pubkey(spki, pkey))
-	ossl_raise(eSPKIError, "NETSCAPE_SPKI_set_pubkey");
+        ossl_raise(eSPKIError, "NETSCAPE_SPKI_set_pubkey");
     return key;
 }
 
@@ -230,13 +230,12 @@ ossl_spki_get_challenge(VALUE self)
     NETSCAPE_SPKI *spki;
 
     GetSPKI(self, spki);
-    if (spki->spkac->challenge->length <= 0) {
-	OSSL_Debug("Challenge.length <= 0?");
-	return rb_str_new(0, 0);
+    if (ASN1_STRING_length(spki->spkac->challenge) <= 0) {
+        OSSL_Debug("Challenge.length <= 0?");
+        return rb_str_new(0, 0);
     }
 
-    return rb_str_new((const char *)spki->spkac->challenge->data,
-		      spki->spkac->challenge->length);
+    return asn1str_to_str(spki->spkac->challenge);
 }
 
 /*
@@ -257,8 +256,8 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
     StringValue(str);
     GetSPKI(self, spki);
     if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING_PTR(str),
-			 RSTRING_LENINT(str))) {
-	ossl_raise(eSPKIError, NULL);
+                         RSTRING_LENINT(str))) {
+        ossl_raise(eSPKIError, NULL);
     }
 
     return str;
@@ -315,12 +314,12 @@ ossl_spki_verify(VALUE self, VALUE key)
     ossl_pkey_check_public_key(pkey);
     switch (NETSCAPE_SPKI_verify(spki, pkey)) {
       case 0:
-	ossl_clear_error();
-	return Qfalse;
+        ossl_clear_error();
+        return Qfalse;
       case 1:
-	return Qtrue;
+        return Qtrue;
       default:
-	ossl_raise(eSPKIError, "NETSCAPE_SPKI_verify");
+        ossl_raise(eSPKIError, "NETSCAPE_SPKI_verify");
     }
 }
 
@@ -378,11 +377,6 @@ ossl_spki_verify(VALUE self, VALUE key)
 void
 Init_ossl_ns_spki(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     mNetscape = rb_define_module_under(mOSSL, "Netscape");
 
     eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);

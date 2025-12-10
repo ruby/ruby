@@ -39,6 +39,7 @@ struct rb_thread_sched_waiting {
 #else
         uint64_t timeout;
 #endif
+        uint32_t event_serial;
         int fd; // -1 for timeout only
         int result;
     } data;

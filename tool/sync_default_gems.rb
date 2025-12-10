@@ -194,6 +194,12 @@ module SyncDefaultGems
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
     },
+    pathname: repo("ruby/pathname", [
+      ["ext/pathname/pathname.c", "pathname.c"],
+      ["lib/pathname_builtin.rb", "pathname_builtin.rb"],
+      ["lib/pathname.rb", "lib/pathname.rb"],
+      ["test/pathname", "test/pathname"],
+    ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
     prism: repo(["ruby/prism", "main"], [
@@ -266,6 +272,7 @@ module SyncDefaultGems
       ["ext/stringio", "ext/stringio"],
       ["test/stringio", "test/stringio"],
       ["stringio.gemspec", "ext/stringio/stringio.gemspec"],
+      ["doc/stringio", "doc/stringio"],
     ], exclude: [
       "ext/stringio/README.md",
     ]),
@@ -420,7 +427,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi"].include?(gem)
+    return if ["rubygems", "mmtk", "cgi", "pathname"].include?(gem)
 
     require "net/https"
     require "json"

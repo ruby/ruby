@@ -1,6 +1,48 @@
 # ZJIT: ADVANCED RUBY JIT PROTOTYPE
 
+ZJIT is a method-based just-in-time (JIT) compiler for Ruby. It uses profile
+information from the interpreter to guide optimization in the compiler.
+
+ZJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
+This project is open source and falls under the same license as CRuby.
+
+## Current Limitations
+
+ZJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs. ZJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
+You can change how much executable memory is allocated using [ZJIT's command-line options](rdoc-ref:@Command-Line+Options).
+
 ## Build Instructions
+
+### For normal use
+
+To build ZJIT on macOS:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc \
+    --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+
+make -j miniruby
+```
+
+To build ZJIT on Linux:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc
+
+make -j miniruby
+```
+
+### For development
 
 To build ZJIT on macOS:
 
@@ -16,12 +58,80 @@ To build ZJIT on macOS:
 make -j miniruby
 ```
 
+To build ZJIT on Linux:
+
+```bash
+./autogen.sh
+
+./configure \
+    --enable-zjit=dev \
+    --prefix="$HOME"/.rubies/ruby-zjit \
+    --disable-install-doc
+
+make -j miniruby
+```
+
+Note that `--enable-zjit=dev` does a lot of IR validation, which will help to catch errors early but mean compilation and warmup are significantly slower.
+
+The valid values for `--enable-zjit` are, from fastest to slowest:
+* `--enable-zjit`: enable ZJIT in release mode for maximum performance
+* `--enable-zjit=stats`: enable ZJIT in extended-stats mode
+* `--enable-zjit=dev_nodebug`: enable ZJIT in development mode but without slow runtime checks
+* `--enable-zjit=dev`: enable ZJIT in debug mode for development, also enables `RUBY_DEBUG`
+
+### Regenerate bindings
+
+When modifying `zjit/bindgen/src/main.rs` you need to regenerate bindings in `zjit/src/cruby_bindings.inc.rs` with:
+
+```bash
+make zjit-bindgen
+```
+
 ## Documentation
+
+### Command-Line Options
+
+See `ruby --help` for ZJIT-specific command-line options:
+
+```
+$ ruby --help
+...
+ZJIT options:
+  --zjit-mem-size=num
+                  Max amount of memory that ZJIT can use in MiB (default: 128).
+  --zjit-call-threshold=num
+                  Number of calls to trigger JIT (default: 30).
+  --zjit-num-profiles=num
+                  Number of profiled calls before JIT (default: 5).
+  --zjit-stats[=quiet]
+                  Enable collecting ZJIT statistics (=quiet to suppress output).
+  --zjit-disable  Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable.
+  --zjit-perf     Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf.
+  --zjit-log-compiled-iseqs=path
+                  Log compiled ISEQs to the file. The file will be truncated.
+  --zjit-trace-exits[=counter]
+                  Record source on side-exit. `Counter` picks specific counter.
+  --zjit-trace-exits-sample-rate=num
+                  Frequency at which to record side exits. Must be `usize`.
+$
+```
+
+### Source level documentation
 
 You can generate and open the source level documentation in your browser using:
 
 ```bash
 cargo doc --document-private-items -p zjit --open
+```
+
+### Graph of the Type System
+
+You can generate a graph of the ZJIT type hierarchy using:
+
+```bash
+ruby zjit/src/hir_type/gen_hir_type.rb > zjit/src/hir_type/hir_type.inc.rs
+dot -O -Tpdf zjit_types.dot
+open zjit_types.dot.pdf
 ```
 
 ## Testing
@@ -139,14 +249,8 @@ end
 
 ### Performance Ratio
 
-The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter. This metric only appears when ZJIT is built with `--enable-zjit=stats` (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
-
-To build with stats support:
-
-```bash
-./configure --enable-zjit=stats
-make -j
-```
+The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter.
+This metric only appears when ZJIT is built with `--enable-zjit=stats` [or more](#build-instructions) (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
 
 ### Tracing side exits
 
@@ -166,7 +270,7 @@ stackprof path/to/zjit_exits_{pid}.dump
 
 Using `--zjit-dump-hir-iongraph` will dump all compiled functions into a directory named `/tmp/zjit-iongraph-{PROCESS_PID}`. Each file will be named `func_{ZJIT_FUNC_NAME}.json`. In order to use them in the Iongraph viewer, you'll need to use `jq` to collate them to a single file. An example invocation of `jq` is shown below for reference.
 
-`jq --slurp --null-input '.functions=inputs | .version=2' /tmp/zjit-iongraph-{PROCESS_PID}/func*.json > ~/Downloads/ion.json`
+`jq --slurp --null-input '.functions=inputs | .version=1' /tmp/zjit-iongraph-{PROCESS_PID}/func*.json > ~/Downloads/ion.json`
 
 From there, you can use https://mozilla-spidermonkey.github.io/iongraph/ to view your trace.
 

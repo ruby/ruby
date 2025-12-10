@@ -27,16 +27,6 @@
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
-#if SIZEOF_VALUE <= SIZEOF_LONG
-# define SVALUE2NUM(x) LONG2NUM((long)(x))
-# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LONG(x)
-#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
-# define SVALUE2NUM(x) LL2NUM((LONG_LONG)(x))
-# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LL(x)
-#else
-# error Need integer for VALUE
-#endif
-
 enum {
     loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
                        1) /* offset by rb_find_file_ext() */
@@ -1203,11 +1193,15 @@ load_ext(VALUE path, VALUE fname)
 {
     VALUE loaded = path;
     const rb_box_t *box = rb_loading_box();
+    VALUE cleanup = 0;
     if (BOX_USER_P(box)) {
-        loaded = rb_box_local_extension(box->box_object, fname, path);
+        loaded = rb_box_local_extension(box->box_object, fname, path, &cleanup);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
+    if (cleanup) {
+        rb_box_cleanup_local_extension(cleanup);
+    }
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);
     return (VALUE)handle;
@@ -1234,7 +1228,7 @@ no_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
     return 0;
 }
 
-// Documented in doc/globals.md
+// Documented in doc/language/globals.md
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
@@ -1344,23 +1338,14 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    // iseq_eval_in_box will be called with the loading box eventually
-                    if (BOX_OPTIONAL_P(box)) {
-                        // check with BOX_OPTIONAL_P (not BOX_USER_P) for NS1::xxx naming
-                        // it is not expected for the main box
-                        // TODO: no need to use load_wrapping() here?
-                        load_wrapping(saved.ec, path, box->box_object);
-                    }
-                    else {
-                        load_iseq_eval(saved.ec, path);
-                    }
+                    load_iseq_eval(saved.ec, path);
                     break;
 
                   case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
                     handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
-                    rb_hash_aset(box->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
+                    rb_hash_aset(box->ruby_dln_libmap, path, PTR2NUM(handle));
                     break;
                 }
                 result = TAG_RETURN;
@@ -1681,7 +1666,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     if (NIL_P(handle)) {
         return NULL;
     }
-    return dln_symbol((void *)NUM2SVALUE(handle), symbol);
+    return dln_symbol(NUM2PTR(handle), symbol);
 }
 
 void

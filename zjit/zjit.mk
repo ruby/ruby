@@ -24,8 +24,8 @@ ZJIT_LIB_TOUCH = touch $@
 # the "target" dir in the source directory through VPATH.
 BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
 
-# ZJIT_SUPPORT=yes when `configure` gets `--enable-zjit`
-ifeq ($(ZJIT_SUPPORT),yes)
+# In a ZJIT-only build (no YJIT)
+ifneq ($(strip $(ZJIT_LIBS)),)
 $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
 	+$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)

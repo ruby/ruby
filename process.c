@@ -2957,7 +2957,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The new process is created using the
  *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
@@ -4011,7 +4011,10 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-#ifdef HAVE_WORKING_VFORK
+
+        // Older versions of ASAN does not work with vfork
+        // See https://github.com/google/sanitizers/issues/925
+#if defined(HAVE_WORKING_VFORK) && !defined(RUBY_ASAN_ENABLED)
         if (!has_privilege())
             pid = vfork();
         else
@@ -4639,7 +4642,7 @@ rb_spawn(int argc, const VALUE *argv)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns:
  *
@@ -4819,7 +4822,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns the process ID (pid) of the new process,
  *  without waiting for it to complete.

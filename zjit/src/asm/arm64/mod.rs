@@ -649,7 +649,7 @@ pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
 
             ShiftImm::lsl(rd.reg_no, rn.reg_no, uimm as u8, rd.num_bits).into()
         },
-        _ => panic!("Invalid operands combination to lsl instruction")
+        _ => panic!("Invalid operands combination {rd:?} {rn:?} {shift:?} to lsl instruction")
     };
 
     cb.write_bytes(&bytes);

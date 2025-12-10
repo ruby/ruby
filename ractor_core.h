@@ -9,6 +9,9 @@
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
+// experimental flag because it is not sure it is the common pattern
+#define RUBY_TYPED_FROZEN_SHAREABLE_NO_REC RUBY_FL_FINALIZE
+
 struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;
@@ -87,6 +90,8 @@ struct rb_ractor_struct {
     struct ccan_list_node vmlr_node;
 
     // ractor local data
+
+    rb_serial_t next_fiber_serial;
 
     st_table *local_storage;
     struct rb_id_table *idkey_local_storage;

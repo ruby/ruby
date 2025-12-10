@@ -747,7 +747,7 @@ strio_copy(VALUE copy, VALUE orig)
  *   lineno -> current_line_number
  *
  * Returns the current line number in +self+;
- * see {Line Number}[rdoc-ref:IO@Line+Number].
+ * see {Line Number}[rdoc-ref:StringIO@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -760,7 +760,7 @@ strio_get_lineno(VALUE self)
  *   lineno = new_line_number -> new_line_number
  *
  * Sets the current line number in +self+ to the given +new_line_number+;
- * see {Line Number}[rdoc-ref:IO@Line+Number].
+ * see {Line Number}[rdoc-ref:StringIO@Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -774,7 +774,7 @@ strio_set_lineno(VALUE self, VALUE lineno)
  *   binmode -> self
  *
  * Sets the data mode in +self+ to binary mode;
- * see {Data Mode}[rdoc-ref:File@Data+Mode].
+ * see {Data Mode}[rdoc-ref:StringIO@Data+Mode].
  *
  */
 static VALUE
@@ -835,7 +835,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  *   pos -> stream_position
  *
  * Returns the current position (in bytes);
- * see {Position}[rdoc-ref:IO@Position].
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_get_pos(VALUE self)
@@ -848,7 +848,7 @@ strio_get_pos(VALUE self)
  *   pos = new_position -> new_position
  *
  * Sets the current position (in bytes);
- * see {Position}[rdoc-ref:IO@Position].
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -1888,7 +1888,7 @@ strio_truncate(VALUE self, VALUE len)
  *   external_encoding -> encoding or nil
  *
  * Returns an Encoding object that represents the encoding of the string;
- * see {Encoding}[rdoc-ref:Encoding]:
+ * see {Encodings}[rdoc-ref:StringIO@Encodings]:
  *
  *   strio = StringIO.new('foo')
  *   strio.external_encoding # => #<Encoding:UTF-8>

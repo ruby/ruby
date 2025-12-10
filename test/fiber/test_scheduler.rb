@@ -226,4 +226,61 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.join
     assert_kind_of RuntimeError, error
   end
+
+  def test_post_fork_scheduler_reset
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    forked_scheduler_state = nil
+    thread = Thread.new do
+      r, w = IO.pipe
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      forked_pid = fork do
+        r.close
+        w << (Fiber.scheduler ? 'set' : 'reset')
+        w.close
+      end
+      w.close
+      forked_scheduler_state = r.read
+      Process.wait(forked_pid)
+    ensure
+      r.close rescue nil
+      w.close rescue nil
+    end
+    thread.join
+    assert_equal 'reset', forked_scheduler_state
+  ensure
+    thread.kill rescue nil
+  end
+
+  def test_post_fork_fiber_blocking
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    fiber_blocking_state = nil
+    thread = Thread.new do
+      r, w = IO.pipe
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      forked_pid = nil
+      Fiber.schedule do
+        forked_pid = fork do
+          r.close
+          w << (Fiber.current.blocking? ? 'blocking' : 'nonblocking')
+          w.close
+        end
+      end
+      w.close
+      fiber_blocking_state = r.read
+      Process.wait(forked_pid)
+    ensure
+      r.close rescue nil
+      w.close rescue nil
+    end
+    thread.join
+    assert_equal 'blocking', fiber_blocking_state
+  ensure
+    thread.kill rescue nil
+  end
 end

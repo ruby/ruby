@@ -73,14 +73,14 @@ static inline SIMD_Implementation find_simd_implementation(void)
 #define HAVE_SIMD_NEON 1
 
 // See: https://community.arm.com/arm-community-blogs/b/servers-and-cloud-computing-blog/posts/porting-x86-vector-bitmask-optimizations-to-arm-neon
-static ALWAYS_INLINE() uint64_t neon_match_mask(uint8x16_t matches)
+ALWAYS_INLINE(static) uint64_t neon_match_mask(uint8x16_t matches)
 {
     const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches), 4);
     const uint64_t mask = vget_lane_u64(vreinterpret_u64_u8(res), 0);
     return mask & 0x8888888888888888ull;
 }
 
-static ALWAYS_INLINE() uint64_t compute_chunk_mask_neon(const char *ptr)
+ALWAYS_INLINE(static) uint64_t compute_chunk_mask_neon(const char *ptr)
 {
     uint8x16_t chunk = vld1q_u8((const unsigned char *)ptr);
 
@@ -93,7 +93,7 @@ static ALWAYS_INLINE() uint64_t compute_chunk_mask_neon(const char *ptr)
     return neon_match_mask(needs_escape);
 }
 
-static ALWAYS_INLINE() int string_scan_simd_neon(const char **ptr, const char *end, uint64_t *mask)
+ALWAYS_INLINE(static) int string_scan_simd_neon(const char **ptr, const char *end, uint64_t *mask)
 {
     while (*ptr + sizeof(uint8x16_t) <= end) {
         uint64_t chunk_mask = compute_chunk_mask_neon(*ptr);
@@ -140,7 +140,7 @@ static inline uint8x16x4_t load_uint8x16_4(const unsigned char *table)
 #define _mm_cmpgt_epu8(a, b) _mm_xor_si128(_mm_cmple_epu8(a, b), _mm_set1_epi8(-1))
 #define _mm_cmplt_epu8(a, b) _mm_cmpgt_epu8(b, a)
 
-static TARGET_SSE2 ALWAYS_INLINE() int compute_chunk_mask_sse2(const char *ptr)
+ALWAYS_INLINE(static) TARGET_SSE2 int compute_chunk_mask_sse2(const char *ptr)
 {
     __m128i chunk         = _mm_loadu_si128((__m128i const*)ptr);
     // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
@@ -151,7 +151,7 @@ static TARGET_SSE2 ALWAYS_INLINE() int compute_chunk_mask_sse2(const char *ptr)
     return _mm_movemask_epi8(needs_escape);
 }
 
-static TARGET_SSE2 ALWAYS_INLINE() int string_scan_simd_sse2(const char **ptr, const char *end, int *mask)
+ALWAYS_INLINE(static) TARGET_SSE2 int string_scan_simd_sse2(const char **ptr, const char *end, int *mask)
 {
     while (*ptr + sizeof(__m128i) <= end) {
         int chunk_mask = compute_chunk_mask_sse2(*ptr);

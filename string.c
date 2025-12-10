@@ -549,7 +549,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!rb_obj_exivar_p(str));
+    RUBY_ASSERT(!rb_shape_obj_has_ivars(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));
 
@@ -2618,7 +2618,7 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Returns the result of formatting +object+ into the format specifications
  *  contained in +self+
- *  (see {Format Specifications}[rdoc-ref:format_specifications.rdoc]):
+ *  (see {Format Specifications}[rdoc-ref:language/format_specifications.rdoc]):
  *
  *    '%05d' % 123 # => "00123"
  *
@@ -3979,7 +3979,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
 
   clear_cr:
     // If no fast path was hit, we clear the coderange.
-    // append_as_bytes is predominently meant to be used in
+    // append_as_bytes is predominantly meant to be used in
     // buffering situation, hence it's likely the coderange
     // will never be scanned, so it's not worth spending time
     // precomputing the coderange except for simple and common
@@ -7966,7 +7966,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(mapping) -> string
+ *    upcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/upcase.rdoc
  */
@@ -8052,7 +8052,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(mapping) -> string
+ *    downcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/downcase.rdoc
  *
@@ -8118,29 +8118,10 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(mapping = :ascii) -> string
+ *    capitalize(mapping = :ascii) -> new_string
  *
- *  Returns a string containing the characters in +self+,
- *  each with possibly changed case:
+ *  :include: doc/string/capitalize.rdoc
  *
- *  - The first character is upcased.
- *  - All other characters are downcased.
- *
- *  Examples:
- *
- *    'hello world'.capitalize # => "Hello world"
- *    'HELLO WORLD'.capitalize # => "Hello world"
- *
- *  Some characters do not have upcase and downcase, and so are not changed;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
- *
- *    '1, 2, 3, ...'.capitalize # => "1, 2, 3, ..."
- *
- *  The casing is affected by the given +mapping+,
- *  which may be +:ascii+, +:fold+, or +:turkic+;
- *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
- *
- *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -8197,7 +8178,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping) -> new_string
+ *    swapcase(mapping = :ascii) -> new_string
  *
  *  :include: doc/string/swapcase.rdoc
  *
@@ -11376,6 +11357,21 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 }
 
 static void
+nil_setter_warning(ID id)
+{
+    rb_warn_deprecated("non-nil '%"PRIsVALUE"'", NULL, rb_id2str(id));
+}
+
+void
+rb_deprecated_str_setter(VALUE val, ID id, VALUE *var)
+{
+    rb_str_setter(val, id, var);
+    if (!NIL_P(*var)) {
+        nil_setter_warning(id);
+    }
+}
+
+static void
 rb_fs_setter(VALUE val, ID id, VALUE *var)
 {
     val = rb_fs_check(val);
@@ -11385,7 +11381,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
                  rb_id2str(id));
     }
     if (!NIL_P(val)) {
-        rb_warn_deprecated("'$;'", NULL);
+        nil_setter_warning(id);
     }
     *var = val;
 }
@@ -12580,9 +12576,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 void
-rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint)
 {
     if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
         ssize_t code = RB_NUM2SSIZE(codepoint);

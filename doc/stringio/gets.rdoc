@@ -19,10 +19,10 @@ With no arguments given, reads a line using the default record separator
   strio.eof? # => true
   strio.gets # => nil
 
-  strio = StringIO.new('тест')  # Four 2-byte characters.
+  strio = StringIO.new('Привет')  # Six 2-byte characters
   strio.pos  # => 0
-  strio.gets # => "тест"
-  strio.pos  # => 8
+  strio.gets # => "Привет"
+  strio.pos  # => 12
 
 <b>Argument +sep+</b>
 
@@ -67,11 +67,11 @@ but in other cases the position may be anywhere:
 
 The position need not be at a character boundary:
 
-  strio = StringIO.new('тест')  # Four 2-byte characters.
-  strio.pos = 2                 # At beginning of second character.
-  strio.gets # => "ест"
-  strio.pos = 3                 # In middle of second character.
-  strio.gets # => "\xB5ст"
+  strio = StringIO.new('Привет') # Six 2-byte characters.
+  strio.pos = 2                  # At beginning of second character.
+  strio.gets # => "ривет"
+  strio.pos = 3                  # In middle of second character.
+  strio.gets # => "\x80ивет"
 
 <b>Special Record Separators</b>
 
@@ -95,4 +95,5 @@ removes the trailing newline (if any) from the returned line:
   strio.gets              # => "First line\n"
   strio.gets(chomp: true) # => "Second line"
 
-Related: StringIO.each_line.
+Related: #each_line, #readlines,
+{Kernel#puts}[rdoc-ref:Kernel#puts].

@@ -486,12 +486,23 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(p1, p2)
 
     obj = Object.new
+    assert_raise_with_message(TypeError, /#to_path or #to_str/) { Pathname.new(obj) }
+
+    obj = Object.new
+    def obj.to_path; "a/path"; end
+    assert_equal("a/path", Pathname.new(obj).to_s)
+
+    obj = Object.new
     def obj.to_str; "a/b"; end
     assert_equal("a/b", Pathname.new(obj).to_s)
   end
 
   def test_initialize_nul
     assert_raise(ArgumentError) { Pathname.new("a\0") }
+  end
+
+  def test_initialize_encoding
+    assert_raise(Encoding::CompatibilityError) { Pathname.new("a".encode(Encoding::UTF_32BE)) }
   end
 
   def test_global_constructor

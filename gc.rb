@@ -37,7 +37,7 @@ module GC
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore sweeping may not be completed before the return.
   #
-  # Note that these keword arguments are implementation- and version-dependent,
+  # Note that these keyword arguments are implementation- and version-dependent,
   # are not guaranteed to be future-compatible,
   # and may be ignored in some implementations.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
@@ -195,7 +195,6 @@ module GC
   # - +:heap_allocated_pages+:
   #   The total number of allocated pages.
   # - +:heap_empty_pages+:
-  # - +:heap_allocated_pages+:
   #   The number of pages with no live objects, and that could be released to the system.
   # - +:heap_sorted_length+:
   #   The number of pages that can fit into the buffer that holds references to  all pages.

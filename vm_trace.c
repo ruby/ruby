@@ -127,9 +127,15 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         rb_clear_bf_ccs();
     }
 
-    ruby_vm_event_flags = new_events;
-    ruby_vm_event_enabled_global_flags |= new_events;
-    rb_objspace_set_event_hook(new_events);
+    // FIXME: Which flags are enabled globally comes from multiple lists, one
+    // per-ractor and a global list.
+    // This incorrectly assumes the lists have mutually exclusive flags set.
+    // This is true for the global (objspace) events, but not for ex. multiple
+    // Ractors listening for the same iseq events.
+    rb_event_flag_t new_events_global = (ruby_vm_event_flags & ~prev_events) | new_events;
+    ruby_vm_event_flags = new_events_global;
+    ruby_vm_event_enabled_global_flags |= new_events_global;
+    rb_objspace_set_event_hook(new_events_global);
 
     // Invalidate JIT code as needed
     if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
@@ -188,7 +194,17 @@ hook_list_connect(VALUE list_owner, rb_hook_list_t *list, rb_event_hook_t *hook,
 static void
 connect_event_hook(const rb_execution_context_t *ec, rb_event_hook_t *hook)
 {
-    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
+    rb_hook_list_t *list;
+
+    /* internal events are VM-global, non-internal are ractor-local */
+    VM_ASSERT(!(hook->events & RUBY_INTERNAL_EVENT_OBJSPACE_MASK) || !(hook->events & ~RUBY_INTERNAL_EVENT_OBJSPACE_MASK));
+
+    if (hook->events & RUBY_INTERNAL_EVENT_OBJSPACE_MASK) {
+        list = rb_vm_global_hooks(ec);
+    }
+    else {
+        list = rb_ec_ractor_hooks(ec);
+    }
     hook_list_connect(Qundef, list, hook, TRUE);
 }
 
@@ -272,11 +288,9 @@ clean_hooks_check(rb_hook_list_t *list)
 
 #define MATCH_ANY_FILTER_TH ((rb_thread_t *)1)
 
-/* if func is 0, then clear all funcs */
 static int
-remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
+remove_event_hook_from_list(rb_hook_list_t *list, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
 {
-    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
     int ret = 0;
     rb_event_hook_t *hook = list->hooks;
 
@@ -294,6 +308,18 @@ remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th
     }
 
     clean_hooks_check(list);
+    return ret;
+}
+
+/* if func is 0, then clear all funcs */
+static int
+remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
+{
+    int ret = 0;
+
+    ret += remove_event_hook_from_list(rb_ec_ractor_hooks(ec), filter_th, func, data);
+    ret += remove_event_hook_from_list(rb_vm_global_hooks(ec), filter_th, func, data);
+
     return ret;
 }
 
@@ -421,8 +447,10 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;
 
-    if (UNLIKELY(trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
-        if (ec->trace_arg && (ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
+    if (UNLIKELY(trace_arg->event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK)) {
+        VM_ASSERT(hooks == rb_vm_global_hooks(ec));
+
+        if (ec->trace_arg && (ec->trace_arg->event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK)) {
             /* skip hooks because this thread doing INTERNAL_EVENT */
         }
         else {
@@ -430,7 +458,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 
             ec->trace_arg = trace_arg;
             /* only global hooks */
-            exec_hooks_unprotected(ec, rb_ec_ractor_hooks(ec), trace_arg);
+            exec_hooks_unprotected(ec, hooks, trace_arg);
             ec->trace_arg = prev_trace_arg;
         }
     }

@@ -296,6 +296,8 @@ AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
+FIRSTMAKEFILE=""
+
 # nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
 # In case we're working with llvm-nm, tell it to not worry about the bitcode.
 AS_IF([${NM} --help 2>&1 | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
@@ -470,6 +472,8 @@ AS_CASE(["$target_os"],
     # so wrap clang to insert our fake wasm-opt, which does nothing, in PATH.
     CC_WRAPPER=`cd -P "${tooldir}" && pwd`/wasm-clangw
     CC="$CC_WRAPPER $CC"
+
+    FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
   ])
 
 cc_version=
@@ -511,6 +515,8 @@ AS_CASE(["$target_os"],
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
     AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
     AS_CASE(["$target_alias"], [-*], [ target_alias="$target_cpu${target_alias}"])
+    # cygwin/GNUmakefile.in is not exclusively for cygwin.
+    FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
     AS_CASE(["$target_os"],
     [mingw*], [
 	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt
@@ -613,6 +619,22 @@ AS_IF([test -f conf$$.dir/src/cdcmd], [
 rm -fr conf$$.dir
 AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
+
+AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
+    AC_MSG_CHECKING([if ${MAKE-make} is GNU make])
+    mkdir conftest.dir
+    echo "all:; @echo yes" > conftest.dir/GNUmakefile
+    echo "all:; @echo no" > conftest.dir/Makefile
+    gnumake=`(cd conftest.dir; ${MAKE-make})`
+    rm -fr conftest.dir
+    AS_CASE(["$gnumake"],
+    [*yes*], [
+	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
+	gnumake=yes],
+    [
+	gnumake=no])
+    AC_MSG_RESULT($gnumake)
+])
 }
 
 [begin]_group "compiler section" && {
@@ -1746,18 +1768,26 @@ AS_IF([test "$GCC" = yes], [
 		    [rb_cv_gcc_atomic_builtins=no])])
     AS_IF([test "$rb_cv_gcc_atomic_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
-	AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
-	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
-			uint64_t atomic_var;]],
-			[[
-			    __atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
-			    __atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
-			]])],
-			[rb_cv_gcc_atomic_builtins_64=yes],
-			[rb_cv_gcc_atomic_builtins_64=no])])
-	AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
-	    AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
-	])
+	for lib in "" atomic; do
+	    AS_IF([test "$lib" != ""], [
+		AC_CHECK_LIB([atomic], [__atomic_fetch_add_8])
+		unset rb_cv_gcc_atomic_builtins_64
+	    ])
+	    AC_CACHE_CHECK([for 64bit __atomic builtins${lib:+ with -l$lib}],
+		[rb_cv_gcc_atomic_builtins_64], [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
+			    uint64_t atomic_var;]],
+			    [[
+				__atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
+				__atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
+			    ]])],
+			    [rb_cv_gcc_atomic_builtins_64=yes],
+			    [rb_cv_gcc_atomic_builtins_64=no])])
+	    AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
+		AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
+		break
+	    ])
+	done
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
@@ -3504,7 +3534,6 @@ AC_SUBST(RUNRUBY)
 AC_SUBST(XRUBY)
 AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
 
-FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
@@ -3867,12 +3896,13 @@ AC_SUBST(INSTALL_STATIC_LIBRARY)
 
 [begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
+AC_CHECK_TOOL(CARGO, [cargo], [no])
 
-dnl check if rustc is recent enough to build YJIT/ZJIT (rustc >= 1.58.0)
+dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 JIT_RUSTC_OK=no
+JIT_TARGET_ARCH=
 AS_IF([test "$RUSTC" != "no"],
-    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT/ZJIT])
-    JIT_TARGET_ARCH=
+    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT])
     AS_CASE(["$target_cpu"],
         [arm64|aarch64], [JIT_TARGET_ARCH=aarch64],
         [x86_64], [JIT_TARGET_ARCH=x86_64],
@@ -3906,33 +3936,47 @@ AS_IF([test "$cross_compiling" = no],
     )
 )
 
-dnl build ZJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
-AC_ARG_ENABLE(zjit,
-    AS_HELP_STRING([--enable-zjit],
-    [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
-    [ZJIT_SUPPORT=$enableval],
-    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$YJIT_SUPPORT"],
-        [yes:yes:no], [
-            ZJIT_SUPPORT=yes
-        ],
-        [ZJIT_SUPPORT=no]
-    )]
-)
-
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$ZJIT_SUPPORT"],
-        [yes:yes:no], [
+    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK"],
+        [yes:yes], [
             YJIT_SUPPORT=yes
         ],
         [YJIT_SUPPORT=no]
     )]
 )
 
-CARGO=
+dnl build ZJIT in release mode if rustc >= 1.85.0 is present and we are on a supported platform
+ZJIT_SUPPORT=no
+AC_ARG_ENABLE(zjit,
+    AS_HELP_STRING([--enable-zjit],
+    [enable experimental JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.85.0+ is available]),
+    [ZJIT_SUPPORT=$enableval],
+    [AS_CASE(["$JIT_TARGET_OK"],
+        [yes], [
+            rb_zjit_build_possible=no
+            AC_MSG_CHECKING([possible to build ZJIT])dnl only checked when --enable-zjit is not specified
+            # Fails in case rustc target doesn't match ruby target. Can happen on Rosetta, for example.
+            # 1.85.0 is the first stable version that supports the 2024 edition.
+            AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
+                    $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
+                AS_IF([test "$gnumake" = "yes" -a  \( "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no" \)], [
+                    # When only building ZJIT, we don't need cargo; it's required for YJIT+ZJIT build.
+                    # Assume that if rustc is new enough, then cargo is also.
+                    # TODO(alan): Get rid of dependency on cargo in YJIT+ZJIT build. Cargo's offline mode
+                    #             still too unreliable: https://github.com/rust-lang/cargo/issues/10352
+                    rb_zjit_build_possible=yes
+                ])
+            )
+            AC_MSG_RESULT($rb_zjit_build_possible)
+            ZJIT_SUPPORT=$rb_zjit_build_possible
+        ]
+    )]
+)
+
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
@@ -4011,9 +4055,8 @@ AS_CASE(["${ZJIT_SUPPORT}"],
 
 # if YJIT+ZJIT release build, or any build that requires Cargo
 AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
-    AC_CHECK_TOOL(CARGO, [cargo], [no])
     AS_IF([test x"$CARGO" = "xno"],
-        AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install]))
+        AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
 
     YJIT_LIBS=
     ZJIT_LIBS=
@@ -4179,7 +4222,6 @@ enum {
 	    PLATFORM_DIR=win32
 	    ])
 	LIBRUBY_ALIASES=''
-	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	AS_IF([test x"$enable_shared" = xyes], [
 	    LIBRUBY='lib$(RUBY_SO_NAME).dll.a'
 	], [
@@ -4189,7 +4231,6 @@ enum {
 	])
 	],
     [wasi*], [
-        FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
         AC_LIBOBJ([wasm/missing])
         AC_LIBOBJ([wasm/runtime])
         AC_LIBOBJ([wasm/fiber])
@@ -4206,21 +4247,6 @@ AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
        [AC_SUBST(ENABLE_DEBUG_ENV, yes)])
 
-AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
-    AC_MSG_CHECKING([if ${MAKE-make} is GNU make])
-    mkdir conftest.dir
-    echo "all:; @echo yes" > conftest.dir/GNUmakefile
-    echo "all:; @echo no" > conftest.dir/Makefile
-    gnumake=`(cd conftest.dir; ${MAKE-make})`
-    rm -fr conftest.dir
-    AS_CASE(["$gnumake"],
-    [*yes*], [
-	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
-	gnumake=yes],
-    [
-	gnumake=no])
-    AC_MSG_RESULT($gnumake)
-])
 AS_IF([test "$gnumake" = yes], [ NULLCMD=: ], [
     AC_MSG_CHECKING([for safe null command for ${MAKE-make}])
     mkdir conftest.dir
@@ -4744,6 +4770,11 @@ AC_ARG_WITH(destdir,
 	    AS_HELP_STRING([--with-destdir=DESTDIR], [specify default directory to install]),
 	    [DESTDIR="$withval"])
 AC_SUBST(DESTDIR)
+
+AS_IF([test "x$load_relative:$DESTDIR" = xyes:], [
+    AS_IF([test "x$prefix" = xNONE], [DESTDIR="$ac_default_prefix"], [DESTDIR="$prefix"])
+    prefix=/.
+])
 
 AC_OUTPUT
 }

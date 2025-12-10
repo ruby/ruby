@@ -127,6 +127,54 @@ VALUE rb_int_bit_length(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
 
+// Unified 128-bit integer structures that work with or without native support:
+union rb_uint128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    uint128_t value;
+#endif
+};
+typedef union rb_uint128 rb_uint128_t;
+
+union rb_int128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    int128_t value;
+#endif
+};
+typedef union rb_int128 rb_int128_t;
+
+union uint128_int128_conversion {
+    rb_uint128_t uint128;
+    rb_int128_t int128;
+};
+
+// Conversion functions for 128-bit integers:
+rb_uint128_t rb_numeric_to_uint128(VALUE x);
+rb_int128_t rb_numeric_to_int128(VALUE x);
+VALUE rb_uint128_to_numeric(rb_uint128_t n);
+VALUE rb_int128_to_numeric(rb_int128_t n);
+
 static inline bool
 INT_POSITIVE_P(VALUE num)
 {

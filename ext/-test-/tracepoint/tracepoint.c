@@ -86,6 +86,25 @@ tracepoint_specify_normal_and_internal_events(VALUE self)
     return Qnil; /* should not be reached */
 }
 
+int rb_objspace_internal_object_p(VALUE obj);
+
+static void
+on_newobj_event(VALUE tpval, void *data)
+{
+    VALUE obj = rb_tracearg_object(rb_tracearg_from_tracepoint(tpval));
+    if (!rb_objspace_internal_object_p(obj)) rb_obj_id(obj);
+}
+
+static VALUE
+add_object_id(RB_UNUSED_VAR(VALUE _))
+{
+    VALUE tp = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, NULL);
+    rb_tracepoint_enable(tp);
+    rb_yield(Qnil);
+    rb_tracepoint_disable(tp);
+    return Qnil;
+}
+
 void Init_gc_hook(VALUE);
 
 void
@@ -95,4 +114,5 @@ Init_tracepoint(void)
     Init_gc_hook(tp_mBug);
     rb_define_module_function(tp_mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
     rb_define_module_function(tp_mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
+    rb_define_singleton_method(tp_mBug, "tracepoint_add_object_id", add_object_id, 0);
 }

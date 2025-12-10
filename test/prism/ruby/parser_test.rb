@@ -62,17 +62,11 @@ module Prism
       "alias.txt",
       "seattlerb/bug_215.txt",
 
+      # %Q with newline delimiter and heredoc interpolation
+      "heredoc_percent_q_newline_delimiter.txt",
+
       # 1.. && 2
       "ranges.txt",
-
-      # https://bugs.ruby-lang.org/issues/20478
-      "3.4/circular_parameters.txt",
-
-      # Cannot yet handling leading logical operators.
-      "4.0/leading_logical.txt",
-
-      # Ruby >= 4.0 specific syntax
-      "4.0/endless_methods_command_call.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
@@ -148,7 +142,7 @@ module Prism
       "whitequark/space_args_block.txt"
     ]
 
-    Fixture.each(except: skip_syntax_error) do |fixture|
+    Fixture.each_for_version(except: skip_syntax_error, version: "3.3") do |fixture|
       define_method(fixture.test_name) do
         assert_equal_parses(
           fixture,
@@ -171,7 +165,7 @@ module Prism
 
     if RUBY_VERSION >= "3.3"
       def test_current_parser_for_current_ruby
-        major, minor = current_major_minor.split(".")
+        major, minor = CURRENT_MAJOR_MINOR.split(".")
         # Let's just hope there never is a Ruby 3.10 or similar
         expected = major.to_i * 10 + minor.to_i
         assert_equal(expected, Translation::ParserCurrent.new.version)

@@ -300,7 +300,7 @@ class CGIEscapePureRubyTest < Test::Unit::TestCase
       remove_method :escapeHTML
       alias _unescapeHTML unescapeHTML
       remove_method :unescapeHTML
-    end if defined?(CGI::EscapeExt)
+    end if defined?(CGI::EscapeExt) and CGI::EscapeExt.method_defined?(:escapeHTML)
   end
 
   def teardown
@@ -309,7 +309,7 @@ class CGIEscapePureRubyTest < Test::Unit::TestCase
       remove_method :_escapeHTML
       alias unescapeHTML _unescapeHTML
       remove_method :_unescapeHTML
-    end if defined?(CGI::EscapeExt)
+    end if defined?(CGI::EscapeExt) and CGI::EscapeExt.method_defined?(:_escapeHTML)
   end
 
   include CGIEscapeTest::UnescapeHTMLTests

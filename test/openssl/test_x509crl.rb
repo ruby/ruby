@@ -20,6 +20,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(cert.issuer.to_der, crl.issuer.to_der)
     assert_equal(now, crl.last_update)
     assert_equal(now+1600, crl.next_update)
+    assert_equal("sha256WithRSAEncryption", crl.signature_algorithm) # ln
 
     crl = OpenSSL::X509::CRL.new(crl.to_der)
     assert_equal(1, crl.version)

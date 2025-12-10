@@ -3946,7 +3946,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    ["F", 6860]
  *
  *  You can use the special symbol <tt>:_alone</tt> to force an element
- *  into its own separate chuck:
+ *  into its own separate chunk:
  *
  *    a = [0, 0, 1, 1]
  *    e = a.chunk{|i| i.even? ? :_alone : true }

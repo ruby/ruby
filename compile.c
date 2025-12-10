@@ -610,8 +610,6 @@ branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
     return 1;
 }
 
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
-
 static VALUE
 setup_branch(const rb_code_location_t *loc, const char *type, VALUE structure, VALUE key)
 {
@@ -2106,7 +2104,6 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
         EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
-        body->param.flags.ruby2_keywords = args->ruby2_keywords;
         body->param.lead_num = arg_size = (int)args->pre_args_num;
         if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
         debugs("  - argc: %d\n", body->param.lead_num);

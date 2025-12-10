@@ -346,6 +346,15 @@ module OpenSSL
       include Extension::CRLDistributionPoints
       include Extension::AuthorityInfoAccess
 
+      def inspect
+        "#<#{self.class}: " \
+          "subject=#{subject.inspect}, " \
+          "issuer=#{issuer.inspect}, " \
+          "serial=#{serial.inspect}, " \
+          "not_before=#{not_before.inspect rescue "(error)"}, " \
+          "not_after=#{not_after.inspect rescue "(error)"}>"
+      end
+
       def pretty_print(q)
         q.object_group(self) {
           q.breakable

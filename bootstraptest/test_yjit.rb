@@ -2680,6 +2680,22 @@ assert_equal '[1, 2]', %q{
   expandarray_redefined_nilclass
 }
 
+assert_equal 'not_array', %q{
+  def expandarray_not_array(obj)
+    a, = obj
+    a
+  end
+
+  obj = Object.new
+  def obj.method_missing(m, *args, &block)
+    return [:not_array] if m == :to_ary
+    super
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
+}
+
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
     a, b, c = [1, 2]

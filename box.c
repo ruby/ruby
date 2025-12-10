@@ -20,6 +20,13 @@
 
 #include <stdio.h>
 
+#ifdef HAVE_SYS_SENDFILE_H
+# include <sys/sendfile.h>
+#endif
+#ifdef HAVE_COPYFILE_H
+#include <copyfile.h>
+#endif
+
 VALUE rb_cBox = 0;
 VALUE rb_cBoxEntry = 0;
 VALUE rb_mBoxLoader = 0;
@@ -55,6 +62,7 @@ bool ruby_box_crashed = false; // extern, changed only in vm.c
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_box_inspect(VALUE obj);
+static void cleanup_all_local_extensions(VALUE libmap);
 
 void
 rb_box_init_done(void)
@@ -149,6 +157,7 @@ box_entry_initialize(rb_box_t *box)
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
+    box->classext_cow_classes = st_init_numtable();
 
     box->is_user = true;
     box->is_optional = true;
@@ -199,6 +208,9 @@ rb_box_entry_mark(void *ptr)
     }
     rb_gc_mark(box->ruby_dln_libmap);
     rb_gc_mark(box->gvar_tbl);
+    if (box->classext_cow_classes) {
+        rb_mark_tbl(box->classext_cow_classes);
+    }
 }
 
 static int
@@ -233,9 +245,38 @@ box_root_free(void *ptr)
     }
 }
 
+static int
+free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+{
+    rb_classext_t *ext;
+    VALUE obj = (VALUE)obj_value;
+    const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_class_classext_free(obj, ext, false);
+    }
+    else if (RB_TYPE_P(obj, T_ICLASS)) {
+        ext = rb_class_unlink_classext(obj, box);
+        rb_iclass_classext_free(obj, ext, false);
+    }
+    else {
+        rb_bug("Invalid type of object in classext_cow_classes: %s", rb_type_str(BUILTIN_TYPE(obj)));
+    }
+    return ST_CONTINUE;
+}
+
 static void
 box_entry_free(void *ptr)
 {
+    const rb_box_t *box = (const rb_box_t *)ptr;
+
+    if (box->classext_cow_classes) {
+        st_foreach(box->classext_cow_classes, free_classext_for_box, (st_data_t)box);
+    }
+
+    cleanup_all_local_extensions(box->ruby_dln_libmap);
+
     box_root_free(ptr);
     xfree(ptr);
 }
@@ -250,7 +291,7 @@ box_entry_memsize(const void *ptr)
 }
 
 const rb_data_type_t rb_box_data_type = {
-    "Namespace::Entry",
+    "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
         box_entry_free,
@@ -261,7 +302,7 @@ const rb_data_type_t rb_box_data_type = {
 };
 
 const rb_data_type_t rb_root_box_data_type = {
-    "Namespace::Root",
+    "Ruby::Box::Root",
     {
         rb_box_entry_mark,
         box_root_free,
@@ -487,10 +528,21 @@ sprint_ext_filename(char *str, size_t size, long box_id, const char *prefix, con
     return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), box_id, basename);
 }
 
-#ifdef _WIN32
+enum copy_error_type {
+    COPY_ERROR_NONE,
+    COPY_ERROR_SRC_OPEN,
+    COPY_ERROR_DST_OPEN,
+    COPY_ERROR_SRC_READ,
+    COPY_ERROR_DST_WRITE,
+    COPY_ERROR_SRC_STAT,
+    COPY_ERROR_DST_CHMOD,
+    COPY_ERROR_SYSERR
+};
+
 static const char *
-copy_ext_file_error(char *message, size_t size)
+copy_ext_file_error(char *message, size_t size, int copy_retvalue)
 {
+#ifdef _WIN32
     int error = GetLastError();
     char *p = message;
     size_t len = snprintf(message, size, "%d: ", error);
@@ -505,114 +557,130 @@ copy_ext_file_error(char *message, size_t size)
         if (*p == '\n' || *p == '\r')
             *p = ' ';
     }
-    return message;
-}
 #else
-static const char *
-copy_ext_file_error(char *message, size_t size, int copy_retvalue, const char *src_path, const char *dst_path)
-{
     switch (copy_retvalue) {
-      case 1:
-        snprintf(message, size, "can't open the extension path: %s", src_path);
-      case 2:
-        snprintf(message, size, "can't open the file to write: %s", dst_path);
-      case 3:
-        snprintf(message, size, "failed to read the extension path: %s", src_path);
-      case 4:
-        snprintf(message, size, "failed to write the extension path: %s", dst_path);
-      case 5:
-        snprintf(message, size, "failed to stat the extension path to copy permissions: %s", src_path);
-      case 6:
-        snprintf(message, size, "failed to set permissions to the copied extension path: %s", dst_path);
+      case COPY_ERROR_SRC_OPEN:
+        strlcpy(message, "can't open the extension path", size);
+        break;
+      case COPY_ERROR_DST_OPEN:
+        strlcpy(message, "can't open the file to write", size);
+        break;
+      case COPY_ERROR_SRC_READ:
+        strlcpy(message, "failed to read the extension path", size);
+        break;
+      case COPY_ERROR_DST_WRITE:
+        strlcpy(message, "failed to write the extension path", size);
+        break;
+      case COPY_ERROR_SRC_STAT:
+        strlcpy(message, "failed to stat the extension path to copy permissions", size);
+        break;
+      case COPY_ERROR_DST_CHMOD:
+        strlcpy(message, "failed to set permissions to the copied extension path", size);
+        break;
+      case COPY_ERROR_SYSERR:
+        strlcpy(message, strerror(errno), size);
+        break;
+      case COPY_ERROR_NONE: /* shouldn't be called */
       default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
+#endif
     return message;
+}
+
+#ifndef _WIN32
+static enum copy_error_type
+copy_stream(int src_fd, int dst_fd)
+{
+    char buffer[1024];
+    ssize_t rsize;
+
+    while ((rsize = read(src_fd, buffer, sizeof(buffer))) != 0) {
+        if (rsize < 0) return COPY_ERROR_SRC_READ;
+        for (size_t written = 0; written < (size_t)rsize;) {
+            ssize_t wsize = write(dst_fd, buffer+written, rsize-written);
+            if (wsize < 0) return COPY_ERROR_DST_WRITE;
+            written += (size_t)wsize;
+        }
+    }
+    return COPY_ERROR_NONE;
 }
 #endif
 
-static int
+static enum copy_error_type
 copy_ext_file(const char *src_path, const char *dst_path)
 {
 #if defined(_WIN32)
-    int rvalue;
-
     WCHAR *w_src = rb_w32_mbstr_to_wstr(CP_UTF8, src_path, -1, NULL);
     WCHAR *w_dst = rb_w32_mbstr_to_wstr(CP_UTF8, dst_path, -1, NULL);
     if (!w_src || !w_dst) {
+        free(w_src);
+        free(w_dst);
         rb_memerror();
     }
 
-    rvalue = CopyFileW(w_src, w_dst, FALSE) ? 0 : 1;
+    enum copy_error_type rvalue = CopyFileW(w_src, w_dst, TRUE) ?
+        COPY_ERROR_NONE : COPY_ERROR_SYSERR;
     free(w_src);
     free(w_dst);
     return rvalue;
 #else
-    FILE *src, *dst;
-    char buffer[1024];
-    size_t read = 0, wrote, written = 0;
-    size_t maxread = sizeof(buffer);
-    int eof = 0;
-    int clean_read = 1;
-    int retvalue = 0;
+# ifdef O_BINARY
+    const int bin = O_BINARY;
+# else
+    const int bin = 0;
+# endif
+    const int src_fd = open(src_path, O_RDONLY|bin);
+    if (src_fd < 0) return COPY_ERROR_SRC_OPEN;
 
-    src = fopen(src_path, "rb");
-    if (!src) {
-        return 1;
+    struct stat src_st;
+    if (fstat(src_fd, &src_st)) {
+        close(src_fd);
+        return COPY_ERROR_SRC_STAT;
     }
-    dst = fopen(dst_path, "wb");
-    if (!dst) {
-        return 2;
+
+    const int dst_fd = open(dst_path, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|bin, S_IRWXU);
+    if (dst_fd < 0) {
+        close(src_fd);
+        return COPY_ERROR_DST_OPEN;
     }
-    while (!eof) {
-        if (clean_read) {
-            read = fread(buffer, 1, sizeof(buffer), src);
-            written = 0;
-        }
-        if (read > 0) {
-            wrote = fwrite(buffer+written, 1, read-written, dst);
-            if (wrote < read-written) {
-                if (ferror(dst)) {
-                    retvalue = 4;
-                    break;
-                }
-                else { // partial write
-                    clean_read = 0;
-                    written += wrote;
-                }
-            }
-            else { // Wrote the entire buffer to dst, next read is clean one
-                clean_read = 1;
-            }
-        }
-        if (read < maxread) {
-            if (clean_read && feof(src)) {
-                // If it's not clean, buffer should have bytes not written yet.
-                eof = 1;
-            }
-            else if (ferror(src)) {
-                retvalue = 3;
-                // Writes could be partial/dirty, but this load is failure anyway
-                break;
-            }
-        }
+
+    enum copy_error_type ret = COPY_ERROR_NONE;
+
+    if (fchmod(dst_fd, src_st.st_mode & 0777)) {
+        ret = COPY_ERROR_DST_CHMOD;
+        goto done;
     }
-    fclose(src);
-    fclose(dst);
-#if defined(__CYGWIN__)
-    // On Cygwin, CopyFile-like operations may strip executable bits.
-    // Explicitly match destination file permissions to source.
-    if (retvalue == 0) {
-        struct stat st;
-        if (stat(src_path, &st) != 0) {
-            retvalue = 5;
-        }
-        else if (chmod(dst_path, st.st_mode & 0777) != 0) {
-            retvalue = 6;
-        }
+
+    const size_t count_max = (SIZE_MAX >> 1) + 1;
+    (void)count_max;
+
+# ifdef HAVE_COPY_FILE_RANGE
+    for (;;) {
+        ssize_t written = copy_file_range(src_fd, NULL, dst_fd, NULL, count_max, 0);
+        if (written == 0) goto done;
+        if (written < 0) break;
     }
-#endif
-    return retvalue;
+# endif
+# ifdef HAVE_FCOPYFILE
+    if (fcopyfile(src_fd, dst_fd, NULL, COPYFILE_DATA) == 0) {
+        goto done;
+    }
+# endif
+# ifdef USE_SENDFILE
+    for (;;) {
+        ssize_t written = sendfile(src_fd, dst_fd, NULL count_max);
+        if (written == 0) goto done;
+        if (written < 0) break;
+    }
+# endif
+    ret = copy_stream(src_fd, dst_fd);
+
+  done:
+    close(src_fd);
+    if (dst_fd >= 0) close(dst_fd);
+    if (ret != COPY_ERROR_NONE) unlink(dst_path);
+    return ret;
 #endif
 }
 
@@ -659,11 +727,60 @@ escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize
     }
 }
 
+static void
+box_ext_cleanup_mark(void *p)
+{
+    rb_gc_mark((VALUE)p);
+}
+
+static void
+box_ext_cleanup_free(void *p)
+{
+    VALUE path = (VALUE)p;
+    unlink(RSTRING_PTR(path));
+}
+
+static const rb_data_type_t box_ext_cleanup_type = {
+    "box_ext_cleanup",
+    {box_ext_cleanup_mark, box_ext_cleanup_free},
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+void
+rb_box_cleanup_local_extension(VALUE cleanup)
+{
+    void *p = DATA_PTR(cleanup);
+    DATA_PTR(cleanup) = NULL;
+#ifndef _WIN32
+    if (p) box_ext_cleanup_free(p);
+#endif
+}
+
+static int
+cleanup_local_extension_i(VALUE key, VALUE value, VALUE arg)
+{
+#if defined(_WIN32)
+    HMODULE h = (HMODULE)NUM2PTR(value);
+    WCHAR module_path[MAXPATHLEN];
+    DWORD len = GetModuleFileNameW(h, module_path, numberof(module_path));
+
+    FreeLibrary(h);
+    if (len > 0 && len < numberof(module_path)) DeleteFileW(module_path);
+#endif
+    return ST_DELETE;
+}
+
+static void
+cleanup_all_local_extensions(VALUE libmap)
+{
+    rb_hash_foreach(libmap, cleanup_local_extension_i, 0);
+}
+
 VALUE
-rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
+rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
 {
     char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
-    int copy_error, wrote;
+    int wrote;
     const char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
     rb_box_t *box = rb_get_box_t(box_value);
 
@@ -674,18 +791,16 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path)
     if (wrote >= (int)sizeof(ext_path)) {
         rb_bug("Extension file path in the box was too long");
     }
-    copy_error = copy_ext_file(src_path, ext_path);
+    VALUE new_path = rb_str_new_cstr(ext_path);
+    *cleanup = TypedData_Wrap_Struct(0, &box_ext_cleanup_type, NULL);
+    enum copy_error_type copy_error = copy_ext_file(src_path, ext_path);
     if (copy_error) {
         char message[1024];
-#if defined(_WIN32)
-        copy_ext_file_error(message, sizeof(message));
-#else
-        copy_ext_file_error(message, sizeof(message), copy_error, src_path, ext_path);
-#endif
-        rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %s): %s", ext_path, src_path, message);
+        copy_ext_file_error(message, sizeof(message), copy_error);
+        rb_raise(rb_eLoadError, "can't prepare the extension file for Ruby Box (%s from %"PRIsVALUE"): %s", ext_path, path, message);
     }
-    // TODO: register the path to be clean-uped
-    return rb_str_new_cstr(ext_path);
+    DATA_PTR(*cleanup) = (void *)new_path;
+    return new_path;
 }
 
 // TODO: delete it just after dln_load? or delay it?
@@ -744,6 +859,7 @@ initialize_root_box(void)
 
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
+    root->classext_cow_classes = NULL; // classext CoW never happen on the root box
 
     vm->root_box = root;
 
@@ -796,7 +912,7 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/box.md for known issues, etc.");
+                         "See doc/language/box.md for known issues, etc.");
         box_experimental_warned = 1;
     }
 
@@ -1047,9 +1163,8 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
 /*
  *  Document-class: Ruby::Box
  *
- *  Ruby::Box is designed to provide separated spaces in a Ruby
- *  process, to isolate applications and libraries.
- *  See {Ruby::Box}[rdoc-ref:box.md].
+ *  :markup: markdown
+ *  :include: doc/language/box.md
  */
 void
 Init_Box(void)
@@ -1057,7 +1172,7 @@ Init_Box(void)
     tmp_dir = system_tmpdir();
     tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
-    VALUE mRuby = rb_path2class("Ruby");
+    VALUE mRuby = rb_define_module("Ruby");
 
     rb_cBox = rb_define_class_under(mRuby, "Box", rb_cModule);
     rb_define_method(rb_cBox, "initialize", box_initialize, 0);

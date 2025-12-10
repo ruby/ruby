@@ -23,7 +23,7 @@ The pattern used is:
 Note that in the examples below, a returned string <tt>'hello'</tt> is a copy of +self+, not +self+.
 
 If +pattern+ is a Regexp, searches for the last matching substring
-(also setting {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching]):
+(also setting {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
 
   'hello'.rpartition(/l/)     # => ["hel", "l", "o"]
   'hello'.rpartition(/ll/)    # => ["he", "ll", "o"]
@@ -36,7 +36,7 @@ If +pattern+ is a Regexp, searches for the last matching substring
 
 If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
 then searches for the last matching substring
-(and does _not_ set {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching]):
+(and does _not_ set {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
 
   'hello'.rpartition('l')     # => ["hel", "l", "o"]
   'hello'.rpartition('ll')    # => ["he", "ll", "o"]

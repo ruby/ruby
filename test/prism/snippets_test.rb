@@ -18,7 +18,7 @@ module Prism
       "whitequark/multiple_pattern_matches.txt"
     ]
 
-    Fixture.each_with_version(except: except) do |fixture, version|
+    Fixture.each_with_all_versions(except: except) do |fixture, version|
       define_method(fixture.test_name(version)) { assert_snippets(fixture, version) }
     end
 

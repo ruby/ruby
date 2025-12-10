@@ -41,6 +41,31 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app("OmgFile.lock")).to exist
     end
 
+    it "creates lockfile using BUNDLE_LOCKFILE instead of lockfile method" do
+      ENV["BUNDLE_LOCKFILE"] = "ReallyOmgFile.lock"
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    ensure
+      ENV.delete("BUNDLE_LOCKFILE")
+    end
+
+    it "creates lockfile based on --lockfile option is given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+    end
+
     it "does not make a lockfile if lockfile false is used in Gemfile" do
       install_gemfile <<-G
         lockfile false
@@ -98,6 +123,18 @@ RSpec.describe "bundle install with gem sources" do
       bundle "install --gemfile OmgFile --no-lock"
 
       expect(bundled_app("OmgFile.lock")).not_to exist
+    end
+
+    it "doesn't create a lockfile if --no-lock and --lockfile options are given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --no-lock --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("OmgFile.lock")).not_to exist
+      expect(bundled_app("ReallyOmgFile.lock")).not_to exist
     end
 
     it "doesn't delete the lockfile if one already exists" do
@@ -1845,6 +1882,25 @@ RSpec.describe "bundle install with gem sources" do
 
     expected_executables = [vendored_gems("bin/myrackup").to_s]
     expected_executables << vendored_gems("bin/myrackup.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
+
+  it "prevents removing binstubs when BUNDLE_CLEAN is set" do
+    build_repo4 do
+      build_gem "kamal", "4.0.6" do |s|
+        s.executables = ["kamal"]
+      end
+    end
+
+    gemfile = <<~G
+      source "https://gem.repo4"
+      gem "kamal"
+    G
+
+    install_gemfile(gemfile, env: { "BUNDLE_CLEAN" => "true", "BUNDLE_PATH" => "vendor/bundle" })
+
+    expected_executables = [vendored_gems("bin/kamal").to_s]
+    expected_executables << vendored_gems("bin/kamal.bat").to_s if Gem.win_platform?
     expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
   end
 

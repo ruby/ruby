@@ -12,7 +12,7 @@
 #define GetDigest(obj, ctx) do { \
     TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_digest_type, (ctx)); \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
     } \
 } while (0)
 
@@ -34,7 +34,7 @@ ossl_digest_free(void *ctx)
 static const rb_data_type_t ossl_digest_type = {
     "OpenSSL/Digest",
     {
-	0, ossl_digest_free,
+        0, ossl_digest_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -110,11 +110,11 @@ ossl_digest_new(const EVP_MD *md)
     ret = ossl_digest_alloc(cDigest);
     ctx = EVP_MD_CTX_new();
     if (!ctx)
-	ossl_raise(eDigestError, "EVP_MD_CTX_new");
+        ossl_raise(eDigestError, "EVP_MD_CTX_new");
     RTYPEDDATA_DATA(ret) = ctx;
 
     if (!EVP_DigestInit_ex(ctx, md, NULL))
-	ossl_raise(eDigestError, "Digest initialization failed");
+        ossl_raise(eDigestError, "Digest initialization failed");
 
     return ret;
 }
@@ -161,13 +161,13 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
     if (!ctx) {
-	RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
-	if (!ctx)
-	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+        RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
+        if (!ctx)
+            ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
 
     if (!EVP_DigestInit_ex(ctx, md, NULL))
-	ossl_raise(eDigestError, "Digest initialization failed");
+        ossl_raise(eDigestError, "Digest initialization failed");
     rb_ivar_set(self, id_md_holder, md_holder);
 
     if (!NIL_P(data)) return ossl_digest_update(self, data);
@@ -185,14 +185,14 @@ ossl_digest_copy(VALUE self, VALUE other)
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx1);
     if (!ctx1) {
-	RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
-	if (!ctx1)
-	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+        RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
+        if (!ctx1)
+            ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
     GetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
-	ossl_raise(eDigestError, NULL);
+        ossl_raise(eDigestError, NULL);
     }
     return self;
 }
@@ -217,8 +217,8 @@ ossl_s_digests(VALUE self)
 
     ary = rb_ary_new();
     OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_MD_METH,
-                    add_digest_name_to_ary,
-                    (void*)ary);
+                           add_digest_name_to_ary,
+                           (void*)ary);
 
     return ary;
 }
@@ -238,7 +238,7 @@ ossl_digest_reset(VALUE self)
 
     GetDigest(self, ctx);
     if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_get0_md(ctx), NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
+        ossl_raise(eDigestError, "Digest initialization failed.");
     }
 
     return self;
@@ -268,7 +268,7 @@ ossl_digest_update(VALUE self, VALUE data)
     GetDigest(self, ctx);
 
     if (!EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)))
-	ossl_raise(eDigestError, "EVP_DigestUpdate");
+        ossl_raise(eDigestError, "EVP_DigestUpdate");
 
     return self;
 }
@@ -287,7 +287,7 @@ ossl_digest_finish(VALUE self)
     GetDigest(self, ctx);
     str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
     if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
-	ossl_raise(eDigestError, "EVP_DigestFinal_ex");
+        ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 
     return str;
 }
@@ -365,11 +365,6 @@ ossl_digest_block_length(VALUE self)
 void
 Init_ossl_digest(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /* Document-class: OpenSSL::Digest
      *
      * OpenSSL::Digest allows you to compute message digests (sometimes

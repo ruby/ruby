@@ -132,7 +132,7 @@ Init_version(void)
      * The constants defined here are aliased in the toplevel with
      * +RUBY_+ prefix.
      */
-    VALUE mRuby = rb_path2class("Ruby");
+    VALUE mRuby = rb_define_module("Ruby");
 
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
     VALUE version = MKSTR(version);
