@@ -497,6 +497,7 @@ pub enum SideExitReason {
     GuardNotShared,
     GuardLess,
     GuardGreaterEq,
+    GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -898,6 +899,17 @@ pub enum Insn {
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
+    },
+    /// Optimized super call to an ISEQ method
+    InvokeSuperDirect {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        /// The CME of the method containing the super call (for runtime guard)
+        current_cme: *const rb_callable_method_entry_t,
+        /// The resolved super method's CME (for PatchPoint and to get target ISEQ)
+        super_cme: *const rb_callable_method_entry_t,
+        args: Vec<InsnId>,
+        state: InsnId,
     },
     InvokeBlock {
         cd: *const rb_call_data,
@@ -1304,6 +1316,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
+                Ok(())
+            }
+            Insn::InvokeSuperDirect { recv, args, .. } => {
+                write!(f, "InvokeSuperDirect {recv}")?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
                 Ok(())
             }
             Insn::InvokeBlock { args, reason, .. } => {
@@ -2080,6 +2099,14 @@ impl Function {
                 state,
                 reason,
             },
+            &InvokeSuperDirect { recv, cd, current_cme, super_cme, ref args, state } => InvokeSuperDirect {
+                recv: find!(recv),
+                cd,
+                current_cme,
+                super_cme,
+                args: find_vec!(args),
+                state,
+            },
             &InvokeBlock { cd, ref args, state, reason } => InvokeBlock {
                 cd,
                 args: find_vec!(args),
@@ -2269,6 +2296,7 @@ impl Function {
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
+            Insn::InvokeSuperDirect { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -3059,6 +3087,81 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
+                    }
+                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                        // Don't handle calls with literal blocks (e.g., super { ... })
+                        if !blockiseq.is_null() {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        // Don't handle calls with complex arguments (kwarg, splat, kw_splat, blockarg, forwarding)
+                        let ci = unsafe { get_call_data_ci(cd) };
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+                        if unspecializable_call_type(flags) {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+
+                        // Get the profiled CME from the current method
+                        let Some(profiles) = self.profiles.as_ref() else {
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        let Some(current_cme) = profiles.payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                            // No profile or polymorphic
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+
+                        // Get defined_class and method ID from the profiled CME
+                        let current_defined_class = unsafe { (*current_cme).defined_class };
+                        let mid = unsafe { get_def_original_id((*current_cme).def) };
+
+                        // Compute superclass: RCLASS_SUPER(RCLASS_ORIGIN(defined_class))
+                        let superclass = unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
+                        if superclass.nil_p() {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        // Look up the super method
+                        let super_cme = unsafe { rb_callable_method_entry(superclass, mid) };
+                        if super_cme.is_null() {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        // Check if it's an ISEQ method
+                        let def_type = unsafe { get_cme_def_type(super_cme) };
+                        if def_type != VM_METHOD_TYPE_ISEQ {
+                            // TODO: Handle CFUNCs
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        // Check if the super method's parameters support direct send.
+                        // If not, we can't do direct dispatch.
+                        let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+                        if !can_direct_send(self, block, super_iseq, insn_id, args.as_slice()) {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        // Add PatchPoints for method redefinition
+                        // TODO: Add guard that ep[-2] matches current_cme
+                        self.push_insn(block, Insn::PatchPoint {
+                            invariant: Invariant::MethodRedefined {
+                                klass: unsafe { (*super_cme).defined_class },
+                                method: mid,
+                                cme: super_cme
+                            },
+                            state
+                        });
+
+                        let send_direct = self.push_insn(block, Insn::InvokeSuperDirect {
+                            recv,
+                            cd,
+                            current_cme,
+                            super_cme,
+                            args,
+                            state
+                        });
+                        self.make_equal_to(insn_id, send_direct);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -4153,7 +4256,8 @@ impl Function {
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeBuiltin { recv, ref args, state, .. }
-            | &Insn::InvokeSuper { recv, ref args, state, .. } => {
+            | &Insn::InvokeSuper { recv, ref args, state, .. }
+            | &Insn::InvokeSuperDirect { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
@@ -4773,6 +4877,7 @@ impl Function {
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
+            | Insn::InvokeSuperDirect { recv, ref args, .. }
             | Insn::CCallWithFrame { recv, ref args, .. }
             | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }

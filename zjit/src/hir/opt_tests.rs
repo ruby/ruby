@@ -10554,4 +10554,249 @@ mod hir_opt_tests {
           Return v15
         ");
     }
+
+    #[test]
+    fn test_invokesuper_to_iseq_optimizes_to_direct() {
+        eval("
+            class A
+              def foo
+                'A'
+              end
+            end
+
+            class B < A
+              def foo
+                super
+              end
+            end
+
+            B.new.foo; B.new.foo
+        ");
+
+        // A Ruby method as the target of `super` should optimize provided no block is given.
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to InvokeSuperDirect but got:\n{hir}");
+        assert!(hir.contains("InvokeSuperDirect"), "Should optimize to InvokeSuperDirect for call without args or block:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
+          v17:BasicObject = InvokeSuperDirect v6
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_args_optimizes_to_direct() {
+        eval("
+            class A
+              def foo(x)
+                x * 2
+              end
+            end
+
+            class B < A
+              def foo(x)
+                super(x) + 1
+              end
+            end
+
+            B.new.foo(5); B.new.foo(5)
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to InvokeSuperDirect but got:\n{hir}");
+        assert!(hir.contains("InvokeSuperDirect"), "Should optimize to InvokeSuperDirect for args without block:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :x, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
+          v26:BasicObject = InvokeSuperDirect v8, v9
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1038, +@0x1040, cme:0x1048)
+          v29:Fixnum = GuardType v26, Fixnum
+          v30:Fixnum = FixnumAdd v29, v17
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_block_literal_remains_invokesuper() {
+        eval("
+            class A
+              def foo
+                block_given? ? yield : 'no block'
+              end
+            end
+
+            class B < A
+              def foo
+                super { 'from subclass' }
+              end
+            end
+
+            B.new.foo; B.new.foo
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for block literal:\n{hir}");
+
+        // With a block, we don't optimize to InvokeSuperDirect
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_cfunc_remains_invokesuper() {
+        eval("
+            class MyArray < Array
+              def length
+                super
+              end
+            end
+
+            MyArray.new.length; MyArray.new.length
+        ");
+
+        let hir = hir_string_proc("MyArray.new.method(:length)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for CFUNC:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn length@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_blockarg_remains_invokesuper() {
+        eval("
+            class A
+              def foo
+                block_given? ? yield : 'no block'
+              end
+            end
+
+            class B < A
+              def foo(&blk)
+                other_block = proc { 'different block' }
+                super(&other_block)
+              end
+            end
+
+            B.new.foo { 'passed' }; B.new.foo { 'passed' }
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for explicit blockarg:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :blk, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          PatchPoint NoSingletonClass(B@0x1000)
+          PatchPoint MethodRedefined(B@0x1000, proc@0x1008, cme:0x1010)
+          v35:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
+          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1038, block=0x1040
+          v18:BasicObject = GetLocal :blk, l0, EP@4
+          SetLocal :other_block, l0, EP@3, v36
+          v25:BasicObject = GetLocal :other_block, l0, EP@3
+          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_symbol_to_proc_remains_invokesuper() {
+        eval("
+            class A
+              def foo(items, &blk)
+                items.map(&blk)
+              end
+            end
+
+            class B < A
+              def foo(items)
+                super(items, &:succ)
+              end
+            end
+
+            B.new.foo([1, 2, 3]); B.new.foo([1, 2, 3])
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for symbol-to-proc:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :items, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v15:StaticSymbol[:succ] = Const Value(VALUE(0x1000))
+          v17:BasicObject = InvokeSuper v8, 0x1008, v9, v15 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v17
+        ");
+    }
 }

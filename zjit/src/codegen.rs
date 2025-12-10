@@ -401,8 +401,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
+        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        Insn::InvokeSuperDirect { recv, current_cme, super_cme, args, state, .. } =>
+            gen_invokesuper_direct(cb, jit, asm, *current_cme, *super_cme, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
@@ -1321,8 +1323,10 @@ fn gen_send_without_block(
     )
 }
 
-/// Compile a direct jump to an ISEQ call without block
-fn gen_send_without_block_direct(
+/// Compile a direct call to an ISEQ method.
+/// If `block_handler` is provided, it's used as the specval for the new frame (for forwarding blocks).
+/// Otherwise, `VM_BLOCK_HANDLER_NONE` is used.
+fn gen_send_iseq_direct(
     cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -1331,6 +1335,7 @@ fn gen_send_without_block_direct(
     recv: Opnd,
     args: Vec<Opnd>,
     state: &FrameState,
+    block_handler: Option<Opnd>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1357,7 +1362,8 @@ fn gen_send_without_block_direct(
         let bmethod_specval = (capture.ep.addr() | 1).into();
         (bmethod_frame_type, bmethod_specval)
     } else {
-        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, VM_BLOCK_HANDLER_NONE.into())
+        let specval = block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into());
+        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
     };
 
     // Set up the new frame
@@ -1489,6 +1495,37 @@ fn gen_invokesuper(
         rb_vm_invokesuper,
         EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
+}
+
+/// Compile an optimized super call to an ISEQ method
+fn gen_invokesuper_direct(
+    cb: &mut CodeBlock,
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    current_cme: *const rb_callable_method_entry_t,
+    super_cme: *const rb_callable_method_entry_t,
+    recv: lir::Opnd,
+    args: Vec<lir::Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    // Guard that ep[VM_ENV_DATA_INDEX_ME_CREF] matches current_cme, ensuring that we're calling
+    // `super` from the expected method context.
+    asm_comment!(asm, "guard super method entry");
+    let lep = gen_get_lep(jit, asm);
+    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
+    let ep_me = asm.load(ep_me_opnd);
+    asm.cmp(ep_me, Opnd::UImm(current_cme as u64));
+    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
+
+    // Get the super method's ISEQ since we'll be dispatching to that.
+    let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+
+    // Read the block handler from the LEP to forward the caller's block.
+    asm_comment!(asm, "load block handler from LEP");
+    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+
+    // Generate the code to invoke the `super` target method.
+    gen_send_iseq_direct(cb, jit, asm, super_cme, super_iseq, recv, args, state, Some(block_handler))
 }
 
 /// Compile a string resurrection
