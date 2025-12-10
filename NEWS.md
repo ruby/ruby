@@ -256,7 +256,7 @@ The following default gems are updated.
 * optparse 0.8.0
 * pp 0.6.3
 * prism 1.6.0
-* psych 5.2.6
+* psych 5.3.0
 * resolv 0.6.3
 * stringio 3.1.9.dev
 * strscan 3.1.6.dev
