@@ -241,7 +241,7 @@ pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
 
             SBFM::asr(rd.reg_no, rn.reg_no, shift.try_into().unwrap(), rd.num_bits).into()
         },
-        _ => panic!("Invalid operand combination to asr instruction: asr {:?}, {:?}, {:?}", rd, rn, shift),
+        _ => panic!("Invalid operand combination to asr instruction: asr {rd:?}, {rn:?}, {shift:?}"),
     };
 
     cb.write_bytes(&bytes);
