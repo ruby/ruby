@@ -247,6 +247,7 @@ The following default gems are updated.
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0
+* forwardable 1.4.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.4.0.dev
