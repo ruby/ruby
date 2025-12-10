@@ -83,6 +83,7 @@ class Gem::DependencyInstaller
     @user_install        = options[:user_install]
     @wrappers            = options[:wrappers]
     @build_args          = options[:build_args]
+    @build_jobs          = options[:build_jobs]
     @build_docs_in_background = options[:build_docs_in_background]
     @dir_mode = options[:dir_mode]
     @data_mode = options[:data_mode]
@@ -154,6 +155,7 @@ class Gem::DependencyInstaller
     options = {
       bin_dir: @bin_dir,
       build_args: @build_args,
+      build_jobs: @build_jobs,
       document: @document,
       env_shebang: @env_shebang,
       force: @force,

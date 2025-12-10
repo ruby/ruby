@@ -1584,6 +1584,34 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
   end
 
+  def test_pass_down_the_job_option_to_make
+    gemspec = nil
+
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 2 do |spec|
+        gemspec = spec
+
+        extconf_path = "#{spec.gem_dir}/extconf.rb"
+
+        write_file(extconf_path) do |io|
+          io.puts "require 'mkmf'"
+          io.puts "create_makefile '#{spec.name}'"
+        end
+
+        spec.extensions = "extconf.rb"
+      end
+    end
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.invoke "a", "-j4"
+      end
+    end
+
+    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    assert_includes(gem_make_out, "make -j4")
+  end
+
   def test_execute_bindir_with_nonexistent_parent_dirs
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2 do |s|

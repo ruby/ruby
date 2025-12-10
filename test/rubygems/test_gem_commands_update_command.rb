@@ -696,6 +696,34 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal expected, @cmd.fetch_remote_gems(specs["a-1"])
   end
 
+  def test_pass_down_the_job_option_to_make
+    gemspec = nil
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 3 do |spec|
+        gemspec = spec
+
+        extconf_path = "#{spec.gem_dir}/extconf.rb"
+
+        write_file(extconf_path) do |io|
+          io.puts "require 'mkmf'"
+          io.puts "create_makefile '#{spec.name}'"
+        end
+
+        spec.extensions = "extconf.rb"
+      end
+
+      fetcher.gem "a", 2
+    end
+
+    use_ui @ui do
+      @cmd.invoke("a", "-j2")
+    end
+
+    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    assert_includes(gem_make_out, "make -j2")
+  end
+
   def test_handle_options_system
     @cmd.handle_options %w[--system]
 
