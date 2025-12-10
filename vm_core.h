@@ -584,7 +584,7 @@ struct rb_iseq_struct {
         } loader;
 
         struct {
-            struct rb_hook_list_struct *local_hooks;
+            unsigned int local_hooks_cnt;
             rb_event_flag_t global_trace_events;
         } exec;
     } aux;
@@ -2030,7 +2030,6 @@ RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
-RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()
@@ -2265,8 +2264,8 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
-void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
-void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);
+void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
+bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
 
 void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *hooks, int pop_p);
 
@@ -2305,6 +2304,8 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
+    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 
 static inline rb_hook_list_t *

@@ -720,7 +720,6 @@ rb_current_ec_noinline(void)
 
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
-unsigned int    ruby_vm_event_local_num;
 
 rb_serial_t ruby_vm_constant_cache_invalidations = 0;
 rb_serial_t ruby_vm_constant_cache_misses = 0;
@@ -2576,7 +2575,11 @@ hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, in
     }
     else {
         const rb_iseq_t *iseq = ec->cfp->iseq;
-        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
+        rb_hook_list_t *local_hooks = NULL;
+        unsigned int local_hooks_cnt = iseq->aux.exec.local_hooks_cnt;
+        if (RB_UNLIKELY(local_hooks_cnt > 0)) {
+            local_hooks = rb_iseq_local_hooks(iseq, rb_ec_ractor_ptr(ec), false);
+        }
 
         switch (VM_FRAME_TYPE(ec->cfp)) {
           case VM_FRAME_MAGIC_METHOD:
@@ -2614,15 +2617,18 @@ hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, in
                                               bmethod_return_value);
 
                 VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-                local_hooks = me->def->body.bmethod.hooks;
-
-                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
-                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
-                                            rb_vm_frame_method_entry(ec->cfp)->def->original_id,
-                                            rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                            rb_vm_frame_method_entry(ec->cfp)->owner,
-                                            bmethod_return_value, TRUE);
+                unsigned int local_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+                if (UNLIKELY(local_hooks_cnt > 0)) {
+                    local_hooks = rb_method_def_local_hooks(me->def, rb_ec_ractor_ptr(ec), false);
+                    if (local_hooks && local_hooks->events & RUBY_EVENT_RETURN) {
+                        rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
+                                                rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+                                                rb_vm_frame_method_entry(ec->cfp)->called_id,
+                                                rb_vm_frame_method_entry(ec->cfp)->owner,
+                                                bmethod_return_value, TRUE);
+                    }
                 }
+
                 THROW_DATA_CONSUMED_SET(err);
             }
             else {

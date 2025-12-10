@@ -207,6 +207,23 @@ static void ractor_sync_free(rb_ractor_t *r);
 static size_t ractor_sync_memsize(const rb_ractor_t *r);
 static void ractor_sync_init(rb_ractor_t *r);
 
+static int
+mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
+{
+    VALUE obj = (VALUE)key; // method def for bmethod or iseq
+    rb_hook_list_t *hook_list = (rb_hook_list_t*)value;
+
+    if (rb_gc_pointer_to_heap_p(obj)) {
+        rb_gc_mark(obj); // iseq
+    } else {
+        rb_method_definition_t *def = (rb_method_definition_t*)obj;
+        rb_gc_mark(def->body.bmethod.proc);
+    }
+    rb_hook_list_mark(hook_list);
+
+    return ST_CONTINUE;
+}
+
 static void
 ractor_mark(void *ptr)
 {
@@ -228,6 +245,9 @@ ractor_mark(void *ptr)
         ractor_sync_mark(r);
 
         rb_hook_list_mark(&r->pub.hooks);
+        if (r->pub.targeted_hooks) {
+            st_foreach(r->pub.targeted_hooks, mark_targeted_hook_list, 0);
+        }
 
         if (r->threads.cnt > 0) {
             rb_thread_t *th = 0;
@@ -241,6 +261,20 @@ ractor_mark(void *ptr)
     }
 }
 
+static int
+free_hook_lists(st_data_t key, st_data_t val, st_data_t _arg)
+{
+    rb_hook_list_t *hook_list = (rb_hook_list_t*)val;
+    rb_hook_list_free(hook_list);
+    return ST_DELETE;
+}
+
+static void
+free_targeted_hooks(st_table *hooks_tbl)
+{
+    st_foreach(hooks_tbl, free_hook_lists, 0);
+}
+
 static void
 ractor_free(void *ptr)
 {
@@ -252,6 +286,8 @@ ractor_free(void *ptr)
 #endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
+    free_targeted_hooks(r->pub.targeted_hooks);
+    st_free_table(r->pub.targeted_hooks);
 
     if (r->newobj_cache) {
         RUBY_ASSERT(r == ruby_single_main_ractor);
@@ -489,6 +525,7 @@ static void
 ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
     ractor_sync_init(r);
+    r->pub.targeted_hooks = st_init_numtable();
 
     // thread management
     rb_thread_sched_init(&r->threads.sched, false);
@@ -1134,6 +1171,12 @@ rb_hook_list_t *
 rb_ractor_hooks(rb_ractor_t *cr)
 {
     return &cr->pub.hooks;
+}
+
+st_table *
+rb_ractor_targeted_hooks(rb_ractor_t *cr)
+{
+    return cr->pub.targeted_hooks;
 }
 
 static void

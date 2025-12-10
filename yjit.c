@@ -162,7 +162,7 @@ rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
 {
     rb_event_flag_t tracing_events;
     if (rb_multi_ractor_p()) {
-        tracing_events = ruby_vm_event_enabled_global_flags;
+        tracing_events = ruby_vm_event_enabled_global_flags; // FIXME
     }
     else {
         // At the time of writing, events are never removed from
