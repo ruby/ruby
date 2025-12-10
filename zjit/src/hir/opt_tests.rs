@@ -9502,9 +9502,6 @@ mod hir_opt_tests {
        ");
     }
 
-    // Tests for fold_getinstancevariable_frozen optimization
-    // This optimization folds LoadField on frozen objects to constants at compile time
-
     #[test]
     fn test_fold_load_field_frozen_constant_object() {
         // Basic case: frozen constant object with attr_accessor
