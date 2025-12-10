@@ -254,7 +254,7 @@ The following default gems are updated.
 * json 2.17.1
 * net-http 0.8.0
 * openssl 4.0.0.pre
-* optparse 0.8.0
+* optparse 0.8.1
 * pp 0.6.3
 * prism 1.6.0
 * psych 5.3.0
