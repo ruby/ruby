@@ -1345,7 +1345,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
                     handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
-                    rb_hash_aset(box->ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
+                    rb_hash_aset(box->ruby_dln_libmap, path, PTR2NUM(handle));
                     break;
                 }
                 result = TAG_RETURN;
@@ -1666,7 +1666,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     if (NIL_P(handle)) {
         return NULL;
     }
-    return dln_symbol((void *)NUM2SVALUE(handle), symbol);
+    return dln_symbol(NUM2PTR(handle), symbol);
 }
 
 void

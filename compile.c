@@ -610,8 +610,6 @@ branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
     return 1;
 }
 
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
-
 static VALUE
 setup_branch(const rb_code_location_t *loc, const char *type, VALUE structure, VALUE key)
 {

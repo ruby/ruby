@@ -3,16 +3,6 @@
 
 #include "ruby/ruby.h"          /* for VALUE */
 
-#if SIZEOF_VALUE <= SIZEOF_LONG
-# define SVALUE2NUM(x) LONG2NUM((long)(x))
-# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LONG(x)
-#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
-# define SVALUE2NUM(x) LL2NUM((LONG_LONG)(x))
-# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LL(x)
-#else
-# error Need integer for VALUE
-#endif
-
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.

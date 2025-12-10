@@ -760,7 +760,7 @@ static int
 cleanup_local_extension_i(VALUE key, VALUE value, VALUE arg)
 {
 #if defined(_WIN32)
-    HMODULE h = (HMODULE)NUM2SVALUE(value);
+    HMODULE h = (HMODULE)NUM2PTR(value);
     WCHAR module_path[MAXPATHLEN];
     DWORD len = GetModuleFileNameW(h, module_path, numberof(module_path));
 

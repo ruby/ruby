@@ -35,8 +35,6 @@ enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
 };
 
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
-
 // For a given raw_sample (frame), set the hash with the caller's
 // name, file, and line number. Return the  hash with collected frame_info.
 static void
