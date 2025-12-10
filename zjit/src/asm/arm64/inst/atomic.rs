@@ -14,7 +14,7 @@ impl From<u8> for Size {
         match num_bits {
             64 => Size::Size64,
             32 => Size::Size32,
-            _ => panic!("Invalid number of bits: {}", num_bits)
+            _ => panic!("Invalid number of bits: {num_bits}"),
         }
     }
 }

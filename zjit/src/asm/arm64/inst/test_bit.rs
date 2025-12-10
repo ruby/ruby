@@ -17,7 +17,7 @@ impl From<u8> for B5 {
         match bit_num {
             0..=31 => B5::B532,
             32..=63 => B5::B564,
-            _ => panic!("Invalid bit number: {}", bit_num)
+            _ => panic!("Invalid bit number: {bit_num}"),
         }
     }
 }

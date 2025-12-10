@@ -96,7 +96,7 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),

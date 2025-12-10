@@ -247,11 +247,11 @@ fn parse_jit_list(path_like: &str) -> HashSet<String> {
             }
         }
     } else {
-        eprintln!("Failed to read JIT list from '{}'", path_like);
+        eprintln!("Failed to read JIT list from '{path_like}'");
     }
     eprintln!("JIT list:");
     for item in &result {
-        eprintln!("  {}", item);
+        eprintln!("  {item}");
     }
     result
 }
@@ -373,7 +373,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.dump_hir_graphviz = Some(opt_val);
@@ -400,7 +400,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
                         eprintln!("invalid --zjit-dump-lir option: '{filter}'");
-                        eprintln!("valid --zjit-dump-lir options: all, {}", valid_options);
+                        eprintln!("valid --zjit-dump-lir options: all, {valid_options}");
                         return None;
                     }
                 };
@@ -421,7 +421,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.log_compiled_iseqs = Some(opt_val);

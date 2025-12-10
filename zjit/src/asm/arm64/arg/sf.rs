@@ -13,7 +13,7 @@ impl From<u8> for Sf {
         match num_bits {
             64 => Sf::Sf64,
             32 => Sf::Sf32,
-            _ => panic!("Invalid number of bits: {}", num_bits)
+            _ => panic!("Invalid number of bits: {num_bits}"),
         }
     }
 }

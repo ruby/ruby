@@ -1311,7 +1311,7 @@ impl Assembler {
                         64 | 32 => stur(cb, src, dest.into()),
                         16 => sturh(cb, src, dest.into()),
                         8 => sturb(cb, src, dest.into()),
-                        num_bits => panic!("unexpected dest num_bits: {} (src: {:?}, dest: {:?})", num_bits, src, dest),
+                        num_bits => panic!("unexpected dest num_bits: {num_bits} (src: {src:?}, dest: {dest:?})"),
                     }
                 },
                 Insn::Load { opnd, out } |
@@ -1331,7 +1331,7 @@ impl Assembler {
                                 64 | 32 => ldur(cb, out.into(), opnd.into()),
                                 16 => ldurh(cb, out.into(), opnd.into()),
                                 8 => ldurb(cb, out.into(), opnd.into()),
-                                num_bits => panic!("unexpected num_bits: {}", num_bits)
+                                num_bits => panic!("unexpected num_bits: {num_bits}"),
                             };
                         },
                         Opnd::Value(value) => {
