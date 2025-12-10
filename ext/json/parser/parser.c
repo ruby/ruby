@@ -752,6 +752,9 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                 break;
             default:
                 if ((unsigned char)*pe < 0x20) {
+                    if (*pe == '\n') {
+                        raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                    }
                     raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                 }
                 raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);

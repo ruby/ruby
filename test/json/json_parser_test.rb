@@ -164,6 +164,14 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_raise JSON::ParserError do
+        parse(%("#{ord.chr}"))
+      end
+    end
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))
