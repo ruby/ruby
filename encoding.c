@@ -56,7 +56,7 @@ int rb_encdb_alias(const char *alias, const char *orig);
 #pragma GCC visibility pop
 #endif
 
-static ID id_encoding;
+static ID id_encoding, id_i_name;
 VALUE rb_cEncoding;
 
 #define ENCODING_LIST_CAPA 256
@@ -136,6 +136,7 @@ static VALUE
 enc_new(rb_encoding *encoding)
 {
     VALUE enc = TypedData_Wrap_Struct(rb_cEncoding, &encoding_data_type, (void *)encoding);
+    rb_ivar_set(enc, id_i_name, rb_fstring_cstr(encoding->name));
     RB_OBJ_SET_FROZEN_SHAREABLE(enc);
     return enc;
 }
@@ -1356,20 +1357,6 @@ enc_inspect(VALUE self)
                           rb_enc_autoload_p(enc) ? " (autoload)" : "");
 }
 
-/*
- * call-seq:
- *   enc.name -> string
- *   enc.to_s -> string
- *
- * Returns the name of the encoding.
- *
- *   Encoding::UTF_8.name      #=> "UTF-8"
- */
-static VALUE
-enc_name(VALUE self)
-{
-    return rb_fstring_cstr(rb_enc_name((rb_encoding*)RTYPEDDATA_GET_DATA(self)));
-}
 
 static int
 enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
@@ -1513,7 +1500,7 @@ static VALUE
 enc_dump(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 1);
-    return enc_name(self);
+    return rb_attr_get(self, id_i_name);
 }
 
 /* :nodoc: */
@@ -2002,12 +1989,19 @@ Init_Encoding(void)
     VALUE list;
     int i;
 
+    id_i_name = rb_intern_const("@name");
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_define_alloc_func(rb_cEncoding, enc_s_alloc);
     rb_undef_method(CLASS_OF(rb_cEncoding), "new");
-    rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
+
+    /* The name of the encoding.
+     *
+     *   Encoding::UTF_8.name      #=> "UTF-8"
+     */
+    rb_attr(rb_cEncoding, rb_intern("name"), TRUE, FALSE, Qfalse);
+    rb_define_alias(rb_cEncoding, "to_s", "name");
+
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
-    rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_method(rb_cEncoding, "names", enc_names, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_method(rb_cEncoding, "ascii_compatible?", enc_ascii_compatible_p, 0);
