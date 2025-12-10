@@ -512,11 +512,9 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 
 ### Embedded \Data
 
-| Constant | Contains                                                            |
-|----------|---------------------------------------------------------------------|
-| `DATA`   | File containing embedded data (lines following `__END__`, if any).  |
-|       Constant        | Contains                                                                      |
+|      Constant         | Contains                                                                      |
 |:---------------------:|-------------------------------------------------------------------------------|
+|        `DATA`         | File containing embedded data (lines following `__END__`, if any).            |
 |         `ENV`         | Hash of current environment variable names and values.                        |
 |        `ARGF`         | String concatenation of files given on the command line, or `$stdin` if none. |
 |        `ARGV`         | Array of the given command-line arguments.                                    |
@@ -530,12 +528,6 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 |     `RUBY_ENGINE`     | String Ruby engine.                                                           |
 | `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
 |  `RUBY_DESCRIPTION`   | String Ruby description.                                                      |
-
-### Embedded Data
-
-| Constant | Contains                                                           |
-|:--------:|--------------------------------------------------------------------|
-|  `DATA`  | File containing embedded data (lines following `__END__`, if any). |
 
 ## Streams
 
