@@ -244,7 +244,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'RGENGC_CHECK_MODE',              with: { cppflags: '-DRGENGC_CHECK_MODE' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'VM_CHECK_MODE',                  with: { cppflags: '-DVM_CHECK_MODE' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'USE_EMBED_CI=0',                 with: { cppflags: '-DUSE_EMBED_CI=0' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'USE_FLONUM=0',                   with: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_FLONUM=0',                   with: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
 
   compileX:
     name: 'omnibus compilations, #10'

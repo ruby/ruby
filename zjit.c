@@ -31,6 +31,10 @@
 
 #include <errno.h>
 
+// This build config impacts the pointer tagging scheme and we only want to
+// support one scheme for simplicity.
+STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
+
 enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
 };
