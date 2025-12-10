@@ -10201,28 +10201,11 @@ tr_setup_table_multi(char table[TR_TABLE_SIZE], VALUE *tablep, VALUE *ctablep,
 }
 
 static long
-lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc,
-              int num_selectors, VALUE *selectors)
+lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 {
     const char *const start = s;
 
     if (!s || s >= e) return 0;
-
-    /* remove leading characters of selectors if given */
-    if (num_selectors > 0) {
-        char table[TR_TABLE_SIZE];
-        VALUE del = 0, nodel = 0;
-
-        tr_setup_table_multi(table, &del, &nodel, str, num_selectors, selectors);
-        while (s < e) {
-            int n;
-            unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
-
-            if (!tr_find(cc, table, del, nodel)) break;
-            s += n;
-        }
-        return s - start;
-    }
 
     /* remove spaces at head */
     if (single_byte_optimizable(str)) {
@@ -10236,6 +10219,25 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc,
             if (cc && !rb_isspace(cc)) break;
             s += n;
         }
+    }
+    return s - start;
+}
+
+static long
+lstrip_offset_table(VALUE str, const char *s, const char *e, rb_encoding *enc,
+                    char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
+{
+    const char *const start = s;
+
+    if (!s || s >= e) return 0;
+
+    /* remove leading characters in the table */
+    while (s < e) {
+        int n;
+        unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
+
+        if (!tr_find(cc, table, del, nodel)) break;
+        s += n;
     }
     return s - start;
 }
@@ -10264,7 +10266,17 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
-    loffset = lstrip_offset(str, start, start+olen, enc, argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
+    }
+    else {
+        loffset = lstrip_offset(str, start, start+olen, enc);
+    }
+
     if (loffset > 0) {
         long len = olen-loffset;
         s = start + loffset;
@@ -10313,14 +10325,22 @@ rb_str_lstrip(int argc, VALUE *argv, VALUE str)
     rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
 
     RSTRING_GETMEM(str, start, len);
-    loffset = lstrip_offset(str, start, start+len, STR_ENC_GET(str), argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        loffset = lstrip_offset_table(str, start, start+len, STR_ENC_GET(str), table, del, nodel);
+    }
+    else {
+        loffset = lstrip_offset(str, start, start+len, STR_ENC_GET(str));
+    }
     if (loffset <= 0) return str_duplicate(rb_cString, str);
     return rb_str_subseq(str, loffset, len - loffset);
 }
 
 static long
-rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc,
-              int num_selectors, VALUE *selectors)
+rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 {
     const char *t;
 
@@ -10330,22 +10350,6 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc,
     }
     if (!s || s >= e) return 0;
     t = e;
-
-    /* remove trailing characters of selectors if given */
-    if (num_selectors > 0) {
-        char table[TR_TABLE_SIZE];
-        VALUE del = 0, nodel = 0;
-        char *tp;
-
-        tr_setup_table_multi(table, &del, &nodel, str, num_selectors, selectors);
-        while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
-            unsigned int c = rb_enc_codepoint(tp, e, enc);
-            if (!tr_find(c, table, del, nodel)) break;
-            t = tp;
-        }
-
-        return e - t;
-    }
 
     /* remove trailing spaces or '\0's */
     if (single_byte_optimizable(str)) {
@@ -10361,6 +10365,30 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc,
             t = tp;
         }
     }
+    return e - t;
+}
+
+static long
+rstrip_offset_table(VALUE str, const char *s, const char *e, rb_encoding *enc,
+                    char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
+{
+    const char *t;
+    char *tp;
+
+    rb_str_check_dummy_enc(enc);
+    if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
+        rb_raise(rb_eEncCompatError, "invalid byte sequence in %s", rb_enc_name(enc));
+    }
+    if (!s || s >= e) return 0;
+    t = e;
+
+    /* remove trailing characters in the table */
+    while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
+        unsigned int c = rb_enc_codepoint(tp, e, enc);
+        if (!tr_find(c, table, del, nodel)) break;
+        t = tp;
+    }
+
     return e - t;
 }
 
@@ -10388,7 +10416,16 @@ rb_str_rstrip_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
-    roffset = rstrip_offset(str, start, start+olen, enc, argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        roffset = rstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
+    }
+    else {
+        roffset = rstrip_offset(str, start, start+olen, enc);
+    }
     if (roffset > 0) {
         long len = olen - roffset;
 
@@ -10437,7 +10474,16 @@ rb_str_rstrip(int argc, VALUE *argv, VALUE str)
 
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
-    roffset = rstrip_offset(str, start, start+olen, enc, argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        roffset = rstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
+    }
+    else {
+        roffset = rstrip_offset(str, start, start+olen, enc);
+    }
     if (roffset <= 0) return str_duplicate(rb_cString, str);
     return rb_str_subseq(str, 0, olen-roffset);
 }
@@ -10468,8 +10514,18 @@ rb_str_strip_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
 
-    loffset = lstrip_offset(str, start, start+olen, enc, argc, argv);
-    roffset = rstrip_offset(str, start+loffset, start+olen, enc, argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
+        roffset = rstrip_offset_table(str, start+loffset, start+olen, enc, table, del, nodel);
+    }
+    else {
+        loffset = lstrip_offset(str, start, start+olen, enc);
+        roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+    }
 
     if (loffset > 0 || roffset > 0) {
         long len = olen-roffset;
@@ -10523,8 +10579,18 @@ rb_str_strip(int argc, VALUE *argv, VALUE str)
 
     RSTRING_GETMEM(str, start, olen);
 
-    loffset = lstrip_offset(str, start, start+olen, enc, argc, argv);
-    roffset = rstrip_offset(str, start+loffset, start+olen, enc, argc, argv);
+    if (argc > 0) {
+        char table[TR_TABLE_SIZE];
+        VALUE del = 0, nodel = 0;
+
+        tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+        loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
+        roffset = rstrip_offset_table(str, start+loffset, start+olen, enc, table, del, nodel);
+    }
+    else {
+        loffset = lstrip_offset(str, start, start+olen, enc);
+        roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+    }
 
     if (loffset <= 0 && roffset <= 0) return str_duplicate(rb_cString, str);
     return rb_str_subseq(str, loffset, olen-loffset-roffset);
