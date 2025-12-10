@@ -9523,7 +9523,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9538,9 +9538,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestFrozen@0x1010, a@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozen@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:Fixnum[1] = Const Value(1)
+          v27:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9564,7 +9564,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:14:
+        fn test@<compiled>:13:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9579,9 +9579,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestMultiIvars@0x1010, b@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestMultiIvars@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:Fixnum[20] = Const Value(20)
+          v27:Fixnum[20] = Const Value(20)
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9602,8 +9602,8 @@ mod hir_opt_tests {
             test
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r#"
-        fn test@<compiled>:12:
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9618,10 +9618,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestFrozenStr@0x1010, name@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenStr@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:String = Const Value(VALUE(0x1050))
+          v27:StringExact[VALUE(0x1050)] = Const Value(VALUE(0x1050))
           CheckInterrupts
-          Return v35
-        "#);
+          Return v27
+        ");
     }
 
     #[test]
@@ -9642,7 +9642,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9657,9 +9657,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestFrozenNil@0x1010, value@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenNil@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:NilClass = Const Value(nil)
+          v27:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9681,7 +9681,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9720,7 +9720,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9735,9 +9735,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestAttrReader@0x1010, value@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestAttrReader@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:Fixnum[42] = Const Value(42)
+          v27:Fixnum[42] = Const Value(42)
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9759,7 +9759,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9774,9 +9774,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestFrozenSym@0x1010, sym@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenSym@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:StaticSymbol[:hello] = Const Value(:hello)
+          v27:StaticSymbol[:hello] = Const Value(VALUE(0x1050))
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9798,7 +9798,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:12:
+        fn test@<compiled>:11:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9813,9 +9813,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestFrozenBool@0x1010, flag@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenBool@0x1010)
           v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v35:TrueClass = Const Value(true)
+          v27:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 
@@ -9875,7 +9875,7 @@ mod hir_opt_tests {
             test
         ");
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:14:
+        fn test@<compiled>:12:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -9886,23 +9886,23 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, NESTED_FROZEN)
-          v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v28:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
-          v25:HeapObject[VALUE(0x1008)] = GuardShape v20, 0x1048
-          v37:Fixnum[100] = Const Value(100)
+          v39:HeapObject[VALUE(0x1008)] = GuardShape v28, 0x1048
+          v50:Fixnum[100] = Const Value(100)
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, NESTED_FROZEN)
-          v31:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1050, cme:0x1058)
+          PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
+          v34:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
-          v36:HeapObject[VALUE(0x1008)] = GuardShape v31, 0x1048
-          v38:Fixnum[200] = Const Value(200)
-          PatchPoint MethodRedefined(Integer@0x1060, +@0x1068, cme:0x1070)
-          v39:Fixnum[300] = Const Value(300)
+          v42:HeapObject[VALUE(0x1008)] = GuardShape v34, 0x1048
+          v51:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Integer@0x1088, +@0x1090, cme:0x1098)
+          v52:Fixnum[300] = Const Value(300)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v39
+          Return v52
         ");
     }
 }
