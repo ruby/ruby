@@ -211,7 +211,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     }
     // If the ISEQ already hax MAX_ISEQ_VERSIONS, do not compile a new version.
     if payload.versions.len() == MAX_ISEQ_VERSIONS {
-        return Err(CompileError::IseqHasMaxVersions);
+        return Err(CompileError::IseqVersionLimitReached);
     }
 
     // Compile the ISEQ
