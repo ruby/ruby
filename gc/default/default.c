@@ -316,7 +316,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS
-# define GC_DEBUG_STRESS_TO_CLASS 1
+# define GC_DEBUG_STRESS_TO_CLASS RUBY_DEBUG
 #endif
 
 typedef enum {
@@ -9428,6 +9428,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 
 VALUE rb_ident_hash_new_with_size(st_index_t size);
 
+#if GC_DEBUG_STRESS_TO_CLASS
 /*
  *  call-seq:
  *    GC.add_stress_to_class(class[, ...])
@@ -9477,6 +9478,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 
     return Qnil;
 }
+#endif
 
 void *
 rb_gc_impl_objspace_alloc(void)
@@ -9582,10 +9584,10 @@ rb_gc_impl_init(void)
         rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
     }
 
-    if (GC_DEBUG_STRESS_TO_CLASS) {
-        rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
-        rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
-    }
+#if GC_DEBUG_STRESS_TO_CLASS
+    rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+    rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
+#endif
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);
