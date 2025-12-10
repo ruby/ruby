@@ -2084,9 +2084,9 @@ rb_current_execution_context(bool expect_ec)
      * and the address of the `ruby_current_ec` can be stored on a function
      * frame. However, this address can be mis-used after native thread
      * migration of a coroutine.
-     *   1) Get `ptr =&ruby_current_ec` op NT1 and store it on the frame.
+     *   1) Get `ptr = &ruby_current_ec` on NT1 and store it on the frame.
      *   2) Context switch and resume it on the NT2.
-     *   3) `ptr` is used on NT2 but it accesses to the TLS on NT1.
+     *   3) `ptr` is used on NT2 but it accesses the TLS of NT1.
      * This assertion checks such misusage.
      *
      * To avoid accidents, `GET_EC()` should be called once on the frame.
