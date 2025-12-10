@@ -3116,8 +3116,6 @@ impl Function {
                             // We're only looking at T_OBJECT so ignore all of the imemo stuff.
                             assert!(recv_type.flags().is_t_object());
                             next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
-                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
-                            assert!(ivar_result, "New shape must have the ivar index");
                             // If the VM ran out of shapes, or this class generated too many leaf,
                             // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
@@ -3126,6 +3124,8 @@ impl Function {
                                 self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
                                 self.push_insn_id(block, insn_id); continue;
                             }
+                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+                            assert!(ivar_result, "New shape must have the ivar index");
                             let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
                             let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
                             // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to

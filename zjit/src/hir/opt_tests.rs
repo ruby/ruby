@@ -3933,6 +3933,38 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dont_specialize_setivar_when_next_shape_is_too_complex() {
+        eval(r#"
+            class AboutToBeTooComplex
+              def test = @abc = 5
+            end
+            SHAPE_MAX_VARIATIONS = 8  # see shape.h
+            SHAPE_MAX_VARIATIONS.times do
+              AboutToBeTooComplex.new.instance_variable_set(:"@a#{_1}", 1)
+            end
+            AboutToBeTooComplex.new.test
+            TEST = AboutToBeTooComplex.instance_method(:test)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          IncrCounter setivar_fallback_new_shape_too_complex
+          SetIvar v6, :@abc, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_elide_freeze_with_frozen_hash() {
         eval("
             def test = {}.freeze
