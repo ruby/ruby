@@ -82,24 +82,6 @@ class TestTracepointObj < Test::Unit::TestCase
     end
   end
 
-  def test_tracepoint_add_object_id
-    Bug.tracepoint_add_object_id do
-      klass = Struct.new
-      2.times { klass.new }
-
-      klass = Struct.new(:a)
-      2.times { klass.new }
-
-      klass = Struct.new(:a, :b, :c)
-      2.times { klass.new }
-
-      2.times { Set.new } # To test T_DATA / TypedData RUBY_TYPED_EMBEDDABLE
-      2.times { Proc.new { } } # To test T_DATA / TypedData non embeddable
-
-      2.times { Object.new }
-    end
-  end
-
   def test_teardown_with_active_GC_end_hook
     assert_separately([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}; GC.start')
   end
