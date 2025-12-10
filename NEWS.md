@@ -240,7 +240,7 @@ The following default gems are updated.
 
 * RubyGems 4.0.1
 * bundler 4.0.1
-* date 3.5.0
+* date 3.5.1
 * digest 3.2.1
 * english 0.8.1
 * erb 6.0.0
