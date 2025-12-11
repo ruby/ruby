@@ -4889,6 +4889,16 @@ assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for splat with &proc{} when the target has rest (Bug #21266)
+assert_equal '[]', %q{
+  def foo(args) = bar(*args, &proc { _1 })
+  def bar(_, _, _, _, *rest) = yield rest
+
+  GC.stress = true
+  foo([1,2,3,4])
+  foo([1,2,3,4])
+}
+
 # regression test for invalidating an empty block
 assert_equal '0', %q{
   def foo = (* = 1).pred

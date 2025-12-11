@@ -7844,6 +7844,17 @@ fn gen_send_iseq(
         asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }
 
+    // If this is a forwardable iseq, adjust the stack size accordingly
+    let callee_ep = if forwarding {
+        -1 + num_locals + VM_ENV_DATA_SIZE as i32
+    } else {
+        -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1
+    };
+    let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
+
+    // Track if we stored the proc early to callee's specval location (above current stack)
+    let mut proc_stored_above_sp = false;
+
     match block_arg_type {
         Some(BlockArg::Nil) => {
             // We have a nil block arg, so let's pop it off the args
@@ -7871,21 +7882,28 @@ fn gen_send_iseq(
                 Counter::guard_send_block_arg_type,
             );
 
-            // If this is a forwardable iseq, adjust the stack size accordingly
-            let callee_ep = if forwarding {
-                -1 + num_locals + VM_ENV_DATA_SIZE as i32
-            } else {
-                -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1
-            };
-            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
             if callee_specval < 0 {
                 // Can't write to sp[-n] since that's where the arguments are
                 gen_counter_incr(jit, asm, Counter::send_iseq_clobbering_block_arg);
                 return None;
             }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
-            let callee_specval = asm.ctx.sp_opnd(callee_specval);
-            asm.store(callee_specval, proc);
+            let callee_specval_opnd = asm.ctx.sp_opnd(callee_specval);
+            asm.store(callee_specval_opnd, proc);
+
+            // When iseq_has_rest is true, there will be C calls (like rb_ary_dup) that
+            // can trigger GC before the callee frame is set up.
+            // The proc is stored above the current stack top, so we need to:
+            // - Nil-fill slots between stack top and specval (so GC doesn't see garbage)
+            // - Later, save SP with a larger offset to include the specval location
+            if iseq_has_rest && callee_specval > 0 {
+                nil_fill(
+                    "nil-initialize slots above stack for GC safety",
+                    0..callee_specval,
+                    asm
+                );
+                proc_stored_above_sp = true;
+            }
         }
         None => {
             // Nothing to do
@@ -7923,7 +7941,13 @@ fn gen_send_iseq(
     if iseq_has_rest {
         // We are going to allocate so setting pc and sp.
         jit_save_pc(jit, asm);
-        gen_save_sp(asm);
+        if proc_stored_above_sp {
+            // The proc was stored above the current stack top. Save SP with a larger
+            // offset so GC can see the proc (and the nil-initialized slots below it).
+            gen_save_sp_with_offset(asm, (callee_specval + 1) as i8);
+        } else {
+            gen_save_sp(asm);
+        }
 
         let rest_param_array = if splat_call {
             let non_rest_arg_count = argc - 1;
