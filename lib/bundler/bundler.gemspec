@@ -34,8 +34,7 @@ Gem::Specification.new do |s|
   # It should match the RubyGems version shipped with `required_ruby_version` above
   s.required_rubygems_version = ">= 3.4.1"
 
-  base = File.expand_path('../../..', __FILE__)
-  s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH, base: base).reject {|f| File.directory?(File.join(base, f)) }
+  s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[lib/bundler/bundler.gemspec]
