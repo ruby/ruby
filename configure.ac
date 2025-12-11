@@ -3957,7 +3957,7 @@ AC_ARG_ENABLE(zjit,
     [AS_CASE(["$JIT_TARGET_OK"],
         [yes], [
             rb_zjit_build_possible=no
-            AC_MSG_CHECKING([possible to build ZJIT])dnl only checked when --enable-zjit is not specified
+            AC_MSG_CHECKING([prerequisites for ZJIT])dnl only checked when --enable-zjit is not specified
             # Fails in case rustc target doesn't match ruby target. Can happen on Rosetta, for example.
             # 1.85.0 is the first stable version that supports the 2024 edition.
             AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
