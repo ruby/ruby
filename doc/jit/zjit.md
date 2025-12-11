@@ -13,6 +13,10 @@ You can change how much executable memory is allocated using [ZJIT's command-lin
 
 ## Build Instructions
 
+Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequists.
+Additionally, ZJIT requires Rust 1.85.0 or later. Release builds need only `rustc`. Development
+builds require `cargo` and may download dependencies.
+
 ### For normal use
 
 To build ZJIT on macOS:
