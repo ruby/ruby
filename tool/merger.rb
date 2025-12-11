@@ -142,10 +142,12 @@ class << Merger = Object.new
     unless relname
       raise ArgumentError, 'relname is not specified'
     end
-    if /^v/ !~ relname
-      tagname = "v#{relname.gsub(/[.-]/, '_')}"
-    else
+    if relname.start_with?('v')
       tagname = relname
+    elsif Integer(relname.split('.', 2).first) >= 4
+      tagname = "v#{relname}"
+    else
+      tagname = "v#{relname.gsub(/[.-]/, '_')}"
     end
 
     execute('git', 'tag', '-d', tagname)
