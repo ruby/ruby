@@ -6,8 +6,10 @@ class TestTimeout < Test::Unit::TestCase
 
   private def kill_timeout_thread
     thread = Timeout.const_get(:State).instance.instance_variable_get(:@timeout_thread)
-    thread.kill
-    thread.join
+    if thread
+      thread.kill
+      thread.join
+    end
   end
 
   def test_public_methods
