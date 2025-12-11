@@ -416,4 +416,33 @@ class TestTimeout < Test::Unit::TestCase
       assert_equal :ok, r
     end;
   end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
+
+  def test_timeout_in_trap_handler
+    # https://github.com/ruby/timeout/issues/17
+
+    # Test as if this was the first timeout usage
+    kill_timeout_thread
+
+    rd, wr = IO.pipe
+
+    trap("SIGUSR1") do
+      begin
+        Timeout.timeout(0.1) do
+          sleep 1
+        end
+      rescue Timeout::Error
+        wr.write "OK"
+        wr.close
+      else
+        wr.write "did not raise"
+      ensure
+        wr.close
+      end
+    end
+
+    Process.kill :USR1, Process.pid
+
+    assert_equal "OK", rd.read
+    rd.close
+  end
 end

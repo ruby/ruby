@@ -123,7 +123,7 @@ module Timeout
         # In that case, just return and let the main thread create the Timeout thread.
         return if @timeout_thread_mutex.owned?
 
-        @timeout_thread_mutex.synchronize do
+        Sync.synchronize @timeout_thread_mutex do
           unless @timeout_thread&.alive?
             @timeout_thread = create_timeout_thread
           end
@@ -132,7 +132,7 @@ module Timeout
     end
 
     def add_request(request)
-      @queue_mutex.synchronize do
+      Sync.synchronize @queue_mutex do
         @queue << request
         @condvar.signal
       end
@@ -153,6 +153,7 @@ module Timeout
       @done = false # protected by @mutex
     end
 
+    # Only called by the timeout thread, so does not need Sync.synchronize
     def done?
       @mutex.synchronize do
         @done
@@ -163,6 +164,7 @@ module Timeout
       now >= @deadline
     end
 
+    # Only called by the timeout thread, so does not need Sync.synchronize
     def interrupt
       @mutex.synchronize do
         unless @done
@@ -173,12 +175,32 @@ module Timeout
     end
 
     def finished
-      @mutex.synchronize do
+      Sync.synchronize @mutex do
         @done = true
       end
     end
   end
   private_constant :Request
+
+  module Sync
+    # Calls mutex.synchronize(&block) but if that fails on CRuby due to being in a trap handler,
+    # run mutex.synchronize(&block) in a separate Thread instead.
+    def self.synchronize(mutex, &block)
+      begin
+        mutex.synchronize(&block)
+      rescue ThreadError => e
+        raise e unless e.message == "can't be called from trap context"
+        # Workaround CRuby issue https://bugs.ruby-lang.org/issues/19473
+        # which raises on Mutex#synchronize in trap handler.
+        # It's expensive to create a Thread just for this,
+        # but better than failing.
+        Thread.new {
+          mutex.synchronize(&block)
+        }.join
+      end
+    end
+  end
+  private_constant :Sync
 
   # :startdoc:
 
