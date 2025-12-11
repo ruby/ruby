@@ -219,6 +219,7 @@ make_counters! {
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
         send_fallback_send_without_block_not_optimized_method_type_optimized,
+        send_fallback_send_without_block_not_optimized_need_permission,
         send_fallback_too_many_args_for_lir,
         send_fallback_send_without_block_bop_redefined,
         send_fallback_send_without_block_operands_not_fixnum,
@@ -230,6 +231,7 @@ make_counters! {
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
+        send_fallback_send_not_optimized_need_permission,
         send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
@@ -552,6 +554,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
         SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_without_block_not_optimized_method_type_optimized,
+        SendWithoutBlockNotOptimizedNeedPermission
+                                                  => send_fallback_send_without_block_not_optimized_need_permission,
         TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
         SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
         SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
@@ -569,6 +573,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
+        SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         Uncategorized(_)                          => send_fallback_uncategorized,
