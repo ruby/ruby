@@ -4051,44 +4051,44 @@ AS_CASE(["${ZJIT_SUPPORT}"],
 JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
 RLIB_DIR=
 AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
-    [no:yes:yes], [ # release build of YJIT+ZJIT
-        YJIT_LIBS=
-        ZJIT_LIBS=
-        JIT_RUST_FLAGS="--crate-type=rlib"
-        RLIB_DIR="target/release"
-        RUST_LIB="target/release/libruby.a"
-    ],
-    [no:*], [],
-    [*], [ # JIT_CARGO_SUPPORT not "no" -- cargo required.
-        AC_CHECK_TOOL(CARGO, [cargo], [no])
-        AS_IF([test x"$CARGO" = "xno"],
-            AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
+[no:yes:yes], [ # release build of YJIT+ZJIT
+    YJIT_LIBS=
+    ZJIT_LIBS=
+    JIT_RUST_FLAGS="--crate-type=rlib"
+    RLIB_DIR="target/release"
+    RUST_LIB="target/release/libruby.a"
+],
+[no:*], [],
+[ # JIT_CARGO_SUPPORT not "no" -- cargo required.
+    AC_CHECK_TOOL(CARGO, [cargo], [no])
+    AS_IF([test x"$CARGO" = "xno"],
+        AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
 
-        YJIT_LIBS=
-        ZJIT_LIBS=
+    YJIT_LIBS=
+    ZJIT_LIBS=
 
-        # There's more processing below to get the feature set for the
-        # top-level crate, so capture at this point for feature set of
-        # just the zjit crate.
-        ZJIT_TEST_FEATURES="${rb_cargo_features}"
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
 
-        AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
-            rb_cargo_features="$rb_cargo_features,yjit"
-        ])
-        AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
-            AC_SUBST(ZJIT_TEST_FEATURES)
-            rb_cargo_features="$rb_cargo_features,zjit"
-        ])
-        # if YJIT and ZJIT release mode
-        AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
-            JIT_CARGO_SUPPORT=release
-        ])
-        CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
-        AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
-            RUST_LIB="target/debug/libruby.a"
-        ], [
-            RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
-        ])
+    AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
+        rb_cargo_features="$rb_cargo_features,yjit"
+    ])
+    AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        AC_SUBST(ZJIT_TEST_FEATURES)
+        rb_cargo_features="$rb_cargo_features,zjit"
+    ])
+    # if YJIT and ZJIT release mode
+    AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
+        JIT_CARGO_SUPPORT=release
+    ])
+    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+    AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
+        RUST_LIB="target/debug/libruby.a"
+    ], [
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
+    ])
 ])
 
 # In case either we're linking rust code
