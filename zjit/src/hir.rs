@@ -733,6 +733,7 @@ pub enum Insn {
     ArrayLength { array: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
+    HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
 
     /// Allocate an instance of the `val` object without calling `#initialize` on it.
@@ -991,7 +992,8 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. }
+            | Insn::HashAset { .. } => false,
             _ => true,
         }
     }
@@ -1182,6 +1184,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
+            Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             &Insn::ObjectAllocClass { class, .. } => {
                 let class_name = get_class_name(class);
@@ -2034,6 +2037,7 @@ impl Function {
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
+            &HashAset { hash, key, val, state } => HashAset { hash: find!(hash), key: find!(key), val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, recv, ref args, name, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, return_type, elidable },
@@ -2131,7 +2135,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -4004,6 +4008,12 @@ impl Function {
                 worklist.push_back(key);
                 worklist.push_back(state);
             }
+            &Insn::HashAset { hash, key, val, state } => {
+                worklist.push_back(hash);
+                worklist.push_back(key);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendForward { recv, ref args, state, .. }
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
@@ -4699,7 +4709,8 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::Fixnum)
             }
             // Instructions with Hash operands
-            Insn::HashAref { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
+            Insn::HashAref { hash, .. }
+            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other
             Insn::ObjectAllocClass { class, .. } => {

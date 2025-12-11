@@ -1429,6 +1429,77 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_hash_freeze], call_threshold: 1
   end
 
+  def test_opt_aset_hash
+    assert_compiles '42', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_opt_aset_hash_returns_value
+    assert_compiles '100', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      test({}, :key, 100)
+      test({}, :key, 100)
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_string_key
+    assert_compiles '"bar"', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, "foo", "bar")
+      test(h, "foo", "bar")
+      h["foo"]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_subclass
+    assert_compiles '42', %q{
+      class MyHash < Hash; end
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = MyHash.new
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_few_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h.[]= 123
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_many_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h[:a, :b] = :c
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
   def test_opt_ary_freeze
     assert_compiles "[[], 5]", %q{
       def test = [].freeze

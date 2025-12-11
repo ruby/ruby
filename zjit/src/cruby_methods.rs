@@ -229,6 +229,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "push", inline_array_push);
     annotate!(rb_cArray, "pop", inline_array_pop);
     annotate!(rb_cHash, "[]", inline_hash_aref);
+    annotate!(rb_cHash, "[]=", inline_hash_aset);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
@@ -356,6 +357,12 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     None
 }
 
+fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[key, val] = args else { return None; };
+    let _ = fun.push_insn(block, hir::Insn::HashAset { hash: recv, key, val, state });
+    // Hash#[]= returns the value, not the hash
+    Some(val)
+}
 
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {

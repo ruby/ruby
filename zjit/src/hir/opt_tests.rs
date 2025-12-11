@@ -6739,6 +6739,102 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_hash_aset_literal() {
+        eval("
+            def test
+              h = {}
+              h[1] = 3
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:HashExact = NewHash
+          PatchPoint NoEPEscape(test)
+          v22:Fixnum[1] = Const Value(1)
+          v24:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          HashAset v13, v22, v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_hash_aset_profiled() {
+        eval("
+            def test(hash, key, val)
+              hash[key] = val
+            end
+            test({}, 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@6
+          v3:BasicObject = GetLocal :key, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v35:HashExact = GuardType v13, HashExact
+          HashAset v35, v14, v15
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_hash_aset_subclass() {
+        eval("
+            class C < Hash; end
+            def test(hash, key, val)
+              hash[key] = val
+            end
+            test(C.new, 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@6
+          v3:BasicObject = GetLocal :key, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v35:HashSubclass[class_exact:C] = GuardType v13, HashSubclass[class_exact:C]
+          HashAset v35, v14, v15
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
     fn test_optimize_thread_current() {
         eval("
             def test = Thread.current
