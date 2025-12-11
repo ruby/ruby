@@ -2201,7 +2201,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
  *  Returns the value of the fiber storage variable identified by +key+.
  *
  *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
- *  Fiber#store.
+ *  Fiber#storage.
  *
  *  See also Fiber::[]=.
  */
