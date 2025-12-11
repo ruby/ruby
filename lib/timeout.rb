@@ -83,36 +83,40 @@ module Timeout
     end
 
     def create_timeout_thread
-      watcher = Thread.new do
-        requests = []
-        while true
-          until @queue.empty? and !requests.empty? # wait to have at least one request
-            req = @queue.pop
-            requests << req unless req.done?
-          end
-          closest_deadline = requests.min_by(&:deadline).deadline
-
-          now = 0.0
-          @queue_mutex.synchronize do
-            while (now = GET_TIME.call(Process::CLOCK_MONOTONIC)) < closest_deadline and @queue.empty?
-              @condvar.wait(@queue_mutex, closest_deadline - now)
+      # Threads unexpectedly inherit the interrupt mask: https://github.com/ruby/timeout/issues/41
+      # So reset the interrupt mask to the default one for the timeout thread
+      Thread.handle_interrupt(Object => :immediate) do
+        watcher = Thread.new do
+          requests = []
+          while true
+            until @queue.empty? and !requests.empty? # wait to have at least one request
+              req = @queue.pop
+              requests << req unless req.done?
             end
-          end
+            closest_deadline = requests.min_by(&:deadline).deadline
 
-          requests.each do |req|
-            req.interrupt if req.expired?(now)
+            now = 0.0
+            @queue_mutex.synchronize do
+              while (now = GET_TIME.call(Process::CLOCK_MONOTONIC)) < closest_deadline and @queue.empty?
+                @condvar.wait(@queue_mutex, closest_deadline - now)
+              end
+            end
+
+            requests.each do |req|
+              req.interrupt if req.expired?(now)
+            end
+            requests.reject!(&:done?)
           end
-          requests.reject!(&:done?)
         end
-      end
 
-      if !watcher.group.enclosed? && (!defined?(Ractor.main?) || Ractor.main?)
-        ThreadGroup::Default.add(watcher)
-      end
+        if !watcher.group.enclosed? && (!defined?(Ractor.main?) || Ractor.main?)
+          ThreadGroup::Default.add(watcher)
+        end
 
-      watcher.name = "Timeout stdlib thread"
-      watcher.thread_variable_set(:"\0__detached_thread__", true)
-      watcher
+        watcher.name = "Timeout stdlib thread"
+        watcher.thread_variable_set(:"\0__detached_thread__", true)
+        watcher
+      end
     end
 
     def ensure_timeout_thread_created
