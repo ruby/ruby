@@ -64,8 +64,6 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
-# define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
-
 // For a given raw_sample (frame), set the hash with the caller's
 // name, file, and line number. Return the  hash with collected frame_info.
 static void
@@ -292,12 +290,6 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
     return rb_ary_subseq(ary, beg, len);
 }
 
-VALUE
-rb_yjit_fix_div_fix(VALUE recv, VALUE obj)
-{
-    return rb_fix_div_fix(recv, obj);
-}
-
 // Return non-zero when `obj` is an array and its last item is a
 // `ruby2_keywords` hash. We don't support this kind of splat.
 size_t
@@ -519,6 +511,15 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
         // to keep executing Ruby frames with the interpreter.
         cfp->jit_return = leave_exception;
     }
+}
+
+// VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
+// bindgen can only grab one version of the constant and copy that to rust,
+// we make that the upper bound and this the accurate value.
+uint32_t
+rb_vm_instruction_size(void)
+{
+    return VM_INSTRUCTION_SIZE;
 }
 
 // Primitives used by yjit.rb

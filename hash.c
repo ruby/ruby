@@ -1554,7 +1554,7 @@ rb_hash_dup(VALUE hash)
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
 
-    if (rb_obj_exivar_p(hash)) {
+    if (rb_obj_gen_fields_p(hash)) {
         rb_copy_generic_ivar(ret, hash);
     }
     return ret;
@@ -2876,7 +2876,7 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 VALUE
 rb_hash_key_str(VALUE key)
 {
-    if (!rb_obj_exivar_p(key) && RBASIC_CLASS(key) == rb_cString) {
+    if (!rb_obj_gen_fields_p(key) && RBASIC_CLASS(key) == rb_cString) {
         return rb_fstring(key);
     }
     else {
@@ -4899,7 +4899,7 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h0 <= h1 # => true
  *    h1 <= h0 # => false
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4928,7 +4928,7 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
  *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4955,7 +4955,7 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h0 >= h0 # => true
  *    h1 >= h0 # => false
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4984,7 +4984,7 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {foo: 0, bar: 1}         # => false  # Different key.
  *    h > {foo: 0, bar: 1}         # => false  # Different value.
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *

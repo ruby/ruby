@@ -314,7 +314,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * dependencies. It is currently being integrated into
  * [CRuby](https://github.com/ruby/ruby),
  * [JRuby](https://github.com/jruby/jruby),
- * [TruffleRuby](https://github.com/oracle/truffleruby),
+ * [TruffleRuby](https://github.com/truffleruby/truffleruby),
  * [Sorbet](https://github.com/sorbet/sorbet), and
  * [Syntax Tree](https://github.com/ruby-syntax-tree/syntax_tree).
  *

@@ -20,7 +20,7 @@
 
 module Timeout
   # The version
-  VERSION = "0.4.4"
+  VERSION = "0.5.0"
 
   # Internal error raised to when a timeout is triggered.
   class ExitException < Exception
@@ -44,12 +44,92 @@ module Timeout
   end
 
   # :stopdoc:
-  CONDVAR = ConditionVariable.new
-  QUEUE = Queue.new
-  QUEUE_MUTEX = Mutex.new
-  TIMEOUT_THREAD_MUTEX = Mutex.new
-  @timeout_thread = nil
-  private_constant :CONDVAR, :QUEUE, :QUEUE_MUTEX, :TIMEOUT_THREAD_MUTEX
+
+  # We keep a private reference so that time mocking libraries won't break Timeout.
+  GET_TIME = Process.method(:clock_gettime)
+  if defined?(Ractor.make_shareable)
+    # Ractor.make_shareable(Method) only works on Ruby 4+
+    Ractor.make_shareable(GET_TIME) rescue nil
+  end
+  private_constant :GET_TIME
+
+  class State
+    attr_reader :condvar, :queue, :queue_mutex # shared with Timeout.timeout()
+
+    def initialize
+      @condvar = ConditionVariable.new
+      @queue = Queue.new
+      @queue_mutex = Mutex.new
+
+      @timeout_thread = nil
+      @timeout_thread_mutex = Mutex.new
+    end
+
+    if defined?(Ractor.store_if_absent) && defined?(Ractor.shareable?) && Ractor.shareable?(GET_TIME)
+      # Ractor support if
+      # 1. Ractor.store_if_absent is available
+      # 2. Method object can be shareable (4.0~)
+      def self.instance
+        Ractor.store_if_absent :timeout_gem_state do
+          State.new
+        end
+      end
+    else
+      GLOBAL_STATE = State.new
+
+      def self.instance
+        GLOBAL_STATE
+      end
+    end
+
+    def create_timeout_thread
+      watcher = Thread.new do
+        requests = []
+        while true
+          until @queue.empty? and !requests.empty? # wait to have at least one request
+            req = @queue.pop
+            requests << req unless req.done?
+          end
+          closest_deadline = requests.min_by(&:deadline).deadline
+
+          now = 0.0
+          @queue_mutex.synchronize do
+            while (now = GET_TIME.call(Process::CLOCK_MONOTONIC)) < closest_deadline and @queue.empty?
+              @condvar.wait(@queue_mutex, closest_deadline - now)
+            end
+          end
+
+          requests.each do |req|
+            req.interrupt if req.expired?(now)
+          end
+          requests.reject!(&:done?)
+        end
+      end
+
+      if !watcher.group.enclosed? && (!defined?(Ractor.main?) || Ractor.main?)
+        ThreadGroup::Default.add(watcher)
+      end
+
+      watcher.name = "Timeout stdlib thread"
+      watcher.thread_variable_set(:"\0__detached_thread__", true)
+      watcher
+    end
+
+    def ensure_timeout_thread_created
+      unless @timeout_thread&.alive?
+        # If the Mutex is already owned we are in a signal handler.
+        # In that case, just return and let the main thread create the Timeout thread.
+        return if @timeout_thread_mutex.owned?
+
+        @timeout_thread_mutex.synchronize do
+          unless @timeout_thread&.alive?
+            @timeout_thread = create_timeout_thread
+          end
+        end
+      end
+    end
+  end
+  private_constant :State
 
   class Request
     attr_reader :deadline
@@ -91,54 +171,6 @@ module Timeout
   end
   private_constant :Request
 
-  def self.create_timeout_thread
-    watcher = Thread.new do
-      requests = []
-      while true
-        until QUEUE.empty? and !requests.empty? # wait to have at least one request
-          req = QUEUE.pop
-          requests << req unless req.done?
-        end
-        closest_deadline = requests.min_by(&:deadline).deadline
-
-        now = 0.0
-        QUEUE_MUTEX.synchronize do
-          while (now = GET_TIME.call(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
-            CONDVAR.wait(QUEUE_MUTEX, closest_deadline - now)
-          end
-        end
-
-        requests.each do |req|
-          req.interrupt if req.expired?(now)
-        end
-        requests.reject!(&:done?)
-      end
-    end
-    ThreadGroup::Default.add(watcher) unless watcher.group.enclosed?
-    watcher.name = "Timeout stdlib thread"
-    watcher.thread_variable_set(:"\0__detached_thread__", true)
-    watcher
-  end
-  private_class_method :create_timeout_thread
-
-  def self.ensure_timeout_thread_created
-    unless @timeout_thread and @timeout_thread.alive?
-      # If the Mutex is already owned we are in a signal handler.
-      # In that case, just return and let the main thread create the @timeout_thread.
-      return if TIMEOUT_THREAD_MUTEX.owned?
-      TIMEOUT_THREAD_MUTEX.synchronize do
-        unless @timeout_thread and @timeout_thread.alive?
-          @timeout_thread = create_timeout_thread
-        end
-      end
-    end
-  end
-
-  # We keep a private reference so that time mocking libraries won't break
-  # Timeout.
-  GET_TIME = Process.method(:clock_gettime)
-  private_constant :GET_TIME
-
   # :startdoc:
 
   # Perform an operation in a block, raising an error if it takes longer than
@@ -167,7 +199,7 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
+  def self.timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     raise ArgumentError, "Timeout sec must be a non-negative number" if 0 > sec
 
@@ -177,12 +209,14 @@ module Timeout
       return scheduler.timeout_after(sec, klass || Error, message, &block)
     end
 
-    Timeout.ensure_timeout_thread_created
+    state = State.instance
+    state.ensure_timeout_thread_created
+
     perform = Proc.new do |exc|
       request = Request.new(Thread.current, sec, exc, message)
-      QUEUE_MUTEX.synchronize do
-        QUEUE << request
-        CONDVAR.signal
+      state.queue_mutex.synchronize do
+        state.queue << request
+        state.condvar.signal
       end
       begin
         return yield(sec)
@@ -197,5 +231,8 @@ module Timeout
       Error.handle_timeout(message, &perform)
     end
   end
-  module_function :timeout
+
+  private def timeout(*args, &block)
+    Timeout.timeout(*args, &block)
+  end
 end

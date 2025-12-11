@@ -9,7 +9,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::{Invariant, SideExitReason};
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
-use crate::payload::IseqPayload;
+use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -531,7 +531,7 @@ pub enum Insn {
     Or { left: Opnd, right: Opnd, out: Opnd },
 
     /// Patch point that will be rewritten to a jump to a side exit on invalidation.
-    PatchPoint { target: Target, invariant: Invariant, payload: *mut IseqPayload },
+    PatchPoint { target: Target, invariant: Invariant, version: IseqVersionRef },
 
     /// Make sure the last PatchPoint has enough space to insert a jump.
     /// We insert this instruction at the end of each block so that the jump
@@ -1399,6 +1399,15 @@ impl Assembler
         }
     }
 
+    pub fn instruction_iterator(&mut self) -> InsnIter {
+        let insns = take(&mut self.insns);
+        InsnIter {
+            old_insns_iter: insns.into_iter(),
+            peeked: None,
+            index: 0,
+        }
+    }
+
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
         self.leaf_ccall_stack_size = Some(stack_size);
     }
@@ -1998,6 +2007,44 @@ impl fmt::Debug for Assembler {
     }
 }
 
+pub struct InsnIter {
+    old_insns_iter: std::vec::IntoIter<Insn>,
+    peeked: Option<(usize, Insn)>,
+    index: usize,
+}
+
+impl InsnIter {
+    // We're implementing our own peek() because we don't want peek to
+    // cross basic blocks as we're iterating.
+    pub fn peek(&mut self) -> Option<&(usize, Insn)> {
+        // If we don't have a peeked value, get one
+        if self.peeked.is_none() {
+            let insn = self.old_insns_iter.next()?;
+            let idx = self.index;
+            self.index += 1;
+            self.peeked = Some((idx, insn));
+        }
+        // Return a reference to the peeked value
+        self.peeked.as_ref()
+    }
+
+    // Get the next instruction.  Right now we're passing the "new" assembler
+    // (the assembler we're copying in to) as a parameter.  Once we've
+    // introduced basic blocks to LIR, we'll use the to set the correct BB
+    // on the new assembler, but for now it is unused.
+    pub fn next(&mut self, _new_asm: &mut Assembler) -> Option<(usize, Insn)> {
+        // If we have a peeked value, return it
+        if let Some(item) = self.peeked.take() {
+            return Some(item);
+        }
+        // Otherwise get the next from underlying iterator
+        let insn = self.old_insns_iter.next()?;
+        let idx = self.index;
+        self.index += 1;
+        Some((idx, insn))
+    }
+}
+
 impl Assembler {
     #[must_use]
     pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
@@ -2311,8 +2358,8 @@ impl Assembler {
         out
     }
 
-    pub fn patch_point(&mut self, target: Target, invariant: Invariant, payload: *mut IseqPayload) {
-        self.push_insn(Insn::PatchPoint { target, invariant, payload });
+    pub fn patch_point(&mut self, target: Target, invariant: Invariant, version: IseqVersionRef) {
+        self.push_insn(Insn::PatchPoint { target, invariant, version });
     }
 
     pub fn pad_patch_point(&mut self) {

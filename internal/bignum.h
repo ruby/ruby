@@ -9,6 +9,7 @@
  * @brief      Internal header for Bignums.
  */
 #include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
+#include "internal/compilers.h"        /* for FLEX_ARY_LEN */
 #include <stddef.h>             /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
@@ -76,18 +77,17 @@
 #define RBIGNUM(obj) ((struct RBignum *)(obj))
 #define BIGNUM_SIGN_BIT FL_USER1
 #define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
-#define BIGNUM_EMBED_LEN_NUMBITS 3
+
+/* This is likely more bits than we need today and will also need adjustment if
+ * we change GC slot sizes.
+ */
+#define BIGNUM_EMBED_LEN_NUMBITS 9
 #define BIGNUM_EMBED_LEN_MASK \
-    (~(~(VALUE)0U << BIGNUM_EMBED_LEN_NUMBITS) << BIGNUM_EMBED_LEN_SHIFT)
+    (RUBY_FL_USER11 | RUBY_FL_USER10 | RUBY_FL_USER9 | RUBY_FL_USER8 | RUBY_FL_USER7 | \
+     RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3)
 #define BIGNUM_EMBED_LEN_SHIFT \
     (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
-#ifndef BIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
-#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
-# else
-#  define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
-# endif
-#endif
+#define BIGNUM_EMBED_LEN_MAX (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)
 
 enum rb_int_parse_flags {
     RB_INT_PARSE_SIGN       = 0x01,
@@ -104,7 +104,12 @@ struct RBignum {
             size_t len;
             BDIGIT *digits;
         } heap;
-        BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
+        /* This is a length 1 array because:
+         *   1. GCC has a bug that does not optimize C flexible array members
+         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+         *   2. Zero length arrays are not supported by all compilers
+         */
+        BDIGIT ary[1];
     } as;
 };
 
@@ -164,7 +169,13 @@ VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 RUBY_SYMBOL_EXPORT_END
 
+#if HAVE_LONG_LONG
+VALUE rb_ull2big(unsigned LONG_LONG n);
+VALUE rb_ll2big(LONG_LONG n);
+#endif
+
 #if defined(HAVE_INT128_T)
+VALUE rb_uint128t2big(uint128_t n);
 VALUE rb_int128t2big(int128_t n);
 #endif
 

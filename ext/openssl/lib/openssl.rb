@@ -12,7 +12,6 @@
 
 require 'openssl.so'
 
-require_relative 'openssl/asn1'
 require_relative 'openssl/bn'
 require_relative 'openssl/cipher'
 require_relative 'openssl/digest'

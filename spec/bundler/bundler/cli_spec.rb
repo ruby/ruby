@@ -87,16 +87,11 @@ RSpec.describe "bundle executable" do
   end
 
   context "with no arguments" do
-    it "installs and log a warning by default" do
+    it "tries to installs by default but print help on missing Gemfile" do
       bundle "", raise_on_error: false
-      expect(err).to include("running `bundle` without argument will no longer run `bundle install`.")
       expect(err).to include("Could not locate Gemfile")
-    end
+      expect(out).to include("In a future version of Bundler")
 
-    it "prints a concise help message when default_cli_command set to cli_help" do
-      bundle "config set default_cli_command cli_help"
-      bundle ""
-      expect(err).to be_empty
       expect(out).to include("Bundler version #{Bundler::VERSION}").
         and include("\n\nBundler commands:\n\n").
         and include("\n\n  Primary commands:\n").
@@ -107,7 +102,9 @@ RSpec.describe "bundle executable" do
     it "runs bundle install when default_cli_command set to install" do
       bundle "config set default_cli_command install"
       bundle "", raise_on_error: false
+      expect(out).to_not include("In a future version of Bundler")
       expect(err).to include("Could not locate Gemfile")
+      expect(exitstatus).to_not be_zero
     end
   end
 

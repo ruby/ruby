@@ -14,7 +14,7 @@
 #define GetPKeyDH(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) { /* PARANOIA? */ \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
+        ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
     } \
 } while (0)
 #define GetDH(obj, dh) do { \
@@ -151,19 +151,19 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 
     dh = DHparams_dup(dh_other);
     if (!dh)
-	ossl_raise(ePKeyError, "DHparams_dup");
+        ossl_raise(ePKeyError, "DHparams_dup");
 
     DH_get0_key(dh_other, &pub, &priv);
     if (pub) {
-	BIGNUM *pub2 = BN_dup(pub);
-	BIGNUM *priv2 = BN_dup(priv);
+        BIGNUM *pub2 = BN_dup(pub);
+        BIGNUM *priv2 = BN_dup(priv);
 
         if (!pub2 || (priv && !priv2)) {
-	    BN_clear_free(pub2);
-	    BN_clear_free(priv2);
-	    ossl_raise(ePKeyError, "BN_dup");
-	}
-	DH_set0_key(dh, pub2, priv2);
+            BN_clear_free(pub2);
+            BN_clear_free(priv2);
+            ossl_raise(ePKeyError, "BN_dup");
+        }
+        DH_set0_key(dh, pub2, priv2);
     }
 
     pkey = EVP_PKEY_new();
@@ -249,11 +249,11 @@ ossl_dh_export(VALUE self)
 
     GetDH(self, dh);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(ePKeyError, NULL);
+        ossl_raise(ePKeyError, NULL);
     }
     if (!PEM_write_bio_DHparams(out, dh)) {
-	BIO_free(out);
-	ossl_raise(ePKeyError, NULL);
+        BIO_free(out);
+        ossl_raise(ePKeyError, NULL);
     }
     str = ossl_membio2str(out);
 
@@ -283,11 +283,11 @@ ossl_dh_to_der(VALUE self)
 
     GetDH(self, dh);
     if((len = i2d_DHparams(dh, NULL)) <= 0)
-	ossl_raise(ePKeyError, NULL);
+        ossl_raise(ePKeyError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_DHparams(dh, &p) < 0)
-	ossl_raise(ePKeyError, NULL);
+        ossl_raise(ePKeyError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -357,12 +357,6 @@ OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 void
 Init_ossl_dh(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
     /* Document-class: OpenSSL::PKey::DH
      *
      * An implementation of the Diffie-Hellman key exchange protocol based on

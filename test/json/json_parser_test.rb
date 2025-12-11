@@ -164,6 +164,20 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_raise JSON::ParserError do
+        parse(%("#{ord.chr}"))
+      end
+    end
+  end
+
+  def test_parse_allowed_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_equal ord.chr, parse(%("#{ord.chr}"), allow_control_characters: true)
+    end
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))
@@ -323,6 +337,13 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\u1_____"') }
     assert_raise(JSON::ParserError) { parse('"\u11____"') }
     assert_raise(JSON::ParserError) { parse('"\u111___"') }
+  end
+
+  def test_unicode_followed_by_newline
+    # Ref: https://github.com/ruby/json/issues/912
+    assert_equal "🌌\n".bytes, JSON.parse('"\ud83c\udf0c\n"').bytes
+    assert_equal "🌌\n", JSON.parse('"\ud83c\udf0c\n"')
+    assert_predicate JSON.parse('"\ud83c\udf0c\n"'), :valid_encoding?
   end
 
   def test_invalid_surogates

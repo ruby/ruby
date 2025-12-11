@@ -2,7 +2,7 @@
 
 typedef uint32_t pm_unicode_codepoint_t;
 
-#define UNICODE_ALPHA_CODEPOINTS_LENGTH 1450
+#define UNICODE_ALPHA_CODEPOINTS_LENGTH 1508
 static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
@@ -10,7 +10,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x2EC, 0x2EC,
     0x2EE, 0x2EE,
     0x345, 0x345,
-    0x370, 0x374,
+    0x363, 0x374,
     0x376, 0x377,
     0x37A, 0x37D,
     0x37F, 0x37F,
@@ -50,7 +50,8 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x840, 0x858,
     0x860, 0x86A,
     0x870, 0x887,
-    0x889, 0x88E,
+    0x889, 0x88F,
+    0x897, 0x897,
     0x8A0, 0x8C9,
     0x8D4, 0x8DF,
     0x8E3, 0x8E9,
@@ -140,7 +141,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0xC4A, 0xC4C,
     0xC55, 0xC56,
     0xC58, 0xC5A,
-    0xC5D, 0xC5D,
+    0xC5C, 0xC5D,
     0xC60, 0xC63,
     0xC80, 0xC83,
     0xC85, 0xC8C,
@@ -152,7 +153,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0xCC6, 0xCC8,
     0xCCA, 0xCCC,
     0xCD5, 0xCD6,
-    0xCDD, 0xCDE,
+    0xCDC, 0xCDE,
     0xCE0, 0xCE3,
     0xCF1, 0xCF3,
     0xD00, 0xD0C,
@@ -264,7 +265,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x1C00, 0x1C36,
     0x1C4D, 0x1C4F,
     0x1C5A, 0x1C7D,
-    0x1C80, 0x1C88,
+    0x1C80, 0x1C8A,
     0x1C90, 0x1CBA,
     0x1CBD, 0x1CBF,
     0x1CE9, 0x1CEC,
@@ -272,7 +273,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x1CF5, 0x1CF6,
     0x1CFA, 0x1CFA,
     0x1D00, 0x1DBF,
-    0x1DE7, 0x1DF4,
+    0x1DD3, 0x1DF4,
     0x1E00, 0x1F15,
     0x1F18, 0x1F1D,
     0x1F20, 0x1F45,
@@ -352,11 +353,8 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0xA67F, 0xA6EF,
     0xA717, 0xA71F,
     0xA722, 0xA788,
-    0xA78B, 0xA7CA,
-    0xA7D0, 0xA7D1,
-    0xA7D3, 0xA7D3,
-    0xA7D5, 0xA7D9,
-    0xA7F2, 0xA805,
+    0xA78B, 0xA7DC,
+    0xA7F1, 0xA805,
     0xA807, 0xA827,
     0xA840, 0xA873,
     0xA880, 0xA8C3,
@@ -446,6 +444,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x105A3, 0x105B1,
     0x105B3, 0x105B9,
     0x105BB, 0x105BC,
+    0x105C0, 0x105F3,
     0x10600, 0x10736,
     0x10740, 0x10755,
     0x10760, 0x10767,
@@ -464,6 +463,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x108F4, 0x108F5,
     0x10900, 0x10915,
     0x10920, 0x10939,
+    0x10940, 0x10959,
     0x10980, 0x109B7,
     0x109BE, 0x109BF,
     0x10A00, 0x10A03,
@@ -483,9 +483,14 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x10C80, 0x10CB2,
     0x10CC0, 0x10CF2,
     0x10D00, 0x10D27,
+    0x10D4A, 0x10D65,
+    0x10D69, 0x10D69,
+    0x10D6F, 0x10D85,
     0x10E80, 0x10EA9,
     0x10EAB, 0x10EAC,
     0x10EB0, 0x10EB1,
+    0x10EC2, 0x10EC7,
+    0x10EFA, 0x10EFC,
     0x10F00, 0x10F1C,
     0x10F27, 0x10F27,
     0x10F30, 0x10F45,
@@ -529,6 +534,17 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x11350, 0x11350,
     0x11357, 0x11357,
     0x1135D, 0x11363,
+    0x11380, 0x11389,
+    0x1138B, 0x1138B,
+    0x1138E, 0x1138E,
+    0x11390, 0x113B5,
+    0x113B7, 0x113C0,
+    0x113C2, 0x113C2,
+    0x113C5, 0x113C5,
+    0x113C7, 0x113CA,
+    0x113CC, 0x113CD,
+    0x113D1, 0x113D1,
+    0x113D3, 0x113D3,
     0x11400, 0x11441,
     0x11443, 0x11445,
     0x11447, 0x1144A,
@@ -567,6 +583,8 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x11A50, 0x11A97,
     0x11A9D, 0x11A9D,
     0x11AB0, 0x11AF8,
+    0x11B60, 0x11B67,
+    0x11BC0, 0x11BE0,
     0x11C00, 0x11C08,
     0x11C0A, 0x11C36,
     0x11C38, 0x11C3E,
@@ -588,6 +606,7 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x11D90, 0x11D91,
     0x11D93, 0x11D96,
     0x11D98, 0x11D98,
+    0x11DB0, 0x11DDB,
     0x11EE0, 0x11EF6,
     0x11F00, 0x11F10,
     0x11F12, 0x11F3A,
@@ -599,7 +618,9 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x12F90, 0x12FF0,
     0x13000, 0x1342F,
     0x13441, 0x13446,
+    0x13460, 0x143FA,
     0x14400, 0x14646,
+    0x16100, 0x1612E,
     0x16800, 0x16A38,
     0x16A40, 0x16A5E,
     0x16A70, 0x16ABE,
@@ -608,16 +629,19 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x16B40, 0x16B43,
     0x16B63, 0x16B77,
     0x16B7D, 0x16B8F,
+    0x16D40, 0x16D6C,
     0x16E40, 0x16E7F,
+    0x16EA0, 0x16EB8,
+    0x16EBB, 0x16ED3,
     0x16F00, 0x16F4A,
     0x16F4F, 0x16F87,
     0x16F8F, 0x16F9F,
     0x16FE0, 0x16FE1,
     0x16FE3, 0x16FE3,
-    0x16FF0, 0x16FF1,
-    0x17000, 0x187F7,
-    0x18800, 0x18CD5,
-    0x18D00, 0x18D08,
+    0x16FF0, 0x16FF6,
+    0x17000, 0x18CD5,
+    0x18CFF, 0x18D1E,
+    0x18D80, 0x18DF2,
     0x1AFF0, 0x1AFF3,
     0x1AFF5, 0x1AFFB,
     0x1AFFD, 0x1AFFE,
@@ -677,6 +701,11 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x1E290, 0x1E2AD,
     0x1E2C0, 0x1E2EB,
     0x1E4D0, 0x1E4EB,
+    0x1E5D0, 0x1E5ED,
+    0x1E5F0, 0x1E5F0,
+    0x1E6C0, 0x1E6DE,
+    0x1E6E0, 0x1E6F5,
+    0x1E6FE, 0x1E6FF,
     0x1E7E0, 0x1E7E6,
     0x1E7E8, 0x1E7EB,
     0x1E7ED, 0x1E7EE,
@@ -722,16 +751,16 @@ static const pm_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEP
     0x1F150, 0x1F169,
     0x1F170, 0x1F189,
     0x20000, 0x2A6DF,
-    0x2A700, 0x2B739,
-    0x2B740, 0x2B81D,
-    0x2B820, 0x2CEA1,
+    0x2A700, 0x2B81D,
+    0x2B820, 0x2CEAD,
     0x2CEB0, 0x2EBE0,
+    0x2EBF0, 0x2EE5D,
     0x2F800, 0x2FA1D,
     0x30000, 0x3134A,
-    0x31350, 0x323AF,
+    0x31350, 0x33479,
 };
 
-#define UNICODE_ALNUM_CODEPOINTS_LENGTH 1528
+#define UNICODE_ALNUM_CODEPOINTS_LENGTH 1598
 static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
@@ -739,7 +768,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x2EC, 0x2EC,
     0x2EE, 0x2EE,
     0x345, 0x345,
-    0x370, 0x374,
+    0x363, 0x374,
     0x376, 0x377,
     0x37A, 0x37D,
     0x37F, 0x37F,
@@ -778,7 +807,8 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x840, 0x858,
     0x860, 0x86A,
     0x870, 0x887,
-    0x889, 0x88E,
+    0x889, 0x88F,
+    0x897, 0x897,
     0x8A0, 0x8C9,
     0x8D4, 0x8DF,
     0x8E3, 0x8E9,
@@ -872,7 +902,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0xC4A, 0xC4C,
     0xC55, 0xC56,
     0xC58, 0xC5A,
-    0xC5D, 0xC5D,
+    0xC5C, 0xC5D,
     0xC60, 0xC63,
     0xC66, 0xC6F,
     0xC80, 0xC83,
@@ -885,7 +915,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0xCC6, 0xCC8,
     0xCCA, 0xCCC,
     0xCD5, 0xCD6,
-    0xCDD, 0xCDE,
+    0xCDC, 0xCDE,
     0xCE0, 0xCE3,
     0xCE6, 0xCEF,
     0xCF1, 0xCF3,
@@ -1007,7 +1037,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x1C00, 0x1C36,
     0x1C40, 0x1C49,
     0x1C4D, 0x1C7D,
-    0x1C80, 0x1C88,
+    0x1C80, 0x1C8A,
     0x1C90, 0x1CBA,
     0x1CBD, 0x1CBF,
     0x1CE9, 0x1CEC,
@@ -1015,7 +1045,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x1CF5, 0x1CF6,
     0x1CFA, 0x1CFA,
     0x1D00, 0x1DBF,
-    0x1DE7, 0x1DF4,
+    0x1DD3, 0x1DF4,
     0x1E00, 0x1F15,
     0x1F18, 0x1F1D,
     0x1F20, 0x1F45,
@@ -1094,11 +1124,8 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0xA67F, 0xA6EF,
     0xA717, 0xA71F,
     0xA722, 0xA788,
-    0xA78B, 0xA7CA,
-    0xA7D0, 0xA7D1,
-    0xA7D3, 0xA7D3,
-    0xA7D5, 0xA7D9,
-    0xA7F2, 0xA805,
+    0xA78B, 0xA7DC,
+    0xA7F1, 0xA805,
     0xA807, 0xA827,
     0xA840, 0xA873,
     0xA880, 0xA8C3,
@@ -1191,6 +1218,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x105A3, 0x105B1,
     0x105B3, 0x105B9,
     0x105BB, 0x105BC,
+    0x105C0, 0x105F3,
     0x10600, 0x10736,
     0x10740, 0x10755,
     0x10760, 0x10767,
@@ -1209,6 +1237,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x108F4, 0x108F5,
     0x10900, 0x10915,
     0x10920, 0x10939,
+    0x10940, 0x10959,
     0x10980, 0x109B7,
     0x109BE, 0x109BF,
     0x10A00, 0x10A03,
@@ -1229,9 +1258,14 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x10CC0, 0x10CF2,
     0x10D00, 0x10D27,
     0x10D30, 0x10D39,
+    0x10D40, 0x10D65,
+    0x10D69, 0x10D69,
+    0x10D6F, 0x10D85,
     0x10E80, 0x10EA9,
     0x10EAB, 0x10EAC,
     0x10EB0, 0x10EB1,
+    0x10EC2, 0x10EC7,
+    0x10EFA, 0x10EFC,
     0x10F00, 0x10F1C,
     0x10F27, 0x10F27,
     0x10F30, 0x10F45,
@@ -1278,6 +1312,17 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x11350, 0x11350,
     0x11357, 0x11357,
     0x1135D, 0x11363,
+    0x11380, 0x11389,
+    0x1138B, 0x1138B,
+    0x1138E, 0x1138E,
+    0x11390, 0x113B5,
+    0x113B7, 0x113C0,
+    0x113C2, 0x113C2,
+    0x113C5, 0x113C5,
+    0x113C7, 0x113CA,
+    0x113CC, 0x113CD,
+    0x113D1, 0x113D1,
+    0x113D3, 0x113D3,
     0x11400, 0x11441,
     0x11443, 0x11445,
     0x11447, 0x1144A,
@@ -1297,6 +1342,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x11680, 0x116B5,
     0x116B8, 0x116B8,
     0x116C0, 0x116C9,
+    0x116D0, 0x116E3,
     0x11700, 0x1171A,
     0x1171D, 0x1172A,
     0x11730, 0x11739,
@@ -1322,6 +1368,9 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x11A50, 0x11A97,
     0x11A9D, 0x11A9D,
     0x11AB0, 0x11AF8,
+    0x11B60, 0x11B67,
+    0x11BC0, 0x11BE0,
+    0x11BF0, 0x11BF9,
     0x11C00, 0x11C08,
     0x11C0A, 0x11C36,
     0x11C38, 0x11C3E,
@@ -1346,6 +1395,8 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x11D93, 0x11D96,
     0x11D98, 0x11D98,
     0x11DA0, 0x11DA9,
+    0x11DB0, 0x11DDB,
+    0x11DE0, 0x11DE9,
     0x11EE0, 0x11EF6,
     0x11F00, 0x11F10,
     0x11F12, 0x11F3A,
@@ -1358,7 +1409,10 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x12F90, 0x12FF0,
     0x13000, 0x1342F,
     0x13441, 0x13446,
+    0x13460, 0x143FA,
     0x14400, 0x14646,
+    0x16100, 0x1612E,
+    0x16130, 0x16139,
     0x16800, 0x16A38,
     0x16A40, 0x16A5E,
     0x16A60, 0x16A69,
@@ -1370,16 +1424,20 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x16B50, 0x16B59,
     0x16B63, 0x16B77,
     0x16B7D, 0x16B8F,
+    0x16D40, 0x16D6C,
+    0x16D70, 0x16D79,
     0x16E40, 0x16E7F,
+    0x16EA0, 0x16EB8,
+    0x16EBB, 0x16ED3,
     0x16F00, 0x16F4A,
     0x16F4F, 0x16F87,
     0x16F8F, 0x16F9F,
     0x16FE0, 0x16FE1,
     0x16FE3, 0x16FE3,
-    0x16FF0, 0x16FF1,
-    0x17000, 0x187F7,
-    0x18800, 0x18CD5,
-    0x18D00, 0x18D08,
+    0x16FF0, 0x16FF6,
+    0x17000, 0x18CD5,
+    0x18CFF, 0x18D1E,
+    0x18D80, 0x18DF2,
     0x1AFF0, 0x1AFF3,
     0x1AFF5, 0x1AFFB,
     0x1AFFD, 0x1AFFE,
@@ -1394,6 +1452,7 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x1BC80, 0x1BC88,
     0x1BC90, 0x1BC99,
     0x1BC9E, 0x1BC9E,
+    0x1CCF0, 0x1CCF9,
     0x1D400, 0x1D454,
     0x1D456, 0x1D49C,
     0x1D49E, 0x1D49F,
@@ -1443,6 +1502,11 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x1E2F0, 0x1E2F9,
     0x1E4D0, 0x1E4EB,
     0x1E4F0, 0x1E4F9,
+    0x1E5D0, 0x1E5ED,
+    0x1E5F0, 0x1E5FA,
+    0x1E6C0, 0x1E6DE,
+    0x1E6E0, 0x1E6F5,
+    0x1E6FE, 0x1E6FF,
     0x1E7E0, 0x1E7E6,
     0x1E7E8, 0x1E7EB,
     0x1E7ED, 0x1E7EE,
@@ -1490,16 +1554,16 @@ static const pm_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEP
     0x1F170, 0x1F189,
     0x1FBF0, 0x1FBF9,
     0x20000, 0x2A6DF,
-    0x2A700, 0x2B739,
-    0x2B740, 0x2B81D,
-    0x2B820, 0x2CEA1,
+    0x2A700, 0x2B81D,
+    0x2B820, 0x2CEAD,
     0x2CEB0, 0x2EBE0,
+    0x2EBF0, 0x2EE5D,
     0x2F800, 0x2FA1D,
     0x30000, 0x3134A,
-    0x31350, 0x323AF,
+    0x31350, 0x33479,
 };
 
-#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1302
+#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1320
 static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
     0x100, 0x100,
     0x102, 0x102,
@@ -1774,6 +1838,7 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x10C7, 0x10C7,
     0x10CD, 0x10CD,
     0x13A0, 0x13F5,
+    0x1C89, 0x1C89,
     0x1C90, 0x1CBA,
     0x1CBD, 0x1CBF,
     0x1E00, 0x1E00,
@@ -2103,9 +2168,15 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0xA7C2, 0xA7C2,
     0xA7C4, 0xA7C7,
     0xA7C9, 0xA7C9,
+    0xA7CB, 0xA7CC,
+    0xA7CE, 0xA7CE,
     0xA7D0, 0xA7D0,
+    0xA7D2, 0xA7D2,
+    0xA7D4, 0xA7D4,
     0xA7D6, 0xA7D6,
     0xA7D8, 0xA7D8,
+    0xA7DA, 0xA7DA,
+    0xA7DC, 0xA7DC,
     0xA7F5, 0xA7F5,
     0xFF21, 0xFF3A,
     0x10400, 0x10427,
@@ -2115,8 +2186,10 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x1058C, 0x10592,
     0x10594, 0x10595,
     0x10C80, 0x10CB2,
+    0x10D50, 0x10D65,
     0x118A0, 0x118BF,
     0x16E40, 0x16E5F,
+    0x16EA0, 0x16EB8,
     0x1D400, 0x1D419,
     0x1D434, 0x1D44D,
     0x1D468, 0x1D481,
@@ -2304,6 +2377,10 @@ pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
  */
 size_t
 pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
@@ -2324,6 +2401,10 @@ pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
  */
 size_t
 pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
@@ -2344,6 +2425,10 @@ pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
  */
 bool
 pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     }
@@ -2362,7 +2447,8 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 static pm_unicode_codepoint_t
 pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
-    if (b[0] < 0x80) {
+
+    if ((n > 0) && (b[0] < 0x80)) {
         *width = 1;
         return (pm_unicode_codepoint_t) b[0];
     }
@@ -2401,6 +2487,10 @@ pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
 
 static size_t
 pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     size_t width;
     pm_cesu_8_codepoint(b, n, &width);
     return width;
@@ -2408,6 +2498,10 @@ pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_cesu_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
@@ -2424,6 +2518,10 @@ pm_encoding_cesu_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_cesu_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
@@ -2440,6 +2538,10 @@ pm_encoding_cesu_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
 
 static bool
 pm_encoding_cesu_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
+
     if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
     }
@@ -3855,14 +3957,14 @@ static const uint8_t pm_encoding_windows_874_table[256] = {
 };
 
 #define PRISM_ENCODING_TABLE(name) \
-    static size_t pm_encoding_ ##name ## _alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHABETIC_BIT);           \
+    static size_t pm_encoding_ ##name ## _alpha_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHABETIC_BIT));           \
     }                                                                                                         \
-    static size_t pm_encoding_ ##name ## _alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0; \
+    static size_t pm_encoding_ ##name ## _alnum_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0; \
     }                                                                                                         \
-    static bool pm_encoding_ ##name ## _isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_UPPERCASE_BIT);            \
+    static bool pm_encoding_ ##name ## _isupper_char(const uint8_t *b, ptrdiff_t n) {           \
+        return ((n > 0) && (pm_encoding_ ##name ## _table[*b] & PRISM_ENCODING_UPPERCASE_BIT));            \
     }
 
 PRISM_ENCODING_TABLE(cp850)
@@ -3931,8 +4033,8 @@ PRISM_ENCODING_TABLE(windows_874)
  * means that if the top bit is not set, the character is 1 byte long.
  */
 static size_t
-pm_encoding_ascii_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return *b < 0x80 ? 1 : 0;
+pm_encoding_ascii_char_width(const uint8_t *b, ptrdiff_t n) {
+    return ((n > 0) && (*b < 0x80)) ? 1 : 0;
 }
 
 /**
@@ -3940,8 +4042,8 @@ pm_encoding_ascii_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  * alphabetical character.
  */
 static size_t
-pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT);
+pm_encoding_ascii_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    return (n > 0) ? (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) : 0;
 }
 
 /**
@@ -3951,7 +4053,7 @@ pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  */
 static size_t
 pm_encoding_ascii_alpha_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+    return ((n > 0) && (*b < 0x80)) ? pm_encoding_ascii_alpha_char(b, n) : 0;
 }
 
 /**
@@ -3959,8 +4061,8 @@ pm_encoding_ascii_alpha_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * alphanumeric character.
  */
 static size_t
-pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0;
+pm_encoding_ascii_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    return ((n > 0) && (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
 }
 
 /**
@@ -3970,7 +4072,7 @@ pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  */
 static size_t
 pm_encoding_ascii_alnum_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+    return ((n > 0) && (*b < 0x80)) ? pm_encoding_ascii_alnum_char(b, n) : 0;
 }
 
 /**
@@ -3978,8 +4080,8 @@ pm_encoding_ascii_alnum_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * character.
  */
 static bool
-pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT);
+pm_encoding_ascii_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    return (n > 0) && (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT);
 }
 
 /**
@@ -3998,7 +4100,7 @@ pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATT
 static size_t
 pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4042,6 +4144,9 @@ pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
  */
 static size_t
 pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
+    if (n == 0) {
+        return 0;
+    }
     // These are the single byte characters.
     if (b[0] < 0x80 || (b[0] >= 0xA1 && b[0] <= 0xDF)) {
         return 1;
@@ -4105,7 +4210,7 @@ pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
  */
 static bool
 pm_encoding_ascii_isupper_char_7bit(const uint8_t *b, ptrdiff_t n) {
-    return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
+    return (n > 0) && (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
 }
 
 /**
@@ -4115,7 +4220,7 @@ pm_encoding_ascii_isupper_char_7bit(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4134,7 +4239,7 @@ pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters
-    if (*b <= 0x80) {
+    if ((n > 0) && (*b <= 0x80)) {
         return 1;
     }
 
@@ -4153,7 +4258,7 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the 1 byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4196,7 +4301,7 @@ pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4215,7 +4320,7 @@ pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4239,7 +4344,7 @@ pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the 1 byte characters.
-    if (*b < 0x80) {
+    if ((n > 0) && (*b < 0x80)) {
         return 1;
     }
 
@@ -4263,7 +4368,7 @@ pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b <= 0x80) {
+    if ((n > 0) && (*b <= 0x80)) {
         return 1;
     }
 

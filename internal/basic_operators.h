@@ -24,6 +24,7 @@ enum ruby_basic_operators {
     BOP_SUCC,
     BOP_GT,
     BOP_GE,
+    BOP_GTGT,
     BOP_NOT,
     BOP_NEQ,
     BOP_MATCH,

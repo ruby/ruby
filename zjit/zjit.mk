@@ -14,23 +14,25 @@ ZJIT_SRC_FILES = $(wildcard \
 
 $(RUST_LIB): $(ZJIT_SRC_FILES)
 
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-ZJIT_LIB_TOUCH = touch $@
-
 # Absolute path to match RUST_LIB rules to avoid picking
 # the "target" dir in the source directory through VPATH.
 BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
 
-# ZJIT_SUPPORT=yes when `configure` gets `--enable-zjit`
-ifeq ($(ZJIT_SUPPORT),yes)
+# In a ZJIT-only build (no YJIT)
+ifneq ($(strip $(ZJIT_LIBS)),)
 $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
-	+$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
-	$(ZJIT_LIB_TOUCH)
-endif
+	$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
+else ifneq ($(strip $(RLIB_DIR)),) # combo build
+# Absolute path to avoid VPATH ambiguity
+ZJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libzjit.rlib
+
+$(ZJIT_RLIB): $(ZJIT_SRC_FILES)
+	$(ECHO) 'building $(@F)'
+	$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
+
+$(RUST_LIB): $(ZJIT_RLIB)
+endif # ifneq ($(strip $(ZJIT_LIBS)),)
 
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
 ZJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems

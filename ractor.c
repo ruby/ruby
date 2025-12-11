@@ -72,15 +72,17 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
 
-    if (rb_current_execution_context(false)) {
-        VM_ASSERT(!GET_RACTOR()->malloc_gc_disabled);
-        GET_RACTOR()->malloc_gc_disabled = true;
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        VM_ASSERT(!cr->malloc_gc_disabled);
+        cr->malloc_gc_disabled = true;
     }
 
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL) {
-        rb_ractor_t *cr = rb_current_ractor_raw(false);
-        r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
+    if (ec != NULL) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        r->sync.locked_by = rb_ractor_self(cr);
     }
 #endif
 
@@ -105,9 +107,11 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
     r->sync.locked_by = Qnil;
 #endif
 
-    if (rb_current_execution_context(false)) {
-        VM_ASSERT(GET_RACTOR()->malloc_gc_disabled);
-        GET_RACTOR()->malloc_gc_disabled = false;
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec) {
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        VM_ASSERT(cr->malloc_gc_disabled);
+        cr->malloc_gc_disabled = false;
     }
 
     rb_native_mutex_unlock(&r->sync.lock);
@@ -418,6 +422,7 @@ ractor_alloc(VALUE klass)
     VALUE rv = TypedData_Make_Struct(klass, rb_ractor_t, &ractor_data_type, r);
     FL_SET_RAW(rv, RUBY_FL_SHAREABLE);
     r->pub.self = rv;
+    r->next_fiber_serial = 1;
     VM_ASSERT(ractor_status_p(r, ractor_created));
     return rv;
 }
@@ -435,6 +440,7 @@ rb_ractor_main_alloc(void)
     r->name = Qnil;
     r->pub.self = Qnil;
     r->newobj_cache = rb_gc_ractor_cache_alloc(r);
+    r->next_fiber_serial = 1;
     ruby_single_main_ractor = r;
 
     return r;
@@ -832,13 +838,11 @@ rb_ractor_terminate_all(void)
 
     VM_ASSERT(cr == GET_RACTOR()); // only main-ractor's main-thread should kick it.
 
-    if (vm->ractor.cnt > 1) {
-        RB_VM_LOCK();
-        {
-            ractor_terminal_interrupt_all(vm); // kill all ractors
-        }
-        RB_VM_UNLOCK();
+    RB_VM_LOCK();
+    {
+        ractor_terminal_interrupt_all(vm); // kill all ractors
     }
+    RB_VM_UNLOCK();
     rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
 
     RB_VM_LOCK();
@@ -851,6 +855,17 @@ rb_ractor_terminate_all(void)
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
+#ifdef RUBY_THREAD_PTHREAD_H
+            while (vm->ractor.sched.barrier_waiting) {
+                // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
+                // since we just acquired the VM lock back, we're blocking other threads from joining it.
+                // We loop until the barrier is over. We can't join this barrier because our thread isn't added to
+                // running_threads until the call below to `rb_add_running_thread`.
+                RB_VM_UNLOCK();
+                unsigned int lev;
+                RB_VM_LOCK_ENTER_LEV_NB(&lev);
+            }
+#endif
             rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 
@@ -1126,7 +1141,7 @@ rb_obj_set_shareable_no_assert(VALUE obj)
 {
     FL_SET_RAW(obj, FL_SHAREABLE);
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         VALUE fields = rb_obj_fields_no_ractor_check(obj);
         if (imemo_type_p(fields, imemo_fields)) {
             // no recursive mark
@@ -1417,6 +1432,26 @@ allow_frozen_shareable_p(VALUE obj)
 }
 
 static enum obj_traverse_iterator_result
+make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
+{
+    if (!RB_OBJ_FROZEN_RAW(obj)) {
+        rb_funcall(obj, idFreeze, 0);
+
+        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
+            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+        }
+
+        if (RB_OBJ_SHAREABLE_P(obj)) {
+            return traverse_skip;
+        }
+    }
+
+    return result;
+}
+
+static int obj_refer_only_shareables_p(VALUE obj);
+
+static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
@@ -1425,7 +1460,21 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        if (rb_obj_is_proc(obj)) {
+        VM_ASSERT(RB_TYPE_P(obj, T_DATA));
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
+            if (obj_refer_only_shareables_p(obj)) {
+                make_shareable_check_shareable_freeze(obj, traverse_skip);
+                RB_OBJ_SET_SHAREABLE(obj);
+                return traverse_skip;
+            }
+            else {
+                rb_raise(rb_eRactorError,
+                         "can not make shareable object for %+"PRIsVALUE" because it refers unshareable objects", obj);
+            }
+        }
+        else if (rb_obj_is_proc(obj)) {
             rb_proc_ractor_make_shareable(obj, Qundef);
             return traverse_cont;
         }
@@ -1455,19 +1504,7 @@ make_shareable_check_shareable(VALUE obj)
         break;
     }
 
-    if (!RB_OBJ_FROZEN_RAW(obj)) {
-        rb_funcall(obj, idFreeze, 0);
-
-        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
-        }
-
-        if (RB_OBJ_SHAREABLE_P(obj)) {
-            return traverse_skip;
-        }
-    }
-
-    return traverse_cont;
+    return make_shareable_check_shareable_freeze(obj, traverse_cont);
 }
 
 static enum obj_traverse_iterator_result
@@ -1739,7 +1776,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     else if (data->replacement != _val)     { RB_OBJ_WRITE(parent_obj, &v, data->replacement); } \
 } while (0)
 
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
@@ -1794,7 +1831,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_FIELDS_COUNT(obj);
+                uint32_t len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
                 VALUE *ptr = ROBJECT_FIELDS(obj);
 
                 for (uint32_t i = 0; i < len; i++) {
@@ -1973,7 +2010,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     rb_gc_writebarrier_remember(data->replacement);
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
-    if (UNLIKELY(rb_obj_exivar_p(obj))) {
+    if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
@@ -2333,7 +2370,7 @@ ractor_local_value_store_if_absent(rb_execution_context_t *ec, VALUE self, VALUE
     return rb_mutex_synchronize(cr->local_storage_store_lock, ractor_local_value_store_i, (VALUE)&data);
 }
 
-// sharable_proc
+// shareable_proc
 
 static VALUE
 ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_lambda)
@@ -2343,7 +2380,7 @@ ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_la
     }
     else {
         VALUE proc = is_lambda ? rb_block_lambda() : rb_block_proc();
-        return rb_proc_ractor_make_shareable(proc, replace_self);
+        return rb_proc_ractor_make_shareable(rb_proc_dup(proc), replace_self);
     }
 }
 

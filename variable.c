@@ -862,7 +862,7 @@ rb_define_virtual_variable(
 static void
 rb_trace_eval(VALUE cmd, VALUE val)
 {
-    rb_eval_cmd_kw(cmd, rb_ary_new3(1, val), RB_NO_KEYWORDS);
+    rb_eval_cmd_call_kw(cmd, 1, &val, RB_NO_KEYWORDS);
 }
 
 VALUE
@@ -1237,6 +1237,18 @@ rb_mark_generic_ivar(VALUE obj)
 }
 
 VALUE
+rb_obj_fields_generic_uncached(VALUE obj)
+{
+    VALUE fields_obj = 0;
+    RB_VM_LOCKING() {
+        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
+            rb_bug("Object is missing entry in generic_fields_tbl");
+        }
+    }
+    return fields_obj;
+}
+
+VALUE
 rb_obj_fields(VALUE obj, ID field_name)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
@@ -1261,15 +1273,12 @@ rb_obj_fields(VALUE obj, ID field_name)
           generic_fields:
             {
                 rb_execution_context_t *ec = GET_EC();
-                if (ec->gen_fields_cache.obj == obj && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
+                if (ec->gen_fields_cache.obj == obj && !UNDEF_P(ec->gen_fields_cache.fields_obj) && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
                     fields_obj = ec->gen_fields_cache.fields_obj;
+                    RUBY_ASSERT(fields_obj == rb_obj_fields_generic_uncached(obj));
                 }
                 else {
-                    RB_VM_LOCKING() {
-                        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-                            rb_bug("Object is missing entry in generic_fields_tbl");
-                        }
-                    }
+                    fields_obj = rb_obj_fields_generic_uncached(obj);
                     ec->gen_fields_cache.fields_obj = fields_obj;
                     ec->gen_fields_cache.obj = obj;
                 }
@@ -1282,7 +1291,7 @@ rb_obj_fields(VALUE obj, ID field_name)
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         st_data_t key = (st_data_t)obj, value;
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
@@ -1300,13 +1309,17 @@ rb_free_generic_ivar(VALUE obj)
           default:
           generic_fields:
             {
+                // Other EC may have stale caches, so fields_obj should be
+                // invalidated and the GC will replace with Qundef
                 rb_execution_context_t *ec = GET_EC();
                 if (ec->gen_fields_cache.obj == obj) {
                     ec->gen_fields_cache.obj = Qundef;
                     ec->gen_fields_cache.fields_obj = Qundef;
                 }
                 RB_VM_LOCKING() {
-                    st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
+                    if (!st_delete(generic_fields_tbl_no_ractor_check(), &key, &value)) {
+                        rb_bug("Object is missing entry in generic_fields_tbl");
+                    }
                 }
             }
         }
@@ -1320,7 +1333,9 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
     ivar_ractor_check(obj, field_name);
 
     if (!fields_obj) {
+        RUBY_ASSERT(original_fields_obj);
         rb_free_generic_ivar(obj);
+        rb_imemo_fields_clear(original_fields_obj);
         return;
     }
 
@@ -2203,7 +2218,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
     rb_check_frozen(dest);
 
-    if (!rb_obj_exivar_p(obj)) {
+    if (!rb_obj_gen_fields_p(obj)) {
         return;
     }
 
@@ -2719,7 +2734,7 @@ autoload_const_free(void *ptr)
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
     {autoload_const_mark_and_move, autoload_const_free, autoload_const_memsize, autoload_const_mark_and_move,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct autoload_data *
@@ -2763,12 +2778,12 @@ autoload_copy_table_for_box_i(st_data_t key, st_data_t value, st_data_t arg)
     struct autoload_data *autoload_data = rb_check_typeddata(autoload_data_value, &autoload_data_type);
 
     VALUE new_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-    autoload_const->box_value = rb_get_box_object((rb_box_t *)box);
-    autoload_const->module = src_const->module;
+    RB_OBJ_WRITE(new_value, &autoload_const->box_value, rb_get_box_object((rb_box_t *)box));
+    RB_OBJ_WRITE(new_value, &autoload_const->module, src_const->module);
     autoload_const->name = src_const->name;
-    autoload_const->value = src_const->value;
+    RB_OBJ_WRITE(new_value, &autoload_const->value, src_const->value);
     autoload_const->flag = src_const->flag;
-    autoload_const->autoload_data_value = autoload_data_value;
+    RB_OBJ_WRITE(new_value, &autoload_const->autoload_data_value, autoload_data_value);
     ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
 
     st_insert(tbl, (st_data_t)autoload_const->name, (st_data_t)new_value);
@@ -2892,12 +2907,12 @@ autoload_synchronized(VALUE _arguments)
     {
         struct autoload_const *autoload_const;
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-        autoload_const->box_value = arguments->box_value;
-        autoload_const->module = arguments->module;
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->box_value, arguments->box_value);
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, arguments->module);
         autoload_const->name = arguments->name;
         autoload_const->value = Qundef;
         autoload_const->flag = CONST_PUBLIC;
-        autoload_const->autoload_data_value = autoload_data_value;
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
         ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
         st_insert(autoload_table, (st_data_t)arguments->name, (st_data_t)autoload_const_value);
         RB_OBJ_WRITTEN(autoload_table_value, Qundef, autoload_const_value);
@@ -3905,21 +3920,21 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     const_added(klass, id);
 }
 
-static struct autoload_data *
-autoload_data_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
+static VALUE
+autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
 {
-    VALUE autoload_data_value = autoload_data(module, name);
-    if (!autoload_data_value) return 0;
+    VALUE autoload_const_value = autoload_data(module, name);
+    if (!autoload_const_value) return Qfalse;
 
-    struct autoload_data *autoload_data = get_autoload_data(autoload_data_value, autoload_const_pointer);
-    if (!autoload_data) return 0;
+    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, autoload_const_pointer);
+    if (!autoload_data) return Qfalse;
 
     /* for autoloading thread, keep the defined value to autoloading storage */
     if (autoload_by_current(autoload_data)) {
-        return autoload_data;
+        return autoload_const_value;
     }
 
-    return 0;
+    return Qfalse;
 }
 
 static void
@@ -3939,13 +3954,13 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             RUBY_ASSERT_CRITICAL_SECTION_ENTER();
             VALUE file = ac->file;
             int line = ac->line;
-            struct autoload_data *ele = autoload_data_for_named_constant(klass, id, &ac);
+            VALUE autoload_const_value = autoload_const_value_for_named_constant(klass, id, &ac);
 
-            if (!autoload_force && ele) {
+            if (!autoload_force && autoload_const_value) {
                 rb_clear_constant_cache_for_id(id);
 
-                ac->value = val; /* autoload_data is non-WB-protected */
-                ac->file = rb_source_location(&ac->line);
+                RB_OBJ_WRITE(autoload_const_value, &ac->value, val);
+                RB_OBJ_WRITE(autoload_const_value, &ac->file, rb_source_location(&ac->line));
             }
             else {
                 /* otherwise autoloaded constant, allow to override */
@@ -4039,10 +4054,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
             ce->flag &= ~mask;
             ce->flag |= flag;
             if (UNDEF_P(ce->value)) {
-                struct autoload_data *ele;
-
-                ele = autoload_data_for_named_constant(mod, id, &ac);
-                if (ele) {
+                if (autoload_const_value_for_named_constant(mod, id, &ac)) {
                     ac->flag &= ~mask;
                     ac->flag |= flag;
                 }

@@ -64,6 +64,12 @@ Note: We're only listing outstanding class updates.
       Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject
       to handle numbered parameters.  [[Bug #21049]]
 
+* File
+
+    * `File::Stat#birthtime` is now available on Linux via the statx
+      system call when supported by the kernel and filesystem.
+      [[Feature #21205]]
+
 * IO
 
     * `IO.select` accepts `Float::INFINITY` as a timeout argument.
@@ -76,10 +82,20 @@ Note: We're only listing outstanding class updates.
 
     * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
 
-* Socket
+* Method
 
-    * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
-      the timeout for the initial connection. [[Feature #21347]]
+    * `Method#source_location`, `Proc#source_location`, and
+      `UnboundMethod#source_location` now return extended location
+      information with 5 elements: `[path, start_line, start_column,
+      end_line, end_column]`. The previous 2-element format `[path,
+      line]` can still be obtained by calling `.take(2)` on the result.
+      [[Feature #6012]]
+
+* Proc
+
+    * `Proc#parameters` now shows anonymous optional parameters as `[:opt]`
+      instead of `[:opt, nil]`, making the output consistent with when the
+      anonymous parameter is required. [[Bug #20974]]
 
 * Ractor
 
@@ -127,15 +143,54 @@ Note: We're only listing outstanding class updates.
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
-* `Set`
+* Range
+
+    * `Range#to_set` and `Enumerator#to_set` now perform size checks to prevent
+      issues with endless ranges. [[Bug #21654]]
+
+    * `Range#overlap?` now correctly handles infinite (unbounded) ranges.
+      [[Bug #21185]]
+
+    * `Range#max` behavior on beginless integer ranges has been fixed.
+      [[Bug #21174]] [[Bug #21175]]
+
+* Ruby
+
+    * A new toplevel module `Ruby` has been defined, which contains
+      Ruby-related constants. This module was reserved in Ruby 3.4
+      and is now officially defined. [[Feature #20884]]
+
+* Ruby::Box
+
+    * A new (experimental) feature to provide separation about definitions.
+      For the detail of "Ruby Box", see [doc/language/box.md](doc/language/box.md).
+      [[Feature #21311]] [[Misc #21385]]
+
+* Set
 
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
+
+    * `Set#inspect` now returns a string suitable for `eval`, using the
+      `Set[]` syntax (e.g., `Set[1, 2, 3]` instead of
+      `#<Set: {1, 2, 3}>`). This makes it consistent with other core
+      collection classes like Array and Hash. [[Feature #21389]]
+
+    * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
+      [[Feature #21390]]
+
+* Socket
+
+    * `Socket.tcp` & `TCPSocket.new` accepts an `open_timeout` keyword argument to specify
+      the timeout for the initial connection. [[Feature #21347]]
 
 * String
 
     * Update Unicode to Version 17.0.0 and Emoji Version 17.0.
       [[Feature #19908]][[Feature #20724]][[Feature #21275]] (also applies to Regexp)
+
+    * `String#strip`, `strip!`, `lstrip`, `lstrip!`, `rstrip`, and `rstrip!`
+       are extended to accept `*selectors` arguments. [[Feature #21552]]
 
 * Thread
 
@@ -167,7 +222,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.5.0
 * logger 1.7.0
-* rdoc 6.15.1
+* rdoc 6.17.0
 * win32ole 1.9.2
 * irb 1.15.3
 * reline 0.6.3
@@ -182,33 +237,35 @@ releases.
 
 The following default gem is added.
 
-* win32-registry 0.1.1
+* win32-registry 0.1.2
 
 The following default gems are updated.
 
-* RubyGems 4.0.0.beta1
-* bundler 4.0.0.beta1
-* date 3.5.0
+* RubyGems 4.0.1
+* bundler 4.0.1
+* date 3.5.1
 * digest 3.2.1
 * english 0.8.1
 * erb 6.0.0
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0
+* forwardable 1.4.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.4.0.dev
-* json 2.16.0
+* ipaddr 1.2.8
+* json 2.18.0
 * net-http 0.8.0
 * openssl 4.0.0.pre
-* optparse 0.8.0
+* optparse 0.8.1
 * pp 0.6.3
 * prism 1.6.0
-* psych 5.2.6
-* resolv 0.6.3
+* psych 5.3.0
+* resolv 0.7.0
 * stringio 3.1.9.dev
 * strscan 3.1.6.dev
-* timeout 0.4.4
+* timeout 0.5.0
 * uri 1.1.1
 * weakref 0.1.4
 * zlib 3.2.2
@@ -221,7 +278,7 @@ The following bundled gems are updated.
 * minitest 5.26.2
 * power_assert 3.0.1
 * rake 13.3.1
-* test-unit 3.7.1
+* test-unit 3.7.3
 * rexml 3.4.4
 * net-ftp 0.3.9
 * net-imap 0.5.12
@@ -240,9 +297,14 @@ The following bundled gems are updated.
 
 ## Supported platforms
 
+* Windows
+
+    * Dropped support for MSVC versions older than 14.0 (_MSC_VER 1900).
+      This means Visual Studio 2015 or later is now required.
+
 ## Compatibility issues
 
-* The following methods were removed from Ractor due because of `Ractor::Port`:
+* The following methods were removed from Ractor due to the addition of `Ractor::Port`:
 
     * `Ractor.yield`
     * `Ractor#take`
@@ -252,6 +314,14 @@ The following bundled gems are updated.
     [[Feature #21262]]
 
 * `ObjectSpace._id2ref` is deprecated. [[Feature #15408]]
+
+* `Process::Status#&` and `Process::Status#>>` have been removed.
+  They were deprecated in Ruby 3.3. [[Bug #19868]]
+
+* `rb_path_check` has been removed. This function was used for
+  `$SAFE` path checking which was removed in Ruby 2.7,
+  and was already deprecated,.
+  [[Feature #20971]]
 
 ## Stdlib compatibility issues
 
@@ -283,6 +353,26 @@ The following bundled gems are updated.
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
+* GVL
+
+    * `rb_thread_call_with_gvl` now works with or without the GVL.
+      This allows gems to avoid checking `ruby_thread_has_gvl_p`.
+      Please still be diligent about the GVL. [[Feature #20750]]
+
+* Set
+
+    * A C API for `Set` has been added. The following methods are supported:
+      [[Feature #21459]]
+
+        * `rb_set_foreach`
+        * `rb_set_new`
+        * `rb_set_new_capa`
+        * `rb_set_lookup`
+        * `rb_set_add`
+        * `rb_set_clear`
+        * `rb_set_delete`
+        * `rb_set_size`
+
 ## Implementation improvements
 
 ### Ractor
@@ -304,40 +394,58 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+* ZJIT
+    * Introduce an [experimental method-based JIT compiler](https://docs.ruby-lang.org/en/master/jit/zjit_md.html).
+      To enable `--zjit` support, build Ruby with Rust 1.85.0 or later.
+    * As of Ruby 4.0.0, ZJIT is faster than the interpreter, but not yet as fast as YJIT.
+      We encourage experimentation with ZJIT, but advise against deploying it in production for now.
+    * Our goal is to make ZJIT faster than YJIT and production-ready in Ruby 4.1.
 * YJIT
-    * YJIT stats
+    * `RubyVM::YJIT.runtime_stats`
         * `ratio_in_yjit` no longer works in the default build.
           Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
         * Add `invalidate_everything` to default stats, which is
           incremented when every code is invalidated by TracePoint.
     * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
-* ZJIT
-    * Add an experimental method-based JIT compiler.
-      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
-    * As of Ruby 4.0.0-preview1, ZJIT is not yet ready for speeding up most benchmarks.
-      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 4.0 release.
 * RJIT
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
 
+[Feature #6012]: https://bugs.ruby-lang.org/issues/6012
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19630]: https://bugs.ruby-lang.org/issues/19630
+[Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
+[Feature #20750]: https://bugs.ruby-lang.org/issues/20750
+[Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20925]: https://bugs.ruby-lang.org/issues/20925
+[Feature #20971]: https://bugs.ruby-lang.org/issues/20971
+[Bug #20974]:     https://bugs.ruby-lang.org/issues/20974
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21166]: https://bugs.ruby-lang.org/issues/21166
+[Bug #21174]:     https://bugs.ruby-lang.org/issues/21174
+[Bug #21175]:     https://bugs.ruby-lang.org/issues/21175
+[Bug #21185]:     https://bugs.ruby-lang.org/issues/21185
+[Feature #21205]: https://bugs.ruby-lang.org/issues/21205
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
+[Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
+[Feature #21311]: https://bugs.ruby-lang.org/issues/21311
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Misc #21385]:    https://bugs.ruby-lang.org/issues/21385
+[Feature #21389]: https://bugs.ruby-lang.org/issues/21389
+[Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21459]: https://bugs.ruby-lang.org/issues/21459
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
+[Bug #21654]:     https://bugs.ruby-lang.org/issues/21654

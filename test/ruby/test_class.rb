@@ -601,7 +601,7 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(FrozenError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen Object/) {
       c.class_eval {def f; end}
     }
   end
@@ -885,6 +885,49 @@ CODE
     begin;
       GC.stress = true
       class C; end
+    end;
+  end
+
+  def test_singleton_cc_invalidation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class T
+        def hi
+          "hi"
+        end
+      end
+
+      t = T.new
+      t.singleton_class
+
+      def hello(t)
+        t.hi
+      end
+
+      5.times do
+        hello(t) # populate inline cache on `t.singleton_class`.
+      end
+
+      class T
+        remove_method :hi # invalidate `t.singleton_class` ccs for `hi`
+      end
+
+      assert_raise NoMethodError do
+        hello(t)
+      end
+    end;
+  end
+
+  def test_safe_multi_ractor_subclasses_list_mutation
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      4.times.map do
+        Ractor.new do
+          20_000.times do
+            Object.new.singleton_class
+          end
+        end
+      end.each(&:join)
     end;
   end
 end

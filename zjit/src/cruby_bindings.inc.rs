@@ -392,22 +392,23 @@ pub const BOP_NIL_P: ruby_basic_operators = 15;
 pub const BOP_SUCC: ruby_basic_operators = 16;
 pub const BOP_GT: ruby_basic_operators = 17;
 pub const BOP_GE: ruby_basic_operators = 18;
-pub const BOP_NOT: ruby_basic_operators = 19;
-pub const BOP_NEQ: ruby_basic_operators = 20;
-pub const BOP_MATCH: ruby_basic_operators = 21;
-pub const BOP_FREEZE: ruby_basic_operators = 22;
-pub const BOP_UMINUS: ruby_basic_operators = 23;
-pub const BOP_MAX: ruby_basic_operators = 24;
-pub const BOP_MIN: ruby_basic_operators = 25;
-pub const BOP_HASH: ruby_basic_operators = 26;
-pub const BOP_CALL: ruby_basic_operators = 27;
-pub const BOP_AND: ruby_basic_operators = 28;
-pub const BOP_OR: ruby_basic_operators = 29;
-pub const BOP_CMP: ruby_basic_operators = 30;
-pub const BOP_DEFAULT: ruby_basic_operators = 31;
-pub const BOP_PACK: ruby_basic_operators = 32;
-pub const BOP_INCLUDE_P: ruby_basic_operators = 33;
-pub const BOP_LAST_: ruby_basic_operators = 34;
+pub const BOP_GTGT: ruby_basic_operators = 19;
+pub const BOP_NOT: ruby_basic_operators = 20;
+pub const BOP_NEQ: ruby_basic_operators = 21;
+pub const BOP_MATCH: ruby_basic_operators = 22;
+pub const BOP_FREEZE: ruby_basic_operators = 23;
+pub const BOP_UMINUS: ruby_basic_operators = 24;
+pub const BOP_MAX: ruby_basic_operators = 25;
+pub const BOP_MIN: ruby_basic_operators = 26;
+pub const BOP_HASH: ruby_basic_operators = 27;
+pub const BOP_CALL: ruby_basic_operators = 28;
+pub const BOP_AND: ruby_basic_operators = 29;
+pub const BOP_OR: ruby_basic_operators = 30;
+pub const BOP_CMP: ruby_basic_operators = 31;
+pub const BOP_DEFAULT: ruby_basic_operators = 32;
+pub const BOP_PACK: ruby_basic_operators = 33;
+pub const BOP_INCLUDE_P: ruby_basic_operators = 34;
+pub const BOP_LAST_: ruby_basic_operators = 35;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
@@ -593,40 +594,6 @@ pub type rb_jit_func_t = ::std::option::Option<
         arg2: *mut rb_control_frame_struct,
     ) -> VALUE,
 >;
-#[repr(C)]
-pub struct rb_iseq_constant_body {
-    pub type_: rb_iseq_type,
-    pub iseq_size: ::std::os::raw::c_uint,
-    pub iseq_encoded: *mut VALUE,
-    pub param: rb_iseq_constant_body_rb_iseq_parameters,
-    pub location: rb_iseq_location_t,
-    pub insns_info: rb_iseq_constant_body_iseq_insn_info,
-    pub local_table: *const ID,
-    pub lvar_states: *mut rb_iseq_constant_body_lvar_state,
-    pub catch_table: *mut iseq_catch_table,
-    pub parent_iseq: *const rb_iseq_struct,
-    pub local_iseq: *mut rb_iseq_struct,
-    pub is_entries: *mut iseq_inline_storage_entry,
-    pub call_data: *mut rb_call_data,
-    pub variable: rb_iseq_constant_body__bindgen_ty_1,
-    pub local_table_size: ::std::os::raw::c_uint,
-    pub ic_size: ::std::os::raw::c_uint,
-    pub ise_size: ::std::os::raw::c_uint,
-    pub ivc_size: ::std::os::raw::c_uint,
-    pub icvarc_size: ::std::os::raw::c_uint,
-    pub ci_size: ::std::os::raw::c_uint,
-    pub stack_max: ::std::os::raw::c_uint,
-    pub builtin_attrs: ::std::os::raw::c_uint,
-    pub prism: bool,
-    pub mark_bits: rb_iseq_constant_body__bindgen_ty_2,
-    pub outer_variables: *mut rb_id_table,
-    pub mandatory_only_iseq: *const rb_iseq_t,
-    pub jit_entry: rb_jit_func_t,
-    pub jit_entry_calls: ::std::os::raw::c_ulong,
-    pub jit_exception: rb_jit_func_t,
-    pub jit_exception_calls: ::std::os::raw::c_ulong,
-    pub zjit_payload: *mut ::std::os::raw::c_void,
-}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters {
@@ -1462,6 +1429,13 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
+pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 29360128;
+pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 33554432;
+pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 134217728;
+pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 100663296;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 264241152;
+pub type shape_id_fl_type = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1744,35 +1718,36 @@ pub const YARVINSN_trace_setlocal_WC_1: ruby_vminsn_type = 215;
 pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 216;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 217;
 pub const YARVINSN_zjit_getinstancevariable: ruby_vminsn_type = 218;
-pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 219;
-pub const YARVINSN_zjit_send: ruby_vminsn_type = 220;
-pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 221;
-pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 222;
-pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 223;
-pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 224;
-pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 225;
-pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 226;
-pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 227;
-pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 228;
-pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 229;
-pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 230;
-pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 231;
-pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 232;
-pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 233;
-pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 234;
-pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 236;
-pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 237;
-pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 238;
-pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 239;
-pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 240;
-pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 241;
-pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 242;
-pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 243;
-pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 244;
-pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 245;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 246;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 247;
+pub const YARVINSN_zjit_setinstancevariable: ruby_vminsn_type = 219;
+pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 220;
+pub const YARVINSN_zjit_send: ruby_vminsn_type = 221;
+pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 222;
+pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 223;
+pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 224;
+pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 225;
+pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 226;
+pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 227;
+pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 228;
+pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 229;
+pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 230;
+pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 231;
+pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 232;
+pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 233;
+pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 234;
+pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 236;
+pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 237;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 238;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 239;
+pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 240;
+pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 241;
+pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 242;
+pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 243;
+pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 244;
+pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 245;
+pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 246;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 247;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 248;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
@@ -1857,6 +1832,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
+pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
@@ -1962,6 +1939,7 @@ unsafe extern "C" {
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
     pub fn rb_obj_alloc(klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
+    pub fn rb_class_real(klass: VALUE) -> VALUE;
     pub fn rb_class_inherited_p(scion: VALUE, ascendant: VALUE) -> VALUE;
     pub fn rb_backref_get() -> VALUE;
     pub fn rb_range_new(beg: VALUE, end: VALUE, excl: ::std::os::raw::c_int) -> VALUE;
@@ -2024,7 +2002,12 @@ unsafe extern "C" {
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
+    pub fn rb_shape_transition_add_ivar_no_warnings(
+        klass: VALUE,
+        original_shape_id: shape_id_t,
+        id: ID,
+    ) -> shape_id_t;
+    pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
@@ -2215,5 +2198,8 @@ unsafe extern "C" {
         start: *mut ::std::os::raw::c_void,
         end: *mut ::std::os::raw::c_void,
     );
+    pub fn rb_jit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
+    pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
+    pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
 }

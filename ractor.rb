@@ -230,8 +230,8 @@ class Ractor
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
     if __builtin_cexpr!("RBOOL(ruby_single_main_ractor)")
-      Kernel.warn("Ractor is experimental, and the behavior may change in future versions of Ruby! " \
-           "Also there are many implementation issues.", uplevel: 0, category: :experimental)
+      Kernel.warn("Ractor API is experimental and may change in future versions of Ruby.",
+                  uplevel: 0, category: :experimental)
     end
     loc = caller_locations(1, 1).first
     loc = "#{loc.path}:#{loc.lineno}"
@@ -472,6 +472,7 @@ class Ractor
   #   }.map(&:value).uniq.size #=> 1 and f() is called only once
   #
   def self.store_if_absent(sym)
+    Primitive.attr! :use_block
     Primitive.ractor_local_value_store_if_absent(sym)
   end
 
@@ -606,7 +607,7 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.sharable_proc(self: nil){} -> sharable proc
+  #   Ractor.shareable_proc(self: nil){} -> shareable proc
   #
   # It returns shareable Proc object. The Proc object is
   # shareable and the self in a block will be replaced with
@@ -618,7 +619,7 @@ class Ractor
   #     Ractor.shareable_proc{ p a }
   #     #=> can not isolate a Proc because it accesses outer variables (a). (ArgumentError)
   #
-  # The `self` should be a sharable object
+  # The `self` should be a shareable object
   #
   #     Ractor.shareable_proc(self: self){}
   #     #=> self should be shareable: main (Ractor::IsolationError)
@@ -633,9 +634,9 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.sharable_proc{} -> sharable proc
+  #   Ractor.shareable_proc{} -> shareable proc
   #
-  # Same as Ractor.sharable_proc, but returns lambda proc.
+  # Same as Ractor.shareable_proc, but returns lambda proc.
   #
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block

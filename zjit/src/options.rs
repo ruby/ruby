@@ -51,6 +51,9 @@ pub struct Options {
     /// Print stats on exit (when stats is also true)
     pub print_stats: bool,
 
+    /// Print stats to file on exit (when stats is also true)
+    pub print_stats_file: Option<std::path::PathBuf>,
+
     /// Enable debug logging
     pub debug: bool,
 
@@ -103,6 +106,7 @@ impl Default for Options {
             num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
             print_stats: false,
+            print_stats_file: None,
             debug: false,
             disable: false,
             disable_hir_opt: false,
@@ -131,7 +135,10 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
-    ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
+    ("--zjit-stats-quiet",
+                     "Collect ZJIT stats and suppress output."),
+    ("--zjit-stats[=file]",
+                     "Collect ZJIT stats (=file to write to a file)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
@@ -240,11 +247,11 @@ fn parse_jit_list(path_like: &str) -> HashSet<String> {
             }
         }
     } else {
-        eprintln!("Failed to read JIT list from '{}'", path_like);
+        eprintln!("Failed to read JIT list from '{path_like}'");
     }
     eprintln!("JIT list:");
     for item in &result {
-        eprintln!("  {}", item);
+        eprintln!("  {item}");
     }
     result
 }
@@ -303,13 +310,28 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+
+        ("stats-quiet", _) => {
+            options.stats = true;
+            options.print_stats = false;
+        }
+
         ("stats", "") => {
             options.stats = true;
             options.print_stats = true;
         }
-        ("stats", "quiet") => {
+        ("stats", path) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(path)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", path, e))
+                .ok();
+            let canonical_path = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.stats = true;
-            options.print_stats = false;
+            options.print_stats_file = Some(canonical_path);
         }
 
         ("trace-exits", exits) => {
@@ -351,7 +373,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.dump_hir_graphviz = Some(opt_val);
@@ -378,7 +400,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
                         eprintln!("invalid --zjit-dump-lir option: '{filter}'");
-                        eprintln!("valid --zjit-dump-lir options: all, {}", valid_options);
+                        eprintln!("valid --zjit-dump-lir options: all, {valid_options}");
                         return None;
                     }
                 };
@@ -399,7 +421,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.log_compiled_iseqs = Some(opt_val);
@@ -487,4 +509,15 @@ pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     } else {
         Qfalse
     }
+}
+
+/// Return path if stats should be printed at exit to a specified file, else Qnil.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if let Some(opts) = unsafe { OPTIONS.as_ref() } {
+        if let Some(ref path) = opts.print_stats_file {
+            return rust_str_to_ruby(path.as_os_str().to_str().unwrap());
+        }
+    }
+    Qnil
 }

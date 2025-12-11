@@ -872,6 +872,10 @@ CODE
     assert_equal('\#', S('"\\\\#"').undump)
     assert_equal('\#{', S('"\\\\\#{"').undump)
 
+    assert_undump("\0\u{ABCD}")
+    assert_undump(S('"\x00\u3042"'.force_encoding("SJIS")))
+    assert_undump(S('"\u3042\x7E"'.force_encoding("SJIS")))
+
     assert_raise(RuntimeError) { S('\u3042').undump }
     assert_raise(RuntimeError) { S('"\x82\xA0\u3042"'.force_encoding("SJIS")).undump }
     assert_raise(RuntimeError) { S('"\u3042\x82\xA0"'.force_encoding("SJIS")).undump }
@@ -1883,9 +1887,24 @@ CODE
   def test_fs
     return unless @cls == String
 
-    assert_raise_with_message(TypeError, /\$;/) {
-      $; = []
-    }
+    begin
+      fs = $;
+      assert_deprecated_warning(/non-nil '\$;'/) {$; = "x"}
+      assert_raise_with_message(TypeError, /\$;/) {$; = []}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
+    name = "\u{5206 5217}"
+    assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
+    do;
+      alias $#{name} $;
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
+      assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
+    end;
+  end
+
+  def test_fs_gc
+    return unless @cls == String
 
     assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
@@ -2032,6 +2051,117 @@ CODE
     a = S("x")
     assert_nil(a.strip!)
     assert_equal(S("x") ,a)
+  end
+
+  def test_strip_with_selectors
+    assert_equal(S("abc"), S("---abc+++").strip("-+"))
+    assert_equal(S("abc"), S("+++abc---").strip("-+"))
+    assert_equal(S("abc"), S("+-+abc-+-").strip("-+"))
+    assert_equal(S(""), S("---+++").strip("-+"))
+    assert_equal(S("abc   "), S("---abc   ").strip("-"))
+    assert_equal(S("   abc"), S("   abc+++").strip("+"))
+
+    # Test with multibyte characters
+    assert_equal(S("abc"), S("あああabcいいい").strip("あい"))
+    assert_equal(S("abc"), S("いいいabcあああ").strip("あい"))
+
+    # Test with NUL characters
+    assert_equal(S("abc\0"), S("---abc\0--").strip("-"))
+    assert_equal(S("\0abc"), S("--\0abc---").strip("-"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").strip("-+"))
+    assert_equal(S("abc"), S("abc").strip(""))
+
+    # Test with range
+    assert_equal(S("abc"), S("012abc345").strip("0-9"))
+    assert_equal(S("abc"), S("012abc345").strip("^a-z"))
+
+    # Test with multiple selectors
+    assert_equal(S("4abc56"), S("01234abc56789").strip("0-9", "^4-6"))
+  end
+
+  def test_strip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("abc"), a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    a = S("+++abc---")
+    assert_equal(S("abc"), a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    a = S("abc")
+    assert_nil(a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    # Test with multibyte characters
+    a = S("あああabcいいい")
+    assert_equal(S("abc"), a.strip!("あい"))
+    assert_equal(S("abc"), a)
+  end
+
+  def test_lstrip_with_selectors
+    assert_equal(S("abc+++"), S("---abc+++").lstrip("-"))
+    assert_equal(S("abc---"), S("+++abc---").lstrip("+"))
+    assert_equal(S("abc"), S("---abc").lstrip("-"))
+    assert_equal(S(""), S("---").lstrip("-"))
+
+    # Test with multibyte characters
+    assert_equal(S("abcいいい"), S("あああabcいいい").lstrip("あ"))
+
+    # Test with NUL characters
+    assert_equal(S("\0abc+++"), S("--\0abc+++").lstrip("-"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").lstrip("-"))
+
+    # Test with range
+    assert_equal(S("abc345"), S("012abc345").lstrip("0-9"))
+
+    # Test with multiple selectors
+    assert_equal(S("4abc56789"), S("01234abc56789").lstrip("0-9", "^4-6"))
+  end
+
+  def test_lstrip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("abc+++"), a.lstrip!("-"))
+    assert_equal(S("abc+++"), a)
+
+    a = S("abc")
+    assert_nil(a.lstrip!("-"))
+    assert_equal(S("abc"), a)
+  end
+
+  def test_rstrip_with_selectors
+    assert_equal(S("---abc"), S("---abc+++").rstrip("+"))
+    assert_equal(S("+++abc"), S("+++abc---").rstrip("-"))
+    assert_equal(S("abc"), S("abc+++").rstrip("+"))
+    assert_equal(S(""), S("+++").rstrip("+"))
+
+    # Test with multibyte characters
+    assert_equal(S("あああabc"), S("あああabcいいい").rstrip("い"))
+
+    # Test with NUL characters
+    assert_equal(S("---abc\0"), S("---abc\0++").rstrip("+"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").rstrip("-"))
+
+    # Test with range
+    assert_equal(S("012abc"), S("012abc345").rstrip("0-9"))
+
+    # Test with multiple selectors
+    assert_equal(S("01234abc56"), S("01234abc56789").rstrip("0-9", "^4-6"))
+  end
+
+  def test_rstrip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("---abc"), a.rstrip!("+"))
+    assert_equal(S("---abc"), a)
+
+    a = S("abc")
+    assert_nil(a.rstrip!("+"))
+    assert_equal(S("abc"), a)
   end
 
   def test_sub
@@ -2761,14 +2891,21 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
-  def test_fs_setter
+  def test_rs
     return unless @cls == String
 
-    assert_raise(TypeError) { $/ = 1 }
+    begin
+      rs = $/
+      assert_deprecated_warning(/non-nil '\$\/'/) { $/ = "" }
+      assert_raise(TypeError) { $/ = 1 }
+    ensure
+      EnvUtil.suppress_warning { $/ = rs }
+    end
     name = "\u{5206 884c}"
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;
       alias $#{name} $/
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
       assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
     end;
   end
@@ -3443,9 +3580,11 @@ CODE
 
   def test_uminus_no_embed_gc
     pad = "a"*2048
-    ("aa".."zz").each do |c|
-      fstr = -(c + pad).freeze
-      File.open(IO::NULL, "w").write(fstr)
+    File.open(IO::NULL, "w") do |dev_null|
+      ("aa".."zz").each do |c|
+        fstr = -(c + pad).freeze
+        dev_null.write(fstr)
+      end
     end
     GC.start
   end
@@ -3891,6 +4030,10 @@ CODE
 
   def assert_byterindex(expected, string, match, *rest)
     assert_index_like(:byterindex, expected, string, match, *rest)
+  end
+
+  def assert_undump(str, *rest)
+    assert_equal(str, str.dump.undump, *rest)
   end
 end
 

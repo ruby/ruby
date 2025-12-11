@@ -222,7 +222,7 @@ enc_check_encoding(VALUE obj)
     if (!is_obj_encoding(obj)) {
         return -1;
     }
-    return check_encoding(RDATA(obj)->data);
+    return check_encoding(RTYPEDDATA_GET_DATA(obj));
 }
 
 NORETURN(static void not_encoding(VALUE enc));
@@ -240,7 +240,7 @@ must_encoding(VALUE enc)
     if (index < 0) {
         not_encoding(enc);
     }
-    return DATA_PTR(enc);
+    return RTYPEDDATA_GET_DATA(enc);
 }
 
 static rb_encoding *
@@ -328,7 +328,7 @@ str_to_encoding(VALUE enc)
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     return str_to_encoding(enc);
 }
 
@@ -336,7 +336,7 @@ rb_encoding *
 rb_find_encoding(VALUE enc)
 {
     int idx;
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     idx = str_find_encindex(enc);
     if (idx < 0) return NULL;
     return rb_enc_from_index(idx);
@@ -1345,7 +1345,7 @@ enc_inspect(VALUE self)
     if (!is_data_encoding(self)) {
         not_encoding(self);
     }
-    if (!(enc = DATA_PTR(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
+    if (!(enc = RTYPEDDATA_GET_DATA(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
         rb_raise(rb_eTypeError, "broken Encoding");
     }
 
@@ -1368,7 +1368,7 @@ enc_inspect(VALUE self)
 static VALUE
 enc_name(VALUE self)
 {
-    return rb_fstring_cstr(rb_enc_name((rb_encoding*)DATA_PTR(self)));
+    return rb_fstring_cstr(rb_enc_name((rb_encoding*)RTYPEDDATA_GET_DATA(self)));
 }
 
 static int

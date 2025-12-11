@@ -186,9 +186,16 @@ pub fn init() -> Annotations {
         ($module:ident, $method_name:literal, $return_type:expr) => {
             annotate_builtin!($module, $method_name, $return_type, no_gc, leaf, elidable)
         };
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
             let mut props = FnProperties::default();
             props.return_type = $return_type;
+            $(props.$properties = true;)+
+            annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
+        };
+        ($module:ident, $method_name:literal, $inline:ident, $return_type:expr $(, $properties:ident)*) => {
+            let mut props = FnProperties::default();
+            props.return_type = $return_type;
+            props.inline = $inline;
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
         }
@@ -206,6 +213,10 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
+    // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
+    // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
+    // ENC_CODERANGE_UNKNOWN.
+    annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -242,6 +253,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "<", inline_integer_lt);
     annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cInteger, "<<", inline_integer_lshift);
+    annotate!(rb_cInteger, ">>", inline_integer_rshift);
+    annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
@@ -250,7 +263,7 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
     // TODO(max): Annotate rb_mKernel#class as returning types::Class. Right now there is a subtle
     // type system bug that causes an issue if we make it return types::Class.
-    annotate_builtin!(rb_mKernel, "class", types::HeapObject, leaf);
+    annotate_builtin!(rb_mKernel, "class", inline_kernel_class, types::HeapObject, leaf);
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
@@ -370,7 +383,21 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
         // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
-        let result = fun.push_insn(block, hir::Insn::StringGetbyteFixnum { string: recv, index });
+        let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+        let len = fun.push_insn(block, hir::Insn::LoadField {
+            recv,
+            id: ID!(len),
+            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            return_type: types::CInt64,
+        });
+        // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
+        // the data dependency is gone (say, the StringGetbyte is elided), they can also be elided.
+        //
+        // This is unlike most other guards.
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, state });
+        let result = fun.push_insn(block, hir::Insn::StringGetbyte { string: recv, index: unboxed_index });
         return Some(result);
     }
     None
@@ -424,10 +451,15 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         let other = fun.coerce_to(block, other, types::String, state);
         let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
-        Some(recv)
-    } else {
-        None
+        return Some(recv);
     }
+    if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        let other = fun.coerce_to(block, other, types::Fixnum, state);
+        let _ = fun.push_insn(block, hir::Insn::StringAppendCodepoint { recv, other, state });
+        return Some(recv);
+    }
+    None
 }
 
 fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -440,7 +472,8 @@ fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
         // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
         let result = fun.push_insn(block, hir::Insn::CCall {
             cfunc: rb_yarv_str_eql_internal as *const u8,
-            args: vec![recv, other],
+            recv,
+            args: vec![other],
             name: ID!(string_eq),
             return_type,
             elidable,
@@ -566,6 +599,16 @@ fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     let Some(other_value) = fun.type_of(other).fixnum_value() else { return None; };
     if other_value < 0 || other_value > 63 { return None; }
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLShift { left, right, state }, BOP_LTLT, recv, other, state)
+}
+
+fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
+    // plausibly create a fixnum.
+    let Some(other_value) = fun.type_of(other).fixnum_value() else { return None; };
+    // TODO(max): If other_value > 63, rewrite to constant zero.
+    if other_value < 0 || other_value > 63 { return None; }
+    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -748,4 +791,11 @@ fn inline_kernel_respond_to_p(
         });
     }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
+}
+
+fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
+    let real_class = unsafe { rb_class_real(recv_class) };
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(real_class) }))
 }

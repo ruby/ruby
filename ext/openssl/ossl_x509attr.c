@@ -13,14 +13,14 @@
     TypedData_Wrap_Struct((klass), &ossl_x509attr_type, 0)
 #define SetX509Attr(obj, attr) do { \
     if (!(attr)) { \
-	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
     } \
     RTYPEDDATA_DATA(obj) = (attr); \
 } while (0)
 #define GetX509Attr(obj, attr) do { \
     TypedData_Get_Struct((obj), X509_ATTRIBUTE, &ossl_x509attr_type, (attr)); \
     if (!(attr)) { \
-	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
     } \
 } while (0)
 
@@ -39,7 +39,7 @@ ossl_x509attr_free(void *ptr)
 static const rb_data_type_t ossl_x509attr_type = {
     "OpenSSL/X509/ATTRIBUTE",
     {
-	0, ossl_x509attr_free,
+        0, ossl_x509attr_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -83,7 +83,7 @@ ossl_x509attr_alloc(VALUE klass)
 
     obj = NewX509Attr(klass);
     if (!(attr = X509_ATTRIBUTE_new()))
-	ossl_raise(eX509AttrError, NULL);
+        ossl_raise(eX509AttrError, NULL);
     SetX509Attr(obj, attr);
 
     return obj;
@@ -102,15 +102,15 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 
     GetX509Attr(self, attr);
     if(rb_scan_args(argc, argv, "11", &oid, &value) == 1){
-	oid = ossl_to_der_if_possible(oid);
-	StringValue(oid);
-	p = (unsigned char *)RSTRING_PTR(oid);
-	x = d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid));
-	DATA_PTR(self) = attr;
-	if(!x){
-	    ossl_raise(eX509AttrError, NULL);
-	}
-	return self;
+        oid = ossl_to_der_if_possible(oid);
+        StringValue(oid);
+        p = (unsigned char *)RSTRING_PTR(oid);
+        x = d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid));
+        DATA_PTR(self) = attr;
+        if(!x){
+            ossl_raise(eX509AttrError, NULL);
+        }
+        return self;
     }
     rb_funcall(self, rb_intern("oid="), 1, oid);
     rb_funcall(self, rb_intern("value="), 1, value);
@@ -130,7 +130,7 @@ ossl_x509attr_initialize_copy(VALUE self, VALUE other)
 
     attr_new = X509_ATTRIBUTE_dup(attr_other);
     if (!attr_new)
-	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
+        ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
 
     SetX509Attr(self, attr_new);
     X509_ATTRIBUTE_free(attr);
@@ -154,8 +154,8 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     obj = OBJ_txt2obj(s, 0);
     if(!obj) ossl_raise(eX509AttrError, NULL);
     if (!X509_ATTRIBUTE_set1_object(attr, obj)) {
-	ASN1_OBJECT_free(obj);
-	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
+        ASN1_OBJECT_free(obj);
+        ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
     }
     ASN1_OBJECT_free(obj);
 
@@ -236,21 +236,21 @@ ossl_x509attr_get_value(VALUE self)
     GetX509Attr(self, attr);
     /* there is no X509_ATTRIBUTE_get0_set() :( */
     if (!(sk = sk_ASN1_TYPE_new_null()))
-	ossl_raise(eX509AttrError, "sk_new");
+        ossl_raise(eX509AttrError, "sk_new");
 
     count = X509_ATTRIBUTE_count(attr);
     for (i = 0; i < count; i++)
-	sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
+        sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
 
     if ((len = i2d_ASN1_SET_ANY(sk, NULL)) <= 0) {
-	sk_ASN1_TYPE_free(sk);
-	ossl_raise(eX509AttrError, NULL);
+        sk_ASN1_TYPE_free(sk);
+        ossl_raise(eX509AttrError, NULL);
     }
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_ASN1_SET_ANY(sk, &p) <= 0) {
-	sk_ASN1_TYPE_free(sk);
-	ossl_raise(eX509AttrError, NULL);
+        sk_ASN1_TYPE_free(sk);
+        ossl_raise(eX509AttrError, NULL);
     }
     ossl_str_adjust(str, p);
     sk_ASN1_TYPE_free(sk);
@@ -272,11 +272,11 @@ ossl_x509attr_to_der(VALUE self)
 
     GetX509Attr(self, attr);
     if((len = i2d_X509_ATTRIBUTE(attr, NULL)) <= 0)
-	ossl_raise(eX509AttrError, NULL);
+        ossl_raise(eX509AttrError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_X509_ATTRIBUTE(attr, &p) <= 0)
-	ossl_raise(eX509AttrError, NULL);
+        ossl_raise(eX509AttrError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -288,12 +288,6 @@ ossl_x509attr_to_der(VALUE self)
 void
 Init_ossl_x509attr(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509AttrError = rb_define_class_under(mX509, "AttributeError", eOSSLError);
 
     cX509Attr = rb_define_class_under(mX509, "Attribute", rb_cObject);

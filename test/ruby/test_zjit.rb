@@ -60,7 +60,9 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_zjit_enable
-    assert_separately([], <<~'RUBY')
+    # --disable-all is important in case the build/environment has YJIT enabled by
+    # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
+    assert_separately(["--disable-all"], <<~'RUBY')
       refute_predicate RubyVM::ZJIT, :enabled?
       refute_predicate RubyVM::ZJIT, :stats_enabled?
       refute_includes RUBY_DESCRIPTION, "+ZJIT"
@@ -525,6 +527,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_variadic_with_block
+    assert_compiles '[[1, "a"], [2, "b"], [3, "c"]]', %q{
+      A = [1, 2, 3]
+      B = ["a", "b", "c"]
+
+      def test
+        result = []
+        A.zip(B) { |x, y| result << [x, y] }
+        result
+      end
+
+      test; test
+    }, call_threshold: 2
+  end
+
   def test_send_splat
     assert_runs '[1, 2]', %q{
       def test(a, b) = [a, b]
@@ -538,12 +555,22 @@ class TestZJIT < Test::Unit::TestCase
       def test(a:, b:) = [a, b]
       def entry = test(b: 2, a: 1) # change order
       entry
-    }
+      entry
+    }, call_threshold: 2
   end
 
   def test_send_kwarg_optional
     assert_compiles '[1, 2]', %q{
       def test(a: 1, b: 2) = [a, b]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_too_many
+    assert_compiles '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10) = [a, b, c, d, e, f, g, h, i, j]
       def entry = test
       entry
       entry
@@ -568,10 +595,91 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwarg_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s) = s.each_line(chomp: true).to_a
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_and_block_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s)
+        a = []
+        s.each_line(chomp: true) { |l| a << l }
+        a
+      end
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_with_too_many_args_to_c_call
+    assert_compiles '"a b c d {kwargs: :e}"', %q{
+      def test(a:, b:, c:, d:, e:) = sprintf("%s %s %s %s %s", a, b, c, d, kwargs: e)
+      def entry = test(e: :e, d: :d, c: :c, a: :a, b: :b)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_kwrest
     assert_compiles '{a: 3}', %q{
       def test(**kwargs) = kwargs
       def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_kwreq
+    assert_compiles '[1, 3]', %q{
+      def test(a, c:) = [a, c]
+      def entry = test(1, c: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq
+    assert_compiles '[[1, 2, 3], [-1, -2, -3]]', %q{
+      def test(a, b = 2, c:) = [a, b, c]
+      def entry = [test(1, c: 3), test(-1, -2, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq_kwopt
+    assert_compiles '[[1, 2, 3, 4], [-1, -2, -3, -4]]', %q{
+      def test(a, b = 2, c:, d: 4) = [a, b, c, d]
+      def entry = [test(1, c: 3), test(-1, -2, d: -4, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_unexpected_keyword
+    assert_compiles ':error', %q{
+      def test(a: 1) = a*2
+      def entry
+        test(z: 2)
+      rescue ArgumentError
+        :error
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_all_arg_types
+    assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
+      def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
+      def entry = test(:req, :post, d: :kwr) {}
       entry
       entry
     }, call_threshold: 2
@@ -943,6 +1051,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_mult]
   end
 
+  def test_fixnum_div
+    assert_compiles '12', %q{
+      C = 48
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_floor
+    assert_compiles '0', %q{
+      C = 3
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_div_zero
+    assert_runs '"divided by 0"', %q{
+      def test(n)
+        n / 0
+      rescue ZeroDivisionError => e
+        e.message
+      end
+
+      test(0)
+      test(0)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
@@ -1066,20 +1205,48 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_duparray_send_include_p_redefined
-      assert_compiles '[:true, :false]', %q{
-        class Array
-          alias_method :old_include?, :include?
-          def include?(x)
-            old_include?(x) ? :true : :false
-          end
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
         end
+      end
 
-        def test(x)
-          [:y, 1].include?(x)
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer
+    assert_compiles '["ABC", "ABC", "ABC", "ABC"]', %q{
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), test(66, buf), test(67, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer_redefined
+    assert_compiles '["b", "A"]', %q{
+      class Array
+        alias_method :old_pack, :pack
+        def pack(fmt, buffer: nil)
+          old_pack(fmt, buffer: buffer)
+          "b"
         end
-        [test(1), test("n")]
-      }, insns: [:opt_duparray_send], call_threshold: 1
-    end
+      end
+
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
 
   def test_opt_newarray_send_hash
     assert_compiles 'Integer', %q{
@@ -1890,7 +2057,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_setclassvariable_raises
-    assert_compiles '"can\'t modify frozen #<Class:Foo>: Foo"', %q{
+    assert_compiles '"can\'t modify frozen Class: Foo"', %q{
       class Foo
         def self.test = @@x = 42
         freeze
@@ -2406,6 +2573,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_require_rubygems_with_auto_compact
+    omit("GC.auto_compact= support is required for this test") unless GC.respond_to?(:auto_compact=)
     assert_runs 'true', %q{
       GC.auto_compact = true
       require 'rubygems'
@@ -3002,7 +3170,35 @@ class TestZJIT < Test::Unit::TestCase
       test
 
       Ractor.new { test }.value
-    }
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_already_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+      r = Ractor.new {
+        Ractor.receive
+        Foo.bar
+      }
+
+      Foo.bar
+      Foo.bar
+
+      r << :go
+      r.value
+    }, call_threshold: 2
   end
 
   def test_ivar_set_with_multi_ractor_mode

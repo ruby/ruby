@@ -104,7 +104,6 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
-#[allow(unnecessary_transmutes)] // https://github.com/rust-lang/rust-bindgen/issues/2807
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
@@ -131,7 +130,6 @@ unsafe extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
-    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
@@ -233,6 +231,16 @@ pub fn insn_len(opcode: usize) -> u32 {
     }
 }
 
+/// We avoid using bindgen for `rb_iseq_constant_body` since its definition changes depending
+/// on build configuration while we need one bindgen file that works for all configurations.
+/// Use an opaque type for it instead.
+/// See: <https://doc.rust-lang.org/nomicon/ffi.html#representing-opaque-structs>
+#[repr(C)]
+pub struct rb_iseq_constant_body {
+    _data: [u8; 0],
+    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
+}
+
 /// An object handle similar to VALUE in the C code. Our methods assume
 /// that this is a handle. Sometimes the C code briefly uses VALUE as
 /// an unsigned integer type and don't necessarily store valid handles but
@@ -262,6 +270,10 @@ impl ShapeId {
 
     pub fn is_too_complex(self) -> bool {
         unsafe { rb_jit_shape_too_complex_p(self.0) }
+    }
+
+    pub fn is_frozen(self) -> bool {
+        (self.0 & SHAPE_ID_FL_FROZEN) != 0
     }
 }
 
@@ -681,7 +693,8 @@ pub trait IseqAccess {
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
-        unsafe { &(*(*self).body).param }
+        use crate::cast::IntoUsize;
+        unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
     }
 }
 
@@ -973,7 +986,7 @@ pub fn rb_bug_panic_hook() {
         // You may also use ZJIT_RB_BUG=1 to trigger this on dev builds.
         if release_build || env::var("ZJIT_RB_BUG").is_ok() {
             // Abort with rb_bug(). It has a length limit on the message.
-            let panic_message = &format!("{}", panic_info)[..];
+            let panic_message = &format!("{panic_info}")[..];
             let len = std::cmp::min(0x100, panic_message.len()) as c_int;
             unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
         } else {
@@ -997,8 +1010,9 @@ mod manual_defs {
     use super::*;
 
     pub const SIZEOF_VALUE: usize = 8;
+    pub const BITS_PER_BYTE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
-    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
+    pub const VALUE_BITS: u8 = BITS_PER_BYTE as u8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -1379,6 +1393,8 @@ pub(crate) mod ids {
         name: _as_heap
         name: thread_ptr
         name: self_              content: b"self"
+        name: rb_ivar_get_at_no_ractor_check
+        name: _shape_id
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

@@ -103,7 +103,7 @@ static  const rb_data_type_t ossl_ts_resp_type = {
 static void
 ossl_ts_token_info_free(void *ptr)
 {
-        TS_TST_INFO_free(ptr);
+    TS_TST_INFO_free(ptr);
 }
 
 static const rb_data_type_t ossl_ts_token_info_type = {
@@ -259,7 +259,7 @@ ossl_ts_req_get_msg_imprint(VALUE self)
     mi = TS_REQ_get_msg_imprint(req);
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
 
-    ret = rb_str_new((const char *)hashed_msg->data, hashed_msg->length);
+    ret = asn1str_to_str(hashed_msg);
 
     return ret;
 }
@@ -470,7 +470,7 @@ ossl_ts_req_to_der(VALUE self)
         ossl_raise(eTimestampError, "Message imprint missing algorithm");
 
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
-    if (!hashed_msg->length)
+    if (!ASN1_STRING_length(hashed_msg))
         ossl_raise(eTimestampError, "Message imprint missing hashed message");
 
     return asn1_to_der((void *)req, (int (*)(void *, unsigned char **))i2d_TS_REQ);
@@ -981,7 +981,7 @@ ossl_ts_token_info_get_msg_imprint(VALUE self)
     GetTSTokenInfo(self, info);
     mi = TS_TST_INFO_get_msg_imprint(info);
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
-    ret = rb_str_new((const char *)hashed_msg->data, hashed_msg->length);
+    ret = asn1str_to_str(hashed_msg);
 
     return ret;
 }
@@ -1226,7 +1226,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     if (rb_obj_is_kind_of(additional_certs, rb_cArray)) {
         inter_certs = ossl_protect_x509_ary2sk(additional_certs, &status);
         if (status)
-                goto end;
+            goto end;
 
         /* this dups the sk_X509 and ups each cert's ref count */
         TS_RESP_CTX_set_certs(ctx, inter_certs);
@@ -1281,7 +1281,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     SetTSResponse(tsresp, response);
     ret = tsresp;
 
-end:
+  end:
     ASN1_INTEGER_free(asn1_serial);
     ASN1_OBJECT_free(def_policy_id_obj);
     TS_RESP_CTX_free(ctx);
@@ -1298,10 +1298,6 @@ end:
 void
 Init_ossl_ts(void)
 {
-    #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
-    #endif
-
     /*
      * Possible return value for +Response#failure_info+. Indicates that the
      * timestamp server rejects the message imprint algorithm used in the
@@ -1511,65 +1507,39 @@ Init_ossl_ts(void)
      *      fac.default_policy_id = '1.2.3.4.5'
      *      fac.additional_certificates = [ inter1, inter2 ]
      *      timestamp = fac.create_timestamp(p12.key, p12.certificate, req)
-     *
-     * ==Attributes
-     *
-     * ===default_policy_id
-     *
-     * Request#policy_id will always be preferred over this if present in the
-     * Request, only if Request#policy_id is nil default_policy will be used.
-     * If none of both is present, a TimestampError will be raised when trying
-     * to create a Response.
-     *
-     * call-seq:
-     *       factory.default_policy_id = "string" -> string
-     *       factory.default_policy_id            -> string or nil
-     *
-     * ===serial_number
-     *
-     * Sets or retrieves the serial number to be used for timestamp creation.
-     * Must be present for timestamp creation.
-     *
-     * call-seq:
-     *       factory.serial_number = number -> number
-     *       factory.serial_number          -> number or nil
-     *
-     * ===gen_time
-     *
-     * Sets or retrieves the Time value to be used in the Response. Must be
-     * present for timestamp creation.
-     *
-     * call-seq:
-     *       factory.gen_time = Time -> Time
-     *       factory.gen_time        -> Time or nil
-     *
-     * ===additional_certs
-     *
-     * Sets or retrieves additional certificates apart from the timestamp
-     * certificate (e.g. intermediate certificates) to be added to the Response.
-     * Must be an Array of OpenSSL::X509::Certificate.
-     *
-     * call-seq:
-     *       factory.additional_certs = [cert1, cert2] -> [ cert1, cert2 ]
-     *       factory.additional_certs                  -> array or nil
-     *
-     * ===allowed_digests
-     *
-     * Sets or retrieves the digest algorithms that the factory is allowed
-     * create timestamps for. Known vulnerable or weak algorithms should not be
-     * allowed where possible.
-     * Must be an Array of String or OpenSSL::Digest subclass instances.
-     *
-     * call-seq:
-     *       factory.allowed_digests = ["sha1", OpenSSL::Digest.new('SHA256').new] -> [ "sha1", OpenSSL::Digest) ]
-     *       factory.allowed_digests                                               -> array or nil
-     *
      */
     cTimestampFactory = rb_define_class_under(mTimestamp, "Factory", rb_cObject);
+    /*
+     * The list of digest algorithms that the factory is allowed
+     * create timestamps for. Known vulnerable or weak algorithms should not be
+     * allowed where possible. Must be an Array of String or OpenSSL::Digest
+     * subclass instances.
+     */
     rb_attr(cTimestampFactory, rb_intern_const("allowed_digests"), 1, 1, 0);
+    /*
+     * A String representing the default policy object identifier, or +nil+.
+     *
+     * Request#policy_id will always be preferred over this if present in the
+     * Request, only if Request#policy_id is +nil+ default_policy will be used.
+     * If none of both is present, a TimestampError will be raised when trying
+     * to create a Response.
+     */
     rb_attr(cTimestampFactory, rb_intern_const("default_policy_id"), 1, 1, 0);
+    /*
+     * The serial number to be used for timestamp creation. Must be present for
+     * timestamp creation. Must be an instance of OpenSSL::BN or Integer.
+     */
     rb_attr(cTimestampFactory, rb_intern_const("serial_number"), 1, 1, 0);
+    /*
+     * The Time value to be used in the Response. Must be present for timestamp
+     * creation.
+     */
     rb_attr(cTimestampFactory, rb_intern_const("gen_time"), 1, 1, 0);
+    /*
+     * Additional certificates apart from the timestamp certificate (e.g.
+     * intermediate certificates) to be added to the Response.
+     * Must be an Array of OpenSSL::X509::Certificate, or +nil+.
+     */
     rb_attr(cTimestampFactory, rb_intern_const("additional_certs"), 1, 1, 0);
     rb_define_method(cTimestampFactory, "create_timestamp", ossl_tsfac_create_ts, 3);
 }

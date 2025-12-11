@@ -426,6 +426,13 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
             rb_gc_mark_and_move_ptr(&env->iseq);
 
+            if (VM_ENV_LOCAL_P(env->ep) && VM_ENV_BOXED_P(env->ep)) {
+                const rb_box_t *box = VM_ENV_BOX(env->ep);
+                if (BOX_USER_P(box)) {
+                    rb_gc_mark_and_move((VALUE *)&box->box_object);
+                }
+            }
+
             if (reference_updating) {
                 ((VALUE *)env->ep)[VM_ENV_DATA_INDEX_ENV] = rb_gc_location(env->ep[VM_ENV_DATA_INDEX_ENV]);
             }

@@ -23,15 +23,13 @@
 #include "ruby/debug.h"
 #include "internal/cont.h"
 
-// For mmapp(), sysconf()
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
+// This build config impacts the pointer tagging scheme and we only want to
+// support one scheme for simplicity.
+STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
-#include <errno.h>
-
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
+enum zjit_struct_offsets {
+    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
+};
 
 // For a given raw_sample (frame), set the hash with the caller's
 // name, file, and line number. Return the  hash with collected frame_info.
@@ -99,7 +97,7 @@ rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int
 
         // Loop through the length of samples_len and add data to the
         // frames hash. Also push the current value onto the raw_samples
-        // and line_samples arrary respectively.
+        // and line_samples array respectively.
         for (int o = 0; o < num; o++) {
             rb_zjit_add_frame(frames, zjit_raw_samples[idx]);
             rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
@@ -311,6 +309,7 @@ VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_get_stats_file_path_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 

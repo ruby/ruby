@@ -26,7 +26,7 @@ impl From<u8> for Opc {
         match num_bits {
             64 => Opc::Opc64,
             32 => Opc::Opc32,
-            _ => panic!("Invalid number of bits: {}", num_bits)
+            _ => panic!("Invalid number of bits: {num_bits}"),
         }
     }
 }

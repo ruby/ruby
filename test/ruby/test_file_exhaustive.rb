@@ -204,12 +204,21 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
 
     conv_error = ->(method, msg = "converting with #{method}") {
-      o = Struct.new(method).new(42)
-      assert_raise(TypeError, msg) {File.path(o)}
-      o = Struct.new(method).new("abc".encode(Encoding::UTF_32BE))
-      assert_raise(Encoding::CompatibilityError, msg) {File.path(o)}
-      o = Struct.new(method).new("\0")
-      assert_raise(ArgumentError, msg) {File.path(o)}
+      test = ->(&new) do
+        o = new.(42)
+        assert_raise(TypeError, msg) {File.path(o)}
+
+        o = new.("abc".encode(Encoding::UTF_32BE))
+        assert_raise(Encoding::CompatibilityError, msg) {File.path(o)}
+
+        ["\0", "a\0", "a\0c"].each do |path|
+          o = new.(path)
+          assert_raise(ArgumentError, msg) {File.path(o)}
+        end
+      end
+
+      test.call(&:itself)
+      test.call(&Struct.new(method).method(:new))
     }
 
     conv_error[:to_path]

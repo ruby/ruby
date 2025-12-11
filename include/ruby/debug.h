@@ -297,7 +297,7 @@ VALUE rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index)
 #define RB_DEBUG_INSPECTOR_FRAME_DEPTH(dc, index) rb_debug_inspector_frame_depth(dc, index)
 
 /**
- * Return current frmae depth.
+ * Return current frame depth.
  *
  * @retval     The depth of the current frame in Integer.
  */

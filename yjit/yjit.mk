@@ -9,24 +9,26 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/jit/src/lib.rs \
 	)
 
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-YJIT_LIB_TOUCH = touch $@
-
 # Absolute path to match RUST_LIB rules to avoid picking
 # the "target" dir in the source directory through VPATH.
 BUILD_YJIT_LIBS = $(TOP_BUILD_DIR)/$(YJIT_LIBS)
 
-# YJIT_SUPPORT=yes when `configure` gets `--enable-yjit`
-ifeq ($(YJIT_SUPPORT),yes)
+# In a YJIT-only build (no ZJIT)
+ifneq ($(strip $(YJIT_LIBS)),)
 yjit-libs: $(BUILD_YJIT_LIBS)
 $(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
-	+$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
-	$(YJIT_LIB_TOUCH)
-endif
+	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
+else ifneq ($(strip $(RLIB_DIR)),) # combo build
+# Absolute path to avoid VPATH ambiguity
+YJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libyjit.rlib
+
+$(YJIT_RLIB): $(YJIT_SRC_FILES)
+	$(ECHO) 'building $(@F)'
+	$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(YJIT_RUSTC_ARGS)
+
+$(RUST_LIB): $(YJIT_RLIB)
+endif # ifneq ($(strip $(YJIT_LIBS)),)
 
 ifneq ($(YJIT_SUPPORT),no)
 $(RUST_LIB): $(YJIT_SRC_FILES)

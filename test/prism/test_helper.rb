@@ -72,7 +72,18 @@ module Prism
         paths.each { |path| yield Fixture.new(path) }
       end
 
-      def self.each_with_version(except: [], &block)
+      def self.each_for_version(except: [], version:, &block)
+        each(except: except) do |fixture|
+          next unless TestCase.ruby_versions_for(fixture.path).include?(version)
+          yield fixture
+        end
+      end
+
+      def self.each_for_current_ruby(except: [], &block)
+        each_for_version(except: except, version: CURRENT_MAJOR_MINOR, &block)
+      end
+
+      def self.each_with_all_versions(except: [], &block)
         each(except: except) do |fixture|
           TestCase.ruby_versions_for(fixture.path).each do |version|
             yield fixture, version
@@ -232,6 +243,9 @@ module Prism
     # All versions that prism can parse
     SYNTAX_VERSIONS = %w[3.3 3.4 4.0]
 
+    # `RUBY_VERSION` with the patch version excluded
+    CURRENT_MAJOR_MINOR = RUBY_VERSION.split(".")[0, 2].join(".")
+
     # Returns an array of ruby versions that a given filepath should test against:
     # test.txt         # => all available versions
     # 3.4/test.txt     # => versions since 3.4 (inclusive)
@@ -250,13 +264,9 @@ module Prism
       end
     end
 
-    def current_major_minor
-      RUBY_VERSION.split(".")[0, 2].join(".")
-    end
-
     if RUBY_VERSION >= "3.3.0"
       def test_all_syntax_versions_present
-        assert_include(SYNTAX_VERSIONS, current_major_minor)
+        assert_include(SYNTAX_VERSIONS, CURRENT_MAJOR_MINOR)
       end
     end
 

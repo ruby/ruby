@@ -241,7 +241,7 @@ impl ZJITState {
                 return;
             }
         };
-        if let Err(e) = writeln!(file, "{}", iseq_name) {
+        if let Err(e) = writeln!(file, "{iseq_name}") {
             eprintln!("ZJIT: Failed to write to file '{}': {}", filename.display(), e);
         }
     }

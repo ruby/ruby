@@ -52,8 +52,11 @@ rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 int
 rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    // YJIT should only use iseqs after AST to bytecode compilation
-    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
+    // YJIT should only use iseqs after AST to bytecode compilation.
+    // (Certain non-default interpreter configurations never set ISEQ_TRANSLATED)
+    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
+        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
+    }
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
@@ -758,10 +761,24 @@ rb_jit_fix_mod_fix(VALUE recv, VALUE obj)
     return rb_fix_mod_fix(recv, obj);
 }
 
+VALUE
+rb_jit_fix_div_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_div_fix(recv, obj);
+}
+
 // YJIT/ZJIT need this function to never allocate and never raise
 VALUE
 rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
 {
     // We wrap this since it's static inline
     return rb_str_eql_internal(str1, str2);
+}
+
+void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
+
+attr_index_t
+rb_jit_shape_capacity(shape_id_t shape_id)
+{
+    return RSHAPE_CAPACITY(shape_id);
 }

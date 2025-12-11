@@ -66,7 +66,7 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -75,6 +75,8 @@ jobs:
         with:
           srcdir: src
           builddir: build
+          make-command: nmake
+          clean: true
 
       - name: Install tools with scoop
         run: |

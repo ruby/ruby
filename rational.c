@@ -715,16 +715,27 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 static double nurat_to_double(VALUE self);
 /*
- * call-seq:
- *    rat + numeric  ->  numeric
+ *  call-seq:
+ *    self + other -> numeric
  *
- * Performs addition.
+ *  Returns the sum of +self+ and +other+:
  *
- *    Rational(2, 3)  + Rational(2, 3)   #=> (4/3)
- *    Rational(900)   + Rational(1)      #=> (901/1)
- *    Rational(-2, 9) + Rational(-9, 2)  #=> (-85/18)
- *    Rational(9, 8)  + 4                #=> (41/8)
- *    Rational(20, 9) + 9.8              #=> 12.022222222222222
+ *    Rational(2, 3) + 0  # => (2/3)
+ *    Rational(2, 3) + 1  # => (5/3)
+ *    Rational(2, 3) + -1 # => (-1/3)
+ *
+ *    Rational(2, 3) + Complex(1, 0)     # => ((5/3)+0i)
+ *
+ *    Rational(2, 3) + Rational(1, 1)     # => (5/3)
+ *    Rational(2, 3) + Rational(3, 2)     # => (13/6)
+ *    Rational(2, 3) + Rational(3.0, 2.0) # => (13/6)
+ *    Rational(2, 3) + Rational(3.1, 2.1) # => (30399297484750849/14186338826217063)
+ *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    Rational(2, 3) + 1.0 # => 1.6666666666666665
+ *    Rational(2, 3) + Complex(1.0, 0.0) # => (1.6666666666666665+0.0i)
+ *
  */
 VALUE
 rb_rational_plus(VALUE self, VALUE other)

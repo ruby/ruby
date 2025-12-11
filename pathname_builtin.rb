@@ -195,14 +195,11 @@ class Pathname
 
   # :stopdoc:
 
-  # to_path is implemented so Pathname objects are usable with File.open, etc.
-  TO_PATH = :to_path
-
-  SAME_PATHS = if File::FNM_SYSCASE.nonzero?
+  if File::FNM_SYSCASE.nonzero?
     # Avoid #zero? here because #casecmp can return nil.
-    proc {|a, b| a.casecmp(b) == 0}
+    private def same_paths?(a, b) a.casecmp(b) == 0 end
   else
-    proc {|a, b| a == b}
+    private def same_paths?(a, b) a == b end
   end
 
   attr_reader :path
@@ -215,19 +212,14 @@ class Pathname
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    unless String === path
-      path = path.to_path if path.respond_to? :to_path
-      path = path.to_str if path.respond_to? :to_str
-      raise TypeError, "Pathname.new requires a String, #to_path or #to_str" unless String === path
-    end
-
-    if path.include?("\0")
-      raise ArgumentError, "pathname contains \\0: #{path.inspect}"
-    end
-
-    @path = path.dup
+    @path = File.path(path).dup
+  rescue TypeError => e
+    raise e.class, "Pathname.new requires a String, #to_path or #to_str", cause: nil
   end
 
+  #
+  # Freze self.
+  #
   def freeze
     super
     @path.freeze
@@ -264,7 +256,7 @@ class Pathname
   end
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.
-  alias_method TO_PATH, :to_s
+  alias to_path to_s
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
@@ -320,6 +312,9 @@ class Pathname
     SEPARATOR_LIST = Regexp.quote File::SEPARATOR
     SEPARATOR_PAT = /#{SEPARATOR_LIST}/
   end
+  SEPARATOR_LIST.freeze
+  SEPARATOR_PAT.freeze
+  private_constant :SEPARATOR_LIST, :SEPARATOR_LIST
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
     # Regexp that matches an absolute path.
@@ -327,6 +322,7 @@ class Pathname
   else
     ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
   end
+  ABSOLUTE_PATH.freeze
   private_constant :ABSOLUTE_PATH
 
   # :startdoc:
@@ -843,12 +839,12 @@ class Pathname
       base_prefix, basename = r
       base_names.unshift basename if basename != '.'
     end
-    unless SAME_PATHS[dest_prefix, base_prefix]
+    unless same_paths?(dest_prefix, base_prefix)
       raise ArgumentError, "different prefix: #{dest_prefix.inspect} and #{base_directory.inspect}"
     end
     while !dest_names.empty? &&
           !base_names.empty? &&
-          SAME_PATHS[dest_names.first, base_names.first]
+          same_paths?(dest_names.first, base_names.first)
       dest_names.shift
       base_names.shift
     end

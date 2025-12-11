@@ -88,7 +88,7 @@ module Prism
       expected = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
       source = expected.lines.grep_v(/^\s*\^/).join.gsub(/\n*\z/, "")
-      refute_valid_syntax(source) if current_major_minor == version
+      refute_valid_syntax(source) if CURRENT_MAJOR_MINOR == version
 
       result = Prism.parse(source, version: version)
       errors = result.errors

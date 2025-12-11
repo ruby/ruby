@@ -8,6 +8,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--gemfile=GEMFILE]
                  [--jobs=NUMBER]
                  [--local]
+                 [--lockfile=LOCKFILE]
                  [--no-cache]
                  [--no-lock]
                  [--prefer-local]
@@ -60,6 +61,10 @@ update process below under [CONSERVATIVE UPDATING][].
   gems already present in Rubygems' cache or in `vendor/cache`. Note that if an
   appropriate platform-specific gem exists on `rubygems.org` it will not be
   found.
+
+* `--lockfile=LOCKFILE`:
+  The location of the lockfile which Bundler should use. This defaults
+  to the Gemfile location with `.lock` appended.
 
 * `--prefer-local`:
   Force using locally installed gems, or gems already present in Rubygems' cache

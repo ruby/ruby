@@ -24,6 +24,15 @@ macro_rules! make_counters {
         optimized_send {
             $($optimized_send_counter_name:ident,)+
         }
+        dynamic_setivar {
+            $($dynamic_setivar_counter_name:ident,)+
+        }
+        dynamic_getivar {
+            $($dynamic_getivar_counter_name:ident,)+
+        }
+        dynamic_definedivar {
+            $($dynamic_definedivar_counter_name:ident,)+
+        }
         $($counter_name:ident,)+
     ) => {
         /// Struct containing the counter values
@@ -33,6 +42,9 @@ macro_rules! make_counters {
             $(pub $exit_counter_name: u64,)+
             $(pub $dynamic_send_counter_name: u64,)+
             $(pub $optimized_send_counter_name: u64,)+
+            $(pub $dynamic_setivar_counter_name: u64,)+
+            $(pub $dynamic_getivar_counter_name: u64,)+
+            $(pub $dynamic_definedivar_counter_name: u64,)+
             $(pub $counter_name: u64,)+
         }
 
@@ -44,6 +56,9 @@ macro_rules! make_counters {
             $($exit_counter_name,)+
             $($dynamic_send_counter_name,)+
             $($optimized_send_counter_name,)+
+            $($dynamic_setivar_counter_name,)+
+            $($dynamic_getivar_counter_name,)+
+            $($dynamic_definedivar_counter_name,)+
             $($counter_name,)+
         }
 
@@ -54,6 +69,9 @@ macro_rules! make_counters {
                     $( Counter::$exit_counter_name => stringify!($exit_counter_name), )+
                     $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name), )+
                     $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name), )+
+                    $( Counter::$dynamic_setivar_counter_name => stringify!($dynamic_setivar_counter_name), )+
+                    $( Counter::$dynamic_getivar_counter_name => stringify!($dynamic_getivar_counter_name), )+
+                    $( Counter::$dynamic_definedivar_counter_name => stringify!($dynamic_definedivar_counter_name), )+
                     $( Counter::$counter_name => stringify!($counter_name), )+
                 }
             }
@@ -64,6 +82,9 @@ macro_rules! make_counters {
                     $( stringify!($exit_counter_name) => Some(Counter::$exit_counter_name), )+
                     $( stringify!($dynamic_send_counter_name) => Some(Counter::$dynamic_send_counter_name), )+
                     $( stringify!($optimized_send_counter_name) => Some(Counter::$optimized_send_counter_name), )+
+                    $( stringify!($dynamic_setivar_counter_name) => Some(Counter::$dynamic_setivar_counter_name), )+
+                    $( stringify!($dynamic_getivar_counter_name) => Some(Counter::$dynamic_getivar_counter_name), )+
+                    $( stringify!($dynamic_definedivar_counter_name) => Some(Counter::$dynamic_definedivar_counter_name), )+
                     $( stringify!($counter_name) => Some(Counter::$counter_name), )+
                     _ => None,
                 }
@@ -77,6 +98,9 @@ macro_rules! make_counters {
                 $( Counter::$default_counter_name => std::ptr::addr_of_mut!(counters.$default_counter_name), )+
                 $( Counter::$exit_counter_name => std::ptr::addr_of_mut!(counters.$exit_counter_name), )+
                 $( Counter::$dynamic_send_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_send_counter_name), )+
+                $( Counter::$dynamic_setivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_setivar_counter_name), )+
+                $( Counter::$dynamic_getivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_getivar_counter_name), )+
+                $( Counter::$dynamic_definedivar_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_definedivar_counter_name), )+
                 $( Counter::$optimized_send_counter_name => std::ptr::addr_of_mut!(counters.$optimized_send_counter_name), )+
                 $( Counter::$counter_name => std::ptr::addr_of_mut!(counters.$counter_name), )+
             }
@@ -101,6 +125,21 @@ macro_rules! make_counters {
         /// List of other counters that are summed as optimized_send_count.
         pub const OPTIMIZED_SEND_COUNTERS: &'static [Counter] = &[
             $( Counter::$optimized_send_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_setivar_count.
+        pub const DYNAMIC_SETIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_setivar_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_getivar_count.
+        pub const DYNAMIC_GETIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_getivar_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as dynamic_definedivar_count.
+        pub const DYNAMIC_DEFINEDIVAR_COUNTERS: &'static [Counter] = &[
+            $( Counter::$dynamic_definedivar_counter_name, )+
         ];
 
         /// List of other counters that are available only for --zjit-stats.
@@ -144,6 +183,7 @@ make_counters! {
         exit_fixnum_mult_overflow,
         exit_fixnum_lshift_overflow,
         exit_fixnum_mod_by_zero,
+        exit_fixnum_div_by_zero,
         exit_box_fixnum_overflow,
         exit_guard_type_failure,
         exit_guard_type_not_failure,
@@ -182,6 +222,10 @@ make_counters! {
         send_fallback_too_many_args_for_lir,
         send_fallback_send_without_block_bop_redefined,
         send_fallback_send_without_block_operands_not_fixnum,
+        send_fallback_send_without_block_direct_keyword_mismatch,
+        send_fallback_send_without_block_direct_optional_keywords,
+        send_fallback_send_without_block_direct_keyword_count_mismatch,
+        send_fallback_send_without_block_direct_missing_keyword,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
@@ -191,6 +235,8 @@ make_counters! {
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
         send_fallback_one_or_more_complex_arg_pass,
+        // Caller has keyword arguments but callee doesn't expect them.
+        send_fallback_unexpected_keyword_args,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_send_cfunc_variadic,
@@ -207,7 +253,39 @@ make_counters! {
         variadic_cfunc_optimized_send_count,
     }
 
+    // Ivar fallback counters that are summed as dynamic_setivar_count
+    dynamic_setivar {
+        // setivar_fallback_: Fallback reasons for dynamic setivar instructions
+        setivar_fallback_not_monomorphic,
+        setivar_fallback_immediate,
+        setivar_fallback_not_t_object,
+        setivar_fallback_too_complex,
+        setivar_fallback_frozen,
+        setivar_fallback_shape_transition,
+        setivar_fallback_new_shape_too_complex,
+        setivar_fallback_new_shape_needs_extension,
+    }
+
+    // Ivar fallback counters that are summed as dynamic_getivar_count
+    dynamic_getivar {
+        // getivar_fallback_: Fallback reasons for dynamic getivar instructions
+        getivar_fallback_not_monomorphic,
+        getivar_fallback_immediate,
+        getivar_fallback_not_t_object,
+        getivar_fallback_too_complex,
+    }
+
+    // Ivar fallback counters that are summed as dynamic_definedivar_count
+    dynamic_definedivar {
+        // definedivar_fallback_: Fallback reasons for dynamic definedivar instructions
+        definedivar_fallback_not_monomorphic,
+        definedivar_fallback_immediate,
+        definedivar_fallback_not_t_object,
+        definedivar_fallback_too_complex,
+    }
+
     // compile_error_: Compile error reasons
+    compile_error_iseq_version_limit_reached,
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
     compile_error_out_of_memory,
@@ -235,10 +313,6 @@ make_counters! {
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
-
-    // The number of times we do a dynamic ivar lookup from JIT code
-    dynamic_getivar_count,
-    dynamic_setivar_count,
 
     // Method call def_type related to send without block fallback to dynamic dispatch
     unspecialized_send_without_block_def_type_iseq,
@@ -280,7 +354,7 @@ make_counters! {
     // Unsupported parameter features
     complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
-    complex_arg_pass_param_kw,
+    complex_arg_pass_param_kw_opt,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
@@ -355,6 +429,7 @@ pub fn send_fallback_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
 /// Reason why ZJIT failed to produce any JIT code
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompileError {
+    IseqVersionLimitReached,
     IseqStackTooLarge,
     ExceptionHandler,
     OutOfMemory,
@@ -368,9 +443,10 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     use crate::stats::CompileError::*;
     use crate::stats::Counter::*;
     match compile_error {
-        IseqStackTooLarge     => compile_error_iseq_stack_too_large,
-        ExceptionHandler      => compile_error_exception_handler,
-        OutOfMemory           => compile_error_out_of_memory,
+        IseqVersionLimitReached => compile_error_iseq_version_limit_reached,
+        IseqStackTooLarge       => compile_error_iseq_stack_too_large,
+        ExceptionHandler        => compile_error_exception_handler,
+        OutOfMemory             => compile_error_out_of_memory,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
@@ -426,6 +502,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         FixnumMultOverflow            => exit_fixnum_mult_overflow,
         FixnumLShiftOverflow          => exit_fixnum_lshift_overflow,
         FixnumModByZero               => exit_fixnum_mod_by_zero,
+        FixnumDivByZero               => exit_fixnum_div_by_zero,
         BoxFixnumOverflow             => exit_box_fixnum_overflow,
         GuardType(_)                  => exit_guard_type_failure,
         GuardTypeNot(_)               => exit_guard_type_not_failure,
@@ -478,12 +555,17 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
         SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
         SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
+        SendWithoutBlockDirectKeywordMismatch     => send_fallback_send_without_block_direct_keyword_mismatch,
+        SendWithoutBlockDirectOptionalKeywords    => send_fallback_send_without_block_direct_optional_keywords,
+        SendWithoutBlockDirectKeywordCountMismatch=> send_fallback_send_without_block_direct_keyword_count_mismatch,
+        SendWithoutBlockDirectMissingKeyword       => send_fallback_send_without_block_direct_missing_keyword,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
         SendCfuncVariadic                         => send_fallback_send_cfunc_variadic,
         SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
+        UnexpectedKeywordArgs                     => send_fallback_unexpected_keyword_args,
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
@@ -657,6 +739,33 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     set_stat_usize!(hash, "optimized_send_count", optimized_send_count);
     set_stat_usize!(hash, "send_count", dynamic_send_count + optimized_send_count);
 
+    // Set send fallback counters for each setivar fallback reason
+    let mut dynamic_setivar_count = 0;
+    for &counter in DYNAMIC_SETIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_setivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_setivar_count", dynamic_setivar_count);
+
+    // Set send fallback counters for each getivar fallback reason
+    let mut dynamic_getivar_count = 0;
+    for &counter in DYNAMIC_GETIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_getivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_getivar_count", dynamic_getivar_count);
+
+    // Set send fallback counters for each definedivar fallback reason
+    let mut dynamic_definedivar_count = 0;
+    for &counter in DYNAMIC_DEFINEDIVAR_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        dynamic_definedivar_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "dynamic_definedivar_count", dynamic_definedivar_count);
+
     // Set send fallback counters for Uncategorized
     let send_fallback_counters = ZJITState::get_send_fallback_counters();
     for (op_idx, count) in send_fallback_counters.iter().enumerate().take(VM_INSTRUCTION_SIZE as usize) {
@@ -680,21 +789,21 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     // Set not inlined cfunc counters
     let not_inlined_cfuncs = ZJITState::get_not_inlined_cfunc_counter_pointers();
     for (signature, counter) in not_inlined_cfuncs.iter() {
-        let key_string = format!("not_inlined_cfuncs_{}", signature);
+        let key_string = format!("not_inlined_cfuncs_{signature}");
         set_stat_usize!(hash, &key_string, **counter);
     }
 
     // Set not annotated cfunc counters
     let not_annotated_cfuncs = ZJITState::get_not_annotated_cfunc_counter_pointers();
     for (signature, counter) in not_annotated_cfuncs.iter() {
-        let key_string = format!("not_annotated_cfuncs_{}", signature);
+        let key_string = format!("not_annotated_cfuncs_{signature}");
         set_stat_usize!(hash, &key_string, **counter);
     }
 
     // Set ccall counters
     let ccall = ZJITState::get_ccall_counter_pointers();
     for (signature, counter) in ccall.iter() {
-        let key_string = format!("ccall_{}", signature);
+        let key_string = format!("ccall_{signature}");
         set_stat_usize!(hash, &key_string, **counter);
     }
 

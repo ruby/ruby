@@ -268,9 +268,8 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2021 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -279,9 +278,8 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2024 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -706,7 +704,8 @@ distclean-local:: clean-local
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
-distclean-ext:: PHONY
+distclean-local:: distclean-srcs-local
+distclean-ext:: distclean-srcs-ext
 distclean-golf: clean-golf
 distclean-rdoc: clean-rdoc
 distclean-html: clean-html
@@ -721,6 +720,7 @@ realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean
 realclean-local:: distclean-local realclean-srcs-local
 
 clean-srcs:: clean-srcs-local clean-srcs-ext
+distclean-srcs:: distclean-srcs-local distclean-srcs-ext
 realclean-srcs:: realclean-srcs-local realclean-srcs-ext
 
 clean-srcs-local::
@@ -728,7 +728,9 @@ clean-srcs-local::
 	$(Q)$(RM) id.c id.h probes.dmyh probes.h
 	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
 
-realclean-srcs-local:: clean-srcs-local
+distclean-srcs-local:: clean-srcs-local
+
+realclean-srcs-local:: distclean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(RM) \
 	  parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h \
 	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub \
@@ -736,7 +738,8 @@ realclean-srcs-local:: clean-srcs-local
 	|| $(NULLCMD)
 
 clean-srcs-ext::
-realclean-srcs-ext:: clean-srcs-ext
+distclean-srcs-ext:: clean-srcs-ext
+realclean-srcs-ext:: distclean-srcs-ext
 
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
@@ -796,7 +799,7 @@ clean-capi distclean-capi realclean-capi:
 
 clean-platform distclean-platform realclean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
@@ -1007,8 +1010,11 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: test install install-nodoc install-doc dist
 .PHONY: loadpath golf capi rdoc install-prereq clear-installed-list
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
+.PHONY: clean-srcs clean-srcs-local clean-srcs-ext
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
+.PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
+.PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
 .PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
@@ -1814,11 +1820,11 @@ $(UNICODE_HDR_DIR)/name2ctype.h:
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_SRC_EMOJI_DATA_DIR) > $@.new
 	$(MV) $@.new $@
 
-srcs-doc: $(srcdir)/doc/regexp/unicode_properties.rdoc
-$(srcdir)/doc/regexp/$(ALWAYS_UPDATE_UNICODE:yes=unicode_properties.rdoc): \
+srcs-doc: $(srcdir)/doc/language/regexp/unicode_properties.rdoc
+$(srcdir)/doc/language/regexp/$(ALWAYS_UPDATE_UNICODE:yes=unicode_properties.rdoc): \
 	$(UNICODE_HDR_DIR)/name2ctype.h $(UNICODE_PROPERTY_FILES)
 
-$(srcdir)/doc/regexp/unicode_properties.rdoc:
+$(srcdir)/doc/language/regexp/unicode_properties.rdoc:
 	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ \
 		$(srcdir)/template/unicode_properties.rdoc.tmpl \
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h || \

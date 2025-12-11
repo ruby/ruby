@@ -150,11 +150,71 @@ assert_equal "42", %q{
   Ractor.shareable_lambda{ a }.call
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
+# Ractor.shareable_proc issue for locals in proc [Bug #18023]
 assert_equal '[:a, :b, :c, :d, :e]', %q{
   v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
   closure = Proc.new { [v1, v2, v3, v4, v5] }
   Ractor.shareable_proc(&closure).call
+}
+
+# Ractor.shareable_proc makes a copy of given Proc
+assert_equal '[true, true]', %q{
+  pr1 = Proc.new do
+    self
+  end
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  [pr1.call == self, pr2.call == nil]
+}
+
+# Ractor.shareable_proc keeps the original Proc intact
+assert_equal '[SyntaxError, [Object, 43, 43], Binding]', %q{
+  a = 42
+  pr1 = Proc.new do
+    [self.class, eval("a"), binding.local_variable_get(:a)]
+  end
+  a += 1
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  r = []
+  begin
+    pr2.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  r << pr1.call << pr1.binding.class
+}
+
+# Ractor.make_shareable mutates the original Proc
+# This is the current behavior, it's currently considered safe enough
+# because in most cases it would raise anyway due to not-shared self or not-shared captured variable value
+assert_equal '[[42, 42], Binding, true, SyntaxError, "Can\'t create Binding from isolated Proc"]', %q{
+  a = 42
+  pr1 = nil.instance_exec do
+    Proc.new do
+      [eval("a"), binding.local_variable_get(:a)]
+    end
+  end
+
+  r = [pr1.call, pr1.binding.class]
+
+  pr2 = Ractor.make_shareable(pr1)
+  r << pr1.equal?(pr2)
+
+  begin
+    pr1.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  begin
+    r << pr1.binding
+  rescue ArgumentError
+    r << $!.message
+  end
+
+  r
 }
 
 # Ractor::IsolationError cases
@@ -171,9 +231,9 @@ assert_equal '3', %q{
 
   begin
     cond = false
-    a = 1
-    a = 2 if cond
-    Ractor.shareable_proc{a}
+    b = 1
+    b = 2 if cond
+    Ractor.shareable_proc{b}
   rescue Ractor::IsolationError => e
     ok += 1
   end
@@ -1106,6 +1166,23 @@ assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
   end.value
 RUBY
 
+# Inserting into the id2ref table should be Ractor-safe
+assert_equal 'ok', <<~'RUBY'
+  # Force all calls to Kernel#object_id to insert into the id2ref table
+  ObjectSpace._id2ref(Object.new.object_id)
+
+  10.times.map do
+    Ractor.new do
+      10_000.times do
+        a = Object.new
+        a.object_id
+      end
+    end
+  end.map(&:value)
+
+  :ok
+RUBY
+
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   class C
@@ -1201,6 +1278,28 @@ assert_equal '[:ok, "Proc\'s self is not shareable:"]', %q{
       :ok
     end
   end
+}
+
+# Ractor.make_shareable(Method/UnboundMethod)
+assert_equal 'true', %q{
+  # raise because receiver is unshareable
+  begin
+    _m0 = Ractor.make_shareable(self.method(:__id__))
+  rescue => e
+    raise e unless e.message =~ /can not make shareable object/
+  else
+    raise "no error"
+  end
+
+  # Method with shareable receiver
+  M1 = Ractor.make_shareable(Object.method(:__id__))
+
+  # UnboundMethod
+  M2 = Ractor.make_shareable(Object.instance_method(:__id__))
+
+  Ractor.new do
+    Object.__id__ == M1.call && M1.call == M2.bind_call(Object)
+  end.value
 }
 
 # Ractor.shareable?(recursive_objects)
@@ -1395,6 +1494,9 @@ assert_equal "ok", %Q{
     unless a[i].equal?(b[i])
       raise [a[i], b[i]].inspect
     end
+    unless a[i] == i.to_s
+      raise [i, a[i], b[i]].inspect
+    end
   end
   :ok
 }
@@ -1559,7 +1661,7 @@ assert_equal 'true', %q{
 }
 
 # check experimental warning
-assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor API is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
   eval("Ractor.new{}.value", nil, "test_ractor.rb", 1)
@@ -2369,4 +2471,71 @@ assert_equal 'ok', <<~'RUBY'
   rescue NotImplementedError
     :ok
   end
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  begin
+    100.times do |i|
+      Ractor.new(i) do |j|
+        1000.times do |i|
+          "#{j}-#{i}"
+        end
+      end
+      pid = fork do
+        GC.verify_internal_consistency
+      end
+      _, status = Process.waitpid2 pid
+      raise unless status.success?
+    end
+
+    :ok
+  rescue NotImplementedError
+    :ok
+  end
+RUBY
+
+# When creating bmethods in Ractors, they should only be usable from their
+# defining ractor, even if it is GC'd
+assert_equal 'ok', <<~'RUBY'
+
+begin
+  CLASSES = 1000.times.map { Class.new }.freeze
+
+  # This would be better to run in parallel, but there's a bug with lambda
+  # creation and YJIT causing crashes in dev mode
+  ractors = CLASSES.map do |klass|
+    Ractor.new(klass) do |klass|
+      Ractor.receive
+      klass.define_method(:foo) {}
+    end
+  end
+
+  ractors.each do |ractor|
+    ractor << nil
+    ractor.join
+  end
+
+  ractors.clear
+  GC.start
+
+  any = 1000.times.map do
+    Ractor.new do
+      CLASSES.any? do |klass|
+        begin
+          klass.new.foo
+          true
+        rescue RuntimeError
+          false
+        end
+      end
+    end
+  end.map(&:value).none? && :ok
+rescue ThreadError => e
+  # ignore limited memory machine
+  if /can\'t create Thread/ =~ e.message
+    :ok
+  else
+    raise
+  end
+end
 RUBY

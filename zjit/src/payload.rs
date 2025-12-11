@@ -1,4 +1,5 @@
 use std::ffi::c_void;
+use std::ptr::NonNull;
 use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
@@ -6,27 +7,55 @@ use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
-    /// Compilation status of the ISEQ. It has the JIT code address of the first block if Compiled.
-    pub status: IseqStatus,
-
     /// Type information of YARV instruction operands
     pub profile: IseqProfile,
-
-    /// GC offsets of the JIT code. These are the addresses of objects that need to be marked.
-    pub gc_offsets: Vec<CodePtr>,
-
-    /// JIT-to-JIT calls in the ISEQ. The IseqPayload's ISEQ is the caller of it.
-    pub iseq_calls: Vec<IseqCallRef>,
+    /// JIT code versions. Different versions should have different assumptions.
+    pub versions: Vec<IseqVersionRef>,
 }
 
 impl IseqPayload {
     fn new(iseq_size: u32) -> Self {
         Self {
-            status: IseqStatus::NotCompiled,
             profile: IseqProfile::new(iseq_size),
-            gc_offsets: vec![],
-            iseq_calls: vec![],
+            versions: vec![],
         }
+    }
+}
+
+/// JIT code version. When the same ISEQ is compiled with a different assumption, a new version is created.
+#[derive(Debug)]
+pub struct IseqVersion {
+    /// ISEQ pointer. Stored here to minimize the size of PatchPoint.
+    pub iseq: IseqPtr,
+
+    /// Compilation status of the ISEQ. It has the JIT code address of the first block if Compiled.
+    pub status: IseqStatus,
+
+    /// GC offsets of the JIT code. These are the addresses of objects that need to be marked.
+    pub gc_offsets: Vec<CodePtr>,
+
+    /// JIT-to-JIT calls from the ISEQ. The IseqPayload's ISEQ is the caller of it.
+    pub outgoing: Vec<IseqCallRef>,
+
+    /// JIT-to-JIT calls to the ISEQ. The IseqPayload's ISEQ is the callee of it.
+    pub incoming: Vec<IseqCallRef>,
+}
+
+/// We use a raw pointer instead of Rc to save space for refcount
+pub type IseqVersionRef = NonNull<IseqVersion>;
+
+impl IseqVersion {
+    /// Allocate a new IseqVersion to be compiled
+    pub fn new(iseq: IseqPtr) -> IseqVersionRef {
+        let version = Self {
+            iseq,
+            status: IseqStatus::NotCompiled,
+            gc_offsets: vec![],
+            outgoing: vec![],
+            incoming: vec![],
+        };
+        let version_ptr = Box::into_raw(Box::new(version));
+        NonNull::new(version_ptr).expect("no null from Box")
     }
 }
 
@@ -44,6 +73,7 @@ pub enum IseqStatus {
     Compiled(IseqCodePtrs),
     CantCompile(CompileError),
     NotCompiled,
+    Invalidated,
 }
 
 /// Get a pointer to the payload object associated with an ISEQ. Create one if none exists.

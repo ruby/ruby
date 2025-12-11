@@ -801,7 +801,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 }
 
 static inline rb_shape_t *
-shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE obj, ID id, bool emit_warnings)
+shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id, bool emit_warnings)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
 
@@ -811,23 +811,6 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE obj, ID id, 
         rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
     }
 #endif
-
-    VALUE klass;
-    if (IMEMO_TYPE_P(obj, imemo_fields)) {
-        VALUE owner = rb_imemo_fields_owner(obj);
-        switch (BUILTIN_TYPE(owner)) {
-          case T_CLASS:
-          case T_MODULE:
-            klass = rb_singleton_class(owner);
-            break;
-          default:
-            klass = rb_obj_class(owner);
-            break;
-        }
-    }
-    else {
-        klass = rb_obj_class(obj);
-    }
 
     bool allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;
     bool variation_created = false;
@@ -839,7 +822,7 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE obj, ID id, 
     }
 
     // Check if we should update max_iv_count on the object's class
-    if (obj != klass && new_shape->next_field_index > RCLASS_MAX_IV_COUNT(klass)) {
+    if (new_shape->next_field_index > RCLASS_MAX_IV_COUNT(klass)) {
         RCLASS_SET_MAX_IV_COUNT(klass, new_shape->next_field_index);
     }
 
@@ -860,6 +843,28 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE obj, ID id, 
     }
 
     return new_shape;
+}
+
+static VALUE
+obj_get_owner_class(VALUE obj)
+{
+    VALUE klass;
+    if (IMEMO_TYPE_P(obj, imemo_fields)) {
+        VALUE owner = rb_imemo_fields_owner(obj);
+        switch (BUILTIN_TYPE(owner)) {
+          case T_CLASS:
+          case T_MODULE:
+            klass = rb_singleton_class(owner);
+            break;
+          default:
+            klass = rb_obj_class(owner);
+            break;
+        }
+    }
+    else {
+        klass = rb_obj_class(obj);
+    }
+    return klass;
 }
 
 static rb_shape_t *
@@ -884,7 +889,8 @@ remove_shape_recursive(VALUE obj, rb_shape_t *shape, ID id, rb_shape_t **removed
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
             if (new_parent) {
-                rb_shape_t *new_child = shape_get_next(new_parent, shape->type, obj, shape->edge_name, true);
+                VALUE klass = obj_get_owner_class(obj);
+                rb_shape_t *new_child = shape_get_next(new_parent, shape->type, klass, shape->edge_name, true);
                 RUBY_ASSERT(!new_child || new_child->capacity <= shape->capacity);
                 return new_child;
             }
@@ -933,7 +939,8 @@ rb_shape_transition_add_ivar(VALUE obj, ID id)
     shape_id_t original_shape_id = RBASIC_SHAPE_ID(obj);
     RUBY_ASSERT(!shape_frozen_p(original_shape_id));
 
-    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, obj, id, true);
+    VALUE klass = obj_get_owner_class(obj);
+    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, true);
     if (next_shape) {
         return shape_id(next_shape, original_shape_id);
     }
@@ -943,12 +950,11 @@ rb_shape_transition_add_ivar(VALUE obj, ID id)
 }
 
 shape_id_t
-rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id)
+rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id)
 {
-    shape_id_t original_shape_id = RBASIC_SHAPE_ID(obj);
     RUBY_ASSERT(!shape_frozen_p(original_shape_id));
 
-    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, obj, id, false);
+    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, false);
     if (next_shape) {
         return shape_id(next_shape, original_shape_id);
     }
@@ -1240,6 +1246,10 @@ rb_shape_foreach_field(shape_id_t initial_shape_id, rb_shape_foreach_transition_
 bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 {
+    if (shape_id == ROOT_SHAPE_ID) {
+        return true;
+    }
+
     if (shape_id == INVALID_SHAPE_ID) {
         rb_bug("Can't set INVALID_SHAPE_ID on an object");
     }

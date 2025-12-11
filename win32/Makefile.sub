@@ -13,6 +13,10 @@ PWD = $(MAKEDIR)
 empty =
 tooldir = $(srcdir)/tool
 
+PROMPT = +$$S
+
+MAKEFLAGS = l$(MAKEFLAGS)
+
 !ifndef MFLAGS
 MFLAGS=-l
 !endif
@@ -117,7 +121,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RM1 = del
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
+RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat -p
 RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 TOUCH = $(BASERUBY) -run -e touch --
@@ -435,6 +439,7 @@ EXTSTATIC     =
 
 OBJEXT = obj
 ASMEXT = asm
+DLEXT = so
 
 INSTALLED_LIST= .installed.list
 
@@ -872,7 +877,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 #define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 #define LOAD_RELATIVE 1
-#define DLEXT ".so"
+#define DLEXT ".$(DLEXT)"
 !if "$(libdir_basename)" != "lib"
 #define LIBDIR_BASENAME "$(libdir_basename)"
 !endif
@@ -967,7 +972,7 @@ s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIR@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,:t t
-s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
+s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat -p,;t t
 s,@RMALL@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat -f -r,:t t
 s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
@@ -985,7 +990,7 @@ s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
 s,@LDSHARED@,$(LDSHARED),;t t
 s,@SOEXT@,dll,;t t
-s,@DLEXT@,so,;t t
+s,@DLEXT@,$(DLEXT),;t t
 s,@LIBEXT@,lib,;t t
 s,@STRIP@,$(STRIP),;t t
 s,@ENCSTATIC@,$(ENCSTATIC),;t t
@@ -1165,13 +1170,43 @@ clean-local::
 		$(Q)$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
 		$(Q)$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		$(Q)$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
-		$(Q)$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
+		$(Q)$(RM) *.map *.pdb *.ilk *.exp *.dll $(RUBYDEF) ext\ripper\y.output
+
+clean-local:: clean-prism
+
+clean-prism:
+		@for /R $(PRISM_BUILD_DIR:/=\) %I in (.time) do @(del /q %I && $(RMDIRS) %~pI) 2> nul || $(NULLCMD)
 
 distclean-local::
-		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
+		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\) miniprelude.c
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 		-$(Q)$(RMDIR) win32
+
+distclean-local:: clean-srcs-local
+distclean-ext:: clean-srcs-ext
+
+distclean-local:: distclean-prism
+
+distclean-prism: clean-prism
+!if "$(srcdir)" != "."
+		$(Q)for %I in ( \
+			$(PRISM_SRCDIR:/=\)\templates\ext\prism\*.c.erb \
+			$(PRISM_SRCDIR:/=\)\templates\include\prism\*.h.erb \
+			$(PRISM_SRCDIR:/=\)\templates\src\*.c.erb \
+		) do $(Q)(del /q prism\%~nI 2> nul || $(NULLCMD))
+		$(Q)for /D %I in (prism\*) do $(Q)$(RMDIRS) %I
+		$(Q)$(RMDIRS) prism
+!endif
+
+realclean-prism: distclean-prism
+!if "$(srcdir)" == "."
+		$(Q)for %I in ( \
+			$(PRISM_SRCDIR:/=\)\templates\ext\prism\*.c.erb \
+			$(PRISM_SRCDIR:/=\)\templates\include\prism\*.h.erb \
+			$(PRISM_SRCDIR:/=\)\templates\src\*.c.erb \
+		) do $(Q)(del /q $(PRISM_SRCDIR:/=\)\%~nI 2> nul || $(NULLCMD))
+!endif
 
 .bundle/clean:: .bundle/clean.sub
 .bundle/distclean:: .bundle/distclean.sub
@@ -1182,7 +1217,7 @@ distclean-local::
 .bundle/realclean.sub:: ext/realclean.mk
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
-	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
+	$(Q)if exist $(EXTS_MK) $(MAKE) $(MFLAGS) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
@@ -1192,16 +1227,18 @@ ext/clean.sub ext/distclean.sub ext/realclean.sub \
 		    call set n=%I && \
 		    call set n=%n:%CD%\$(@D)\=% && \
 		    call set n=%n:\.=% && \
-		    call echo $(@F)ing %n:\=/% & \
-		    $(MAKE) $(MFLAGS) $(@F) & \
+		    call echo $(@F:.sub=)ing %n:\=/% & \
+		    $(MAKE) $(MFLAGS) $(@F:.sub=) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
-		))) || @
+		))) || $(NULLCMD)
 
 ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
-		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (exts.mk*) \
-		do $(Q)(del %I & rmdir %~dpI)) || @
-		-$(Q)rmdir $(@D) 2> nul || @
+		$(Q)(for /D /R $(@D) %I in (.) do $(Q)$(RMDIRS) %I) || $(NULLCMD)
+
+.bundle/distclean .bundle/realclean::
+		$(Q)for /D %I in ($(@D)\*) do $(Q)$(RMDIRS) %I || $(NULLCMD)
+		-$(Q)rmdir $(@D) 2> nul || $(NULLCMD)
 
 .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
@@ -1393,5 +1430,5 @@ exts: rubyspec-capiext
 yesterday:
 	(set TZ=UTC-9) && \
 	for /f "usebackq" %H in \
-	    (`$(GIT_LOG_FORMAT):%H -1 "--before=00:00"`) do \
+	    (`$(GIT_LOG_FORMAT)%H -1 "--before=00:00"`) do \
 	    $(GIT_IN_SRC) reset --hard %%H

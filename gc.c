@@ -991,9 +991,10 @@ gc_validate_pc(VALUE obj)
 }
 
 static inline VALUE
-newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t size)
+newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
+    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     gc_validate_pc(obj);
 
@@ -1032,17 +1033,17 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t s
 }
 
 VALUE
-rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags, size_t size)
+rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(GET_RACTOR(), klass, flags, FALSE, size);
+    return newobj_of(GET_RACTOR(), klass, flags, shape_id, FALSE, size);
 }
 
 VALUE
-rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
+rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, TRUE, size);
+    return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, shape_id, TRUE, size);
 }
 
 #define UNEXPECTED_NODE(func) \
@@ -1063,7 +1064,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, !dmark, sizeof(struct RTypedData));
+    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RTypedData));
 
     struct RData *data = (struct RData *)obj;
     data->dmark = dmark;
@@ -1087,7 +1088,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, wb_protected, size);
+    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, ROOT_SHAPE_ID, wb_protected, size);
 
     struct RTypedData *data = (struct RTypedData *)obj;
     data->fields_obj = 0;
@@ -1815,7 +1816,7 @@ id2ref_tbl_mark(void *data)
         // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
         rb_mark_set(table);
     }
-    // We purposedly don't mark values, as they are weak references.
+    // We purposely don't mark values, as they are weak references.
     // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
 }
 
@@ -1904,7 +1905,9 @@ object_id0(VALUE obj)
     RUBY_ASSERT(rb_shape_obj_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        RB_VM_LOCKING() {
+            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
+        }
     }
     return id;
 }
@@ -2060,7 +2063,7 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
     obj_free_object_id(obj);
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         rb_free_generic_ivar(obj);
     }
 
@@ -2119,14 +2122,9 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 static VALUE
 id2ref(VALUE objid)
 {
-#if SIZEOF_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULONG(x)
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULL(x)
-#endif
     objid = rb_to_int(objid);
     if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
-        VALUE ptr = NUM2PTR(objid);
+        VALUE ptr = (VALUE)NUM2PTR(objid);
         if (SPECIAL_CONST_P(ptr)) {
             if (ptr == Qtrue) return Qtrue;
             if (ptr == Qfalse) return Qfalse;
@@ -3115,7 +3113,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 {
     struct gc_mark_classext_foreach_arg foreach_args;
 
-    if (rb_obj_exivar_p(obj)) {
+    if (rb_obj_gen_fields_p(obj)) {
         rb_mark_generic_ivar(obj);
     }
 
@@ -3154,12 +3152,18 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         foreach_args.objspace = objspace;
         foreach_args.obj = obj;
         rb_class_classext_foreach(obj, gc_mark_classext_module, (void *)&foreach_args);
+        if (BOX_USER_P(RCLASS_PRIME_BOX(obj))) {
+            gc_mark_internal(RCLASS_PRIME_BOX(obj)->box_object);
+        }
         break;
 
       case T_ICLASS:
         foreach_args.objspace = objspace;
         foreach_args.obj = obj;
         rb_class_classext_foreach(obj, gc_mark_classext_iclass, (void *)&foreach_args);
+        if (BOX_USER_P(RCLASS_PRIME_BOX(obj))) {
+            gc_mark_internal(RCLASS_PRIME_BOX(obj)->box_object);
+        }
         break;
 
       case T_ARRAY:
@@ -3227,19 +3231,21 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
+        uint32_t len;
         if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
+            len = ROBJECT_FIELDS_COUNT_COMPLEX(obj);
         }
         else {
             const VALUE * const ptr = ROBJECT_FIELDS(obj);
 
-            uint32_t len = ROBJECT_FIELDS_COUNT(obj);
+            len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
             for (uint32_t i = 0; i < len; i++) {
                 gc_mark_internal(ptr[i]);
             }
         }
 
-        attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
+        attr_index_t fields_count = (attr_index_t)len;
         if (fields_count) {
             VALUE klass = RBASIC_CLASS(obj);
 
@@ -3295,7 +3301,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_internal(ptr[i]);
         }
 
-        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+        if (rb_shape_obj_has_fields(obj) && !FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
             gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
         }
 
@@ -4830,11 +4836,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                         APPEND_F("(too_complex) len:%zu", hash_len);
                     }
                     else {
-                        APPEND_F("(embed) len:%d", ROBJECT_FIELDS_CAPACITY(obj));
+                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
                     }
                 }
                 else {
-                    APPEND_F("len:%d ptr:%p", ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
+                    APPEND_F("len:%d capa:%d ptr:%p", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
                 }
             }
             break;
@@ -5055,11 +5061,7 @@ gc_raise(VALUE exc, const char *fmt, ...)
         exc, fmt, &ap,
     };
 
-    if (ruby_thread_has_gvl_p()) {
-        gc_vraise(&argv);
-        UNREACHABLE;
-    }
-    else if (ruby_native_thread_p()) {
+    if (ruby_native_thread_p()) {
         rb_thread_call_with_gvl(gc_vraise, &argv);
         UNREACHABLE;
     }

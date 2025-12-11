@@ -7,7 +7,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters, sym_symbolize_names, sym_freeze,
              sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
 
 static int binary_encindex;
@@ -88,7 +88,7 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
 #if JSON_CPU_LITTLE_ENDIAN_64BITS
 #if __has_builtin(__builtin_bswap64)
 #undef rstring_cache_memcmp
-static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
+ALWAYS_INLINE(static) int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
     // The libc memcmp has numerous complex optimizations, but in this particular case,
     // we know the string is small (JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH), so being able to
@@ -117,7 +117,7 @@ static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rpt
 #endif
 #endif
 
-static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+ALWAYS_INLINE(static) int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
 {
     const char *rstring_ptr;
     long rstring_length;
@@ -131,7 +131,7 @@ static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length,
     }
 }
 
-static ALWAYS_INLINE() VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+ALWAYS_INLINE(static) VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
     int low = 0;
     int high = cache->length - 1;
@@ -335,6 +335,7 @@ typedef struct JSON_ParserStruct {
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
+    bool allow_control_characters;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
@@ -540,7 +541,7 @@ json_eat_comments(JSON_ParserState *state)
     }
 }
 
-static ALWAYS_INLINE() void
+ALWAYS_INLINE(static) void
 json_eat_whitespace(JSON_ParserState *state)
 {
     while (true) {
@@ -651,7 +652,9 @@ static inline const char *json_next_backslash(const char *pe, const char *string
         positions->size--;
         const char *next_position = positions->positions[0];
         positions->positions++;
-        return next_position;
+        if (next_position >= pe) {
+            return next_position;
+        }
     }
 
     if (positions->has_more) {
@@ -661,7 +664,7 @@ static inline const char *json_next_backslash(const char *pe, const char *string
     return NULL;
 }
 
-static NOINLINE() VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
+NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
 {
     bool intern = is_name || config->freeze;
     bool symbolize = is_name && config->symbolize_names;
@@ -750,9 +753,15 @@ static NOINLINE() VALUE json_string_unescape(JSON_ParserState *state, JSON_Parse
                 break;
             default:
                 if ((unsigned char)*pe < 0x20) {
-                    raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                    if (!config->allow_control_characters) {
+                        if (*pe == '\n') {
+                            raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        }
+                        raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                    }
+                } else {
+                    raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 }
-                raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 break;
         }
     }
@@ -946,7 +955,7 @@ static const bool string_scan_table[256] = {
 static SIMD_Implementation simd_impl = SIMD_NONE;
 #endif /* HAVE_SIMD */
 
-static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
+ALWAYS_INLINE(static) bool string_scan(JSON_ParserState *state)
 {
 #ifdef HAVE_SIMD
 #if defined(HAVE_SIMD_NEON)
@@ -1004,7 +1013,9 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
                 break;
             }
             default:
-                raise_parse_error("invalid ASCII control character in string: %s", state);
+                if (!config->allow_control_characters) {
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                }
                 break;
         }
 
@@ -1015,7 +1026,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
     return Qfalse;
 }
 
-static ALWAYS_INLINE() VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
 {
     state->cursor++;
     const char *start = state->cursor;
@@ -1425,14 +1436,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
     JSON_ParserConfig *config = (JSON_ParserConfig *)data;
 
-         if (key == sym_max_nesting)          { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
-    else if (key == sym_allow_nan)            { config->allow_nan = RTEST(val); }
-    else if (key == sym_allow_trailing_comma) { config->allow_trailing_comma = RTEST(val); }
-    else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
-    else if (key == sym_freeze)               { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_allow_duplicate_key)  { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
-    else if (key == sym_decimal_class)        {
+         if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
+    else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
+    else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
+    else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
+    else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
+    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
                 config->decimal_class = val;
@@ -1645,6 +1657,7 @@ void Init_parser(void)
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
     sym_on_load = ID2SYM(rb_intern("on_load"));

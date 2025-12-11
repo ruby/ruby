@@ -14,7 +14,7 @@
 #define AllocCipher(obj, ctx) do { \
     (ctx) = EVP_CIPHER_CTX_new(); \
     if (!(ctx)) \
-	ossl_raise(rb_eRuntimeError, NULL); \
+        ossl_raise(rb_eRuntimeError, NULL); \
     RTYPEDDATA_DATA(obj) = (ctx); \
 } while (0)
 #define GetCipherInit(obj, ctx) do { \
@@ -23,7 +23,7 @@
 #define GetCipher(obj, ctx) do { \
     GetCipherInit((obj), (ctx)); \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "Cipher not initialized!"); \
+        ossl_raise(rb_eRuntimeError, "Cipher not initialized!"); \
     } \
 } while (0)
 
@@ -41,7 +41,7 @@ static void ossl_cipher_free(void *ptr);
 static const rb_data_type_t ossl_cipher_type = {
     "OpenSSL/Cipher",
     {
-	0, ossl_cipher_free,
+        0, ossl_cipher_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -112,7 +112,7 @@ ossl_cipher_new(const EVP_CIPHER *cipher)
     ret = ossl_cipher_alloc(cCipher);
     AllocCipher(ret, ctx);
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
 
     return ret;
 }
@@ -149,7 +149,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 
     GetCipherInit(self, ctx);
     if (ctx) {
-	ossl_raise(rb_eRuntimeError, "Cipher already initialized!");
+        ossl_raise(rb_eRuntimeError, "Cipher already initialized!");
     }
     cipher = ossl_evp_cipher_fetch(str, &cipher_holder);
     AllocCipher(self, ctx);
@@ -171,11 +171,11 @@ ossl_cipher_copy(VALUE self, VALUE other)
 
     GetCipherInit(self, ctx1);
     if (!ctx1) {
-	AllocCipher(self, ctx1);
+        AllocCipher(self, ctx1);
     }
     GetCipher(other, ctx2);
     if (EVP_CIPHER_CTX_copy(ctx1, ctx2) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
 
     return self;
 }
@@ -200,8 +200,8 @@ ossl_s_ciphers(VALUE self)
 
     ary = rb_ary_new();
     OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
-                    add_cipher_name_to_ary,
-                    (void*)ary);
+                           add_cipher_name_to_ary,
+                           (void*)ary);
 
     return ary;
 }
@@ -222,7 +222,7 @@ ossl_cipher_reset(VALUE self)
 
     GetCipher(self, ctx);
     if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
 
     return self;
 }
@@ -304,20 +304,20 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "13", &vpass, &vsalt, &viter, &vdigest);
     StringValue(vpass);
     if(!NIL_P(vsalt)){
-	StringValue(vsalt);
-	if(RSTRING_LEN(vsalt) != PKCS5_SALT_LEN)
-	    ossl_raise(eCipherError, "salt must be an 8-octet string");
-	salt = (unsigned char *)RSTRING_PTR(vsalt);
+        StringValue(vsalt);
+        if(RSTRING_LEN(vsalt) != PKCS5_SALT_LEN)
+            ossl_raise(eCipherError, "salt must be an 8-octet string");
+        salt = (unsigned char *)RSTRING_PTR(vsalt);
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
     if (iter <= 0)
-	rb_raise(rb_eArgError, "iterations must be a positive integer");
+        rb_raise(rb_eArgError, "iterations must be a positive integer");
     digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_md_fetch(vdigest, &md_holder);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
-		   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);
+                   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 
@@ -328,25 +328,25 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 
 static int
 ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_ptr,
-			const unsigned char *in, long in_len)
+                        const unsigned char *in, long in_len)
 {
     int out_part_len;
     int limit = INT_MAX / 2 + 1;
     long out_len = 0;
 
     do {
-	int in_part_len = in_len > limit ? limit : (int)in_len;
+        int in_part_len = in_len > limit ? limit : (int)in_len;
 
-	if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
-			      &out_part_len, in, in_part_len))
-	    return 0;
+        if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
+                              &out_part_len, in, in_part_len))
+            return 0;
 
-	out_len += out_part_len;
-	in += in_part_len;
+        out_len += out_part_len;
+        in += in_part_len;
     } while ((in_len -= limit) > 0);
 
     if (out_len_ptr)
-	*out_len_ptr = out_len;
+        *out_len_ptr = out_len;
 
     return 1;
 }
@@ -377,7 +377,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &data, &str);
 
     if (!RTEST(rb_attr_get(self, id_key_set)))
-	ossl_raise(eCipherError, "key not set");
+        ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
@@ -396,8 +396,8 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
      * currently implemented in OpenSSL, but this can change in the future.
      */
     if (in_len > LONG_MAX - EVP_MAX_BLOCK_LENGTH) {
-	ossl_raise(rb_eRangeError,
-		   "data too big to make output buffer: %ld bytes", in_len);
+        ossl_raise(rb_eRangeError,
+                   "data too big to make output buffer: %ld bytes", in_len);
     }
     out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 
@@ -412,7 +412,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     }
 
     if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
     assert(out_len <= RSTRING_LEN(str));
     rb_str_set_len(str, out_len);
 
@@ -503,10 +503,10 @@ ossl_cipher_set_key(VALUE self, VALUE key)
 
     key_len = EVP_CIPHER_CTX_key_length(ctx);
     if (RSTRING_LEN(key) != key_len)
-	ossl_raise(rb_eArgError, "key must be %d bytes", key_len);
+        ossl_raise(rb_eArgError, "key must be %d bytes", key_len);
 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
 
     rb_ivar_set(self, id_key_set, Qtrue);
 
@@ -541,14 +541,14 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     GetCipher(self, ctx);
 
     if (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER)
-	iv_len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
+        iv_len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
     if (!iv_len)
-	iv_len = EVP_CIPHER_CTX_iv_length(ctx);
+        iv_len = EVP_CIPHER_CTX_iv_length(ctx);
     if (RSTRING_LEN(iv) != iv_len)
-	ossl_raise(rb_eArgError, "iv must be %d bytes", iv_len);
+        ossl_raise(rb_eArgError, "iv must be %d bytes", iv_len);
 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, (unsigned char *)RSTRING_PTR(iv), -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
 
     return iv;
 }
@@ -603,7 +603,7 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
 
     GetCipher(self, ctx);
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
-	ossl_raise(eCipherError, "AEAD not supported by this cipher");
+        ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
     if (!ossl_cipher_update_long(ctx, NULL, &out_len, in, in_len))
         ossl_raise(eCipherError, "couldn't set additional authenticated data");
@@ -636,18 +636,18 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &vtag_len);
     if (NIL_P(vtag_len))
-	vtag_len = rb_attr_get(self, id_auth_tag_len);
+        vtag_len = rb_attr_get(self, id_auth_tag_len);
     if (!NIL_P(vtag_len))
-	tag_len = NUM2INT(vtag_len);
+        tag_len = NUM2INT(vtag_len);
 
     GetCipher(self, ctx);
 
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
-	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
+        ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
     ret = rb_str_new(NULL, tag_len);
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tag_len, RSTRING_PTR(ret)))
-	ossl_raise(eCipherError, "retrieving the authentication tag failed");
+        ossl_raise(eCipherError, "retrieving the authentication tag failed");
 
     return ret;
 }
@@ -686,10 +686,10 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
 
     GetCipher(self, ctx);
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
-	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
+        ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, tag))
-	ossl_raise(eCipherError, "unable to set AEAD tag");
+        ossl_raise(eCipherError, "unable to set AEAD tag");
 
     return vtag;
 }
@@ -716,10 +716,10 @@ ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
 
     GetCipher(self, ctx);
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
-	ossl_raise(eCipherError, "AEAD not supported by this cipher");
+        ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, NULL))
-	ossl_raise(eCipherError, "unable to set authentication tag length");
+        ossl_raise(eCipherError, "unable to set authentication tag length");
 
     /* for #auth_tag */
     rb_ivar_set(self, id_auth_tag_len, INT2NUM(tag_len));
@@ -748,10 +748,10 @@ ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
 
     GetCipher(self, ctx);
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
-	ossl_raise(eCipherError, "cipher does not support AEAD");
+        ossl_raise(eCipherError, "cipher does not support AEAD");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, len, NULL))
-	ossl_raise(eCipherError, "unable to set IV length");
+        ossl_raise(eCipherError, "unable to set IV length");
 
     /*
      * EVP_CIPHER_CTX_iv_length() returns the default length. So we need to save
@@ -809,7 +809,7 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
 
     GetCipher(self, ctx);
     if (EVP_CIPHER_CTX_set_padding(ctx, pad) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, NULL);
     return padding;
 }
 
@@ -843,9 +843,9 @@ ossl_cipher_iv_length(VALUE self)
 
     GetCipher(self, ctx);
     if (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER)
-	len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
+        len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
     if (!len)
-	len = EVP_CIPHER_CTX_iv_length(ctx);
+        len = EVP_CIPHER_CTX_iv_length(ctx);
 
     return INT2NUM(len);
 }
@@ -901,11 +901,6 @@ ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
 void
 Init_ossl_cipher(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /* Document-class: OpenSSL::Cipher
      *
      * Provides symmetric algorithms for encryption and decryption. The

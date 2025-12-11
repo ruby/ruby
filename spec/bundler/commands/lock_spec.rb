@@ -2035,6 +2035,56 @@ RSpec.describe "bundle lock" do
     L
   end
 
+  it "adds checksums when source is not specified" do
+    system_gems(%w[myrack-1.0.0], path: default_bundle_path)
+
+    gemfile <<-G
+      gem "myrack"
+    G
+
+    lockfile <<~L
+      GEM
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        myrack
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-checksums"
+    end
+
+    # myrack is coming from gem_repo1
+    # but it's simulated to install in the system gems path
+    checksums = checksums_section do |c|
+      c.checksum gem_repo1, "myrack", "1.0.0"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        myrack
+      #{checksums}
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+  end
+
   it "adds checksums to an existing lockfile, when gems are already installed" do
     build_repo4 do
       build_gem "nokogiri", "1.14.2"

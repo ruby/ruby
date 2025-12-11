@@ -34,6 +34,7 @@ struct rb_box_struct {
     VALUE ruby_dln_libmap;
 
     VALUE gvar_tbl;
+    struct st_table *classext_cow_classes;
 
     bool is_user;
     bool is_optional;
@@ -74,7 +75,8 @@ void rb_box_gc_update_references(void *ptr);
 rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
-VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path);
+VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path, VALUE *cleanup);
+void rb_box_cleanup_local_extension(VALUE cleanup);
 
 void rb_initialize_main_box(void);
 void rb_box_init_done(void);

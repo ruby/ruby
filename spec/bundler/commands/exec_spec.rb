@@ -1020,7 +1020,7 @@ RSpec.describe "bundle exec" do
     context "signal handling" do
       let(:test_signals) do
         open3_reserved_signals = %w[CHLD CLD PIPE]
-        reserved_signals = %w[SEGV BUS ILL FPE VTALRM KILL STOP EXIT]
+        reserved_signals = %w[SEGV BUS ILL FPE ABRT IOT VTALRM KILL STOP EXIT]
         bundler_signals = %w[INT]
 
         Signal.list.keys - (bundler_signals + reserved_signals + open3_reserved_signals)

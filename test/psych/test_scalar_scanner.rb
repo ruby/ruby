@@ -138,6 +138,11 @@ module Psych
       assert_equal '-0b___', scanner.tokenize('-0b___')
     end
 
+    def test_scan_without_parse_symbols
+      scanner = Psych::ScalarScanner.new ClassLoader.new, parse_symbols: false
+      assert_equal ':foo', scanner.tokenize(':foo')
+    end
+
     def test_scan_int_commas_and_underscores
       # NB: This test is to ensure backward compatibility with prior Psych versions,
       # not to test against any actual YAML specification.

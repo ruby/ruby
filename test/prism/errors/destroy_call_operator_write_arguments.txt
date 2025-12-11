@@ -1,0 +1,11 @@
+t next&&do end&=
+        ^~ unexpected 'do'; expected an expression after the operator
+  ^~~~ unexpected void value expression
+  ^~~~ unexpected void value expression
+^~~~~~~~~~~~~~ unexpected write target
+              ^~ unexpected operator after a call with arguments
+              ^~ unexpected operator after a call with a block
+''while=
+  ^~~~~ expected a predicate expression for the `while` statement
+       ^ unexpected '='; target cannot be written
+
