@@ -1594,7 +1594,10 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
         proc->is_isolated = TRUE;
     }
     else {
-        VALUE proc_self = vm_block_self(vm_proc_block(self));
+        const struct rb_block *block = vm_proc_block(self);
+        if (block->type != block_type_symbol) rb_raise(rb_eRuntimeError, "not supported yet");
+
+        VALUE proc_self = vm_block_self(block);
         if (!rb_ractor_shareable_p(proc_self)) {
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
