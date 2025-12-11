@@ -172,6 +172,12 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_allowed_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_equal ord.chr, parse(%("#{ord.chr}"), allow_control_characters: true)
+    end
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))

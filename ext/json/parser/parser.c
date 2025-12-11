@@ -7,7 +7,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters, sym_symbolize_names, sym_freeze,
              sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
 
 static int binary_encindex;
@@ -335,6 +335,7 @@ typedef struct JSON_ParserStruct {
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
+    bool allow_control_characters;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
@@ -752,12 +753,15 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                 break;
             default:
                 if ((unsigned char)*pe < 0x20) {
-                    if (*pe == '\n') {
-                        raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                    if (!config->allow_control_characters) {
+                        if (*pe == '\n') {
+                            raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        }
+                        raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
-                    raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                } else {
+                    raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 }
-                raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 break;
         }
     }
@@ -1009,7 +1013,9 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
                 break;
             }
             default:
-                raise_parse_error("invalid ASCII control character in string: %s", state);
+                if (!config->allow_control_characters) {
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                }
                 break;
         }
 
@@ -1430,14 +1436,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
     JSON_ParserConfig *config = (JSON_ParserConfig *)data;
 
-         if (key == sym_max_nesting)          { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
-    else if (key == sym_allow_nan)            { config->allow_nan = RTEST(val); }
-    else if (key == sym_allow_trailing_comma) { config->allow_trailing_comma = RTEST(val); }
-    else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
-    else if (key == sym_freeze)               { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_allow_duplicate_key)  { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
-    else if (key == sym_decimal_class)        {
+         if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
+    else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
+    else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
+    else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
+    else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
+    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
                 config->decimal_class = val;
@@ -1650,6 +1657,7 @@ void Init_parser(void)
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
     sym_on_load = ID2SYM(rb_intern("on_load"));
