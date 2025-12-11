@@ -2957,4 +2957,15 @@ CODE
 
     assert_kind_of(Thread, target_thread)
   end
+
+  def test_tracepoint_not_ractor_shareable
+    omit "no ractor" unless defined?(Ractor)
+    tp = TracePoint.new { }
+    assert_raise Ractor::Error do
+      Ractor.make_shareable(tp)
+    end
+    assert_raise Ractor::Error do
+      Ractor.make_shareable([tp])
+    end
+  end
 end

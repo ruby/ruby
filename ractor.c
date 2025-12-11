@@ -1456,7 +1456,7 @@ make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
 
-    if (rb_ractor_shareable_p(obj)) {
+    if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
@@ -1481,6 +1481,9 @@ make_shareable_check_shareable(VALUE obj)
         else {
             rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
         }
+    }
+    else if (rb_ractor_shareable_p(obj)) {
+        return traverse_skip;
     }
 
     switch (TYPE(obj)) {
