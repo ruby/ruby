@@ -54,8 +54,6 @@ module Timeout
   private_constant :GET_TIME
 
   class State
-    attr_reader :condvar, :queue, :queue_mutex # shared with Timeout.timeout()
-
     def initialize
       @condvar = ConditionVariable.new
       @queue = Queue.new
@@ -130,6 +128,13 @@ module Timeout
             @timeout_thread = create_timeout_thread
           end
         end
+      end
+    end
+
+    def add_request(request)
+      @queue_mutex.synchronize do
+        @queue << request
+        @condvar.signal
       end
     end
   end
@@ -263,10 +268,7 @@ module Timeout
 
     perform = Proc.new do |exc|
       request = Request.new(Thread.current, sec, exc, message)
-      state.queue_mutex.synchronize do
-        state.queue << request
-        state.condvar.signal
-      end
+      state.add_request(request)
       begin
         return yield(sec)
       ensure
