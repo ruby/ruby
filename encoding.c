@@ -97,6 +97,8 @@ static rb_encoding *global_enc_ascii,
                    *global_enc_utf_8,
                    *global_enc_us_ascii;
 
+static int filesystem_encindex = ENCINDEX_ASCII_8BIT;
+
 #define GLOBAL_ENC_TABLE_LOCKING(tbl) \
     for (struct enc_table *tbl = &global_enc_table, **locking = &tbl; \
          locking; \
@@ -1589,12 +1591,7 @@ rb_locale_encoding(void)
 int
 rb_filesystem_encindex(void)
 {
-    int idx;
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        idx = enc_registered(enc_table, "filesystem");
-    }
-    if (idx < 0) idx = ENCINDEX_ASCII_8BIT;
-    return idx;
+    return filesystem_encindex;
 }
 
 rb_encoding *
@@ -1646,7 +1643,9 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         }
 
         if (def == &default_external) {
-            enc_alias_internal(enc_table, "filesystem", Init_enc_set_filesystem_encoding());
+            int fs_idx = Init_enc_set_filesystem_encoding();
+            enc_alias_internal(enc_table, "filesystem", fs_idx);
+            filesystem_encindex = fs_idx;
         }
     }
 
