@@ -1143,17 +1143,25 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
     // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
+
+        // Load both operands BEFORE creating label - ensures clean register state
+        // This is equivalent to YJIT's spill_regs() before conditional logic
+        let recv_reg = asm.load(recv);
+        let val_reg = asm.load(val);
+
+        // Now create label and do conditional tests
         let skip_wb = asm.new_label("skip_wb");
-        let val = asm.load(val);
-        // If the value we're writing is an immediate, we don't need to WB
-        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+
+        // If value is an immediate, skip write barrier
+        asm.test(val_reg, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(skip_wb.clone());
-        // If the value we're writing is nil or false, we don't need to WB
-        asm.cmp(val, Qfalse.into());
+
+        // If value is false, skip write barrier (nil is also immediate)
+        asm.cmp(val_reg, Qfalse.into());
         asm.je(skip_wb.clone());
 
-        let recv = asm.load(recv);
-        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+        // Call write barrier with already-loaded operands
+        asm_ccall!(asm, rb_gc_writebarrier, recv_reg, val_reg);
 
         asm.write_label(skip_wb);
     }
