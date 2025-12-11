@@ -5502,7 +5502,8 @@ fn unspecializable_c_call_type(flags: u32) -> bool {
 fn unspecializable_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
     ((flags & VM_CALL_KW_SPLAT) != 0) ||
-    ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
+    ((flags & VM_CALL_ARGS_BLOCKARG) != 0) ||
+    ((flags & VM_CALL_FORWARDING) != 0)
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
