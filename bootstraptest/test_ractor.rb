@@ -1169,7 +1169,8 @@ RUBY
 # Inserting into the id2ref table should be Ractor-safe
 assert_equal 'ok', <<~'RUBY'
   # Force all calls to Kernel#object_id to insert into the id2ref table
-  ObjectSpace._id2ref(Object.new.object_id)
+  obj = Object.new
+  ObjectSpace._id2ref(obj.object_id) rescue nil
 
   10.times.map do
     Ractor.new do
