@@ -655,25 +655,25 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
         // TODO(max): Make this WriteBarrier conditional on if the EP flags has
         // VM_ENV_FLAG_WB_REQUIRED set.
         // TODO(max): Find a way to avoid explicitly checking that flag at run-time.
-        let skip_wb = asm.new_label("skip_wb");
-        // Continue if special constant (not string)
-        // asm.breakpoint();
-        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-        asm.jnz(skip_wb.clone());
-        // Continue if false (not string)
-        // asm.cmp(val, Qfalse.into());
-        // asm.je(skip_wb.clone());
+        // let skip_wb = asm.new_label("skip_wb");
+        // // Continue if special constant (not string)
+        // // asm.breakpoint();
+        // asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        // asm.jnz(skip_wb.clone());
+        // // Continue if false (not string)
+        // // asm.cmp(val, Qfalse.into());
+        // // asm.je(skip_wb.clone());
 
         let local_index = -local_ep_offset;
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
-        let skip_write = asm.new_label("skip_write");
-        asm.jmp(skip_write.clone());
+        // let skip_write = asm.new_label("skip_write");
+        // asm.jmp(skip_write.clone());
 
-        asm.write_label(skip_wb);
-        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-        asm.mov(Opnd::mem(64, ep, offset), val);
+        // asm.write_label(skip_wb);
+        // let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
+        // asm.mov(Opnd::mem(64, ep, offset), val);
 
-        asm.write_label(skip_write);
+        // asm.write_label(skip_write);
     }
 }
 
