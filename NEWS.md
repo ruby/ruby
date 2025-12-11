@@ -189,6 +189,9 @@ Note: We're only listing outstanding class updates.
     * Update Unicode to Version 17.0.0 and Emoji Version 17.0.
       [[Feature #19908]][[Feature #20724]][[Feature #21275]] (also applies to Regexp)
 
+    * `String#strip`, `strip!`, `lstrip`, `lstrip!`, `rstrip`, and `rstrip!`
+       are extended to accept `*selectors` arguments. [[Feature #21552]]
+
 * Thread
 
     * Introduce support for `Thread#raise(cause:)` argument similar to
