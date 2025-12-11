@@ -4089,8 +4089,6 @@ AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
         ], [
             RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
         ])
-    ],
-
 ])
 
 # In case either we're linking rust code
