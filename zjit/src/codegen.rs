@@ -1143,8 +1143,8 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
     // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
-        let recv = asm.load(recv);
         let skip_wb = asm.new_label("skip_wb");
+        let val = asm.load(val);
         // If the value we're writing is an immediate, we don't need to WB
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(skip_wb.clone());
@@ -1152,6 +1152,7 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
         asm.cmp(val, Qfalse.into());
         asm.je(skip_wb.clone());
 
+        let recv = asm.load(recv);
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
 
         asm.write_label(skip_wb);
