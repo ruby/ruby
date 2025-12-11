@@ -255,7 +255,7 @@ The following default gems are updated.
 * io-nonblock 0.3.2
 * io-wait 0.4.0.dev
 * ipaddr 1.2.8
-* json 2.17.1
+* json 2.18.0
 * net-http 0.8.0
 * openssl 4.0.0.pre
 * optparse 0.8.1
