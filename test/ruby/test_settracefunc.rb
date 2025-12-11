@@ -2958,22 +2958,24 @@ CODE
     assert_kind_of(Thread, target_thread)
   end
 
-  def test_tp_ractor_local
+  def test_tp_ractor_local_untargeted
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
     r = Ractor.new do
       results = []
       tp = TracePoint.new(:line) { |tp| results << tp.path }
       tp.enable
-      receive # block until message
+      Ractor.main << :continue
+      Ractor.receive
       tp.disable
       results
     end
     outer_results = []
     outer_tp = TracePoint.new(:line) { |tp| outer_results << tp.path }
     outer_tp.enable
+    Ractor.receive
     GC.start # so I can check <internal:gc> path
-    r.send(:continue)
+    r << :continue
     inner_results = r.value
     outer_tp.disable
     assert_equal 1, outer_results.select { |path| path.match?(/internal:gc/) }.size
@@ -3044,14 +3046,22 @@ CODE
     end;
   end
 
-  def test_tracepoint_not_disabled_by_ractor_gc
+  def test_tracepoints_not_disabled_by_ractor_gc
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
     $-w = nil # uses ObjectSpace._id2ref
-    events = []
-    tp = TracePoint.new(:line) { |tp|
-      events << [tp.path, tp.lineno, tp.event]
-    }.tap(&:enable)
+    def hi = "hi"
+    greetings = 0
+    tp_target = TracePoint.new(:call) do |tp|
+      greetings += 1
+    end
+    tp_target.enable(target: method(:hi))
+
+    raises = 0
+    tp_global = TracePoint.new(:raise) do |tp|
+      raises += 1
+    end
+    tp_global.enable
 
     r = Ractor.new { 10 }
     r.join
@@ -3066,16 +3076,57 @@ CODE
       if gc_times == gc_max_retries
         break
       end
-    end # tracepoints should still be enabled after ractor gc
+    end
 
     # tracepoints should still be enabled after GC of `r`
     5.times {
-      gc_times += 1
-      # we're checking path of '<internal:gc> calls (GC.start calls)'
-      GC.start
+      hi
     }
-    tp.disable
-    assert_equal gc_times, events.select { |e| e[0] =~ /internal:gc/}.size, "Bug #[19112]"
+    6.times {
+      raise "uh oh" rescue nil
+    }
+    tp_target.disable
+    tp_global.disable
+    assert_equal 5, greetings
+    if gc_times == gc_max_retries # _id2ref never raised
+      assert_equal 6, raises
+    else
+      assert_equal 7, raises
+    end
     end;
+  end
+
+  def test_lots_of_enabled_tracepoints_ractor_gc
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def foo; end
+      sum = 8.times.map do
+        Ractor.new do
+          called = 0
+          TracePoint.new(:call) do |tp|
+            next if tp.callee_id != :foo
+            called += 1
+          end.enable
+          200.times do
+            TracePoint.new(:line) {
+              # all these allocations shouldn't GC these tracepoints while the ractor is alive.
+              Object.new
+            }.enable
+          end
+          100.times { foo }
+          called
+        end
+      end.map(&:value).sum
+      assert_equal 800, sum
+      4.times { GC.start }
+    end;
+  end
+
+  def test_tracepoints_not_ractor_shareable
+    omit "No ractor" unless defined?(Ractor)
+    tp = TracePoint.new(:call) { }
+    assert_raise(Ractor::Error) do
+      Ractor.make_shareable(tp)
+    end
   end
 end
