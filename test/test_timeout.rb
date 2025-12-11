@@ -444,5 +444,5 @@ class TestTimeout < Test::Unit::TestCase
 
     assert_equal "OK", rd.read
     rd.close
-  end
+  end if Signal.list["USR1"] # Windows has no SIGUSR1
 end
