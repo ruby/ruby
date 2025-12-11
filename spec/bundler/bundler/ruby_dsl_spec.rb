@@ -178,11 +178,21 @@ RSpec.describe Bundler::RubyDsl do
         let(:file_content) do
           <<~TOML
             [tools]
-            ruby = "#{version}"
+            ruby = #{quote}#{version}#{quote}
           TOML
         end
 
-        it_behaves_like "it stores the ruby version"
+        context "with double quotes" do
+          let(:quote) { '"' }
+
+          it_behaves_like "it stores the ruby version"
+        end
+
+        context "with single quotes" do
+          let(:quote) { "'" }
+
+          it_behaves_like "it stores the ruby version"
+        end
       end
 
       context "with a .tool-versions file format" do
