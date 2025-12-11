@@ -451,7 +451,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
 }
 
 static VALUE
-rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
+fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
     RUBY_ASSERT(thread);
 
@@ -467,13 +467,18 @@ VALUE rb_fiber_scheduler_current(void)
 {
     RUBY_ASSERT(ruby_thread_has_gvl_p());
 
-    return rb_fiber_scheduler_current_for_threadptr(GET_THREAD());
+    return fiber_scheduler_current_for_threadptr(GET_THREAD());
 }
 
 // This function is allowed to be called without holding the GVL.
 VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 {
-    return rb_fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
+    return fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
+}
+
+VALUE rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
+{
+    return fiber_scheduler_current_for_threadptr(thread);
 }
 
 /*

@@ -1291,7 +1291,8 @@ internal_writev_func(void *ptr)
 static ssize_t
 rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 0);
 
@@ -1301,7 +1302,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     }
 
     struct io_internal_read_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1324,7 +1325,8 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
 static ssize_t
 rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, 0);
 
@@ -1334,7 +1336,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
     }
 
     struct io_internal_write_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1360,7 +1362,9 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
 {
     if (!iovcnt) return 0;
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         // This path assumes at least one `iov`:
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len, 0);
@@ -1371,7 +1375,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
     }
 
     struct io_internal_writev_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1453,7 +1457,8 @@ io_fflush(rb_io_t *fptr)
 VALUE
 rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     if (scheduler != Qnil) {
         return rb_fiber_scheduler_io_wait(scheduler, io, events, timeout);
@@ -1474,7 +1479,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
         tv = &tv_storage;
     }
 
-    int ready = rb_thread_io_wait(fptr, RB_NUM2INT(events), tv);
+    int ready = rb_thread_io_wait(th, fptr, RB_NUM2INT(events), tv);
 
     if (ready < 0) {
         rb_sys_fail(0);
@@ -1498,17 +1503,15 @@ io_from_fd(int fd)
 }
 
 static int
-io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+io_wait_for_single_fd(int fd, int events, struct timeval *timeout, rb_thread_t *th, VALUE scheduler)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
-
     if (scheduler != Qnil) {
         return RTEST(
             rb_fiber_scheduler_io_wait(scheduler, io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
         );
     }
 
-    return rb_thread_wait_for_single_fd(fd, events, timeout);
+    return rb_thread_wait_for_single_fd(th, fd, events, timeout);
 }
 
 int
@@ -1516,7 +1519,8 @@ rb_io_wait_readable(int f)
 {
     io_fd_check_closed(f);
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     switch (errno) {
       case EINTR:
@@ -1536,7 +1540,7 @@ rb_io_wait_readable(int f)
             );
         }
         else {
-            io_wait_for_single_fd(f, RUBY_IO_READABLE, NULL);
+            io_wait_for_single_fd(f, RUBY_IO_READABLE, NULL, th, scheduler);
         }
         return TRUE;
 
@@ -1550,7 +1554,8 @@ rb_io_wait_writable(int f)
 {
     io_fd_check_closed(f);
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     switch (errno) {
       case EINTR:
@@ -1579,7 +1584,7 @@ rb_io_wait_writable(int f)
             );
         }
         else {
-            io_wait_for_single_fd(f, RUBY_IO_WRITABLE, NULL);
+            io_wait_for_single_fd(f, RUBY_IO_WRITABLE, NULL, th, scheduler);
         }
         return TRUE;
 
@@ -1591,7 +1596,9 @@ rb_io_wait_writable(int f)
 int
 rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    return io_wait_for_single_fd(fd, events, timeout);
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+    return io_wait_for_single_fd(fd, events, timeout, th, scheduler);
 }
 
 int

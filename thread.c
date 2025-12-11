@@ -226,7 +226,7 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
 
     // When a signal is received, we yield to the scheduler as soon as possible:
     if (result || RUBY_VM_INTERRUPTED(ec)) {
-        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
         if (scheduler != Qnil) {
             rb_fiber_scheduler_yield(scheduler);
         }
@@ -1075,7 +1075,7 @@ thread_join_sleep(VALUE arg)
     }
 
     while (!thread_finished(target_th)) {
-        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
         if (!limit) {
             if (scheduler != Qnil) {
@@ -1424,17 +1424,18 @@ rb_thread_sleep_deadly(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
         RUBY_DEBUG_LOG("...");
         if (end) {
-            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+            sleep_hrtime_until(th, end, SLEEP_SPURIOUS_CHECK);
         }
         else {
-            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+            sleep_forever(th, SLEEP_DEADLOCKABLE);
         }
     }
 }
@@ -4601,7 +4602,7 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
  * returns a mask of events
  */
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1] = {{
         .fd = fd,
@@ -4614,8 +4615,8 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     enum ruby_tag_type state;
     volatile int lerrno;
 
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    RUBY_ASSERT(th);
+    rb_execution_context_t *ec = th->ec;
 
     if (io) {
         blocking_operation.ec = ec;
@@ -4749,7 +4750,7 @@ init_set_fd(int fd, rb_fdset_t *fds)
 }
 
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
@@ -4758,7 +4759,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     struct rb_io_blocking_operation blocking_operation;
     if (io) {
         args.io = io;
-        blocking_operation.ec = GET_EC();
+        blocking_operation.ec = th->ec;
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     }
@@ -4783,15 +4784,15 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 #endif /* ! USE_POLL */
 
 int
-rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(rb_thread_t *th, int fd, int events, struct timeval *timeout)
 {
-    return thread_io_wait(NULL, fd, events, timeout);
+    return thread_io_wait(th, NULL, fd, events, timeout);
 }
 
 int
-rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout)
+rb_thread_io_wait(rb_thread_t *th, struct rb_io *io, int events, struct timeval * timeout)
 {
-    return thread_io_wait(io, io->fd, events, timeout);
+    return thread_io_wait(th, io, io->fd, events, timeout);
 }
 
 /*
