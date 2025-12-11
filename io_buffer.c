@@ -479,6 +479,8 @@ io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offs
 VALUE
 rb_io_buffer_type_allocate(VALUE self)
 {
+    io_buffer_experimental();
+
     struct rb_io_buffer *buffer = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
@@ -649,8 +651,6 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 VALUE
 rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
-    io_buffer_experimental();
-
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
     struct rb_io_buffer *buffer = NULL;
@@ -805,8 +805,6 @@ io_flags_for_size(size_t size)
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
-    io_buffer_experimental();
-
     rb_check_arity(argc, 0, 2);
 
     struct rb_io_buffer *buffer = NULL;
