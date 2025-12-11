@@ -1180,12 +1180,9 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                 if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
                     pm_node_t *body_part;
                     PM_NODE_LIST_FOREACH(&cast->body, index, body_part) {
-                        switch (PM_NODE_TYPE(body_part)) {
-                            case PM_CASE_VOID_VALUE:
-                                if (void_node == NULL) void_node = body_part;
-                                break;
-                            default: break;
-                        }
+                        if (index == cast->body.size - 1) break;
+                        pm_node_t *vn = pm_check_value_expression(parser, body_part);
+                        if (vn) return vn;
                     }
                 }
 
