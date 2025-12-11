@@ -41,10 +41,10 @@ blocking_operation(void *argument)
 {
     struct blocking_state *blocking_state = (struct blocking_state *)argument;
 
+    write(blocking_state->notify_descriptor, "x", 1);
+
     while (true) {
         struct timeval tv = {1, 0};  // 1 second timeout.
-
-        write(blocking_state->notify_descriptor, "x", 1);
         int result = select(0, NULL, NULL, NULL, &tv);
 
         if (result == -1 && errno == EINTR) {
