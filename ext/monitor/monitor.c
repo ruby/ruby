@@ -148,7 +148,7 @@ monitor_check_owner(VALUE monitor)
 static void
 monitor_exit0(struct monitor_args *args)
 {
-    monitor_check_owner(args->monitor);
+    monitor_check_owner0(args);
 
     if (args->mc->count <= 0) rb_bug("monitor_exit: count:%d", (int)args->mc->count);
     args->mc->count--;
