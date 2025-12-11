@@ -3896,7 +3896,6 @@ AC_SUBST(INSTALL_STATIC_LIBRARY)
 
 [begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
-AC_CHECK_TOOL(CARGO, [cargo], [no])
 
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 JIT_RUSTC_OK=no
@@ -3963,11 +3962,7 @@ AC_ARG_ENABLE(zjit,
             # 1.85.0 is the first stable version that supports the 2024 edition.
             AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
                     $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
-                AS_IF([test "$gnumake" = "yes" -a  \( "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no" \)], [
-                    # When only building ZJIT, we don't need cargo; it's required for YJIT+ZJIT build.
-                    # Assume that if rustc is new enough, then cargo is also.
-                    # TODO(alan): Get rid of dependency on cargo in YJIT+ZJIT build. Cargo's offline mode
-                    #             still too unreliable: https://github.com/rust-lang/cargo/issues/10352
+                AS_IF([test "$gnumake" = "yes"], [
                     rb_zjit_build_possible=yes
                 ])
             )
@@ -4053,36 +4048,47 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
-# if YJIT+ZJIT release build, or any build that requires Cargo
-AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
-    AS_IF([test x"$CARGO" = "xno"],
-        AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
+JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
+RLIB_DIR=
+AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
+    [no:yes:yes], [ # release build of YJIT+ZJIT
+        YJIT_LIBS=
+        ZJIT_LIBS=
+        JIT_RUST_FLAGS="--crate-type=rlib"
+        RLIB_DIR="target/release"
+        RUST_LIB="target/release/libruby.a"
+    ],
+    [no:*], [],
+    [*], [ # JIT_CARGO_SUPPORT not "no" -- cargo required.
+        AC_CHECK_TOOL(CARGO, [cargo], [no])
+        AS_IF([test x"$CARGO" = "xno"],
+            AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
 
-    YJIT_LIBS=
-    ZJIT_LIBS=
+        YJIT_LIBS=
+        ZJIT_LIBS=
 
-    # There's more processing below to get the feature set for the
-    # top-level crate, so capture at this point for feature set of
-    # just the zjit crate.
-    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+        # There's more processing below to get the feature set for the
+        # top-level crate, so capture at this point for feature set of
+        # just the zjit crate.
+        ZJIT_TEST_FEATURES="${rb_cargo_features}"
 
-    AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
-        rb_cargo_features="$rb_cargo_features,yjit"
-    ])
-    AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
-        AC_SUBST(ZJIT_TEST_FEATURES)
-        rb_cargo_features="$rb_cargo_features,zjit"
-    ])
-    # if YJIT and ZJIT release mode
-    AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
-        JIT_CARGO_SUPPORT=release
-    ])
-    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
-    AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
-        RUST_LIB="target/debug/libruby.a"
-    ], [
-        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
-    ])
+        AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
+            rb_cargo_features="$rb_cargo_features,yjit"
+        ])
+        AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+            AC_SUBST(ZJIT_TEST_FEATURES)
+            rb_cargo_features="$rb_cargo_features,zjit"
+        ])
+        # if YJIT and ZJIT release mode
+        AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
+            JIT_CARGO_SUPPORT=release
+        ])
+        CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+        AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
+            RUST_LIB="target/debug/libruby.a"
+        ], [
+            RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
+        ])
 ])
 
 # In case either we're linking rust code
@@ -4098,6 +4104,7 @@ AS_IF([test -n "$RUST_LIB"], [
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(RUSTC)dnl Rust compiler command
+AC_SUBST(JIT_RUST_FLAGS)dnl the common rustc flags for JIT crates such as zjit
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
@@ -4108,6 +4115,7 @@ AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
 AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
 AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
 AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 

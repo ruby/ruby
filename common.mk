@@ -268,9 +268,8 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2021 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -279,9 +278,8 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2024 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
