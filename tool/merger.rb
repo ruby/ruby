@@ -65,7 +65,8 @@ class << Merger = Object.new
     if teeny
       v[2].succ!
     end
-    if pl != '-1' # trunk does not have patchlevel
+    # We stopped bumping RUBY_PATCHLEVEL at Ruby 4.0.0.
+    if Integer(v[0]) <= 3
       pl.succ!
     end
 

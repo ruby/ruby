@@ -1319,4 +1319,10 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_toplevel_ruby
     assert_instance_of Module, ::Ruby
   end
+
+  def test_ruby_patchlevel
+    # We stopped bumping RUBY_PATCHLEVEL at Ruby 4.0.0.
+    # Released versions have RUBY_PATCHLEVEL 0, and un-released versions have -1.
+    assert_include [-1, 0], RUBY_PATCHLEVEL
+  end
 end
