@@ -425,7 +425,9 @@ class TestTimeout < Test::Unit::TestCase
 
     rd, wr = IO.pipe
 
-    trap("SIGUSR1") do
+    signal = Signal.list["USR1"] ? :USR1 : :TERM
+
+    trap(signal) do
       begin
         Timeout.timeout(0.1) do
           sleep 1
@@ -440,9 +442,9 @@ class TestTimeout < Test::Unit::TestCase
       end
     end
 
-    Process.kill :USR1, Process.pid
+    Process.kill signal, Process.pid
 
     assert_equal "OK", rd.read
     rd.close
-  end if Signal.list["USR1"] # Windows has no SIGUSR1
+  end
 end
