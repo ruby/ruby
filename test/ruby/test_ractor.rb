@@ -201,6 +201,18 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_symbol_proc_is_shareable
+    pr = :symbol.to_proc
+    assert_make_shareable(pr)
+  end
+
+  # [Bug #21775]
+  def test_ifunc_proc_not_shareable
+    h = Hash.new { self }
+    pr = h.to_proc
+    assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
