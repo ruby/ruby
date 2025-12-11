@@ -22,7 +22,7 @@ module Timeout
   # The version
   VERSION = "0.5.0"
 
-  # Internal error raised to when a timeout is triggered.
+  # Internal exception raised to when a timeout is triggered.
   class ExitException < Exception
     def exception(*) # :nodoc:
       self
@@ -177,7 +177,7 @@ module Timeout
 
   # :startdoc:
 
-  # Perform an operation in a block, raising an error if it takes longer than
+  # Perform an operation in a block, raising an exception if it takes longer than
   # +sec+ seconds to complete.
   #
   # +sec+:: Number of seconds to wait for the block to terminate. Any non-negative number
@@ -190,12 +190,18 @@ module Timeout
   #             Omitting will use the default, "execution expired"
   #
   # Returns the result of the block *if* the block completed before
-  # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
+  # +sec+ seconds, otherwise raises an exception, based on the value of +klass+.
   #
-  # The exception thrown to terminate the given block cannot be rescued inside
-  # the block unless +klass+ is given explicitly. However, the block can use
-  # ensure to prevent the handling of the exception.  For that reason, this
-  # method cannot be relied on to enforce timeouts for untrusted blocks.
+  # The exception raised to terminate the given block is the given +klass+, or
+  # Timeout::ExitException if +klass+ is not given. The reason for that behavior
+  # is that Timeout::Error inherits from RuntimeError and might be caught unexpectedly by `rescue`.
+  # Timeout::ExitException inherits from Exception so it will only be rescued by `rescue Exception`.
+  # Note that the Timeout::ExitException is translated to a Timeout::Error once it reaches the Timeout.timeout call,
+  # so outside that call it will be a Timeout::Error.
+  #
+  # In general, be aware that the code block may rescue the exception, and in such a case not respect the timeout.
+  # Also, the block can use +ensure+ to prevent the handling of the exception.
+  # For those reasons, this method cannot be relied on to enforce timeouts for untrusted blocks.
   #
   # If a scheduler is defined, it will be used to handle the timeout by invoking
   # Scheduler#timeout_after.
@@ -203,6 +209,45 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
+  #
+  # ==== Ensuring the exception does not fire inside ensure blocks
+  #
+  # When using Timeout.timeout it can be desirable to ensure the timeout exception does not fire inside an +ensure+ block.
+  # The simplest and best way to do so it to put the Timeout.timeout call inside the body of the begin/ensure/end:
+  #
+  #     begin
+  #       Timeout.timeout(sec) { some_long_operation }
+  #     ensure
+  #       cleanup # safe, cannot be interrupt by timeout
+  #     end
+  #
+  # If that is not feasible, e.g. if there are +ensure+ blocks inside +some_long_operation+,
+  # they need to not be interrupted by timeout, and it's not possible to move these ensure blocks outside,
+  # one can use Thread.handle_interrupt to delay the timeout exception like so:
+  #
+  #     Thread.handle_interrupt(Timeout::Error => :never) {
+  #       Timeout.timeout(sec, Timeout::Error) do
+  #         setup # timeout cannot happen here, no matter how long it takes
+  #         Thread.handle_interrupt(Timeout::Error => :immediate) {
+  #           some_long_operation # timeout can happen here
+  #         }
+  #       ensure
+  #         cleanup # timeout cannot happen here, no matter how long it takes
+  #       end
+  #     }
+  #
+  # An important thing to note is the need to pass an exception klass to Timeout.timeout,
+  # otherwise it does not work. Specifically, using +Thread.handle_interrupt(Timeout::ExitException => ...)+
+  # is unsupported and causes subtle errors like raising the wrong exception outside the block, do not use that.
+  #
+  # Note that Thread.handle_interrupt is somewhat dangerous because if setup or cleanup hangs
+  # then the current thread will hang too and the timeout will never fire.
+  # Also note the block might run for longer than +sec+ seconds:
+  # e.g. some_long_operation executes for +sec+ seconds + whatever time cleanup takes.
+  #
+  # If you want the timeout to only happen on blocking operations one can use :on_blocking
+  # instead of :immediate. However, that means if the block uses no blocking operations after +sec+ seconds,
+  # the block will not be interrupted.
   def self.timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     raise ArgumentError, "Timeout sec must be a non-negative number" if 0 > sec
