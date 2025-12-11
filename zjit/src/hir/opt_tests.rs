@@ -9932,4 +9932,201 @@ mod hir_opt_tests {
           Return v25
         ");
     }
+
+    #[test]
+    fn optimize_call_to_private_method_iseq_with_fcall() {
+        eval(r#"
+            class C
+              def callprivate = secret
+              private def secret = 42
+            end
+            C.new.callprivate
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:callprivate)"), @r"
+        fn callprivate@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, secret@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v18:HeapObject[class_exact:C] = GuardType v6, HeapObject[class_exact:C]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[42] = Const Value(42)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn dont_optimize_call_to_private_method_iseq() {
+        eval(r#"
+            class C
+              private def secret = 42
+            end
+            Obj = C.new
+            def test = Obj.secret rescue $!
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Obj)
+          v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v13:BasicObject = SendWithoutBlock v21, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn optimize_call_to_private_method_cfunc_with_fcall() {
+        eval(r#"
+            class BasicObject
+              def callprivate = initialize rescue $!
+            end
+            Obj = BasicObject.new.callprivate
+        "#);
+        assert_snapshot!(hir_string_proc("BasicObject.instance_method(:callprivate)"), @r"
+        fn callprivate@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(BasicObject@0x1000)
+          v20:BasicObjectExact = GuardType v6, BasicObjectExact
+          v21:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn dont_optimize_call_to_private_method_cfunc() {
+        eval(r#"
+            Obj = BasicObject.new
+            def test = Obj.initialize rescue $!
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Obj)
+          v21:BasicObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v13:BasicObject = SendWithoutBlock v21, :initialize # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn dont_optimize_call_to_private_top_level_method() {
+        eval(r#"
+            def toplevel_method = :OK
+            Obj = Object.new
+            def test = Obj.toplevel_method rescue $!
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Obj)
+          v21:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v13:BasicObject = SendWithoutBlock v21, :toplevel_method # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn optimize_call_to_protected_method_iseq_with_fcall() {
+        eval(r#"
+            class C
+              def callprotected = secret
+              protected def secret = 42
+            end
+            C.new.callprotected
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:callprotected)"), @r"
+        fn callprotected@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, secret@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v18:HeapObject[class_exact:C] = GuardType v6, HeapObject[class_exact:C]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[42] = Const Value(42)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn dont_optimize_call_to_protected_method_iseq() {
+        eval(r#"
+            class C
+              protected def secret = 42
+            end
+            Obj = C.new
+            def test = Obj.secret rescue $!
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Obj)
+          v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v13:BasicObject = SendWithoutBlock v21, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          CheckInterrupts
+          Return v13
+        ");
+    }
 }

@@ -614,6 +614,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
+    SendWithoutBlockNotOptimizedNeedPermission,
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
     SendWithoutBlockDirectKeywordMismatch,
@@ -626,6 +627,7 @@ pub enum SendFallbackReason {
     SendCfuncVariadic,
     SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
+    SendNotOptimizedNeedPermission,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     TooManyArgsForLir,
@@ -653,6 +655,8 @@ impl Display for SendFallbackReason {
             SendWithoutBlockCfuncArrayVariadic => write!(f, "SendWithoutBlock: C function expects array variadic"),
             SendWithoutBlockNotOptimizedMethodType(method_type) => write!(f, "SendWithoutBlock: unsupported method type {:?}", method_type),
             SendWithoutBlockNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "SendWithoutBlock: unsupported optimized method type {:?}", opt_type),
+            SendWithoutBlockNotOptimizedNeedPermission => write!(f, "SendWithoutBlock: method private or protected and no FCALL"),
+            SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
             SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
             SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
             SendWithoutBlockDirectKeywordMismatch => write!(f, "SendWithoutBlockDirect: keyword mismatch"),
@@ -2634,6 +2638,16 @@ impl Function {
                         // Load an overloaded cme if applicable. See vm_search_cc().
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+                        match (visibility, flags & VM_CALL_FCALL != 0) {
+                            (METHOD_VISI_PUBLIC, _) => {}
+                            (METHOD_VISI_PRIVATE, true) => {}
+                            (METHOD_VISI_PROTECTED, true) => {}
+                            _ => {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedNeedPermission);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                        }
                         let mut def_type = unsafe { get_cme_def_type(cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
@@ -3256,7 +3270,18 @@ impl Function {
                 return Err(());
             }
 
+
             let ci_flags = unsafe { vm_ci_flag(call_info) };
+            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+            match (visibility, ci_flags & VM_CALL_FCALL != 0) {
+                (METHOD_VISI_PUBLIC, _) => {}
+                (METHOD_VISI_PRIVATE, true) => {}
+                (METHOD_VISI_PROTECTED, true) => {}
+                _ => {
+                    fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedNeedPermission);
+                    return Err(());
+                }
+            }
 
             // When seeing &block argument, fall back to dynamic dispatch for now
             // TODO: Support block forwarding
@@ -3398,6 +3423,18 @@ impl Function {
                 return Err(());
             }
 
+            let ci_flags = unsafe { vm_ci_flag(call_info) };
+            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+            match (visibility, ci_flags & VM_CALL_FCALL != 0) {
+                (METHOD_VISI_PUBLIC, _) => {}
+                (METHOD_VISI_PRIVATE, true) => {}
+                (METHOD_VISI_PROTECTED, true) => {}
+                _ => {
+                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedNeedPermission);
+                    return Err(());
+                }
+            }
+
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
@@ -3409,8 +3446,6 @@ impl Function {
                     if argc != cfunc_argc as u32 {
                         return Err(());
                     }
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
 
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
