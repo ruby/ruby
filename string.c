@@ -10244,7 +10244,7 @@ lstrip_offset_table(VALUE str, const char *s, const char *e, rb_encoding *enc,
 
 /*
  *  call-seq:
- *    lstrip!(chars = nil) -> self or nil
+ *    lstrip!(*selectors) -> self or nil
  *
  *  Like String#lstrip, except that:
  *
@@ -10394,7 +10394,7 @@ rstrip_offset_table(VALUE str, const char *s, const char *e, rb_encoding *enc,
 
 /*
  *  call-seq:
- *    rstrip!(chars = nil) -> self or nil
+ *    rstrip!(*selectors) -> self or nil
  *
  *  Like String#rstrip, except that:
  *
@@ -10491,7 +10491,7 @@ rb_str_rstrip(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    strip! -> self or nil
+ *    strip!(*selectors) -> self or nil
  *
  *  Like String#strip, except that:
  *
