@@ -114,7 +114,13 @@ class << Merger = Object.new
         abort 'no relname is given and not in a release branch even if this is patch release'
       end
     end
-    tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
+    if /^(?:preview|rc)/ =~ pl
+      tagname = "v#{v.join('.')}-#{pl}"
+    elsif Integer(v[0]) >= 4
+      tagname = "v#{v.join('.')}"
+    else
+      tagname = "v#{v.join('_')}"
+    end
 
     unless execute('git', 'diff', '--exit-code')
       abort 'uncommitted changes'
