@@ -1731,6 +1731,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
             let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
 
+            // Only inline if the local is a parameter (not a method-defined local) as we are indexing args.
+            let param_size = unsafe { rb_get_iseq_body_param_size(iseq) } as usize;
+            if local_idx >= param_size {
+                return None;
+            }
+
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx.try_into().unwrap()));
             }
