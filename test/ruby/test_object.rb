@@ -888,12 +888,14 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_to_s
-    x = eval(<<-EOS)
-      class ToS\u{3042}
-        new.to_s
-      end
-    EOS
-    assert_match(/\bToS\u{3042}:/, x)
+    unless multiple_ractors?
+      x = eval(<<-EOS)
+        class ToS\u{3042}
+          new.to_s
+        end
+      EOS
+      assert_match(/\bToS\u{3042}:/, x)
+    end
 
     name = "X".freeze
     x = Object.new
@@ -935,24 +937,26 @@ class TestObject < Test::Unit::TestCase
     end
     assert_match(/\A#<Object:0x\h+>\z/, x.inspect, feature6130)
 
-    x = eval(<<-EOS)
-      class Inspect\u{3042}
-        new.inspect
-      end
-    EOS
-    assert_match(/\bInspect\u{3042}:/, x)
-
-    x = eval(<<-EOS)
-      class Inspect\u{3042}
-        def initialize
-          @\u{3044} = 42
+    unless multiple_ractors?
+      x = eval(<<-EOS)
+        class Inspect\u{3042}
+          new.inspect
         end
-        new
-      end
-    EOS
-    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
-    x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
-    assert_match(/@\u{3046}=6\b/, x.inspect)
+      EOS
+      assert_match(/\bInspect\u{3042}:/, x)
+
+      x = eval(<<-EOS)
+        class Inspect\u{3042}
+          def initialize
+            @\u{3044} = 42
+          end
+          new
+        end
+      EOS
+      assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
+      x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
+      assert_match(/@\u{3046}=6\b/, x.inspect)
+    end
 
     x = Object.new
     x.singleton_class.class_eval do
