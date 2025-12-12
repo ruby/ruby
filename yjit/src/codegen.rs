@@ -7466,6 +7466,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
             let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
 
+            // Only inline getlocal on a parameter. DCE in the IESQ builder can
+            // make a two-instruction ISEQ that does not return a parameter.
+            if local_idx >= unsafe { get_iseq_body_param_size(iseq) } {
+                return None;
+            }
+
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx));
             } else if unsafe { rb_iseq_only_kwparam_p(iseq) } {
