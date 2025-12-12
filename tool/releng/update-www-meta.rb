@@ -49,13 +49,18 @@ eom
     if z != 0
       prev_tag = nil
     elsif y != 0
-      prev_tag = "v#{x}_#{y-1}_0"
       prev_ver = "#{x}.#{y-1}.0"
-    elsif x == 3 && y == 0 && z == 0
-      prev_tag = "v2_7_0"
-      prev_ver = "2.7.0"
-    else
-      raise "unexpected version for prev_ver '#{version}'"
+      prev_tag = version_tag(prev_ver)
+    else # y == 0 && z == 0
+      case x
+      when 3
+        prev_ver = "2.7.0"
+      when 4
+        prev_ver = "3.4.0"
+      else
+        raise "it doesn't know what is the previous version of '#{version}'"
+      end
+      prev_tag = version_tag(prev_ver)
     end
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
@@ -76,7 +81,7 @@ eom
 
     if prev_tag
       # show diff shortstat
-      tag = "v#{version.gsub(/[.\-]/, '_')}"
+      tag = version_tag(version)
       rubydir = File.expand_path(File.join(__FILE__, '../../../'))
       puts %`git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
       stat = `git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
@@ -155,7 +160,7 @@ eom
     date = Time.now.utc # use utc to use previous day in midnight
     entry = <<eom
 - version: #{ver}
-  tag: v#{ver.tr('-.', '_')}
+  tag: #{version_tag(ver)}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
   stats:
@@ -190,6 +195,15 @@ eom
       data.sub!(/^$/, "\n# #{xy} series\n\n#{entry}")
     end
     File.write(File.join(wwwdir, filename), data)
+  end
+
+  def self.version_tag(version)
+    major_version = Integer(version.split('.', 2)[0])
+    if major_version >= 4
+      "v#{version}"
+    else
+      "v#{version.tr('.-', '_')}"
+    end
   end
 end
 
