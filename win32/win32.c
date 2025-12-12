@@ -7223,9 +7223,6 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     size_t len;
     size_t ret;
     OVERLAPPED ol;
-    BOOL isconsole;
-    BOOL islineinput = FALSE;
-    int start = 0;
 
     if (is_socket(sock))
         return rb_w32_recv(fd, buf, size, 0);
@@ -7248,25 +7245,8 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     }
 
     ret = 0;
-    isconsole = is_console(_osfhnd(fd)) && (osver.dwMajorVersion < 6 || (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2));
-    if (isconsole) {
-        DWORD mode;
-        GetConsoleMode((HANDLE)_osfhnd(fd),&mode);
-        islineinput = (mode & ENABLE_LINE_INPUT) != 0;
-    }
   retry:
-    /* get rid of console reading bug */
-    if (isconsole) {
-        constat_reset((HANDLE)_osfhnd(fd));
-        if (start)
-            len = 1;
-        else {
-            len = 0;
-            start = 1;
-        }
-    }
-    else
-        len = size;
+    len = size;
     size -= len;
 
     if (setup_overlapped(&ol, fd, FALSE, offset)) {
@@ -7337,8 +7317,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     ret += read;
     if (read >= len) {
         buf = (char *)buf + read;
-        if (err != ERROR_OPERATION_ABORTED &&
-            !(isconsole && len == 1 && (!islineinput || *((char *)buf - 1) == '\n')) && size > 0)
+        if (err != ERROR_OPERATION_ABORTED && size > 0)
             goto retry;
     }
     if (read == 0)
