@@ -270,7 +270,7 @@ def package(vcs, rev, destdir, tmp = nil)
   when /\Astable\z/
     vcs.branch_list("ruby_[0-9]*") {|n| url = n[/\Aruby_\d+_\d+\z/]}
     url &&= vcs.branch(url)
-  when /\A(.*)\.(.*)\.(.*)-(preview|rc)(\d+)/
+  when /\A(\d+)\.(\d+)\.(\d+)-(preview|rc)(\d+)/
     prerelease = true
     tag = "#{$4}#{$5}"
     url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
