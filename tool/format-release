@@ -77,7 +77,7 @@ eom
     end
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
-    info = YAML.load(URI(uri).read)
+    info = YAML.unsafe_load(URI(uri).read)
     if info.size != 1
       raise "unexpected info.yml '#{uri}'"
     end
