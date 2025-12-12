@@ -340,6 +340,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_return_nonparam_local
+    # Use dead code (if false) to create a local without initialization instructions.
+    assert_compiles 'nil', %q{
+      def foo(a)
+        if false
+          x = nil
+        end
+        x
+      end
+      def test = foo(1)
+      test
+      test
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval
     assert_compiles '1', %q{
       @b = binding
