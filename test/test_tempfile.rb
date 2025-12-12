@@ -508,4 +508,16 @@ puts Tempfile.new('foo').path
       assert_equal(true, t.autoclose?)
     }
   end
+
+  def test_tempfile_ractor_safe
+    assert_ractor(<<~'RUBY', require: LIB_TEMPFILE_RB_PATH, timeout: 30)
+    10.times.map do |i|
+      Ractor.new(i) do |j|
+        t = Tempfile.new "tempfile_#{j}"
+        t.close
+        t.unlink
+      end
+    end.each(&:join)
+    RUBY
+  end
 end
