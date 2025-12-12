@@ -1913,6 +1913,14 @@ class TestProc < Test::Unit::TestCase
     end
   end
 
+  def test_implicit_parameter_invalid_name
+    message_pattern = /is not an implicit parameter/
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_defined?(:foo) }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_get(:foo) }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_defined?("wrong_implicit_parameter_name_#{rand(10000)}") }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_get("wrong_implicit_parameter_name_#{rand(10000)}") }
+  end
+
   def test_local_variable_set_wb
     assert_ruby_status([], <<-'end;', '[Bug #13605]', timeout: 30)
       b = binding
