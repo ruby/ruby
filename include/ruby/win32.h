@@ -307,7 +307,7 @@ extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
 extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
 
 RBIMPL_ATTR_DEPRECATED(("as Windows 9x is not supported already"))
-extern DWORD rb_w32_osid(void);
+static inline DWORD rb_w32_osid(void) {return VER_PLATFORM_WIN32_NT;}
 RBIMPL_ATTR_DEPRECATED(("by Windows Version Helper APIs"))
 extern DWORD rb_w32_osver(void);
 

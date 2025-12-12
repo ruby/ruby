@@ -314,15 +314,6 @@ get_version(void)
     GetVersionEx(&osver);
 }
 
-#ifdef _M_IX86
-/* License: Artistic or GPL */
-DWORD
-rb_w32_osid(void)
-{
-    return osver.dwPlatformId;
-}
-#endif
-
 /* License: Artistic or GPL */
 DWORD
 rb_w32_osver(void)
