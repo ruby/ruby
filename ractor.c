@@ -1553,6 +1553,14 @@ rb_ractor_ensure_main_ractor(const char *msg)
     }
 }
 
+// Check if a proc is shareable.
+// If a proc is frozen and its self is shareable, it is shareable.
+static bool
+is_proc_shareable(VALUE obj)
+{
+    return RB_OBJ_FROZEN_RAW(obj) && rb_ractor_shareable_p(vm_block_self(vm_proc_block(obj)));
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
@@ -1560,8 +1568,7 @@ shareable_p_enter(VALUE obj)
         return traverse_skip;
     }
     else if (rb_obj_is_proc(obj)) {
-        if (RB_OBJ_FROZEN_RAW(obj) && rb_ractor_shareable_p(vm_block_self(vm_proc_block(obj)))) {
-            // If the proc is frozen and its self is shareable, the proc is shareable.
+        if (is_proc_shareable(obj)) {
             return traverse_skip;
         }
     }
