@@ -13035,14 +13035,14 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
 # endif
         /* method call without arguments */
-        if (dyna_in_block(p) && id == rb_intern("it") && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))) {
+        if (dyna_in_block(p) && id == idIt && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))) {
             if (numparam_used_p(p)) return 0;
             if (p->max_numparam == ORDINAL_PARAM) {
                 compile_error(p, "ordinary parameter is defined");
                 return 0;
             }
             if (!p->it_id) {
-                p->it_id = internal_id(p);
+                p->it_id = idItImplicit;
                 vtable_add(p->lvtbl->args, p->it_id);
             }
             NODE *node = NEW_DVAR(p->it_id, loc);

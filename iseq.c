@@ -19,6 +19,7 @@
 #endif
 
 #include "eval_intern.h"
+#include "id.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/bits.h"
@@ -3363,7 +3364,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     for (i=0; i<iseq_body->local_table_size; i++) {
         ID lid = iseq_body->local_table[i];
         if (lid) {
-            if (rb_id2str(lid)) {
+            if (lid != idItImplicit && rb_id2str(lid)) {
                 rb_ary_push(locals, ID2SYM(lid));
             }
             else { /* hidden variable from id_internal() */
@@ -3673,10 +3674,10 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     ID req, opt, rest, block, key, keyrest;
 #define PARAM_TYPE(type) rb_ary_push(a = rb_ary_new2(2), ID2SYM(type))
 #define PARAM_ID(i) body->local_table[(i)]
-#define PARAM(i, type) (		      \
-        PARAM_TYPE(type),		      \
-        rb_id2str(PARAM_ID(i)) ?	      \
-        rb_ary_push(a, ID2SYM(PARAM_ID(i))) : \
+#define PARAM(i, type) (                                        \
+        PARAM_TYPE(type),                                       \
+        PARAM_ID(i) != idItImplicit && rb_id2str(PARAM_ID(i)) ? \
+        rb_ary_push(a, ID2SYM(PARAM_ID(i))) :                   \
         a)
 
     CONST_ID(req, "req");
@@ -3695,7 +3696,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     if (is_proc) {
         for (i = 0; i < body->param.lead_num; i++) {
             PARAM_TYPE(opt);
-            if (rb_id2str(PARAM_ID(i))) {
+            if (PARAM_ID(i) != idItImplicit && rb_id2str(PARAM_ID(i))) {
                 rb_ary_push(a, ID2SYM(PARAM_ID(i)));
             }
             rb_ary_push(args, a);
