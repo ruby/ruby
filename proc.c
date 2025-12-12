@@ -660,7 +660,21 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
  *  call-seq:
  *     binding.implicit_parameters -> Array
  *
- *  TODO
+ *  Returns the names of numbered parameters and "it" parameter
+ *  that are defined in the binding.
+ *
+ *	def foo
+ *	  [42].each do
+ *	    it
+ *  	    binding.implicit_parameters #=> [:it]
+ *	  end
+ *
+ *	  { k: 42 }.each do
+ *  	    _2
+ *  	    binding.implicit_parameters #=> [:_1, :_2]
+ *  	  end
+ *  	end
+ *
  */
 static VALUE
 bind_implicit_parameters(VALUE bindval)
@@ -683,7 +697,21 @@ bind_implicit_parameters(VALUE bindval)
  *  call-seq:
  *     binding.implicit_parameter_get(symbol) -> obj
  *
- *  TODO
+ *  Returns the value of the numbered parameter or "it" parameter.
+ *
+ *	def foo
+ *  	  [42].each do
+ *  	    it
+ *  	    binding.implicit_parameter_get(:it) #=> 42
+ *  	  end
+ *
+ *  	  { k: 42 }.each do
+ *  	    _2
+ *  	    binding.implicit_parameter_get(:_1) #=> :k
+ *  	    binding.implicit_parameter_get(:_2) #=> 42
+ *  	  end
+ *  	end
+ *
  */
 static VALUE
 bind_implicit_parameter_get(VALUE bindval, VALUE sym)
@@ -716,7 +744,23 @@ bind_implicit_parameter_get(VALUE bindval, VALUE sym)
  *  call-seq:
  *     binding.implicit_parameter_defined?(symbol) -> obj
  *
- *  TODO
+ *  Returns +true+ if the numbered parameter or "it" parameter exists.
+ *
+ *	def foo
+ *  	  [42].each do
+ *  	    it
+ *  	    binding.implicit_parameter_defined?(:it) #=> true
+ *  	    binding.implicit_parameter_defined?(:_1) #=> false
+ *  	  end
+ *
+ *        { k: 42 }.each do
+ *          _2
+ *  	    binding.implicit_parameter_defined?(:_1) #=> true
+ *  	    binding.implicit_parameter_defined?(:_2) #=> true
+ *  	    binding.implicit_parameter_defined?(:_3) #=> false
+ *  	    binding.implicit_parameter_defined?(:it) #=> false
+ *  	  end
+ *  	end
  *
  */
 static VALUE
