@@ -260,7 +260,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
-            Const::Shape(v) => Self::from_cint(types::CShape, v.0 as i64),
+            Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
             Const::CDouble(v) => Self::from_double(v),

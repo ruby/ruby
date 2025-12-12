@@ -299,11 +299,11 @@ pub enum Const {
     CInt8(i8),
     CInt16(i16),
     CInt32(i32),
-    Shape(ShapeId),
     CInt64(i64),
     CUInt8(u8),
     CUInt16(u16),
     CUInt32(u32),
+    CShape(ShapeId),
     CUInt64(u64),
     CPtr(*const u8),
     CDouble(f64),
@@ -390,7 +390,7 @@ impl<'a> std::fmt::Display for ConstPrinter<'a> {
             // number than {:?} does and we don't know why.
             // We'll have to resolve that first.
             Const::CPtr(val) => write!(f, "CPtr({:?})", self.ptr_map.map_ptr(val)),
-            &Const::Shape(shape_id) => write!(f, "Shape({:p})", self.ptr_map.map_shape(shape_id)),
+            &Const::CShape(shape_id) => write!(f, "CShape({:p})", self.ptr_map.map_shape(shape_id)),
             _ => write!(f, "{:?}", self.inner),
         }
     }
@@ -2138,11 +2138,11 @@ impl Function {
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
             Insn::Const { val: Const::CInt16(val) } => Type::from_cint(types::CInt16, *val as i64),
             Insn::Const { val: Const::CInt32(val) } => Type::from_cint(types::CInt32, *val as i64),
-            Insn::Const { val: Const::Shape(val) } => Type::from_cint(types::CShape, val.0 as i64),
             Insn::Const { val: Const::CInt64(val) } => Type::from_cint(types::CInt64, *val),
             Insn::Const { val: Const::CUInt8(val) } => Type::from_cint(types::CUInt8, *val as i64),
             Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
             Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
+            Insn::Const { val: Const::CShape(val) } => Type::from_cint(types::CShape, val.0 as i64),
             Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
             Insn::Const { val: Const::CPtr(val) } => Type::from_cptr(*val),
             Insn::Const { val: Const::CDouble(val) } => Type::from_double(*val),
@@ -3209,7 +3209,7 @@ impl Function {
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::Shape(next_shape_id) });
+                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
                             self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
                         }
@@ -4775,7 +4775,7 @@ impl Function {
                     Const::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
                     Const::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
                     Const::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
-                    Const::Shape(_) => self.assert_subtype(insn_id, val, types::CShape),
+                    Const::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
                     Const::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
                     Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
                     Const::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
