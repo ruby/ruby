@@ -4673,7 +4673,7 @@ impl Function {
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
-            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
+            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other
             Insn::ObjectAllocClass { class, .. } => {

@@ -6651,7 +6651,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_hash_aref_subclass() {
+    fn test_no_optimize_hash_aref_subclass() {
         eval("
             class C < Hash; end
             def test(hash, key)
@@ -6674,8 +6674,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
           v27:HashSubclass[class_exact:C] = GuardType v11, HashSubclass[class_exact:C]
-          v28:BasicObject = HashAref v27, v12
-          IncrCounter inline_cfunc_optimized_send_count
+          v28:BasicObject = CCallWithFrame v27, :Hash#[]@0x1038, v12
           CheckInterrupts
           Return v28
         ");
@@ -6776,7 +6775,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_hash_aset_subclass() {
+    fn test_no_optimize_hash_aset_subclass() {
         eval("
             class C < Hash; end
             def test(hash, key, val)
@@ -6800,8 +6799,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, []=@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
           v35:HashSubclass[class_exact:C] = GuardType v13, HashSubclass[class_exact:C]
-          HashAset v35, v14, v15
-          IncrCounter inline_cfunc_optimized_send_count
+          v36:BasicObject = CCallWithFrame v35, :Hash#[]=@0x1038, v14, v15
           CheckInterrupts
           Return v15
         ");
