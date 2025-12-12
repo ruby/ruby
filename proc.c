@@ -641,7 +641,8 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     if (!lid) return Qfalse;
     if (rb_numparam_id_p(lid)) {
-        return Qfalse;
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
     }
 
     GetBindingPtr(bindval, bind);
