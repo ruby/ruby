@@ -92,6 +92,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val & u8::MAX as u64) as i8),
         Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val & u16::MAX as u64) as i16),
         Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val & u32::MAX as u64) as i32),
+        Specialization::Int(val) if ty.is_subtype(types::CShape) =>
+            write!(f, "[{:p}]", printer.ptr_map.map_shape(crate::cruby::ShapeId((val & u32::MAX as u64) as u32))),
         Specialization::Int(val) if ty.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
@@ -258,6 +260,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
             Const::CDouble(v) => Self::from_double(v),
@@ -526,6 +529,10 @@ impl Type {
         if self.is_subtype(types::CUInt8) || self.is_subtype(types::CInt8) { return 1; }
         if self.is_subtype(types::CUInt16) || self.is_subtype(types::CInt16) { return 2; }
         if self.is_subtype(types::CUInt32) || self.is_subtype(types::CInt32) { return 4; }
+        if self.is_subtype(types::CShape) {
+            use crate::cruby::{SHAPE_ID_NUM_BITS, BITS_PER_BYTE};
+            return (SHAPE_ID_NUM_BITS as usize / BITS_PER_BYTE).try_into().unwrap();
+        }
         // CUInt64, CInt64, CPtr, CNull, CDouble, or anything else defaults to 8 bytes
         crate::cruby::SIZEOF_VALUE as u8
     }
