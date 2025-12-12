@@ -675,12 +675,14 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         RB_VM_LOCK();
         {
             rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
-            rb_ractor_t *r = th->ractor;
-            r->r_stdin = rb_io_prep_stdin();
-            r->r_stdout = rb_io_prep_stdout();
-            r->r_stderr = rb_io_prep_stderr();
         }
         RB_VM_UNLOCK();
+    }
+    if (th == ractor_main_th) {
+        rb_ractor_t *r = th->ractor;
+        r->r_stdin = rb_io_prep_stdin();
+        r->r_stdout = rb_io_prep_stdout();
+        r->r_stderr = rb_io_prep_stderr();
     }
 
     // Ensure that we are not joinable.
