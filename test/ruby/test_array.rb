@@ -3584,6 +3584,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal((1..67).to_a.reverse, var_0)
   end
 
+  def test_values_returns_a_new_array_containing_a_shallow_copy_of_its_values
+    arr = []
+    array = [:a, arr]
+
+    values = array.values
+
+    assert_equal(array, values)
+    refute_same(array, values)
+    assert_same(arr, values[1])
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
