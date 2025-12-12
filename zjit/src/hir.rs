@@ -5229,6 +5229,7 @@ fn unspecializable_c_call_type(flags: u32) -> bool {
 /// If a given call uses overly complex arguments, then we won't specialize.
 fn unspecializable_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
+    ((flags & VM_CALL_KW_SPLAT) != 0) ||
     ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
 }
 

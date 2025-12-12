@@ -2994,6 +2994,33 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_specialize_call_to_iseq_with_call_kwsplat() {
+        eval("
+            def foo(a:) = a
+            def test = foo(**{a: 1})
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          IncrCounter complex_arg_pass_caller_kw_splat
+          v14:BasicObject = SendWithoutBlock v6, :foo, v12 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
     fn dont_specialize_call_to_iseq_with_param_kwrest() {
         eval("
             def foo(**kwargs) = kwargs.keys
