@@ -514,6 +514,12 @@ rb_numparam_id_p(ID id)
     return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 9) << ID_SCOPE_SHIFT);
 }
 
+int
+rb_implicit_param_p(ID id)
+{
+    return id == idItImplicit || rb_numparam_id_p(id);
+}
+
 /*
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
@@ -662,9 +668,13 @@ bind_implicit_parameters(VALUE bindval)
     const rb_binding_t *bind;
     const rb_env_t *env;
 
-    // TODO: it
-
     GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+
+    if (RBOOL(get_local_variable_ptr(&env, idItImplicit, FALSE))) {
+        return rb_ary_new_from_args(1, ID2SYM(idIt));
+    }
+
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return rb_vm_env_numbered_parameters(env);
 }
@@ -683,7 +693,9 @@ bind_implicit_parameter_get(VALUE bindval, VALUE sym)
     const VALUE *ptr;
     const rb_env_t *env;
 
-    if (!lid || !rb_numparam_id_p(lid)) {
+    if (lid == idIt) lid = idItImplicit;
+
+    if (!lid || !rb_implicit_param_p(lid)) {
         rb_name_err_raise("'%1$s' is not an implicit parameter",
                           bindval, ID2SYM(lid));
     }
@@ -695,6 +707,7 @@ bind_implicit_parameter_get(VALUE bindval, VALUE sym)
         return *ptr;
     }
 
+    if (lid == idItImplicit) lid = idIt;
     rb_name_err_raise("implicit parameter '%1$s' is not defined for %2$s", bindval, ID2SYM(lid));
     UNREACHABLE_RETURN(Qundef);
 }
@@ -713,7 +726,9 @@ bind_implicit_parameter_defined_p(VALUE bindval, VALUE sym)
     const rb_binding_t *bind;
     const rb_env_t *env;
 
-    if (!lid || !rb_numparam_id_p(lid)) {
+    if (lid == idIt) lid = idItImplicit;
+
+    if (!lid || !rb_implicit_param_p(lid)) {
         rb_name_err_raise("'%1$s' is not an implicit parameter",
                           bindval, ID2SYM(lid));
     }
