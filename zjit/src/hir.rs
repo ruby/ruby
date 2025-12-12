@@ -20,6 +20,16 @@ use SendFallbackReason::*;
 mod tests;
 mod opt_tests;
 
+#[allow(unused_macros)]
+macro_rules! hir_debug_statement {
+    ($func:expr, $block:expr, $($arg:tt)*) => {
+        $func.push_debug_statement($block, format!($($arg)*))
+    };
+}
+
+#[allow(unused_imports)]
+pub(crate) use hir_debug_statement;
+
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
@@ -978,6 +988,9 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
+
+    /// Debugging statement that can be inserted into HIR for diagnostics
+    DebugStatement { message: String },
 }
 
 impl Insn {
@@ -989,7 +1002,8 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. }
+            | Insn::DebugStatement { .. } => false,
             _ => true,
         }
     }
@@ -1057,6 +1071,7 @@ impl Insn {
             Insn::BoxBool { .. } => false,
             Insn::IsBitEqual { .. } => false,
             Insn::IsA { .. } => false,
+            Insn::DebugStatement { .. } => true,
             _ => true,
         }
     }
@@ -1431,6 +1446,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
             Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
+            Insn::DebugStatement { message } => write!(f, "# {message}"),
         }
     }
 }
@@ -1797,6 +1813,10 @@ impl Function {
         id
     }
 
+    pub fn push_debug_statement(&mut self, block: BlockId, message: String) -> InsnId {
+        self.push_insn(block, Insn::DebugStatement { message })
+    }
+
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
         self.blocks[block.0].insns.push(insn_id);
@@ -1916,7 +1936,8 @@ impl Function {
                     | LoadEC
                     | LoadSelf
                     | IncrCounterPtr {..}
-                    | IncrCounter(_)) => result.clone(),
+                    | IncrCounter(_)
+                    | DebugStatement {..}) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -2129,7 +2150,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::DebugStatement { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -3848,7 +3869,8 @@ impl Function {
             | &Insn::PutSpecialObject { .. }
             | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
-            | &Insn::IncrCounterPtr { .. } =>
+            | &Insn::IncrCounterPtr { .. }
+            | &Insn::DebugStatement { .. } =>
                 {}
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
@@ -4581,7 +4603,8 @@ impl Function {
             | Insn::GetSpecialNumber { .. }
             | Insn::GetSpecialSymbol { .. }
             | Insn::GetLocal { .. }
-            | Insn::StoreField { .. } => {
+            | Insn::StoreField { .. }
+            | Insn::DebugStatement { .. } => {
                 Ok(())
             }
             // Instructions with 1 Ruby object operand
