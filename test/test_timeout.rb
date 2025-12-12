@@ -427,9 +427,9 @@ class TestTimeout < Test::Unit::TestCase
 
     rd, wr = IO.pipe
 
-    signal = Signal.list["USR1"] ? :USR1 : :TERM
+    signal = :TERM
 
-    trap(signal) do
+    original_handler = trap(signal) do
       begin
         Timeout.timeout(0.1) do
           sleep 1
@@ -444,9 +444,13 @@ class TestTimeout < Test::Unit::TestCase
       end
     end
 
-    Process.kill signal, Process.pid
+    begin
+      Process.kill signal, Process.pid
 
-    assert_equal "OK", rd.read
-    rd.close
+      assert_equal "OK", rd.read
+      rd.close
+    ensure
+      trap(signal, original_handler)
+    end
   end
 end
