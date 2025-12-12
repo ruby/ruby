@@ -1379,6 +1379,17 @@ rb_yield(VALUE val)
     }
 }
 
+VALUE
+rb_ec_yield(rb_execution_context_t *ec, VALUE val)
+{
+    if (UNDEF_P(val)) {
+        return vm_yield(ec, 0, NULL, RB_NO_KEYWORDS);
+    }
+    else {
+        return vm_yield(ec, 1, &val, RB_NO_KEYWORDS);
+    }
+}
+
 #undef rb_yield_values
 VALUE
 rb_yield_values(int n, ...)

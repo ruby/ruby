@@ -1,5 +1,6 @@
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
+#include "ruby/io.h"
 #include "ruby/fiber/scheduler.h"
 
 /*
@@ -24,6 +25,7 @@
  */
 
 struct blocking_state {
+    int notify_descriptor;
     volatile int interrupted;
 };
 
@@ -39,14 +41,14 @@ blocking_operation(void *argument)
 {
     struct blocking_state *blocking_state = (struct blocking_state *)argument;
 
-    while (true) {
-        struct timeval tv = {1, 0};  // 1 second timeout.
+    write(blocking_state->notify_descriptor, "x", 1);
 
+    while (!blocking_state->interrupted) {
+        struct timeval tv = {1, 0};  // 1 second timeout.
         int result = select(0, NULL, NULL, NULL, &tv);
 
         if (result == -1 && errno == EINTR) {
             blocking_state->interrupted = 1;
-            return NULL;
         }
 
         // Otherwise, timeout -> loop again.
@@ -56,9 +58,10 @@ blocking_operation(void *argument)
 }
 
 static VALUE
-scheduler_blocking_loop(VALUE self)
+scheduler_blocking_loop(VALUE self, VALUE notify)
 {
     struct blocking_state blocking_state = {
+        .notify_descriptor = rb_io_descriptor(notify),
         .interrupted = 0,
     };
 
@@ -84,5 +87,5 @@ Init_scheduler(void)
     VALUE mBug = rb_define_module("Bug");
     VALUE mScheduler = rb_define_module_under(mBug, "Scheduler");
 
-    rb_define_module_function(mScheduler, "blocking_loop", scheduler_blocking_loop, 0);
+    rb_define_module_function(mScheduler, "blocking_loop", scheduler_blocking_loop, 1);
 }

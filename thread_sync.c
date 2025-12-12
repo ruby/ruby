@@ -650,7 +650,6 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     return rb_mut_sleep(GET_EC(), self, timeout);
 }
 
-
 VALUE
 rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
 {
@@ -658,6 +657,12 @@ rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
     mutex_args_init(&args, self);
     do_mutex_lock(&args, 1);
     return rb_ec_ensure(args.ec, func, arg, do_mutex_unlock_safe, (VALUE)&args);
+}
+
+static VALUE
+do_ec_yield(VALUE _ec)
+{
+    return rb_ec_yield((rb_execution_context_t *)_ec, Qundef);
 }
 
 VALUE
@@ -669,7 +674,7 @@ rb_mut_synchronize(rb_execution_context_t *ec, VALUE self)
         .ec = ec,
     };
     do_mutex_lock(&args, 1);
-    return rb_ec_ensure(args.ec, rb_yield, Qundef, do_mutex_unlock_safe, (VALUE)&args);
+    return rb_ec_ensure(args.ec, do_ec_yield, (VALUE)ec, do_mutex_unlock_safe, (VALUE)&args);
 }
 
 void
@@ -1560,21 +1565,8 @@ condvar_alloc(VALUE klass)
     return obj;
 }
 
-/*
- * Document-method: ConditionVariable::new
- *
- * Creates a new condition variable instance.
- */
-
-static VALUE
-rb_condvar_initialize(VALUE self)
-{
-    struct rb_condvar *cv = condvar_ptr(self);
-    ccan_list_head_init(&cv->waitq);
-    return self;
-}
-
 struct sleep_call {
+    rb_execution_context_t *ec;
     VALUE mutex;
     VALUE timeout;
 };
@@ -1585,65 +1577,44 @@ static VALUE
 do_sleep(VALUE args)
 {
     struct sleep_call *p = (struct sleep_call *)args;
-    return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
+    if (CLASS_OF(p->mutex) == rb_cMutex) {
+        return rb_mut_sleep(p->ec, p->mutex, p->timeout);
+    }
+    else {
+        return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
+    }
 }
 
-/*
- * Document-method: Thread::ConditionVariable#wait
- * call-seq: wait(mutex, timeout=nil)
- *
- * Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
- *
- * If +timeout+ is given, this method returns after +timeout+ seconds passed,
- * even if no other thread doesn't signal.
- *
- * This method may wake up spuriously due to underlying implementation details.
- *
- * Returns the slept result on +mutex+.
- */
-
 static VALUE
-rb_condvar_wait(int argc, VALUE *argv, VALUE self)
+rb_condvar_wait(rb_execution_context_t *ec, VALUE self, VALUE mutex, VALUE timeout)
 {
-    rb_execution_context_t *ec = GET_EC();
-
     struct rb_condvar *cv = condvar_ptr(self);
-    struct sleep_call args;
-
-    rb_scan_args(argc, argv, "11", &args.mutex, &args.timeout);
+    struct sleep_call args = {
+        .ec = ec,
+        .mutex = mutex,
+        .timeout = timeout,
+    };
 
     struct sync_waiter sync_waiter = {
-        .self = args.mutex,
+        .self = mutex,
         .th = ec->thread_ptr,
         .fiber = nonblocking_fiber(ec->fiber_ptr)
     };
 
     ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
-    return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
+    return rb_ec_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 
-/*
- * Document-method: Thread::ConditionVariable#signal
- *
- * Wakes up the first thread in line waiting for this lock.
- */
-
 static VALUE
-rb_condvar_signal(VALUE self)
+rb_condvar_signal(rb_execution_context_t *ec, VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
     wakeup_one(&cv->waitq);
     return self;
 }
 
-/*
- * Document-method: Thread::ConditionVariable#broadcast
- *
- * Wakes up all threads waiting for this lock.
- */
-
 static VALUE
-rb_condvar_broadcast(VALUE self)
+rb_condvar_broadcast(rb_execution_context_t *ec, VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
     wakeup_all(&cv->waitq);
@@ -1725,13 +1696,6 @@ Init_thread_sync(void)
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
     id_sleep = rb_intern("sleep");
-
-    rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
-    rb_undef_method(rb_cConditionVariable, "initialize_copy");
-    rb_define_method(rb_cConditionVariable, "marshal_dump", undumpable, 0);
-    rb_define_method(rb_cConditionVariable, "wait", rb_condvar_wait, -1);
-    rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
-    rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
     rb_provide("thread.rb");
 }

@@ -26,23 +26,20 @@ class TestSchedulerInterruptHandling < Test::Unit::TestCase
           # Yield to the scheduler:
           sleep(0)
 
-          output.puts "ready"
-          Bug::Scheduler.blocking_loop
+          Bug::Scheduler.blocking_loop(output)
         end
       end
 
       output.close
-      assert_equal "ready\n", input.gets
+      assert_equal "x", input.read(1)
 
-      sleep 0.1 # Ensure the child is in the blocking loop
-      # $stderr.puts "Sending interrupt"
       Process.kill(:INT, pid)
 
       reaper = Thread.new do
         Process.waitpid2(pid)
       end
 
-      unless reaper.join(1)
+      unless reaper.join(10)
         Process.kill(:KILL, pid)
       end
 
