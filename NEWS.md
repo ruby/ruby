@@ -61,8 +61,13 @@ Note: We're only listing outstanding class updates.
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject
-      to handle numbered parameters.  [[Bug #21049]]
+      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
+      `Binding#local_variable_defined?` reject to handle numbered parameters.
+      [[Bug #21049]]
+
+    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
+      `Binding#implicit_parameter_defined?` have been added to access
+      numbered parameters and "it" parameter. [[Bug #21049]]
 
 * File
 
