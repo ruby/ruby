@@ -626,6 +626,15 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwsplat
+    assert_compiles '3', %q{
+      def test(a:) = a
+      def entry = test(**{a: 3})
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_kwrest
     assert_compiles '{a: 3}', %q{
       def test(**kwargs) = kwargs
