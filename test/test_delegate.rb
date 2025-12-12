@@ -390,4 +390,20 @@ class TestDelegateClass < Test::Unit::TestCase
     a = DelegateClass(k).new(k.new)
     assert_equal([1, 0], a.test(1, k: 0))
   end
+
+  def test_delegate_class_can_be_used_in_ractors
+    omit "no Ractor#value" unless defined?(Ractor) && Ractor.method_defined?(:value)
+    require_path = File.expand_path(File.join(__dir__, "..", "lib", "delegate.rb"))
+    raise "file doesn't exist: #{require_path}" unless File.exist?(require_path)
+    assert_ractor <<-RUBY
+      require "#{require_path}"
+      class MyClass < DelegateClass(Array);end
+      values = 2.times.map do
+        Ractor.new do
+          MyClass.new([1,2,3]).at(0)
+        end
+      end.map(&:value)
+      assert_equal [1,1], values
+    RUBY
+  end
 end
