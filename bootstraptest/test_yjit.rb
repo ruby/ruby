@@ -5435,3 +5435,18 @@ assert_normal_exit %q{
   alias some_method binding # induce environment escape
   test_body(:symbol)
 }
+
+# regression test for missing check in identity method inlining
+assert_normal_exit %q{
+  # Use dead code (if false) to create a local
+  # without initialization instructions.
+  def foo(a)
+    if false
+      x = nil
+    end
+    x
+  end
+  def test = foo(1)
+  test
+  test
+}
