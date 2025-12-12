@@ -148,4 +148,48 @@ class Thread
       Primitive.rb_mut_sleep(timeout)
     end
   end
+
+  class ConditionVariable
+    # Document-method: ConditionVariable::new
+    #
+    # Creates a new condition variable instance.
+    def initialize
+    end
+
+    undef_method :initialize_copy
+
+    # :nodoc:
+    def marshal_dump
+      raise TypeError, "can't dump #{self.class}"
+    end
+
+    # Document-method: Thread::ConditionVariable#signal
+    #
+    # Wakes up the first thread in line waiting for this lock.
+    def signal
+      Primitive.rb_condvar_signal
+    end
+
+    # Document-method: Thread::ConditionVariable#broadcast
+    #
+    # Wakes up all threads waiting for this lock.
+    def broadcast
+      Primitive.rb_condvar_broadcast
+    end
+
+    # Document-method: Thread::ConditionVariable#wait
+    # call-seq: wait(mutex, timeout=nil)
+    #
+    # Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
+    #
+    # If +timeout+ is given, this method returns after +timeout+ seconds passed,
+    # even if no other thread doesn't signal.
+    #
+    # This method may wake up spuriously due to underlying implementation details.
+    #
+    # Returns the slept result on +mutex+.
+    def wait(mutex, timeout=nil)
+      Primitive.rb_condvar_wait(mutex, timeout)
+    end
+  end
 end
