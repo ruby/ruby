@@ -409,7 +409,7 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
-get_local_variable_ptr(const rb_env_t **envp, ID lid)
+get_local_variable_ptr(const rb_env_t **envp, ID lid, bool search_outer)
 {
     const rb_env_t *env = *envp;
     do {
@@ -446,7 +446,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             *envp = NULL;
             return NULL;
         }
-    } while ((env = rb_vm_env_prev_env(env)) != NULL);
+    } while (search_outer && (env = rb_vm_env_prev_env(env)) != NULL);
 
     *envp = NULL;
     return NULL;
@@ -548,7 +548,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+    if ((ptr = get_local_variable_ptr(&env, lid, TRUE)) != NULL) {
         return *ptr;
     }
 
@@ -600,7 +600,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
+    if ((ptr = get_local_variable_ptr(&env, lid, TRUE)) == NULL) {
         /* not found. create new env */
         ptr = rb_binding_add_dynavars(bindval, bind, 1, &lid);
         env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -647,7 +647,80 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    return RBOOL(get_local_variable_ptr(&env, lid));
+    return RBOOL(get_local_variable_ptr(&env, lid, TRUE));
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameters -> Array
+ *
+ *  TODO
+ */
+static VALUE
+bind_implicit_parameters(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    // TODO: it
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return rb_vm_env_numbered_parameters(env);
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameter_get(symbol) -> obj
+ *
+ *  TODO
+ */
+static VALUE
+bind_implicit_parameter_get(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const VALUE *ptr;
+    const rb_env_t *env;
+
+    if (!lid || !rb_numparam_id_p(lid)) {
+        rb_name_err_raise("'%1$s' is not an implicit parameter",
+                          bindval, ID2SYM(lid));
+    }
+
+    GetBindingPtr(bindval, bind);
+
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    if ((ptr = get_local_variable_ptr(&env, lid, FALSE)) != NULL) {
+        return *ptr;
+    }
+
+    rb_name_err_raise("implicit parameter '%1$s' is not defined for %2$s", bindval, ID2SYM(lid));
+    UNREACHABLE_RETURN(Qundef);
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameter_defined?(symbol) -> obj
+ *
+ *  TODO
+ *
+ */
+static VALUE
+bind_implicit_parameter_defined_p(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    if (!lid || !rb_numparam_id_p(lid)) {
+        rb_name_err_raise("'%1$s' is not an implicit parameter",
+                          bindval, ID2SYM(lid));
+    }
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return RBOOL(get_local_variable_ptr(&env, lid, FALSE));
 }
 
 /*
@@ -4607,6 +4680,9 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
+    rb_define_method(rb_cBinding, "implicit_parameters", bind_implicit_parameters, 0);
+    rb_define_method(rb_cBinding, "implicit_parameter_get", bind_implicit_parameter_get, 1);
+    rb_define_method(rb_cBinding, "implicit_parameter_defined?", bind_implicit_parameter_defined_p, 1);
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
