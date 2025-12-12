@@ -272,10 +272,18 @@ def package(vcs, rev, destdir, tmp = nil)
   when /\A(\d+)\.(\d+)\.(\d+)-(preview|rc)(\d+)/
     prerelease = true
     tag = "#{$4}#{$5}"
-    url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
+    if Integer($1) >= 4
+      url = vcs.tag("v#{rev}")
+    else
+      url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
+    end
   when /\A(\d+)\.(\d+)\.(\d+)\z/
     tag = ""
-    url = vcs.tag("v#{$1}_#{$2}_#{$3}")
+    if Integer($1) >= 4
+      url = vcs.tag("v#{rev}")
+    else
+      url = vcs.tag("v#{$1}_#{$2}_#{$3}")
+    end
   when /\A(\d+)\.(\d+)\z/
     url = vcs.branch("ruby_#{rev.tr('.', '_')}")
   else
