@@ -640,6 +640,9 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) return Qfalse;
+    if (rb_numparam_id_p(lid)) {
+        return Qfalse;
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
