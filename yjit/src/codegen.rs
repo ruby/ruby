@@ -2518,6 +2518,7 @@ fn gen_setlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Post condition: The type of of the set local is updated in the Context.
     let value_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Fallback because of write barrier
@@ -2539,6 +2540,11 @@ fn gen_setlocal_generic(
         );
         asm.stack_pop(1);
 
+        // Set local type in the context
+        if level == 0 {
+            let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
+            asm.ctx.set_local_type(local_idx, value_type);
+        }
         return Some(KeepCompiling);
     }
 
@@ -2591,6 +2597,7 @@ fn gen_setlocal_generic(
         );
     }
 
+    // Set local type in the context
     if level == 0 {
         let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
         asm.ctx.set_local_type(local_idx, value_type);
