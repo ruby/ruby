@@ -2,10 +2,15 @@
 # :markup: markdown
 
 begin
-  require "ruby_parser"
+  require "sexp"
 rescue LoadError
-  warn(%q{Error: Unable to load ruby_parser. Add `gem "ruby_parser"` to your Gemfile.})
+  warn(%q{Error: Unable to load sexp. Add `gem "sexp"` to your Gemfile.})
   exit(1)
+end
+
+class RubyParser # :nodoc:
+  class SyntaxError < RuntimeError # :nodoc:
+  end
 end
 
 module Prism
