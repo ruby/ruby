@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 module RubyVersion
   def self.tag(version)
     major_version = Integer(version.split('.', 2)[0])
@@ -33,5 +35,18 @@ module RubyVersion
         raise "it doesn't know what is the previous version of '#{version}'"
       end
     end
+  end
+end
+
+if __FILE__ == $0
+  case ARGV[0]
+  when "tag"
+    print RubyVersion.tag(ARGV[1])
+  when "previous"
+    print RubyVersion.previous(ARGV[1])
+  when "previous-tag"
+    print RubyVersion.tag(RubyVersion.previous(ARGV[1]))
+  else
+    "#{$0}: unexpected command #{ARGV[0].inspect}"
   end
 end

@@ -49,9 +49,9 @@ jobs:
 
       - name: Create a release on GitHub
         run: |
-          RELEASE_TAG=$(echo v${{ env.RUBY_VERSION }} | sed 's/\./_/g')
+          RELEASE_TAG=$(ruby tool/ruby-version.rb tag "${{ env.RUBY_VERSION }}")
           echo $RELEASE_TAG
-          PREVIOUS_RELEASE_TAG=$(echo $RELEASE_TAG | awk 'BEGIN {FS="_"; OFS="_"}{ $NF=$NF-1; print }')
+          PREVIOUS_RELEASE_TAG=$(ruby tool/ruby-version.rb previous-tag "${{ env.RUBY_VERSION }}")
           echo $PREVIOUS_RELEASE_TAG
           tool/gen-github-release.rb $PREVIOUS_RELEASE_TAG $RELEASE_TAG --no-dry-run
         env:
