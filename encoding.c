@@ -65,6 +65,7 @@ static VALUE rb_encoding_list;
 struct rb_encoding_entry {
     rb_atomic_t loaded;
     const char *name;
+    VALUE name_str;
     rb_encoding *enc;
     rb_encoding *base;
 };
@@ -381,7 +382,7 @@ enc_load_from_base(struct enc_table *enc_table, int index, rb_encoding *base_enc
 }
 
 static int
-enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_encoding *base_encoding)
+enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_encoding *base_encoding, VALUE name_str)
 {
     ASSERT_vm_locking();
 
@@ -396,6 +397,7 @@ enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_enc
     RUBY_ASSERT(valid_encoding_name_p(name));
 
     ent->name = name = strdup(name);
+    ent->name_str = name_str;
 
     encoding = ZALLOC(rb_raw_encoding);
     encoding->name = name;
@@ -427,9 +429,11 @@ enc_register(struct enc_table *enc_table, const char *name, rb_encoding *encodin
     if (!valid_encoding_name_p(name)) return -1;
 
     int index = enc_table->count;
+    VALUE name_str = rb_fstring_cstr(name);
+    rb_gc_register_mark_object(name_str);
 
     enc_table->count = enc_table_expand(enc_table, index + 1);
-    return enc_register_at(enc_table, index, name, encoding);
+    return enc_register_at(enc_table, index, name, encoding, name_str);
 }
 
 static void set_encoding_const(const char *, rb_encoding *);
@@ -758,7 +762,7 @@ rb_enc_init(struct enc_table *enc_table)
         enc_table->names = st_init_strcasetable_with_size(ENCODING_LIST_CAPA);
     }
 #define OnigEncodingASCII_8BIT OnigEncodingASCII
-#define ENC_REGISTER(enc) enc_register_at(enc_table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
+#define ENC_REGISTER(enc) enc_register_at(enc_table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc, 0)
     ENC_REGISTER(ASCII_8BIT);
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
@@ -767,7 +771,7 @@ rb_enc_init(struct enc_table *enc_table)
     global_enc_us_ascii = enc_table->list[ENCINDEX_US_ASCII].enc;
 #undef ENC_REGISTER
 #undef OnigEncodingASCII_8BIT
-#define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL)
+#define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL, 0)
     ENCDB_REGISTER("UTF-16BE", UTF_16BE);
     ENCDB_REGISTER("UTF-16LE", UTF_16LE);
     ENCDB_REGISTER("UTF-32BE", UTF_32BE);
@@ -1368,7 +1372,14 @@ enc_inspect(VALUE self)
 static VALUE
 enc_name(VALUE self)
 {
-    return rb_fstring_cstr(rb_enc_name((rb_encoding*)RTYPEDDATA_GET_DATA(self)));
+    rb_encoding *enc = RTYPEDDATA_GET_DATA(self);
+    int index = rb_enc_to_index(enc);
+    RUBY_ASSERT(rb_enc_from_index(index) == enc);
+
+    VALUE name = global_enc_table.list[index].name_str;
+    RUBY_ASSERT(name);
+    RUBY_ASSERT(name == rb_fstring_cstr(rb_enc_name(enc)));
+    return name;
 }
 
 static int
@@ -2034,6 +2045,10 @@ Init_Encoding(void)
 
     for (i = 0; i < enc_table->count; ++i) {
         rb_ary_push(list, enc_new(enc_table->list[i].enc));
+
+        VALUE name_str = rb_fstring_cstr(enc_table->list[i].name);
+        rb_gc_register_mark_object(name_str);
+        enc_table->list[i].name_str = name_str;
     }
 
     rb_marshal_define_compat(rb_cEncoding, Qnil, 0, enc_m_loader);
