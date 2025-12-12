@@ -169,11 +169,11 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     st_data_t val;
     if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)iseq, &val)) {
         hook_list = (rb_hook_list_t*)val;
-        RUBY_ASSERT(hook_list->type == hook_list_type_iseq);
+        RUBY_ASSERT(hook_list->type == hook_list_type_targeted_iseq);
     }
     else if (create) {
         hook_list = RB_ZALLOC(rb_hook_list_t);
-        hook_list->type = hook_list_type_iseq;
+        hook_list->type = hook_list_type_targeted_iseq;
         st_insert(rb_ractor_targeted_hooks(r), (st_data_t)iseq, (st_data_t)hook_list);
     }
     return hook_list;

@@ -4585,6 +4585,7 @@ Init_BareVM(void)
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
     vm->unused_block_warning_table = set_init_numtable();
+    vm->global_hooks.type = hook_list_type_global;
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);

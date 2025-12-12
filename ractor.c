@@ -212,12 +212,12 @@ mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 {
     rb_hook_list_t *hook_list = (rb_hook_list_t*)value;
 
-    if (hook_list->type == hook_list_type_iseq) {
+    if (hook_list->type == hook_list_type_targeted_iseq) {
         rb_gc_mark((VALUE)key);
     }
     else {
         rb_method_definition_t *def = (rb_method_definition_t*)key;
-        RUBY_ASSERT(hook_list->type == hook_list_type_def);
+        RUBY_ASSERT(hook_list->type == hook_list_type_targeted_def);
         rb_gc_mark(def->body.bmethod.proc);
     }
     rb_hook_list_mark(hook_list);

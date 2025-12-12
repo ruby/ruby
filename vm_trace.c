@@ -291,8 +291,8 @@ static bool
 hook_list_targeted_p(rb_hook_list_t *list)
 {
     switch (list->type) {
-        case hook_list_type_iseq:
-        case hook_list_type_def:
+        case hook_list_type_targeted_iseq:
+        case hook_list_type_targeted_def:
             return true;
         default:
             return false;
@@ -1352,11 +1352,11 @@ rb_method_def_local_hooks(rb_method_definition_t *def, rb_ractor_t *cr, bool cre
     rb_hook_list_t *hook_list = NULL;
     if (st_lookup(rb_ractor_targeted_hooks(cr), (st_data_t)def, &val)) {
         hook_list = (rb_hook_list_t*)val;
-        RUBY_ASSERT(hook_list->type == hook_list_type_def);
+        RUBY_ASSERT(hook_list->type == hook_list_type_targeted_def);
     }
     else if (create) {
         hook_list = ZALLOC(rb_hook_list_t);
-        hook_list->type = hook_list_type_def;
+        hook_list->type = hook_list_type_targeted_def;
         st_insert(cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
     }
     return hook_list;
@@ -1506,7 +1506,7 @@ rb_tracepoint_disable(VALUE tpval)
     return Qundef;
 }
 
-// connect a targeted (ie: "local") tracepoint to the hook list for the iseq or method
+// connect a targeted (ie: "local") tracepoint to the hook list for the method
 // ex: tp.enable(target: method(:puts))
 void
 rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line)
@@ -1755,7 +1755,6 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
     VALUE stat = rb_hash_new();
 
     tracepoint_stat_event_hooks(stat, vm->self, rb_ec_ractor_hooks(ec)->hooks);
-    /* TODO: thread local hooks */
 
     return stat;
 }

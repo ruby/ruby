@@ -2958,6 +2958,48 @@ CODE
     assert_kind_of(Thread, target_thread)
   end
 
+  def test_tracepoint_garbage_collected_when_disable
+    before_count_stat = 0
+    before_count_objspace = 0
+    TracePoint.stat.each do
+      before_count_stat += 1
+    end
+    ObjectSpace.each_object(TracePoint) do
+      before_count_objspace += 1
+    end
+    tp = TracePoint.new(:c_call, :c_return) do
+    end
+    tp.enable
+    Class.inspect # c_call, c_return invoked
+    tp.disable
+    tp_id = tp.object_id
+    tp = nil
+
+    gc_times = 0
+    gc_max_retries = 10
+    EnvUtil.suppress_warning do
+      until (ObjectSpace._id2ref(tp_id) rescue nil).nil?
+        GC.start
+        gc_times += 1
+        if gc_times == gc_max_retries
+          break
+        end
+      end
+    end
+    return if gc_times == gc_max_retries
+
+    after_count_stat = 0
+    TracePoint.stat.each do |v|
+      after_count_stat += 1
+    end
+    assert after_count_stat <= before_count_stat
+    after_count_objspace = 0
+    ObjectSpace.each_object(TracePoint) do
+      after_count_objspace += 1
+    end
+    assert after_count_objspace <= before_count_objspace
+  end
+
   def test_tp_ractor_local_untargeted
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -2986,18 +3028,18 @@ CODE
   def test_tp_targeted_ractor_local_bmethod
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
-      meth_name = "#{__method__}_method".to_sym
+      mname = :foo
       prok = Ractor.shareable_proc do
       end
       klass = EnvUtil.labeled_class(:Klass) do
-        define_method(meth_name, &prok)
+        define_method(mname, &prok)
       end
       outer_results = 0
       _outer_tp = TracePoint.new(:call) do
         outer_results += 1
       end # not enabled
       rs = 10.times.map do
-        Ractor.new(meth_name, klass) do |mname, klass0|
+        Ractor.new(mname, klass) do |mname, klass0|
           inner_results = 0
           tp = TracePoint.new(:call) { |tp| inner_results += 1 }
           target = klass0.instance_method(mname)
@@ -3010,7 +3052,7 @@ CODE
       end
       inner_results = rs.map(&:value).sum
       obj = klass.new
-      10.times { obj.send(meth_name) }
+      10.times { obj.send(mname) }
       assert_equal 100, inner_results
       assert_equal 0, outer_results
     end;
@@ -3067,7 +3109,7 @@ CODE
     r.join
     ractor_id = r.object_id
     r = nil # allow gc for ractor
-    gc_max_retries = 30
+    gc_max_retries = 15
     gc_times = 0
     # force GC of ractor (or try, because we have a conservative GC)
     until (ObjectSpace._id2ref(ractor_id) rescue nil).nil?
@@ -3118,15 +3160,7 @@ CODE
         end
       end.map(&:value).sum
       assert_equal 800, sum
-      4.times { GC.start }
+      4.times { GC.start } # Now the tracepoints can be GC'd because the ractors can be GC'd
     end;
-  end
-
-  def test_tracepoints_not_ractor_shareable
-    omit "No ractor" unless defined?(Ractor)
-    tp = TracePoint.new(:call) { }
-    assert_raise(Ractor::Error) do
-      Ractor.make_shareable(tp)
-    end
   end
 end

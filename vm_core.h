@@ -652,8 +652,9 @@ void rb_objspace_call_finalizer(void);
 
 enum rb_hook_list_type {
     hook_list_type_ractor_local,
-    hook_list_type_iseq,
-    hook_list_type_def
+    hook_list_type_targeted_iseq,
+    hook_list_type_targeted_def, // C function
+    hook_list_type_global
 };
 
 typedef struct rb_hook_list_struct {

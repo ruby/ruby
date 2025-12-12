@@ -89,7 +89,9 @@ class TracePoint
   #     end
   #     $tp.lineno #=> access from outside (RuntimeError)
   #
-  # Access from other threads or fibers is also forbidden.
+  # Access from other ractors, threads or fibers is forbidden. TracePoints are active
+  # per-ractor so if you enable a TracePoint in one ractor, other ractors will not be
+  # affected.
   #
   def self.new(*events)
     Primitive.attr! :use_block
