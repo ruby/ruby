@@ -92,6 +92,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val & u8::MAX as u64) as i8),
         Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val & u16::MAX as u64) as i16),
         Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val & u32::MAX as u64) as i32),
+        Specialization::Int(val) if ty.is_subtype(types::CShape) =>
+            write!(f, "[{:p}]", printer.ptr_map.map_shape(crate::cruby::ShapeId((val & u32::MAX as u64) as u32))),
         Specialization::Int(val) if ty.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
@@ -258,6 +260,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::Shape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
             Const::CDouble(v) => Self::from_double(v),

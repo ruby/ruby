@@ -3813,8 +3813,8 @@ mod hir_opt_tests {
           v20:HeapBasicObject = GuardShape v19, 0x1000
           StoreField v20, :@foo@0x1001, v10
           WriteBarrier v20, v10
-          v23:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v20, :_shape_id@0x1002, v23
+          v23:CShape[0x1002] = Const Shape(0x1002)
+          StoreField v20, :_shape_id@0x1003, v23
           CheckInterrupts
           Return v10
         ");
@@ -3845,16 +3845,16 @@ mod hir_opt_tests {
           v26:HeapBasicObject = GuardShape v25, 0x1000
           StoreField v26, :@foo@0x1001, v10
           WriteBarrier v26, v10
-          v29:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v26, :_shape_id@0x1002, v29
+          v29:CShape[0x1002] = Const Shape(0x1002)
+          StoreField v26, :_shape_id@0x1003, v29
           v16:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           v31:HeapBasicObject = GuardType v6, HeapBasicObject
-          v32:HeapBasicObject = GuardShape v31, 0x1003
+          v32:HeapBasicObject = GuardShape v31, 0x1002
           StoreField v32, :@bar@0x1004, v16
           WriteBarrier v32, v16
-          v35:CUInt32[4194312] = Const CUInt32(4194312)
-          StoreField v32, :_shape_id@0x1002, v35
+          v35:CShape[0x1005] = Const Shape(0x1005)
+          StoreField v32, :_shape_id@0x1003, v35
           CheckInterrupts
           Return v16
         ");
@@ -6095,8 +6095,8 @@ mod hir_opt_tests {
           v29:HeapObject[class_exact:C] = GuardShape v26, 0x1038
           StoreField v29, :@foo@0x1039, v16
           WriteBarrier v29, v16
-          v32:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v29, :_shape_id@0x103a, v32
+          v32:CShape[0x103a] = Const Shape(0x103a)
+          StoreField v29, :_shape_id@0x103b, v32
           CheckInterrupts
           Return v16
         ");
@@ -6130,8 +6130,8 @@ mod hir_opt_tests {
           v29:HeapObject[class_exact:C] = GuardShape v26, 0x1038
           StoreField v29, :@foo@0x1039, v16
           WriteBarrier v29, v16
-          v32:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v29, :_shape_id@0x103a, v32
+          v32:CShape[0x103a] = Const Shape(0x103a)
+          StoreField v29, :_shape_id@0x103b, v32
           CheckInterrupts
           Return v16
         ");
@@ -9514,8 +9514,8 @@ mod hir_opt_tests {
          v57:HeapBasicObject = GuardShape v56, 0x1000
          StoreField v57, :@formatted@0x1001, v39
          WriteBarrier v57, v39
-         v60:CUInt32[4194311] = Const CUInt32(4194311)
-         StoreField v57, :_shape_id@0x1002, v60
+         v60:CShape[0x1002] = Const Shape(0x1002)
+         StoreField v57, :_shape_id@0x1003, v60
          v45:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
          PatchPoint NoSingletonClass(Class@0x1010)
