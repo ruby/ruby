@@ -170,7 +170,7 @@ eom
     if /\.0(?:-\w+)?\z/ =~ ver
       # preview, rc, or first release
       entry <<= <<eom
-  tag: #{RubyVersion.version_tag(ver)}
+  tag: #{RubyVersion.tag(ver)}
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}
