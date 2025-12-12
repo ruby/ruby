@@ -650,7 +650,6 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     return rb_mut_sleep(GET_EC(), self, timeout);
 }
 
-
 VALUE
 rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
 {
@@ -658,6 +657,12 @@ rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
     mutex_args_init(&args, self);
     do_mutex_lock(&args, 1);
     return rb_ec_ensure(args.ec, func, arg, do_mutex_unlock_safe, (VALUE)&args);
+}
+
+static VALUE
+do_ec_yield(VALUE _ec)
+{
+    return rb_ec_yield((rb_execution_context_t *)_ec, Qundef);
 }
 
 VALUE
@@ -669,7 +674,7 @@ rb_mut_synchronize(rb_execution_context_t *ec, VALUE self)
         .ec = ec,
     };
     do_mutex_lock(&args, 1);
-    return rb_ec_ensure(args.ec, rb_yield, Qundef, do_mutex_unlock_safe, (VALUE)&args);
+    return rb_ec_ensure(args.ec, do_ec_yield, (VALUE)ec, do_mutex_unlock_safe, (VALUE)&args);
 }
 
 void
