@@ -1078,12 +1078,12 @@ timer_thread_polling(rb_vm_t *vm)
 
     switch (r) {
       case 0: // timeout
-        rb_native_mutex_lock(&vm->ractor.sched.lock);
+        ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
             timer_thread_check_timeslice(vm);
         }
-        rb_native_mutex_unlock(&vm->ractor.sched.lock);
+        ractor_sched_unlock(vm, NULL);
         break;
 
       case -1: // error
