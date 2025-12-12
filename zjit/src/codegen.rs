@@ -1144,23 +1144,20 @@ fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type)
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
 
-        // Load both operands BEFORE creating label - ensures clean register state
-        // This is equivalent to YJIT's spill_regs() before conditional logic
-        let recv_reg = asm.load(recv);
-        let val_reg = asm.load(val);
-
-        // Now create label and do conditional tests
         let skip_wb = asm.new_label("skip_wb");
 
-        // If value is an immediate, skip write barrier
-        asm.test(val_reg, (RUBY_IMMEDIATE_MASK as u64).into());
+        // Test value WITHOUT loading it first - this avoids creating VRegs with
+        // ambiguous live ranges across the conditional control flow
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(skip_wb.clone());
 
-        // If value is false, skip write barrier (nil is also immediate)
-        asm.cmp(val_reg, Qfalse.into());
+        asm.cmp(val, Qfalse.into());
         asm.je(skip_wb.clone());
 
-        // Call write barrier with already-loaded operands
+        // Only load operands here, right before the ccall
+        // This ensures their live ranges don't extend across the conditional jumps
+        let recv_reg = asm.load(recv);
+        let val_reg = asm.load(val);
         asm_ccall!(asm, rb_gc_writebarrier, recv_reg, val_reg);
 
         asm.write_label(skip_wb);
