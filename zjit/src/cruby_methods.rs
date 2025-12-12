@@ -350,18 +350,30 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    if let &[key] = args  {
+    let &[key] = args else { return None; };
+
+    // Only optimize exact Hash, not subclasses
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
         let result = fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state });
-        return Some(result);
+        Some(result)
+    } else {
+        None
     }
-    None
 }
 
 fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[key, val] = args else { return None; };
-    let _ = fun.push_insn(block, hir::Insn::HashAset { hash: recv, key, val, state });
-    // Hash#[]= returns the value, not the hash
-    Some(val)
+
+    // Only optimize exact Hash, not subclasses
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        let _ = fun.push_insn(block, hir::Insn::HashAset { hash: recv, key, val, state });
+        // Hash#[]= returns the value, not the hash
+        Some(val)
+    } else {
+        None
+    }
 }
 
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
