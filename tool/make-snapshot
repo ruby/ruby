@@ -274,10 +274,6 @@ def package(vcs, rev, destdir, tmp = nil)
     prerelease = true
     tag = "#{$4}#{$5}"
     url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
-  when /\A(.*)\.(.*)\.(.*)-p(\d+)/
-    patchlevel = true
-    tag = "p#{$4}"
-    url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}")
   when /\A(\d+)\.(\d+)(?:\.(\d+))?\z/
     if $3 && ($1 > "2" || $1 == "2" && $2 >= "1")
       patchlevel = true
