@@ -529,7 +529,10 @@ impl Type {
         if self.is_subtype(types::CUInt8) || self.is_subtype(types::CInt8) { return 1; }
         if self.is_subtype(types::CUInt16) || self.is_subtype(types::CInt16) { return 2; }
         if self.is_subtype(types::CUInt32) || self.is_subtype(types::CInt32) { return 4; }
-        if self.is_subtype(types::Shape) { return SHAPE_ID_NUM_BITS / BITS_PER_BYTE; }
+        if self.is_subtype(types::CShape) {
+            use crate::cruby::{SHAPE_ID_NUM_BITS, BITS_PER_BYTE};
+            return (SHAPE_ID_NUM_BITS as usize / BITS_PER_BYTE).try_into().unwrap();
+        }
         // CUInt64, CInt64, CPtr, CNull, CDouble, or anything else defaults to 8 bytes
         crate::cruby::SIZEOF_VALUE as u8
     }
