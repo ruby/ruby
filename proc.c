@@ -725,7 +725,7 @@ bind_implicit_parameter_get(VALUE bindval, VALUE sym)
 
     if (!lid || !rb_implicit_param_p(lid)) {
         rb_name_err_raise("'%1$s' is not an implicit parameter",
-                          bindval, ID2SYM(lid));
+                          bindval, sym);
     }
 
     GetBindingPtr(bindval, bind);
@@ -774,7 +774,7 @@ bind_implicit_parameter_defined_p(VALUE bindval, VALUE sym)
 
     if (!lid || !rb_implicit_param_p(lid)) {
         rb_name_err_raise("'%1$s' is not an implicit parameter",
-                          bindval, ID2SYM(lid));
+                          bindval, sym);
     }
 
     GetBindingPtr(bindval, bind);
