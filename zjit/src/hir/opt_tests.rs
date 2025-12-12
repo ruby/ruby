@@ -10575,8 +10575,8 @@ mod hir_opt_tests {
 
         // A Ruby method as the target of `super` should optimize provided no block is given.
         let hir = hir_string_proc("B.new.method(:foo)");
-        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to InvokeSuperDirect but got:\n{hir}");
-        assert!(hir.contains("InvokeSuperDirect"), "Should optimize to InvokeSuperDirect for call without args or block:\n{hir}");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to SendWithoutBlockDirect but got:\n{hir}");
+        assert!(hir.contains("SendWithoutBlockDirect"), "Should optimize to SendWithoutBlockDirect for call without args or block:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
@@ -10589,14 +10589,17 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          v17:BasicObject = InvokeSuperDirect v6
+          GuardSuperMethodEntry 0x1038
+          v18:RubyValue = GetBlockHandler
+          v19:FalseClass = GuardBitEquals v18, Value(false)
+          v20:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
           CheckInterrupts
-          Return v17
+          Return v20
         ");
     }
 
     #[test]
-    fn test_invokesuper_with_args_optimizes_to_direct() {
+    fn test_invokesuper_with_positional_args_remains_invokesuper() {
         eval("
             class A
               def foo(x)
@@ -10614,8 +10617,8 @@ mod hir_opt_tests {
         ");
 
         let hir = hir_string_proc("B.new.method(:foo)");
-        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to InvokeSuperDirect but got:\n{hir}");
-        assert!(hir.contains("InvokeSuperDirect"), "Should optimize to InvokeSuperDirect for args without block:\n{hir}");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for explicit blockarg:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
@@ -10628,15 +10631,54 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          v26:BasicObject = InvokeSuperDirect v8, v9
+          v15:BasicObject = InvokeSuper v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuper)
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1038, +@0x1040, cme:0x1048)
-          v29:Fixnum = GuardType v26, Fixnum
-          v30:Fixnum = FixnumAdd v29, v17
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v15, Fixnum
+          v28:Fixnum = FixnumAdd v27, v17
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_forwarded_splat_args_remains_invokesuper() {
+        eval("
+            class A
+              def foo(x)
+                x * 2
+              end
+            end
+
+            class B < A
+              def foo(*x)
+                super
+              end
+            end
+
+            B.new.foo(5); B.new.foo(5)
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for explicit blockarg:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:ArrayExact = GetLocal :x, l0, SP@4, *
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:ArrayExact):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:ArrayExact):
+          v15:ArrayExact = ToArray v9
+          v17:BasicObject = InvokeSuper v8, 0x1000, v15 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v17
         ");
     }
 
@@ -10660,9 +10702,9 @@ mod hir_opt_tests {
 
         let hir = hir_string_proc("B.new.method(:foo)");
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for block literal:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for block literal:\n{hir}");
 
-        // With a block, we don't optimize to InvokeSuperDirect
+        // With a block, we don't optimize to SendWithoutBlockDirect
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
         bb0():
@@ -10693,7 +10735,7 @@ mod hir_opt_tests {
 
         let hir = hir_string_proc("MyArray.new.method(:length)");
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for CFUNC:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for CFUNC:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn length@<compiled>:4:
@@ -10732,7 +10774,7 @@ mod hir_opt_tests {
 
         let hir = hir_string_proc("B.new.method(:foo)");
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for explicit blockarg:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for explicit blockarg:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
@@ -10780,7 +10822,7 @@ mod hir_opt_tests {
 
         let hir = hir_string_proc("B.new.method(:foo)");
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("InvokeSuperDirect"), "Should not optimize to InvokeSuperDirect for symbol-to-proc:\n{hir}");
+        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for symbol-to-proc:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
@@ -10797,6 +10839,56 @@ mod hir_opt_tests {
           v17:BasicObject = InvokeSuper v8, 0x1008, v9, v15 # SendFallbackReason: Uncategorized(invokesuper)
           CheckInterrupts
           Return v17
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_with_keyword_args_remains_invokesuper() {
+        eval("
+          class A
+            def foo(attributes = {})
+              @attributes = attributes
+            end
+          end
+
+          class B < A
+            def foo(content = '')
+              super(content: content)
+            end
+          end
+
+          B.new.foo('image data'); B.new.foo('image data')
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo)");
+        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+
+        assert_snapshot!(hir, @r"
+        fn foo@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :content, l0, SP@4
+          v3:CPtr = LoadPC
+          v4:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v5:CBool = IsBitEqual v3, v4
+          IfTrue v5, bb2(v1, v2)
+          Jump bb4(v1, v2)
+        bb1(v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v9, v10)
+        bb2(v16:BasicObject, v17:BasicObject):
+          v20:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v21:StringExact = StringCopy v20
+          Jump bb4(v16, v21)
+        bb3(v13:BasicObject, v14:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb4(v13, v14)
+        bb4(v24:BasicObject, v25:BasicObject):
+          v31:BasicObject = InvokeSuper v24, 0x1018, v25 # SendFallbackReason: Uncategorized(invokesuper)
+          CheckInterrupts
+          Return v31
         ");
     }
 }

@@ -1278,7 +1278,7 @@ class TestZJIT < Test::Unit::TestCase
       end
 
       def test
-        B.new.f
+        B.new.foo
       end
 
       test  # profile invokesuper (super -> A#foo)
@@ -1293,6 +1293,30 @@ class TestZJIT < Test::Unit::TestCase
       A.prepend(M)
 
       test  # should call M#foo, not A#foo
+    }, call_threshold: 2
+  end
+
+  # Test super with positional and keyword arguments (pattern from chunky_png)
+  def test_invokesuper_with_keyword_args
+    assert_compiles '{content: "image data"}', %q{
+      class A
+        def foo(attributes = {})
+          @attributes = attributes
+        end
+      end
+
+      class B < A
+        def foo(content = '')
+          super(content: content)
+        end
+      end
+
+      def test
+        B.new.foo("image data")
+      end
+
+      test
+      test
     }, call_threshold: 2
   end
 

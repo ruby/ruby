@@ -403,8 +403,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        Insn::InvokeSuperDirect { recv, current_cme, super_cme, args, state, .. } =>
-            gen_invokesuper_direct(cb, jit, asm, *current_cme, *super_cme, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
@@ -455,6 +453,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardSuperMethodEntry { cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, cme, &function.frame_state(state))),
+        Insn::GetBlockHandler => gen_get_block_handler(jit, asm),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -715,6 +715,29 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
     asm.cmp(left, right);
     asm.jl(side_exit(jit, state, SideExitReason::GuardGreaterEq));
     left
+}
+
+/// Guard that the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] matches the expected CME.
+/// This ensures we're calling super from the expected method context.
+fn gen_guard_super_method_entry(
+    jit: &JITState,
+    asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
+    state: &FrameState,
+) {
+    asm_comment!(asm, "guard super method entry");
+    let lep = gen_get_lep(jit, asm);
+    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
+    let ep_me = asm.load(ep_me_opnd);
+    asm.cmp(ep_me, Opnd::UImm(cme as u64));
+    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
+}
+
+/// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
+fn gen_get_block_handler(jit: &JITState, asm: &mut Assembler) -> Opnd {
+    asm_comment!(asm, "get block handler from LEP");
+    let lep = gen_get_lep(jit, asm);
+    asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
@@ -1495,37 +1518,6 @@ fn gen_invokesuper(
         rb_vm_invokesuper,
         EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
-}
-
-/// Compile an optimized super call to an ISEQ method
-fn gen_invokesuper_direct(
-    cb: &mut CodeBlock,
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    current_cme: *const rb_callable_method_entry_t,
-    super_cme: *const rb_callable_method_entry_t,
-    recv: lir::Opnd,
-    args: Vec<lir::Opnd>,
-    state: &FrameState,
-) -> lir::Opnd {
-    // Guard that ep[VM_ENV_DATA_INDEX_ME_CREF] matches current_cme, ensuring that we're calling
-    // `super` from the expected method context.
-    asm_comment!(asm, "guard super method entry");
-    let lep = gen_get_lep(jit, asm);
-    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
-    let ep_me = asm.load(ep_me_opnd);
-    asm.cmp(ep_me, Opnd::UImm(current_cme as u64));
-    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
-
-    // Get the super method's ISEQ since we'll be dispatching to that.
-    let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-
-    // Read the block handler from the LEP to forward the caller's block.
-    asm_comment!(asm, "load block handler from LEP");
-    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-
-    // Generate the code to invoke the `super` target method.
-    gen_send_iseq_direct(cb, jit, asm, super_cme, super_iseq, recv, args, state, Some(block_handler))
 }
 
 /// Compile a string resurrection
