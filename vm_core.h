@@ -1130,7 +1130,6 @@ typedef struct rb_thread_struct {
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
-    uint32_t event_serial;
 
     VALUE last_status; /* $? */
 

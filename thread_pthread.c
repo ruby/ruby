@@ -2988,7 +2988,7 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now, uint32_t *event_serial)
 static void
 timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial)
 {
-    if (sched->running != th && th->event_serial == event_serial) {
+    if (sched->running != th && th->sched.event_serial == event_serial) {
         thread_sched_to_ready_common(sched, th, true, false);
     }
 }
