@@ -972,33 +972,16 @@ thread_sched_wakeup_next_thread(struct rb_thread_sched *sched, rb_thread_t *th, 
     }
 }
 
-// running -> waiting
-//
-// to_dead: false
-//   th will run dedicated task.
-//   run another ready thread.
-// to_dead: true
-//   th will be dead.
-//   run another ready thread.
-static void
-thread_sched_to_waiting_common0(struct rb_thread_sched *sched, rb_thread_t *th, bool to_dead)
-{
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-
-    if (!to_dead) native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
-
-    RUBY_DEBUG_LOG("%sth:%u", to_dead ? "to_dead " : "", rb_th_serial(th));
-
-    bool can_switch = to_dead ? !th_has_dedicated_nt(th) : false;
-    thread_sched_wakeup_next_thread(sched, th, can_switch);
-}
-
 // running -> dead (locked)
 static void
 thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RUBY_DEBUG_LOG("dedicated:%d", th->nt->dedicated);
-    thread_sched_to_waiting_common0(sched, th, true);
+    RUBY_DEBUG_LOG("th:%u DNT:%d", rb_th_serial(th), th->nt->dedicated);
+
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+
+    thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
+
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
 }
 
@@ -1019,8 +1002,12 @@ thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RUBY_DEBUG_LOG("dedicated:%d", th->nt->dedicated);
-    thread_sched_to_waiting_common0(sched, th, false);
+    RUBY_DEBUG_LOG("th:%u DNT:%d", rb_th_serial(th), th->nt->dedicated);
+
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+
+    native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+    thread_sched_wakeup_next_thread(sched, th, false);
 }
 
 // running -> waiting
