@@ -132,10 +132,14 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
-#define thread_sched_to_dead thread_sched_to_waiting
+static void
+thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    ReleaseMutex(sched->lock);
+}
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool dummy_switch_immediately)
 {
     ReleaseMutex(sched->lock);
 }
@@ -143,7 +147,7 @@ thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    thread_sched_to_waiting(sched, th);
+    thread_sched_to_waiting(sched, th, true);
     native_thread_yield();
     thread_sched_to_running(sched, th);
 }
@@ -338,7 +342,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     const volatile DWORD msec = rel ? hrtime2msec(*rel) : INFINITE;
 
-    THREAD_BLOCKING_BEGIN(th);
+    SLEEP_BLOCKING_BEGIN(th);
     {
         DWORD ret;
 
@@ -362,7 +366,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         th->unblock.arg = 0;
         rb_native_mutex_unlock(&th->interrupt_lock);
     }
-    THREAD_BLOCKING_END(th);
+    SLEEP_BLOCKING_END(th);
 }
 
 void
