@@ -176,7 +176,7 @@ ractor_status_set(rb_ractor_t *r, enum ractor_status status)
     // check2: transition check. assume it will be vanished on non-debug build.
     switch (r->status_) {
       case ractor_created:
-        VM_ASSERT(status == ractor_blocking);
+        VM_ASSERT(status == (RACTOR_TRACK_BLOCKING ? ractor_blocking : ractor_running));
         break;
       case ractor_running:
         VM_ASSERT(status == ractor_blocking||
