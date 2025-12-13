@@ -1559,6 +1559,12 @@ shareable_p_enter(VALUE obj)
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
+    else if (rb_obj_is_proc(obj)) {
+        if (RB_OBJ_FROZEN_RAW(obj) && rb_ractor_shareable_p(vm_block_self(vm_proc_block(obj)))) {
+            // If the proc is frozen and its self is shareable, the proc is shareable.
+            return traverse_skip;
+        }
+    }
     else if (RB_TYPE_P(obj, T_CLASS)  ||
              RB_TYPE_P(obj, T_MODULE) ||
              RB_TYPE_P(obj, T_ICLASS)) {
