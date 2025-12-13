@@ -933,12 +933,12 @@ console_set_winsize(VALUE io, VALUE size)
     if (ws.dwCursorPosition.Y > ws.srWindow.Bottom) {
         console_scroll(io, ws.dwCursorPosition.Y - ws.srWindow.Bottom);
         ws.dwCursorPosition.Y = ws.srWindow.Bottom;
-        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X)); 
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X));
     }
     if (ws.srWindow.Bottom > ws.dwSize.Y - 1) {
         console_scroll(io, ws.srWindow.Bottom - (ws.dwSize.Y - 1));
         ws.dwCursorPosition.Y -= ws.srWindow.Bottom - (ws.dwSize.Y - 1);
-        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X)); 
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X));
 	ws.srWindow.Bottom = ws.dwSize.Y - 1;
     }
     ws.srWindow.Top = ws.srWindow.Bottom - (newrow - 1);
