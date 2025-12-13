@@ -2,6 +2,7 @@
 require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 require 'stringio'
+require 'delegate'
 
 class TestEnumerable < Test::Unit::TestCase
   def setup
