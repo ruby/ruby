@@ -6276,15 +6276,11 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
 static void
 threadptr_interrupt_exec_cleanup(rb_thread_t *th)
 {
-    rb_native_mutex_lock(&th->interrupt_lock);
-    {
-        struct rb_interrupt_exec_task *task;
+    struct rb_interrupt_exec_task *task;
 
-        while ((task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node)) != NULL) {
-            ruby_xfree(task);
-        }
+    while ((task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node)) != NULL) {
+        ruby_xfree(task);
     }
-    rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
 // native thread safe
