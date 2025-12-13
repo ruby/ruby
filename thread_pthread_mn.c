@@ -61,6 +61,8 @@ static bool timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_s
 static bool
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
 {
+    RUBY_DEBUG_LOG("th:%u fd:%d ev:%d\n", rb_th_serial(th), fd, events);
+
     VM_ASSERT(!th_has_dedicated_nt(th));  // on SNT
 
     volatile bool timedout = false, need_cancel = false;
@@ -925,6 +927,7 @@ static void
 timer_thread_polling(rb_vm_t *vm)
 {
     int r = event_wait(vm);
+    rb_thread_t **waiting_ths;
 
     RUBY_DEBUG_LOG("r:%d errno:%d", r, errno);
 
@@ -935,7 +938,7 @@ timer_thread_polling(rb_vm_t *vm)
         ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
-            timer_thread_check_timeslice(vm);
+            waiting_ths = timer_thread_check_timeslice(vm);
 
             // (1-4) lazy grq deq
             if (vm->ractor.sched.grq_cnt > 0) {
@@ -944,6 +947,9 @@ timer_thread_polling(rb_vm_t *vm)
             }
         }
         ractor_sched_unlock(vm, NULL);
+
+        // (1-1) additional
+        timer_thread_switch_waiting(vm, waiting_ths);
 
         // (1-2)
         native_thread_check_and_create_shared(vm);
@@ -1075,15 +1081,19 @@ timer_thread_polling(rb_vm_t *vm)
     };
 
     int r = poll(&pfd, 1, timeout);
+    rb_thread_t **waiting_ths;
 
     switch (r) {
       case 0: // timeout
         ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
-            timer_thread_check_timeslice(vm);
+            waiting_ths = timer_thread_check_timeslice(vm);
         }
         ractor_sched_unlock(vm, NULL);
+
+        timer_thread_switch_waiting(vm, waiting_ths);
+
         break;
 
       case -1: // error
