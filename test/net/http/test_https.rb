@@ -266,6 +266,24 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(re_msg, ex.message)
   end
 
+  def test_ractor
+    assert_ractor(<<~RUBY, require: 'net/https')
+      expected = #{$test_net_http_data.dump}.b
+      ret = Ractor.new {
+        host = #{HOST.dump}
+        port = #{config('port')}
+        ca_cert_pem = #{CA_CERT.to_pem.dump}
+        cert_store = OpenSSL::X509::Store.new.tap { |s|
+          s.add_cert(OpenSSL::X509::Certificate.new(ca_cert_pem))
+        }
+        Net::HTTP.start(host, port, use_ssl: true, cert_store: cert_store) { |http|
+          res = http.get('/')
+          res.body
+        }
+      }.value
+      assert_equal expected, ret
+    RUBY
+  end if defined?(Ractor) && Ractor.method_defined?(:value)
 end
 
 class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
