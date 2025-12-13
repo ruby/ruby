@@ -93,3 +93,6 @@ test_relative_path_from(PathnameInstanceTest)
 test_slash(PathnameInstanceTest)
 test_Pathname(PathnameKernelTest)
 test_initialize(PathnameSingletonTest)
+
+# [Feature #20925] `size` of Enumerator created by `produce` returns `nil` instead of `Float::INFINITY`, unless `size:` is specified.
+test_produce(EnumeratorSingletonTest)
