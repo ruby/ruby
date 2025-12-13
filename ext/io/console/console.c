@@ -1651,8 +1651,6 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     VALUE con = 0;
     VALUE sym = 0;
 
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
-
     if (argc) {
         Check_Type(sym = argv[0], T_SYMBOL);
     }
