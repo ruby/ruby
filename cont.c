@@ -2651,12 +2651,6 @@ return_fiber(bool terminate)
 }
 
 VALUE
-rb_ec_fiber_current(rb_execution_context_t *ec)
-{
-    return ec_fiber_current(ec)->cont.self;
-}
-
-VALUE
 rb_fiber_current(void)
 {
     return fiber_current()->cont.self;

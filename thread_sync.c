@@ -1642,7 +1642,7 @@ define_thread_class(VALUE outer, const ID name, VALUE super)
 
 struct rb_monitor {
     long count;
-    VALUE owner;
+    rb_serial_t fiber_serial;
     VALUE mutex;
 };
 
@@ -1650,7 +1650,6 @@ static void
 monitor_mark(void *ptr)
 {
     struct rb_monitor *mc = ptr;
-    rb_gc_mark_movable(mc->owner);
     rb_gc_mark_movable(mc->mutex);
 }
 
@@ -1658,7 +1657,6 @@ static void
 monitor_compact(void *ptr)
 {
     struct rb_monitor *mc = ptr;
-    mc->owner = rb_gc_location(mc->owner);
     mc->mutex = rb_gc_location(mc->mutex);
 }
 
@@ -1681,7 +1679,7 @@ monitor_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, struct rb_monitor, &monitor_data_type, mc);
     RB_OBJ_WRITE(obj, &mc->mutex, rb_mutex_new());
-    RB_OBJ_WRITE(obj, &mc->owner, Qnil);
+    mc->fiber_serial = 0;
     mc->count = 0;
 
     return obj;
@@ -1696,9 +1694,9 @@ monitor_ptr(VALUE monitor)
 }
 
 static bool
-mc_owner_p(struct rb_monitor *mc, VALUE current_fiber)
+mc_owner_p(struct rb_monitor *mc, rb_serial_t current_fiber_serial)
 {
-    return mc->owner == current_fiber;
+    return mc->fiber_serial == current_fiber_serial;
 }
 
 static VALUE
@@ -1706,12 +1704,12 @@ rb_monitor_try_enter(rb_execution_context_t *ec, VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
 
-    VALUE current_fiber = rb_ec_fiber_current(ec);
-    if (!mc_owner_p(mc, current_fiber)) {
+    rb_serial_t current_fiber_serial = rb_fiber_serial(ec->fiber_ptr);
+    if (!mc_owner_p(mc, current_fiber_serial)) {
         if (!rb_mut_trylock(ec, mc->mutex)) {
             return Qfalse;
         }
-        RB_OBJ_WRITE(monitor, &mc->owner, current_fiber);
+        mc->fiber_serial = current_fiber_serial;
         mc->count = 0;
     }
     mc->count += 1;
@@ -1721,21 +1719,21 @@ rb_monitor_try_enter(rb_execution_context_t *ec, VALUE monitor)
 struct monitor_args {
     VALUE monitor;
     struct rb_monitor *mc;
-    VALUE current_fiber;
+    rb_serial_t current_fiber_serial;
     rb_execution_context_t *ec;
 };
 
 static void
 monitor_enter0(struct monitor_args *args)
 {
-    if (!mc_owner_p(args->mc, args->current_fiber)) {
+    if (!mc_owner_p(args->mc, args->current_fiber_serial)) {
         struct mutex_args mut_args = {
             .self = args->mc->mutex,
             .mutex = mutex_ptr(args->mc->mutex),
             .ec= args->ec,
         };
         do_mutex_lock(&mut_args, 1);
-        RB_OBJ_WRITE(args->monitor, &args->mc->owner, args->current_fiber);
+        args->mc->fiber_serial = args->current_fiber_serial;
         args->mc->count = 0;
     }
     args->mc->count++;
@@ -1748,7 +1746,7 @@ rb_monitor_enter(rb_execution_context_t *ec, VALUE monitor)
         .monitor = monitor,
         .mc = monitor_ptr(monitor),
         .ec = ec,
-        .current_fiber = rb_ec_fiber_current(ec),
+        .current_fiber_serial = rb_fiber_serial(ec->fiber_ptr),
     };
     monitor_enter0(&args);
     return Qnil;
@@ -1757,7 +1755,7 @@ rb_monitor_enter(rb_execution_context_t *ec, VALUE monitor)
 static inline void
 monitor_check_owner0(struct monitor_args *args)
 {
-    if (!mc_owner_p(args->mc, args->current_fiber)) {
+    if (!mc_owner_p(args->mc, args->current_fiber_serial)) {
         rb_raise(rb_eThreadError, "current fiber not owner");
     }
 }
@@ -1770,7 +1768,7 @@ rb_monitor_check_owner(rb_execution_context_t *ec, VALUE monitor)
         .monitor = monitor,
         .mc = monitor_ptr(monitor),
         .ec = ec,
-        .current_fiber = rb_ec_fiber_current(ec),
+        .current_fiber_serial = rb_fiber_serial(ec->fiber_ptr),
     };
     monitor_check_owner0(&args);
     return Qnil;
@@ -1785,7 +1783,7 @@ monitor_exit0(struct monitor_args *args)
     args->mc->count--;
 
     if (args->mc->count == 0) {
-        RB_OBJ_WRITE(args->monitor, &args->mc->owner, Qnil);
+        args->mc->fiber_serial = 0;
 
         struct mutex_args mut_args = {
             .self = args->mc->mutex,
@@ -1803,7 +1801,7 @@ rb_monitor_exit(rb_execution_context_t *ec, VALUE monitor)
         .monitor = monitor,
         .mc = monitor_ptr(monitor),
         .ec = ec,
-        .current_fiber = rb_ec_fiber_current(ec),
+        .current_fiber_serial = rb_fiber_serial(ec->fiber_ptr),
     };
     monitor_exit0(&args);
     return Qnil;
@@ -1822,7 +1820,7 @@ static VALUE
 rb_monitor_owned_p(rb_execution_context_t *ec, VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
-    return rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc, rb_ec_fiber_current(ec)) ? Qtrue : Qfalse;
+    return rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc, rb_fiber_serial(ec->fiber_ptr)) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -1830,7 +1828,7 @@ monitor_exit_for_cond(VALUE monitor)
 {
     struct rb_monitor *mc = monitor_ptr(monitor);
     long cnt = mc->count;
-    RB_OBJ_WRITE(monitor, &mc->owner, Qnil);
+    mc->fiber_serial = 0;
     mc->count = 0;
     return LONG2NUM(cnt);
 }
@@ -1860,7 +1858,7 @@ monitor_enter_for_cond(VALUE v)
 
     struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
     struct rb_monitor *mc = monitor_ptr(data->monitor);
-    RB_OBJ_WRITE(data->monitor, &mc->owner, rb_fiber_current());
+    mc->fiber_serial = rb_fiber_serial(GET_EC()->fiber_ptr);
     mc->count = NUM2LONG(data->count);
     return Qnil;
 }
@@ -1894,7 +1892,7 @@ rb_monitor_synchronize(rb_execution_context_t *ec, VALUE monitor)
         .monitor = monitor,
         .mc = monitor_ptr(monitor),
         .ec = ec,
-        .current_fiber = rb_ec_fiber_current(ec),
+        .current_fiber_serial = rb_fiber_serial(ec->fiber_ptr),
     };
     monitor_enter0(&args);
     return rb_ec_ensure(ec, do_ec_yield, (VALUE)ec, monitor_sync_ensure, (VALUE)&args);
