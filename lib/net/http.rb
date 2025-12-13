@@ -1531,7 +1531,7 @@ module Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ] # :nodoc:
+    ].freeze # :nodoc:
 
     SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
@@ -2430,7 +2430,7 @@ module Net   #:nodoc:
 
     # :stopdoc:
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
