@@ -475,12 +475,20 @@ describe "C-API Encoding function" do
       @s.rb_enc_copy("string", @obj).encoding.should == Encoding::US_ASCII
     end
 
-    it "raises a RuntimeError if the second argument is a Symbol" do
+    it "raises a RuntimeError if the first argument is a Symbol" do
       -> { @s.rb_enc_copy(:symbol, @obj) }.should raise_error(RuntimeError)
     end
 
-    it "sets the encoding of a Regexp to that of the second argument" do
-      @s.rb_enc_copy(/regexp/.dup, @obj).encoding.should == Encoding::US_ASCII
+    ruby_version_is "4.0" do
+      it "raises a FrozenError if the first argument is a Regexp" do
+        -> { @s.rb_enc_copy(/regexp/.dup, @obj) }.should raise_error(FrozenError)
+      end
+    end
+
+    ruby_version_is ""..."4.0" do
+      it "sets the encoding of a Regexp to that of the second argument" do
+        @s.rb_enc_copy(/regexp/.dup, @obj).encoding.should == Encoding::US_ASCII
+      end
     end
   end
 
@@ -530,8 +538,16 @@ describe "C-API Encoding function" do
       -> { @s.rb_enc_associate(:symbol, "US-ASCII") }.should raise_error(RuntimeError)
     end
 
-    it "sets the encoding of a Regexp to the encoding" do
-      @s.rb_enc_associate(/regexp/.dup, "BINARY").encoding.should == Encoding::BINARY
+    ruby_version_is "4.0" do
+      it "raises a FrozenError if the argument is a Regexp" do
+        -> { @s.rb_enc_associate(/regexp/, "US-ASCII") }.should raise_error(FrozenError)
+      end
+    end
+
+    ruby_version_is ""..."4.0" do
+      it "sets the encoding of a Regexp to the encoding" do
+        @s.rb_enc_associate(/regexp/.dup, "BINARY").encoding.should == Encoding::BINARY
+      end
     end
 
     it "sets the encoding of a String to a default when the encoding is NULL" do
@@ -546,10 +562,19 @@ describe "C-API Encoding function" do
       enc.should == Encoding::BINARY
     end
 
-    it "sets the encoding of a Regexp to the encoding" do
-      index = @s.rb_enc_find_index("UTF-8")
-      enc = @s.rb_enc_associate_index(/regexp/.dup, index).encoding
-      enc.should == Encoding::UTF_8
+    ruby_version_is "4.0" do
+      it "raises a FrozenError if the argument is a Regexp" do
+        index = @s.rb_enc_find_index("UTF-8")
+        -> { @s.rb_enc_associate_index(/regexp/.dup, index) }.should raise_error(FrozenError)
+      end
+    end
+
+    ruby_version_is ""..."4.0" do
+      it "sets the encoding of a Regexp to the encoding" do
+        index = @s.rb_enc_find_index("UTF-8")
+        enc = @s.rb_enc_associate_index(/regexp/.dup, index).encoding
+        enc.should == Encoding::UTF_8
+      end
     end
 
     it "sets the encoding of a Symbol to the encoding" do
