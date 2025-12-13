@@ -43,17 +43,20 @@ module Bundler
     def normalize_ruby_file(filename)
       file_content = Bundler.read_file(gemfile.dirname.join(filename))
       # match "ruby-3.2.2", ruby = "3.2.2", ruby = '3.2.2' or "ruby   3.2.2" capturing version string up to the first space or comment
-      if /^                    # Start of line
-         ruby                  # Literal "ruby"
-         [\s-]*                # Optional whitespace or hyphens (for "ruby-3.2.2" format)
-         (?:=\s*)?             # Optional equals sign with whitespace (for ruby = "3.2.2" format)
-         ["']?                 # Optional opening quote
-         (                     # Start capturing group
-           [^\s#"']+           # One or more chars that aren't spaces, #, or quotes
-         )                     # End capturing group
-         ["']?                 # Optional closing quote
-         /x.match(file_content)
-        $1
+      version_match = /^               # Start of line
+                      ruby             # Literal "ruby"
+                      [\s-]*           # Optional whitespace or hyphens (for "ruby-3.2.2" format)
+                      (?:=\s*)?        # Optional equals sign with whitespace (for ruby = "3.2.2" format)
+                      (?:
+                        "([^"]+)"      # Double quoted version
+                        |
+                        '([^']+)'      # Single quoted version
+                        |
+                        ([^\s#"']+)    # Unquoted version
+                      )
+                      /x.match(file_content)
+      if version_match
+        version_match[1] || version_match[2] || version_match[3]
       else
         file_content.strip
       end

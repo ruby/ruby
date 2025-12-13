@@ -193,6 +193,19 @@ RSpec.describe Bundler::RubyDsl do
 
           it_behaves_like "it stores the ruby version"
         end
+
+        context "with mismatched quotes" do
+          let(:file_content) do
+            <<~TOML
+              [tools]
+              ruby = "#{version}'
+            TOML
+          end
+
+          it "raises an error" do
+            expect { subject }.to raise_error(Bundler::InvalidArgumentError, "= is not a valid requirement on the Ruby version")
+          end
+        end
       end
 
       context "with a .tool-versions file format" do
