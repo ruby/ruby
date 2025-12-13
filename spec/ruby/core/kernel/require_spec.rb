@@ -20,6 +20,7 @@ describe "Kernel#require" do
   ruby_version_is "4.0" do
     provided << "set"
     provided << "pathname"
+    provided << "monitor"
   end
 
   it "#{provided.join(', ')} are already required" do
