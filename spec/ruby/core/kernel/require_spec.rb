@@ -21,13 +21,16 @@ describe "Kernel#require" do
     provided << "set"
     provided << "pathname"
   end
+  ruby_version_is "4.1" do
+    provided << "monitor"
+  end
 
   it "#{provided.join(', ')} are already required" do
     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
 
     # Ignore CRuby internals
-    features -= %w[encdb transdb windows_1252 windows_31j]
+    features -= %w[encdb transdb windows_1252 windows_31]
     features.reject! { |feature| feature.end_with?('-fake') }
 
     features.sort.should == provided.sort
@@ -35,6 +38,10 @@ describe "Kernel#require" do
     requires = provided
     ruby_version_is "4.0" do
       requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
+    end
+
+    ruby_version_is "4.1" do
+      requires = requires.map { |f| f == "monitor" ? "monitor.so" : f }
     end
 
     code = requires.map { |f| "puts require #{f.inspect}\n" }.join
