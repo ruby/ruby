@@ -1775,12 +1775,6 @@ rb_complex_new_polar(VALUE x, VALUE y)
 }
 
 VALUE
-rb_complex_polar(VALUE x, VALUE y)
-{
-    return rb_complex_new_polar(x, y);
-}
-
-VALUE
 rb_Complex(VALUE x, VALUE y)
 {
     VALUE a[2];

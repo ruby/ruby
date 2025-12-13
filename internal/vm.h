@@ -101,8 +101,6 @@ const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo
 /* vm_method.c */
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 
-void rb_clear_constant_cache(void);
-
 /* vm_dump.c */
 void rb_print_backtrace(FILE *);
 
