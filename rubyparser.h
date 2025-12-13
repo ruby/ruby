@@ -427,6 +427,8 @@ typedef struct RNode_LASGN {
 
     ID nd_vid;
     struct RNode *nd_value;
+    rb_code_location_t name_loc;
+    rb_code_location_t operator_loc;
 } rb_node_lasgn_t;
 
 typedef struct RNode_DASGN {
@@ -1219,7 +1221,7 @@ typedef struct parser_params rb_parser_t;
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 
-typedef NODE *(*rb_parser_assignable_func)(struct parser_params *p, ID id, NODE *val, const rb_code_location_t *loc);
+typedef NODE *(*rb_parser_assignable_func)(struct parser_params *p, ID id, NODE *val, const rb_code_location_t *loc, const rb_code_location_t *name_loc, const rb_code_location_t* operator_loc);
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
