@@ -12,6 +12,7 @@ use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
+use crate::hir_effect::{Effect, effect_sets};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
@@ -1008,6 +1009,144 @@ impl Insn {
 
     pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
+    }
+
+    // Unused variables should NOT be allowed. We temporarily allow this to create the skeleton
+    // structure for an effects system. Changes that specify refined effects should remove this
+    // unused variables attribute.
+    #[allow(unused_variables)]
+    fn get_effects(&self) -> Effect {
+        assert!(self.has_output());
+        match &self {
+            Insn::Param => unimplemented!("params should not be present in block.insns"),
+            Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
+            | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::Value(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CBool(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CInt8(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CInt16(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CInt32(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CInt64(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CUInt8(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CUInt16(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CUInt32(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CUInt64(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CPtr(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Const { val: Const::CDouble(val) } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Test { val } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsNil { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsMethodCfunc { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsBitEqual { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsBitNotEqual { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::BoxBool { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::BoxFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::UnboxFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringCopy { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringIntern { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringConcat { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringGetbyte { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringSetbyteFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringAppend { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::StringAppendCodepoint { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ToRegexp { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::NewArray { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayArefFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayPop { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayLength { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::HashAref { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::NewHash { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::HashDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::NewRange { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::NewRangeFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ObjectAlloc { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ObjectAllocClass { class, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            &Insn::CCallWithFrame { return_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::CCall { return_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            &Insn::CCallVariadic { return_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardType { val, guard_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardTypeNot { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardBitEquals { val, expected, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardShape { val, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardNotFrozen { recv, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardLess { left, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GuardGreaterEq { left, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumAdd  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumSub  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumMult { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumDiv  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumMod  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumEq   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumNeq  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumLt   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumLe   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumGt   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumGe   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumAnd  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumOr   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumXor  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumLShift { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumRShift { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::PutSpecialObject { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::SendWithoutBlock { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::SendWithoutBlockDirect { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Send { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::SendForward { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::InvokeSuper { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::InvokeBlock { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::InvokeBuiltin { return_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::Defined { pushval, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::DefinedIvar { pushval, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetConstantPath { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsBlockGiven => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::FixnumBitCheck { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayMax { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayInclude { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::DupArrayInclude { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ArrayHash { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetGlobal { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetIvar { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::LoadPC => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::LoadEC => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::LoadSelf => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            &Insn::LoadField { return_type, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetSpecialSymbol { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetSpecialNumber { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetClassVar { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ToNewArray { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ToArray { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::ObjToString { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::AnyToString { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetLocal { rest_param: true, .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::GetLocal { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            // The type of Snapshot doesn't really matter; it's never materialized. It's used only
+            // as a reference for FrameState, which we use to generate side-exit code.
+            Insn::Snapshot { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+            Insn::IsA { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+        }
+    }
+
+    /// Return true if we can safely omit the instruction. This occurs when one of the following
+    /// conditions are met.
+    /// 1. The instruction does not write anything.
+    /// 2. The instruction only allocates and writes nothing else.
+    /// Calling the effects of our instruction `insn_effects`, we need:
+    /// `effects::Empty` to include `insn_effects.write` or `effects::Allocator` to include
+    /// `insn_effects.write`.
+    /// We can simplify this to `effects::Empty.union(effects::Allocator).includes(insn_effects.write)`.
+    /// But the union of `Allocator` and `Empty` is simply `Allocator`, so our entire function
+    /// collapses to `effects::Allocator.includes(insn_effects.write)`.
+    /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
+    /// `read: effects::Any` could potentially be omitted.
+    // TODO(Jacob): Replace `has_effects` with `!is_elidable` once `effects_of` is correct.
+    // TODO(Jacob): Ensure that `is_elidable` === `!has_effects` for all inputs
+    fn is_elidable(&self) -> bool {
+        let writes_allocator = Effect::from_bits(effect_sets::Any, effect_sets::Allocator);
+        writes_allocator.includes(self.get_effects())
     }
 
     /// Return true if the instruction needs to be kept around. For example, if the instruction
