@@ -10263,8 +10263,6 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
     char *start, *s;
     long olen, loffset;
 
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
-
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
@@ -10323,8 +10321,6 @@ rb_str_lstrip(int argc, VALUE *argv, VALUE str)
 {
     char *start;
     long len, loffset;
-
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
 
     RSTRING_GETMEM(str, start, len);
     if (argc > 0) {
@@ -10413,8 +10409,6 @@ rb_str_rstrip_bang(int argc, VALUE *argv, VALUE str)
     char *start;
     long olen, roffset;
 
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
-
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
@@ -10472,8 +10466,6 @@ rb_str_rstrip(int argc, VALUE *argv, VALUE str)
     char *start;
     long olen, roffset;
 
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
-
     enc = STR_ENC_GET(str);
     RSTRING_GETMEM(str, start, olen);
     if (argc > 0) {
@@ -10509,8 +10501,6 @@ rb_str_strip_bang(int argc, VALUE *argv, VALUE str)
     char *start;
     long olen, loffset, roffset;
     rb_encoding *enc;
-
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
@@ -10576,8 +10566,6 @@ rb_str_strip(int argc, VALUE *argv, VALUE str)
     char *start;
     long olen, loffset, roffset;
     rb_encoding *enc = STR_ENC_GET(str);
-
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
 
     RSTRING_GETMEM(str, start, olen);
 
