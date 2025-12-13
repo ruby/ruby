@@ -166,8 +166,8 @@ typedef struct rb_method_refined_struct {
 
 typedef struct rb_method_bmethod_struct {
     VALUE proc; /* should be marked */
-    struct rb_hook_list_struct *hooks;
     rb_serial_t defined_ractor_id;
+    unsigned int local_hooks_cnt;
 } rb_method_bmethod_t;
 
 enum method_optimized_type {
@@ -208,6 +208,8 @@ struct rb_method_definition_struct {
 };
 
 struct rb_id_table;
+struct rb_ractor_struct;
+struct rb_hook_list_struct;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
 STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
@@ -267,5 +269,8 @@ void rb_vm_delete_cc_refinement(const struct rb_callcache *cc);
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_all_refinement_method_cache(void);
 void rb_invalidate_method_caches(struct rb_id_table *cm_tbl, VALUE cc_tbl);
+struct rb_hook_list_struct *rb_method_def_local_hooks(rb_method_definition_t *def, struct rb_ractor_struct *cr, bool create);
+void rb_method_definition_addref(rb_method_definition_t *def);
+void rb_method_definition_release(rb_method_definition_t *def);
 
 #endif /* RUBY_METHOD_H */

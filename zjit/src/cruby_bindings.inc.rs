@@ -1214,17 +1214,8 @@ pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_1 {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_2 {
-    pub local_hooks: *mut rb_hook_list_struct,
+    pub local_hooks_cnt: ::std::os::raw::c_uint,
     pub global_trace_events: rb_event_flag_t,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_hook_list_struct {
-    pub hooks: *mut rb_event_hook_struct,
-    pub events: rb_event_flag_t,
-    pub running: ::std::os::raw::c_uint,
-    pub need_clean: bool,
-    pub is_local: bool,
 }
 #[repr(C)]
 pub struct rb_captured_block {
@@ -1844,11 +1835,6 @@ pub type rb_iseq_param_keyword_struct =
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct succ_index_table {
-    pub _address: u8,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_event_hook_struct {
     pub _address: u8,
 }
 unsafe extern "C" {

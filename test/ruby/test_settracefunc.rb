@@ -2957,4 +2957,210 @@ CODE
 
     assert_kind_of(Thread, target_thread)
   end
+
+  def test_tracepoint_garbage_collected_when_disable
+    before_count_stat = 0
+    before_count_objspace = 0
+    TracePoint.stat.each do
+      before_count_stat += 1
+    end
+    ObjectSpace.each_object(TracePoint) do
+      before_count_objspace += 1
+    end
+    tp = TracePoint.new(:c_call, :c_return) do
+    end
+    tp.enable
+    Class.inspect # c_call, c_return invoked
+    tp.disable
+    tp_id = tp.object_id
+    tp = nil
+
+    gc_times = 0
+    gc_max_retries = 10
+    EnvUtil.suppress_warning do
+      until (ObjectSpace._id2ref(tp_id) rescue nil).nil?
+        GC.start
+        gc_times += 1
+        if gc_times == gc_max_retries
+          break
+        end
+      end
+    end
+    return if gc_times == gc_max_retries
+
+    after_count_stat = 0
+    TracePoint.stat.each do |v|
+      after_count_stat += 1
+    end
+    assert after_count_stat <= before_count_stat
+    after_count_objspace = 0
+    ObjectSpace.each_object(TracePoint) do
+      after_count_objspace += 1
+    end
+    assert after_count_objspace <= before_count_objspace
+  end
+
+  def test_tp_ractor_local_untargeted
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+    r = Ractor.new do
+      results = []
+      tp = TracePoint.new(:line) { |tp| results << tp.path }
+      tp.enable
+      Ractor.main << :continue
+      Ractor.receive
+      tp.disable
+      results
+    end
+    outer_results = []
+    outer_tp = TracePoint.new(:line) { |tp| outer_results << tp.path }
+    outer_tp.enable
+    Ractor.receive
+    GC.start # so I can check <internal:gc> path
+    r << :continue
+    inner_results = r.value
+    outer_tp.disable
+    assert_equal 1, outer_results.select { |path| path.match?(/internal:gc/) }.size
+    assert_equal 0, inner_results.select { |path| path.match?(/internal:gc/) }.size
+    end;
+  end
+
+  def test_tp_targeted_ractor_local_bmethod
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+      mname = :foo
+      prok = Ractor.shareable_proc do
+      end
+      klass = EnvUtil.labeled_class(:Klass) do
+        define_method(mname, &prok)
+      end
+      outer_results = 0
+      _outer_tp = TracePoint.new(:call) do
+        outer_results += 1
+      end # not enabled
+      rs = 10.times.map do
+        Ractor.new(mname, klass) do |mname, klass0|
+          inner_results = 0
+          tp = TracePoint.new(:call) { |tp| inner_results += 1 }
+          target = klass0.instance_method(mname)
+          tp.enable(target: target)
+          obj = klass0.new
+          10.times { obj.send(mname) }
+          tp.disable
+          inner_results
+        end
+      end
+      inner_results = rs.map(&:value).sum
+      obj = klass.new
+      10.times { obj.send(mname) }
+      assert_equal 100, inner_results
+      assert_equal 0, outer_results
+    end;
+  end
+
+  def test_tp_targeted_ractor_local_method
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+      def foo
+      end
+      outer_results = 0
+      _outer_tp = TracePoint.new(:call) do
+        outer_results += 1
+      end # not enabled
+
+      rs = 10.times.map do
+        Ractor.new do
+          inner_results = 0
+          tp = TracePoint.new(:call) do
+             inner_results += 1
+          end
+          tp.enable(target: method(:foo))
+          10.times { foo }
+          tp.disable
+          inner_results
+        end
+      end
+
+      inner_results = rs.map(&:value).sum
+      10.times { foo }
+      assert_equal 100, inner_results
+      assert_equal 0,   outer_results
+    end;
+  end
+
+  def test_tracepoints_not_disabled_by_ractor_gc
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+    $-w = nil # uses ObjectSpace._id2ref
+    def hi = "hi"
+    greetings = 0
+    tp_target = TracePoint.new(:call) do |tp|
+      greetings += 1
+    end
+    tp_target.enable(target: method(:hi))
+
+    raises = 0
+    tp_global = TracePoint.new(:raise) do |tp|
+      raises += 1
+    end
+    tp_global.enable
+
+    r = Ractor.new { 10 }
+    r.join
+    ractor_id = r.object_id
+    r = nil # allow gc for ractor
+    gc_max_retries = 15
+    gc_times = 0
+    # force GC of ractor (or try, because we have a conservative GC)
+    until (ObjectSpace._id2ref(ractor_id) rescue nil).nil?
+      GC.start
+      gc_times += 1
+      if gc_times == gc_max_retries
+        break
+      end
+    end
+
+    # tracepoints should still be enabled after GC of `r`
+    5.times {
+      hi
+    }
+    6.times {
+      raise "uh oh" rescue nil
+    }
+    tp_target.disable
+    tp_global.disable
+    assert_equal 5, greetings
+    if gc_times == gc_max_retries # _id2ref never raised
+      assert_equal 6, raises
+    else
+      assert_equal 7, raises
+    end
+    end;
+  end
+
+  def test_lots_of_enabled_tracepoints_ractor_gc
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def foo; end
+      sum = 8.times.map do
+        Ractor.new do
+          called = 0
+          TracePoint.new(:call) do |tp|
+            next if tp.callee_id != :foo
+            called += 1
+          end.enable
+          200.times do
+            TracePoint.new(:line) {
+              # all these allocations shouldn't GC these tracepoints while the ractor is alive.
+              Object.new
+            }.enable
+          end
+          100.times { foo }
+          called
+        end
+      end.map(&:value).sum
+      assert_equal 800, sum
+      4.times { GC.start } # Now the tracepoints can be GC'd because the ractors can be GC'd
+    end;
+  end
 end

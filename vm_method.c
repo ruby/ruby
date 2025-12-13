@@ -826,7 +826,7 @@ rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type opt_type
 }
 
 static void
-rb_method_definition_release(rb_method_definition_t *def)
+method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
         const unsigned int reference_count_was = RUBY_ATOMIC_FETCH_SUB(def->reference_count, 1);
@@ -836,9 +836,6 @@ rb_method_definition_release(rb_method_definition_t *def)
         if (reference_count_was == 1) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:1->0 (remove)\n", (void *)def,
                                       rb_id2name(def->original_id));
-            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
-                xfree(def->body.bmethod.hooks);
-            }
             xfree(def);
         }
         else {
@@ -846,6 +843,12 @@ rb_method_definition_release(rb_method_definition_t *def)
                                       reference_count_was, reference_count_was - 1);
         }
     }
+}
+
+void
+rb_method_definition_release(rb_method_definition_t *def)
+{
+    method_definition_release(def);
 }
 
 static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
@@ -872,7 +875,7 @@ rb_free_method_entry(const rb_method_entry_t *me)
     // to remove from `Invariants` here.
 #endif
 
-    rb_method_definition_release(me->def);
+    method_definition_release(me->def);
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -939,6 +942,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int 
     cfunc->invoker = call_cfunc_invoker_func(argc);
 }
 
+
 static rb_method_definition_t *
 method_definition_addref(rb_method_definition_t *def, bool complemented)
 {
@@ -953,9 +957,15 @@ method_definition_addref(rb_method_definition_t *def, bool complemented)
 }
 
 void
+rb_method_definition_addref(rb_method_definition_t *def)
+{
+    method_definition_addref(def, false);
+}
+
+void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
-    rb_method_definition_release(me->def);
+    method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
     if (!ruby_running) add_opt_method_entry(me);
@@ -1060,8 +1070,6 @@ method_definition_reset(const rb_method_entry_t *me)
         break;
       case VM_METHOD_TYPE_BMETHOD:
         RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
-        /* give up to check all in a list */
-        if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
         break;
       case VM_METHOD_TYPE_REFINED:
         RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
@@ -1195,7 +1203,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
 void
 rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
-    rb_method_definition_release(dst->def);
+    method_definition_release(dst->def);
     *(rb_method_definition_t **)&dst->def = method_definition_addref(src->def, METHOD_ENTRY_COMPLEMENTED(src));
     method_definition_reset(dst);
     dst->called_id = src->called_id;
