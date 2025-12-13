@@ -1062,6 +1062,7 @@ rb_sym_all_symbols(void)
     VALUE ary;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
+        rb_vm_barrier();
         ary = rb_ary_new2(rb_concurrent_set_size(symbols->sym_set));
         rb_concurrent_set_foreach_with_replace(symbols->sym_set, symbols_i, (void *)ary);
     }

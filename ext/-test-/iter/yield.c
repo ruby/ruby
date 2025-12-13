@@ -10,6 +10,9 @@ yield_block(int argc, VALUE *argv, VALUE self)
 void
 Init_yield(VALUE klass)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     VALUE yield = rb_define_module_under(klass, "Yield");
 
     rb_define_method(yield, "yield_block", yield_block, -1);

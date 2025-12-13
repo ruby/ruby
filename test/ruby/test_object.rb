@@ -339,6 +339,9 @@ class TestObject < Test::Unit::TestCase
       'T_CLASS,T_MODULE' => Class.new(Object),
       'generic ivar' => '',
     }.each do |desc, o|
+      if o.is_a?(Class) && !main_ractor?
+        next
+      end
       e = assert_raise(NameError, "#{desc} iv removal raises before set") do
         o.remove_instance_variable(:@foo)
       end
@@ -373,14 +376,14 @@ class TestObject < Test::Unit::TestCase
     o1.instance_variable_set(:@a, 0)
     o1.instance_variable_set(:@b, 1)
     o1.instance_variable_set(:@c, 2)
-    refute_includes ObjectSpace.dump(o1), '"embedded":true'
+    refute_includes ObjectSpace.dump(o1), '"embedded":true' if main_ractor?
     o1.remove_instance_variable(:@foo)
-    assert_includes ObjectSpace.dump(o1), '"embedded":true'
+    assert_includes ObjectSpace.dump(o1), '"embedded":true' if main_ractor?
 
     o2.instance_variable_set(:@a, 0)
     o2.instance_variable_set(:@b, 1)
     o2.instance_variable_set(:@c, 2)
-    assert_includes ObjectSpace.dump(o2), '"embedded":true'
+    assert_includes ObjectSpace.dump(o2), '"embedded":true' if main_ractor?
 
     assert_equal(0, o1.a)
     assert_equal(1, o1.b)
@@ -885,12 +888,14 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_to_s
-    x = eval(<<-EOS)
-      class ToS\u{3042}
-        new.to_s
-      end
-    EOS
-    assert_match(/\bToS\u{3042}:/, x)
+    unless multiple_ractors?
+      x = eval(<<-EOS)
+        class ToS\u{3042}
+          new.to_s
+        end
+      EOS
+      assert_match(/\bToS\u{3042}:/, x)
+    end
 
     name = "X".freeze
     x = Object.new
@@ -932,24 +937,26 @@ class TestObject < Test::Unit::TestCase
     end
     assert_match(/\A#<Object:0x\h+>\z/, x.inspect, feature6130)
 
-    x = eval(<<-EOS)
-      class Inspect\u{3042}
-        new.inspect
-      end
-    EOS
-    assert_match(/\bInspect\u{3042}:/, x)
-
-    x = eval(<<-EOS)
-      class Inspect\u{3042}
-        def initialize
-          @\u{3044} = 42
+    unless multiple_ractors?
+      x = eval(<<-EOS)
+        class Inspect\u{3042}
+          new.inspect
         end
-        new
-      end
-    EOS
-    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
-    x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
-    assert_match(/@\u{3046}=6\b/, x.inspect)
+      EOS
+      assert_match(/\bInspect\u{3042}:/, x)
+
+      x = eval(<<-EOS)
+        class Inspect\u{3042}
+          def initialize
+            @\u{3044} = 42
+          end
+          new
+        end
+      EOS
+      assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
+      x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
+      assert_match(/@\u{3046}=6\b/, x.inspect)
+    end
 
     x = Object.new
     x.singleton_class.class_eval do
@@ -1056,7 +1063,7 @@ class TestObject < Test::Unit::TestCase
     assert_not_initialize_copy {Enumerator::Yielder.new {}}
     assert_not_initialize_copy {File.stat(__FILE__)}
     assert_not_initialize_copy {open(__FILE__)}.each(&:close)
-    assert_not_initialize_copy {ARGF.class.new}
+    assert_not_initialize_copy {ARGF.class.new} if main_ractor?
     assert_not_initialize_copy {Random.new}
     assert_not_initialize_copy {//}
     assert_not_initialize_copy {/.*/.match("foo")}

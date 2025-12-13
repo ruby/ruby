@@ -28,8 +28,6 @@ class TestEval < Test::Unit::TestCase
     assert_equal 11,    eval("11")
     @ivar = 12
     assert_equal 12,    eval("@ivar")
-    assert_equal 13,    eval("@@cvar")
-    assert_equal 14,    eval("$gvar__eval")
     assert_equal 15,    eval("Const")
 
     assert_equal 16,    eval("7 + 9")
@@ -39,10 +37,17 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  eval("@ivar")
-      assert_equal 13,  eval("@@cvar")
-      assert_equal 14,  eval("$gvar__eval")
       assert_equal 15,  eval("Const")
     }
+  end
+
+  def test_eval_basic_ractor_unsafe
+    assert_equal 13, eval("@@cvar")
+    assert_equal 14, eval("$gvar__eval")
+    1.times do
+      assert_equal 13, eval("@@cvar")
+      assert_equal 14, eval("$gvar__eval")
+    end
   end
 
   def test_eval_binding_basic
@@ -56,8 +61,6 @@ class TestEval < Test::Unit::TestCase
     assert_equal 11,    eval("11", binding())
     @ivar = 12
     assert_equal 12,    eval("@ivar", binding())
-    assert_equal 13,    eval("@@cvar", binding())
-    assert_equal 14,    eval("$gvar__eval", binding())
     assert_equal 15,    eval("Const", binding())
 
     assert_equal 16,    eval("7 + 9", binding())
@@ -67,10 +70,17 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  eval("@ivar")
-      assert_equal 13,  eval("@@cvar")
-      assert_equal 14,  eval("$gvar__eval")
       assert_equal 15,  eval("Const")
     }
+  end
+
+  def test_eval_binding_basic_ractor_unsafe
+    assert_equal 13,    eval("@@cvar", binding())
+    assert_equal 14,    eval("$gvar__eval", binding())
+    1.times do
+      assert_equal 13,    eval("@@cvar", binding())
+      assert_equal 14,    eval("$gvar__eval", binding())
+    end
   end
 
   def test_module_eval_string_basic
@@ -83,8 +93,6 @@ class TestEval < Test::Unit::TestCase
     assert_equal 11,    c.module_eval("11")
     @ivar = 12
     assert_equal 12,    c.module_eval("@ivar")
-    assert_equal 13,    c.module_eval("@@cvar")
-    assert_equal 14,    c.module_eval("$gvar__eval")
     assert_equal 15,    c.module_eval("Const")
     assert_equal 16,    c.module_eval("7 + 9")
     assert_equal 17,    c.module_eval("17.to_i")
@@ -94,10 +102,18 @@ class TestEval < Test::Unit::TestCase
     @ivar = 12
     1.times {
       assert_equal 12,  c.module_eval("@ivar")
-      assert_equal 13,  c.module_eval("@@cvar")
-      assert_equal 14,  c.module_eval("$gvar__eval")
       assert_equal 15,  c.module_eval("Const")
     }
+  end
+
+  def test_module_eval_string_basic_ractor_unsafe
+    c = self.class
+    assert_equal 13,    c.module_eval("@@cvar")
+    assert_equal 14,    c.module_eval("$gvar__eval")
+    1.times do
+      assert_equal 13,  c.module_eval("@@cvar")
+      assert_equal 14,  c.module_eval("$gvar__eval")
+    end
   end
 
   def test_module_eval_block_basic
@@ -110,8 +126,6 @@ class TestEval < Test::Unit::TestCase
     assert_equal 11,    c.module_eval { 11 }
     @ivar = 12
     assert_equal 12,    c.module_eval { @ivar }
-    assert_equal 13,    c.module_eval { @@cvar }
-    assert_equal 14,    c.module_eval { $gvar__eval }
     assert_equal 15,    c.module_eval { Const }
     assert_equal 16,    c.module_eval { 7 + 9 }
     assert_equal 17,    c.module_eval { "17".to_i }
@@ -121,10 +135,18 @@ class TestEval < Test::Unit::TestCase
     @ivar = 12
     1.times {
       assert_equal 12,  c.module_eval { @ivar }
-      assert_equal 13,  c.module_eval { @@cvar }
-      assert_equal 14,  c.module_eval { $gvar__eval }
       assert_equal 15,  c.module_eval { Const }
     }
+  end
+
+  def test_module_eval_block_basic_ractor_unsafe
+    c = self.class
+    assert_equal 13,    c.module_eval { @@cvar }
+    assert_equal 14,    c.module_eval { $gvar__eval }
+    1.times do
+      assert_equal 13,  c.module_eval { @@cvar }
+      assert_equal 14,  c.module_eval { $gvar__eval }
+    end
   end
 
   def test_module_eval_block_symbol
@@ -150,8 +172,6 @@ class TestEval < Test::Unit::TestCase
 
       assert_equal 11,    o.instance_eval("11")
       assert_equal 12,    o.instance_eval("@ivar") unless o.frozen?
-      assert_equal 13,    o.instance_eval("@@cvar")
-      assert_equal 14,    o.instance_eval("$gvar__eval")
       assert_equal 15,    o.instance_eval("Const")
       assert_equal 16,    o.instance_eval("7 + 9")
       assert_equal 17,    o.instance_eval("17.to_i")
@@ -160,9 +180,18 @@ class TestEval < Test::Unit::TestCase
 
       1.times {
         assert_equal 12,  o.instance_eval("@ivar") unless o.frozen?
+        assert_equal 15,  o.instance_eval("Const")
+      }
+    end
+  end
+
+  def test_instance_eval_string_basic_ractor_unsafe
+    forall_TYPE do |o|
+      assert_equal 13,    o.instance_eval("@@cvar")
+      assert_equal 14,    o.instance_eval("$gvar__eval")
+      1.times {
         assert_equal 13,  o.instance_eval("@@cvar")
         assert_equal 14,  o.instance_eval("$gvar__eval")
-        assert_equal 15,  o.instance_eval("Const")
       }
     end
   end
@@ -178,8 +207,6 @@ class TestEval < Test::Unit::TestCase
 
       assert_equal 11,    o.instance_eval { 11 }
       assert_equal 12,    o.instance_eval { @ivar } unless o.frozen?
-      assert_equal 13,    o.instance_eval { @@cvar }
-      assert_equal 14,    o.instance_eval { $gvar__eval }
       assert_equal 15,    o.instance_eval { Const }
       assert_equal 16,    o.instance_eval { 7 + 9 }
       assert_equal 17,    o.instance_eval { 17.to_i }
@@ -188,9 +215,18 @@ class TestEval < Test::Unit::TestCase
 
       1.times {
         assert_equal 12,  o.instance_eval { @ivar } unless o.frozen?
+        assert_equal 15,  o.instance_eval { Const }
+      }
+    end
+  end
+
+  def test_instance_eval_block_basic_ractor_unsafe
+    forall_TYPE do |o|
+      assert_equal 13,    o.instance_eval { @@cvar }
+      assert_equal 14,    o.instance_eval { $gvar__eval }
+      1.times {
         assert_equal 13,  o.instance_eval { @@cvar }
         assert_equal 14,  o.instance_eval { $gvar__eval }
-        assert_equal 15,  o.instance_eval { Const }
       }
     end
   end
@@ -270,8 +306,6 @@ class TestEval < Test::Unit::TestCase
 
       assert_equal 11,    o.instance_exec { 11 }
       assert_equal 12,    o.instance_exec { @ivar } unless o.frozen?
-      assert_equal 13,    o.instance_exec { @@cvar }
-      assert_equal 14,    o.instance_exec { $gvar__eval }
       assert_equal 15,    o.instance_exec { Const }
       assert_equal 16,    o.instance_exec { 7 + 9 }
       assert_equal 17,    o.instance_exec { 17.to_i }
@@ -280,9 +314,18 @@ class TestEval < Test::Unit::TestCase
 
       1.times {
         assert_equal 12,  o.instance_exec { @ivar } unless o.frozen?
+        assert_equal 15,  o.instance_exec { Const }
+      }
+    end
+  end
+
+  def test_instance_exec_block_basic_ractor_unsafe
+    forall_TYPE do |o|
+      assert_equal 13,    o.instance_exec { @@cvar }
+      assert_equal 14,    o.instance_exec { $gvar__eval }
+      1.times {
         assert_equal 13,  o.instance_exec { @@cvar }
         assert_equal 14,  o.instance_exec { $gvar__eval }
-        assert_equal 15,  o.instance_exec { Const }
       }
     end
   end
@@ -346,14 +389,6 @@ class TestEval < Test::Unit::TestCase
     assert(!eval('nil'))
     assert(!eval('false'))
 
-    $foo = 'assert(true)'
-    begin
-      eval $foo
-    rescue
-      assert(false)
-    end
-
-    assert_equal('assert(true)', eval("$foo"))
     assert_equal(true, eval("true"))
     i = i = 5
     assert(eval("i == 5"))
@@ -371,24 +406,6 @@ class TestEval < Test::Unit::TestCase
     end
     assert(!bad)
 
-    # !! use class_eval to avoid nested definition
-    x = self.class.class_eval %q(
-      module EvTest
-	EVTEST1 = 25
-	evtest2 = 125
-	evtest2 = evtest2
-	binding
-      end
-    )
-    assert_equal(25, eval("EVTEST1", x))	# constant in module
-    assert_equal(125, eval("evtest2", x))	# local var in module
-    bad = true
-    begin
-      eval("EVTEST1")
-    rescue NameError		# must raise error
-      bad = false
-    end
-    assert(!bad)
 
     x = binding
     eval "i = 1", x
@@ -418,9 +435,39 @@ class TestEval < Test::Unit::TestCase
       assert_equal(55, foo22)
     }.call
 
+  end
+
+  def test_eval_orig_ractor_unsafe
+    $foo = 'assert(true)'
+    begin
+      eval $foo
+    rescue
+      assert(false)
+    end
+    assert_equal('assert(true)', eval("$foo"))
+
+    # !! use class_eval to avoid nested definition
+    x = self.class.class_eval %q(
+      module EvTest
+        EVTEST1 = 25
+        evtest2 = 125
+        evtest2 = evtest2
+        binding
+      end
+      )
+    assert_equal(25, eval("EVTEST1", x))	# constant in module
+    assert_equal(125, eval("evtest2", x))	# local var in module
+    bad = true
+    begin
+      eval("EVTEST1")
+    rescue NameError		# must raise error
+      bad = false
+    end
+    assert(!bad)
+
     self.class.class_eval do
       remove_const :EvTest
-    end
+    end if x
   end
 
   def test_nil_instance_eval_cvar

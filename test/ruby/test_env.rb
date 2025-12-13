@@ -5,12 +5,12 @@ class TestEnv < Test::Unit::TestCase
   windows = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
   IGNORE_CASE = windows
   ENCODING = windows ? Encoding::UTF_8 : Encoding.find("locale")
-  PATH_ENV = "PATH"
+  PATH_ENV = "PATH".freeze
   INVALID_ENVVARS = [
-    "foo\0bar",
-    "\xa1\xa1".force_encoding(Encoding::UTF_16LE),
-    "foo".force_encoding(Encoding::ISO_2022_JP),
-  ]
+    "foo\0bar".freeze,
+    "\xa1\xa1".force_encoding(Encoding::UTF_16LE).freeze,
+    "foo".force_encoding(Encoding::ISO_2022_JP).freeze,
+  ].freeze
 
   def assert_invalid_env(msg = nil)
     all_assertions(msg) do |a|
@@ -645,7 +645,7 @@ class TestEnv < Test::Unit::TestCase
         end
         assert_equal(as.sort, bs.sort)
       end
-  }
+  }.freeze
 
   def test_bracket_in_ractor
     assert_ractor(<<-"end;")

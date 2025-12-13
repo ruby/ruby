@@ -30,6 +30,9 @@ asan_p(VALUE klass)
 void
 Init_stack(VALUE klass)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     rb_define_singleton_method(rb_cThread, "alloca_overflow", stack_alloca_overflow, 0);
     rb_define_singleton_method(rb_cThread, "asan?", asan_p, 0);
 }

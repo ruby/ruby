@@ -386,7 +386,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   # We check that values are correctly round tripped.
-  RANGES = {
+  Ractor.make_shareable(RANGES = {
     :U8 => [0, 2**8-1],
     :S8 => [-2**7, 0, 2**7-1],
 
@@ -412,7 +412,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     :F32 => [-1.0, 0.0, 0.5, 1.0, 128.0],
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
-  }
+  })
 
   def test_get_set_value
     buffer = IO::Buffer.new(128)
