@@ -2063,13 +2063,18 @@ root_fiber_alloc(rb_thread_t *th)
 }
 
 static inline rb_fiber_t*
-fiber_current(void)
+ec_fiber_current(rb_execution_context_t *ec)
 {
-    rb_execution_context_t *ec = GET_EC();
     if (ec->fiber_ptr->cont.self == 0) {
         root_fiber_alloc(rb_ec_thread_ptr(ec));
     }
     return ec->fiber_ptr;
+}
+
+static inline rb_fiber_t*
+fiber_current(void)
+{
+    return ec_fiber_current(GET_EC());
 }
 
 static inline VALUE
@@ -2643,6 +2648,12 @@ return_fiber(bool terminate)
 
         return fiber;
     }
+}
+
+VALUE
+rb_ec_fiber_current(rb_execution_context_t *ec)
+{
+    return ec_fiber_current(ec)->cont.self;
 }
 
 VALUE

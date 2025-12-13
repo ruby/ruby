@@ -6,9 +6,6 @@
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
 #
-
-require 'monitor.so'
-
 #
 # In concurrent programming, a monitor is an object or module intended to be
 # used safely by more than one thread. The defining characteristic of a
