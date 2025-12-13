@@ -1391,6 +1391,16 @@ fn gen_send_without_block_direct(
         0
     };
 
+    // Fill non-parameter locals with nil (they may be read by eval before being written)
+    let num_params = params.size.to_usize();
+    if local_size > num_params {
+        asm_comment!(asm, "initialize non-parameter locals to nil");
+        for local_idx in num_params..local_size {
+            let offset = local_size_and_idx_to_bp_offset(local_size, local_idx);
+            asm.store(Opnd::mem(64, SP, -offset * SIZEOF_VALUE_I32), Qnil.into());
+        }
+    }
+
     // Make a method call. The target address will be rewritten once compiled.
     let iseq_call = IseqCall::new(iseq, num_optionals_passed);
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
@@ -2369,8 +2379,8 @@ c_callable! {
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
-            // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
-            // We need to set them if we side-exit from function_stub_hit.
+            // Successful JIT-to-JIT calls fill nils to non-parameter locals in generated code.
+            // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
                 unsafe {
                     // Set SP which gen_push_frame() doesn't set

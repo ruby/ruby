@@ -355,6 +355,21 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_nonparam_local_nil_in_jit_call
+    # Non-parameter locals must be initialized to nil in JIT-to-JIT calls.
+    # Use dead code (if false) to create locals without initialization instructions.
+    # Then eval a string that accesses the uninitialized locals.
+    assert_compiles '["x", "x", "x", "x"]', %q{
+      def f(a)
+        a ||= 1
+        if false; b = 1; end
+        eval("-> { p 'x#{b}' }")
+      end
+
+      4.times.map { f(1).call }
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval
     assert_compiles '1', %q{
       @b = binding
