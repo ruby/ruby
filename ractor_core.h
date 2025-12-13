@@ -73,7 +73,9 @@ struct rb_ractor_struct {
     struct {
         struct ccan_list_head set;
         unsigned int cnt;
+#if RACTOR_TRACK_BLOCKING
         unsigned int blocking_cnt;
+#endif
         unsigned int sleeper;
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
