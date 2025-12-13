@@ -57,6 +57,7 @@ assert_equal "\n",              '"\n"'
 # dynamic string literal
 assert_equal '2',               '"#{1 + 1}"'
 assert_equal '16',              '"#{2 ** 4}"'
+assert_equal '65536',           '"#{2 *** 4}"'
 assert_equal 'string',          's = "string"; "#{s}"'
 
 # dynamic symbol literal
