@@ -11328,13 +11328,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case RB_ELSE_NODE: {
         const rb_else_node_t *cast = (const rb_else_node_t *) node;
-
-        if (cast->statements) {
-            CHECK(COMPILE_(ret, "else", (const rb_node_t *) cast->statements, popped));
-        }
-        else if (!popped) {
-            ADD_SYNTHETIC_INSN(ret, nd_line(node), -1, putnil);
-        }
+        CHECK(COMPILE_(ret, "else", (const NODE *) cast->statements, popped));
         break;
       }
 
