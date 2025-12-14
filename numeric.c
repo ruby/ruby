@@ -2601,7 +2601,7 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
  *    floor(ndigits = 0) -> float or integer
  *
  *  Returns the largest float or integer that is less than or equal to +self+,
- *  as specified by the given `ndigits`,
+ *  as specified by the given +ndigits+,
  *  which must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
