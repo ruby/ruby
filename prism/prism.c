@@ -2075,7 +2075,10 @@ pm_arguments_node_arguments_append(pm_arguments_node_t *node, pm_node_t *argumen
         node->base.location.start = argument->location.start;
     }
 
-    node->base.location.end = argument->location.end;
+    if (node->base.location.end < argument->location.end) {
+        node->base.location.end = argument->location.end;
+    }
+
     pm_node_list_append(&node->arguments, argument);
 
     if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
