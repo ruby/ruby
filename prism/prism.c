@@ -18492,6 +18492,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // yield node.
             if (arguments.block != NULL) {
                 pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+                pm_node_unreference(parser, arguments.block);
                 pm_node_destroy(parser, arguments.block);
                 arguments.block = NULL;
             }
