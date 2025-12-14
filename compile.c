@@ -11301,7 +11301,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             for (size_t index = 0; index < body->size - 1; index++) {
                 COMPILE_POPPED(ret, "statements body", body->nodes[index]);
             }
-            COMPILE(ret, "statements body", body->nodes[body->size - 1]);
+            CHECK(COMPILE_(ret, "statements body", body->nodes[body->size - 1], popped));
         }
         else {
             ADD_INSN(ret, node, putnil);
