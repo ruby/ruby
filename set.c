@@ -1988,13 +1988,6 @@ rb_set_size(VALUE set)
 /*
  *  Document-class: Set
  *
- * Copyright (c) 2002-2024 Akinori MUSHA <knu@iDaemons.org>
- *
- * Documentation by Akinori MUSHA and Gavin Sinclair.
- *
- * All rights reserved.  You can redistribute and/or modify it under the same
- * terms as Ruby.
- *
  * The Set class implements a collection of unordered values with no
  * duplicates. It is a hybrid of Array's intuitive inter-operation
  * facilities and Hash's fast lookup.
