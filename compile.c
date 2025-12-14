@@ -909,7 +909,7 @@ get_string_value(const NODE *node)
 }
 
 static VALUE
-get_string_value2(const rb_node_t *node)
+get_string_value2(const NODE *node)
 {
     switch (nd_type(node)) {
       case RB_STRING_NODE:
@@ -2169,7 +2169,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->bits_start = arg_size++;
 
     for (size_t i = 0; i < RB_NODE_LIST_LEN(keywords); i++) {
-        const rb_node_t *node = keywords->nodes[i];
+        const NODE *node = keywords->nodes[i];
         VALUE dv;
 
         switch (nd_type(node)) {
@@ -2281,7 +2281,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
         rb_parameters_node_t *args = RB_NODE_PARAMETERS(node_args);
-        rb_node_t *rest = 0;
+        NODE *rest = 0;
         int last_comma = 0;
         rb_block_parameter_node_t *block = 0;
         int arg_size;
@@ -2315,7 +2315,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             int i = 0, j;
 
             for (size_t k = 0; k < list->size; k++) {
-                rb_node_t *node = list->nodes[k];
+                NODE *node = list->nodes[k];
                 label = NEW_LABEL(nd_line(node));
                 rb_ary_push(labels, (VALUE)label | 1);
                 ADD_LABEL(optargs, label);
@@ -7368,17 +7368,17 @@ optimized_range_item(const NODE *n)
     }
 }
 
-static rb_node_t *
+static NODE *
 unless_node_else_statements(const rb_unless_node_t *const node)
 {
-    return (node->else_clause == NULL) ? NULL : (rb_node_t *)node->else_clause->statements;
+    return (node->else_clause == NULL) ? NULL : (NODE *)node->else_clause->statements;
 }
 
 static int
-compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_node_t *const node, int popped, const enum rb_node_type type)
+compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum rb_node_type type)
 {
-    const rb_node_t *const node_body = type == RB_IF_NODE ? RB_NODE_IF(node)->statements : unless_node_else_statements(RB_NODE_UNLESS(node));
-    const rb_node_t *const node_else = type == RB_IF_NODE ? RB_NODE_IF(node)->subsequent : RB_NODE_UNLESS(node)->statements;
+    const NODE *const node_body = type == RB_IF_NODE ? RB_NODE_IF(node)->statements : unless_node_else_statements(RB_NODE_UNLESS(node));
+    const NODE *const node_else = type == RB_IF_NODE ? RB_NODE_IF(node)->subsequent : RB_NODE_UNLESS(node)->statements;
 
     const int line = nd_line(node);
     const NODE *line_node = node;
@@ -7391,7 +7391,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_node_t *const node,
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    rb_node_t *cond = RB_NODE_IF(node)->predicate;
+    NODE *cond = RB_NODE_IF(node)->predicate;
     // if (nd_type(cond) == NODE_BLOCK) {
     //     cond = RNODE_BLOCK(cond)->nd_head;
     // }
@@ -7437,7 +7437,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_node_t *const node,
         CHECK(COMPILE_(else_seq, "else", node_else, popped));
 
         if (then_label->refcnt) {
-            const rb_node_t *const coverage_node = node_else ? node_else : node;
+            const NODE *const coverage_node = node_else ? node_else : node;
             add_trace_branch_coverage(
                 iseq,
                 ret,
