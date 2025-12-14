@@ -1010,12 +1010,17 @@ Init_openssl(void)
     /*
      * Version of OpenSSL the ruby OpenSSL extension was built with
      */
-    rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+    rb_define_const(mOSSL, "OPENSSL_VERSION",
+                    rb_obj_freeze(rb_str_new_cstr(OPENSSL_VERSION_TEXT)));
 
     /*
      * Version of OpenSSL the ruby OpenSSL extension is running with
      */
-    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
+    rb_define_const(
+        mOSSL,
+        "OPENSSL_LIBRARY_VERSION",
+        rb_obj_freeze(rb_str_new_cstr(OpenSSL_version(OPENSSL_VERSION)))
+    );
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
