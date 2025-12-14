@@ -15512,10 +15512,10 @@ new_args2(struct parser_params *p, rb_array_node_t *pre_args, rb_array_node_t *o
 //         rest_arg = idFWD_REST;
 //     }
 
-       if (pre_args) rb_node_list_move(&tail->requireds, &pre_args->elements);
-       if (post_args) rb_node_list_move(&tail->posts, &post_args->elements);
-       tail->rest = rest_arg;
-       if (opt_args) rb_node_list_move(&tail->optionals, &opt_args->elements);
+    if (pre_args) rb_node_list_move(&tail->requireds, &pre_args->elements);
+    if (post_args) rb_node_list_move(&tail->posts, &post_args->elements);
+    tail->rest = rest_arg;
+    if (opt_args) rb_node_list_move(&tail->optionals, &opt_args->elements);
 
 //     nd_set_loc(RNODE(tail), loc);
 
