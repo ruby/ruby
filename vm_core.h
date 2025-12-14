@@ -1041,6 +1041,7 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
+    rb_serial_t fiber_serial;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;

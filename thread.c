@@ -454,7 +454,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
         VM_ASSERT(mutex->fiber_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, NULL);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
@@ -5283,7 +5283,7 @@ rb_thread_shield_owned(VALUE self)
 
     rb_mutex_t *m = mutex_ptr(mutex);
 
-    return m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr);
+    return m->fiber_serial == rb_ec_fiber_serial(GET_EC());
 }
 
 /*
@@ -5302,7 +5302,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr)) return Qnil;
+    if (m->fiber_serial == rb_ec_fiber_serial(GET_EC())) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5860,7 +5860,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber_serial == rb_fiber_serial(th->ec->fiber_ptr) || (!mutex->fiber_serial && !ccan_list_empty(&mutex->waitq))) {
+            if (mutex->fiber_serial == rb_ec_fiber_serial(th->ec) || (!mutex->fiber_serial && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }
