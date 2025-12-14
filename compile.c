@@ -11268,7 +11268,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         else {
             ADD_INSN(ret, node, putnil);
-        }        
+        }
         break;
       }
       // ... more nodes
