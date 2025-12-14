@@ -31,16 +31,8 @@ VALUE rb_cBox = 0;
 VALUE rb_cBoxEntry = 0;
 VALUE rb_mBoxLoader = 0;
 
-static rb_box_t root_box_data = {
-    /* Initialize values lazily in Init_Box() */
-    (VALUE)NULL, 0,
-    (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL,
-    (struct st_table *)NULL, (struct st_table *)NULL, (VALUE)NULL, (VALUE)NULL,
-    false, false
-};
-
-static rb_box_t * root_box = &root_box_data;
-static rb_box_t * main_box = 0;
+static rb_box_t root_box[1]; /* Initialize in initialize_root_box() */
+static rb_box_t *main_box;
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
 
@@ -290,7 +282,7 @@ box_entry_memsize(const void *ptr)
         rb_st_memsize(box->loading_table);
 }
 
-const rb_data_type_t rb_box_data_type = {
+static const rb_data_type_t rb_box_data_type = {
     "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
@@ -301,7 +293,7 @@ const rb_data_type_t rb_box_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
-const rb_data_type_t rb_root_box_data_type = {
+static const rb_data_type_t rb_root_box_data_type = {
     "Ruby::Box::Root",
     {
         rb_box_entry_mark,
@@ -838,8 +830,6 @@ rb_box_require_relative(VALUE box, VALUE fname)
 static void
 initialize_root_box(void)
 {
-    VALUE root_box, entry;
-    ID id_box_entry;
     rb_vm_t *vm = GET_VM();
     rb_box_t *root = (rb_box_t *)rb_root_box();
 
@@ -864,6 +854,8 @@ initialize_root_box(void)
     vm->root_box = root;
 
     if (rb_box_available()) {
+        VALUE root_box, entry;
+        ID id_box_entry;
         CONST_ID(id_box_entry, "__box_entry__");
 
         root_box = rb_obj_alloc(rb_cBox);
