@@ -4,7 +4,7 @@
 begin
   require "sexp"
 rescue LoadError
-  warn(%q{Error: Unable to load sexp. Add `gem "sexp"` to your Gemfile.})
+  warn(%q{Error: Unable to load sexp. Add `gem "sexp_processor"` to your Gemfile.})
   exit(1)
 end
 
