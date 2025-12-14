@@ -2621,7 +2621,7 @@ num_floor(int argc, VALUE *argv, VALUE num)
  *    ceil(ndigits = 0) -> float or integer
  *
  *  Returns the smallest float or integer that is greater than or equal to +self+,
- *  as specified by the given `ndigits`,
+ *  as specified by the given +ndigits+,
  *  which must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
