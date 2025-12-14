@@ -4569,10 +4569,10 @@ primary		: inline_primary
                         m->nd_plen = 1;
                         m->nd_next = $for_var;
                         break;
-                        case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
+                      case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
                         m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                         break;
-                        default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
+                      default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
                         m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
                     }
                     /* {|*internal_id| <m> = internal_id; ... } */
@@ -4692,7 +4692,7 @@ primary		: inline_primary
                     if (!p->ctxt.in_defined) {
                         switch (p->ctxt.in_rescue) {
                           case before_rescue: yyerror1(&@1, "Invalid retry without rescue"); break;
-                            case after_rescue: /* ok */ break;
+                          case after_rescue: /* ok */ break;
                           case after_else: yyerror1(&@1, "Invalid retry after else"); break;
                           case after_ensure: yyerror1(&@1, "Invalid retry after ensure"); break;
                         }
@@ -5122,10 +5122,10 @@ numparam	:   {
                 ;
 
 it_id		:   {
-                    $$ = p->it_id;
-                    p->it_id = 0;
-                }
-            ;
+                        $$ = p->it_id;
+                        p->it_id = 0;
+                    }
+                ;
 
 lambda		: tLAMBDA[lpar]
                     {
@@ -5441,7 +5441,7 @@ p_top_expr	: p_top_expr_body
                     }
                 ;
 
-p_top_expr_body	: p_expr
+p_top_expr_body : p_expr
                 | p_expr ','
                     {
                         $$ = new_array_pattern_tail(p, 0, 1, 0, 0, &@$);
@@ -5794,7 +5794,7 @@ p_value 	: p_primitive
                 | p_const
                 ;
 
-p_primitive		: inline_primary
+p_primitive	: inline_primary
                 | keyword_variable
                     {
                         if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
@@ -6058,7 +6058,7 @@ xstring_contents: /* none */
                     }
                 ;
 
-regexp_contents: /* none */
+regexp_contents	: /* none */
                     {
                         $$ = 0;
                     /*% ripper: regexp_new! %*/
@@ -6205,14 +6205,14 @@ user_variable	: ident_or_const
                 | nonlocal_var
                 ;
 
-keyword_variable	: keyword_nil {$$ = KWD2EID(nil, $1);}
-                    | keyword_self {$$ = KWD2EID(self, $1);}
-                    | keyword_true {$$ = KWD2EID(true, $1);}
-                    | keyword_false {$$ = KWD2EID(false, $1);}
-                    | keyword__FILE__ {$$ = KWD2EID(_FILE__, $1);}
-                    | keyword__LINE__ {$$ = KWD2EID(_LINE__, $1);}
-                    | keyword__ENCODING__ {$$ = KWD2EID(_ENCODING__, $1);}
-                    ;
+keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
+                | keyword_self {$$ = KWD2EID(self, $1);}
+                | keyword_true {$$ = KWD2EID(true, $1);}
+                | keyword_false {$$ = KWD2EID(false, $1);}
+                | keyword__FILE__ {$$ = KWD2EID(_FILE__, $1);}
+                | keyword__LINE__ {$$ = KWD2EID(_LINE__, $1);}
+                | keyword__ENCODING__ {$$ = KWD2EID(_ENCODING__, $1);}
+                ;
 
 var_ref		: user_variable
                     {
