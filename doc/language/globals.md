@@ -10,6 +10,74 @@ To use the module:
 require 'English'
 ```
 
+## In Brief
+
+### Exceptions
+
+| Variable |     \English      | Initially | Read-Only | Set By                                         |
+|:--------:|:-----------------:|:---------:|:---------:|------------------------------------------------|
+|  `$!`    |  `$ERROR_INFO`    |  `nil`    |   Yes.    | Kernel#raise, to Exception object.             |
+|   `$@`   | `$ERROR_POSITION` |   `nil`   |   Yes.    | Kernel#raise, to array of backtrace positions. |
+
+### Pattern Matching
+
+| Variable |       \English       | Initially | Read-Only | Set By                                                    |
+|:--------:|:--------------------:|:---------:|:---------:|-----------------------------------------------------------|
+|   `$~`   | `$LAST_MATCH_INFO`   |  `nil`    |    No.    | Matcher method: to MatchData object or `nil`.             |
+|   `$&`   |       `$MATCH`       |   `nil`   |    No.    | Matcher method: to matched substring or `nil`.            |
+| `` $` `` |     `$PRE_MATCH`     |   `nil`   |    No.    | Matcher method: to substring left of match or `nil`.      |
+|   `$'`   |    `$POST_MATCH`     |   `nil`   |    No.    | Matcher method: to substring right of match or `nil`.     |
+|   `$+`   | `$LAST_PAREN_MATCH`  |   `nil`   |    No.    | Matcher method: to last group matched or `nil`.           |
+|   `$1`   |                      |   `nil`   |   Yes.    | Matcher method: to first group matched or `nil`.          |
+|   `$2`   |                      |   `nil`   |   Yes.    | Matcher method: to second group matched or `nil`.         |
+|  <tt>$_n_</tt>  |                      |   `nil`   |   Yes.    | Matcher method: to <i>n</i>th group matched or `nil`. |
+
+### Separators
+
+| Variable |          \English           | Initially | Read-Only |
+|:--------:|:---------------------------:|:---------:|:---------:|
+| `$/`     | `$INPUT_RECORD_SEPARATOR`   | Newline.  |    No.    |
+| `$\`     | `$OUTPUT_RECORD_SEPARATOR`  |  `nil`    |    No.    |
+
+### Streams
+
+|  Variable  |          \English           | Initially | Read-Only | Set By                |
+|:----------:|:---------------------------:|:---------:|:---------:|-----------------------|
+| `$stdin`   |                             |  `STDIN`  |    No.    |                       |
+| `$stdout`  |                             | `STDOUT`  |    No.    |                       |
+| `$stderr`  |                             | `STDERR`  |    No.    |                       |
+|    `$<`    |      `$DEFAULT_INPUT`       |  `ARGF`   |   Yes.    |                       |
+|    `$>`    |     `$DEFAULT_OUTPUT`       | `STDOUT ` |    No.    |                       |
+|    `$.`    | `$INPUT_LINE_NUMBER`, `$NR` |     0     |    No.    | Certain read methods. |
+|    `$_`    |      `$LAST_READ_LINE`      |   `nil`   |    No.    | Certain read methods. |
+
+### Processes
+
+|         Variable          |        \English        |       Initially       | Read-Only |
+|:-------------------------:|:----------------------:|:---------------------:|:---------:|
+|   `$0`, `$PROGRAM_NAME`   |                        |     Program name.     |    No.    |
+|           `$*`            |        `$ARGV`         |      `ARGV`           |   Yes.    |
+|           `$$`            | `$PROCESS_ID`, `$PID`  |     Process PID.      |   Yes.    |
+|           `$?`            |    `$CHILD_STATUS`     | Child process status. |   Yes.    |
+| `$LOAD_PATH`, `$:`, `$-I` |                        |    Array of paths.    |   Yes.    |
+| `$LOADED_FEATURES`, `$"`  |                        |    Array of paths.    |   Yes.    |
+
+### Debugging
+
+|   Variable   | \English |                   Initially                   | Read-Only | Set By  |
+|:------------:|:--------:|:---------------------------------------------:|:---------:|---------|
+| `$FILENAME`  |          | The value returned by method `ARGF#filename`. |   Yes.    | `ARGF`  |
+|   `$DEBUG`   |          | Whether option `-d` or `--debug` was given.   |    No.    |         |
+|  `$VERBOSE`  |          |    Whether option `-V` or `-W` was given.     |    No.    |         |
+
+### Other Variables
+
+| Variable | \English |                   Initially                    | Read-Only |
+|:--------:|:--------:|:----------------------------------------------:|:---------:|
+| `$-a`    |          |         Whether option `-a` was given.         |   Yes.    |
+|  `$-i`   |          | Extension given with command-line option `-i`. |    No.    |
+|  `$-l`   |          |    Whether option `-l` was given.              |   Yes.    |
+|  `$-p`   |          |         Whether option `-p` was given.         |   Yes.    |
 ## Summary
 
 ### Exceptions
@@ -330,6 +398,8 @@ The value returned by method ARGF.filename.
 
 ### `$DEBUG`
 
+Initially `true` if command-line option `-d` or `--debug` is given,
+otherwise initially `false`;
 Initially `true` if [command-line option `-d`] or
 [`--debug`][command-line option `-d`] is given, otherwise initially `false`;
 may be set to either value in the running program.
@@ -340,6 +410,8 @@ Aliased as `$-d`.
 
 ### `$VERBOSE`
 
+Initially `true` if command-line option `-v` or `-w` is given,
+otherwise initially `false`;
 Initially `true` if [command-line option `-v`] or
 [`-w`][command-line option `-w`] is given, otherwise initially `false`;
 may be set to either value, or to `nil`, in the running program.
@@ -352,6 +424,13 @@ Aliased as `$-v` and `$-w`.
 
 ## Other Variables
 
+### `$-a`
+
+Whether command-line option `-a` was given; read-only.
+
+### `$-i`
+
+Contains the extension given with command-line option `-i`,
 ### `$-F`
 
 The default field separator in String#split; must be a String or a
@@ -375,6 +454,11 @@ An alias of ARGF.inplace_mode.
 
 ### `$-l`
 
+Whether command-line option `-l` was set; read-only.
+
+### `$-p`
+
+Whether command-line option `-p` was given; read-only.
 Whether [command-line option `-l`] was set; read-only.
 
 ### `$-p`
@@ -393,6 +477,8 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 
 ### `$,`
 
+### `$;`
+
 # Pre-Defined Global Constants
 
 ## Summary
@@ -400,6 +486,7 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 ### Streams
 
 | Constant | Contains                |
+|----------|-------------------------|
 |:--------:|-------------------------|
 | `STDIN`  | Standard input stream.  |
 | `STDOUT` | Standard output stream. |
@@ -407,8 +494,27 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 
 ### Environment
 
-|       Constant        | Contains                                                                      |
+| Constant              | Contains                                                                      |
+|-----------------------|-------------------------------------------------------------------------------|
+| `ENV`                 | Hash of current environment variable names and values.                        |
+| `ARGF`                | String concatenation of files given on the command line, or `$stdin` if none. |
+| `ARGV`                | Array of the given command-line arguments.                                    |
+| `TOPLEVEL_BINDING`    | Binding of the top level scope.                                               |
+| `RUBY_VERSION`        | String Ruby version.                                                          |
+| `RUBY_RELEASE_DATE`   | String Ruby release date.                                                     |
+| `RUBY_PLATFORM`       | String Ruby platform.                                                         |
+| `RUBY_PATCH_LEVEL`    | String Ruby patch level.                                                      |
+| `RUBY_REVISION`       | String Ruby revision.                                                         |
+| `RUBY_COPYRIGHT`      | String Ruby copyright.                                                        |
+| `RUBY_ENGINE`         | String Ruby engine.                                                           |
+| `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
+| `RUBY_DESCRIPTION`    | String Ruby description.                                                      |
+
+### Embedded \Data
+
+|      Constant         | Contains                                                                      |
 |:---------------------:|-------------------------------------------------------------------------------|
+|        `DATA`         | File containing embedded data (lines following `__END__`, if any).            |
 |         `ENV`         | Hash of current environment variable names and values.                        |
 |        `ARGF`         | String concatenation of files given on the command line, or `$stdin` if none. |
 |        `ARGV`         | Array of the given command-line arguments.                                    |
@@ -422,12 +528,6 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 |     `RUBY_ENGINE`     | String Ruby engine.                                                           |
 | `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
 |  `RUBY_DESCRIPTION`   | String Ruby description.                                                      |
-
-### Embedded Data
-
-| Constant | Contains                                                           |
-|:--------:|--------------------------------------------------------------------|
-|  `DATA`  | File containing embedded data (lines following `__END__`, if any). |
 
 ## Streams
 
@@ -607,3 +707,4 @@ Output:
 [command-line option `-p`]: rdoc-ref:language/options.md@p-3A+-n-2C+with+Printing
 [command-line option `-v`]: rdoc-ref:language/options.md@v-3A+Print+Version-3B+Set+-24VERBOSE
 [command-line option `-w`]: rdoc-ref:language/options.md@w-3A+Synonym+for+-W1
+
