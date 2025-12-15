@@ -89,6 +89,66 @@ RSpec.describe "bundle pristine" do
       expect(changes_txt).to be_file
       expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overridden.")
     end
+
+    it "doesn't run multiple git processes for the same repository" do
+      nested_gems = [
+        "actioncable",
+        "actionmailer",
+        "actionpack",
+        "actionview",
+        "activejob",
+        "activemodel",
+        "activerecord",
+        "activestorage",
+        "activesupport",
+        "railties",
+      ]
+
+      build_repo2 do
+        nested_gems.each do |gem|
+          build_lib gem, path: lib_path("rails/#{gem}")
+        end
+
+        build_git "rails", path: lib_path("rails") do |s|
+          nested_gems.each do |gem|
+            s.add_dependency gem
+          end
+        end
+      end
+
+      install_gemfile <<-G
+        source 'https://rubygems.org'
+
+        git "#{lib_path("rails")}" do
+          gem "rails"
+          gem "actioncable"
+          gem "actionmailer"
+          gem "actionpack"
+          gem "actionview"
+          gem "activejob"
+          gem "activemodel"
+          gem "activerecord"
+          gem "activestorage"
+          gem "activesupport"
+          gem "railties"
+        end
+      G
+
+      changed_files = []
+      diff = "#Pristine spec changes"
+
+      nested_gems.each do |gem|
+        spec = find_spec(gem)
+        changed_files << Pathname.new(spec.full_gem_path).join("lib/#{gem}.rb")
+        File.open(changed_files.last, "a") {|f| f.puts diff }
+      end
+
+      bundle "pristine"
+
+      changed_files.each do |changed_file|
+        expect(File.read(changed_file)).to_not include(diff)
+      end
+    end
   end
 
   context "when sourced from gemspec" do
