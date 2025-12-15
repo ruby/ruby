@@ -61,7 +61,7 @@ describe "Proc#source_location" do
     ruby_version_is("4.0") do
       proc { true }.source_location.should == [__FILE__, __LINE__, 11, __LINE__, 19]
       Proc.new { true }.source_location.should == [__FILE__, __LINE__, 15, __LINE__, 23]
-      -> { true }.source_location.should == [__FILE__, __LINE__, 8, __LINE__, 17]
+      -> { true }.source_location.should == [__FILE__, __LINE__, 6, __LINE__, 17]
     end
   end
 
@@ -98,7 +98,7 @@ describe "Proc#source_location" do
       location.should == ["foo", 100]
     end
     ruby_version_is("4.0") do
-      location.should == ["foo", 100, 2, 100, 5]
+      location.should == ["foo", 100, 0, 100, 5]
     end
   end
 end
