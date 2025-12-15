@@ -8910,6 +8910,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "size", rb_ary_length, 0);
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find", rb_ary_find, -1);
+    rb_define_method(rb_cArray, "detect", rb_ary_find, -1);
     rb_define_method(rb_cArray, "rfind", rb_ary_rfind, -1);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
