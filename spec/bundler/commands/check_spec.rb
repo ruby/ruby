@@ -164,7 +164,7 @@ RSpec.describe "bundle check" do
     bundle "config set --local path vendor/bundle"
     bundle :cache
 
-    gem_command "uninstall myrack", env: { "GEM_HOME" => vendored_gems.to_s }
+    uninstall_gem("myrack", env: { "GEM_HOME" => vendored_gems.to_s })
 
     bundle "check", raise_on_error: false
     expect(err).to include("* myrack (1.0.0)")
