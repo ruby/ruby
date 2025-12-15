@@ -861,9 +861,9 @@ rb_complex_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex - numeric -> new_complex
+ *   self - other -> complex
  *
- * Returns the difference of +self+ and +numeric+:
+ * Returns the difference of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  - Complex.rect(2, 3)  # => (0+0i)
  *   Complex.rect(900)   - Complex.rect(1)     # => (899+0i)

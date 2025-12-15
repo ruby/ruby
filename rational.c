@@ -768,9 +768,9 @@ rb_rational_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat - numeric  ->  numeric
+ *    self - other -> numeric
  *
- * Performs subtraction.
+ * Returns the difference of +self+ and +other+:
  *
  *    Rational(2, 3)  - Rational(2, 3)   #=> (0/1)
  *    Rational(900)   - Rational(1)      #=> (899/1)
