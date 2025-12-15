@@ -320,8 +320,8 @@ static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
 static void threadptr_trap_interrupt(rb_thread_t *);
 
-static void native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
-static void native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
+static void native_thread_waiting_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
+static void native_thread_waiting_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
 static void native_thread_assign(struct rb_native_thread *nt, rb_thread_t *th);
 
 static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r);
@@ -914,7 +914,7 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     VM_ASSERT(th_has_dedicated_nt(th));
     VM_ASSERT(GET_THREAD() == th);
 
-    native_thread_dedicated_dec(th->vm, th->ractor, th->nt);
+    native_thread_waiting_dec(th->vm, th->ractor, th->nt);
 
     // waiting -> ready
     thread_sched_to_ready_common(sched, th, false, false);
@@ -1006,7 +1006,7 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
-    native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+    native_thread_waiting_inc(th->vm, th->ractor, th->nt);
     thread_sched_wakeup_next_thread(sched, th, false);
 }
 
@@ -1752,7 +1752,7 @@ ruby_mn_threads_params(void)
 
 // For temporary blocking (thread_sched_to_waiting)
 static void
-native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
+native_thread_waiting_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
 {
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated + 1);
 
@@ -1765,7 +1765,7 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
 
 // For returning from temporary blocking (thread_sched_to_running)
 static void
-native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
+native_thread_waiting_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
 {
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated - 1);
     VM_ASSERT(nt->dedicated > 0);
