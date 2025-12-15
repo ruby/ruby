@@ -1041,7 +1041,7 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
-    rb_serial_t fiber_serial;
+    rb_serial_t serial;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;
@@ -2036,6 +2036,13 @@ RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 #define GET_RACTOR() rb_current_ractor()
 #define GET_THREAD() rb_current_thread()
 #define GET_EC()     rb_current_execution_context(true)
+
+static inline rb_serial_t
+rb_ec_serial(struct rb_execution_context_struct *ec)
+{
+    VM_ASSERT(ec->serial >= 1);
+    return ec->serial;
+}
 
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
