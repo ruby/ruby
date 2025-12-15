@@ -917,7 +917,8 @@ class Socket < BasicSocket
     end
   ensure
     hostname_resolution_threads.each do |thread|
-      thread.exit
+      thread.kill
+      thread.join
     end
 
     hostname_resolution_result&.close
