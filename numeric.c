@@ -576,7 +576,7 @@ num_imaginary(VALUE num)
  *  call-seq:
  *    -self -> numeric
  *
- *  Unary Minus---Returns the receiver, negated.
+ *  Returns +self+, negated.
  */
 
 static VALUE
