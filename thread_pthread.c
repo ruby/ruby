@@ -1575,6 +1575,7 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     else {
         vm->ractor.sched.snt_cnt = 1;
     }
+    vm->ractor.sched.waiting_snt_cnt = 0;
     vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
@@ -1714,6 +1715,7 @@ Init_native_thread(rb_thread_t *main_th)
     main_th->nt->vm = vm;
 
     // setup mn
+    vm->ractor.sched.waiting_snt_cnt = 0;
     vm->ractor.sched.dnt_cnt = 1;
 }
 
@@ -1748,23 +1750,20 @@ ruby_mn_threads_params(void)
     vm->ractor.sched.max_cpu = max_cpu;
 }
 
+// For temporary blocking (thread_sched_to_waiting)
 static void
 native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
 {
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated + 1);
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            vm->ractor.sched.snt_cnt--;
-            vm->ractor.sched.dnt_cnt++;
-        }
-        ractor_sched_unlock(vm, cr);
+        RUBY_ATOMIC_INC(vm->ractor.sched.waiting_snt_cnt);
     }
 
     nt->dedicated++;
 }
 
+// For returning from temporary blocking (thread_sched_to_running)
 static void
 native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt)
 {
@@ -1773,12 +1772,7 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     nt->dedicated--;
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            nt->vm->ractor.sched.snt_cnt++;
-            nt->vm->ractor.sched.dnt_cnt--;
-        }
-        ractor_sched_unlock(vm, cr);
+        RUBY_ATOMIC_DEC(vm->ractor.sched.waiting_snt_cnt);
     }
 }
 
@@ -3492,7 +3486,17 @@ rb_thread_lock_native_thread(void)
 {
     rb_thread_t *th = GET_THREAD();
     bool is_snt = th->nt->dedicated == 0;
-    native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+
+    // Permanently convert to dedicated
+    if (is_snt) {
+        ractor_sched_lock(th->vm, th->ractor);
+        {
+            th->vm->ractor.sched.snt_cnt--;
+            th->vm->ractor.sched.dnt_cnt++;
+        }
+        ractor_sched_unlock(th->vm, th->ractor);
+    }
+    th->nt->dedicated++;
 
     return is_snt;
 }

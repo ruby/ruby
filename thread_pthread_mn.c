@@ -409,12 +409,16 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             schedulable_ractor_cnt--; // do not need snt for main ractor
 
         unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-        if (((int)snt_cnt < MINIMUM_SNT) ||
-            (snt_cnt < schedulable_ractor_cnt  &&
-             snt_cnt < vm->ractor.sched.max_cpu)) {
+        unsigned int waiting_snt_cnt = RUBY_ATOMIC_LOAD(vm->ractor.sched.waiting_snt_cnt);
+        RUBY_ASSERT(waiting_snt_cnt <= snt_cnt);
+        unsigned int available_snt_cnt = snt_cnt - waiting_snt_cnt;
+        if (((int)available_snt_cnt < MINIMUM_SNT) ||
+            (available_snt_cnt < schedulable_ractor_cnt  &&
+             available_snt_cnt < vm->ractor.sched.max_cpu)) {
 
-            RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
-                           vm->ractor.sched.snt_cnt,
+            RUBY_DEBUG_LOG("added snt:%u waiting_snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
+                           snt_cnt,
+                           waiting_snt_cnt,
                            vm->ractor.sched.dnt_cnt,
                            vm->ractor.cnt,
                            vm->ractor.sched.grq_cnt);
@@ -423,7 +427,8 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             need_to_make = true;
         }
         else {
-            RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
+            RUBY_DEBUG_LOG("snt:%d available_snt:%d ractor_cnt:%d",
+                           (int)vm->ractor.sched.snt_cnt, (int)available_snt_cnt, (int)vm->ractor.cnt);
         }
     }
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
