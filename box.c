@@ -929,11 +929,11 @@ rb_box_inspect(VALUE obj)
     rb_box_t *box;
     VALUE r;
     if (obj == Qfalse) {
-        r = rb_str_new_cstr("#<Namespace:root>");
+        r = rb_str_new_cstr("#<Ruby::Box:root>");
         return r;
     }
     box = rb_get_box_t(obj);
-    r = rb_str_new_cstr("#<Namespace:");
+    r = rb_str_new_cstr("#<Ruby::Box:");
     rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
     if (BOX_ROOT_P(box)) {
         rb_str_cat_cstr(r, ",root");
