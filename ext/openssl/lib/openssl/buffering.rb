@@ -217,32 +217,92 @@ module OpenSSL::Buffering
   # _limit_ is provided the result will not be longer than the given number of
   # bytes.
   #
-  # _eol_ may be a String or Regexp.
+  # _eol_ may be a String or Regexp. _eol_ defaults to +$/+.
   #
-  # Unlike IO#gets the line read will not be assigned to +$_+.
+  # Note that Regexp _eol_ is an extension to the standard IO#gets. This mode
+  # is incompatible with _chomp_ option.
   #
-  # Unlike IO#gets the separator must be provided if a limit is provided.
+  # Unlike IO#gets, the line read will not be assigned to +$_+.
 
-  def gets(eol=$/, limit=nil, chomp: false)
-    idx = @rbuffer.index(eol)
-    until @eof
-      break if idx
-      fill_rbuff
-      idx = @rbuffer.index(eol)
+  def gets(eol = $/, limit = nil, chomp: false)
+    if limit.nil? && Integer === eol
+      eol, limit = $/, eol
     end
-    if eol.is_a?(Regexp)
-      size = idx ? idx+$&.size : nil
+    limit = nil if limit && limit < 0
+    return String.new if limit == 0
+
+    case eol
+    when nil
+      gets_slurp(limit)
+    when Regexp
+      if chomp
+        raise ArgumentError,
+          "chomp is not supported with Regexp record separator"
+      end
+      gets_regexp(eol, limit)
+    when ""
+      swallow_newlines
+      ret = gets_string("\n\n", limit, chomp)
+      swallow_newlines
+      ret
     else
-      size = idx ? idx+eol.size : nil
+      gets_string(eol, limit, chomp)
     end
-    if size && limit && limit >= 0
-      size = [size, limit].min
+  end
+
+  private def gets_string(eol, limit, chomp)
+    pos = 0
+    while true
+      break if idx = @rbuffer.index(eol, pos)
+      break if limit && @rbuffer.bytesize >= limit
+      pos = [0, @rbuffer.bytesize - eol.bytesize + 1].max
+      break if @eof
+      fill_rbuff
+    end
+    if idx
+      size = idx + eol.bytesize
+      if limit && size > limit
+        size = limit
+        chomp = false
+      end
+    else
+      size = limit
     end
     line = consume_rbuff(size)
-    if chomp && line
+    if chomp && idx
       line.chomp!(eol)
     end
     line
+  end
+
+  private def gets_regexp(eol, limit)
+    while true
+      break if idx = @rbuffer.index(eol)
+      break if limit && @rbuffer.bytesize >= limit
+      break if @eof
+      fill_rbuff
+    end
+    if idx
+      size = idx + $&.size
+      size = [size, limit].min if limit
+    else
+      size = limit
+    end
+    consume_rbuff(size)
+  end
+
+  private def gets_slurp(limit)
+    ret = read(limit)
+    return nil if ret && ret.empty?
+    ret
+  end
+
+  private def swallow_newlines
+    while true
+      @rbuffer.sub!(/\A\n+/, "")
+      break if @eof || !@rbuffer.empty?
+      fill_rbuff
+    end
   end
 
   ##
@@ -251,10 +311,16 @@ module OpenSSL::Buffering
   #
   # See also #gets
 
-  def each(eol=$/)
-    while line = self.gets(eol)
+  def each(eol = $/, limit = nil, chomp: false)
+    return to_enum(__method__, eol, limit, chomp: chomp) unless block_given?
+    if limit.nil? && Integer === eol
+      eol, limit = $/, eol
+    end
+    raise ArgumentError, "invalid limit: 0 for each_line" if limit == 0
+    while line = gets(eol, limit, chomp: chomp)
       yield line
     end
+    self
   end
   alias each_line each
 
@@ -263,12 +329,8 @@ module OpenSSL::Buffering
   #
   # See also #gets
 
-  def readlines(eol=$/)
-    ary = []
-    while line = self.gets(eol)
-      ary << line
-    end
-    ary
+  def readlines(eol = $/, limit = nil, chomp: false)
+    each_line(eol, limit, chomp: chomp).to_a
   end
 
   ##
@@ -276,9 +338,8 @@ module OpenSSL::Buffering
   #
   # Raises EOFError if at end of file.
 
-  def readline(eol=$/)
-    raise EOFError if eof?
-    gets(eol)
+  def readline(eol = $/, limit = nil, chomp: false)
+    gets(eol, limit, chomp: chomp) or raise EOFError
   end
 
   ##

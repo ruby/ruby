@@ -184,15 +184,92 @@ module OpenSSL::TestPairM
 
   def test_gets
     ssl_pair {|s1, s2|
-      s1 << "abc\n\n$def123ghi"
+      s1 << "abc\n\n$def123ghij"
       s1.close
       ret = s2.gets
       assert_equal Encoding::BINARY, ret.encoding
       assert_equal "abc\n", ret
       assert_equal "\n$", s2.gets("$")
-      assert_equal "def123", s2.gets(/\d+/)
-      assert_equal "ghi", s2.gets
+      assert_equal "def123", s2.gets("123")
+      assert_equal "ghi", s2.gets(":", 3)
+      assert_equal "j", s2.gets(1)
       assert_equal nil, s2.gets
+      assert_equal "", s2.gets(0)
+    }
+    # rs spans multiple sysreads
+    ssl_pair {|s1, s2|
+      s1 << "a" * 8192 + "b" * 16384
+      s1.close
+      assert_equal("a" * 8192, s2.gets("b" * 10000, chomp: true))
+    }
+  end
+
+  def test_gets_rs_nil
+    ssl_pair {|s1, s2|
+      s1 << "abc\n\ndef"
+      s1.close
+      assert_equal("", s2.gets(nil, 0))
+      assert_equal("a", s2.gets(nil, 1))
+      assert_equal("bc\n\ndef", s2.gets(nil))
+
+      # At EOF
+      assert_equal("", s2.gets(nil, 0))
+      assert_nil(s2.gets(nil))
+      assert_nil(s2.gets(nil, 1))
+    }
+  end
+
+  def test_gets_rs_empty_leading_newlines
+    ssl_pair {|s1, s2|
+      s1 << "abc\n\ndef\n\nghi"
+      s1.close
+      assert_equal("a", s2.gets("", 1))
+      assert_equal("bc", s2.gets("", 2))
+      assert_equal("def\n\n", s2.gets(""))
+      assert_equal("ghi", s2.gets(""))
+    }
+    # Leading and trailing newlines are trimmed
+    ssl_pair {|s1, s2|
+      s1 << "\n\nabc\n\n\n"
+      s1.close
+      assert_equal("abc\n\n", s2.gets(""))
+      assert_predicate(s2, :eof?)
+    }
+    # Leading and trailing newlines do not count towards limit, and
+    # trailing newlines are still trimmed after limit is reached
+    ssl_pair {|s1, s2|
+      s1 << "\n\nabc\n\n\n\ndef"
+      s1.close
+      assert_equal("a", s2.gets("", 1))
+      assert_equal("bc\n", s2.gets("", 3))
+      assert_equal("def", s2.read)
+    }
+    # chomp: true
+    ssl_pair {|s1, s2|
+      s1 << "a\n\n\ndef\n\n\n"
+      s1.close
+      assert_equal("a\n", s2.gets("", 2, chomp: true))
+      assert_equal("def", s2.gets("", chomp: true))
+    }
+    # \r does not have any special meaning in paragraph mode
+    ssl_pair {|s1, s2|
+      s1 << "\r\nabc\r\n\r\ndef\r\n"
+      s1.close
+      assert_equal("\r\nabc\r\n\r\ndef\r\n", s2.gets("", chomp: true))
+      assert_predicate(s2, :eof?)
+    }
+  end
+
+  def test_gets_rs_regexp
+    ssl_pair {|s1, s2|
+      # OpenSSL::Buffering-specific behavior
+      next unless s2.is_a?(OpenSSL::Buffering)
+
+      s1 << "abc\n\n$def123ghi"
+      s1.close
+      assert_equal("abc\n", s2.gets(/\d+/, 4))
+      assert_equal("\n$def123", s2.gets(/\d+/))
+      assert_equal("ghi", s2.gets(/\d+/))
     }
   end
 
@@ -207,11 +284,81 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_gets_chomp_rs
+    ssl_pair {|s1, s2|
+      s1 << "aaa::bbb:"
+      s1.close
+
+      assert_equal("aaa", s2.gets("::", chomp: true))
+      assert_equal("bbb:", s2.gets("::", chomp: true))
+      assert_nil(s2.gets("::", chomp: true))
+    }
+  end
+
+  def test_gets_chomp_default_rs
+    ssl_pair {|s1, s2|
+      s1 << "aaa\r\nbbb\nccc"
+      s1.close
+
+      assert_equal("aaa", s2.gets(chomp: true))
+      assert_equal("bbb", s2.gets(chomp: true))
+      assert_equal("ccc", s2.gets(chomp: true))
+      assert_nil(s2.gets(chomp: true))
+    }
+  end
+
+  def test_gets_chomp_default_rs_limit
+    ssl_pair {|s1, s2|
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa", s2.gets(10, chomp: true))
+      assert_equal("bbb", s2.read(3))
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa", s2.gets(3, chomp: true))
+      assert_equal("\r\nbbb", s2.read(5))
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa\r", s2.gets(4, chomp: true))
+      assert_equal("\nbbb", s2.read(4))
+    }
+  end
+
   def test_gets_eof_limit
     ssl_pair {|s1, s2|
       s1.write("hello")
       s1.close # trigger EOF
       assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11400]"
+    }
+  end
+
+  def test_each_line
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      lines = []
+      ret = s2.each_line(chomp: true) { |line| lines << line }
+      assert_same(s2, ret)
+      assert_equal(["a", "b", "c"], lines)
+      lines = []
+      s2.each_line { |line| lines << line }
+      assert_equal([], lines)
+    }
+  end
+
+  def test_each_line_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      assert_equal(["a", "b", "c"], s2.each_line(chomp: true).to_a)
+      assert_equal([], s2.each_line.to_a)
+    }
+  end
+
+  def test_readlines
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      assert_equal(["a\n", "b\n", "c"], s2.readlines)
+      assert_equal([], s2.readlines)
+      assert_raise(ArgumentError) { s2.readlines(0) }
     }
   end
 
@@ -243,6 +390,7 @@ module OpenSSL::TestPairM
   def test_readline
     ssl_pair {|s1, s2|
       s2.close
+      assert_equal("", s1.readline(0))
       assert_raise(EOFError) { s1.readline }
     }
   end
