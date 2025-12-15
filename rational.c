@@ -984,9 +984,9 @@ nurat_fdiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat ** numeric  ->  numeric
+ *    self ** exponent -> numeric
  *
- * Performs exponentiation.
+ * Returns +self+ raised to the power +exponent+:
  *
  *    Rational(2)    ** Rational(3)     #=> (8/1)
  *    Rational(10)   ** -2              #=> (1/100)
