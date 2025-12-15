@@ -278,7 +278,7 @@ The following default gems are updated.
 * date 3.5.1
 * digest 3.2.1
 * english 0.8.1
-* erb 6.0.0
+* erb 6.0.1
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0
