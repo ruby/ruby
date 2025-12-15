@@ -5,22 +5,30 @@ describe :regexp_new, shared: true do
     Regexp.send(@method, '').is_a?(Regexp).should == true
   end
 
-  it "works by default for subclasses with overridden #initialize" do
-    class RegexpSpecsSubclass < Regexp
-      def initialize(*args)
-        super
-        @args = args
+  ruby_version_is "4.0" do
+    it "is frozen" do
+      Regexp.send(@method, '').should.frozen?
+    end
+  end
+
+  ruby_version_is ""..."4.0" do
+    it "works by default for subclasses with overridden #initialize" do
+      class RegexpSpecsSubclass < Regexp
+        def initialize(*args)
+          super
+          @args = args
+        end
+
+        attr_accessor :args
       end
 
-      attr_accessor :args
+      class RegexpSpecsSubclassTwo < Regexp; end
+
+      RegexpSpecsSubclass.send(@method, "hi").should be_kind_of(RegexpSpecsSubclass)
+      RegexpSpecsSubclass.send(@method, "hi").args.first.should == "hi"
+
+      RegexpSpecsSubclassTwo.send(@method, "hi").should be_kind_of(RegexpSpecsSubclassTwo)
     end
-
-    class RegexpSpecsSubclassTwo < Regexp; end
-
-    RegexpSpecsSubclass.send(@method, "hi").should be_kind_of(RegexpSpecsSubclass)
-    RegexpSpecsSubclass.send(@method, "hi").args.first.should == "hi"
-
-    RegexpSpecsSubclassTwo.send(@method, "hi").should be_kind_of(RegexpSpecsSubclassTwo)
   end
 end
 

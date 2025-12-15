@@ -314,7 +314,7 @@ class TestMarshal < Test::Unit::TestCase
   def test_regexp2
     assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
     assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
-    assert_equal(/u/, Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP"))
+    assert_raise(FrozenError) { Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP") }
 
     bug2109 = '[ruby-core:25625]'
     a = "\x82\xa0".force_encoding(Encoding::Windows_31J)
@@ -988,7 +988,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_proc_returned_object_are_not_frozen
-      source = ["foo", {}, /foo/, 1..2]
+      source = ["foo", {}, 1..2]
       objects = Marshal.load(encode(source), ->(o) { o.dup }, freeze: true)
       assert_equal source, objects
       refute_predicate objects, :frozen?

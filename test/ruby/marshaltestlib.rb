@@ -206,7 +206,12 @@ module MarshalTestLib
     marshal_equal(MyRange.new(4,5,8, false))
   end
 
-  class MyRegexp < Regexp; def initialize(v, *args) super(*args); @v = v; end end
+  class MyRegexp < Regexp
+    def initialize(v, *args)
+      @v = v
+      super(*args)
+    end
+  end
   def test_regexp
     marshal_equal(/a/)
     marshal_equal(/A/i)
@@ -220,7 +225,8 @@ module MarshalTestLib
   end
 
   def test_regexp_subclass
-    marshal_equal(MyRegexp.new(10, "a"))
+    dumped = encode(MyRegexp.new(10, "a"))
+    assert_raise(FrozenError) { decode dumped }
   end
 
   class MyString < String; def initialize(v, *args) super(*args); @v = v; end end

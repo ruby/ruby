@@ -417,8 +417,9 @@ class TestSymbol < Test::Unit::TestCase
   def test_match_method
     assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
 
-    o = Regexp.new('foo')
-    def o.match(x, y, z); x + y + z; end
+    o = Class.new(Regexp) {
+      def match(x, y, z) = x + y + z
+    }.new('foo')
     assert_equal("foobarbaz", :"foo".match(o, "bar", "baz"))
     x = nil
     :"foo".match(o, "bar", "baz") {|y| x = y }
