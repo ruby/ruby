@@ -2098,13 +2098,13 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  * With a block given, calls the block with successive elements of the array;
  * returns the first element for which the block returns a truthy value:
  *
- *   (0..9).find {|element| element > 2}                # => 3
+ *   [1, 3, 5].find {|element| element > 2}                # => 3
  *
  * If no such element is found, calls +if_none_proc+ and returns its return value.
  *
- *   (0..9).find(proc {false}) {|element| element > 12} # => false
- *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
- *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
+ *   [1, 3, 5].find(proc {false}) {|element| element > 12} # => false
+ *   [[:foo, 0], [:bar, 1], [:baz, 2]].find {|key, value| key.start_with?('b') }            # => [:bar, 1]
+ *   [[:foo, 0], [:bar, 1], [:baz, 2]].find(proc {[]}) {|key, value| key.start_with?('c') } # => []
  *
  * With no block given, returns an Enumerator.
  *
