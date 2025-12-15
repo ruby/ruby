@@ -286,7 +286,7 @@ The following default gems are updated.
 * ipaddr 1.2.8
 * json 2.18.0
 * net-http 0.8.0
-* openssl 4.0.0.pre
+* openssl 4.0.0
 * optparse 0.8.1
 * pp 0.6.3
 * prism 1.6.0
