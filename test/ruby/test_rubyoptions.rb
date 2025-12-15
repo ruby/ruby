@@ -939,6 +939,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_crash_report_pipe
+    pend "macOS 15 is not working with this assertion" if macos?(15)
+
     if File.executable?(echo = "/bin/echo")
     elsif /mswin|ming/ =~ RUBY_PLATFORM
       echo = "echo"
