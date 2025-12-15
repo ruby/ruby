@@ -348,7 +348,7 @@ rb_get_box_object(rb_box_t *box)
 
 /*
  *  call-seq:
- *    Namespace.new -> new_box
+ *    Ruby::Box.new -> new_box
  *
  *  Returns a new Ruby::Box object.
  */
@@ -389,7 +389,7 @@ box_initialize(VALUE box_value)
 
 /*
  *  call-seq:
- *    Namespace.enabled? -> true or false
+ *    Ruby::Box.enabled? -> true or false
  *
  *  Returns +true+ if Ruby::Box is enabled.
  */
@@ -401,7 +401,7 @@ rb_box_s_getenabled(VALUE recv)
 
 /*
  *  call-seq:
- *    Namespace.current -> box, nil or false
+ *    Ruby::Box.current -> box, nil or false
  *
  *  Returns the current box.
  *  Returns +nil+ if Ruby Box is not enabled.
@@ -794,10 +794,6 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
     DATA_PTR(*cleanup) = (void *)new_path;
     return new_path;
 }
-
-// TODO: delete it just after dln_load? or delay it?
-//       At least for _WIN32, deleting extension files should be delayed until the namespace's destructor.
-//       And it requires calling dlclose before deleting it.
 
 static VALUE
 rb_box_load(int argc, VALUE *argv, VALUE box)
