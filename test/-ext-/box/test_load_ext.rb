@@ -2,7 +2,7 @@
 require 'test/unit'
 
 class Test_Load_Extensions < Test::Unit::TestCase
-  ENV_ENABLE_NAMESPACE = {'RUBY_NAMESPACE' => '1'}
+  ENV_ENABLE_BOX = {'RUBY_BOX' => '1'}
 
   def test_load_extension
     pend
@@ -32,7 +32,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
 
   def test_load_extension_in_box
     pend
-    assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns = Ruby::Box.new
       ns.require '-test-/box/yay1'
@@ -43,7 +43,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
 
   def test_different_version_extensions
     pend
-    assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns1 = Ruby::Box.new
       ns2 = Ruby::Box.new
@@ -62,7 +62,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
 
   def test_loading_extensions_from_global_to_local
     pend
-    assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require '-test-/box/yay1'
       assert_equal "1.0.0", Yay.version
@@ -79,7 +79,7 @@ class Test_Load_Extensions < Test::Unit::TestCase
 
   def test_loading_extensions_from_local_to_global
     pend
-    assert_separately([ENV_ENABLE_NAMESPACE], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       ns = Ruby::Box.new
       ns.require '-test-/box/yay1'
