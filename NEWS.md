@@ -82,6 +82,11 @@ Note: We're only listing outstanding class updates.
     * A deprecated behavior, process creation by `Kernel#open` with a
       leading `|`, was removed.  [[Feature #19630]]
 
+* Array
+
+    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
+    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
+
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
@@ -478,4 +483,5 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
+[Feature #21678]: https://bugs.ruby-lang.org/issues/21678
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
