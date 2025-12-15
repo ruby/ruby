@@ -16690,6 +16690,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
                 pm_parser_err_node(parser, node, diag_id);
                 pm_missing_node_t *missing_node = pm_missing_node_create(parser, node->location.start, node->location.end);
+
+                pm_node_unreference(parser, node);
                 pm_node_destroy(parser, node);
                 return UP(missing_node);
             }
