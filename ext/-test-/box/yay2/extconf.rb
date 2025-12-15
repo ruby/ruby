@@ -1,1 +1,1 @@
-create_makefile('-test-/namespace/yay2')
+create_makefile('-test-/box/yay2')
