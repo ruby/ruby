@@ -150,7 +150,7 @@ st_table *rb_ractor_targeted_hooks(rb_ractor_t *cr);
 RUBY_SYMBOL_EXPORT_BEGIN
 void rb_ractor_finish_marking(void);
 
-bool rb_ractor_shareable_p_continue(VALUE obj);
+bool rb_ractor_shareable_p_continue(VALUE obj, VALUE *chain);
 
 // THIS FUNCTION SHOULD NOT CALL WHILE INCREMENTAL MARKING!!
 // This function is for T_DATA::free_func
@@ -269,6 +269,24 @@ static inline unsigned int
 rb_ractor_targeted_hooks_cnt(rb_ractor_t *cr)
 {
     return cr->pub.targeted_hooks_cnt;
+}
+
+static inline void
+rb_ractor_error_chain_append(VALUE *chain_ptr, const char *fmt, ...)
+{
+    if (!chain_ptr) return;
+
+    va_list args;
+    va_start(args, fmt);
+
+    if (NIL_P(*chain_ptr)) {
+        *chain_ptr = rb_vsprintf(fmt, args);
+    }
+    else {
+        rb_str_vcatf(*chain_ptr, fmt, args);
+    }
+
+    va_end(args);
 }
 
 #if RACTOR_CHECK_MODE > 0
