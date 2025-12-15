@@ -276,7 +276,7 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def test_do_lambda_source_location
-    exp = [__LINE__ + 1, 12, __LINE__ + 5, 7]
+    exp = [__LINE__ + 1, 10, __LINE__ + 5, 7]
     lmd = ->(x,
              y,
              z) do
@@ -288,7 +288,7 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def test_brace_lambda_source_location
-    exp = [__LINE__ + 1, 12, __LINE__ + 5, 5]
+    exp = [__LINE__ + 1, 10, __LINE__ + 5, 5]
     lmd = ->(x,
              y,
              z) {
