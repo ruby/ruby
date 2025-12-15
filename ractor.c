@@ -1211,7 +1211,8 @@ enum obj_traverse_iterator_result {
     traverse_stop,
 };
 
-typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
+struct obj_traverse_data;
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj, struct obj_traverse_data *data);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_final_func)(VALUE obj);
 
@@ -1222,9 +1223,10 @@ struct obj_traverse_data {
     rb_obj_traverse_leave_func leave_func;
 
     st_table *rec;
-    VALUE rec_hash;
+    VALUE rec_hash;  // objects seen during traversal
+    VALUE *chain; // reference chain string built during unwinding (NULL if not needed)
+    VALUE *exception; // exception raised trying to freeze an object
 };
-
 
 struct obj_traverse_callback_data {
     bool stop;
@@ -1239,11 +1241,13 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
     if (obj_traverse_i(key, d->data)) {
+        rb_ractor_error_chain_append(d->data->chain, "\n  from hash key %+"PRIsVALUE, key);
         d->stop = true;
         return ST_STOP;
     }
 
     if (obj_traverse_i(val, d->data)) {
+        rb_ractor_error_chain_append(d->data->chain, "\n  from hash value at key %+"PRIsVALUE, key);
         d->stop = true;
         return ST_STOP;
     }
@@ -1277,6 +1281,7 @@ obj_traverse_ivar_foreach_i(ID key, VALUE val, st_data_t ptr)
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
     if (obj_traverse_i(val, d->data)) {
+        rb_ractor_error_chain_append(d->data->chain, "\n  from instance variable %"PRIsVALUE, rb_id2str(key));
         d->stop = true;
         return ST_STOP;
     }
@@ -1289,7 +1294,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 {
     if (RB_SPECIAL_CONST_P(obj)) return 0;
 
-    switch (data->enter_func(obj)) {
+    switch (data->enter_func(obj, data)) {
       case traverse_cont: break;
       case traverse_skip: return 0; // skip children
       case traverse_stop: return 1; // stop search
@@ -1306,7 +1311,9 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         .data = data,
     };
     rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
-    if (d.stop) return 1;
+    if (d.stop) {
+        return 1;
+    }
 
     switch (BUILTIN_TYPE(obj)) {
       // no child node
@@ -1328,14 +1335,21 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
-                if (obj_traverse_i(e, data)) return 1;
+                if (obj_traverse_i(e, data)) {
+                    rb_ractor_error_chain_append(data->chain, "\n  from array element at index %d", i);
+                    return 1;
+                }
             }
         }
         break;
 
       case T_HASH:
         {
-            if (obj_traverse_i(RHASH_IFNONE(obj), data)) return 1;
+            const VALUE ifnone = RHASH_IFNONE(obj);
+            if (obj_traverse_i(ifnone, data)) {
+                rb_ractor_error_chain_append(data->chain, "\n  from hash default value");
+                return 1;
+            }
 
             struct obj_traverse_callback_data d = {
                 .stop = false,
@@ -1352,7 +1366,12 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
             for (long i=0; i<len; i++) {
-                if (obj_traverse_i(ptr[i], data)) return 1;
+                if (obj_traverse_i(ptr[i], data)) {
+                    VALUE members = rb_struct_members(obj);
+                    VALUE member_name = rb_array_const_ptr(members)[i];
+                    rb_ractor_error_chain_append(data->chain, "\n  from struct member %+"PRIsVALUE, member_name);
+                    return 1;
+                }
             }
         }
         break;
@@ -1423,15 +1442,21 @@ static int
 rb_obj_traverse(VALUE obj,
                 rb_obj_traverse_enter_func enter_func,
                 rb_obj_traverse_leave_func leave_func,
-                rb_obj_traverse_final_func final_func)
+                rb_obj_traverse_final_func final_func,
+                VALUE *chain,
+                VALUE *exception)
 {
     struct obj_traverse_data data = {
         .enter_func = enter_func,
         .leave_func = leave_func,
         .rec = NULL,
+        .chain = chain,
+        .exception = exception,
     };
 
-    if (obj_traverse_i(obj, &data)) return 1;
+    if (obj_traverse_i(obj, &data)) {
+        return 1;
+    }
     if (final_func && data.rec) {
         struct rb_obj_traverse_final_data f = {final_func, 0};
         st_foreach(data.rec, obj_traverse_final_i, (st_data_t)&f);
@@ -1456,14 +1481,45 @@ allow_frozen_shareable_p(VALUE obj)
     return false;
 }
 
+static VALUE
+try_freeze(VALUE obj)
+{
+    rb_funcall(obj, idFreeze, 0);
+    return Qtrue;
+}
+
+struct rescue_freeze_data {
+    VALUE exception;
+};
+
+static VALUE
+rescue_freeze(VALUE data, VALUE freeze_exception)
+{
+    struct rescue_freeze_data *rescue_freeze_data = (struct rescue_freeze_data *)data;
+    VALUE exception = rb_exc_new3(rb_eRactorError, rb_str_new_cstr("raised calling #freeze"));
+    rb_ivar_set(exception, rb_intern("cause"), freeze_exception);
+    rescue_freeze_data->exception = exception;
+    return Qfalse;
+}
+
 static enum obj_traverse_iterator_result
-make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
+make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result, struct obj_traverse_data *data)
 {
     if (!RB_OBJ_FROZEN_RAW(obj)) {
-        rb_funcall(obj, idFreeze, 0);
+        struct rescue_freeze_data rescue_freeze_data = { 0 };
+        if (!rb_rescue(try_freeze, obj, rescue_freeze, (VALUE)&rescue_freeze_data)) {
+            if (data->exception) {
+                *data->exception = rescue_freeze_data.exception;
+            }
+            return traverse_stop;
+        }
 
         if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
+            VALUE exception = rb_exc_new3(rb_eRactorError, rb_str_new_cstr("#freeze does not freeze object correctly"));
+            if (data->exception) {
+                *data->exception = exception;
+            }
+            return traverse_stop;
         }
 
         if (RB_OBJ_SHAREABLE_P(obj)) {
@@ -1477,7 +1533,7 @@ make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_resu
 static int obj_refer_only_shareables_p(VALUE obj);
 
 static enum obj_traverse_iterator_result
-make_shareable_check_shareable(VALUE obj)
+make_shareable_check_shareable(VALUE obj, struct obj_traverse_data *data)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
 
@@ -1490,7 +1546,8 @@ make_shareable_check_shareable(VALUE obj)
 
         if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
             if (obj_refer_only_shareables_p(obj)) {
-                make_shareable_check_shareable_freeze(obj, traverse_skip);
+                enum obj_traverse_iterator_result result = make_shareable_check_shareable_freeze(obj, traverse_skip, data);
+                if (result == traverse_stop) return traverse_stop;
                 RB_OBJ_SET_SHAREABLE(obj);
                 return traverse_skip;
             }
@@ -1500,11 +1557,19 @@ make_shareable_check_shareable(VALUE obj)
             }
         }
         else if (rb_obj_is_proc(obj)) {
-            rb_proc_ractor_make_shareable(obj, Qundef);
+            if (!rb_proc_ractor_make_shareable_continue(obj, Qundef, data->chain)) {
+                rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(obj);
+                if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
+                if (data->exception) {
+                    *data->exception = rb_exc_new3(rb_eRactorIsolationError, rb_sprintf("Proc's self is not shareable: %" PRIsVALUE, obj));
+                }
+                return traverse_stop;
+            }
             return traverse_cont;
         }
         else {
-            rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
+            return traverse_stop;
         }
     }
 
@@ -1529,7 +1594,7 @@ make_shareable_check_shareable(VALUE obj)
         break;
     }
 
-    return make_shareable_check_shareable_freeze(obj, traverse_cont);
+    return make_shareable_check_shareable_freeze(obj, traverse_cont, data);
 }
 
 static enum obj_traverse_iterator_result
@@ -1546,9 +1611,20 @@ mark_shareable(VALUE obj)
 VALUE
 rb_ractor_make_shareable(VALUE obj)
 {
-    rb_obj_traverse(obj,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
+    VALUE chain = Qnil;
+    VALUE exception = Qfalse;
+    if (rb_obj_traverse(obj, make_shareable_check_shareable, null_leave, mark_shareable, &chain, &exception)) {
+        if (exception) {
+            VALUE id_mesg = rb_intern("mesg");
+            VALUE message = rb_attr_get(exception, id_mesg);
+            message = rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, message, chain);
+            rb_ivar_set(exception, id_mesg, message);
+            rb_exc_raise(exception);
+        }
+        rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE"%"PRIsVALUE, obj, chain);
+    }
+    RB_GC_GUARD(chain);
+    RB_GC_GUARD(exception);
     return obj;
 }
 
@@ -1579,7 +1655,7 @@ rb_ractor_ensure_main_ractor(const char *msg)
 }
 
 static enum obj_traverse_iterator_result
-shareable_p_enter(VALUE obj)
+shareable_p_enter(VALUE obj, struct obj_traverse_data *data)
 {
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
@@ -1600,11 +1676,9 @@ shareable_p_enter(VALUE obj)
 }
 
 bool
-rb_ractor_shareable_p_continue(VALUE obj)
+rb_ractor_shareable_p_continue(VALUE obj, VALUE *chain)
 {
-    if (rb_obj_traverse(obj,
-                        shareable_p_enter, null_leave,
-                        mark_shareable)) {
+    if (rb_obj_traverse(obj, shareable_p_enter, null_leave, mark_shareable, chain, NULL)) {
         return false;
     }
     else {
@@ -1620,7 +1694,7 @@ rb_ractor_setup_belonging(VALUE obj)
 }
 
 static enum obj_traverse_iterator_result
-reset_belonging_enter(VALUE obj)
+reset_belonging_enter(VALUE obj, struct obj_traverse_data *data)
 {
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
@@ -1642,7 +1716,7 @@ static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL, NULL, NULL);
 #endif
     return obj;
 }

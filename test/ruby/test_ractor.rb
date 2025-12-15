@@ -213,6 +213,81 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
+  def test_error_includes_ivar
+    obj = Class.new do
+      def initialize
+        @unshareable = -> {}
+      end
+    end.new
+    assert_unshareable(obj, /from instance variable @unshareable/)
+  end
+
+  def test_error_includes_array_index
+    assert_unshareable([0, -> {}], /from array element at index 1/)
+  end
+
+  def test_error_includes_hash_key_and_value
+    assert_unshareable({ unshareable: -> {} }, /from hash value at key :unshareable/)
+  end
+
+  def test_error_includes_hash_unshareable_key
+    assert_unshareable({ -> {} => true }, /from hash key #<Proc:0x[[:xdigit:]]+ #{__FILE__}:#{__LINE__}/)
+  end
+
+  def test_error_includes_hash_default
+    h = Hash.new {}
+    assert_unshareable(h, /from hash default value/)
+  end
+
+  def test_error_includes_struct_member
+    s = Struct.new(:member).new(-> {})
+    assert_unshareable(s, /from struct member :member/)
+  end
+
+  def test_error_includes_block_self
+    pr = -> {}
+    assert_unshareable(pr, /from block self #<#{self.class.name}/)
+  end
+
+  def test_error_wraps_freeze_error
+    obj = Class.new do
+      undef_method :freeze
+    end.new
+    e = assert_unshareable(obj, /raised calling #freeze/, exception: Ractor::Error)
+    assert_equal NoMethodError, e.cause.class
+    assert_equal :freeze, e.cause.name
+  end
+
+  def test_error_for_module_instance_variable
+    h = Hash.new {}.freeze
+    mod = Module.new do
+      attr_reader :unshareable
+      @unshareable = h
+    end
+    mod.extend(mod)
+    e = Ractor.new(mod) do |mod|
+      mod.unshareable
+    rescue
+      $!
+    end.value
+    assert_kind_of Ractor::IsolationError, e
+    assert_match(/from hash default value/, e.message)
+  end
+
+  module ModuleWithUnshareableConstant
+    UNSHAREABLE = Hash.new {}.freeze
+  end
+
+  def test_error_for_module_constant
+    e = Ractor.new do
+      ModuleWithUnshareableConstant::UNSHAREABLE
+    rescue
+      $!
+    end.value
+    assert_kind_of(Ractor::IsolationError, e)
+    assert_match(/from hash default value/, e.message)
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
@@ -221,9 +296,10 @@ class TestRactor < Test::Unit::TestCase
 
   def assert_unshareable(obj, msg=nil, exception: Ractor::IsolationError)
     refute Ractor.shareable?(obj), "object is already shareable"
-    assert_raise_with_message(exception, msg) do
+    e = assert_raise_with_message(exception, msg) do
       Ractor.make_shareable(obj)
     end
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
+    e
   end
 end
