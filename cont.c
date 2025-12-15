@@ -1996,9 +1996,9 @@ fiber_alloc(VALUE klass)
 }
 
 static rb_serial_t
-next_fiber_serial(rb_ractor_t *cr)
+next_ec_serial(rb_ractor_t *cr)
 {
-    return cr->next_fiber_serial++;
+    return cr->next_ec_serial++;
 }
 
 static rb_fiber_t*
@@ -2020,7 +2020,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     cont_init(&fiber->cont, th);
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
-    fiber->cont.saved_ec.fiber_serial = next_fiber_serial(th->ractor);
+    fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
 
     fiber->prev = NULL;
@@ -2567,7 +2567,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     }
     fiber->cont.type = FIBER_CONTEXT;
     fiber->cont.saved_ec.fiber_ptr = fiber;
-    fiber->cont.saved_ec.fiber_serial = next_fiber_serial(th->ractor);
+    fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
     fiber->blocking = 1;
     fiber->killed = 0;

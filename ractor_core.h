@@ -91,7 +91,7 @@ struct rb_ractor_struct {
 
     // ractor local data
 
-    rb_serial_t next_fiber_serial;
+    rb_serial_t next_ec_serial;
 
     st_table *local_storage;
     struct rb_id_table *idkey_local_storage;
