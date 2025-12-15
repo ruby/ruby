@@ -1089,7 +1089,7 @@ rb_float_plus(VALUE x, VALUE y)
  *  call-seq:
  *    self - other -> numeric
  *
- *  Returns a new \Float which is the difference of +self+ and +other+:
+ * Returns the difference of +self+ and +other+:
  *
  *    f = 3.14
  *    f - 1                 # => 2.14
@@ -4197,9 +4197,9 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self - numeric -> numeric_result
+ *    self - other -> numeric
  *
- *  Performs subtraction:
+ * Returns the difference of +self+ and +other+:
  *
  *    4 - 2              # => 2
  *    -4 - 2             # => -6
