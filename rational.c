@@ -609,9 +609,13 @@ nurat_denominator(VALUE self)
 
 /*
  * call-seq:
- *    -rat  ->  rational
+ *    -self -> rational
  *
- * Negates +rat+.
+ * Returns +self+, negated:
+ *
+ *   -(1/3r)   # => (-1/3)
+ *   -(-1/3r)  # => (1/3)
+ *
  */
 VALUE
 rb_rational_uminus(VALUE self)

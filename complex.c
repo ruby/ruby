@@ -799,9 +799,9 @@ rb_complex_imag(VALUE self)
 
 /*
  * call-seq:
- *   -complex -> new_complex
+ *   -self -> complex
  *
- * Returns the negation of +self+, which is the negation of each of its parts:
+ * Returns +self+, negated, which is the negation of each of its parts:
  *
  *   -Complex.rect(1, 2)   # => (-1-2i)
  *   -Complex.rect(-1, -2) # => (1+2i)
