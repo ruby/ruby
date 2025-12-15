@@ -90,6 +90,7 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
                            RUBY_EVENT_B_CALL   | \
                            RUBY_EVENT_B_RETURN | \
                            RUBY_EVENT_RESCUE   | \
+                           RUBY_EVENT_IVAR_SET | \
                            RUBY_EVENT_COVERAGE_LINE| \
                            RUBY_EVENT_COVERAGE_BRANCH)
 
