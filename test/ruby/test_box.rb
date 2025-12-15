@@ -190,7 +190,7 @@ class TestBox < Test::Unit::TestCase
     pend unless Ruby::Box.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       ns1 = Namespace.new
       ns1.require(File.join("#{here}", 'namespace/proc_callee'))
@@ -212,7 +212,7 @@ class TestBox < Test::Unit::TestCase
     pend unless Ruby::Box.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       require(File.join("#{here}", 'namespace/proc_callee'))
       def Target.foo
