@@ -184,8 +184,7 @@ module Prism
       queue = [self] #: Array[Prism::node]
       result = [] #: Array[Prism::node]
 
-      line_offset = source.offsets[line - 1] or raise
-      search_offset = line_offset + column
+      search_offset = source.line_to_byte_offset(line) + column
 
       while (node = queue.shift)
         result << node
