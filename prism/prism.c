@@ -8613,7 +8613,7 @@ escape_hexadecimal_digit(const uint8_t value) {
  * validated.
  */
 static inline uint32_t
-escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
+escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length, const pm_location_t *error_location) {
     uint32_t value = 0;
     for (size_t index = 0; index < length; index++) {
         if (index != 0) value <<= 4;
@@ -8623,7 +8623,11 @@ escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
     // Here we're going to verify that the value is actually a valid Unicode
     // codepoint and not a surrogate pair.
     if (value >= 0xD800 && value <= 0xDFFF) {
-        pm_parser_err(parser, string, string + length, PM_ERR_ESCAPE_INVALID_UNICODE);
+        if (error_location != NULL) {
+            pm_parser_err(parser, error_location->start, error_location->end, PM_ERR_ESCAPE_INVALID_UNICODE);
+        } else {
+            pm_parser_err(parser, string, string + length, PM_ERR_ESCAPE_INVALID_UNICODE);
+        }
         return 0xFFFD;
     }
 
@@ -8923,7 +8927,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         extra_codepoints_start = unicode_start;
                     }
 
-                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length);
+                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length, NULL);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
                     parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
@@ -8964,7 +8968,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         PM_PARSER_ERR_FORMAT(parser, start, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
                     }
                 } else if (length == 4) {
-                    uint32_t value = escape_unicode(parser, parser->current.end, 4);
+                    uint32_t value = escape_unicode(parser, parser->current.end, 4, NULL);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
                         pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
@@ -20368,7 +20372,7 @@ pm_named_capture_escape_octal(pm_buffer_t *unescaped, const uint8_t *cursor, con
 }
 
 static inline const uint8_t *
-pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
+pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end, const pm_location_t *error_location) {
     const uint8_t *start = cursor - 1;
     cursor++;
 
@@ -20379,7 +20383,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
 
     if (*cursor != '{') {
         size_t length = pm_strspn_hexadecimal_digit(cursor, MIN(end - cursor, 4));
-        uint32_t value = escape_unicode(parser, cursor, length);
+        uint32_t value = escape_unicode(parser, cursor, length, error_location);
 
         if (!pm_buffer_append_unicode_codepoint(unescaped, value)) {
             pm_buffer_append_string(unescaped, (const char *) start, (size_t) ((cursor + length) - start));
@@ -20402,7 +20406,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
         if (length == 0) {
             break;
         }
-        uint32_t value = escape_unicode(parser, cursor, length);
+        uint32_t value = escape_unicode(parser, cursor, length, error_location);
 
         (void) pm_buffer_append_unicode_codepoint(unescaped, value);
         cursor += length;
@@ -20412,7 +20416,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
 }
 
 static void
-pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor) {
+pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor, const pm_location_t *error_location) {
     const uint8_t *end = source + length;
     pm_buffer_append_string(unescaped, (const char *) source, (size_t) (cursor - source));
 
@@ -20430,7 +20434,7 @@ pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8
                 cursor = pm_named_capture_escape_octal(unescaped, cursor, end);
                 break;
             case 'u':
-                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end);
+                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end, error_location);
                 break;
             default:
                 pm_buffer_append_byte(unescaped, '\\');
@@ -20473,7 +20477,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     // unescaped, which is what we need.
     const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
     if (PRISM_UNLIKELY(cursor != NULL)) {
-        pm_named_capture_escape(parser, &unescaped, source, length, cursor);
+        pm_named_capture_escape(parser, &unescaped, source, length, cursor, callback_data->shared ? NULL : &call->receiver->location);
         source = (const uint8_t *) pm_buffer_value(&unescaped);
         length = pm_buffer_length(&unescaped);
     }
