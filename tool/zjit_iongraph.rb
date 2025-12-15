@@ -31,4 +31,4 @@ html = File.read(File.join(File.dirname(__FILE__), "zjit_iongraph.html"))
 html.sub!("{{ IONJSON }}", json)
 output_path = "zjit_iongraph_#{pid}.html"
 File.write(output_path, html)
-LOGGER.info("Wrote iongraph to #{output_path}")
+puts output_path
