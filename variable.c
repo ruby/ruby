@@ -63,7 +63,7 @@ static VALUE autoload_mutex;
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
-static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
+static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in);
 static st_table *generic_fields_tbl_;
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
@@ -473,7 +473,7 @@ rb_path_to_class(VALUE pathname)
         if (!id) {
             goto undefined_class;
         }
-        c = rb_const_search(c, id, TRUE, FALSE, FALSE);
+        c = rb_const_search(c, id, TRUE, FALSE, FALSE, NULL);
         if (UNDEF_P(c)) goto undefined_class;
         if (!rb_namespace_p(c)) {
             rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
@@ -3348,11 +3348,12 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE c = rb_const_search(klass, id, exclude, recurse, visibility);
+    VALUE found_in;
+    VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
         if (UNLIKELY(!rb_ractor_main_p())) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
+                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(found_in), rb_id2name(id));
             }
         }
         return c;
@@ -3361,7 +3362,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 }
 
 static VALUE
-rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in)
 {
     VALUE value, current;
     bool first_iteration = true;
@@ -3398,13 +3399,17 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
                 if (am == tmp) break;
                 am = tmp;
                 ac = autoloading_const_entry(tmp, id);
-                if (ac) return ac->value;
+                if (ac) {
+                    if (found_in) { *found_in = tmp; }
+                    return ac->value;
+                }
                 rb_autoload_load(tmp, id);
                 continue;
             }
             if (exclude && tmp == rb_cObject) {
                 goto not_found;
             }
+            if (found_in) { *found_in = tmp; }
             return value;
         }
         if (!recurse) break;
@@ -3416,17 +3421,17 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 }
 
 static VALUE
-rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in)
 {
     VALUE value;
 
     if (klass == rb_cObject) exclude = FALSE;
-    value = rb_const_search_from(klass, id, exclude, recurse, visibility);
+    value = rb_const_search_from(klass, id, exclude, recurse, visibility, found_in);
     if (!UNDEF_P(value)) return value;
     if (exclude) return value;
     if (BUILTIN_TYPE(klass) != T_MODULE) return value;
     /* search global const too, if klass is a module */
-    return rb_const_search_from(rb_cObject, id, FALSE, recurse, visibility);
+    return rb_const_search_from(rb_cObject, id, FALSE, recurse, visibility, found_in);
 }
 
 VALUE

@@ -1089,6 +1089,20 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
   end
 RUBY
 
+# The correct constant path shall be reported
+assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+  STR = "hello"
+  module M
+    def self.str; STR; end
+  end
+
+  begin
+    Ractor.new{ M.str }.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
 # Setting non-shareable objects into constants by other Ractors is not allowed
 assert_equal 'can not set constants with non-shareable objects by non-main Ractors', <<~'RUBY', frozen_string_literal: false
   class C
