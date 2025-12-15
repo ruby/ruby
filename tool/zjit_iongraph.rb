@@ -25,6 +25,10 @@ functions = Dir["/tmp/zjit-iongraph-#{pid}/fun*.json"].map do |path|
   JSON.parse(File.read(path))
 end
 
+if functions.empty?
+  LOGGER.warn("No iongraph functions found for PID #{pid}")
+end
+
 json = JSON.dump({version: 1, functions: functions})
 # Get zjit_iongraph.html from the sibling file next to this script
 html = File.read(File.join(File.dirname(__FILE__), "zjit_iongraph.html"))
