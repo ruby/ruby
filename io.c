@@ -448,10 +448,8 @@ rb_cloexec_pipe(int descriptors[2])
     rb_maygvl_fd_fix_cloexec(descriptors[0]);
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
-#ifndef _WIN32
     rb_fd_set_nonblock(descriptors[0]);
     rb_fd_set_nonblock(descriptors[1]);
-#endif
 #endif
 
     return result;
