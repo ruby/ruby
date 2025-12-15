@@ -846,7 +846,7 @@ assert_equal '99', %q{
 }
 
 # ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
