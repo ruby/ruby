@@ -1122,9 +1122,9 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex ** numeric -> new_complex
+ *   self ** exponent -> complex
  *
- * Returns +self+ raised to power +numeric+:
+ * Returns +self+ raised to the power +exponent+:
  *
  *   Complex.rect(0, 1) ** 2            # => (-1+0i)
  *   Complex.rect(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
