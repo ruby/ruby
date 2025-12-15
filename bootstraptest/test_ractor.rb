@@ -986,6 +986,43 @@ assert_equal '333', %q{
   a + b + c + d + e + f
 }
 
+assert_equal <<-output.chomp, %q{
+  from Hash default proc
+  from instance variable @ivar of an instance of Foo
+  from block's self (an instance of Foo)
+  from Hash default proc
+  from instance variable @ivar of an instance of Foo
+  from member :foo of an instance of Bar
+output
+  class Foo
+    def initialize
+      @ivar = Hash.new { |h, k| h[k] = [] } # the default proc holds self, an instance of Foo
+    end
+    def inspect = "#<Foo @ivar=#{@ivar.inspect}>"
+  end
+
+  Bar = Data.define(:foo)
+
+  begin
+    Ractor.make_shareable(Bar.new(Foo.new))
+  rescue Ractor::Error
+    $!.to_s.lines[1..].join
+  end
+}
+
+assert_equal '[true, true]', %q{
+  class Foo
+    undef_method :freeze
+  end
+
+  begin
+    Ractor.make_shareable Foo.new
+  rescue Ractor::Error
+    cause = $!.cause
+    [cause.class == NoMethodError, cause.name == :freeze]
+  end
+}
+
 assert_equal '["instance-variable", "instance-variable", nil]', %q{
   class C
     @iv1 = ""
