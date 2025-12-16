@@ -12,55 +12,63 @@ module Gem
     # want other processes or threads to see half-written files.
 
     def self.open(file_name)
-      temp_dir = File.dirname(file_name)
-      require "tempfile" unless defined?(Tempfile)
+      require "securerandom" unless defined?(SecureRandom)
 
-      Tempfile.create(".#{File.basename(file_name)}", temp_dir) do |temp_file|
-        temp_file.binmode
-        return_value = yield temp_file
-        temp_file.close
+      old_stat = begin
+                   File.stat(file_name)
+                 rescue SystemCallError
+                   nil
+                 end
 
-        original_permissions = if File.exist?(file_name)
-          File.stat(file_name)
-        else
-          # If not possible, probe which are the default permissions in the
-          # destination directory.
-          probe_permissions_in(File.dirname(file_name))
-        end
+      # Names can't be longer than 255B
+      tmp_suffix = ".tmp.#{SecureRandom.hex}"
+      dirname = File.dirname(file_name)
+      basename = File.basename(file_name)
+      tmp_path = File.join(dirname, ".#{basename.byteslice(0, 254 - tmp_suffix.bytesize)}#{tmp_suffix}")
 
-        # Set correct permissions on new file
-        if original_permissions
+      flags = File::RDWR | File::CREAT | File::EXCL | File::BINARY
+      flags |= File::SHARE_DELETE if defined?(File::SHARE_DELETE)
+
+      File.open(tmp_path, flags) do |temp_file|
+        if old_stat
+          # Set correct permissions on new file
           begin
-            File.chown(original_permissions.uid, original_permissions.gid, temp_file.path)
-            File.chmod(original_permissions.mode, temp_file.path)
+            File.chown(old_stat.uid, old_stat.gid, temp_file.path)
+            # This operation will affect filesystem ACL's
+            File.chmod(old_stat.mode, temp_file.path)
           rescue Errno::EPERM, Errno::EACCES
             # Changing file ownership failed, moving on.
           end
         end
 
-        # Overwrite original file with temp file
-        File.rename(temp_file.path, file_name)
-        return_value
-      end
-    end
+        return_val = yield temp_file
+      rescue StandardError => error
+        begin
+          temp_file.close
+        rescue StandardError
+          nil
+        end
 
-    def self.probe_permissions_in(dir) # :nodoc:
-      basename = [
-        ".permissions_check",
-        Thread.current.object_id,
-        Process.pid,
-        rand(1_000_000),
-      ].join(".")
+        begin
+          File.unlink(temp_file.path)
+        rescue StandardError
+          nil
+        end
 
-      file_name = File.join(dir, basename)
-      File.open(file_name, "w") {}
-      File.stat(file_name)
-    rescue Errno::ENOENT
-      nil
-    ensure
-      begin
-        File.unlink(file_name) if File.exist?(file_name)
-      rescue SystemCallError
+        raise error
+      else
+        begin
+          File.rename(temp_file.path, file_name)
+        rescue StandardError
+          begin
+            File.unlink(temp_file.path)
+          rescue StandardError
+          end
+
+          raise
+        end
+
+        return_val
       end
     end
   end
