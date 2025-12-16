@@ -936,4 +936,116 @@ EXPECTED
       assert_equal "oh no", v
     end;
   end
+
+  def test_unpack_broken_R
+    assert_equal([nil], "\xFF".unpack("R"))
+    assert_nil("\xFF".unpack1("R"))
+    assert_equal([nil], "\xFF".unpack("r"))
+    assert_nil("\xFF".unpack1("r"))
+
+    bytes = [256].pack("r")
+    assert_equal([256, nil, nil, nil], (bytes + "\xFF").unpack("rrrr"))
+
+    bytes = [256].pack("R")
+    assert_equal([256, nil, nil, nil], (bytes + "\xFF").unpack("RRRR"))
+
+    assert_equal([], "\xFF".unpack("R*"))
+    assert_equal([], "\xFF".unpack("r*"))
+  end
+
+  def test_pack_unpack_R
+    # ULEB128 encoding (unsigned)
+    assert_equal("\x00", [0].pack("R"))
+    assert_equal("\x01", [1].pack("R"))
+    assert_equal("\x7f", [127].pack("R"))
+    assert_equal("\x80\x01", [128].pack("R"))
+    assert_equal("\xff\x7f", [0x3fff].pack("R"))
+    assert_equal("\x80\x80\x01", [0x4000].pack("R"))
+    assert_equal("\xff\xff\xff\xff\x0f", [0xffffffff].pack("R"))
+    assert_equal("\x80\x80\x80\x80\x10", [0x100000000].pack("R"))
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", [0xffff_ffff_ffff_ffff].pack("R"))
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("R"))
+
+    # Multiple values
+    assert_equal("\x01\x02", [1, 2].pack("R*"))
+    assert_equal("\x7f\x80\x01", [127, 128].pack("R*"))
+
+    # Negative numbers should raise an error
+    assert_raise(ArgumentError) { [-1].pack("R") }
+    assert_raise(ArgumentError) { [-100].pack("R") }
+
+    # Unpack tests
+    assert_equal([0], "\x00".unpack("R"))
+    assert_equal([1], "\x01".unpack("R"))
+    assert_equal([127], "\x7f".unpack("R"))
+    assert_equal([128], "\x80\x01".unpack("R"))
+    assert_equal([0x3fff], "\xff\x7f".unpack("R"))
+    assert_equal([0x4000], "\x80\x80\x01".unpack("R"))
+    assert_equal([0xffffffff], "\xff\xff\xff\xff\x0f".unpack("R"))
+    assert_equal([0x100000000], "\x80\x80\x80\x80\x10".unpack("R"))
+    assert_equal([0xffff_ffff_ffff_ffff], "\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01".unpack("R"))
+    assert_equal([0xffff_ffff_ffff_ffff_ffff_ffff].pack("R"), "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f")
+
+    # Multiple values
+    assert_equal([1, 2], "\x01\x02".unpack("R*"))
+    assert_equal([127, 128], "\x7f\x80\x01".unpack("R*"))
+
+    # Round-trip test
+    values = [0, 1, 127, 128, 0x3fff, 0x4000, 0xffffffff, 0x100000000]
+    assert_equal(values, values.pack("R*").unpack("R*"))
+  end
+
+  def test_pack_unpack_r
+    # SLEB128 encoding (signed)
+    assert_equal("\x00", [0].pack("r"))
+    assert_equal("\x01", [1].pack("r"))
+    assert_equal("\x7f", [-1].pack("r"))
+    assert_equal("\x7e", [-2].pack("r"))
+    assert_equal("\xff\x00", [127].pack("r"))
+    assert_equal("\x80\x01", [128].pack("r"))
+    assert_equal("\x81\x7f", [-127].pack("r"))
+    assert_equal("\x80\x7f", [-128].pack("r"))
+
+    # Larger positive numbers
+    assert_equal("\xff\xff\x00", [0x3fff].pack("r"))
+    assert_equal("\x80\x80\x01", [0x4000].pack("r"))
+
+    # Larger negative numbers
+    assert_equal("\x81\x80\x7f", [-0x3fff].pack("r"))
+    assert_equal("\x80\x80\x7f", [-0x4000].pack("r"))
+
+    # Very large numbers
+    assert_equal("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x1F", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+    assert_equal("\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80`", [-0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+
+    # Multiple values
+    assert_equal("\x00\x01\x7f", [0, 1, -1].pack("r*"))
+
+    # Unpack tests
+    assert_equal([0], "\x00".unpack("r"))
+    assert_equal([1], "\x01".unpack("r"))
+    assert_equal([-1], "\x7f".unpack("r"))
+    assert_equal([-2], "\x7e".unpack("r"))
+    assert_equal([127], "\xff\x00".unpack("r"))
+    assert_equal([128], "\x80\x01".unpack("r"))
+    assert_equal([-127], "\x81\x7f".unpack("r"))
+    assert_equal([-128], "\x80\x7f".unpack("r"))
+
+    # Larger numbers
+    assert_equal([0x3fff], "\xff\xff\x00".unpack("r"))
+    assert_equal([0x4000], "\x80\x80\x01".unpack("r"))
+    assert_equal([-0x3fff], "\x81\x80\x7f".unpack("r"))
+    assert_equal([-0x4000], "\x80\x80\x7f".unpack("r"))
+
+    # Very large numbers
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+    assert_equal("\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80`", [-0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+
+    # Multiple values
+    assert_equal([0, 1, -1], "\x00\x01\x7f".unpack("r*"))
+
+    # Round-trip test
+    values = [0, 1, -1, 127, -127, 128, -128, 0x3fff, -0x3fff, 0x4000, -0x4000]
+    assert_equal(values, values.pack("r*").unpack("r*"))
+  end
 end
