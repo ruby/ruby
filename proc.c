@@ -1543,9 +1543,9 @@ rb_iseq_location(const rb_iseq_t *iseq)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
  */
@@ -3203,9 +3203,9 @@ rb_method_entry_location(const rb_method_entry_t *me)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
  */
