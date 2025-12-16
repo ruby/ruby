@@ -1609,7 +1609,11 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
-    assert_includes(gem_make_out, "make -j4")
+    if vc_windows? && nmake_found?
+      refute_includes(gem_make_out, "-j4")
+    else
+      assert_includes(gem_make_out, "make -j4")
+    end
   end
 
   def test_execute_bindir_with_nonexistent_parent_dirs
