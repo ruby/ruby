@@ -1130,31 +1130,11 @@ fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Op
 }
 
 fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
-    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written().
-    // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
-    if val_type.is_immediate() {
-        return;
-    } else if val_type.is_heap_object() {
-        asm_comment!(asm, "Write barrier with known heap object value");
+    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
+    if !val_type.is_immediate() {
+        asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
-    } else {
-        // Unknown if immediate or not, need to check because rb_gc_writebarrier() assumes not immediate
-        asm_comment!(asm, "Write barrier with unknown value");
-        let no_wb = asm.new_label("no_write_barrier_for_immediate");
-
-        // Continue if special constant
-        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-        asm.jnz(no_wb.clone());
-
-        // Continue if false
-        asm.cmp(val, Qfalse.into());
-        asm.je(no_wb.clone());
-
-        let recv = asm.load(recv);
-        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
-
-        asm.write_label(no_wb);
     }
 }
 
