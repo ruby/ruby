@@ -37,7 +37,7 @@ describe :array_pack_basic_non_float, shared: true do
     # NOTE: it's just a plan of the Ruby core team
     it "warns that a directive is unknown" do
       # additional directive ('a') is required for the X directive
-      -> { [@obj, @obj].pack("a R" + pack_format) }.should complain(/unknown pack directive 'R'/)
+      -> { [@obj, @obj].pack("a K" + pack_format) }.should complain(/unknown pack directive 'K'/)
       -> { [@obj, @obj].pack("a 0" + pack_format) }.should complain(/unknown pack directive '0'/)
       -> { [@obj, @obj].pack("a :" + pack_format) }.should complain(/unknown pack directive ':'/)
     end
@@ -48,7 +48,7 @@ describe :array_pack_basic_non_float, shared: true do
     # NOTE: Added this case just to not forget about the decision in the ticket
     it "raise ArgumentError when a directive is unknown" do
       # additional directive ('a') is required for the X directive
-      -> { [@obj, @obj].pack("a R" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive 'R'/)
+      -> { [@obj, @obj].pack("a K" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive 'K'/)
       -> { [@obj, @obj].pack("a 0" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive '0'/)
       -> { [@obj, @obj].pack("a :" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive ':'/)
     end
