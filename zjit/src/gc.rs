@@ -183,7 +183,9 @@ pub fn append_gc_offsets(iseq: IseqPtr, mut version: IseqVersionRef, offsets: &V
         let value_ptr = value_ptr as *const VALUE;
         unsafe {
             let object = value_ptr.read_unaligned();
-            rb_gc_writebarrier(iseq.into(), object);
+            if !object.special_const_p() {
+                rb_gc_writebarrier(iseq.into(), object);
+            }
         }
     }
 }
