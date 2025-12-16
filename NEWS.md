@@ -11,6 +11,15 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Method
+
+    * `Method#source_location`, `Proc#source_location`, and
+      `UnboundMethod#source_location` now return extended location
+      information with 5 elements: `[path, start_line, start_column,
+      end_line, end_column]`. The previous 2-element format `[path,
+      line]` can still be obtained by calling `.take(2)` on the result.
+      [[Feature #6012]]
+
 * Set
 
     * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
@@ -66,4 +75,5 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Feature #6012]: https://bugs.ruby-lang.org/issues/6012
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
