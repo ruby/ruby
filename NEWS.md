@@ -313,7 +313,7 @@ The following bundled gems are updated.
 * typeprof 0.31.0
 * debug 1.11.0
 * base64 0.3.0
-* bigdecimal 3.3.1
+* bigdecimal 4.0.0
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.5

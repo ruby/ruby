@@ -96,3 +96,7 @@ test_initialize(PathnameSingletonTest)
 
 # [Feature #20925] `size` of Enumerator created by `produce` returns `nil` instead of `Float::INFINITY`, unless `size:` is specified.
 test_produce(EnumeratorSingletonTest)
+
+# BigDecimal v4.0.0 changed behavior
+test_divmod(BigDecimalTest)
+test_precs(BigDecimalTest)
