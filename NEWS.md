@@ -205,10 +205,8 @@ Note: We're only listing outstanding class updates.
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
 
-    * `Set#inspect` now returns a string suitable for `eval`, using the
-      `Set[]` syntax (e.g., `Set[1, 2, 3]` instead of
-      `#<Set: {1, 2, 3}>`). This makes it consistent with other core
-      collection classes like Array and Hash. [[Feature #21389]]
+    * `Set#inspect` now uses a simpler displays, similar to literal arrays.
+      (e.g., `Set[1, 2, 3]` instead of `#<Set: {1, 2, 3}>`). [[Feature #21389]]
 
     * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
       [[Feature #21390]]
@@ -280,7 +278,7 @@ The following default gems are updated.
 * date 3.5.1
 * digest 3.2.1
 * english 0.8.1
-* erb 6.0.0
+* erb 6.0.1
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0

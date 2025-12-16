@@ -576,7 +576,7 @@ num_imaginary(VALUE num)
  *  call-seq:
  *    -self -> numeric
  *
- *  Unary Minus---Returns the receiver, negated.
+ *  Returns +self+, negated.
  */
 
 static VALUE
@@ -1089,7 +1089,7 @@ rb_float_plus(VALUE x, VALUE y)
  *  call-seq:
  *    self - other -> numeric
  *
- *  Returns a new \Float which is the difference of +self+ and +other+:
+ * Returns the difference of +self+ and +other+:
  *
  *    f = 3.14
  *    f - 1                 # => 2.14
@@ -1390,9 +1390,9 @@ flo_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** other -> numeric
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +other+:
+ *  Returns +self+ raised to the power +exponent+:
  *
  *    f = 3.14
  *    f ** 2              # => 9.8596
@@ -4197,9 +4197,9 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self - numeric -> numeric_result
+ *    self - other -> numeric
  *
- *  Performs subtraction:
+ * Returns the difference of +self+ and +other+:
  *
  *    4 - 2              # => 2
  *    -4 - 2             # => -6
@@ -4623,9 +4623,9 @@ rb_int_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** numeric -> numeric_result
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +numeric+:
+ * Returns +self+ raised to the power +exponent+:
  *
  *    2 ** 3              # => 8
  *    2 ** -3             # => (1/8)
@@ -4748,8 +4748,7 @@ fix_pow(VALUE x, VALUE y)
  *  call-seq:
  *    self ** exponent -> numeric
  *
- *  Returns the value of base +self+ raised to the power +exponent+;
- *  see {Exponentiation}[https://en.wikipedia.org/wiki/Exponentiation]:
+ *  Returns +self+ raised to the power +exponent+:
  *
  *    # Result for non-negative Integer exponent is Integer.
  *    2 ** 0   # => 1

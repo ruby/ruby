@@ -609,9 +609,13 @@ nurat_denominator(VALUE self)
 
 /*
  * call-seq:
- *    -rat  ->  rational
+ *    -self -> rational
  *
- * Negates +rat+.
+ * Returns +self+, negated:
+ *
+ *   -(1/3r)   # => (-1/3)
+ *   -(-1/3r)  # => (1/3)
+ *
  */
 VALUE
 rb_rational_uminus(VALUE self)
@@ -768,9 +772,9 @@ rb_rational_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat - numeric  ->  numeric
+ *    self - other -> numeric
  *
- * Performs subtraction.
+ * Returns the difference of +self+ and +other+:
  *
  *    Rational(2, 3)  - Rational(2, 3)   #=> (0/1)
  *    Rational(900)   - Rational(1)      #=> (899/1)
@@ -984,9 +988,9 @@ nurat_fdiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat ** numeric  ->  numeric
+ *    self ** exponent -> numeric
  *
- * Performs exponentiation.
+ * Returns +self+ raised to the power +exponent+:
  *
  *    Rational(2)    ** Rational(3)     #=> (8/1)
  *    Rational(10)   ** -2              #=> (1/100)

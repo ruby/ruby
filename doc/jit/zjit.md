@@ -11,6 +11,38 @@ This project is open source and falls under the same license as CRuby.
 ZJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs. ZJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
 You can change how much executable memory is allocated using [ZJIT's command-line options](rdoc-ref:@Command-Line+Options).
 
+## Contributing
+
+We welcome open source contributions. Feel free to open new issues to report
+bugs or just to ask questions. Suggestions on how to make this document more
+helpful for new contributors are most welcome.
+
+Bug fixes and bug reports are very valuable to us. If you find a bug in ZJIT,
+it's very possible that nobody has reported it before, or that we don't have
+a good reproduction for it, so please open a ticket on [the official Ruby bug
+tracker][rubybugs] (or, if you don't want to make an account, [on
+Shopify/ruby][shopifyruby]) and provide as much information as you can about
+your configuration and a description of how you encountered the problem. List
+the commands you used to run ZJIT so that we can easily reproduce the issue on
+our end and investigate it. If you are able to produce a small program
+reproducing the error to help us track it down, that is very much appreciated
+as well.
+
+[rubybugs]: https://bugs.ruby-lang.org/projects/ruby-master
+[shopifyruby]: https://github.com/Shopify/ruby/issues
+
+If you would like to contribute a large patch to ZJIT, we suggest [chatting on
+Zulip][zulip] for a casual chat and then opening an issue on the [Shopify/ruby
+repository][shopifyruby] so that we can have a technical discussion. A common
+problem is that sometimes people submit large pull requests to open source
+projects without prior communication, and we have to reject them because the
+work they implemented does not fit within the design of the project. We want to
+save you time and frustration, so please reach out so we can have a productive
+discussion as to how you can contribute patches we will want to merge into
+ZJIT.
+
+[zulip]: https://zjit.zulipchat.com/
+
 ## Build Instructions
 
 Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequists.
