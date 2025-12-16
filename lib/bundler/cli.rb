@@ -104,7 +104,7 @@ module Bundler
       primary_commands = ["install", "update", "cache", "exec", "config", "help"]
 
       list = self.class.printable_commands(true)
-      by_name = list.group_by {|name, _message| name.match(/^bundle (\w+)/)[1] }
+      by_name = list.group_by {|name, _message| name.match(/^bundler? (\w+)/)[1] }
       utilities = by_name.keys.sort - primary_commands
       primary_commands.map! {|name| (by_name[name] || raise("no primary command #{name}")).first }
       utilities.map! {|name| by_name[name].first }
