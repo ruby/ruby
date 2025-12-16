@@ -20,18 +20,18 @@ end
 
 module UniqueGvar
   def self.read
-    $used_only_in_ns
+    $used_only_in_box
   end
 
   def self.write(val)
-    $used_only_in_ns = val
+    $used_only_in_box = val
   end
 
   def self.write_only(val)
-    $write_only_var_in_ns = val
+    $write_only_var_in_box = val
   end
 
-  def self.gvars_in_ns
+  def self.gvars_in_box
     global_variables
   end
 end
