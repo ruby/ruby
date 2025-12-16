@@ -517,6 +517,10 @@ impl Type {
         self.is_subtype(types::Immediate)
     }
 
+    pub fn is_heap_object(&self) -> bool {
+        self.is_subtype(types::HeapBasicObject)
+    }
+
     pub fn print(self, ptr_map: &PtrPrintMap) -> TypePrinter<'_> {
         TypePrinter { inner: self, ptr_map }
     }
