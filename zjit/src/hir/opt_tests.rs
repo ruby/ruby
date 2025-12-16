@@ -2588,7 +2588,7 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
           IncrCounter inline_iseq_optimized_send_count
-          v23:BasicObject = InvokeBuiltin leaf _bi285, v13
+          v23:BasicObject = InvokeBuiltin leaf <inline_expr>, v13
           CheckInterrupts
           Return v23
         ");
@@ -2620,7 +2620,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
           IncrCounter inline_iseq_optimized_send_count
-          v31:BasicObject = InvokeBuiltin leaf _bi132, v17
+          v31:BasicObject = InvokeBuiltin leaf <inline_expr>, v17
           CheckInterrupts
           Return v31
         ");
