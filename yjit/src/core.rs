@@ -2419,7 +2419,9 @@ impl<'a> JITState<'a> {
             // Pending branches => actual branches
             outgoing: MutableBranchList(Cell::new(self.pending_outgoing.into_iter().map(|pending_out| {
                 let pending_out = Rc::try_unwrap(pending_out)
-                    .ok().expect("all PendingBranchRefs should be unique when ready to construct a Block");
+                    .unwrap_or_else(|rc| panic!(
+                        "PendingBranchRef should be unique when ready to construct a Block. \
+                         strong={} weak={}", Rc::strong_count(&rc), Rc::weak_count(&rc)));
                 pending_out.into_branch(NonNull::new(blockref as *mut Block).expect("no null from Box"))
             }).collect()))
         });
