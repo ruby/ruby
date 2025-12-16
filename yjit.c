@@ -160,18 +160,7 @@ rb_yjit_exit_locations_dict(VALUE *yjit_raw_samples, int *yjit_line_samples, int
 bool
 rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
 {
-    rb_event_flag_t tracing_events;
-    if (rb_multi_ractor_p()) {
-        tracing_events = ruby_vm_event_enabled_global_flags;
-    }
-    else {
-        // At the time of writing, events are never removed from
-        // ruby_vm_event_enabled_global_flags so always checking using it would
-        // mean we don't compile even after tracing is disabled.
-        tracing_events = rb_ec_ractor_hooks(ec)->events;
-    }
-
-    return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
+    return ruby_vm_c_events_enabled > 0;
 }
 
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
