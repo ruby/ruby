@@ -509,28 +509,29 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_reset_superclass
-    self.class.class_eval <<-RUBY
+    m = Module.new
+    m.module_eval <<-RUBY
       class A; end
       class SuperclassCannotBeReset < A
       end
     RUBY
-    assert_equal A, SuperclassCannotBeReset.superclass
+    assert_equal m::A, m::SuperclassCannotBeReset.superclass
 
     assert_raise_with_message(TypeError, /superclass mismatch/) {
-      self.class.class_eval <<-RUBY
+      m.module_eval <<-RUBY
         class SuperclassCannotBeReset < String
         end
       RUBY
     }
 
     assert_raise_with_message(TypeError, /superclass mismatch/, "[ruby-core:75446]") {
-      self.class.class_eval <<-RUBY
+      m.module_eval <<-RUBY
         class SuperclassCannotBeReset < Object
         end
       RUBY
     }
 
-    assert_equal A, SuperclassCannotBeReset.superclass
+    assert_equal m::A, m::SuperclassCannotBeReset.superclass
   end
 
   def test_cloned_singleton_method_added

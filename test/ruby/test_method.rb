@@ -117,7 +117,9 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:m, Class.new {def m; tap{return __method__}; end}.new.m)
     assert_equal(:m, Class.new {define_method(:m) {__method__}}.new.m)
     assert_equal(:m, Class.new {define_method(:m) {tap{return __method__}}}.new.m)
-    assert_nil(eval("class TestCallee; __method__; end"))
+    unless multiple_ractors?
+      assert_nil(eval("class TestCallee; __method__; end"))
+    end
 
     assert_equal(:test_callee, __callee__)
     [
@@ -131,7 +133,9 @@ class TestMethod < Test::Unit::TestCase
       assert_equal(:m, o.m, mesg)
       assert_equal(:m2, o.m2, mesg)
     end
-    assert_nil(eval("class TestCallee; __callee__; end"))
+    unless multiple_ractors?
+      assert_nil(eval("class TestCallee; __callee__; end"))
+    end
   end
 
   def test_orphan_callee
