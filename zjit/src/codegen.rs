@@ -1130,11 +1130,12 @@ fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Op
 }
 
 fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
-    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
+    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written().
+    // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
-        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+        asm_ccall!(asm, rb_zjit_writebarrier_check_immediate, recv, val);
     }
 }
 
