@@ -1447,7 +1447,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                     UNLIKELY(!rb_ractor_main_p()) &&
                     !rb_ractor_shareable_p(val)) {
                 rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                        rb_id2str(id), obj);
             }
             return val;
         }
