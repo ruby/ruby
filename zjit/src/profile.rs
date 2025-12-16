@@ -124,7 +124,9 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
-        unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+        if !ty.class().special_const_p() {
+            unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+        }
         profile_type.observe(ty);
     }
 }
@@ -138,7 +140,9 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
     // drop them or something
     let ty = ProfiledType::new(obj);
-    unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    if !ty.class().special_const_p() {
+        unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    }
     types[0].observe(ty);
 }
 
@@ -149,7 +153,9 @@ fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     }
     let obj = profiler.peek_at_block_handler();
     let ty = ProfiledType::object(obj);
-    unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    if !ty.class().special_const_p() {
+        unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    }
     types[0].observe(ty);
 }
 
