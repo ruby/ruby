@@ -11,7 +11,7 @@ module ProcLookupTestA
   end
 end
 
-module ProcInNS
+module ProcInBox
   def self.make_proc_from_block(&b)
     b
   end
