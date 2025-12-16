@@ -1175,7 +1175,7 @@ rb_flo_div_flo(VALUE x, VALUE y)
  *  call-seq:
  *    self / other -> numeric
  *
- *  Returns a new \Float which is the result of dividing +self+ by +other+:
+ * Returns the quotient of +self+ and +other+:
  *
  *    f = 3.14
  *    f / 2              # => 1.57
@@ -4386,16 +4386,18 @@ fix_div(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   self / numeric -> numeric_result
+ *   self / other -> numeric
  *
- * Performs division; for integer +numeric+, truncates the result to an integer:
+ * Returns the quotient of +self+ and +other+.
+ *
+ * For integer +other+, truncates the result to an integer:
  *
  *   4 / 3              # => 1
  *   4 / -3             # => -2
  *   -4 / 3             # => -2
  *   -4 / -3            # => 1
  *
- *  For other +numeric+, returns non-integer result:
+ * For non-integer +other+, returns a non-integer result:
  *
  *   4 / 3.0            # => 1.3333333333333333
  *   4 / Rational(3, 1) # => (4/3)

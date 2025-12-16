@@ -999,9 +999,9 @@ f_divide(VALUE self, VALUE other,
 
 /*
  * call-seq:
- *   complex / numeric -> new_complex
+ *   self / other -> complex
  *
- * Returns the quotient of +self+ and +numeric+:
+ * Returns the quotient of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  / Complex.rect(2, 3)  # => (1+0i)
  *   Complex.rect(900)   / Complex.rect(1)     # => (900+0i)
