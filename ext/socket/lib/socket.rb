@@ -948,7 +948,14 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
-        timeout = open_timeout ? open_timeout - (current_clock_time - starts_at) : connect_timeout
+        timeout =
+          if open_timeout
+            t = open_timeout - (current_clock_time - starts_at)
+            t.negative? ? 0 : t
+          else
+            connect_timeout
+          end
+
         sock = local_addr ?
           ai.connect_from(local_addr, timeout:) :
           ai.connect(timeout:)
