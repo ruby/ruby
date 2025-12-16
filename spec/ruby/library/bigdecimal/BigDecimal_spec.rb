@@ -31,16 +31,12 @@ describe "Kernel#BigDecimal" do
   end
 
   it "accepts significant digits >= given precision" do
-    suppress_warning do
-      BigDecimal("3.1415923", 10).precs[1].should >= 10
-    end
+    BigDecimal("3.1415923", 10).should == BigDecimal("3.1415923")
   end
 
   it "determines precision from initial value" do
     pi_string = "3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196442881097566593014782083152134043"
-    suppress_warning {
-      BigDecimal(pi_string).precs[1]
-    }.should >= pi_string.size-1
+    BigDecimal(pi_string).precision.should == pi_string.size-1
   end
 
   it "ignores leading and trailing whitespace" do
@@ -208,14 +204,6 @@ describe "Kernel#BigDecimal" do
       Float(@b).to_s.should == "166.66666666666666"
     end
 
-    it "has the expected precision on the LHS" do
-      suppress_warning { @a.precs[0] }.should == 18
-    end
-
-    it "has the expected maximum precision on the LHS" do
-      suppress_warning { @a.precs[1] }.should == 27
-    end
-
     it "produces the expected result when done via Float" do
       (Float(@a) - Float(@b)).to_s.should == "-6.666596163995564e-10"
     end
@@ -226,32 +214,8 @@ describe "Kernel#BigDecimal" do
 
     # Check underlying methods work as we understand
 
-    it "BigDecimal precision is the number of digits rounded up to a multiple of nine" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, _ = suppress_warning { b.precs }
-        (precs >= 9).should be_true
-        (precs >= n).should be_true
-        (precs % 9).should == 0
-      end
-      suppress_warning { BigDecimal('NaN').precs[0] }.should == 9
-    end
-
-    it "BigDecimal maximum precision is nine more than precision except for abnormals" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, max = suppress_warning { b.precs }
-        max.should == precs + 9
-      end
-      suppress_warning { BigDecimal('NaN').precs[1] }.should == 9
-    end
-
     it "BigDecimal(Rational, 18) produces the result we expect" do
       BigDecimal(@b, 18).to_s.should == "0.166666666666666667e3"
-    end
-
-    it "BigDecimal(Rational, BigDecimal.precs[0]) produces the result we expect" do
-      BigDecimal(@b, suppress_warning { @a.precs[0] }).to_s.should == "0.166666666666666667e3"
     end
 
     # Check the top-level expression works as we expect
