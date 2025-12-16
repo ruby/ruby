@@ -3026,7 +3026,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v10:HeapObject = InvokeBuiltin leaf _bi20, v6
+          v10:HeapObject = InvokeBuiltin leaf <inline_expr>, v6
           Jump bb3(v6, v10)
         bb3(v12:BasicObject, v13:HeapObject):
           CheckInterrupts
@@ -3140,7 +3140,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v10:StringExact = InvokeBuiltin leaf _bi28, v6
+          v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
           Jump bb3(v6, v10)
         bb3(v12:BasicObject, v13:StringExact):
           CheckInterrupts
@@ -3162,7 +3162,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v10:StringExact = InvokeBuiltin leaf _bi12, v6
+          v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
           Jump bb3(v6, v10)
         bb3(v12:BasicObject, v13:StringExact):
           CheckInterrupts

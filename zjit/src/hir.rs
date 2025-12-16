@@ -1297,9 +1297,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
+                let bf_name = unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap();
                 write!(f, "InvokeBuiltin{} {}",
                            if *leaf { " leaf" } else { "" },
-                           unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap())?;
+                           // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
+                           if bf_name.starts_with("_bi") { "<inline_expr>" } else { bf_name })?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
