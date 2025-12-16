@@ -98,8 +98,6 @@ pub const X2_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 2 };
 pub const X3_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 3 };
 pub const X4_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 4 };
 pub const X5_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 5 };
-pub const X6_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 6 };
-pub const X7_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 7 };
 
 // caller-save registers
 pub const X9_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 9 };

@@ -24,15 +24,13 @@ pub const EC: Opnd = Opnd::Reg(X20_REG);
 pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const C_ARG_OPNDS: [Opnd; 8] = [
+pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
     Opnd::Reg(X3_REG),
     Opnd::Reg(X4_REG),
-    Opnd::Reg(X5_REG),
-    Opnd::Reg(X6_REG),
-    Opnd::Reg(X7_REG)
+    Opnd::Reg(X5_REG)
 ];
 
 // C return value register on this platform
@@ -201,8 +199,6 @@ pub const ALLOC_REGS: &[Reg] = &[
     X3_REG,
     X4_REG,
     X5_REG,
-    X6_REG,
-    X7_REG,
     X11_REG,
     X12_REG,
 ];
@@ -235,7 +231,7 @@ impl Assembler {
 
     /// Get a list of all of the caller-saved registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
-        vec![X1_REG, X6_REG, X7_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
+        vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
     /// How many bytes a call and a [Self::frame_setup] would change native SP
@@ -492,13 +488,31 @@ impl Assembler {
                 }
                 */
                 Insn::CCall { opnds, .. } => {
-                    opnds.iter_mut().for_each(|opnd| {
-                        *opnd = match opnd {
-                            Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
-                            Opnd::Mem(_) => split_memory_address(asm, *opnd),
-                            _ => *opnd
-                        };
-                    });
+                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+
+                    // Load each operand into the corresponding argument
+                    // register.
+                    // Note: the iteration order is reversed to avoid corrupting x0,
+                    // which is both the return value and first argument register
+                    if !opnds.is_empty() {
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
+                            // If the value that we're sending is 0, then we can use
+                            // the zero register, so in this case we'll just send
+                            // a UImm of 0 along as the argument to the move.
+                            let value = match opnd {
+                                Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
+                                Opnd::Mem(_) => split_memory_address(asm, *opnd),
+                                _ => *opnd
+                            };
+                            args.push((C_ARG_OPNDS[idx], value));
+                        }
+                        asm.parallel_mov(args);
+                    }
+
+                    // Now we push the CCall without any arguments so that it
+                    // just performs the call.
+                    *opnds = vec![];
                     asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
@@ -1843,19 +1857,17 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: str x1, [sp, #-0x10]!
-        0x4: str x6, [sp, #-0x10]!
-        0x8: str x7, [sp, #-0x10]!
-        0xc: str x9, [sp, #-0x10]!
-        0x10: str x10, [sp, #-0x10]!
-        0x14: str x11, [sp, #-0x10]!
-        0x18: str x12, [sp, #-0x10]!
-        0x1c: str x13, [sp, #-0x10]!
-        0x20: str x14, [sp, #-0x10]!
-        0x24: str x15, [sp, #-0x10]!
-        0x28: mrs x16, nzcv
-        0x2c: str x16, [sp, #-0x10]!
+        0x4: str x9, [sp, #-0x10]!
+        0x8: str x10, [sp, #-0x10]!
+        0xc: str x11, [sp, #-0x10]!
+        0x10: str x12, [sp, #-0x10]!
+        0x14: str x13, [sp, #-0x10]!
+        0x18: str x14, [sp, #-0x10]!
+        0x1c: str x15, [sp, #-0x10]!
+        0x20: mrs x16, nzcv
+        0x24: str x16, [sp, #-0x10]!
         ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e60f1ff8e70f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
+        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
     }
 
     #[test]
@@ -1875,11 +1887,9 @@ mod tests {
         0x18: ldr x11, [sp], #0x10
         0x1c: ldr x10, [sp], #0x10
         0x20: ldr x9, [sp], #0x10
-        0x24: ldr x7, [sp], #0x10
-        0x28: ldr x6, [sp], #0x10
-        0x2c: ldr x1, [sp], #0x10
+        0x24: ldr x1, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e70741f8e60741f8e10741f8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
     }
 
     #[test]
@@ -2648,14 +2658,14 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: mov x15, x1
-        0x4: mov x1, x0
-        0x8: mov x0, x15
-        0xc: mov x16, #0
-        0x10: blr x16
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov x15, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x15
+            0xc: mov x16, #0
+            0x10: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"ef0301aae10300aae0030faa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae1030faa100080d200023fd6");
     }
 
     #[test]
@@ -2671,17 +2681,17 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: mov x15, x1
-        0x4: mov x1, x0
-        0x8: mov x0, x15
-        0xc: mov x15, x3
-        0x10: mov x3, x2
-        0x14: mov x2, x15
-        0x18: mov x16, #0
-        0x1c: blr x16
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov x15, x2
+            0x4: mov x2, x3
+            0x8: mov x3, x15
+            0xc: mov x15, x0
+            0x10: mov x0, x1
+            0x14: mov x1, x15
+            0x18: mov x16, #0
+            0x1c: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"ef0301aae10300aae0030faaef0303aae30302aae2030faa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
     }
 
     #[test]
@@ -2696,15 +2706,15 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: mov x15, x1
-        0x4: mov x1, x2
-        0x8: mov x2, x0
-        0xc: mov x0, x15
-        0x10: mov x16, #0
-        0x14: blr x16
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov x15, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x2
+            0xc: mov x2, x15
+            0x10: mov x16, #0
+            0x14: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"ef0301aae10302aae20300aae0030faa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae10302aae2030faa100080d200023fd6");
     }
 
     #[test]
