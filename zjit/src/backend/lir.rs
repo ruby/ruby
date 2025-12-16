@@ -1559,8 +1559,9 @@ impl Assembler
                 frame_setup_idxs.push(asm.insns.len());
             }
 
-            let before_ccall = match &insn {
-                Insn::CCall { .. } if !pool.is_empty() => {
+            let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
+                (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
+                (Insn::CCall { .. }, _) if !pool.is_empty() => {
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
                     if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
@@ -1610,25 +1611,6 @@ impl Assembler
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
                     asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
-                }
-                if let Insn::ParallelMov { moves } = &insn {
-                    if moves.len() > C_ARG_OPNDS.len() {
-                        let difference = moves.len().saturating_sub(C_ARG_OPNDS.len());
-
-                        #[cfg(target_arch = "x86_64")]
-                        let offset = {
-                            // double quadword alignment
-                            ((difference + 3) / 4) * 4
-                        };
-
-                        #[cfg(target_arch = "aarch64")]
-                        let offset = {
-                            // quadword alignment
-                            if difference % 2 == 0 { difference } else { difference + 1 }
-                        };
-
-                        asm.sub_into(NATIVE_STACK_PTR, (offset * 8).into());
-                    }
                 }
             }
 
@@ -1721,23 +1703,7 @@ impl Assembler
             // Push instruction(s)
             let is_ccall = matches!(insn, Insn::CCall { .. });
             match insn {
-                Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
-                    let mut moves: Vec<(Opnd, Opnd)> = vec![];
-                    let num_reg_args = opnds.len().min(C_ARG_OPNDS.len());
-                    let num_stack_args = opnds.len().saturating_sub(C_ARG_OPNDS.len());
-
-                    if num_stack_args > 0 {
-                        for (i, opnd) in opnds.iter().skip(num_reg_args).enumerate() {
-                            moves.push((Opnd::mem(64, NATIVE_STACK_PTR, 8 * i as i32), *opnd));
-                        }
-                    }
-
-                    if num_reg_args > 0 {
-                        for (i, opnd) in opnds.iter().take(num_reg_args).enumerate() {
-                            moves.push((C_ARG_OPNDS[i], *opnd));
-                        }
-                    }
-
+                Insn::ParallelMov { moves } => {
                     // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
                     if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
                         for (dst, src) in moves {
@@ -1747,12 +1713,13 @@ impl Assembler
                         // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
                         asm.push_insn(Insn::ParallelMov { moves });
                     }
-
+                }
+                Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
                     // Split start_marker and end_marker here to avoid inserting push/pop between them.
                     if let Some(start_marker) = start_marker {
                         asm.push_insn(Insn::PosMarker(start_marker));
                     }
-                    asm.push_insn(Insn::CCall { opnds: vec![], fptr, start_marker: None, end_marker: None, out });
+                    asm.push_insn(Insn::CCall { opnds, fptr, start_marker: None, end_marker: None, out });
                     if let Some(end_marker) = end_marker {
                         asm.push_insn(Insn::PosMarker(end_marker));
                     }

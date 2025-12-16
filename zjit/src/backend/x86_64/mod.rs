@@ -351,7 +351,21 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { .. } => {
+                Insn::CCall { opnds, .. } => {
+                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+
+                    // Load each operand into the corresponding argument register.
+                    if !opnds.is_empty() {
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
+                        for (idx, opnd) in opnds.iter_mut().enumerate() {
+                            args.push((C_ARG_OPNDS[idx], *opnd));
+                        }
+                        asm.parallel_mov(args);
+                    }
+
+                    // Now we push the CCall without any arguments so that it
+                    // just performs the call.
+                    *opnds = vec![];
                     asm.push_insn(insn);
                 },
                 Insn::Lea { .. } => {
