@@ -329,7 +329,8 @@ $(LIBRUBY_SO):
 		@-[ -n "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $@
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
-		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)ruby_static_id_*' \
+		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)InitVM_*' \
+			-L '$(SYMBOL_PREFIX)ruby_static_id_*' \
 			-L '$(SYMBOL_PREFIX)*_threadptr_*' -L '$(SYMBOL_PREFIX)*_ec_*' $@
 		$(Q) $(POSTLINK)
 		@-$(MINIRUBY) -e 'so, *aliases = ARGV; aliases.uniq!; aliases.delete(File.basename(so)); \

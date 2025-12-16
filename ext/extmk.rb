@@ -566,6 +566,7 @@ extend Module.new {
       if $static and (target = args.first).include?("/")
         base = File.basename(target)
         $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+        $defs << "-DInitVM_#{base}=InitVM_#{target.tr('/', '_')}"
       end
       return super
     end
