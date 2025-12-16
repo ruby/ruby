@@ -1750,6 +1750,18 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_proc_block_with_kwrest
+    # When the bug was present this required --yjit-stats to trigger.
+    assert_compiles(<<~RUBY, result: {extra: 5})
+      def foo = bar(w: 1, x: 2, y: 3, z: 4, extra: 5, &proc { _1 })
+      def bar(w:, x:, y:, z:, **kwrest) = yield kwrest
+
+      GC.stress = true
+      foo
+      foo
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
