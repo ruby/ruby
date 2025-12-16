@@ -1511,20 +1511,14 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[5];
-    int i = 0;
+    VALUE loc[2];
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[i++] = rb_iseq_path(iseq);
-    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
-    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
-    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->end_pos.column);
-    RUBY_ASSERT_ALWAYS(i == numberof(loc));
+    loc[0] = rb_iseq_path(iseq);
+    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 
-    return rb_ary_new_from_values(i, loc);
+    return rb_ary_new4(2, loc);
 }
 
 VALUE
