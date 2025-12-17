@@ -22,14 +22,14 @@ BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
 ifneq ($(strip $(ZJIT_LIBS)),)
 $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
-	$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
+	$(gnumake_recursive)$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
 else ifneq ($(strip $(RLIB_DIR)),) # combo build
 # Absolute path to avoid VPATH ambiguity
 ZJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libzjit.rlib
 
 $(ZJIT_RLIB): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building $(@F)'
-	$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
+	$(gnumake_recursive)$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
 
 $(RUST_LIB): $(ZJIT_RLIB)
 endif # ifneq ($(strip $(ZJIT_LIBS)),)
