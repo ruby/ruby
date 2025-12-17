@@ -501,6 +501,16 @@ class IOScheduler < Scheduler
   end
 end
 
+class IOErrorScheduler < Scheduler
+  def io_read(io, buffer, length, offset)
+    return -Errno::EBADF::Errno
+  end
+
+  def io_write(io, buffer, length, offset)
+    return -Errno::EINVAL::Errno
+  end
+end
+
 # This scheduler has a broken implementation of `unblock`` in the sense that it
 # raises an exception. This is used to test the behavior of the scheduler when
 # unblock raises an exception.

@@ -1423,9 +1423,12 @@ io_flush_buffer_fiber_scheduler(VALUE scheduler, rb_io_t *fptr)
 {
     VALUE ret = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, fptr->wbuf.ptr+fptr->wbuf.off, fptr->wbuf.len, 0);
     if (!UNDEF_P(ret)) {
-        int written = NUM2INT(ret);
-        fptr->wbuf.off += written;
-        fptr->wbuf.len -= written;
+        ssize_t result = rb_fiber_scheduler_io_result_apply(ret);
+        if (result > 0) {
+            fptr->wbuf.off += result;
+            fptr->wbuf.len -= result;
+        }
+        return result >= 0 ? (VALUE)0 : (VALUE)-1;
     }
     return ret;
 }
@@ -1439,7 +1442,7 @@ io_flush_buffer_async(VALUE arg)
     if (scheduler != Qnil) {
         VALUE result = io_flush_buffer_fiber_scheduler(scheduler, fptr);
         if (!UNDEF_P(result)) {
-            return (VALUE)0;
+            return result;
         }
     }
 

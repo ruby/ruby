@@ -315,4 +315,61 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.kill rescue nil
     FileUtils.rm_f(fn)
   end
+
+  def test_io_read_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_read_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it.read }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EBADF, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
+
+  def test_io_write_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it.sync = true; it << 'foo' }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EINVAL, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
+
+  def test_io_write_flush_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it << 'foo' }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EINVAL, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
 end
