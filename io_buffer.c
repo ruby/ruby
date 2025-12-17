@@ -1527,8 +1527,8 @@ VALUE rb_io_buffer_free_locked(VALUE self)
 static bool
 size_sum_is_bigger_than(size_t a, size_t b, size_t x)
 {
-    struct rbimpl_size_mul_overflow_tag size = rbimpl_size_add_overflow(a, b);
-    return size.left || size.right > x;
+    struct rbimpl_size_overflow_tag size = rbimpl_size_add_overflow(a, b);
+    return size.overflowed || size.result > x;
 }
 
 // Validate that access to the buffer is within bounds, assuming you want to

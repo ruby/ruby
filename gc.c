@@ -484,21 +484,21 @@ rb_malloc_grow_capa(size_t current, size_t type_size)
     return new_capacity;
 }
 
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_add_overflow(t.right, z);
-    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left, u.right };
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_overflow_tag u = rbimpl_size_add_overflow(t.result, z);
+    return (struct rbimpl_size_overflow_tag) { t.overflowed || u.overflowed, u.result };
 }
 
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_mul_overflow(z, w);
-    struct rbimpl_size_mul_overflow_tag v = rbimpl_size_add_overflow(t.right, u.right);
-    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_overflow_tag u = rbimpl_size_mul_overflow(z, w);
+    struct rbimpl_size_overflow_tag v = rbimpl_size_add_overflow(t.result, u.result);
+    return (struct rbimpl_size_overflow_tag) { t.overflowed || u.overflowed || v.overflowed, v.result };
 }
 
 PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
@@ -506,9 +506,9 @@ PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -532,9 +532,9 @@ rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
 static inline size_t
 size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = size_mul_add_overflow(x, y, z);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -559,9 +559,9 @@ rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 static inline size_t
 size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -5372,11 +5372,11 @@ ruby_mimcalloc(size_t num, size_t size)
 {
     void *mem;
 #if CALC_EXACT_MALLOC_SIZE
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(num, size);
-    if (UNLIKELY(t.left)) {
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(num, size);
+    if (UNLIKELY(t.overflowed)) {
         return NULL;
     }
-    size = t.right + sizeof(struct malloc_obj_info);
+    size = t.result + sizeof(struct malloc_obj_info);
     mem = calloc1(size);
     if (!mem) {
         return NULL;
