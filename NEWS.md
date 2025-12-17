@@ -276,7 +276,7 @@ The following default gems are updated.
 * forwardable 1.4.0
 * io-console 0.8.2
 * io-nonblock 0.3.2
-* io-wait 0.4.0.dev
+* io-wait 0.4.0
 * ipaddr 1.2.8
 * json 2.18.0
 * net-http 0.8.0
