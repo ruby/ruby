@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "4.0.1"
+  VERSION = "4.0.2"
 end
 
 require_relative "rubygems/defaults"
@@ -17,7 +17,6 @@ require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
 require_relative "rubygems/target_rbconfig"
 require_relative "rubygems/win_platform"
-require_relative "rubygems/util/atomic_file_writer"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -834,12 +833,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Atomically write a file in binary mode on all platforms.
+  # Safely write a file in binary mode on all platforms.
 
   def self.write_binary(path, data)
-    Gem::AtomicFileWriter.open(path) do |file|
-      file.write(data)
-    end
+    File.binwrite(path, data)
+  rescue Errno::ENOSPC
+    # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
+    File.delete(path) if File.exist?(path)
+    raise
   end
 
   ##

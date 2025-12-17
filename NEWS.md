@@ -98,6 +98,24 @@ Note: We're only listing outstanding class updates.
       `Binding#implicit_parameter_defined?` have been added to access
       numbered parameters and "it" parameter. [[Bug #21049]]
 
+* ErrorHighlight
+
+    * When an ArgumentError is raised, it now displays code snippets for
+      both the method call (caller) and the method definition (callee).
+      [[Feature #21543]]
+
+      ```
+      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+          caller: test.rb:3
+          | add(1)
+            ^^^
+          callee: test.rb:1
+          | def add(x, y) = x + y
+                ^^^
+              from test.rb:3:in '<main>'
+      ```
+
 * File
 
     * `File::Stat#birthtime` is now available on Linux via the statx
@@ -170,8 +188,8 @@ Note: We're only listing outstanding class updates.
 
 * Range
 
-    * `Range#to_set` and `Enumerator#to_set` now perform size checks to prevent
-      issues with endless ranges. [[Bug #21654]]
+    * `Range#to_set` now performs size checks to prevent issues with
+      endless ranges. [[Bug #21654]]
 
     * `Range#overlap?` now correctly handles infinite (unbounded) ranges.
       [[Bug #21185]]
@@ -264,8 +282,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.1
-* bundler 4.0.1
+* RubyGems 4.0.2
+* bundler 4.0.2
 * date 3.5.1
 * digest 3.2.1
 * english 0.8.1
@@ -276,19 +294,20 @@ The following default gems are updated.
 * forwardable 1.4.0
 * io-console 0.8.2
 * io-nonblock 0.3.2
-* io-wait 0.4.0.dev
+* io-wait 0.4.0
 * ipaddr 1.2.8
 * json 2.18.0
-* net-http 0.8.0
+* net-http 0.9.1
 * openssl 4.0.0
 * optparse 0.8.1
 * pp 0.6.3
 * prism 1.6.0
-* psych 5.3.0
+* psych 5.3.1
 * resolv 0.7.0
-* stringio 3.1.9.dev
-* strscan 3.1.6.dev
-* timeout 0.5.0
+* stringio 3.2.0
+* strscan 3.1.6
+* time 0.4.2
+* timeout 0.6.0
 * uri 1.1.1
 * weakref 0.1.4
 * zlib 3.2.2
@@ -345,6 +364,31 @@ The following bundled gems are updated.
   `$SAFE` path checking which was removed in Ruby 2.7,
   and was already deprecated,.
   [[Feature #20971]]
+
+* A backtrace for `ArgumentError` of "wrong number of arguments" now
+  include the receiver's class or module name (e.g., in `Foo#bar`
+  instead of in `bar`). [[Bug #21698]]
+
+* Backtraces no longer display `internal` frames.
+  These methods now appear as if it is in the Ruby source file,
+  consistent with other C-implemented methods. [[Bug #20968]]
+
+  Before:
+  ```
+  ruby -e '[1].fetch_values(42)'
+  <internal:array>:211:in 'Array#fetch': index 42 outside of array bounds: -1...1 (IndexError)
+          from <internal:array>:211:in 'block in Array#fetch_values'
+          from <internal:array>:211:in 'Array#map!'
+          from <internal:array>:211:in 'Array#fetch_values'
+          from -e:1:in '<main>'
+  ```
+
+  After:
+  ```
+  $ ruby -e '[1].fetch_values(42)'
+  -e:1:in 'Array#fetch_values': index 42 outside of array bounds: -1...1 (IndexError)
+          from -e:1:in '<main>'
+  ```
 
 ## Stdlib compatibility issues
 
@@ -445,6 +489,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #20750]: https://bugs.ruby-lang.org/issues/20750
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20925]: https://bugs.ruby-lang.org/issues/20925
+[Bug #20968]:     https://bugs.ruby-lang.org/issues/20968
 [Feature #20971]: https://bugs.ruby-lang.org/issues/20971
 [Bug #20974]:     https://bugs.ruby-lang.org/issues/20974
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
@@ -469,8 +514,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21459]: https://bugs.ruby-lang.org/issues/21459
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
+[Feature #21543]: https://bugs.ruby-lang.org/issues/21543
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
+[Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701

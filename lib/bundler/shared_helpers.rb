@@ -105,8 +105,7 @@ module Bundler
     def filesystem_access(path, action = :write, &block)
       yield(path.dup)
     rescue Errno::EACCES => e
-      path_basename = File.basename(path.to_s)
-      raise unless e.message.include?(path_basename) || action == :create
+      raise unless e.message.include?(path.to_s) || action == :create
 
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN

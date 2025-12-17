@@ -27,11 +27,19 @@ struct inetsock_arg
 };
 
 void
-rsock_raise_user_specified_timeout(void)
+rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port)
 {
-    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-    rb_raise(etimedout_error, "user specified timeout");
+    VALUE message;
+
+    if (ai && ai->ai_addr) {
+        VALUE rai = rsock_addrinfo_new((struct sockaddr *)ai->ai_addr, (socklen_t)ai->ai_addrlen, PF_UNSPEC, 0, 0, Qnil, Qnil);
+        VALUE addr_str = rsock_addrinfo_inspect_sockaddr(rai);
+        message = rb_sprintf("user specified timeout for %" PRIsVALUE, addr_str);
+    } else {
+        message = rb_sprintf("user specified timeout for %" PRIsVALUE " port %" PRIsVALUE, host, port);
+    }
+
+    rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
 }
 
 static VALUE
@@ -151,7 +159,9 @@ init_inetsock_internal(VALUE v)
             } else {
                 VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
                 timeout = rb_funcall(open_timeout, '-', 1, elapsed);
-                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) rsock_raise_user_specified_timeout();
+                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
+                    rsock_raise_user_specified_timeout(res, arg->remote.host, arg->remote.serv);
+                }
             }
 
             if (status >= 0) {
@@ -846,6 +856,10 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     if (!NIL_P(open_timeout)) {
                         VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
                         timeout = rb_funcall(open_timeout, '-', 1, elapsed);
+
+                        if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
+                            rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
+                        }
                     }
                     if (NIL_P(timeout)) {
                         if (!NIL_P(connect_timeout)) {
@@ -1182,7 +1196,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        if (is_timeout_tv(user_specified_open_timeout_at, now)) rsock_raise_user_specified_timeout();
+        if (is_timeout_tv(user_specified_open_timeout_at, now)) {
+            rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
+        }
 
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
@@ -1205,7 +1221,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.is_all_finished) &&
                 (is_timeout_tv(user_specified_connect_timeout_at, now) ||
                 !in_progress_fds(arg->connection_attempt_fds_size))) {
-                rsock_raise_user_specified_timeout();
+                rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
             }
         }
     }

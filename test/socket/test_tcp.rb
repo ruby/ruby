@@ -80,7 +80,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(Errno::ETIMEDOUT) do
+    assert_raise(IO::TimeoutError) do
       TCPSocket.new(
         "localhost",
         port,
@@ -321,7 +321,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(Errno::ETIMEDOUT) do
+    assert_raise(IO::TimeoutError) do
       TCPSocket.new(
         "localhost",
         port,
