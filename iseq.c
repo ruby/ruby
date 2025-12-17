@@ -3711,11 +3711,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 
     if (is_proc) {
         for (i = 0; i < body->param.lead_num; i++) {
-            PARAM_TYPE(opt);
-            if (PARAM_ID(i) != idItImplicit && rb_id2str(PARAM_ID(i))) {
-                rb_ary_push(a, ID2SYM(PARAM_ID(i)));
-            }
-            rb_ary_push(args, a);
+            rb_ary_push(args, PARAM(i, opt));
         }
     }
     else {
@@ -3725,11 +3721,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     }
     r = body->param.lead_num + body->param.opt_num;
     for (; i < r; i++) {
-        PARAM_TYPE(opt);
-        if (rb_id2str(PARAM_ID(i))) {
-            rb_ary_push(a, ID2SYM(PARAM_ID(i)));
-        }
-        rb_ary_push(args, a);
+        rb_ary_push(args, PARAM(i, opt));
     }
     if (body->param.flags.has_rest) {
         CONST_ID(rest, "rest");
@@ -3738,11 +3730,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     r = body->param.post_start + body->param.post_num;
     if (is_proc) {
         for (i = body->param.post_start; i < r; i++) {
-            PARAM_TYPE(opt);
-            if (rb_id2str(PARAM_ID(i))) {
-                rb_ary_push(a, ID2SYM(PARAM_ID(i)));
-            }
-            rb_ary_push(args, a);
+            rb_ary_push(args, PARAM(i, opt));
         }
     }
     else {
