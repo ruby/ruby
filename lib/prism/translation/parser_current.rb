@@ -12,6 +12,8 @@ module Prism
       ParserCurrent = Parser34
     when /^3\.5\./, /^4\.0\./
       ParserCurrent = Parser40
+    when /^4\.1\./
+      ParserCurrent = Parser41
     else
       # Keep this in sync with released Ruby.
       parser = Parser34
