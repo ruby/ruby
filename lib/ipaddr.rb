@@ -368,7 +368,7 @@ class IPAddr
   # into an IPv4-mapped IPv6 address.
   def ipv4_mapped
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
     clone = self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
     clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
@@ -380,7 +380,7 @@ class IPAddr
   def ipv4_compat
     warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
     clone = self.clone.set(@addr, Socket::AF_INET6)
     clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
@@ -413,7 +413,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC3172.
   def ip6_arpa
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.arpa"
   end
@@ -421,7 +421,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC1886.
   def ip6_int
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.int"
   end
@@ -743,19 +743,19 @@ class IPAddr
       right = ''
     when RE_IPV6ADDRLIKE_COMPRESSED
       if $4
-        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{@addr}"
+        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{left}"
         addr = in_addr($~[4,4])
         left = $1
         right = $3 + '0:0'
       else
         left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
-          raise InvalidAddressError, "invalid address: #{@addr}"
+          raise InvalidAddressError, "invalid address: #{left}"
         left = $1
         right = $2
         addr = 0
       end
     else
-      raise InvalidAddressError, "invalid address: #{@addr}"
+      raise InvalidAddressError, "invalid address: #{left}"
     end
     l = left.split(':')
     r = right.split(':')
