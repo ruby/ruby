@@ -73,6 +73,7 @@ struct rb_thread_sched_item {
     uint32_t event_serial;
 
     bool finished;
+    bool waiting;
     bool malloc_stack;
     void *context_stack;
     struct coroutine_context *context;
