@@ -27,7 +27,7 @@ require 'date'
 # #
 class Time
 
-  VERSION = "0.4.1"             # :nodoc:
+  VERSION = "0.4.2"             # :nodoc:
 
   class << Time
 
