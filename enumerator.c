@@ -3037,7 +3037,8 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  * The optional +size+ keyword argument specifies the size of the enumerator,
  * which can be retrieved by Enumerator#size.  It can be an integer,
  * +Float::INFINITY+, a callable object (such as a lambda), or +nil+ to
- * indicate unknown size.  When not specified, the size is unknown (+nil+).
+ * indicate unknown size.  When not specified, the size defaults to
+ * +Float::INFINITY+.
  *
  *   # Infinite enumerator
  *   enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
@@ -3063,7 +3064,7 @@ enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
     rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "01:", &init, &opts);
     rb_get_kwargs(opts, keyword_ids, 0, 1, &size);
 
-    size = UNDEF_P(size) ? Qnil : convert_to_feasible_size_value(size);
+    size = UNDEF_P(size) ? DBL2NUM(HUGE_VAL) : convert_to_feasible_size_value(size);
 
     if (argc == 0 || (argc == 1 && !NIL_P(opts))) {
         init = Qundef;

@@ -38,8 +38,8 @@ Note: We're only listing outstanding class updates.
     * `Enumerator.produce` now accepts an optional `size` keyword argument
       to specify the size of the enumerator.  It can be an integer,
       `Float::INFINITY`, a callable object (such as a lambda), or `nil` to
-      indicate unknown size.  When not specified, the size is unknown (`nil`).
-      Previously, the size was always `Float::INFINITY` and not specifiable.
+      indicate unknown size.  When not specified, the size defaults to
+      `Float::INFINITY`.
 
         ```ruby
         # Infinite enumerator

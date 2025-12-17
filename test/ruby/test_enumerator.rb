@@ -892,7 +892,7 @@ class TestEnumerator < Test::Unit::TestCase
     passed_args = []
     enum = Enumerator.produce { |obj| passed_args << obj; (obj || 0).succ }
     assert_instance_of(Enumerator, enum)
-    assert_nil enum.size
+    assert_equal Float::INFINITY, enum.size
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [nil, 1, 2], passed_args
 
@@ -900,14 +900,14 @@ class TestEnumerator < Test::Unit::TestCase
     passed_args = []
     enum = Enumerator.produce(1) { |obj| passed_args << obj; obj.succ }
     assert_instance_of(Enumerator, enum)
-    assert_nil enum.size
+    assert_equal Float::INFINITY, enum.size
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [1, 2], passed_args
 
     # Raising StopIteration
     words = "The quick brown fox jumps over the lazy dog.".scan(/\w+/)
     enum = Enumerator.produce { words.shift or raise StopIteration }
-    assert_nil enum.size
+    assert_equal Float::INFINITY, enum.size
     assert_instance_of(Enumerator, enum)
     assert_equal %w[The quick brown fox jumps over the lazy dog], enum.to_a
 
@@ -917,7 +917,7 @@ class TestEnumerator < Test::Unit::TestCase
       obj.respond_to?(:first) or raise StopIteration
       obj.first
     }
-    assert_nil enum.size
+    assert_equal Float::INFINITY, enum.size
     assert_instance_of(Enumerator, enum)
     assert_nothing_raised {
       assert_equal [
