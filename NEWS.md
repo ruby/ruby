@@ -12,7 +12,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Logical binary operators (`||`, `&&`, `and` and `or`) at the
   beginning of a line continue the previous line, like fluent dot.
-  The following two code are equal:
+  The following two code examples are equal:
 
     ```ruby
     if condition1
@@ -165,7 +165,7 @@ Note: We're only listing outstanding class updates.
         * `Ractor::Port#close`
         * `Ractor::Port#closed?`
 
-        As result, `Ractor.yield` and `Ractor#take` were removed.
+        As a result, `Ractor.yield` and `Ractor#take` were removed.
 
     * `Ractor#join` and `Ractor#value` were added to wait for the
       termination of a Ractor. These are similar to `Thread#join`
@@ -182,7 +182,7 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
-    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` is introduced
+    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` are introduced
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
@@ -214,7 +214,7 @@ Note: We're only listing outstanding class updates.
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
 
-    * `Set#inspect` now uses a simpler displays, similar to literal arrays.
+    * `Set#inspect` now uses a simpler display, similar to literal arrays.
       (e.g., `Set[1, 2, 3]` instead of `#<Set: {1, 2, 3}>`). [[Feature #21389]]
 
     * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
@@ -369,7 +369,7 @@ The following bundled gems are updated.
 
 * `rb_path_check` has been removed. This function was used for
   `$SAFE` path checking which was removed in Ruby 2.7,
-  and was already deprecated,.
+  and was already deprecated.
   [[Feature #20971]]
 
 * A backtrace for `ArgumentError` of "wrong number of arguments" now
@@ -523,6 +523,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
 [Feature #21543]: https://bugs.ruby-lang.org/issues/21543
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
+[Feature #21552]: https://bugs.ruby-lang.org/issues/21552
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
