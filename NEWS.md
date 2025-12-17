@@ -227,8 +227,9 @@ Note: We're only listing outstanding class updates.
     * When a user-specified timeout occurred in `TCPSocket.new`, either `Errno::ETIMEDOUT`
       or `IO::TimeoutError` could previously be raised depending on the situation.
       This behavior has been unified so that `IO::TimeoutError` is now consistently raised.
-      (Please note that, in `Socket.tcp`, there are still cases where `Errno::ETIMEDOUT` may
-      be raised in similar situations.)
+      (Please note that, in `Socket.tcp`, there are still cases where `Errno::ETIMEDOUT`
+      may be raised in similar situations, and that in both cases `Errno::ETIMEDOUT` may be
+      raised when the timeout occurs at the OS level.)
 
 * String
 
