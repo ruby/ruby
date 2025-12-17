@@ -1418,10 +1418,31 @@ io_flush_buffer_sync(void *arg)
     return (VALUE)-1;
 }
 
+static inline VALUE
+io_flush_buffer_fiber_scheduler(VALUE scheduler, rb_io_t *fptr)
+{
+    VALUE ret = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, fptr->wbuf.ptr+fptr->wbuf.off, fptr->wbuf.len, 0);
+    if (!UNDEF_P(ret)) {
+        int written = NUM2INT(ret);
+        fptr->wbuf.off += written;
+        fptr->wbuf.len -= written;
+    }
+    return ret;
+}
+
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
     rb_io_t *fptr = (rb_io_t *)arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = io_flush_buffer_fiber_scheduler(scheduler, fptr);
+        if (!UNDEF_P(result)) {
+            return (VALUE)0;
+        }
+    }
+
     return rb_io_blocking_region_wait(fptr, io_flush_buffer_sync, fptr, RUBY_IO_WRITABLE);
 }
 
