@@ -473,6 +473,12 @@ rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
     return 1 - sp_inc_of_invokeblock(ci); // + 1 to ignore return value push
 }
 
+rb_serial_t
+rb_yjit_cme_ractor_serial(const rb_callable_method_entry_t *cme)
+{
+    return cme->def->body.bmethod.defined_ractor_id;
+}
+
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
 // See [jit_compile_exception] for details.
 void
