@@ -358,7 +358,7 @@ The following bundled gems are updated.
     * `Ractor.yield`
     * `Ractor#take`
     * `Ractor#close_incoming`
-    * `Ractor#close_outgoging`
+    * `Ractor#close_outgoing`
 
     [[Feature #21262]]
 
@@ -449,15 +449,27 @@ The following bundled gems are updated.
 
 ## Implementation improvements
 
+* `Class#new` (ex. `Object.new`) is faster in all cases, but especially when passing keyword arguments. This has also been integrated into YJIT and ZJIT. [[Feature #21254]]
+* GC heaps of different size pools now grow independently, reducing memory usage when only some pools contain long-lived objects
+* GC sweeping is faster on pages of large objects
+* "Generic ivar" objects (String, Array, `TypedData`, etc.) now use a new internal "fields" object for faster instance variable access
+* The GC avoids maintaining an internal `id2ref` table until it is first used, making `object_id` allocation and GC sweeping faster
+* `object_id` and `hash` are faster on Class and Module objects
+* Larger bignum Integers can remain embedded using variable width allocation
+* `Random`, `Enumerator::Product`, `Enumerator::Chain`, `Addrinfo`,
+  `StringScanner`, and some internal objects are now write-barrier protected,
+  which reduces GC overhead.
+
 ### Ractor
 
-A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
 * Performance improvements
-    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Frozen strings and the symbol table internally use a lock-free hash set [[Feature #21268]]
     * Method cache lookups avoid locking in most cases
-    * Class (and geniv) instance variable access is faster and avoids locking
-    * Cache contention is avoided during object allocation
+    * Class (and generic ivar) instance variable access is faster and avoids locking
+    * CPU cache contention is avoided in object allocation by using a per-ractor counter
+    * CPU cache contention is avoided in xmalloc/xfree by using a thread-local counter
     * `object_id` avoids locking in most cases
 * Bug fixes and stability
     * Fixed possible deadlocks when combining Ractors and Threads
@@ -465,6 +477,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * Fixed encoding/transcoding issues across Ractors
     * Fixed race conditions in GC operations and method invalidation
     * Fixed issues with processes forking after starting a Ractor
+    * GC allocation counts are now accurate under Ractors
+    * Fixed TracePoints not working after GC [[Bug #19112]]
 
 ## JIT
 
@@ -488,6 +502,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
+[Bug #19112]:     https://bugs.ruby-lang.org/issues/19112
 [Feature #19630]: https://bugs.ruby-lang.org/issues/19630
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
@@ -510,6 +525,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
 [Feature #21254]: https://bugs.ruby-lang.org/issues/21254
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
+[Feature #21268]: https://bugs.ruby-lang.org/issues/21268
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
