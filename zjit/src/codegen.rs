@@ -398,12 +398,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        // Give up SendWithoutBlockDirect for 6+ args since the callee doesn't know how to read arguments from the stack.
+        // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::TooManyArgsForLir),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
+        // Ensure we have enough room fit ec, self, and arguments
+        // TODO remove this check when we have stack args (we can use Time.new to test it)
+        Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, *leaf, opnds!(args)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
@@ -450,6 +453,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
+        // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
+        // There's no test case for this because no core cfuncs have this many parameters. But C extensions could have such methods.
+        Insn::CCallWithFrame { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() =>
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
         Insn::CCallWithFrame { cfunc, recv, name, args, cme, state, blockiseq, .. } =>
             gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state)),
         Insn::CCallVariadic { cfunc, recv, name, args, cme, state, blockiseq, return_type: _, elidable: _ } => {
@@ -715,6 +722,10 @@ fn gen_fixnum_bit_check(asm: &mut Assembler, val: Opnd, index: u8) -> Opnd {
 }
 
 fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, leaf: bool, args: Vec<Opnd>) -> lir::Opnd {
+    assert!(bf.argc + 2 <= C_ARG_OPNDS.len() as i32,
+            "gen_invokebuiltin should not be called for builtin function {} with too many arguments: {}",
+            unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() },
+            bf.argc);
     if leaf {
         gen_prepare_leaf_call_with_gc(asm, state);
     } else {
@@ -1119,11 +1130,12 @@ fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Op
 }
 
 fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
-    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
+    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written().
+    // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
-        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+        asm_ccall!(asm, rb_zjit_writebarrier_check_immediate, recv, val);
     }
 }
 

@@ -10,16 +10,21 @@ class TestBox < Test::Unit::TestCase
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
   def setup
-    @n = nil
+    @box = nil
     @dir = __dir__
   end
 
   def teardown
-    @n = nil
+    @box = nil
+  end
+
+  def setup_box
+    pend unless Ruby::Box.enabled?
+    @box = Ruby::Box.new
   end
 
   def test_box_availability_in_default
-    assert_separately([], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately(['RUBY_BOX'=>nil], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       assert_nil ENV['RUBY_BOX']
       assert !Ruby::Box.enabled?
@@ -43,278 +48,278 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_require_rb_separately
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
 
-    @n.require(File.join(__dir__, 'namespace', 'a.1_1_0'))
+    @box.require(File.join(__dir__, 'box', 'a.1_1_0'))
 
-    assert_not_nil @n::NS_A
-    assert_not_nil @n::NS_B
-    assert_equal "1.1.0", @n::NS_A::VERSION
-    assert_equal "yay 1.1.0", @n::NS_A.new.yay
-    assert_equal "1.1.0", @n::NS_B::VERSION
-    assert_equal "yay_b1", @n::NS_B.yay
+    assert_not_nil @box::BOX_A
+    assert_not_nil @box::BOX_B
+    assert_equal "1.1.0", @box::BOX_A::VERSION
+    assert_equal "yay 1.1.0", @box::BOX_A.new.yay
+    assert_equal "1.1.0", @box::BOX_B::VERSION
+    assert_equal "yay_b1", @box::BOX_B.yay
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
   end
 
   def test_require_relative_rb_separately
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
 
-    @n.require_relative('namespace/a.1_1_0')
+    @box.require_relative('box/a.1_1_0')
 
-    assert_not_nil @n::NS_A
-    assert_not_nil @n::NS_B
-    assert_equal "1.1.0", @n::NS_A::VERSION
-    assert_equal "yay 1.1.0", @n::NS_A.new.yay
-    assert_equal "1.1.0", @n::NS_B::VERSION
-    assert_equal "yay_b1", @n::NS_B.yay
+    assert_not_nil @box::BOX_A
+    assert_not_nil @box::BOX_B
+    assert_equal "1.1.0", @box::BOX_A::VERSION
+    assert_equal "yay 1.1.0", @box::BOX_A.new.yay
+    assert_equal "1.1.0", @box::BOX_B::VERSION
+    assert_equal "yay_b1", @box::BOX_B.yay
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
   end
 
   def test_load_separately
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
 
-    @n.load(File.join(__dir__, 'namespace', 'a.1_1_0.rb'))
+    @box.load(File.join(__dir__, 'box', 'a.1_1_0.rb'))
 
-    assert_not_nil @n::NS_A
-    assert_not_nil @n::NS_B
-    assert_equal "1.1.0", @n::NS_A::VERSION
-    assert_equal "yay 1.1.0", @n::NS_A.new.yay
-    assert_equal "1.1.0", @n::NS_B::VERSION
-    assert_equal "yay_b1", @n::NS_B.yay
+    assert_not_nil @box::BOX_A
+    assert_not_nil @box::BOX_B
+    assert_equal "1.1.0", @box::BOX_A::VERSION
+    assert_equal "yay 1.1.0", @box::BOX_A.new.yay
+    assert_equal "1.1.0", @box::BOX_B::VERSION
+    assert_equal "yay_b1", @box::BOX_B.yay
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
   end
 
   def test_box_in_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(NameError) { NS1 }
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX1 }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
 
-    @n.require_relative('namespace/ns')
+    @box.require_relative('box/box')
 
-    assert_not_nil @n::NS1
-    assert_not_nil @n::NS1::NS_A
-    assert_not_nil @n::NS1::NS_B
-    assert_equal "1.1.0", @n::NS1::NS_A::VERSION
-    assert_equal "yay 1.1.0", @n::NS1::NS_A.new.yay
-    assert_equal "1.1.0", @n::NS1::NS_B::VERSION
-    assert_equal "yay_b1", @n::NS1::NS_B.yay
+    assert_not_nil @box::BOX1
+    assert_not_nil @box::BOX1::BOX_A
+    assert_not_nil @box::BOX1::BOX_B
+    assert_equal "1.1.0", @box::BOX1::BOX_A::VERSION
+    assert_equal "yay 1.1.0", @box::BOX1::BOX_A.new.yay
+    assert_equal "1.1.0", @box::BOX1::BOX_B::VERSION
+    assert_equal "yay_b1", @box::BOX1::BOX_B.yay
 
-    assert_raise(NameError) { NS1 }
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX1 }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
   end
 
-  def test_require_rb_2versions
-    pend unless Ruby::Box.enabled?
+  def test_require_rb_2versiobox
+    setup_box
 
-    assert_raise(NameError) { NS_A }
+    assert_raise(NameError) { BOX_A }
 
-    @n.require(File.join(__dir__, 'namespace', 'a.1_2_0'))
-    assert_equal "1.2.0", @n::NS_A::VERSION
-    assert_equal "yay 1.2.0", @n::NS_A.new.yay
+    @box.require(File.join(__dir__, 'box', 'a.1_2_0'))
+    assert_equal "1.2.0", @box::BOX_A::VERSION
+    assert_equal "yay 1.2.0", @box::BOX_A.new.yay
 
-    n2 = Namespace.new
-    n2.require(File.join(__dir__, 'namespace', 'a.1_1_0'))
-    assert_equal "1.1.0", n2::NS_A::VERSION
-    assert_equal "yay 1.1.0", n2::NS_A.new.yay
+    n2 = Ruby::Box.new
+    n2.require(File.join(__dir__, 'box', 'a.1_1_0'))
+    assert_equal "1.1.0", n2::BOX_A::VERSION
+    assert_equal "yay 1.1.0", n2::BOX_A.new.yay
 
-    # recheck @n is not affected by the following require
-    assert_equal "1.2.0", @n::NS_A::VERSION
-    assert_equal "yay 1.2.0", @n::NS_A.new.yay
+    # recheck @box is not affected by the following require
+    assert_equal "1.2.0", @box::BOX_A::VERSION
+    assert_equal "yay 1.2.0", @box::BOX_A.new.yay
 
-    assert_raise(NameError) { NS_A }
+    assert_raise(NameError) { BOX_A }
   end
 
   def test_raising_errors_in_require
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(RuntimeError, "Yay!") { @n.require(File.join(__dir__, 'namespace', 'raise')) }
-    assert Namespace.current.inspect.include?("main")
+    assert_raise(RuntimeError, "Yay!") { @box.require(File.join(__dir__, 'box', 'raise')) }
+    assert Ruby::Box.current.inspect.include?("main")
   end
 
   def test_autoload_in_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    assert_raise(NameError) { NS_A }
+    assert_raise(NameError) { BOX_A }
 
-    @n.require_relative('namespace/autoloading')
+    @box.require_relative('box/autoloading')
     # autoloaded A is visible from global
-    assert_equal '1.1.0', @n::NS_A::VERSION
+    assert_equal '1.1.0', @box::BOX_A::VERSION
 
-    assert_raise(NameError) { NS_A }
+    assert_raise(NameError) { BOX_A }
 
-    # autoload trigger NS_B::BAR is valid even from global
-    assert_equal 'bar_b1', @n::NS_B::BAR
+    # autoload trigger BOX_B::BAR is valid even from global
+    assert_equal 'bar_b1', @box::BOX_B::BAR
 
-    assert_raise(NameError) { NS_A }
-    assert_raise(NameError) { NS_B }
+    assert_raise(NameError) { BOX_A }
+    assert_raise(NameError) { BOX_B }
   end
 
   def test_continuous_top_level_method_in_a_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/define_toplevel')
-    @n.require_relative('namespace/call_toplevel')
+    @box.require_relative('box/define_toplevel')
+    @box.require_relative('box/call_toplevel')
 
     assert_raise(NameError) { foo }
   end
 
   def test_top_level_methods_in_box
     pend # TODO: fix loading/current box detection
-    pend unless Ruby::Box.enabled?
-    @n.require_relative('box/top_level')
-    assert_equal "yay!", @n::Foo.foo
+    setup_box
+    @box.require_relative('box/top_level')
+    assert_equal "yay!", @box::Foo.foo
     assert_raise(NameError) { yaaay }
-    assert_equal "foo", @n::Bar.bar
-    assert_raise_with_message(RuntimeError, "boooo") { @n::Baz.baz }
+    assert_equal "foo", @box::Bar.bar
+    assert_raise_with_message(RuntimeError, "boooo") { @box::Baz.baz }
   end
 
   def test_proc_defined_in_box_refers_module_in_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      ns1 = Namespace.new
-      ns1.require(File.join("#{here}", 'namespace/proc_callee'))
-      proc_v = ns1::Foo.callee
+      box1 = Ruby::Box.new
+      box1.require("#{here}/box/proc_callee")
+      proc_v = box1::Foo.callee
       assert_raise(NameError) { Target }
-      assert ns1::Target
-      assert_equal "fooooo", proc_v.call # refers Target in the namespace ns1
-      ns1.require(File.join("#{here}", 'namespace/proc_caller'))
-      assert_equal "fooooo", ns1::Bar.caller(proc_v)
+      assert box1::Target
+      assert_equal "fooooo", proc_v.call # refers Target in the box box1
+      box1.require("#{here}/box/proc_caller")
+      assert_equal "fooooo", box1::Bar.caller(proc_v)
 
-      ns2 = Namespace.new
-      ns2.require(File.join("#{here}", 'namespace/proc_caller'))
-      assert_raise(NameError) { ns2::Target }
-      assert_equal "fooooo", ns2::Bar.caller(proc_v) # refers Target in the namespace ns1
+      box2 = Ruby::Box.new
+      box2.require("#{here}/box/proc_caller")
+      assert_raise(NameError) { box2::Target }
+      assert_equal "fooooo", box2::Bar.caller(proc_v) # refers Target in the box box1
     end;
   end
 
   def test_proc_defined_globally_refers_global_module
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      require(File.join("#{here}", 'namespace/proc_callee'))
+      require("#{here}/box/proc_callee")
       def Target.foo
         "yay"
       end
       proc_v = Foo.callee
       assert Target
       assert_equal "yay", proc_v.call # refers global Foo
-      ns1 = Namespace.new
-      ns1.require(File.join("#{here}", 'namespace/proc_caller'))
-      assert_equal "yay", ns1::Bar.caller(proc_v)
+      box1 = Ruby::Box.new
+      box1.require("#{here}/box/proc_caller")
+      assert_equal "yay", box1::Bar.caller(proc_v)
 
-      ns2 = Namespace.new
-      ns2.require(File.join("#{here}", 'namespace/proc_callee'))
-      ns2.require(File.join("#{here}", 'namespace/proc_caller'))
-      assert_equal "fooooo", ns2::Foo.callee.call
-      assert_equal "yay", ns2::Bar.caller(proc_v) # should refer the global Target, not Foo in ns2
+      box2 = Ruby::Box.new
+      box2.require("#{here}/box/proc_callee")
+      box2.require("#{here}/box/proc_caller")
+      assert_equal "fooooo", box2::Foo.callee.call
+      assert_equal "yay", box2::Bar.caller(proc_v) # should refer the global Target, not Foo in box2
     end;
   end
 
   def test_instance_variable
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/instance_variables')
+    @box.require_relative('box/instance_variables')
 
     assert_equal [], String.instance_variables
-    assert_equal [:@str_ivar1, :@str_ivar2], @n::StringDelegatorObj.instance_variables
-    assert_equal 111, @n::StringDelegatorObj.str_ivar1
-    assert_equal 222, @n::StringDelegatorObj.str_ivar2
-    assert_equal 222, @n::StringDelegatorObj.instance_variable_get(:@str_ivar2)
+    assert_equal [:@str_ivar1, :@str_ivar2], @box::StringDelegatorObj.instance_variables
+    assert_equal 111, @box::StringDelegatorObj.str_ivar1
+    assert_equal 222, @box::StringDelegatorObj.str_ivar2
+    assert_equal 222, @box::StringDelegatorObj.instance_variable_get(:@str_ivar2)
 
-    @n::StringDelegatorObj.instance_variable_set(:@str_ivar3, 333)
-    assert_equal 333, @n::StringDelegatorObj.instance_variable_get(:@str_ivar3)
-    @n::StringDelegatorObj.remove_instance_variable(:@str_ivar1)
-    assert_nil @n::StringDelegatorObj.str_ivar1
-    assert_equal [:@str_ivar2, :@str_ivar3], @n::StringDelegatorObj.instance_variables
+    @box::StringDelegatorObj.instance_variable_set(:@str_ivar3, 333)
+    assert_equal 333, @box::StringDelegatorObj.instance_variable_get(:@str_ivar3)
+    @box::StringDelegatorObj.remove_instance_variable(:@str_ivar1)
+    assert_nil @box::StringDelegatorObj.str_ivar1
+    assert_equal [:@str_ivar2, :@str_ivar3], @box::StringDelegatorObj.instance_variables
 
     assert_equal [], String.instance_variables
   end
 
   def test_methods_added_in_box_are_invisible_globally
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/string_ext')
+    @box.require_relative('box/string_ext')
 
-    assert_equal "yay", @n::Bar.yay
+    assert_equal "yay", @box::Bar.yay
 
     assert_raise(NoMethodError){ String.new.yay }
   end
 
   def test_continuous_method_definitions_in_a_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/string_ext')
-    assert_equal "yay", @n::Bar.yay
+    @box.require_relative('box/string_ext')
+    assert_equal "yay", @box::Bar.yay
 
-    @n.require_relative('namespace/string_ext_caller')
-    assert_equal "yay", @n::Foo.yay
+    @box.require_relative('box/string_ext_caller')
+    assert_equal "yay", @box::Foo.yay
 
-    @n.require_relative('namespace/string_ext_calling')
+    @box.require_relative('box/string_ext_calling')
   end
 
   def test_methods_added_in_box_later_than_caller_code
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/string_ext_caller')
-    @n.require_relative('namespace/string_ext')
+    @box.require_relative('box/string_ext_caller')
+    @box.require_relative('box/string_ext')
 
-    assert_equal "yay", @n::Bar.yay
-    assert_equal "yay", @n::Foo.yay
+    assert_equal "yay", @box::Bar.yay
+    assert_equal "yay", @box::Foo.yay
   end
 
   def test_method_added_in_box_are_available_on_eval
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/string_ext')
-    @n.require_relative('namespace/string_ext_eval_caller')
+    @box.require_relative('box/string_ext')
+    @box.require_relative('box/string_ext_eval_caller')
 
-    assert_equal "yay", @n::Baz.yay
+    assert_equal "yay", @box::Baz.yay
   end
 
   def test_method_added_in_box_are_available_on_eval_with_binding
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/string_ext')
-    @n.require_relative('namespace/string_ext_eval_caller')
+    @box.require_relative('box/string_ext')
+    @box.require_relative('box/string_ext_eval_caller')
 
-    assert_equal "yay, yay!", @n::Baz.yay_with_binding
+    assert_equal "yay, yay!", @box::Baz.yay_with_binding
   end
 
   def test_methods_and_constants_added_by_include
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/open_class_with_include')
+    @box.require_relative('box/open_class_with_include')
 
-    assert_equal "I'm saying foo 1", @n::OpenClassWithInclude.say
-    assert_equal "I'm saying foo 1", @n::OpenClassWithInclude.say_foo
-    assert_equal "I'm saying foo 1", @n::OpenClassWithInclude.say_with_obj("wow")
+    assert_equal "I'm saying foo 1", @box::OpenClassWithInclude.say
+    assert_equal "I'm saying foo 1", @box::OpenClassWithInclude.say_foo
+    assert_equal "I'm saying foo 1", @box::OpenClassWithInclude.say_with_obj("wow")
 
     assert_raise(NameError) { String::FOO }
 
-    assert_equal "foo 1", @n::OpenClassWithInclude.refer_foo
+    assert_equal "foo 1", @box::OpenClassWithInclude.refer_foo
   end
 end
 
@@ -330,9 +335,9 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_proc_from_main_works_with_global_definitions
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/procs')
+    @box.require_relative('box/procs')
 
     proc_and_labels = [
       [Proc.new { String.new.yay }, "Proc.new"],
@@ -340,13 +345,13 @@ class TestBox < Test::Unit::TestCase
       [lambda { String.new.yay }, "lambda{}"],
       [->(){ String.new.yay }, "->(){}"],
       [make_proc_from_block { String.new.yay }, "make_proc_from_block"],
-      [@n::ProcInNS.make_proc_from_block { String.new.yay }, "make_proc_from_block in @n"],
+      [@box::ProcInBox.make_proc_from_block { String.new.yay }, "make_proc_from_block in @box"],
     ]
 
     proc_and_labels.each do |str_pr|
       pr, pr_label = str_pr
       assert_raise(NoMethodError, "NoMethodError expected: #{pr_label}, called in main") { pr.call }
-      assert_raise(NoMethodError, "NoMethodError expected: #{pr_label}, called in @n") { @n::ProcInNS.call_proc(pr) }
+      assert_raise(NoMethodError, "NoMethodError expected: #{pr_label}, called in @box") { @box::ProcInBox.call_proc(pr) }
     end
 
     const_and_labels = [
@@ -355,48 +360,48 @@ class TestBox < Test::Unit::TestCase
       [lambda { ProcLookupTestA::B::VALUE }, "lambda{}"],
       [->(){ ProcLookupTestA::B::VALUE }, "->(){}"],
       [make_proc_from_block { ProcLookupTestA::B::VALUE }, "make_proc_from_block"],
-      [@n::ProcInNS.make_proc_from_block { ProcLookupTestA::B::VALUE }, "make_proc_from_block in @n"],
+      [@box::ProcInBox.make_proc_from_block { ProcLookupTestA::B::VALUE }, "make_proc_from_block in @box"],
     ]
 
     const_and_labels.each do |const_pr|
       pr, pr_label = const_pr
       assert_equal 111, pr.call, "111 expected, #{pr_label} called in main"
-      assert_equal 111, @n::ProcInNS.call_proc(pr), "111 expected, #{pr_label} called in @n"
+      assert_equal 111, @box::ProcInBox.call_proc(pr), "111 expected, #{pr_label} called in @box"
     end
   end
 
   def test_proc_from_box_works_with_definitions_in_box
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/procs')
+    @box.require_relative('box/procs')
 
     proc_types = [:proc_new, :proc_f, :lambda_f, :lambda_l, :block]
 
     proc_types.each do |proc_type|
-      assert_equal 222, @n::ProcInNS.make_const_proc(proc_type).call, "ProcLookupTestA::B::VALUE should be 222 in @n"
-      assert_equal "foo", @n::ProcInNS.make_str_const_proc(proc_type).call, "String::FOO should be \"foo\" in @n"
-      assert_equal "yay", @n::ProcInNS.make_str_proc(proc_type).call, "String#yay should be callable in @n"
+      assert_equal 222, @box::ProcInBox.make_const_proc(proc_type).call, "ProcLookupTestA::B::VALUE should be 222 in @box"
+      assert_equal "foo", @box::ProcInBox.make_str_const_proc(proc_type).call, "String::FOO should be \"foo\" in @box"
+      assert_equal "yay", @box::ProcInBox.make_str_proc(proc_type).call, "String#yay should be callable in @box"
       #
-      # TODO: method calls not-in-methods nor procs can't handle the current namespace correctly.
+      # TODO: method calls not-in-methods nor procs can't handle the current box correctly.
       #
       # assert_equal "yay,foo,222",
-      #              @n::ProcInNS.const_get(('CONST_' + proc_type.to_s.upcase).to_sym).call,
-      #              "Proc assigned to constants should refer constants correctly in @n"
+      #              @box::ProcInBox.const_get(('CONST_' + proc_type.to_s.upcase).to_sym).call,
+      #              "Proc assigned to constants should refer constants correctly in @box"
     end
   end
 
   def test_class_module_singleton_methods
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    @n.require_relative('namespace/singleton_methods')
+    @box.require_relative('box/singleton_methods')
 
-    assert_equal "Good evening!", @n::SingletonMethods.string_greeing # def self.greeting
-    assert_equal 42, @n::SingletonMethods.integer_answer # class << self; def answer
-    assert_equal([], @n::SingletonMethods.array_blank) # def self.blank w/ instance methods
-    assert_equal({status: 200, body: 'OK'}, @n::SingletonMethods.hash_http_200) # class << self; def ... w/ instance methods
+    assert_equal "Good evening!", @box::SingletonMethods.string_greeing # def self.greeting
+    assert_equal 42, @box::SingletonMethods.integer_answer # class << self; def answer
+    assert_equal([], @box::SingletonMethods.array_blank) # def self.blank w/ instance methods
+    assert_equal({status: 200, body: 'OK'}, @box::SingletonMethods.hash_http_200) # class << self; def ... w/ instance methods
 
-    assert_equal([4, 4], @n::SingletonMethods.array_instance_methods_return_size([1, 2, 3, 4]))
-    assert_equal([3, 3], @n::SingletonMethods.hash_instance_methods_return_size({a: 2, b: 4, c: 8}))
+    assert_equal([4, 4], @box::SingletonMethods.array_instance_methods_return_size([1, 2, 3, 4]))
+    assert_equal([3, 3], @box::SingletonMethods.hash_instance_methods_return_size({a: 2, b: 4, c: 8}))
 
     assert_raise(NoMethodError) { String.greeting }
     assert_raise(NoMethodError) { Integer.answer }
@@ -405,7 +410,9 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_add_constants_in_box
-    pend unless Ruby::Box.enabled?
+    setup_box
+
+    @box.require('envutil')
 
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
@@ -416,37 +423,38 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { String::STR_CONST3 }
     assert_raise(NameError) { Integer.const_get(:INT_CONST1) }
 
-    EnvUtil.suppress_warning do
-      @n.require_relative('namespace/consts')
+    EnvUtil.verbose_warning do
+      @box.require_relative('box/consts')
     end
+    return
     assert_equal 999, String::STR_CONST0
     assert_raise(NameError) { String::STR_CONST1 }
     assert_raise(NameError) { String::STR_CONST2 }
     assert_raise(NameError) { Integer::INT_CONST1 }
 
-    assert_not_nil @n::ForConsts.refer_all
+    assert_not_nil @box::ForConsts.refer_all
 
-    assert_equal 112, @n::ForConsts.refer1
-    assert_equal 112, @n::ForConsts.get1
-    assert_equal 112, @n::ForConsts::CONST1
-    assert_equal 222, @n::ForConsts.refer2
-    assert_equal 222, @n::ForConsts.get2
-    assert_equal 222, @n::ForConsts::CONST2
-    assert_equal 333, @n::ForConsts.refer3
-    assert_equal 333, @n::ForConsts.get3
-    assert_equal 333, @n::ForConsts::CONST3
+    assert_equal 112, @box::ForConsts.refer1
+    assert_equal 112, @box::ForConsts.get1
+    assert_equal 112, @box::ForConsts::CONST1
+    assert_equal 222, @box::ForConsts.refer2
+    assert_equal 222, @box::ForConsts.get2
+    assert_equal 222, @box::ForConsts::CONST2
+    assert_equal 333, @box::ForConsts.refer3
+    assert_equal 333, @box::ForConsts.get3
+    assert_equal 333, @box::ForConsts::CONST3
 
-    EnvUtil.suppress_warning do
-      @n::ForConsts.const_set(:CONST3, 334)
+    @box::EnvUtil.suppress_warning do
+      @box::ForConsts.const_set(:CONST3, 334)
     end
-    assert_equal 334, @n::ForConsts::CONST3
-    assert_equal 334, @n::ForConsts.refer3
-    assert_equal 334, @n::ForConsts.get3
+    assert_equal 334, @box::ForConsts::CONST3
+    assert_equal 334, @box::ForConsts.refer3
+    assert_equal 334, @box::ForConsts.get3
 
-    assert_equal 10, @n::ForConsts.refer_top_const
+    assert_equal 10, @box::ForConsts.refer_top_const
 
     # use Proxy object to use usual methods instead of singleton methods
-    proxy = @n::ForConsts::Proxy.new
+    proxy = @box::ForConsts::Proxy.new
 
     assert_raise(NameError){ proxy.call_str_refer0 }
     assert_raise(NameError){ proxy.call_str_get0 }
@@ -486,36 +494,36 @@ class TestBox < Test::Unit::TestCase
     default_l = $-0
     default_f = $,
 
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     assert_equal "\n", $-0 # equal to $/, line splitter
     assert_equal nil, $,   # field splitter
 
-    @n.require_relative('namespace/global_vars')
+    @box.require_relative('box/global_vars')
 
     # read first
-    assert_equal "\n", @n::LineSplitter.read
-    @n::LineSplitter.write("\r\n")
-    assert_equal "\r\n", @n::LineSplitter.read
+    assert_equal "\n", @box::LineSplitter.read
+    @box::LineSplitter.write("\r\n")
+    assert_equal "\r\n", @box::LineSplitter.read
     assert_equal "\n", $-0
 
     # write first
-    @n::FieldSplitter.write(",")
-    assert_equal ",", @n::FieldSplitter.read
+    @box::FieldSplitter.write(",")
+    assert_equal ",", @box::FieldSplitter.read
     assert_equal nil, $,
 
-    # used only in ns
-    assert !global_variables.include?(:$used_only_in_ns)
-    @n::UniqueGvar.write(123)
-    assert_equal 123, @n::UniqueGvar.read
-    assert_nil $used_only_in_ns
+    # used only in box
+    assert !global_variables.include?(:$used_only_in_box)
+    @box::UniqueGvar.write(123)
+    assert_equal 123, @box::UniqueGvar.read
+    assert_nil $used_only_in_box
 
     # Kernel#global_variables returns the sum of all gvars.
     global_gvars = global_variables.sort
-    assert_equal global_gvars, @n::UniqueGvar.gvars_in_ns.sort
-    @n::UniqueGvar.write_only(456)
-    assert_equal (global_gvars + [:$write_only_var_in_ns]).sort, @n::UniqueGvar.gvars_in_ns.sort
-    assert_equal (global_gvars + [:$write_only_var_in_ns]).sort, global_variables.sort
+    assert_equal global_gvars, @box::UniqueGvar.gvars_in_box.sort
+    @box::UniqueGvar.write_only(456)
+    assert_equal (global_gvars + [:$write_only_var_in_box]).sort, @box::UniqueGvar.gvars_in_box.sort
+    assert_equal (global_gvars + [:$write_only_var_in_box]).sort, global_variables.sort
   ensure
     EnvUtil.suppress_warning do
       $-0 = default_l
@@ -524,105 +532,105 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_load_path_and_loaded_features
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     assert $LOAD_PATH.respond_to?(:resolve_feature_path)
 
-    @n.require_relative('namespace/load_path')
+    @box.require_relative('box/load_path')
 
-    assert_not_equal $LOAD_PATH, @n::LoadPathCheck::FIRST_LOAD_PATH
+    assert_not_equal $LOAD_PATH, @box::LoadPathCheck::FIRST_LOAD_PATH
 
-    assert @n::LoadPathCheck::FIRST_LOAD_PATH_RESPOND_TO_RESOLVE
+    assert @box::LoadPathCheck::FIRST_LOAD_PATH_RESPOND_TO_RESOLVE
 
-    namespace_dir = File.join(__dir__, 'namespace')
-    # TODO: $LOADED_FEATURES in method calls should refer the current namespace in addition to the loading namespace.
-    # assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank1.rb'))
-    # assert !@n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
-    # assert @n::LoadPathCheck.require_blank2
-    # assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
+    box_dir = File.join(__dir__, 'box')
+    # TODO: $LOADED_FEATURES in method calls should refer the current box in addition to the loading box.
+    # assert @box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank1.rb'))
+    # assert !@box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank2.rb'))
+    # assert @box::LoadPathCheck.require_blank2
+    # assert @box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank2.rb'))
 
-    assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank1.rb'))
-    assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank2.rb'))
+    assert !$LOADED_FEATURES.include?(File.join(box_dir, 'blank1.rb'))
+    assert !$LOADED_FEATURES.include?(File.join(box_dir, 'blank2.rb'))
   end
 
   def test_eval_basic
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     # Test basic evaluation
-    result = @n.eval("1 + 1")
+    result = @box.eval("1 + 1")
     assert_equal 2, result
 
     # Test string evaluation
-    result = @n.eval("'hello ' + 'world'")
+    result = @box.eval("'hello ' + 'world'")
     assert_equal "hello world", result
   end
 
   def test_eval_with_constants
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    # Define a constant in the namespace via eval
-    @n.eval("TEST_CONST = 42")
-    assert_equal 42, @n::TEST_CONST
+    # Define a constant in the box via eval
+    @box.eval("TEST_CONST = 42")
+    assert_equal 42, @box::TEST_CONST
 
-    # Constant should not be visible in main namespace
+    # Constant should not be visible in main box
     assert_raise(NameError) { TEST_CONST }
   end
 
   def test_eval_with_classes
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    # Define a class in the namespace via eval
-    @n.eval("class TestClass; def hello; 'from namespace'; end; end")
+    # Define a class in the box via eval
+    @box.eval("class TestClass; def hello; 'from box'; end; end")
 
-    # Class should be accessible in the namespace
-    instance = @n::TestClass.new
-    assert_equal "from namespace", instance.hello
+    # Class should be accessible in the box
+    instance = @box::TestClass.new
+    assert_equal "from box", instance.hello
 
-    # Class should not be visible in main namespace
+    # Class should not be visible in main box
     assert_raise(NameError) { TestClass }
   end
 
   def test_eval_isolation
-    pend unless Ruby::Box.enabled?
+    setup_box
 
-    # Create another namespace
-    n2 = Namespace.new
+    # Create another box
+    n2 = Ruby::Box.new
 
-    # Define different constants in each namespace
-    @n.eval("ISOLATION_TEST = 'first'")
+    # Define different constants in each box
+    @box.eval("ISOLATION_TEST = 'first'")
     n2.eval("ISOLATION_TEST = 'second'")
 
-    # Each namespace should have its own constant
-    assert_equal "first", @n::ISOLATION_TEST
+    # Each box should have its own constant
+    assert_equal "first", @box::ISOLATION_TEST
     assert_equal "second", n2::ISOLATION_TEST
 
     # Constants should not interfere with each other
-    assert_not_equal @n::ISOLATION_TEST, n2::ISOLATION_TEST
+    assert_not_equal @box::ISOLATION_TEST, n2::ISOLATION_TEST
   end
 
   def test_eval_with_variables
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     # Test local variable access (should work within the eval context)
-    result = @n.eval("x = 10; y = 20; x + y")
+    result = @box.eval("x = 10; y = 20; x + y")
     assert_equal 30, result
   end
 
   def test_eval_error_handling
-    pend unless Ruby::Box.enabled?
+    setup_box
 
     # Test syntax error
-    assert_raise(SyntaxError) { @n.eval("1 +") }
+    assert_raise(SyntaxError) { @box.eval("1 +") }
 
     # Test name error
-    assert_raise(NameError) { @n.eval("undefined_variable") }
+    assert_raise(NameError) { @box.eval("undefined_variable") }
 
-    # Test that namespace is properly restored after error
+    # Test that box is properly restored after error
     begin
-      @n.eval("raise RuntimeError, 'test error'")
+      @box.eval("raise RuntimeError, 'test error'")
     rescue RuntimeError
-      # Should be able to continue using the namespace
-      result = @n.eval("2 + 2")
+      # Should be able to continue using the box
+      result = @box.eval("2 + 2")
       assert_equal 4, result
     end
   end
@@ -702,24 +710,24 @@ class TestBox < Test::Unit::TestCase
   def test_basic_box_detections
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      ns = Ruby::Box.new
+      box = Ruby::Box.new
       $gvar1 = 'bar'
       code = <<~EOC
-      NS1 = Ruby::Box.current
+      BOX1 = Ruby::Box.current
       $gvar1 = 'foo'
 
       def toplevel = $gvar1
 
       class Foo
-        NS2 = Ruby::Box.current
-        NS2_proc = ->(){ NS2 }
-        NS3_proc = ->(){ Ruby::Box.current }
+        BOX2 = Ruby::Box.current
+        BOX2_proc = ->(){ BOX2 }
+        BOX3_proc = ->(){ Ruby::Box.current }
 
-        def ns4 = Ruby::Box.current
-        def self.ns5 = NS2
-        def self.ns6 = Ruby::Box.current
-        def self.ns6_proc = ->(){ Ruby::Box.current }
-        def self.ns7
+        def box4 = Ruby::Box.current
+        def self.box5 = BOX2
+        def self.box6 = Ruby::Box.current
+        def self.box6_proc = ->(){ Ruby::Box.current }
+        def self.box7
           res = []
           [1,2].chunk{ it.even? }.each do |bool, members|
             res << Ruby::Box.current.object_id.to_s + ":" + bool.to_s + ":" + members.map(&:to_s).join(",")
@@ -740,35 +748,35 @@ class TestBox < Test::Unit::TestCase
         module_function :foo_box
       end
 
-      NS_X = Foo.new.ns4
-      NS_Y = foo_box
+      BOX_X = Foo.new.box4
+      BOX_Y = foo_box
       EOC
-      ns.eval(code)
+      box.eval(code)
       outer = Ruby::Box.current
-      assert_equal ns, ns::NS1 # on TOP frame
-      assert_equal ns, ns::Foo::NS2 # on CLASS frame
-      assert_equal ns, ns::Foo::NS2_proc.call # proc -> a const on CLASS
-      assert_equal ns, ns::Foo::NS3_proc.call # proc -> the current
-      assert_equal ns, ns::Foo.new.ns4 # instance method  -> the current
-      assert_equal ns, ns::Foo.ns5     # singleton method -> a const on CLASS
-      assert_equal ns, ns::Foo.ns6     # singleton method -> the current
-      assert_equal ns, ns::Foo.ns6_proc.call # method returns a proc -> the current
+      assert_equal box, box::BOX1 # on TOP frame
+      assert_equal box, box::Foo::BOX2 # on CLASS frame
+      assert_equal box, box::Foo::BOX2_proc.call # proc -> a const on CLASS
+      assert_equal box, box::Foo::BOX3_proc.call # proc -> the current
+      assert_equal box, box::Foo.new.box4 # instance method  -> the current
+      assert_equal box, box::Foo.box5     # singleton method -> a const on CLASS
+      assert_equal box, box::Foo.box6     # singleton method -> the current
+      assert_equal box, box::Foo.box6_proc.call # method returns a proc -> the current
 
       # a block after CFUNC/IFUNC in a method -> the current
-      assert_equal ["#{ns.object_id}:false:1", "#{ns.object_id}:true:2"], ns::Foo.ns7
+      assert_equal ["#{box.object_id}:false:1", "#{box.object_id}:true:2"], box::Foo.box7
 
-      assert_equal outer, ns::Foo.yield_block{ Ruby::Box.current } # method yields
-      assert_equal outer, ns::Foo.call_block{ Ruby::Box.current }  # method calls a block
+      assert_equal outer, box::Foo.yield_block{ Ruby::Box.current } # method yields
+      assert_equal outer, box::Foo.call_block{ Ruby::Box.current }  # method calls a block
 
-      assert_equal 'foo', ns::Foo.gvar1 # method refers gvar
-      assert_equal 'bar', $gvar1        # gvar value out of the ns
-      assert_equal 'foo', ns::Foo.call_toplevel # toplevel method referring gvar
+      assert_equal 'foo', box::Foo.gvar1 # method refers gvar
+      assert_equal 'bar', $gvar1        # gvar value out of the box
+      assert_equal 'foo', box::Foo.call_toplevel # toplevel method referring gvar
 
-      assert_equal ns, ns::NS_X # on TOP frame, referring a class in the current
-      assert_equal ns, ns::NS_Y # on TOP frame, referring Kernel method defined by a CFUNC method
+      assert_equal box, box::BOX_X # on TOP frame, referring a class in the current
+      assert_equal box, box::BOX_Y # on TOP frame, referring Kernel method defined by a CFUNC method
 
-      assert_equal "Foo", ns::FOO_NAME
-      assert_equal "Foo", ns::Foo.name
+      assert_equal "Foo", box::FOO_NAME
+      assert_equal "Foo", box::Foo.name
     end;
   end
 

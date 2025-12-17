@@ -7,7 +7,7 @@ static VALUE rb_eClosedQueueError;
 
 /* Mutex */
 typedef struct rb_mutex_struct {
-    rb_serial_t fiber_serial;
+    rb_serial_t ec_serial;
     VALUE thread; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
@@ -81,7 +81,7 @@ static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 #endif
-static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber);
+static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial);
 
 /*
  *  Document-class: Thread::Mutex
@@ -125,7 +125,7 @@ rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
 static bool
 mutex_locked_p(rb_mutex_t *mutex)
 {
-    return mutex->fiber_serial != 0;
+    return mutex->ec_serial != 0;
 }
 
 static void
@@ -133,7 +133,7 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, rb_thread_ptr(mutex->thread), NULL);
+        const char *err = rb_mutex_unlock_th(mutex, rb_thread_ptr(mutex->thread), 0);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -221,26 +221,26 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 }
 
 static void
-mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
     mutex->thread = th->self;
-    mutex->fiber_serial = rb_fiber_serial(fiber);
+    mutex->ec_serial = ec_serial;
 }
 
 static void
-mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    mutex_set_owner(mutex, th, fiber);
+    mutex_set_owner(mutex, th, ec_serial);
     thread_mutex_insert(th, mutex);
 }
 
 static inline bool
-mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    if (mutex->fiber_serial == 0) {
+    if (mutex->ec_serial == 0) {
         RUBY_DEBUG_LOG("%p ok", mutex);
 
-        mutex_locked(mutex, th, fiber);
+        mutex_locked(mutex, th, ec_serial);
         return true;
     }
     else {
@@ -252,7 +252,7 @@ mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 static VALUE
 rb_mut_trylock(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(mutex_trylock(mutex_ptr(self), ec->thread_ptr, ec->fiber_ptr));
+    return RBOOL(mutex_trylock(mutex_ptr(self), ec->thread_ptr, rb_ec_serial(ec)));
 }
 
 VALUE
@@ -262,9 +262,9 @@ rb_mutex_trylock(VALUE self)
 }
 
 static VALUE
-mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
+mutex_owned_p(rb_serial_t ec_serial, rb_mutex_t *mutex)
 {
-    return RBOOL(mutex->fiber_serial == rb_fiber_serial(fiber));
+    return RBOOL(mutex->ec_serial == ec_serial);
 }
 
 static VALUE
@@ -305,6 +305,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
     rb_execution_context_t *ec = args->ec;
     rb_thread_t *th = ec->thread_ptr;
     rb_fiber_t *fiber = ec->fiber_ptr;
+    rb_serial_t ec_serial = rb_ec_serial(ec);
     rb_mutex_t *mutex = args->mutex;
     rb_atomic_t saved_ints = 0;
 
@@ -314,13 +315,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
-    if (!mutex_trylock(mutex, th, fiber)) {
-        if (mutex->fiber_serial == rb_fiber_serial(fiber)) {
+    if (!mutex_trylock(mutex, th, ec_serial)) {
+        if (mutex->ec_serial == ec_serial) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
 
-        while (mutex->fiber_serial != rb_fiber_serial(fiber)) {
-            VM_ASSERT(mutex->fiber_serial != 0);
+        while (mutex->ec_serial != ec_serial) {
+            VM_ASSERT(mutex->ec_serial != 0);
 
             VALUE scheduler = rb_fiber_scheduler_current();
             if (scheduler != Qnil) {
@@ -334,8 +335,8 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
             }
             else {
@@ -375,8 +376,8 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 ccan_list_del(&sync_waiter.node);
 
                 // unlocked by another thread while sleeping
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
 
                 rb_ractor_sleeper_threads_dec(th->ractor);
@@ -389,13 +390,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
             if (interruptible_p) {
                 /* release mutex before checking for interrupts...as interrupt checking
                  * code might call rb_raise() */
-                if (mutex->fiber_serial == rb_fiber_serial(fiber)) {
+                if (mutex->ec_serial == ec_serial) {
                     mutex->thread = Qfalse;
-                    mutex->fiber_serial = 0;
+                    mutex->ec_serial = 0;
                 }
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
             }
             else {
@@ -414,13 +415,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         }
 
         if (saved_ints) th->ec->interrupt_flag = saved_ints;
-        if (mutex->fiber_serial == rb_fiber_serial(fiber)) mutex_locked(mutex, th, fiber);
+        if (mutex->ec_serial == ec_serial) mutex_locked(mutex, th, ec_serial);
     }
 
     RUBY_DEBUG_LOG("%p locked", mutex);
 
     // assertion
-    if (mutex_owned_p(fiber, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
+    if (mutex_owned_p(ec_serial, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
 
     return self;
 }
@@ -455,7 +456,7 @@ rb_mutex_lock(VALUE self)
 static VALUE
 rb_mut_owned_p(rb_execution_context_t *ec, VALUE self)
 {
-    return mutex_owned_p(ec->fiber_ptr, mutex_ptr(self));
+    return mutex_owned_p(rb_ec_serial(ec), mutex_ptr(self));
 }
 
 VALUE
@@ -465,20 +466,20 @@ rb_mutex_owned_p(VALUE self)
 }
 
 static const char *
-rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
     RUBY_DEBUG_LOG("%p", mutex);
 
-    if (mutex->fiber_serial == 0) {
+    if (mutex->ec_serial == 0) {
         return "Attempt to unlock a mutex which is not locked";
     }
-    else if (fiber && mutex->fiber_serial != rb_fiber_serial(fiber)) {
+    else if (ec_serial && mutex->ec_serial != ec_serial) {
         return "Attempt to unlock a mutex which is locked by another thread/fiber";
     }
 
     struct sync_waiter *cur = 0, *next;
 
-    mutex->fiber_serial = 0;
+    mutex->ec_serial = 0;
     thread_mutex_remove(th, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
@@ -516,7 +517,7 @@ do_mutex_unlock(struct mutex_args *args)
     rb_mutex_t *mutex = args->mutex;
     rb_thread_t *th = rb_ec_thread_ptr(args->ec);
 
-    err = rb_mutex_unlock_th(mutex, th, args->ec->fiber_ptr);
+    err = rb_mutex_unlock_th(mutex, th, rb_ec_serial(args->ec));
     if (err) rb_raise(rb_eThreadError, "%s", err);
 }
 
@@ -582,7 +583,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
     while (mutexes) {
         mutex = mutexes;
         mutexes = mutex->next_mutex;
-        mutex->fiber_serial = 0;
+        mutex->ec_serial = 0;
         mutex->next_mutex = 0;
         ccan_list_head_init(&mutex->waitq);
     }

@@ -31,6 +31,15 @@ module Gem::InstallUpdateOptions
       options[:bin_dir] = File.expand_path(value)
     end
 
+    add_option(:"Install/Update", "-j", "--build-jobs VALUE", Integer,
+               "Specify the number of jobs to pass to `make` when installing",
+               "gems with native extensions.",
+               "Defaults to the number of processors.",
+               "This option is ignored on the mswin platform or",
+               "if the MAKEFLAGS environment variable is set.") do |value, options|
+      options[:build_jobs] = value
+    end
+
     add_option(:"Install/Update", "--document [TYPES]", Array,
                "Generate documentation for installed gems",
                "List the documentation types you wish to",

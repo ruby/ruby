@@ -306,9 +306,6 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             if (!rb_gc_checking_shareable()) {
                 rb_gc_mark_and_move(&def->body.bmethod.proc);
             }
-            if (def->body.bmethod.hooks) {
-                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
-            }
             break;
           case VM_METHOD_TYPE_ALIAS:
             rb_gc_mark_and_move_ptr(&def->body.alias.original_me);

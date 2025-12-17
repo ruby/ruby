@@ -681,6 +681,14 @@ impl VALUE {
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
     }
+
+    /// Call the write barrier after separately writing val to self.
+    pub fn write_barrier(self, val: VALUE) {
+        // rb_gc_writebarrier() asserts it is not called with a special constant
+        if !val.special_const_p() {
+            unsafe { rb_gc_writebarrier(self, val) };
+        }
+    }
 }
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;

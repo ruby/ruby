@@ -37,7 +37,7 @@ class Gem::Ext::CmakeBuilder < Gem::Ext::Builder
   end
 
   def build(extension, dest_path, results, args = [], lib_dir = nil, cmake_dir = Dir.pwd,
-    target_rbconfig = Gem.target_rbconfig)
+    target_rbconfig = Gem.target_rbconfig, n_jobs: nil)
     if target_rbconfig.path
       warn "--target-rbconfig is not yet supported for CMake extensions. Ignoring"
     end

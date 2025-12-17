@@ -6090,11 +6090,13 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    if (RGENGC_CHECK_MODE) {
-        if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
-    }
-
-    if (SPECIAL_CONST_P(b)) return;
+#if RGENGC_CHECK_MODE
+    if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
+    if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
+#else
+    RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(a));
+    RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(b));
+#endif
 
     GC_ASSERT(!during_gc);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);

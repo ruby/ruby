@@ -116,15 +116,6 @@ Note: We're only listing outstanding class updates.
 
     * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
 
-* Method
-
-    * `Method#source_location`, `Proc#source_location`, and
-      `UnboundMethod#source_location` now return extended location
-      information with 5 elements: `[path, start_line, start_column,
-      end_line, end_column]`. The previous 2-element format `[path,
-      line]` can still be obtained by calling `.take(2)` on the result.
-      [[Feature #6012]]
-
 * Proc
 
     * `Proc#parameters` now shows anonymous optional parameters as `[:opt]`
@@ -443,7 +434,6 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
 
-[Feature #6012]: https://bugs.ruby-lang.org/issues/6012
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
@@ -466,6 +456,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21205]: https://bugs.ruby-lang.org/issues/21205
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
+[Feature #21254]: https://bugs.ruby-lang.org/issues/21254
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21275]: https://bugs.ruby-lang.org/issues/21275

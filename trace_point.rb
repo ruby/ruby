@@ -26,7 +26,7 @@
 # change. Instead, it is recommended to specify the types of events you
 # want to use.
 #
-# To filter what is traced, you can pass any of the following as +events+:
+# To filter what is traced, you can pass any number of the following as +events+:
 #
 # +:line+:: Execute an expression or statement on a new line.
 # +:class+:: Start a class or module definition.
@@ -74,7 +74,7 @@ class TracePoint
   #
   # A block must be given; otherwise, an ArgumentError is raised.
   #
-  # If the trace method isn't included in the given events filter, a
+  # If the trace method isn't supported for the given event(s) filter, a
   # RuntimeError is raised.
   #
   #     TracePoint.trace(:line) do |tp|
@@ -89,7 +89,9 @@ class TracePoint
   #     end
   #     $tp.lineno #=> access from outside (RuntimeError)
   #
-  # Access from other threads is also forbidden.
+  # Access from other ractors, threads or fibers is forbidden. TracePoints are active
+  # per-ractor so if you enable a TracePoint in one ractor, other ractors will not be
+  # affected.
   #
   def self.new(*events)
     Primitive.attr! :use_block

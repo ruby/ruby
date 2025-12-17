@@ -846,7 +846,7 @@ assert_equal '99', %q{
 }
 
 # ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -1022,7 +1022,7 @@ assert_equal '1234', %q{
 }
 
 # cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
   class C
     @@cv = 'str'
   end
@@ -1041,7 +1041,7 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
 }
 
 # also cached cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
   class C
     @@cv = 'str'
     def self.cv

@@ -911,10 +911,9 @@ rb_rational_mul(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat / numeric     ->  numeric
- *    rat.quo(numeric)  ->  numeric
+ *    self / other -> numeric
  *
- * Performs division.
+ * Returns the quotient of +self+ and +other+:
  *
  *    Rational(2, 3)  / Rational(2, 3)   #=> (1/1)
  *    Rational(900)   / Rational(1)      #=> (900/1)

@@ -584,7 +584,7 @@ struct rb_iseq_struct {
         } loader;
 
         struct {
-            struct rb_hook_list_struct *local_hooks;
+            unsigned int local_hooks_cnt;
             rb_event_flag_t global_trace_events;
         } exec;
     } aux;
@@ -650,14 +650,20 @@ void *rb_objspace_alloc(void);
 void rb_objspace_free(void *objspace);
 void rb_objspace_call_finalizer(void);
 
+enum rb_hook_list_type {
+    hook_list_type_ractor_local,
+    hook_list_type_targeted_iseq,
+    hook_list_type_targeted_def, // C function
+    hook_list_type_global
+};
+
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
     rb_event_flag_t events;
     unsigned int running;
+    enum rb_hook_list_type type;
     bool need_clean;
-    bool is_local;
 } rb_hook_list_t;
-
 
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
@@ -1041,6 +1047,7 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
+    rb_serial_t serial;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;
@@ -2028,13 +2035,21 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
-RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
-RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
+RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags; // only ever added to
+RUBY_EXTERN unsigned int ruby_vm_iseq_events_enabled;
+RUBY_EXTERN unsigned int ruby_vm_c_events_enabled;
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()
 #define GET_THREAD() rb_current_thread()
 #define GET_EC()     rb_current_execution_context(true)
+
+static inline rb_serial_t
+rb_ec_serial(struct rb_execution_context_struct *ec)
+{
+    VM_ASSERT(ec->serial >= 1);
+    return ec->serial;
+}
 
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
@@ -2264,8 +2279,9 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
-void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
-void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);
+void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
+bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
+unsigned int rb_hook_list_count(rb_hook_list_t *list);
 
 void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *hooks, int pop_p);
 
@@ -2304,6 +2320,8 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
+    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 
 static inline rb_hook_list_t *
