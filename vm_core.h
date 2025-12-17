@@ -2074,8 +2074,9 @@ rb_ec_ractor_ptr(const rb_execution_context_t *ec)
 static inline rb_serial_t
 rb_ec_ractor_id(const rb_execution_context_t *ec)
 {
-    VM_ASSERT(ec->ractor_id == rb_ractor_id(rb_ec_ractor_ptr(ec)));
-    return ec->ractor_id;
+    rb_serial_t ractor_id = ec->ractor_id;
+    RUBY_ASSERT(ractor_id);
+    return ractor_id;
 }
 
 static inline rb_vm_t *

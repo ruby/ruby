@@ -7396,11 +7396,12 @@ fn gen_send_bmethod(
     let capture = unsafe { proc_block.as_.captured.as_ref() };
     let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-    // Optimize for single ractor mode and avoid runtime check for
-    // "defined with an un-shareable Proc in a different Ractor"
-    if !assume_single_ractor_mode(jit, asm) {
-        gen_counter_incr(jit, asm, Counter::send_bmethod_ractor);
-        return None;
+    if !procv.shareable_p() {
+        let ractor_serial = unsafe { rb_yjit_cme_ractor_serial(cme) };
+        asm_comment!(asm, "guard current ractor == {}", ractor_serial);
+        let current_ractor_serial = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_RACTOR_ID));
+        asm.cmp(current_ractor_serial, Opnd::UImm(ractor_serial));
+        asm.jne(Target::side_exit(Counter::send_bmethod_ractor));
     }
 
     // Passing a block to a block needs logic different from passing
