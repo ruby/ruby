@@ -224,6 +224,11 @@ Note: We're only listing outstanding class updates.
 
     * `Socket.tcp` & `TCPSocket.new` accepts an `open_timeout` keyword argument to specify
       the timeout for the initial connection. [[Feature #21347]]
+    * When a user-specified timeout occurred in `TCPSocket.new`, either `Errno::ETIMEDOUT`
+      or `IO::TimeoutError` could previously be raised depending on the situation.
+      This behavior has been unified so that `IO::TimeoutError` is now consistently raised.
+      (Please note that, in `Socket.tcp`, there are still cases where `Errno::ETIMEDOUT` may
+      be raised in similar situations.)
 
 * String
 
