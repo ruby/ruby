@@ -98,6 +98,24 @@ Note: We're only listing outstanding class updates.
       `Binding#implicit_parameter_defined?` have been added to access
       numbered parameters and "it" parameter. [[Bug #21049]]
 
+* ErrorHighlight
+
+    * When an ArgumentError is raised, it now displays code snippets for
+      both the method call (caller) and the method definition (callee).
+      [[Feature #21543]]
+
+      ```
+      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+          caller: test.rb:3
+          | add(1)
+            ^^^
+          callee: test.rb:1
+          | def add(x, y) = x + y
+                ^^^
+              from test.rb:3:in '<main>'
+      ```
+
 * File
 
     * `File::Stat#birthtime` is now available on Linux via the statx
@@ -347,6 +365,31 @@ The following bundled gems are updated.
   and was already deprecated,.
   [[Feature #20971]]
 
+* A backtrace for `ArgumentError` of "wrong number of arguments" now
+  include the receiver's class or module name (e.g., in `Foo#bar`
+  instead of in `bar`). [[Bug #21698]]
+
+* Backtraces no longer display `internal` frames.
+  These methods now appear as if it is in the Ruby source file,
+  consistent with other C-implemented methods. [[Bug #20968]]
+
+  Before:
+  ```
+  ruby -e '[1].fetch_values(42)'
+  <internal:array>:211:in 'Array#fetch': index 42 outside of array bounds: -1...1 (IndexError)
+          from <internal:array>:211:in 'block in Array#fetch_values'
+          from <internal:array>:211:in 'Array#map!'
+          from <internal:array>:211:in 'Array#fetch_values'
+          from -e:1:in '<main>'
+  ```
+
+  After:
+  ```
+  $ ruby -e '[1].fetch_values(42)'
+  -e:1:in 'Array#fetch_values': index 42 outside of array bounds: -1...1 (IndexError)
+          from -e:1:in '<main>'
+  ```
+
 ## Stdlib compatibility issues
 
 * CGI library is removed from the default gems. Now we only provide `cgi/escape` for
@@ -446,6 +489,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #20750]: https://bugs.ruby-lang.org/issues/20750
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20925]: https://bugs.ruby-lang.org/issues/20925
+[Bug #20968]:     https://bugs.ruby-lang.org/issues/20968
 [Feature #20971]: https://bugs.ruby-lang.org/issues/20971
 [Bug #20974]:     https://bugs.ruby-lang.org/issues/20974
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
@@ -470,8 +514,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21459]: https://bugs.ruby-lang.org/issues/21459
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
+[Feature #21543]: https://bugs.ruby-lang.org/issues/21543
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
+[Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
