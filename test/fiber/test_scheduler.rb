@@ -287,7 +287,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_io_write_on_flush
-    fn = "/tmp/ruby_test_io_write_on_flush_#{SecureRandom.hex}"
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
     write_fd = nil
     io_ops = nil
     thread = Thread.new do
