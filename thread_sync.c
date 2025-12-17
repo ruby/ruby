@@ -1083,12 +1083,12 @@ szqueue_sleep_done(VALUE p)
     return Qfalse;
 }
 
-static VALUE
-queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
+static inline VALUE
+queue_do_pop(rb_execution_context_t *ec, VALUE self, struct rb_queue *q, VALUE non_block, VALUE timeout)
 {
     check_array(self, q->que);
     if (RARRAY_LEN(q->que) == 0) {
-        if (!should_block) {
+        if (RTEST(non_block)) {
             rb_raise(rb_eThreadError, "queue empty");
         }
 
@@ -1103,8 +1103,6 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
             return queue_closed_result(self, q);
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
-
             RUBY_ASSERT(RARRAY_LEN(q->que) == 0);
             RUBY_ASSERT(queue_closed_p(self) == 0);
 
@@ -1136,7 +1134,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
 static VALUE
 rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
 {
-    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout);
+    return queue_do_pop(ec, self, queue_ptr(self), non_block, timeout);
 }
 
 /*
@@ -1330,7 +1328,6 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
             raise_closed_queue_error(self);
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
             struct queue_waiter queue_waiter = {
                 .w = {.self = self, .th = ec->thread_ptr, .fiber = nonblocking_fiber(ec->fiber_ptr)},
                 .as = {.sq = sq}
@@ -1357,21 +1354,16 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
 }
 
 static VALUE
-szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
+rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
-    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout);
+    VALUE retval = queue_do_pop(ec, self, &sq->q, non_block, timeout);
 
     if (queue_length(self, &sq->q) < sq->max) {
         wakeup_one(szqueue_pushq(sq));
     }
 
     return retval;
-}
-static VALUE
-rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
-{
-    return szqueue_do_pop(self, !RTEST(non_block), timeout);
 }
 
 /*
