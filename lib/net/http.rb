@@ -1676,7 +1676,9 @@ module Net   #:nodoc:
       begin
         s = timeouted_connect(conn_addr, conn_port)
       rescue => e
-        e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) # for compatibility with previous versions
+        if (defined?(IO::TimeoutError) && e.is_a?(IO::TimeoutError)) || e.is_a?(Errno::ETIMEDOUT)  # for compatibility with previous versions
+          e = Net::OpenTimeout.new(e)
+        end
         raise e, "Failed to open TCP connection to " +
           "#{conn_addr}:#{conn_port} (#{e.message})"
       end
