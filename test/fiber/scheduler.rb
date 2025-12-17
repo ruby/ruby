@@ -497,7 +497,7 @@ class IOScheduler < Scheduler
     fd = io.fileno
     str = buffer.get_string
     __io_ops__ << [:io_write, fd, str]
-    Fiber.blocking { IO.for_fd(fd).syswrite(str) }
+    Fiber.blocking { buffer.write(IO.for_fd(fd), 0, offset) }
   end
 end
 
