@@ -79,6 +79,63 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_ungetc
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal("a", s2.read(1))
+      assert_nil(s2.ungetc("A"))
+      assert_equal("Abc", s2.read(3))
+      assert_predicate(s2, :eof?)
+
+      s2.ungetc("B")
+      assert_not_predicate(s2, :eof?)
+      assert_equal("B", s2.read)
+
+      s2.ungetc("あ") # \xe3\x81\x82
+      s = s2.read(2)
+      assert_equal("\xe3\x81".b, s)
+      assert_equal(Encoding::BINARY, s.encoding)
+      s2.ungetc("")
+      assert_equal("\x82".b, s2.read)
+
+      s2.ungetc(1)
+      assert_equal("\x01".b, s2.read)
+      assert_raise(RangeError) { s2.ungetc(258) }
+      assert_raise(RangeError) { s2.ungetc(-1) }
+    }
+  end
+
+  def test_ungetbyte
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+
+      assert_equal("a", s2.read(1))
+      assert_nil(s2.ungetbyte("A"))
+      assert_equal("Abc", s2.read(3))
+      assert_predicate(s2, :eof?)
+
+      s2.ungetbyte("B")
+      assert_not_predicate(s2, :eof?)
+      assert_equal("B", s2.read)
+
+      s2.ungetbyte("あ") # \xe3\x81\x82
+      s = s2.read(2)
+      assert_equal("\xe3\x81".b, s)
+      assert_equal(Encoding::BINARY, s.encoding)
+      s2.ungetbyte("")
+      assert_equal("\x82".b, s2.read)
+
+      s2.ungetbyte(1)
+      assert_equal("\x01".b, s2.read)
+      s2.ungetbyte(258)
+      assert_equal("\x02".b, s2.read)
+      s2.ungetbyte(-1)
+      assert_equal("\xff".b, s2.read)
+    }
+  end
+
   def test_gets
     ssl_pair {|s1, s2|
       s1 << "abc\n\n$def123ghi"

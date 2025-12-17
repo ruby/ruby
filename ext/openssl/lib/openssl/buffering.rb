@@ -311,12 +311,28 @@ module OpenSSL::Buffering
   # Pushes character _c_ back onto the stream such that a subsequent buffered
   # character read will return it.
   #
-  # Unlike IO#getc multiple bytes may be pushed back onto the stream.
-  #
   # Has no effect on unbuffered reads (such as #sysread).
 
   def ungetc(c)
-    @rbuffer[0,0] = c.chr
+    if Integer === c
+      @rbuffer[0, 0] = c.chr(Encoding::BINARY)
+    else
+      @rbuffer[0, 0] = c.to_str.b
+    end
+    nil
+  end
+
+  ##
+  # Pushes byte _c_ back onto the stream such that a subsequent buffered byte
+  # read will return it.
+
+  def ungetbyte(c)
+    if Integer === c
+      @rbuffer[0, 0] = (c & 0xff).chr
+    else
+      @rbuffer[0, 0] = c.to_str.b
+    end
+    nil
   end
 
   ##
