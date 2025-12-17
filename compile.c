@@ -5310,6 +5310,21 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
 #define HASH_BRACE 1
 
 static int
+compile_lasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id, const NODE *const valn, int popped)
+{
+    int idx = ISEQ_BODY(iseq)->local_table_size - get_local_var_idx(iseq, id);
+
+    debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
+    CHECK(COMPILE(ret, "rvalue", valn));
+
+    if (!popped) {
+        ADD_INSN(ret, node, dup);
+    }
+    ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+    return COMPILE_OK;
+}
+
+static int
 keyword_node_p(const NODE *const node)
 {
     return nd_type_p(node, NODE_HASH) && (RNODE_HASH(node)->nd_brace & HASH_BRACE) != HASH_BRACE;
@@ -10813,7 +10828,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
         ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
         ADD_INSNL(ret, node, branchif, end_label);
-        // CHECK(COMPILE_POPPED(ret, "keyword default argument", RNODE_KW_ARG(node)->nd_body));
+        CHECK(compile_lasgn(iseq, ret, node, cast->name, default_value, 1));
         ADD_LABEL(ret, end_label);
     }
     return COMPILE_OK;
@@ -11816,17 +11831,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
       // NODE
       case RB_OPTIONAL_PARAMETER_NODE: {
-        // TODO: These codes are same with `RB_LOCAL_VARIABLE_WRITE_NODE`
         ID id = RB_NODE_OPTIONAL_PARAMETER(node)->name;
-        int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
 
-        debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
-        CHECK(COMPILE(ret, "rvalue", RB_NODE_OPTIONAL_PARAMETER(node)->value));
-
-        if (!popped) {
-            ADD_INSN(ret, node, dup);
-        }
-        ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+        CHECK(compile_lasgn(iseq, ret, node, id, RB_NODE_OPTIONAL_PARAMETER(node)->value, 1));
         break;
       }
       case RB_OPTIONAL_KEYWORD_PARAMETER_NODE: {

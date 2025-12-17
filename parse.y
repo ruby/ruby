@@ -15551,6 +15551,22 @@ new_args2(struct parser_params *p, rb_array_node_t *pre_args, rb_array_node_t *o
     return tail;
 }
 
+static ID
+get_kw_nd_vid(struct parser_params *p, rb_node_t *node)
+{
+    switch (RB_NODE_TYPE(node)) {
+      case RB_OPTIONAL_KEYWORD_PARAMETER_NODE:
+        return RB_NODE_OPTIONAL_KEYWORD_PARAMETER(node)->name;
+      case RB_REQUIRED_KEYWORD_PARAMETER_NODE:
+        return RB_NODE_REQUIRED_KEYWORD_PARAMETER(node)->name;
+      case RB_KEYWORD_REST_PARAMETER_NODE:
+        return RB_NODE_KEYWORD_REST_PARAMETER(node)->name;
+      default:
+        compile_error(p, "get_kw_nd_vid: unexpected node: %s", parser_node_name(nd_type(node)));
+        return 0;
+    }
+}
+
 static rb_parameters_node_t *
 new_args_tail2(struct parser_params *p, rb_array_node_t *kw_args, rb_node_t *kw_rest_arg, rb_block_parameter_node_t *block, const YYLTYPE *kw_rest_loc)
 {
@@ -15559,55 +15575,50 @@ new_args_tail2(struct parser_params *p, rb_array_node_t *kw_args, rb_node_t *kw_
 
     node->block = block;
     if (kw_args) {
+        /*
+         * def foo(k1: 1, kr1:, k2: 2, **krest, &b)
+         * variable order: k1, kr1, k2, &b, internal_id, krest
+         * #=> <reorder>
+         * variable order: kr1, k1, k2, internal_id, krest, &b
+         */
+        ID kw_bits = internal_id(p), *required_kw_vars, *kw_vars;
+        ID block_id = 0;
+        struct vtable *vtargs = p->lvtbl->args;
+        rb_array_node_t *kwn = kw_args;
+
+        if (block) block_id = vtargs->tbl[vtargs->pos-1];
+        vtable_pop(vtargs, !!block + !!kw_rest_arg);
+        required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
+
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(&kwn->elements); i++) {
+            rb_node_t *node = kwn->elements.nodes[i];
+            if (!RB_NODE_TYPE_P(node, RB_REQUIRED_KEYWORD_PARAMETER_NODE))
+                --kw_vars;
+            --required_kw_vars;
+        }
+
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(&kwn->elements); i++) {
+            rb_node_t *node = kwn->elements.nodes[i];
+            ID vid = get_kw_nd_vid(p, node);
+            if (RB_NODE_TYPE_P(node, RB_REQUIRED_KEYWORD_PARAMETER_NODE)) {
+                *required_kw_vars++ = vid;
+            }
+            else {
+                *kw_vars++ = vid;
+            }
+        }
+
         rb_node_list_move(&node->keywords, &kw_args->elements);
+        arg_var(p, kw_bits);
+        if (kw_rest_arg) arg_var(p, get_kw_nd_vid(p, kw_rest_arg));
+        if (block) arg_var(p, block_id);
+
+        // args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
     }
-    else if (kw_rest_arg) {
+
+    if (kw_rest_arg) {
         node->keyword_rest = kw_rest_arg;
     }
-
-    // if (kw_args) {
-    //     /*
-    //      * def foo(k1: 1, kr1:, k2: 2, **krest, &b)
-    //      * variable order: k1, kr1, k2, &b, internal_id, krest
-    //      * #=> <reorder>
-    //      * variable order: kr1, k1, k2, internal_id, krest, &b
-    //      */
-    //     ID kw_bits = internal_id(p), *required_kw_vars, *kw_vars;
-    //     struct vtable *vtargs = p->lvtbl->args;
-    //     rb_node_kw_arg_t *kwn = kw_args;
-
-    //     if (block) block = vtargs->tbl[vtargs->pos-1];
-    //     vtable_pop(vtargs, !!block + !!kw_rest_arg);
-    //     required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
-    //     while (kwn) {
-    //         if (!NODE_REQUIRED_KEYWORD_P(get_nd_value(p, kwn->nd_body)))
-    //             --kw_vars;
-    //         --required_kw_vars;
-    //         kwn = kwn->nd_next;
-    //     }
-
-    //     for (kwn = kw_args; kwn; kwn = kwn->nd_next) {
-    //         ID vid = get_nd_vid(p, kwn->nd_body);
-    //         if (NODE_REQUIRED_KEYWORD_P(get_nd_value(p, kwn->nd_body))) {
-    //             *required_kw_vars++ = vid;
-    //         }
-    //         else {
-    //             *kw_vars++ = vid;
-    //         }
-    //     }
-
-    //     arg_var(p, kw_bits);
-    //     if (kw_rest_arg) arg_var(p, kw_rest_arg);
-    //     if (block) arg_var(p, block);
-
-    //     args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
-    // }
-    // else if (kw_rest_arg == idNil) {
-    //     args->no_kwarg = 1;
-    // }
-    // else if (kw_rest_arg) {
-    //     args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
-    // }
 
     return node;
 }
