@@ -699,7 +699,12 @@ ractor_sync_free(rb_ractor_t *r)
 static size_t
 ractor_sync_memsize(const rb_ractor_t *r)
 {
-    return st_table_size(r->sync.ports);
+    if (r->sync.ports) {
+        return st_table_size(r->sync.ports);
+    }
+    else {
+        return 0;
+    }
 }
 
 static void

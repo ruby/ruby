@@ -46,53 +46,6 @@ test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
 
-# https://github.com/ruby/openssl/pull/774
-test_params(OpenSSLDHTest)
-
-# RBS isn't compatible with RDoc 6.13
-RDocPluginParserTest
-
-# https://github.com/ruby/json/pull/773
-test_load(JSONInstanceTest)
-test_load(JSONSingletonTest)
-
-# https://github.com/ruby/json/pull/775
-test_fast_unparse(JSONInstanceTest)
-test_pretty_unparse(JSONInstanceTest)
-test_restore(JSONInstanceTest)
-test_unparse(JSONInstanceTest)
-test_fast_unparse(JSONSingletonTest)
-test_pretty_unparse(JSONSingletonTest)
-test_restore(JSONSingletonTest)
-test_unparse(JSONSingletonTest)
-
-# https://github.com/ruby/json/pull/779
-test_iconv(JSONSingletonTest)
-
-# https://github.com/ruby/json/pull/774
-test_recurse_proc(JSONInstanceTest)
-test_recurse_proc(JSONSingletonTest)
-
-test_deep_const_get(JSONSingletonTest)
-
-CGITest CGI is retired
-CGISingletonTest CGI is retired
-
-RactorSingletonTest Ractor API was changed https://bugs.ruby-lang.org/issues/21262
-RactorInstanceTest  Ractor API was changed https://bugs.ruby-lang.org/issues/21262
-
-# https://github.com/ruby/fileutils/pull/139
-# https://github.com/ruby/actions/actions/runs/16425309325/job/46414287784
-test_ln_sr(FileUtilsSingletonTest)
-
-# https://github.com/ruby/ruby/pull/14303
-# NoMethodError: undefined method 'respond_to?' for an instance of RBS::UnitTest::Convertibles::ToStr
-test_join(PathnameInstanceTest)
-test_plus(PathnameInstanceTest)
-test_relative_path_from(PathnameInstanceTest)
-test_slash(PathnameInstanceTest)
-test_Pathname(PathnameKernelTest)
-test_initialize(PathnameSingletonTest)
-
-# [Feature #20925] `size` of Enumerator created by `produce` returns `nil` instead of `Float::INFINITY`, unless `size:` is specified.
-test_produce(EnumeratorSingletonTest)
+# BigDecimal v4.0.0 changed behavior
+test_divmod(BigDecimalTest)
+test_precs(BigDecimalTest)

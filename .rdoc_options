@@ -10,6 +10,7 @@ rdoc_include:
 
 exclude:
 - \.gemspec\z
+- lib/set/subclass_compatible.rb
 
 generator_name: aliki
 

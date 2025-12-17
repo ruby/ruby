@@ -827,6 +827,27 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_all_with_ractors
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      require "tempfile"
+      require "json"
+      rs = 4.times.map do
+        Ractor.new do
+          Tempfile.create do |f|
+            ObjectSpace.dump_all(output: f)
+            f.close
+            File.readlines(f.path).each do |line|
+              JSON.parse(line)
+            end
+          end
+        end
+      end
+      rs.each(&:join)
+    end;
+  end
+
   def test_dump_uninitialized_file
     assert_in_out_err(%[-robjspace], <<-RUBY) do |(output), (error)|
       puts ObjectSpace.dump(File.allocate)
