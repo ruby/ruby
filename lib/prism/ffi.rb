@@ -434,6 +434,8 @@ module Prism
         2
       when /\A3\.5(\.\d+)?\z/, /\A4\.0(\.\d+)?\z/
         3
+      when /\A4\.1(\.\d+)?\z/
+        4
       else
         if current
           raise CurrentVersionError, RUBY_VERSION
