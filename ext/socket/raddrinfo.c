@@ -597,7 +597,15 @@ start:
 
     if (need_free) free_getaddrinfo_arg(arg);
 
-    if (timedout) rsock_raise_user_specified_timeout();
+    if (timedout) {
+        if (arg->ai) {
+            rsock_raise_user_specified_timeout(arg->ai, Qnil, Qnil);
+        } else {
+            VALUE host = rb_str_new_cstr(hostp);
+            VALUE port = rb_str_new_cstr(portp);
+            rsock_raise_user_specified_timeout(NULL, host, port);
+        }
+    }
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
     // But if the current thread is interrupted by timer thread, the following returns; we need to manually retry.
