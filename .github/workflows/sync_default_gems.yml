@@ -1,4 +1,8 @@
 name: Sync default gems
+
+env:
+  DEFAULT_GEM_SYNC_ENABLED: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -58,7 +62,7 @@ jobs:
         run: |
           git pull --rebase origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
-        if: ${{ steps.sync.outputs.update }}
+        if: ${{ steps.sync.outputs.update && env.DEFAULT_GEM_SYNC_ENABLED == 'true' }}
         env:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
