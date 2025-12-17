@@ -2157,7 +2157,7 @@ method_owner(VALUE obj)
 }
 
 /*
- *  call-see:
+ *  call-seq:
  *    meth.box   -> box or nil
  *
  *  Returns the Ruby::Box where +meth+ is defined in.
