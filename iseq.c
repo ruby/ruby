@@ -3936,7 +3936,6 @@ rb_vm_insn_decode(const VALUE encoded)
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_traced)
 {
-    ASSERT_vm_locking();
     st_data_t key = (st_data_t)*iseq_encoded_insn;
     st_data_t val;
 
