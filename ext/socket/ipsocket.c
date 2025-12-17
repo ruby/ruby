@@ -29,9 +29,7 @@ struct inetsock_arg
 void
 rsock_raise_user_specified_timeout(void)
 {
-    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-    rb_raise(etimedout_error, "user specified timeout");
+    rb_raise(rb_eIOTimeoutError, "user specified timeout");
 }
 
 static VALUE

@@ -905,7 +905,7 @@ class Socket < BasicSocket
         end
       end
 
-      raise(Errno::ETIMEDOUT, 'user specified timeout') if expired?(now, user_specified_open_timeout_at)
+      raise(IO::TimeoutError, 'user specified timeout') if expired?(now, user_specified_open_timeout_at)
 
       if resolution_store.empty_addrinfos?
         if connecting_sockets.empty? && resolution_store.resolved_all_families?
@@ -918,7 +918,7 @@ class Socket < BasicSocket
 
         if (expired?(now, user_specified_resolv_timeout_at) || resolution_store.resolved_all_families?) &&
            (expired?(now, user_specified_connect_timeout_at) || connecting_sockets.empty?)
-          raise Errno::ETIMEDOUT, 'user specified timeout'
+          raise IO::TimeoutError, 'user specified timeout'
         end
       end
     end
