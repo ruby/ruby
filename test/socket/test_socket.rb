@@ -1011,7 +1011,7 @@ class TestSocket < Test::Unit::TestCase
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
         when Socket::AF_INET6 then raise SocketError
-        when Socket::AF_INET then sleep(0.001); raise SocketError, "Last hostname resolution error"
+        when Socket::AF_INET then sleep(0.01); raise SocketError, "Last hostname resolution error"
         end
       end
 

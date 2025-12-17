@@ -113,7 +113,7 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_warn("TCPSocket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
-        rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME, 0);
+        rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME, Qnil);
     return rsock_make_hostent(host, res, tcp_sockaddr);
 }
 
