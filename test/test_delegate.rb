@@ -93,15 +93,21 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   class Parent
-    def parent_public; end
+    def parent_public
+      :public
+    end
 
     protected
 
-    def parent_protected; end
+    def parent_protected
+      :protected
+    end
 
     private
 
-    def parent_private; end
+    def parent_private
+      :private
+    end
   end
 
   class Child < DelegateClass(Parent)
@@ -155,6 +161,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NameError) { Child.instance_method(:parent_private) }
     assert_raise(NameError) { Child.instance_method(:parent_private_added) }
     assert_instance_of UnboundMethod, Child.public_instance_method(:to_s)
+  end
+
+  def test_call_visibiltiy
+    obj = Child.new(Parent.new)
+    assert_equal :public, obj.parent_public
+    assert_equal :protected, obj.__send__(:parent_protected)
+    assert_raise(NoMethodError) { obj.__send__(:parent_private) }
   end
 
   class IV < DelegateClass(Integer)
