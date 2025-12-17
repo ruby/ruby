@@ -18,14 +18,14 @@ ifneq ($(strip $(YJIT_LIBS)),)
 yjit-libs: $(BUILD_YJIT_LIBS)
 $(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
-	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
+	$(gnumake_recursive)$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 else ifneq ($(strip $(RLIB_DIR)),) # combo build
 # Absolute path to avoid VPATH ambiguity
 YJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libyjit.rlib
 
 $(YJIT_RLIB): $(YJIT_SRC_FILES)
 	$(ECHO) 'building $(@F)'
-	$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(YJIT_RUSTC_ARGS)
+	$(gnumake_recursive)$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(YJIT_RUSTC_ARGS)
 
 $(RUST_LIB): $(YJIT_RLIB)
 endif # ifneq ($(strip $(YJIT_LIBS)),)
