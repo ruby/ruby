@@ -620,6 +620,45 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set.new(1..10), set)
   end
 
+  def test_compact!
+    set = Set[1, 2, nil, 3]
+    ret = set.compact!
+    assert_equal(set, ret)
+    assert_equal(Set[1, 2, 3], set)
+
+    ret = set.compact!
+    assert_nil(ret)
+    assert_equal(Set[1, 2, 3], set)
+
+    # Preserve the class
+    set = SetSubclass[1, 2, nil, 3]
+    ret = set.compact!
+    assert_equal(set, ret)
+    assert_equal(SetSubclass[1, 2, 3], set)
+    assert_instance_of(SetSubclass, set)
+    assert_instance_of(SetSubclass, ret)
+
+    ret = set.compact!
+    assert_nil(ret)
+    assert_equal(SetSubclass[1, 2, 3], set)
+    assert_instance_of(SetSubclass, set)
+  end
+
+  def test_compact
+    set = Set[1, 2, nil, 3]
+    ret = set.compact
+    assert_equal(Set[1, 2, nil, 3], set)
+    assert_equal(Set[1, 2, 3], ret)
+
+    # Preserve the class
+    set = SetSubclass[1, 2, nil, 3]
+    ret = set.compact
+    assert_equal(SetSubclass[1, 2, nil, 3], set)
+    assert_equal(SetSubclass[1, 2, 3], ret)
+    assert_instance_of(SetSubclass, set)
+    assert_instance_of(SetSubclass, ret)
+  end
+
   def test_merge
     set = Set[1,2,3]
     ret = set.merge([2,4,6])
