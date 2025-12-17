@@ -1630,8 +1630,12 @@ class TestRegexp < Test::Unit::TestCase
                        "WHITE CROSS MARK..TOP LEFT JUSTIFIED LOWER RIGHT QUARTER BLACK CIRCLE")
   end
 
-  UnicodeAgeRegexps = Hash.new do |h, age|
-    h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u].freeze
+  def unicode_age_regexps
+    @unicode_age_regexps ||= begin
+      Hash.new do |h, age|
+        h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u]
+      end
+    end
   end
 
   def assert_unicode_age(char, mesg = nil, matches: @matches, unmatches: @unmatches)
@@ -1640,13 +1644,13 @@ class TestRegexp < Test::Unit::TestCase
     end
 
     matches.each do |age|
-      pos, neg = UnicodeAgeRegexps[age]
+      pos, neg = unicode_age_regexps[age]
       assert_match(pos, char, mesg)
       assert_not_match(neg, char, mesg)
     end
 
     unmatches.each do |age|
-      pos, neg = UnicodeAgeRegexps[age]
+      pos, neg = unicode_age_regexps[age]
       assert_not_match(pos, char, mesg)
       assert_match(neg, char, mesg)
     end

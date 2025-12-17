@@ -3,11 +3,11 @@
 require 'test/unit'
 
 class TestBox < Test::Unit::TestCase
-  EXPERIMENTAL_WARNINGS = [
+  EXPERIMENTAL_WARNINGS = Ractor.make_shareable([
     "warning: Ruby::Box is experimental, and the behavior may change in the future!",
     "See doc/language/box.md for known issues, etc."
-  ].join("\n")
-  ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
+  ].join("\n"))
+  ENV_ENABLE_BOX = Ractor.make_shareable({'RUBY_BOX' => '1', 'TEST_DIR' => __dir__})
 
   def setup
     @box = nil

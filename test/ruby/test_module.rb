@@ -87,13 +87,13 @@ class TestModule < Test::Unit::TestCase
     private :user3
   end
 
-  OtherSetup = -> do
+  OtherSetup = Ractor.make_shareable(proc do
     remove_const :Other if defined? ::TestModule::Other
     module Other
       def other
       end
     end
-  end
+  end)
 
   class AClass
     def AClass.cm1
@@ -253,8 +253,9 @@ class TestModule < Test::Unit::TestCase
     assert_operator(Math, :const_defined?, "PI")
     assert_not_operator(Math, :const_defined?, :IP)
     assert_not_operator(Math, :const_defined?, "IP")
+  end
 
-    # Test invalid symbol name
+  def test_const_defined_invalid_symbol_name
     # [Bug #20245]
     EnvUtil.under_gc_stress do
       assert_raise(EncodingError) do
@@ -832,8 +833,9 @@ class TestModule < Test::Unit::TestCase
     assert User.method_defined?(:user, false)
     assert !User.method_defined?(:mixin, false)
     assert Mixin.method_defined?(:mixin, false)
+    const_name = "FOO#{Ractor.current.object_id}"
 
-    User.const_set(:FOO, c = Class.new)
+    User.const_set(const_name, c = Class.new)
 
     c.prepend(User)
     assert !c.method_defined?(:user, false)
@@ -850,7 +852,7 @@ class TestModule < Test::Unit::TestCase
 
     # cleanup
     User.class_eval do
-      remove_const :FOO
+      remove_const const_name
     end
   end
 
@@ -942,15 +944,16 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::N$/, m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
     assert_match(/\A#<Module:.*>::C\z/, m::C.name)
-    self.class.const_set(:M, m)
-    prefix = self.class.name + "::M::"
+    m_name = "M#{Ractor.current.object_id}"
+    self.class.const_set(m_name, m)
+    prefix = self.class.name + "::#{m_name}::"
     assert_equal(prefix+"N", m.const_get(:N).name)
     assert_equal(prefix+"O", m.const_get(:O).name)
     assert_equal(prefix+"C", m.const_get(:C).name)
     c = m.class_eval("Bug15891 = Class.new.freeze")
     assert_equal(prefix+"Bug15891", c.name)
   ensure
-    self.class.class_eval {remove_const(:M)}
+    self.class.class_eval {remove_const(m_name)}
   end
 
   def test_private_class_method
@@ -1738,14 +1741,15 @@ class TestModule < Test::Unit::TestCase
 
 
   def test_nonascii_name
-    c = eval("class ::C\u{df}; self; end")
-    assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
-    c = eval("class C\u{df}; self; end")
-    assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
+    c_name = "C#{Ractor.current.object_id}"
+    c = eval("class ::#{c_name}\u{df}; self; end")
+    assert_equal("#{c_name}\u{df}", c.name, '[ruby-core:24600]')
+    c = eval("class #{c_name}\u{df}; self; end")
+    assert_equal("TestModule::#{c_name}\u{df}", c.name, '[ruby-core:24600]')
     c = Module.new.module_eval("class X\u{df} < Module; self; end")
     assert_match(/::X\u{df}:/, c.new.to_s)
   ensure
-    Object.send(:remove_const, "C\u{df}")
+    Object.send(:remove_const, "#{c_name}\u{df}")
   end
 
 
@@ -2017,7 +2021,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_private_constant_in_class
     c = Class.new
-    c.const_set(:FOO, "foo")
+    c.const_set(:FOO, "foo".freeze)
     assert_equal("foo", c::FOO)
     c.private_constant(:FOO)
     e = assert_raise(NameError) {c::FOO}
@@ -2026,7 +2030,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal("foo", c.class_eval("FOO"))
     assert_equal("foo", c.const_get("FOO"))
     $VERBOSE, verbose = nil, $VERBOSE
-    c.const_set(:FOO, "foo")
+    c.const_set(:FOO, "foo".freeze)
     $VERBOSE = verbose
     e = assert_raise(NameError) {c::FOO}
     assert_equal(c, e.receiver)
@@ -2040,7 +2044,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_private_constant_in_module
     m = Module.new
-    m.const_set(:FOO, "foo")
+    m.const_set(:FOO, "foo".freeze)
     assert_equal("foo", m::FOO)
     m.private_constant(:FOO)
     e = assert_raise(NameError) {m::FOO}
@@ -2049,7 +2053,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal("foo", m.class_eval("FOO"))
     assert_equal("foo", m.const_get("FOO"))
     $VERBOSE, verbose = nil, $VERBOSE
-    m.const_set(:FOO, "foo")
+    m.const_set(:FOO, "foo".freeze)
     $VERBOSE = verbose
     e = assert_raise(NameError) {m::FOO}
     assert_equal(m, e.receiver)
@@ -2068,8 +2072,8 @@ class TestModule < Test::Unit::TestCase
 
   def test_private_constant2
     c = Class.new
-    c.const_set(:FOO, "foo")
-    c.const_set(:BAR, "bar")
+    c.const_set(:FOO, "foo".freeze)
+    c.const_set(:BAR, "bar".freeze)
     assert_equal("foo", c::FOO)
     assert_equal("bar", c::BAR)
     c.private_constant(:FOO, :BAR)
@@ -2108,21 +2112,22 @@ class TestModule < Test::Unit::TestCase
   private_constant :PrivateClass
 
   def test_define_module_under_private_constant
+    const_name = "TestModule#{Ractor.current.object_id}"
     assert_raise(NameError) do
       eval %q{class TestModule::PrivateClass; end}
     end
     assert_raise(NameError) do
-      eval %q{module TestModule::PrivateClass::TestModule; end}
+      eval %Q{module TestModule::PrivateClass::#{const_name}; end}
     end
     eval %q{class PrivateClass; end}
-    eval %q{module PrivateClass::TestModule; end}
-    assert_instance_of(Module, PrivateClass::TestModule)
-    PrivateClass.class_eval { remove_const(:TestModule) }
+    eval %Q{module PrivateClass::#{const_name}; end}
+    assert_instance_of(Module, PrivateClass.const_get(const_name))
+    PrivateClass.class_eval { remove_const(const_name) }
   end
 
   def test_public_constant
     c = Class.new
-    c.const_set(:FOO, "foo")
+    c.const_set(:FOO, "foo".freeze)
     assert_equal("foo", c::FOO)
     c.private_constant(:FOO)
     assert_raise(NameError) { c::FOO }
@@ -2133,7 +2138,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_deprecate_constant
     c = Class.new
-    c.const_set(:FOO, "foo")
+    c.const_set(:FOO, "foo".freeze)
     c.deprecate_constant(:FOO)
     assert_warn(/deprecated/) do
       Warning[:deprecated] = true
@@ -2825,7 +2830,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal 'A', a.new.a, '[ruby-core:17019]'
   end
 
-  Bug6891 = '[ruby-core:47241]'
+  Bug6891 = '[ruby-core:47241]'.freeze
 
   def test_extend_module_with_protected_method
     list = []
@@ -3242,7 +3247,7 @@ class TestModule < Test::Unit::TestCase
     }
   end
 
-  ConstLocation = [__FILE__, __LINE__]
+  ConstLocation = Ractor.make_shareable([__FILE__, __LINE__])
 
   def test_const_source_location
     assert_equal(ConstLocation, self.class.const_source_location(:ConstLocation))

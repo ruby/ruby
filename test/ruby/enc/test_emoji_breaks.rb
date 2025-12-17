@@ -46,15 +46,16 @@ class TestEmojiBreaks < Test::Unit::TestCase
   end
 
   UNICODE_VERSION   = RbConfig::CONFIG['UNICODE_VERSION']
-  UNICODE_DATA_PATH = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}/ucd/emoji", __dir__)
+  UNICODE_DATA_PATH = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}/ucd/emoji", __dir__).freeze
   EMOJI_VERSION     = RbConfig::CONFIG['UNICODE_EMOJI_VERSION']
-  EMOJI_DATA_PATH   = File.expand_path("../../../enc/unicode/data/emoji/#{EMOJI_VERSION}", __dir__)
+  EMOJI_DATA_PATH   = File.expand_path("../../../enc/unicode/data/emoji/#{EMOJI_VERSION}", __dir__).freeze
 
   EMOJI_DATA_FILES  = %w[emoji-sequences emoji-test emoji-zwj-sequences].map do |basename|
     BreakFile.new(basename, EMOJI_DATA_PATH, EMOJI_VERSION)
   end
   UNICODE_DATA_FILE = BreakFile.new('emoji-variation-sequences', UNICODE_DATA_PATH, EMOJI_VERSION)
   EMOJI_DATA_FILES << UNICODE_DATA_FILE
+  Ractor.make_shareable(EMOJI_DATA_FILES)
 
   def self.data_files_available?
     EMOJI_DATA_FILES.all? do |f|

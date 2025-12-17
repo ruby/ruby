@@ -1938,7 +1938,7 @@ void
 Init_console(void)
 {
 #if USE_RACTOR_STORAGE
-    RB_EXT_RACTOR_SAFE(true);
+    rb_ext_ractor_safe(true);
 #endif
 
 #undef rb_intern

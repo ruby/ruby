@@ -70,17 +70,17 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_bignum
-    $x = fact(40)
-    assert_equal($x, $x)
-    assert_equal($x, fact(40))
-    assert_operator($x, :<, $x+2)
-    assert_operator($x, :>, $x-2)
-    assert_equal(815915283247897734345611269596115894272000000000, $x)
-    assert_not_equal(815915283247897734345611269596115894272000000001, $x)
-    assert_equal(815915283247897734345611269596115894272000000001, $x+1)
-    assert_equal(335367096786357081410764800000, $x/fact(20))
-    $x = -$x
-    assert_equal(-815915283247897734345611269596115894272000000000, $x)
+    x = fact(40)
+    assert_equal(x, x)
+    assert_equal(x, fact(40))
+    assert_operator(x, :<, x+2)
+    assert_operator(x, :>, x-2)
+    assert_equal(815915283247897734345611269596115894272000000000, x)
+    assert_not_equal(815915283247897734345611269596115894272000000001, x)
+    assert_equal(815915283247897734345611269596115894272000000001, x+1)
+    assert_equal(335367096786357081410764800000, x/fact(20))
+    x = -x
+    assert_equal(-815915283247897734345611269596115894272000000000, x)
 
     b = 2*BIGNUM_MIN
     assert_equal(2-b, -(b-2))

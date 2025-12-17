@@ -665,7 +665,7 @@ end.join
     assert_equal([__FILE__, line], [loc.path, loc.lineno])
   end
 
-  Bug4438 = '[ruby-core:35364]'
+  Bug4438 = '[ruby-core:35364]'.freeze
 
   def test_rescue_single_argument
     assert_raise(TypeError, Bug4438) do
@@ -1063,38 +1063,39 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def capture_warning_warn(category: false)
-    verbose = $VERBOSE
-    categories = Warning.categories.to_h {|cat| [cat, Warning[cat]]}
-    warning = []
+    begin
+      verbose = $VERBOSE
+      categories = Warning.categories.to_h {|cat| [cat, Warning[cat]]}
+      warning = []
 
-    ::Warning.class_eval do
-      alias_method :warn2, :warn
-      remove_method :warn
+      ::Warning.class_eval do
+        alias_method :warn2, :warn
+        remove_method :warn
 
-      if category
-        define_method(:warn) do |str, category: nil|
-          warning << [str, category]
-        end
-      else
-        define_method(:warn) do |str, category: nil|
-          warning << str
+        if category
+          define_method(:warn) do |str, category: nil|
+            warning << [str, category]
+          end
+        else
+          define_method(:warn) do |str, category: nil|
+            warning << str
+          end
         end
       end
-    end
 
-    $VERBOSE = true
-    Warning.categories.each {|cat| Warning[cat] = true}
-    yield
+      $VERBOSE = true
+      Warning.categories.each {|cat| Warning[cat] = true}
+      yield
+      return warning
+    ensure
+      $VERBOSE = verbose
+      categories.each {|cat, flag| Warning[cat] = flag}
 
-    return warning
-  ensure
-    $VERBOSE = verbose
-    categories.each {|cat, flag| Warning[cat] = flag}
-
-    ::Warning.class_eval do
-      remove_method :warn
-      alias_method :warn, :warn2
-      remove_method :warn2
+      ::Warning.class_eval do
+        remove_method :warn
+        alias_method :warn, :warn2
+        remove_method :warn2
+      end
     end
   end
 

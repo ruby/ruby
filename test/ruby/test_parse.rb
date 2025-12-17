@@ -1464,11 +1464,11 @@ x = __ENCODING__
     end;
   end
 
-  NONASCII_CONSTANTS = [
+  NONASCII_CONSTANTS = Ractor.make_shareable([
     *%W"\u{00de} \u{00C0}".flat_map {|c| [c, c.encode("iso-8859-15")]},
     "\u{1c4}", "\u{1f2}", "\u{1f88}", "\u{370}",
     *%W"\u{391} \u{ff21}".flat_map {|c| [c, c.encode("cp932"), c.encode("euc-jp")]},
-  ]
+  ])
 
   def assert_nonascii_const
     assert_all_assertions_foreach("NONASCII_CONSTANTS", *NONASCII_CONSTANTS) do |n|

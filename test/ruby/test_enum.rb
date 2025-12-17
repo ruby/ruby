@@ -802,6 +802,9 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1, 3], [2, 4], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
     def ary.to_ary; [5, 6]; end
     assert_equal([[1, 5], [2, 6], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
+  end
+
+  def test_zip_ractor_unsafe
     obj = eval("class C\u{1f5ff}; self; end").new
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) {(1..1).zip(obj)}
   end

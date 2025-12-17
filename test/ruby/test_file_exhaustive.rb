@@ -7,7 +7,7 @@ require '-test-/file'
 
 class TestFileExhaustive < Test::Unit::TestCase
   ROOT_REGEXP = %r'\A(?:[a-z]:(?=(/))|//[^/]+/[^/]+)'i
-  DRIVE = Dir.pwd[ROOT_REGEXP]
+  DRIVE = Dir.pwd[ROOT_REGEXP].freeze
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
   NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
@@ -19,7 +19,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def setup
-    @dir = Dir.mktmpdir("ruby-test")
+    @dir = Dir.mktmpdir("#{Ractor.current.object_id}")
     File.chown(-1, Process.gid, @dir)
   end
 
@@ -288,13 +288,20 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if DRIVE
 
   def test_stat_dotted_prefix
-    Dir.mktmpdir do |dir|
+    Dir.mktmpdir("#{Ractor.current.object_id}") do |dir|
       prefix = File.join(dir, "...a")
       Dir.mkdir(prefix)
       assert_file.exist?(prefix)
 
       assert_nothing_raised { File.stat(prefix) }
+    end
+  end if NTFS
 
+  def test_stat_dotted_prefix_ractor_unsafe
+    Dir.mktmpdir("#{Ractor.current.object_id}") do |dir|
+      prefix = File.join(dir, "...a")
+      Dir.mkdir(prefix)
+      assert_file.exist?(prefix)
       Dir.chdir(dir) do
         assert_nothing_raised { File.stat(File.basename(prefix)) }
       end
@@ -720,6 +727,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.utime(t + 1, t + 2, zerofile)
     assert_equal(t + 1, File.atime(zerofile))
     assert_equal(t + 2, File.mtime(zerofile))
+  end
+
+  def test_utime_ractor_unsafe
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         path = "foo\u{30b3 30d4 30fc}"
@@ -934,17 +944,19 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_expand_path_encoding_filesystem
-    home = ENV["HOME"]
-    ENV["HOME"] = "#{DRIVE}/UserHome"
+    begin
+      home = ENV["HOME"]
+      ENV["HOME"] = "#{DRIVE}/UserHome"
 
-    path = "~".encode("US-ASCII")
-    dir = "C:/".encode("IBM437")
-    fs = Encoding.find("filesystem")
+      path = "~".encode("US-ASCII")
+      dir = "C:/".encode("IBM437")
+      fs = Encoding.find("filesystem")
 
-    assert_equal fs, File.expand_path(path).encoding
-    assert_equal fs, File.expand_path(path, dir).encoding
-  ensure
-    ENV["HOME"] = home
+      assert_equal fs, File.expand_path(path).encoding
+      assert_equal fs, File.expand_path(path, dir).encoding
+    ensure
+      ENV["HOME"] = home
+    end
   end
 
   UnknownUserHome = "~foo_bar_baz_unknown_user_wahaha".freeze
@@ -976,20 +988,22 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_expand_path_home_dir_string
-    home = ENV["HOME"]
-    new_home = "#{DRIVE}/UserHome"
-    ENV["HOME"] = new_home
-    bug8034 = "[ruby-core:53168]"
+    begin
+      home = ENV["HOME"]
+      new_home = "#{DRIVE}/UserHome"
+      ENV["HOME"] = new_home
+      bug8034 = "[ruby-core:53168]"
 
-    assert_equal File.join(new_home, "foo"), File.expand_path("foo", "~"), bug8034
-    assert_equal File.join(new_home, "bar", "foo"), File.expand_path("foo", "~/bar"), bug8034
+      assert_equal File.join(new_home, "foo"), File.expand_path("foo", "~"), bug8034
+      assert_equal File.join(new_home, "bar", "foo"), File.expand_path("foo", "~/bar"), bug8034
 
-    assert_raise(ArgumentError) { File.expand_path(".", UnknownUserHome) }
-    assert_nothing_raised(ArgumentError) { File.expand_path("#{DRIVE}/", UnknownUserHome) }
-    ENV["HOME"] = "#{DRIVE}UserHome"
-    assert_raise(ArgumentError) { File.expand_path("~") }
-  ensure
-    ENV["HOME"] = home
+      assert_raise(ArgumentError) { File.expand_path(".", UnknownUserHome) }
+      assert_nothing_raised(ArgumentError) { File.expand_path("#{DRIVE}/", UnknownUserHome) }
+      ENV["HOME"] = "#{DRIVE}UserHome"
+      assert_raise(ArgumentError) { File.expand_path("~") }
+    ensure
+      ENV["HOME"] = home
+    end
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -1111,31 +1125,37 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_expand_path_converts_a_pathname_to_an_absolute_pathname_using_home_as_base
-    old_home = ENV["HOME"]
-    home = ENV["HOME"] = "#{DRIVE}/UserHome"
-    assert_equal(home, File.expand_path("~"))
-    assert_equal(home, File.expand_path("~", "C:/FooBar"))
-    assert_equal(File.join(home, "a"), File.expand_path("~/a", "C:/FooBar"))
-  ensure
-    ENV["HOME"] = old_home
+    begin
+      old_home = ENV["HOME"]
+      home = ENV["HOME"] = "#{DRIVE}/UserHome"
+      assert_equal(home, File.expand_path("~"))
+      assert_equal(home, File.expand_path("~", "C:/FooBar"))
+      assert_equal(File.join(home, "a"), File.expand_path("~/a", "C:/FooBar"))
+    ensure
+      ENV["HOME"] = old_home
+    end
   end
 
   def test_expand_path_converts_a_pathname_to_an_absolute_pathname_using_unc_home
-    old_home = ENV["HOME"]
-    unc_home = ENV["HOME"] = "//UserHome"
-    assert_equal(unc_home, File.expand_path("~"))
-  ensure
-    ENV["HOME"] = old_home
+    begin
+      old_home = ENV["HOME"]
+      unc_home = ENV["HOME"] = "//UserHome"
+      assert_equal(unc_home, File.expand_path("~"))
+    ensure
+      ENV["HOME"] = old_home
+    end
   end if DRIVE
 
   def test_expand_path_does_not_modify_a_home_string_argument
-    old_home = ENV["HOME"]
-    home = ENV["HOME"] = "#{DRIVE}/UserHome"
-    str = "~/a"
-    assert_equal("#{home}/a", File.expand_path(str))
-    assert_equal("~/a", str)
-  ensure
-    ENV["HOME"] = old_home
+    begin
+      old_home = ENV["HOME"]
+      home = ENV["HOME"] = "#{DRIVE}/UserHome"
+      str = "~/a"
+      assert_equal("#{home}/a", File.expand_path(str))
+      assert_equal("~/a", str)
+    ensure
+      ENV["HOME"] = old_home
+    end
   end
 
   def test_expand_path_raises_argument_error_for_any_supplied_username
@@ -1155,11 +1175,13 @@ class TestFileExhaustive < Test::Unit::TestCase
   end unless DRIVE
 
   def test_expand_path_error_for_non_absolute_home
-    old_home = ENV["HOME"]
-    ENV["HOME"] = "./UserHome"
-    assert_raise_with_message(ArgumentError, /non-absolute home/) {File.expand_path("~")}
-  ensure
-    ENV["HOME"] = old_home
+    begin
+      old_home = ENV["HOME"]
+      ENV["HOME"] = "./UserHome"
+      assert_raise_with_message(ArgumentError, /non-absolute home/) {File.expand_path("~")}
+    ensure
+      ENV["HOME"] = old_home
+    end
   end
 
   def test_expand_path_raises_a_type_error_if_not_passed_a_string_type

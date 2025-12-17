@@ -6,14 +6,14 @@ require 'timeout'
 require 'rbconfig'
 
 class TestProcess < Test::Unit::TestCase
-  RUBY = EnvUtil.rubybin
+  RUBY = EnvUtil.rubybin.freeze
 
   def setup
-    Process.waitall
+    Process.waitall unless multiple_ractors?
   end
 
   def teardown
-    Process.waitall
+    Process.waitall unless multiple_ractors?
   end
 
   def windows?
@@ -24,6 +24,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def with_tmpchdir
+    omit "Dir.chdir" if multiple_ractors?
     Dir.mktmpdir {|d|
       d = File.realpath(d)
       Dir.chdir(d) {
@@ -33,6 +34,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def run_in_child(str) # should be called in a temporary directory
+    omit "global side effects" unless main_ractor?
     File.write("test-script", str)
     Process.wait spawn(RUBY, "test-script")
     $?
@@ -154,7 +156,7 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
-  TRUECOMMAND = [RUBY, '-e', '']
+  TRUECOMMAND = Ractor.make_shareable([RUBY, '-e', ''])
 
   def test_execopts_opts
     assert_nothing_raised {
@@ -298,9 +300,10 @@ class TestProcess < Test::Unit::TestCase
     #           RUBY, "-e", %q[print ENV.keys.join(?\0)]],
     #          &:read).split(?\0)
   end
-  PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
-  ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
-  ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
+  Ractor.make_shareable(MANDATORY_ENVS)
+  PREENVARG = Ractor.make_shareable(['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"])
+  ENVARG = Ractor.make_shareable(['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }'])
+  ENVCOMMAND = Ractor.make_shareable([RUBY].concat(PREENVARG).concat(ENVARG))
 
   def test_execopts_env
     assert_raise(ArgumentError) {
@@ -339,7 +342,7 @@ class TestProcess < Test::Unit::TestCase
     }
 
     with_tmpchdir {|d|
-      system({"fofo"=>"haha"}, *ENVCOMMAND, STDOUT=>"out")
+      system({"fofo"=>"haha"}, *ENVCOMMAND, $stdout=>"out")
       assert_match(/^fofo=haha$/, File.read("out").chomp)
     }
 
@@ -458,7 +461,7 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  PWD = [RUBY, '-e', 'puts Dir.pwd']
+  PWD = Ractor.make_shareable([RUBY, '-e', 'puts Dir.pwd'])
 
   def test_execopts_chdir
     with_tmpchdir {|d|
@@ -514,7 +517,7 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
+  UMASK = Ractor.make_shareable([RUBY, '-e', 'printf "%04o\n", File.umask'])
 
   def test_execopts_umask
     omit "umask is not supported" if windows?
@@ -551,49 +554,49 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
-  ECHO = lambda {|arg| [RUBY, '-e', "puts #{arg.dump}; STDOUT.flush"] }
-  SORT = [RUBY, '-e', "puts ARGF.readlines.sort"]
-  CAT = [RUBY, '-e', "IO.copy_stream STDIN, STDOUT"]
+  ECHO = Ractor.make_shareable(lambda {|arg| [RUBY, '-e', "puts #{arg.dump}; $stdout.flush"] })
+  SORT = Ractor.make_shareable([RUBY, '-e', "puts ARGF.readlines.sort"])
+  CAT = Ractor.make_shareable([RUBY, '-e', "IO.copy_stream $stdin, $stdout"])
 
   def test_execopts_redirect_fd
     with_tmpchdir {|d|
-      Process.wait Process.spawn(*ECHO["a"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*ECHO["a"], $stdout=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("a", File.read("out").chomp)
       if windows?
         # currently telling to child the file modes is not supported.
         File.write("out", "0\n", mode: "a")
       else
-        Process.wait Process.spawn(*ECHO["0"], STDOUT=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
+        Process.wait Process.spawn(*ECHO["0"], $stdout=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
         assert_equal("a\n0\n", File.read("out"))
       end
-      Process.wait Process.spawn(*SORT, STDIN=>["out", File::RDONLY, 0644],
-                                         STDOUT=>["out2", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*SORT, $stdin=>["out", File::RDONLY, 0644],
+                                         $stdout=>["out2", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("0\na\n", File.read("out2"))
-      Process.wait Process.spawn(*ECHO["b"], [STDOUT, STDERR]=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*ECHO["b"], [$stdout, $stderr]=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("b", File.read("out").chomp)
       # problem occur with valgrind
-      #Process.wait Process.spawn(*ECHO["a"], STDOUT=>:close, STDERR=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      #Process.wait Process.spawn(*ECHO["a"], $stdout=>:close, $stderr=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       #p File.read("out")
       #assert_not_empty(File.read("out")) # error message such as "-e:1:in `flush': Bad file descriptor (Errno::EBADF)"
-      Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*ECHO["c"], $stderr=>$stdout, $stdout=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
-        Process.wait Process.spawn(*ECHO["d"], STDOUT=>f)
+        Process.wait Process.spawn(*ECHO["d"], $stdout=>f)
         assert_equal("d", File.read("out").chomp)
       }
-      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
-      opts.merge(3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT) unless windows?
+      opts = {$stdout=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      opts.merge(3=>$stdout, 4=>$stdout, 5=>$stdout, 6=>$stdout, 7=>$stdout) unless windows?
       Process.wait Process.spawn(*ECHO["e"], opts)
       assert_equal("e", File.read("out").chomp)
-      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
-      opts.merge(3=>0, 4=>:in, 5=>STDIN, 6=>1, 7=>:out, 8=>STDOUT, 9=>2, 10=>:err, 11=>STDERR) unless windows?
+      opts = {$stdout=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      opts.merge(3=>0, 4=>:in, 5=>$stdin, 6=>1, 7=>:out, 8=>$stdout, 9=>2, 10=>:err, 11=>$stderr) unless windows?
       Process.wait Process.spawn(*ECHO["ee"], opts)
       assert_equal("ee", File.read("out").chomp)
       unless windows?
         # passing non-stdio fds is not supported on Windows
         File.open("out", "w") {|f|
-          h = {STDOUT=>f, f=>STDOUT}
-          3.upto(30) {|i| h[i] = STDOUT if f.fileno != i }
+          h = {$stdout=>f, f=>$stdout}
+          3.upto(30) {|i| h[i] = $stdout if f.fileno != i }
           Process.wait Process.spawn(*ECHO["f"], h)
           assert_equal("f", File.read("out").chomp)
         }
@@ -605,14 +608,14 @@ class TestProcess < Test::Unit::TestCase
         Process.wait Process.spawn(*ECHO["f"], [Process]=>1)
       }
       assert_raise(ArgumentError) {
-        Process.wait Process.spawn(*ECHO["f"], [1, STDOUT]=>2)
+        Process.wait Process.spawn(*ECHO["f"], [1, $stdout]=>2)
       }
       assert_raise(ArgumentError) {
         Process.wait Process.spawn(*ECHO["f"], -1=>2)
       }
-      Process.wait Process.spawn(*ECHO["hhh\nggg\n"], STDOUT=>"out")
+      Process.wait Process.spawn(*ECHO["hhh\nggg\n"], $stdout=>"out")
       assert_equal("hhh\nggg\n", File.read("out"))
-      Process.wait Process.spawn(*SORT, STDIN=>"out", STDOUT=>"out2")
+      Process.wait Process.spawn(*SORT, $stdin=>"out", $stdout=>"out2")
       assert_equal("ggg\nhhh\n", File.read("out2"))
 
       unless windows?
@@ -623,9 +626,9 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("", File.read("err"))
       end
 
-      system(*ECHO["bb\naa\n"], STDOUT=>["out", "w"])
+      system(*ECHO["bb\naa\n"], $stdout=>["out", "w"])
       assert_equal("bb\naa\n", File.read("out"))
-      system(*SORT, STDIN=>["out"], STDOUT=>"out2")
+      system(*SORT, $stdin=>["out"], $stdout=>"out2")
       assert_equal("aa\nbb\n", File.read("out2"))
     }
   end
@@ -741,7 +744,7 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_redirect_pipe
     with_pipe {|r1, w1|
       with_pipe {|r2, w2|
-        opts = {STDIN=>r1, STDOUT=>w2}
+        opts = {$stdin=>r1, $stdout=>w2}
         opts.merge(w1=>:close, r2=>:close) unless windows?
         pid = spawn(*SORT, opts)
         r1.close
@@ -854,30 +857,30 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_redirect_dup2_child
     with_tmpchdir {|d|
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
-                         STDOUT=>"out", STDERR=>[:child, STDOUT])
+                         $stdout=>"out", $stderr=>[:child, $stdout])
       assert_equal("errout", File.read("out"))
 
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
-                         STDERR=>"out", STDOUT=>[:child, STDERR])
+                         $stderr=>"out", $stdout=>[:child, $stderr])
       assert_equal("errout", File.read("out"))
 
       omit "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
-                         STDOUT=>"out",
-                         STDERR=>[:child, 3],
+                         $stdout=>"out",
+                         $stderr=>[:child, 3],
                          3=>[:child, 4],
-                         4=>[:child, STDOUT]
+                         4=>[:child, $stdout]
                         )
       assert_equal("errout", File.read("out"))
 
-      IO.popen([RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'", STDERR=>[:child, STDOUT]]) {|io|
+      IO.popen([RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'", $stderr=>[:child, $stdout]]) {|io|
         assert_equal("errout", io.read)
       }
 
-      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, STDOUT]) }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, $stdout=>[:child, $stdout]) }
       assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, 3=>[:child, 4], 4=>[:child, 3]) }
       assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, 3=>[:child, 4], 4=>[:child, 5], 5=>[:child, 3]) }
-      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, STDOUT=>[:child, 3]) }
+      assert_raise(ArgumentError) { Process.wait spawn(*TRUECOMMAND, $stdout=>[:child, 3]) }
     }
   end
 
@@ -901,13 +904,13 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_popen_stdio
     with_tmpchdir {|d|
       assert_raise(ArgumentError) {
-        IO.popen([*ECHO["qux"], STDOUT=>STDOUT]) {|io| }
+        IO.popen([*ECHO["qux"], $stdout=>$stdout]) {|io| }
       }
-      IO.popen([*ECHO["hoge"], STDERR=>STDOUT]) {|io|
+      IO.popen([*ECHO["hoge"], $stderr=>$stdout]) {|io|
         assert_equal("hoge\n", io.read)
       }
       assert_raise(ArgumentError) {
-        IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
+        IO.popen([*ECHO["fuga"], $stdout=>"out"]) {|io| }
       }
     }
   end
@@ -944,7 +947,7 @@ class TestProcess < Test::Unit::TestCase
     def test_popen_fork_ensure
       IO.popen("-") do |io|
         if !io
-          STDERR.reopen(STDOUT)
+          $stderr.reopen($stdout) # issue is here
           raise "fooo"
         else
           assert_empty io.read
@@ -1114,8 +1117,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_duplex_io
     IO.popen("#{RUBY} -e ''", "r+") {|duplex|
-      assert_raise(ArgumentError) { system("#{RUBY} -e ''", duplex=>STDOUT) }
-      assert_raise(ArgumentError) { system("#{RUBY} -e ''", STDOUT=>duplex) }
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", duplex=>$stdout) }
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", $stdout=>duplex) }
     }
   end
 
@@ -1417,12 +1420,12 @@ class TestProcess < Test::Unit::TestCase
   def with_stdin(filename)
     File.open(filename) {|f|
       begin
-        old = STDIN.dup
+        old = $stdin.dup
         begin
-          STDIN.reopen(filename)
+          $stdin.reopen(filename)
           yield
         ensure
-          STDIN.reopen(old)
+          $stdin.reopen(old)
         end
       ensure
         old.close
@@ -1687,25 +1690,31 @@ class TestProcess < Test::Unit::TestCase
 
   if Process::UID.respond_to?(:from_name)
     def test_uid_from_name
-      if u = Etc.getpwuid(Process.uid)
-        assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
-      end
       exc = assert_raise_kind_of(ArgumentError, SystemCallError) {
         Process::UID.from_name("\u{4e0d 5b58 5728}")
       }
       assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
     end
+
+    def test_uid_from_name_ractor_unsafe
+      if u = Etc.getpwuid(Process.uid)
+        assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
+      end
+    end
   end
 
   if Process::GID.respond_to?(:from_name) && !RUBY_PLATFORM.include?("android")
     def test_gid_from_name
-      if g = Etc.getgrgid(Process.gid)
-        assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
-      end
       exc = assert_raise_kind_of(ArgumentError, SystemCallError) do
         Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
       end
       assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
+    end
+
+    def test_gid_from_name_ractor_unsafe
+      if g = Etc.getgrgid(Process.gid)
+        assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
+      end
     end
   end
 
@@ -1817,7 +1826,7 @@ class TestProcess < Test::Unit::TestCase
     exs = [Errno::ENOENT]
     exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
-    opts = {[STDOUT, STDERR]=>File::NULL}
+    opts = {[$stdout, $stderr]=>File::NULL}
     if defined?(Process::RLIMIT_NPROC)
       opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
     end
@@ -1897,7 +1906,7 @@ class TestProcess < Test::Unit::TestCase
           break f.read
         end
         Process.daemon(true, true)
-        puts STDIN.gets
+        puts $stdin.gets
       end
       assert_equal("ok?\n", data)
     end
@@ -2133,7 +2142,7 @@ EOS
         assert_equal(Marshal.load(io), Process.getsid(io.pid))
       ensure
         Process.kill(:KILL, io.pid) rescue nil
-        Process.wait(io.pid)
+        Process.wait(io.pid) rescue nil
       end
     end
   end
@@ -2604,7 +2613,7 @@ EOS
     assert_raise(Errno::ENOENT) do
       spawn('inexistent_command')
     end
-    assert_empty(Process.waitall)
+    assert_empty(Process.waitall) unless multiple_ractors?
   end
 
   def test__fork

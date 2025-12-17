@@ -336,10 +336,12 @@ class TestGc < Test::Unit::TestCase
     assert_equal true,    h[:immediate_sweep]
     assert_equal true,    h.key?(:need_major_by)
 
-    GC.stress = true
-    assert_equal :force, GC.latest_gc_info[:major_by]
-  ensure
-    GC.stress = false
+    begin
+      GC.stress = true
+      assert_equal :force, GC.latest_gc_info[:major_by]
+    ensure
+      GC.stress = false
+    end
   end
 
   def test_latest_gc_info_argument

@@ -32,7 +32,7 @@ module Test
     end
   end
 
-  self.backtrace_filter = BacktraceFilter.new
+  self.backtrace_filter = BacktraceFilter.new.freeze
 
   def self.filter_backtrace bt # :nodoc:
     backtrace_filter.filter bt
@@ -95,18 +95,21 @@ module Test
       end
 
       def assert_file
-        AssertFile
+        Ractor.current[:__AssertFile] ||= CoreAssertions.new_AssertFile
       end
 
-      FailDesc = proc do |status, message = "", out = ""|
-        now = Time.now
-        proc do
-          EnvUtil.failure_description(status, now, message, out)
+      FailDesc = Ractor.make_shareable(Ractor.current.instance_eval do
+        proc do |status, message = "", out = ""|
+          now = Time.now
+          proc do
+            EnvUtil.failure_description(status, now, message, out)
+          end
         end
-      end
+      end)
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
                             success: nil, failed: nil, gems: false, **opt)
+        pend "#{__method__}" if respond_to?(:main_ractor?) && !main_ractor?
         args = Array(args).dup
         unless gems.nil?
           args.insert((Hash === args[0] ? 1 : 0), "--#{gems ? 'enable' : 'disable'}=gems")
@@ -165,6 +168,7 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
+        omit "separate process" if respond_to?(:main_ractor?) && !main_ractor?
         # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
         pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
         # For previous versions which implemented MJIT
@@ -281,6 +285,7 @@ module Test
       end
 
       def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
+        pend "#{__method__}" if respond_to?(:main_ractor?) && !main_ractor?
         assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
         if child_env
           child_env = [child_env]
@@ -292,6 +297,7 @@ module Test
       end
 
       def assert_ruby_status(args, test_stdin="", message=nil, **opt)
+        pend "#{__method__}" if respond_to?(:main_ractor?) && !main_ractor?
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
         desc = FailDesc[status, message, out]
         assert(!status.signaled?, desc)
@@ -299,7 +305,7 @@ module Test
         assert(status.success?, desc)
       end
 
-      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM").freeze
 
       def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
@@ -315,6 +321,7 @@ module Test
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
+        pend "#{__method__}" if respond_to?(:main_ractor?) && !main_ractor?
         unless file and line
           loc, = caller_locations(1,1)
           file ||= loc.path
@@ -392,10 +399,6 @@ eom
       def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
         omit unless defined?(Ractor)
 
-        # https://bugs.ruby-lang.org/issues/21262
-        shim_value = "class Ractor; alias value take; end" unless Ractor.method_defined?(:value)
-        shim_join = "class Ractor; alias join take; end" unless Ractor.method_defined?(:join)
-
         if require
           require = [require] unless require.is_a?(Array)
           require = require.map {|r| "require #{r.inspect}"}.join("\n")
@@ -408,12 +411,10 @@ eom
         end
 
         assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
-          #{shim_value}
-          #{shim_join}
           #{require}
           previous_verbose = $VERBOSE
           $VERBOSE = nil
-          Ractor.new {} # trigger initial warning
+          Ractor.new {}.join # trigger initial warning
           $VERBOSE = previous_verbose
           #{src}
         RUBY
@@ -578,7 +579,7 @@ eom
         e
       end
 
-      TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
+      TEST_DIR = File.join(__dir__, "test/unit").freeze #:nodoc:
 
       # :call-seq:
       #   assert(test, [failure_message])
@@ -697,11 +698,17 @@ eom
 
       def assert_warning(pat, msg = nil)
         result = nil
-        stderr = EnvUtil.with_default_internal(of: pat) {
-          EnvUtil.verbose_warning {
+        if respond_to?(:multiple_ractors?) && multiple_ractors?
+          stderr = EnvUtil.verbose_warning {
             result = yield
           }
-        }
+        else
+          stderr = EnvUtil.with_default_internal(of: pat) {
+            EnvUtil.verbose_warning {
+              result = yield
+            }
+          }
+        end
         msg = message(msg) {diff pat, stderr}
         assert(pat === stderr, msg)
         result
@@ -723,27 +730,32 @@ eom
         end
       end
 
-      class << (AssertFile = Struct.new(:failure_message).new)
-        include Assertions
-        include CoreAssertions
-        def assert_file_predicate(predicate, *args)
-          if /\Anot_/ =~ predicate
-            predicate = $'
-            neg = " not"
+      def self.new_AssertFile
+        struct = Struct.new(:failure_message).new
+        # Uses method_missing, so contain it within its own object
+        class << struct
+          include Assertions
+          include CoreAssertions
+          def assert_file_predicate(predicate, *args)
+            if /\Anot_/ =~ predicate
+              predicate = $'
+              neg = " not"
+            end
+            result = File.__send__(predicate, *args)
+            result = !result if neg
+            mesg = "Expected file ".dup << args.shift.inspect
+            mesg << "#{neg} to be #{predicate}"
+            mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
+            mesg << " #{failure_message}" if failure_message
+            assert(result, mesg)
           end
-          result = File.__send__(predicate, *args)
-          result = !result if neg
-          mesg = "Expected file ".dup << args.shift.inspect
-          mesg << "#{neg} to be #{predicate}"
-          mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
-          mesg << " #{failure_message}" if failure_message
-          assert(result, mesg)
-        end
-        alias method_missing assert_file_predicate
+          alias method_missing assert_file_predicate
 
-        def for(message)
-          clone.tap {|a| a.failure_message = message}
+          def for(message)
+            clone.tap {|a| a.failure_message = message}
+          end
         end
+        struct
       end
 
       class AllFailures
@@ -872,6 +884,7 @@ eom
       # :yield: each elements of +seq+.
       def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
         pend "No PERFORMANCE_CLOCK found" unless defined?(PERFORMANCE_CLOCK)
+        pend "Timeout" if respond_to?(:main_ractor?) && !main_ractor?
 
         # Timeout testing generally doesn't work when RJIT compilation happens.
         rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
@@ -994,11 +1007,20 @@ eom
       end
 
       def self.macos?(*ver)
-        unless defined?(@macos)
-          @macos = RUBY_PLATFORM.include?('darwin') && `sw_vers -productVersion`.scan(/\d+/).map(&:to_i)
+        is_main_ractor = (!respond_to?(:main_ractor?)) || main_ractor?
+        # Don't cache @macos as class ivar if we're running in a ractor. That means we shell out
+        # each time if we're not in main ractor, but this guard isn't used often so it's fine for now.
+        if !is_main_ractor || !defined?(@macos)
+          macos = RUBY_PLATFORM.include?('darwin') && `sw_vers -productVersion`.scan(/\d+/).map(&:to_i)
         end
-        version_match? ver, @macos
+        if macos && is_main_ractor
+          @macos = macos
+        elsif is_main_ractor
+          macos = @macos
+        end
+        version_match? ver, macos
       end
+
       private def macos?(*ver)
         CoreAssertions.macos?(*ver)
       end
