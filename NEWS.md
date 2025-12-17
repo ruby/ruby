@@ -188,8 +188,8 @@ Note: We're only listing outstanding class updates.
 
 * Range
 
-    * `Range#to_set` and `Enumerator#to_set` now perform size checks to prevent
-      issues with endless ranges. [[Bug #21654]]
+    * `Range#to_set` now performs size checks to prevent issues with
+      endless ranges. [[Bug #21654]]
 
     * `Range#overlap?` now correctly handles infinite (unbounded) ranges.
       [[Bug #21185]]

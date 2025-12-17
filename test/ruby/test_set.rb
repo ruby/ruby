@@ -1003,6 +1003,12 @@ class TC_Enumerable < Test::Unit::TestCase
     set = assert_nothing_raised { enum.to_set }
     assert(set.is_a?(Set))
     assert_equal(Set[1,2,3], set)
+
+    enumerator = enum.to_enum
+
+    set = assert_nothing_raised { enumerator.to_set }
+    assert(set.is_a?(Set))
+    assert_equal(Set[1,2,3], set)
   end
 end
 
