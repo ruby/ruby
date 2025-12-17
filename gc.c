@@ -1537,34 +1537,26 @@ os_obj_of(VALUE of)
  *  Ruby process. If <i>module</i> is specified, calls the block
  *  for only those classes or modules that match (or are a subclass of)
  *  <i>module</i>. Returns the number of objects found. Immediate
- *  objects (<code>Fixnum</code>s, <code>Symbol</code>s
- *  <code>true</code>, <code>false</code>, and <code>nil</code>) are
- *  never returned. In the example below, #each_object returns both
- *  the numbers we defined and several constants defined in the Math
- *  module.
+ *  objects (such as <code>Fixnum</code>s, static <code>Symbol</code>s
+ *  <code>true</code>, <code>false</code> and <code>nil</code>) are
+ *  never returned.
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     a = 102.7
- *     b = 95       # Won't be returned
- *     c = 12345678987654321
- *     count = ObjectSpace.each_object(Numeric) {|x| p x }
+ *     Job = Class.new
+ *     jobs = [Job.new, Job.new]
+ *     count = ObjectSpace.each_object(Job) {|x| p x }
  *     puts "Total count: #{count}"
  *
  *  <em>produces:</em>
  *
- *     12345678987654321
- *     102.7
- *     2.71828182845905
- *     3.14159265358979
- *     2.22044604925031e-16
- *     1.7976931348623157e+308
- *     2.2250738585072e-308
- *     Total count: 7
+ *    #<Job:0x000000011d6cbbf0>
+ *    #<Job:0x000000011d6cbc68>
+ *     Total count: 2
  *
- *  Due to a current known Ractor implementation issue, this method will not yield
- *  Ractor-unshareable objects in multi-Ractor mode (when
- *  <code>Ractor.new</code> has been called within the process at least once).
+ *  Due to a current Ractor implementation issue, this method does not yield
+ *  Ractor-unshareable objects when the process is in multi-Ractor mode. Multi-ractor
+ *  mode is enabled when <code>Ractor.new</code> has been called for the first time.
  *  See https://bugs.ruby-lang.org/issues/19387 for more information.
  *
  *     a = 12345678987654321 # shareable
