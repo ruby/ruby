@@ -3953,6 +3953,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 
     th->ec->storage = Qnil;
+    th->ec->ractor_id = rb_ractor_id(th->ractor);
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
