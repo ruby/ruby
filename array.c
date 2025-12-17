@@ -5499,6 +5499,7 @@ rb_ary_hash(VALUE ary)
  *    [0, 1, 2].include?(2.0) # => true
  *    [0, 1, 2].include?(2.1) # => false
  *
+ *  @return [Boolean] 
  *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
