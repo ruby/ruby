@@ -4120,7 +4120,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4143,7 +4143,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
