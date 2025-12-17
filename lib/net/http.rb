@@ -724,7 +724,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.9.0"
+    VERSION = "0.9.1"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
