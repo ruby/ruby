@@ -11,6 +11,7 @@ module Prism
     autoload :Parser34, "prism/translation/parser34"
     autoload :Parser35, "prism/translation/parser35"
     autoload :Parser40, "prism/translation/parser40"
+    autoload :Parser41, "prism/translation/parser41"
     autoload :Ripper, "prism/translation/ripper"
     autoload :RubyParser, "prism/translation/ruby_parser"
   end
