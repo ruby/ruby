@@ -529,11 +529,9 @@ RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(
 rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
 	@ $(NULLCMD)
 
-ifeq ($(ENABLE_SHARED),yes)
-exts: rubyspec-capiext
-endif
+yes-test-spec: $(if $(filter yes,$(ENABLE_SHARED)),rubyspec-capiext)
 
-spec/%/ spec/%_spec.rb: programs exts PHONY
+spec/%/ spec/%_spec.rb: programs exts $(if $(filter yes,$(ENABLE_SHARED)),rubyspec-capiext) PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
