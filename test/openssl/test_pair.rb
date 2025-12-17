@@ -79,6 +79,52 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_each_char
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      chars = []
+      ret = s2.each_char { |c| chars << c }
+      assert_same(s2, ret)
+      assert_equal(["a", "b", "c"], chars)
+      chars = []
+      s2.each_char { |c| chars << c }
+      assert_equal([], chars)
+    }
+  end
+
+  def test_each_char_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal(["a", "b", "c"], s2.each_char.to_a)
+      assert_equal([], s2.each_char.to_a)
+    }
+  end
+
+  def test_each_byte
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      bytes = []
+      ret = s2.each_byte { |b| bytes << b }
+      assert_same(s2, ret)
+      assert_equal([97, 98, 99], bytes)
+      bytes = []
+      s2.each_byte { |b| bytes << b }
+      assert_equal([], bytes)
+    }
+  end
+
+  def test_each_byte_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal([97, 98, 99], s2.each_byte.to_a)
+      assert_equal([], s2.each_byte.to_a)
+    }
+  end
+
   def test_ungetc
     ssl_pair {|s1, s2|
       s1 << "abc"

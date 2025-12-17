@@ -290,12 +290,25 @@ module OpenSSL::Buffering
   end
 
   ##
+  # Calls the given block once for each character in the stream.
+
+  def each_char
+    return to_enum(__method__) unless block_given?
+    while c = getc
+      yield c
+    end
+    self
+  end
+
+  ##
   # Calls the given block once for each byte in the stream.
 
   def each_byte # :yields: byte
-    while c = getc
-      yield(c.ord)
+    return to_enum(__method__) unless block_given?
+    while c = getbyte
+      yield c
     end
+    self
   end
 
   ##
