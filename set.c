@@ -1766,7 +1766,7 @@ set_i_disjoint(VALUE set, VALUE other)
  *    set <=> other -> -1, 0, 1, or nil
  *
  *  Returns 0 if the set are equal, -1 / 1 if the set is a
- *  proper subset / superset of the given set, or or nil if
+ *  proper subset / superset of the given set, or nil if
  *  they both have unique elements.
  */
 static VALUE
