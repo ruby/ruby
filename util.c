@@ -616,3 +616,6 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 #undef hdtoa
 #define hdtoa ruby_hdtoa
 #include "missing/dtoa.c"
+
+/* Ryu algorithm for fast float-to-string conversion */
+#include "missing/ryu.c"
