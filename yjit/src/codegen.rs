@@ -7400,7 +7400,7 @@ fn gen_send_bmethod(
         let ractor_serial = unsafe { rb_yjit_cme_ractor_serial(cme) };
         asm_comment!(asm, "guard current ractor == {}", ractor_serial);
         let current_ractor_serial = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_RACTOR_ID));
-        asm.cmp(current_ractor_serial, Opnd::UImm(ractor_serial));
+        asm.cmp(current_ractor_serial, ractor_serial.into());
         asm.jne(Target::side_exit(Counter::send_bmethod_ractor));
     }
 
