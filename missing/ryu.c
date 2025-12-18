@@ -21,7 +21,7 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.
  *
- * Adapted for Ruby by Maciej Mensfeld, 2024
+ * Adapted for Ruby by Maciej Mensfeld, 2025
  */
 
 #include <assert.h>
