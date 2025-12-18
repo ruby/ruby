@@ -456,10 +456,10 @@ static int c_valid_civil_p(int, int, int, double,
 /* Forward declarations for Neri-Schneider optimized functions */
 static int c_gregorian_civil_to_jd(int y, int m, int d);
 static void c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd);
-inline static int c_gregorian_fdoy(int y);
-inline static int c_gregorian_ldoy(int y);
-inline static int c_gregorian_ldom_jd(int y, int m);
-inline static int ns_jd_in_range(int jd);
+static int c_gregorian_fdoy(int y);
+static int c_gregorian_ldoy(int y);
+static int c_gregorian_ldom_jd(int y, int m);
+static int ns_jd_in_range(int jd);
 
 static int
 c_find_fdoy(int y, double sg, int *rjd, int *ns)
@@ -809,7 +809,7 @@ static int
 c_gregorian_civil_to_jd(int y, int m, int d)
 {
     /* Shift epoch to March 1 of year 0 (Jan/Feb belong to previous year) */
-    int j  = (m < 3) ? 1 : 0;
+    int j = (m < 3) ? 1 : 0;
     int y0 = y - j;
     int m0 = j ? m + 12 : m;
     int d0 = d - 1;
