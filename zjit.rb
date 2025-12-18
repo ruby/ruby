@@ -19,6 +19,9 @@ module RubyVM::ZJIT
   if Primitive.rb_zjit_trace_exit_locations_enabled_p
     at_exit { dump_locations }
   end
+  if Primitive.rb_zjit_dump_iongraph_p
+    at_exit { collate_iongraph }
+  end
 end
 
 class << RubyVM::ZJIT
@@ -352,5 +355,21 @@ class << RubyVM::ZJIT
 
     absolute_filename = File.expand_path(filename)
     $stderr.puts("#{n_bytes} bytes written to #{absolute_filename}")
+  end
+
+  def collate_iongraph
+    pid = Process.pid
+    functions = Dir["/tmp/zjit-iongraph-#{pid}/fun*.json"].map do |path|
+      File.read(path)
+    end
+
+    json = '{"version":1,"functions":['
+    json += functions.join(',')
+    json += ']}'
+
+    filename = "zjit-iongraph-#{pid}.json"
+    File.open(filename, "wb") do |file|
+      file.write json
+    end
   end
 end

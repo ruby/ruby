@@ -320,6 +320,7 @@ VALUE rb_zjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_get_stats_file_path_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_dump_iongraph_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"

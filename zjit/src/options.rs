@@ -521,3 +521,13 @@ pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VAL
     }
     Qnil
 }
+
+// Return Qtrue if Iongraph JSON should be collated.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_dump_iongraph_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.dump_hir_iongraph) {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}

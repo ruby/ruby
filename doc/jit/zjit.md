@@ -304,11 +304,9 @@ stackprof path/to/zjit_exits_{pid}.dump
 
 ### Viewing HIR in Iongraph
 
-Using `--zjit-dump-hir-iongraph` will dump all compiled functions into a directory named `/tmp/zjit-iongraph-{PROCESS_PID}`. Each file will be named `func_{ZJIT_FUNC_NAME}.json`. In order to use them in the Iongraph viewer, you'll need to use `jq` to collate them to a single file. An example invocation of `jq` is shown below for reference.
+Using `--zjit-dump-hir-iongraph` will dump all compiled functions into a file named `zjit-iongraph-{PROCESS_PID}.json` in the current directory. It also creates a directory named `/tmp/zjit-iongraph-{PROCESS_PID}` containing the individual functions called `func_{ZJIT_FUNC_NAME}.json`.
 
-`jq --slurp --null-input '.functions=inputs | .version=1' /tmp/zjit-iongraph-{PROCESS_PID}/func*.json > ~/Downloads/ion.json`
-
-From there, you can use https://mozilla-spidermonkey.github.io/iongraph/ to view your trace.
+From there, you can use https://mozilla-spidermonkey.github.io/iongraph/ to view `zjit-iongraph-{PROCESS_PID}.json`.
 
 ### Printing ZJIT Errors
 
