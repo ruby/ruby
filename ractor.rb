@@ -371,7 +371,7 @@ class Ractor
   #
   # Checks if the object is shareable by ractors.
   #
-  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen
+  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are shareable
   #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # frozen_string_literal: true
   #     Ractor.shareable?('foo'.freeze) #=> true
   #
@@ -589,7 +589,7 @@ class Ractor
   #
   #     r = Ractor.new{ raise "foo" }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :terminated and r is terminated with an exception "foo"
+  #     port.receive #=> :aborted and r is terminated with an exception "foo"
   #
   def monitor port
     __builtin_ractor_monitor(port)
@@ -634,7 +634,7 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.shareable_proc{} -> shareable proc
+  #   Ractor.shareable_lambda{} -> shareable lambda
   #
   # Same as Ractor.shareable_proc, but returns a lambda.
   #
@@ -690,7 +690,7 @@ class Ractor
     #     Still received only one
     #     Received: message2
     #
-    # If close_incoming was called on the ractor, the method raises Ractor::ClosedError
+    # If the port is closed, the method raises Ractor::ClosedError
     # if there are no more messages in the message queue:
     #
     #     port = Ractor::Port.new
@@ -710,8 +710,8 @@ class Ractor
     # Send a message to a port to be accepted by port.receive.
     #
     #     port = Ractor::Port.new
-    #     r = Ractor.new do
-    #       r.send 'message'
+    #     r = Ractor.new(port) do |port|
+    #       port.send 'message'
     #     end
     #     value = port.receive
     #     puts "Received #{value}"
@@ -722,7 +722,7 @@ class Ractor
     #
     #     port = Ractor::Port.new
     #     r = Ractor.new(port) do |port|
-    #       port.send 'test'}
+    #       port.send 'test'
     #       puts "Sent successfully"
     #       # Prints: "Sent successfully" immediately
     #     end
@@ -752,7 +752,7 @@ class Ractor
     # call-seq:
     #    port.close
     #
-    # Close the port. On the closed port, sending is not prohibited.
+    # Close the port. On the closed port, sending is prohibited.
     # Receiving is also not allowed if there is no sent messages arrived before closing.
     #
     #     port = Ractor::Port.new
