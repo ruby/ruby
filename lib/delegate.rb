@@ -400,7 +400,7 @@ def DelegateClass(superclass, &block)
   source = []
 
   methods_to_define.each do |target_name, is_protected|
-    unless target_name.match?(/\A[a-zA-Z]\w*[!\?]?\z/)
+    unless target_name.match?(/\A[_a-zA-Z]\w*[!\?]?\z/)
       placeholder_name = :__delegate
     end
 
