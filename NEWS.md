@@ -256,6 +256,15 @@ Note: We're only listing outstanding class updates.
       waiting on a blocking IO operation when the IO operation is closed.
       [[Feature #21166]]
 
+    - Introduce `Fiber::Scheduler#yield` to allow the fiber scheduler to
+      continue processing when signal exceptions are disabled. [[feature
+      #21633]]
+
+    - Reintroduce `Fiber::Scheduler#io_close` hooks for processing `IO#close`.
+
+    - Invoke `Fiber::Scheduler#io_write` when flushing the IO write buffer.
+      [[feature #21789]]
+
 * Pathname
 
     * Pathname has been promoted from a default gem to a core class of Ruby.
