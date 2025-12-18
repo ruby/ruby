@@ -345,16 +345,10 @@ class SimpleDelegator < Delegator
 end
 
 def Delegator.delegating_block(mid) # :nodoc:
-  prok = lambda do |*args, &block|
+  lambda do |*args, &block|
     target = self.__getobj__
     target.__send__(mid, *args, &block)
-  end
-  prok.ruby2_keywords
-  if defined?(Ractor.shareable_proc)
-    Ractor.shareable_proc(&prok)
-  else
-    prok
-  end
+  end.ruby2_keywords
 end
 
 #
