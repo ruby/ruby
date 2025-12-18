@@ -187,7 +187,7 @@ ID rb_check_id(volatile VALUE *namep);
  *
  * :FIXME:  Can anyone  tell us  what is  the difference  between this  one and
  * rb_intern_str()?  As far as @shyouhei reads the implementation it seems what
- * rb_to_id() does is  is just waste some CPU time,  then call rb_intern_str().
+ * rb_to_id() does is just waste some CPU time,  then call rb_intern_str().
  * He hopes he is wrong.
  */
 ID rb_to_id(VALUE str);
