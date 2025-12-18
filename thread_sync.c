@@ -728,9 +728,14 @@ queue_memsize(const void *ptr)
 }
 
 static const rb_data_type_t queue_data_type = {
-    "queue",
-    {queue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, queue_memsize, queue_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "Thread::Queue",
+    .function = {
+        .dmark = queue_mark_and_move,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = queue_memsize,
+        .dcompact = queue_mark_and_move,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -803,9 +808,15 @@ szqueue_memsize(const void *ptr)
 }
 
 static const rb_data_type_t szqueue_data_type = {
-    "sized_queue",
-    {szqueue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, szqueue_memsize, szqueue_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "Thread::SizedQueue",
+    .function = {
+        .dmark = szqueue_mark_and_move,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = szqueue_memsize,
+        .dcompact = szqueue_mark_and_move,
+    },
+    .parent = &queue_data_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1383,23 +1394,6 @@ rb_szqueue_clear(VALUE self)
 }
 
 /*
- * Document-method: Thread::SizedQueue#length
- * call-seq:
- *   length
- *   size
- *
- * Returns the length of the queue.
- */
-
-static VALUE
-rb_szqueue_length(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    return LONG2NUM(queue_length(self, &sq->q));
-}
-
-/*
  * Document-method: Thread::SizedQueue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
@@ -1411,21 +1405,6 @@ rb_szqueue_num_waiting(VALUE self)
     struct rb_szqueue *sq = szqueue_ptr(self);
 
     return INT2NUM(sq->q.num_waiting + sq->num_waiting_push);
-}
-
-/*
- * Document-method: Thread::SizedQueue#empty?
- * call-seq: empty?
- *
- * Returns +true+ if the queue is empty.
- */
-
-static VALUE
-rb_szqueue_empty_p(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    return RBOOL(queue_length(self, &sq->q) == 0);
 }
 
 
@@ -1678,11 +1657,8 @@ Init_thread_sync(void)
     rb_define_method(rb_cSizedQueue, "close", rb_szqueue_close, 0);
     rb_define_method(rb_cSizedQueue, "max", rb_szqueue_max_get, 0);
     rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
-    rb_define_method(rb_cSizedQueue, "empty?", rb_szqueue_empty_p, 0);
     rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
-    rb_define_method(rb_cSizedQueue, "length", rb_szqueue_length, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
-    rb_define_alias(rb_cSizedQueue, "size", "length");
 
     /* CVar */
     DEFINE_CLASS(ConditionVariable, Object);

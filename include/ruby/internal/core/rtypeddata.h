@@ -615,13 +615,24 @@ RBIMPL_ATTR_ARTIFICIAL()
  * directly.
  */
 static inline void *
-rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *type)
+rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *expected_type)
 {
-    if (RB_LIKELY(RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == type)) {
-        return RTYPEDDATA_GET_DATA(obj);
+    if (RB_LIKELY(RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj))) {
+        const rb_data_type_t *actual_type = RTYPEDDATA_TYPE(obj);
+        void *data = RTYPEDDATA_GET_DATA(obj);
+        if (RB_LIKELY(actual_type == expected_type)) {
+            return data;
+        }
+
+        while (actual_type) {
+            actual_type = actual_type->parent;
+            if (actual_type == expected_type) {
+                return data;
+            }
+        }
     }
 
-    return rb_check_typeddata(obj, type);
+    return rb_check_typeddata(obj, expected_type);
 }
 
 
