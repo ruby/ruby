@@ -8,7 +8,7 @@ static VALUE rb_eClosedQueueError;
 /* Mutex */
 typedef struct rb_mutex_struct {
     rb_serial_t ec_serial;
-    VALUE thread; // even if the fiber is collected, we might need access to the thread in mutex_free
+    rb_thread_t *th; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -133,7 +133,7 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, rb_thread_ptr(mutex->thread), 0);
+        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -223,7 +223,7 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 static void
 mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    mutex->thread = th->self;
+    mutex->th = th;
     mutex->ec_serial = ec_serial;
 }
 
@@ -340,7 +340,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 }
             }
             else {
-                if (!th->vm->thread_ignore_deadlock && rb_thread_ptr(mutex->thread) == th) {
+                if (!th->vm->thread_ignore_deadlock && mutex->th == th) {
                     rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
                 }
 
@@ -391,7 +391,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 /* release mutex before checking for interrupts...as interrupt checking
                  * code might call rb_raise() */
                 if (mutex->ec_serial == ec_serial) {
-                    mutex->thread = Qfalse;
+                    mutex->th = NULL;
                     mutex->ec_serial = 0;
                 }
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
