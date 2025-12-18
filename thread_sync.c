@@ -235,7 +235,7 @@ mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 }
 
 static inline bool
-mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+do_mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
     if (mutex->ec_serial == 0) {
         RUBY_DEBUG_LOG("%p ok", mutex);
@@ -252,7 +252,7 @@ mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 static VALUE
 rb_mut_trylock(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(mutex_trylock(mutex_ptr(self), ec->thread_ptr, rb_ec_serial(ec)));
+    return RBOOL(do_mutex_trylock(mutex_ptr(self), ec->thread_ptr, rb_ec_serial(ec)));
 }
 
 VALUE
@@ -315,7 +315,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
-    if (!mutex_trylock(mutex, th, ec_serial)) {
+    if (!do_mutex_trylock(mutex, th, ec_serial)) {
         if (mutex->ec_serial == ec_serial) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
