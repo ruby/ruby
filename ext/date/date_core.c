@@ -863,9 +863,7 @@ static void
 c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd)
 {
     int r0, n1, q1, r1, n2, q2, r2, n3, q3, r3, y0, j;
-#ifdef HAVE_LONG_LONG
-    unsigned LONG_LONG u2;
-#endif
+    uint64_t u2;
 
     /* Convert JDN to rata die (March 1, Year 0 epoch) */
     r0 = jd - NS_EPOCH;
@@ -878,16 +876,10 @@ c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd)
 
     /* Calculate year within century and day of year */
     n2 = 4 * r1 + 3;
-#ifdef HAVE_LONG_LONG
     /* Use 64-bit arithmetic to avoid overflow */
-    u2 = (unsigned LONG_LONG)NS_YEAR_MULTIPLIER * (unsigned LONG_LONG)n2;
+    u2 = (uint64_t)NS_YEAR_MULTIPLIER * (uint64_t)n2;
     q2 = (int)(u2 >> 32);
-    r2 = (int)((unsigned int)u2 / NS_YEAR_MULTIPLIER / 4);
-#else
-    /* Fallback for systems without 64-bit integers */
-    q2 = n2 / NS_DAYS_IN_4_YEARS;
-    r2 = (n2 % NS_DAYS_IN_4_YEARS) / 4;
-#endif
+    r2 = (int)((uint32_t)u2 / NS_YEAR_MULTIPLIER / 4);
 
     /* Calculate month and day using integer arithmetic */
     n3 = NS_MONTH_COEFF * r2 + NS_MONTH_OFFSET;
