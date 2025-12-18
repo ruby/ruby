@@ -1948,7 +1948,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   self < other ->true, false, or nil
+ *   self < other -> true, false, or nil
  *
  * Returns whether +self+ is a subclass of +other+,
  * or +nil+ if there is no relationship between the two:
