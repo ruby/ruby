@@ -1068,13 +1068,12 @@ f_lambda(VALUE _)
  *  Document-method: Proc#yield
  *
  *  call-seq:
- *     prc.call(params,...)   -> obj
- *     prc[params,...]        -> obj
- *     prc.(params,...)       -> obj
- *     prc.yield(params,...)  -> obj
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     yield(...) -> obj
  *
- *  Invokes the block, setting the block's parameters to the values in
- *  <i>params</i> using something close to method calling semantics.
+ *  Invokes the block, setting the block's parameters to the arguments
+ *  using something close to method calling semantics.
  *  Returns the value of the last expression evaluated in the block.
  *
  *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
