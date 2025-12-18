@@ -2635,9 +2635,6 @@ io_fillbuf(rb_io_t *fptr)
         fptr->rbuf.len = 0;
         fptr->rbuf.capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
-#ifdef _WIN32
-        fptr->rbuf.capa--;
-#endif
     }
     if (fptr->rbuf.len == 0) {
       retry:
@@ -3305,10 +3302,6 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 static int
 io_setstrbuf(VALUE *str, long len)
 {
-#ifdef _WIN32
-    if (len > 0)
-        len = (len + 1) & ~1L;	/* round up for wide char */
-#endif
     if (NIL_P(*str)) {
         *str = rb_str_new(0, len);
         return TRUE;
