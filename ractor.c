@@ -953,36 +953,16 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *
  *  Raised when an attempt is made to send a message to a closed port,
  *  or to retrieve a message from a closed and empty port.
- *  Ports may be closed explicitly with Ractor#close_outgoing/close_incoming
+ *  Ports may be closed explicitly with Ractor::Port#close
  *  and are closed implicitly when a Ractor terminates.
  *
- *     r = Ractor.new { sleep(500) }
- *     r.close_outgoing
- *     r.take # Ractor::ClosedError
+ *     port = Ractor::Port.new
+ *     port.close
+ *     port << "test"  # Ractor::ClosedError
+ *     port.receive    # Ractor::ClosedError
  *
- *  ClosedError is a descendant of StopIteration, so the closing of the ractor will break
- *  the loops without propagating the error:
- *
- *     r = Ractor.new do
- *       loop do
- *         msg = receive # raises ClosedError and loop traps it
- *         puts "Received: #{msg}"
- *       end
- *       puts "loop exited"
- *     end
- *
- *     3.times{|i| r << i}
- *     r.close_incoming
- *     r.take
- *     puts "Continue successfully"
- *
- *  This will print:
- *
- *     Received: 0
- *     Received: 1
- *     Received: 2
- *     loop exited
- *     Continue successfully
+ *  ClosedError is a descendant of StopIteration, so the closing of a port will break
+ *  out of loops without propagating the error.
  */
 
 /*
@@ -995,14 +975,14 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Ractor::RemoteError
  *
- *  Raised on attempt to Ractor#take if there was an uncaught exception in the Ractor.
+ *  Raised on Ractor#join or Ractor#value if there was an uncaught exception in the Ractor.
  *  Its +cause+ will contain the original exception, and +ractor+ is the original ractor
  *  it was raised in.
  *
  *     r = Ractor.new { raise "Something weird happened" }
  *
  *     begin
- *       r.take
+ *       r.value
  *     rescue => e
  *       p e             # => #<Ractor::RemoteError: thrown by remote Ractor.>
  *       p e.ractor == r # => true
@@ -1014,7 +994,7 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Ractor::MovedError
  *
- *  Raised on an attempt to access an object which was moved in Ractor#send or Ractor.yield.
+ *  Raised on an attempt to access an object which was moved in Ractor#send or Ractor::Port#send.
  *
  *     r = Ractor.new { sleep }
  *
@@ -1029,7 +1009,7 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *  Document-class: Ractor::MovedObject
  *
  *  A special object which replaces any value that was moved to another ractor in Ractor#send
- *  or Ractor.yield. Any attempt to access the object results in Ractor::MovedError.
+ *  or Ractor::Port#send. Any attempt to access the object results in Ractor::MovedError.
  *
  *     r = Ractor.new { receive }
  *
