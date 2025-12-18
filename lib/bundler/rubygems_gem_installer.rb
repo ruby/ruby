@@ -124,10 +124,18 @@ module Bundler
     end
 
     def build_jobs
-      Bundler.settings[:jobs] || super
+      @jobserver_read_io&.read_nonblock(3, @jobserver_tokens)
+      available_jobs = @jobserver_tokens.empty? ? nil : @jobserver_tokens.size
+
+      available_jobs || Bundler.settings[:jobs] || super
+    rescue IO::WaitReadable
+      1
     end
 
     def build_extensions
+      @jobserver_tokens = +""
+      @jobserver_read_io, @jobserver_write_io = connect_to_jobserver
+
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir
       unless extension_cache_path && extension_dir
@@ -151,6 +159,11 @@ module Bundler
           FileUtils.cp_r extension_dir, extension_cache_path
         end
       end
+    ensure
+      unless @jobserver_tokens.empty?
+        @jobserver_write_io.write(@jobserver_tokens)
+        @jobserver_write_io.flush
+      end
     end
 
     def spec
@@ -166,6 +179,15 @@ module Bundler
     end
 
     private
+
+    def connect_to_jobserver
+      return unless ENV["MAKEFLAGS"]
+      read_fd, write_fd = ENV["MAKEFLAGS"].match(/--jobserver-auth=(\d+),(\d+)/)&.captures
+
+      return unless read_fd && write_fd
+
+      [IO.new(read_fd.to_i, autoclose: false), IO.new(write_fd.to_i, autoclose: false)]
+    end
 
     def prepare_extension_build(extension_dir)
       SharedHelpers.filesystem_access(extension_dir, :create) do
