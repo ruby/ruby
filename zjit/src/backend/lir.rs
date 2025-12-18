@@ -94,7 +94,9 @@ impl BasicBlock {
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx < self.live_ranges.len());
+                    assert!(idx < self.live_ranges.len(),
+                        "VReg index out of bounds: idx={}, live_ranges.len()={} insn={:?}",
+                        opnd, self.live_ranges.len(), insn);
                     assert_ne!(self.live_ranges[idx].end, None);
                     self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
                 }
@@ -1513,11 +1515,13 @@ impl Assembler
     }
 
     // Create a new LIR basic block.  Returns the newly created block
-    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool) -> BlockId {
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool, set_current: bool) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
         let lir_bb = BasicBlock::new(bb_id, hir_block_id, entry);
         self.basic_blocks.push(lir_bb);
-        self.set_current_block(bb_id);
+        if set_current {
+            self.set_current_block(bb_id);
+        }
         bb_id
     }
 

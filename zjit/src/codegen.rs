@@ -177,7 +177,7 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
 pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    asm.new_block(BlockId(usize::MAX), true);
+    asm.new_block(BlockId(usize::MAX), true, true);
     gen_entry_prologue(&mut asm);
 
     // Jump to the first block using a call instruction. This trampoline is used
@@ -273,7 +273,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for &block_id in reverse_post_order.iter() {
-        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id));
+        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), false);
         hir_to_lir.insert(block_id, lir_block_id);
     }
 
@@ -281,8 +281,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     for &block_id in reverse_post_order.iter() {
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
-        // let lir_block_id = hir_to_lir[&block_id];
-        asm.set_current_block(lir::BlockId(0));
+        let lir_block_id = hir_to_lir[&block_id];
+        asm.set_current_block(lir_block_id);
 
         // Write a label to jump to the basic block
         let label = jit.get_label(&mut asm, block_id);
@@ -308,15 +308,43 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // Compile all instructions
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
-            if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
-                debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
-                gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledHIRInsn(insn_id), &function.frame_state(last_snapshot));
-                // Don't bother generating code after a side-exit. We won't run it.
-                // TODO(max): Generate ud2 or equivalent.
-                break;
-            };
-            // It's fine; we generated the instruction
+            match insn {
+                Insn::IfFalse { val, target } => {
+                    let val_opnd = jit.get_opnd(val);
+
+                    let lir_target = hir_to_lir[&target.target];
+
+                    let fall_through_target = asm.new_block(block_id, false, false);
+
+                    let branch_edge = lir::BranchEdge {
+                        target: lir_target,
+                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                    };
+
+                    let fall_through_edge = lir::BranchEdge {
+                        target: fall_through_target,
+                        args: vec![]
+                    };
+
+                    gen_if_false(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
+                    asm.set_current_block(fall_through_target);
+                },
+                Insn::Jump(target) => {
+                    let lir_target = hir_to_lir[&target.target];
+                    gen_jump(&mut jit, &mut asm, lir_target);
+                },
+                _ => {
+                    if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
+                        debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
+                        gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
+                        gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledHIRInsn(insn_id), &function.frame_state(last_snapshot));
+                        // Don't bother generating code after a side-exit. We won't run it.
+                        // TODO(max): Generate ud2 or equivalent.
+                        break;
+                    };
+                    // It's fine; we generated the instruction
+                }
+            }
         }
         // Make sure the last patch point has enough space to insert a jump
         asm.pad_patch_point();
@@ -412,9 +440,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
-        Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
-        Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
@@ -528,6 +554,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { state, .. }
         | &Insn::Throw { state, .. }
         => return Err(state),
+        &Insn::IfFalse { .. }
+        | &Insn::Jump { .. } => unreachable!(),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
@@ -797,6 +825,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) {
     let invariant = *invariant;
+    println!("state {:?}", state);
     let exit = build_side_exit(jit, state);
 
     // Let compile_exits compile a side exit. Let scratch_split lower it with split_patch_point.
@@ -1254,13 +1283,9 @@ fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
 }
 
 /// Compile a jump to a basic block
-fn gen_jump(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
-    // Set basic block arguments
-    gen_branch_params(jit, asm, branch);
-
+fn gen_jump(_jit: &mut JITState, asm: &mut Assembler, branch: lir::BlockId) {
     // Jump to the basic block
-    let target = jit.get_label(asm, branch.target);
-    asm.jmp(target);
+    asm.jmp(Target::Block(lir::BranchEdge { target: branch, args: vec![] }));
 }
 
 /// Compile a conditional branch to a basic block
@@ -1280,19 +1305,11 @@ fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: 
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) {
+fn gen_if_false(_jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
     // If val is not zero, move on to the next instruction.
-    let if_true = asm.new_label("if_true");
     asm.test(val, val);
-    asm.jnz(if_true.clone());
-
-    // If val is zero, set basic block arguments and jump to the branch target.
-    // TODO: Consider generating the loads out-of-line
-    let if_false = jit.get_label(asm, branch.target);
-    gen_branch_params(jit, asm, branch);
-    asm.jmp(if_false);
-
-    asm.write_label(if_true);
+    asm.jnz(Target::Block(fall_through));
+    asm.jmp(Target::Block(branch));
 }
 
 /// Compile a dynamic dispatch with block
@@ -2632,7 +2649,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_block(BlockId(usize::MAX), true);
+    asm.new_block(BlockId(usize::MAX), true, true);
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
@@ -2650,7 +2667,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 /// See [gen_function_stub] for how it's used.
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_block(BlockId(usize::MAX), true);
+    asm.new_block(BlockId(usize::MAX), true, true);
     asm_comment!(asm, "function_stub_hit trampoline");
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
@@ -2691,7 +2708,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 /// Generate a trampoline that is used when a function exits without restoring PC and the stack
 pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm.new_block(BlockId(usize::MAX), true);
+    asm.new_block(BlockId(usize::MAX), true, true);
 
     asm_comment!(asm, "side-exit trampoline");
     asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
@@ -2914,7 +2931,7 @@ impl IseqCall {
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
         cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
             let mut asm = Assembler::new();
-            asm.new_block(BlockId(usize::MAX), true);
+            asm.new_block(BlockId(usize::MAX), true, true);
             callback(&mut asm);
             asm.compile(cb).unwrap();
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
