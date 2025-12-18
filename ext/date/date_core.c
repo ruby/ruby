@@ -7,7 +7,6 @@
 #include "ruby/util.h"
 #include <math.h>
 #include <time.h>
-#include <stdint.h>  /* For uint64_t in Neri-Schneider algorithm */
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif
@@ -453,6 +452,9 @@ do {\
 static int c_valid_civil_p(int, int, int, double,
 			   int *, int *, int *, int *);
 
+/* Check if using pure Gregorian calendar (sg == -Infinity) */
+#define c_gregorian_only_p(sg) (isinf(sg) && (sg) < 0)
+
 /* Forward declarations for Neri-Schneider optimized functions */
 static int c_gregorian_civil_to_jd(int y, int m, int d);
 static void c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd);
@@ -467,7 +469,7 @@ c_find_fdoy(int y, double sg, int *rjd, int *ns)
     int d, rm, rd;
 
     /* Fast path: pure Gregorian calendar */
-    if (isinf(sg) && sg < 0) {
+    if (c_gregorian_only_p(sg)) {
 	*rjd = c_gregorian_fdoy(y);
 	*ns = 1;
 	return 1;
@@ -486,7 +488,7 @@ c_find_ldoy(int y, double sg, int *rjd, int *ns)
     int i, rm, rd;
 
     /* Fast path: pure Gregorian calendar */
-    if (isinf(sg) && sg < 0) {
+    if (c_gregorian_only_p(sg)) {
 	*rjd = c_gregorian_ldoy(y);
 	*ns = 1;
 	return 1;
@@ -519,7 +521,7 @@ c_find_ldom(int y, int m, double sg, int *rjd, int *ns)
     int i, rm, rd;
 
     /* Fast path: pure Gregorian calendar */
-    if (isinf(sg) && sg < 0) {
+    if (c_gregorian_only_p(sg)) {
 	*rjd = c_gregorian_ldom_jd(y, m);
 	*ns = 1;
 	return 1;
@@ -537,8 +539,8 @@ c_civil_to_jd(int y, int m, int d, double sg, int *rjd, int *ns)
 {
     int jd;
 
-    /* Fast path: pure Gregorian calendar (sg == -infinity) */
-    if (isinf(sg) && sg < 0) {
+    /* Fast path: pure Gregorian calendar */
+    if (c_gregorian_only_p(sg)) {
 	*rjd = c_gregorian_civil_to_jd(y, m, d);
 	*ns = 1;
 	return;
@@ -570,7 +572,7 @@ static void
 c_jd_to_civil(int jd, double sg, int *ry, int *rm, int *rdom)
 {
     /* Fast path: pure Gregorian or date after switchover, within safe range */
-    if (((isinf(sg) && sg < 0) || jd >= sg) && ns_jd_in_range(jd)) {
+    if ((c_gregorian_only_p(sg) || jd >= sg) && ns_jd_in_range(jd)) {
 	c_gregorian_jd_to_civil(jd, ry, rm, rdom);
 	return;
     }
@@ -789,7 +791,40 @@ c_gregorian_last_day_of_month(int y, int m)
  */
 
 /* JDN of March 1, Year 0 in proleptic Gregorian calendar */
-#define NS_GREGORIAN_EPOCH 1721120
+#define NS_EPOCH 1721120
+
+/* Days in a 4-year cycle (3 normal years + 1 leap year) */
+#define NS_DAYS_IN_4_YEARS 1461
+
+/* Days in a 400-year Gregorian cycle (97 leap years in 400 years) */
+#define NS_DAYS_IN_400_YEARS 146097
+
+/* Years per century */
+#define NS_YEARS_PER_CENTURY 100
+
+/*
+ * Multiplier for extracting year within century using fixed-point arithmetic.
+ * This is ceil(2^32 / NS_DAYS_IN_4_YEARS) for the Euclidean affine function.
+ */
+#define NS_YEAR_MULTIPLIER 2939745
+
+/*
+ * Coefficients for month calculation from day-of-year.
+ * Maps day-of-year to month using: month = (NS_MONTH_COEFF * doy + NS_MONTH_OFFSET) >> 16
+ */
+#define NS_MONTH_COEFF 2141
+#define NS_MONTH_OFFSET 197913
+
+/*
+ * Coefficients for civil date to JDN month contribution.
+ * Maps month to accumulated days: days = (NS_CIVIL_MONTH_COEFF * m - NS_CIVIL_MONTH_OFFSET) / 32
+ */
+#define NS_CIVIL_MONTH_COEFF 979
+#define NS_CIVIL_MONTH_OFFSET 2919
+#define NS_CIVIL_MONTH_DIVISOR 32
+
+/* Days from March 1 to December 31 (for Jan/Feb year adjustment) */
+#define NS_DAYS_BEFORE_NEW_YEAR 306
 
 /*
  * Safe bounds for Neri-Schneider algorithm to avoid integer overflow.
@@ -815,14 +850,14 @@ c_gregorian_civil_to_jd(int y, int m, int d)
     int d0 = d - 1;
 
     /* Calculate year contribution with leap year correction */
-    int q1 = DIV(y0, 100);
-    int yc = DIV(1461 * y0, 4) - q1 + DIV(q1, 4);
+    int q1 = DIV(y0, NS_YEARS_PER_CENTURY);
+    int yc = DIV(NS_DAYS_IN_4_YEARS * y0, 4) - q1 + DIV(q1, 4);
 
     /* Calculate month contribution using integer arithmetic */
-    int mc = (979 * m0 - 2919) / 32;
+    int mc = (NS_CIVIL_MONTH_COEFF * m0 - NS_CIVIL_MONTH_OFFSET) / NS_CIVIL_MONTH_DIVISOR;
 
     /* Combine and add epoch offset to get JDN */
-    return yc + mc + d0 + NS_GREGORIAN_EPOCH;
+    return yc + mc + d0 + NS_EPOCH;
 }
 
 /* Optimized: Julian Day Number -> Gregorian date */
@@ -830,33 +865,42 @@ static void
 c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd)
 {
     int r0, n1, q1, r1, n2, q2, r2, n3, q3, r3, y0, j;
-    uint64_t u2;
+#ifdef HAVE_LONG_LONG
+    unsigned LONG_LONG u2;
+#endif
 
     /* Convert JDN to rata die (March 1, Year 0 epoch) */
-    r0 = jd - NS_GREGORIAN_EPOCH;
+    r0 = jd - NS_EPOCH;
 
     /* Extract century and day within 400-year cycle */
     /* Use Euclidean (floor) division for negative values */
     n1 = 4 * r0 + 3;
-    q1 = DIV(n1, 146097);                   /* Century */
-    r1 = MOD(n1, 146097) / 4;               /* Day within 400-year cycle */
+    q1 = DIV(n1, NS_DAYS_IN_400_YEARS);
+    r1 = MOD(n1, NS_DAYS_IN_400_YEARS) / 4;
 
-    /* Use 64-bit arithmetic for year calculation within century */
+    /* Calculate year within century and day of year */
     n2 = 4 * r1 + 3;
-    u2 = (uint64_t)2939745 * (uint64_t)n2;
-    q2 = (int)(u2 >> 32);                   /* Year within century */
-    r2 = (int)((uint32_t)u2 / 2939745 / 4); /* Day of year */
+#ifdef HAVE_LONG_LONG
+    /* Use 64-bit arithmetic to avoid overflow */
+    u2 = (unsigned LONG_LONG)NS_YEAR_MULTIPLIER * (unsigned LONG_LONG)n2;
+    q2 = (int)(u2 >> 32);
+    r2 = (int)((unsigned int)u2 / NS_YEAR_MULTIPLIER / 4);
+#else
+    /* Fallback for systems without 64-bit integers */
+    q2 = n2 / NS_DAYS_IN_4_YEARS;
+    r2 = (n2 % NS_DAYS_IN_4_YEARS) / 4;
+#endif
 
     /* Calculate month and day using integer arithmetic */
-    n3 = 2141 * r2 + 197913;
-    q3 = n3 >> 16;                          /* Month (3-14) */
-    r3 = (n3 & 0xFFFF) / 2141;              /* Day of month (0-based) */
+    n3 = NS_MONTH_COEFF * r2 + NS_MONTH_OFFSET;
+    q3 = n3 >> 16;
+    r3 = (n3 & 0xFFFF) / NS_MONTH_COEFF;
 
     /* Combine century and year */
-    y0 = 100 * q1 + q2;
+    y0 = NS_YEARS_PER_CENTURY * q1 + q2;
 
     /* Adjust for January/February (shift from fiscal year) */
-    j = (r2 >= 306) ? 1 : 0;
+    j = (r2 >= NS_DAYS_BEFORE_NEW_YEAR) ? 1 : 0;
 
     *ry = y0 + j;
     *rm = j ? q3 - 12 : q3;
