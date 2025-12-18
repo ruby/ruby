@@ -267,7 +267,7 @@ class Ractor
   #
   # TBD
   def self.select(*ports)
-    raise ArgumentError, 'specify at least one ractor or `yield_value`' if ports.empty?
+    raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
     monitors = {} # Ractor::Port => Ractor
 
