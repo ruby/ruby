@@ -276,10 +276,15 @@ box_entry_free(void *ptr)
 static size_t
 box_entry_memsize(const void *ptr)
 {
+    size_t size = sizeof(rb_box_t);
     const rb_box_t *box = (const rb_box_t *)ptr;
-    return sizeof(rb_box_t) + \
-        rb_st_memsize(box->loaded_features_index) + \
-        rb_st_memsize(box->loading_table);
+    if (box->loaded_features_index) {
+        size += rb_st_memsize(box->loaded_features_index);
+    }
+    if (box->loading_table) {
+        size += rb_st_memsize(box->loading_table);
+    }
+    return size;
 }
 
 static const rb_data_type_t rb_box_data_type = {
