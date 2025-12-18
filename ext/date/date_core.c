@@ -455,6 +455,24 @@ static int c_valid_civil_p(int, int, int, double,
 /* Check if using pure Gregorian calendar (sg == -Infinity) */
 #define c_gregorian_only_p(sg) (isinf(sg) && (sg) < 0)
 
+/*
+ * Fast path macros for pure Gregorian calendar.
+ * Sets *rjd to the JD value, *ns to 1 (new style), and returns.
+ */
+#define GREGORIAN_JD_FAST_PATH_RET(sg, jd_expr, rjd, ns) \
+    if (c_gregorian_only_p(sg)) { \
+	*(rjd) = (jd_expr); \
+	*(ns) = 1; \
+	return 1; \
+    }
+
+#define GREGORIAN_JD_FAST_PATH(sg, jd_expr, rjd, ns) \
+    if (c_gregorian_only_p(sg)) { \
+	*(rjd) = (jd_expr); \
+	*(ns) = 1; \
+	return; \
+    }
+
 /* Forward declarations for Neri-Schneider optimized functions */
 static int c_gregorian_civil_to_jd(int y, int m, int d);
 static void c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd);
@@ -468,12 +486,7 @@ c_find_fdoy(int y, double sg, int *rjd, int *ns)
 {
     int d, rm, rd;
 
-    /* Fast path: pure Gregorian calendar */
-    if (c_gregorian_only_p(sg)) {
-	*rjd = c_gregorian_fdoy(y);
-	*ns = 1;
-	return 1;
-    }
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_fdoy(y), rjd, ns);
 
     /* Keep existing loop for Julian/reform period */
     for (d = 1; d < 31; d++)
@@ -487,12 +500,7 @@ c_find_ldoy(int y, double sg, int *rjd, int *ns)
 {
     int i, rm, rd;
 
-    /* Fast path: pure Gregorian calendar */
-    if (c_gregorian_only_p(sg)) {
-	*rjd = c_gregorian_ldoy(y);
-	*ns = 1;
-	return 1;
-    }
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_ldoy(y), rjd, ns);
 
     /* Keep existing loop for Julian/reform period */
     for (i = 0; i < 30; i++)
@@ -520,12 +528,7 @@ c_find_ldom(int y, int m, double sg, int *rjd, int *ns)
 {
     int i, rm, rd;
 
-    /* Fast path: pure Gregorian calendar */
-    if (c_gregorian_only_p(sg)) {
-	*rjd = c_gregorian_ldom_jd(y, m);
-	*ns = 1;
-	return 1;
-    }
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_ldom_jd(y, m), rjd, ns);
 
     /* Keep existing loop for Julian/reform period */
     for (i = 0; i < 30; i++)
@@ -539,12 +542,7 @@ c_civil_to_jd(int y, int m, int d, double sg, int *rjd, int *ns)
 {
     int jd;
 
-    /* Fast path: pure Gregorian calendar */
-    if (c_gregorian_only_p(sg)) {
-	*rjd = c_gregorian_civil_to_jd(y, m, d);
-	*ns = 1;
-	return;
-    }
+    GREGORIAN_JD_FAST_PATH(sg, c_gregorian_civil_to_jd(y, m, d), rjd, ns);
 
     /* Calculate Gregorian JD using optimized algorithm */
     jd = c_gregorian_civil_to_jd(y, m, d);
