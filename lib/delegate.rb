@@ -40,7 +40,7 @@
 #
 class Delegator < BasicObject
   # The version string
-  VERSION = "0.6.0"
+  VERSION = "0.6.1"
 
   kernel = ::Kernel.dup
   kernel.class_eval do
