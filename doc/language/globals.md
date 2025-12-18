@@ -330,8 +330,6 @@ The value returned by method ARGF.filename.
 
 ### `$DEBUG`
 
-Initially `true` if command-line option `-d` or `--debug` is given,
-otherwise initially `false`;
 Initially `true` if [command-line option `-d`] or
 [`--debug`][command-line option `-d`] is given, otherwise initially `false`;
 may be set to either value in the running program.
@@ -342,8 +340,6 @@ Aliased as `$-d`.
 
 ### `$VERBOSE`
 
-Initially `true` if command-line option `-v` or `-w` is given,
-otherwise initially `false`;
 Initially `true` if [command-line option `-v`] or
 [`-w`][command-line option `-w`] is given, otherwise initially `false`;
 may be set to either value, or to `nil`, in the running program.
@@ -360,9 +356,6 @@ Aliased as `$-v` and `$-w`.
 
 Whether command-line option `-a` was given; read-only.
 
-### `$-i`
-
-Contains the extension given with command-line option `-i`,
 ### `$-F`
 
 The default field separator in String#split; must be a String or a
@@ -390,11 +383,6 @@ Whether command-line option `-l` was set; read-only.
 
 ### `$-p`
 
-Whether command-line option `-p` was given; read-only.
-Whether [command-line option `-l`] was set; read-only.
-
-### `$-p`
-
 Whether [command-line option `-p`] was given; read-only.
 
 ### `$F`
@@ -409,8 +397,6 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 
 ### `$,`
 
-### `$;`
-
 # Pre-Defined Global Constants
 
 ## Summary
@@ -418,7 +404,6 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 ### Streams
 
 | Constant | Contains                |
-|----------|-------------------------|
 |:--------:|-------------------------|
 | `STDIN`  | Standard input stream.  |
 | `STDOUT` | Standard output stream. |
@@ -447,19 +432,6 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 |      Constant         | Contains                                                                      |
 |:---------------------:|-------------------------------------------------------------------------------|
 |        `DATA`         | File containing embedded data (lines following `__END__`, if any).            |
-|         `ENV`         | Hash of current environment variable names and values.                        |
-|        `ARGF`         | String concatenation of files given on the command line, or `$stdin` if none. |
-|        `ARGV`         | Array of the given command-line arguments.                                    |
-|  `TOPLEVEL_BINDING`   | Binding of the top level scope.                                               |
-|    `RUBY_VERSION`     | String Ruby version.                                                          |
-|  `RUBY_RELEASE_DATE`  | String Ruby release date.                                                     |
-|    `RUBY_PLATFORM`    | String Ruby platform.                                                         |
-|  `RUBY_PATCH_LEVEL`   | String Ruby patch level.                                                      |
-|    `RUBY_REVISION`    | String Ruby revision.                                                         |
-|   `RUBY_COPYRIGHT`    | String Ruby copyright.                                                        |
-|     `RUBY_ENGINE`     | String Ruby engine.                                                           |
-| `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
-|  `RUBY_DESCRIPTION`   | String Ruby description.                                                      |
 
 ## Streams
 
