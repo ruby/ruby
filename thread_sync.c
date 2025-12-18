@@ -839,13 +839,13 @@ ary_buf_new(void)
     return rb_ary_hidden_new(1);
 }
 
-static VALUE
+static inline VALUE
 check_array(VALUE obj, VALUE ary)
 {
-    if (!RB_TYPE_P(ary, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
+    if (RB_LIKELY(ary)) {
+        return ary;
     }
-    return ary;
+    rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
 }
 
 static long
