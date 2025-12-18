@@ -139,9 +139,11 @@ wmap_memsize(const void *ptr)
     const struct weakmap *w = ptr;
 
     size_t size = 0;
-    size += st_memsize(w->table);
-    /* The key and value of the table each take sizeof(VALUE) in size. */
-    size += st_table_size(w->table) * (2 * sizeof(VALUE));
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* The key and value of the table each take sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * (2 * sizeof(VALUE));
+    }
 
     return size;
 }
@@ -689,9 +691,11 @@ wkmap_memsize(const void *ptr)
     const struct weakkeymap *w = ptr;
 
     size_t size = 0;
-    size += st_memsize(w->table);
-    /* Each key of the table takes sizeof(VALUE) in size. */
-    size += st_table_size(w->table) * sizeof(VALUE);
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* Each key of the table takes sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * sizeof(VALUE);
+    }
 
     return size;
 }
