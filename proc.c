@@ -685,7 +685,7 @@ bind_implicit_parameters(VALUE bindval)
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
 
-    if (RBOOL(get_local_variable_ptr(&env, idItImplicit, FALSE))) {
+    if (get_local_variable_ptr(&env, idItImplicit, FALSE)) {
         return rb_ary_new_from_args(1, ID2SYM(idIt));
     }
 
