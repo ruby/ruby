@@ -260,7 +260,7 @@ Note: We're only listing outstanding class updates.
       continue processing when signal exceptions are disabled. [[feature
       #21633]]
 
-    - Reintroduce `Fiber::Scheduler#io_close` hooks for processing `IO#close`.
+    - Reintroduce the `Fiber::Scheduler#io_close` hook for asynchronous `IO#close`.
 
     - Invoke `Fiber::Scheduler#io_write` when flushing the IO write buffer.
       [[feature #21789]]
