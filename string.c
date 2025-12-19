@@ -286,6 +286,8 @@ static VALUE str_new(VALUE klass, const char *ptr, long len);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
 static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
+static VALUE rb_str_tr(VALUE str, VALUE src, VALUE repl);
+static VALUE rb_str_tr_bang(VALUE str, VALUE src, VALUE repl);
 static inline VALUE str_alloc_embed(VALUE klass, size_t capa);
 
 static inline void
@@ -6331,6 +6333,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         hash = rb_check_hash_type(argv[1]);
         if (NIL_P(hash)) {
             StringValue(repl);
+
+            if (RSTRING_LEN(repl) <= 1 &&
+                OBJ_BUILTIN_TYPE(argv[0]) == T_STRING &&
+                RSTRING_LEN(argv[0]) == 1) {
+                /* Simpler cases handled in a more optimized manner by `tr` */
+                if (bang) {
+                    return rb_str_tr_bang(str, argv[0], repl);
+                } else {
+                    return rb_str_tr(str, argv[0], repl);
+                }
+            }
         }
         else if (rb_hash_default_unredefined(hash) && !FL_TEST_RAW(hash, RHASH_PROC_DEFAULT)) {
             mode = FAST_MAP;
