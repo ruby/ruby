@@ -789,16 +789,8 @@ static NODE *
 get_nd_recv(const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_CALL:
-        return RNODE_CALL(node)->nd_recv;
-      case NODE_OPCALL:
-        return RNODE_OPCALL(node)->nd_recv;
-      case NODE_FCALL:
-        return 0;
-      case NODE_QCALL:
-        return RNODE_QCALL(node)->nd_recv;
-      case NODE_VCALL:
-        return 0;
+      case RB_CALL_NODE:
+        return RB_NODE_CALL(node)->receiver;
       case NODE_ATTRASGN:
         return RNODE_ATTRASGN(node)->nd_recv;
       case NODE_OP_ASGN1:
@@ -814,16 +806,8 @@ static ID
 get_node_call_nd_mid(const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_CALL:
-        return RNODE_CALL(node)->nd_mid;
-      case NODE_OPCALL:
-        return RNODE_OPCALL(node)->nd_mid;
-      case NODE_FCALL:
-        return RNODE_FCALL(node)->nd_mid;
-      case NODE_QCALL:
-        return RNODE_QCALL(node)->nd_mid;
-      case NODE_VCALL:
-        return RNODE_VCALL(node)->nd_mid;
+      case RB_CALL_NODE:
+        return RB_NODE_CALL(node)->name;
       case NODE_ATTRASGN:
         return RNODE_ATTRASGN(node)->nd_mid;
       default:
@@ -831,20 +815,12 @@ get_node_call_nd_mid(const NODE *node)
     }
 }
 
-static NODE *
+static rb_arguments_node_t *
 get_nd_args(const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_CALL:
-        return RNODE_CALL(node)->nd_args;
-      case NODE_OPCALL:
-        return RNODE_OPCALL(node)->nd_args;
-      case NODE_FCALL:
-        return RNODE_FCALL(node)->nd_args;
-      case NODE_QCALL:
-        return RNODE_QCALL(node)->nd_args;
-      case NODE_VCALL:
-        return 0;
+      case RB_CALL_NODE:
+        return RB_NODE_CALL(node)->arguments;
       case NODE_ATTRASGN:
         return RNODE_ATTRASGN(node)->nd_args;
       default:
@@ -6479,8 +6455,18 @@ static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
              const NODE *const node, LABEL **lfinish, VALUE needstr, bool ignore);
 
+enum node_call_type {
+    N_CALL,   // obj.m
+    N_OPCALL, // 1 + 2
+    N_FCALL,  // f(1)
+    N_VCALL,  // f
+    N_QCALL   // obj&.m
+};
+
+static enum node_call_type get_node_call_type(rb_call_node_t *node);
+
 static int
-compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, int popped, bool assume_receiver);
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver);
 
 static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
@@ -6635,7 +6621,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
               case NODE_FCALL:
               case NODE_ATTRASGN:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[2]);
-                compile_call(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, 0, true);
+                compile_call(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, get_node_call_type(RB_NODE_CALL(node)), 0, true);
                 break;
               default:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
@@ -7085,7 +7071,7 @@ setup_args_dup_rest_p(const NODE *argn)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *argn,
            unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
@@ -9391,19 +9377,33 @@ qcall_branch_end(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *else_label, VAL
     ADD_LABEL(ret, end_label);
 }
 
+#define NULL_LOC_P(loc) ((loc)->beg_pos.lineno == 0 && (loc)->beg_pos.column == -1 && (loc)->end_pos.lineno == 0 && (loc)->end_pos.column == -1)
+
+static enum node_call_type
+get_node_call_type(rb_call_node_t *node)
+{
+    if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_VARIABLE_CALL) return N_VCALL;
+    if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION) return N_QCALL;
+    if (!node->receiver) return N_FCALL;
+    if (NULL_LOC_P(&node->call_operator_loc) && !NULL_LOC_P(&node->message_loc)) return N_OPCALL;
+    return N_CALL;
+}
+
 static int
-compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const NODE *line_node, int popped)
+compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_call_node_t *const node, const NODE *line_node, int popped)
 {
     /* optimization shortcut
      *   "literal".freeze -> opt_str_freeze("literal")
      */
-    if (get_nd_recv(node) &&
-        (nd_type_p(get_nd_recv(node), NODE_STR) || nd_type_p(get_nd_recv(node), NODE_FILE)) &&
+    NODE *recv = node->receiver;
+
+    if (recv &&
+        (nd_type_p(recv, RB_STRING_NODE) || nd_type_p(recv, RB_SOURCE_FILE_NODE)) &&
         (get_node_call_nd_mid(node) == idFreeze || get_node_call_nd_mid(node) == idUMinus) &&
         get_nd_args(node) == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = get_string_value(get_nd_recv(node));
+        VALUE str = get_string_value(recv);
         if (get_node_call_nd_mid(node) == idUMinus) {
             ADD_INSN2(ret, line_node, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
@@ -9810,7 +9810,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 }
 
 static int
-compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, int popped, bool assume_receiver)
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver)
 {
     /* call:  obj.method(...)
      * fcall: func(...)
@@ -9891,7 +9891,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     /* receiver */
     if (!assume_receiver) {
-        if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
+        if (call_type == N_CALL || call_type == N_OPCALL || call_type == N_QCALL) {
             int idx, level;
 
             if ((mid == idCall || mid == idAREF || mid == idYield || mid == idEqq) &&
@@ -9907,17 +9907,17 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                 CHECK(COMPILE(recv, "recv", get_nd_recv(node)));
             }
 
-            if (type == NODE_QCALL) {
+            if (call_type == N_QCALL) {
                 else_label = qcall_branch_start(iseq, recv, &branches, node, line_node);
             }
         }
-        else if (type == NODE_FCALL || type == NODE_VCALL) {
+        else if (call_type == N_FCALL || call_type == N_VCALL) {
             ADD_CALL_RECEIVER(recv, line_node);
         }
     }
 
     /* args */
-    if (type != NODE_VCALL) {
+    if (call_type != N_VCALL) {
         argc = setup_args(iseq, args, get_nd_args(node), &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
@@ -9942,11 +9942,11 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     debugp_param("call args argc", argc);
     debugp_param("call method", ID2SYM(mid));
 
-    switch ((int)type) {
-      case NODE_VCALL:
+    switch ((int)call_type) {
+      case N_VCALL:
         flag |= VM_CALL_VCALL;
         /* VCALL is funcall, so fall through */
-      case NODE_FCALL:
+      case N_FCALL:
         flag |= VM_CALL_FCALL;
     }
 
@@ -11315,6 +11315,26 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         ADD_INSN2(ret, node, setclassvariable,
                   ID2SYM(RB_NODE_CLASS_VARIABLE_WRITE(node)->name),
                   get_cvar_ic_value(iseq, RB_NODE_CLASS_VARIABLE_WRITE(node)->name));
+        break;
+      }
+
+      case RB_CALL_NODE: {
+        rb_call_node_t *cast = RB_NODE_CALL(node);
+        enum node_call_type call_type = get_node_call_type(cast);
+
+        switch (call_type) {
+          case N_CALL:   /* obj.foo */
+          case N_OPCALL: /* foo[] */
+            if (compile_call_precheck_freeze(iseq, ret, cast, node, popped) == TRUE) {
+                break;
+            }
+          case N_QCALL: /* obj&.foo */
+          case N_FCALL: /* foo() */
+          case N_VCALL: /* foo (variable or call) */
+            if (compile_call(iseq, ret, node, type, node, call_type, popped, false) == COMPILE_NG) {
+                goto ng;
+            }
+        }
         break;
       }
 

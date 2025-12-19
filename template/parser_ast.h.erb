@@ -74,6 +74,9 @@ static const rb_node_flags_t RB_NODE_FLAG_STATIC_LITERAL = 0x2;
 #define rb_node_set_fl_newline(n) ((n)->flags |= RB_NODE_FLAG_NEWLINE)
 #define rb_node_unset_fl_newline(n) ((n)->flags &= ~RB_NODE_FLAG_NEWLINE)
 
+#define rb_node_set_fl(n,fl) (RB_NODE(n)->flags |= fl)
+#define rb_node_get_fl(n) (RB_NODE(n)->flags)
+
 /**
  * Cast the type to an enum to allow the compiler to provide exhaustiveness
  * checking.
