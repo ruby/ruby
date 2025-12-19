@@ -4292,23 +4292,26 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    self <=> other_string -> -1, 0, 1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares +self+ and +other_string+, returning:
+ *  Compares +self+ and +other+,
+ *  evaluating their _contents_, not their _lengths_.
  *
- *  - -1 if +other_string+ is larger.
- *  - 0 if the two are equal.
- *  - 1 if +other_string+ is smaller.
- *  - +nil+ if the two are incomparable.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ is smaller.
+ *  - +0+, if the two are equal.
+ *  - +1+, if +self+ is larger.
+ *  - +nil+, if the two are incomparable.
  *
  *  Examples:
  *
- *    'foo' <=> 'foo'  # => 0
- *    'foo' <=> 'food' # => -1
- *    'food' <=> 'foo' # => 1
- *    'FOO' <=> 'foo'  # => -1
- *    'foo' <=> 'FOO'  # => 1
- *    'foo' <=> 1      # => nil
+ *    'a'  <=> 'b'  # => -1
+ *    'a'  <=> 'ab' # => -1
+ *    'a'  <=> 'a'  # => 0
+ *    'b'  <=> 'a'  # => 1
+ *    'ab' <=> 'a'  # => 1
+ *    'a'  <=> :a   # => nil
  *
  *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
