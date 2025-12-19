@@ -55,6 +55,11 @@ impl VMBinding for Ruby {
     type VMMemorySlice = RubyMemorySlice;
 }
 
+/// The callback for mutator thread panic handler (which calls rb_bug to output
+/// debugging information such as the Ruby backtrace and memory maps).
+/// This is set before BINDING is set because mmtk_init could panic.
+pub static MUTATOR_THREAD_PANIC_HANDLER: OnceCell<extern "C" fn()> = OnceCell::new();
+
 /// The singleton object for the Ruby binding itself.
 pub static BINDING: OnceCell<RubyBinding> = OnceCell::new();
 
@@ -132,6 +137,9 @@ pub(crate) fn set_panic_hook() {
             handle_gc_thread_panic(panic_info);
         } else {
             old_hook(panic_info);
+            (crate::MUTATOR_THREAD_PANIC_HANDLER
+                .get()
+                .expect("MUTATOR_THREAD_PANIC_HANDLER is not set"))();
         }
     }));
 }

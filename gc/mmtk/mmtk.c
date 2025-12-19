@@ -355,6 +355,12 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
     return RB_SPECIAL_CONST_P(obj);
 }
 
+static void
+rb_mmtk_mutator_thread_panic_handler(void)
+{
+    rb_bug("Ruby mutator thread panicked");
+}
+
 // Bootup
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -374,6 +380,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
     rb_mmtk_special_const_p,
+    rb_mmtk_mutator_thread_panic_handler,
 };
 
 // Use max 80% of the available memory by default for MMTk

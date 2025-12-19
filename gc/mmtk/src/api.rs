@@ -138,6 +138,10 @@ pub unsafe extern "C" fn mmtk_init_binding(
     upcalls: *const RubyUpcalls,
     weak_reference_dead_value: ObjectReference,
 ) {
+    crate::MUTATOR_THREAD_PANIC_HANDLER
+        .set((unsafe { (*upcalls).clone() }).mutator_thread_panic_handler)
+        .unwrap_or_else(|_| panic!("MUTATOR_THREAD_PANIC_HANDLER is already initialized"));
+
     crate::set_panic_hook();
 
     let builder = unsafe { Box::from_raw(builder) };
