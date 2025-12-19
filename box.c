@@ -9,6 +9,7 @@
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/load.h"
 #include "internal/st.h"
 #include "internal/variable.h"
@@ -627,8 +628,14 @@ copy_ext_file(const char *src_path, const char *dst_path)
 # else
     const int bin = 0;
 # endif
-    const int src_fd = open(src_path, O_RDONLY|bin);
+# ifdef O_CLOEXEC
+    const int cloexec = O_CLOEXEC;
+# else
+    const int cloexec = 0;
+# endif
+    const int src_fd = open(src_path, O_RDONLY|cloexec|bin);
     if (src_fd < 0) return COPY_ERROR_SRC_OPEN;
+    if (!cloexec) rb_maygvl_fd_fix_cloexec(src_fd);
 
     struct stat src_st;
     if (fstat(src_fd, &src_st)) {
@@ -636,11 +643,12 @@ copy_ext_file(const char *src_path, const char *dst_path)
         return COPY_ERROR_SRC_STAT;
     }
 
-    const int dst_fd = open(dst_path, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|bin, S_IRWXU);
+    const int dst_fd = open(dst_path, O_WRONLY|O_CREAT|O_EXCL|cloexec|bin, S_IRWXU);
     if (dst_fd < 0) {
         close(src_fd);
         return COPY_ERROR_DST_OPEN;
     }
+    if (!cloexec) rb_maygvl_fd_fix_cloexec(dst_fd);
 
     enum copy_error_type ret = COPY_ERROR_NONE;
 

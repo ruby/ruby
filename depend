@@ -745,6 +745,7 @@ box.$(OBJEXT): $(top_srcdir)/internal/file.h
 box.$(OBJEXT): $(top_srcdir)/internal/gc.h
 box.$(OBJEXT): $(top_srcdir)/internal/hash.h
 box.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+box.$(OBJEXT): $(top_srcdir)/internal/io.h
 box.$(OBJEXT): $(top_srcdir)/internal/load.h
 box.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 box.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -951,6 +952,7 @@ box.$(OBJEXT): {$(VPATH)}internal/value_type.h
 box.$(OBJEXT): {$(VPATH)}internal/variable.h
 box.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 box.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+box.$(OBJEXT): {$(VPATH)}io.h
 box.$(OBJEXT): {$(VPATH)}iseq.h
 box.$(OBJEXT): {$(VPATH)}method.h
 box.$(OBJEXT): {$(VPATH)}missing.h
