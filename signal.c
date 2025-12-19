@@ -1346,31 +1346,36 @@ reserved_signal_p(int signo)
 
 /*
  * call-seq:
- *   Signal.trap( signal, command ) -> obj
- *   Signal.trap( signal ) {| | block } -> obj
+ *   Signal.trap(signal, command) -> obj
+ *   Signal.trap(signal) { ... } -> obj
  *
- * Specifies the handling of signals. The first parameter is a signal
- * name (a string such as ``SIGALRM'', ``SIGUSR1'', and so on) or a
- * signal number. The characters ``SIG'' may be omitted from the
- * signal name. The command or block specifies code to be run when the
+ * Specifies the handling of signals. Returns the previous handler for
+ * the given signal.
+ *
+ * Argument +signal+ is a signal name (a string or symbol such
+ * as +SIGALRM+ or +SIGUSR1+) or an integer signal number. When +signal+
+ * is a string or symbol, the leading characters +SIG+ may be omitted.
+ *
+ * Argument +command+ or block provided specifies code to be run when the
  * signal is raised.
- * If the command is the string ``IGNORE'' or ``SIG_IGN'', the signal
- * will be ignored.
- * If the command is ``DEFAULT'' or ``SIG_DFL'', the Ruby's default handler
- * will be invoked.
- * If the command is ``EXIT'', the script will be terminated by the signal.
- * If the command is ``SYSTEM_DEFAULT'', the operating system's default
- * handler will be invoked.
- * Otherwise, the given command or block will be run.
- * The special signal name ``EXIT'' or signal number zero will be
- * invoked just prior to program termination.
- * trap returns the previous handler for the given signal.
+ *
+ * Argument +command+ may also be a string or symbol with the following special
+ * values:
+ *
+ * - +IGNORE+, +SIG_IGN+: the signal will be ignored.
+ * - +DEFAULT+, +SIG_DFL+: Ruby's default handler will be invoked.
+ * - +EXIT+: the process will be terminated by the signal.
+ * - +SYSTEM_DEFAULT+: the operating system's default handler will be invoked.
+ *
+ * The special signal name +EXIT+ or signal number zero will be
+ * invoked just prior to program termination:
  *
  *     Signal.trap(0, proc { puts "Terminating: #{$$}" })
  *     Signal.trap("CLD")  { puts "Child died" }
  *     fork && Process.wait
  *
- * <em>produces:</em>
+ * Outputs:
+ *
  *     Terminating: 27461
  *     Child died
  *     Terminating: 27460
