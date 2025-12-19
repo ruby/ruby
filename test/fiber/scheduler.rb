@@ -488,6 +488,29 @@ class IOBufferScheduler < Scheduler
   end
 end
 
+class IOScheduler < Scheduler
+  def __io_ops__
+    @__io_ops__ ||= []
+  end
+
+  def io_write(io, buffer, length, offset)
+    fd = io.fileno
+    str = buffer.get_string
+    __io_ops__ << [:io_write, fd, str]
+    Fiber.blocking { buffer.write(IO.for_fd(fd), 0, offset) }
+  end
+end
+
+class IOErrorScheduler < Scheduler
+  def io_read(io, buffer, length, offset)
+    return -Errno::EBADF::Errno
+  end
+
+  def io_write(io, buffer, length, offset)
+    return -Errno::EINVAL::Errno
+  end
+end
+
 # This scheduler has a broken implementation of `unblock`` in the sense that it
 # raises an exception. This is used to test the behavior of the scheduler when
 # unblock raises an exception.

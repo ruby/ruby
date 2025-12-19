@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'securerandom'
+require 'fileutils'
 require_relative 'scheduler'
 
 class TestFiberScheduler < Test::Unit::TestCase
@@ -282,5 +284,92 @@ class TestFiberScheduler < Test::Unit::TestCase
     assert_equal 'blocking', fiber_blocking_state
   ensure
     thread.kill rescue nil
+  end
+
+  def test_io_write_on_flush
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
+    write_fd = nil
+    io_ops = nil
+    thread = Thread.new do
+      scheduler = IOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        File.open(fn, 'w+') do |f|
+          write_fd = f.fileno
+          f << 'foo'
+          f.flush
+          f << 'bar'
+        end
+      end
+      io_ops = scheduler.__io_ops__
+    end
+    thread.join
+    assert_equal [
+      [:io_write, write_fd, 'foo'],
+      [:io_write, write_fd, 'bar']
+    ], io_ops
+
+    assert_equal 'foobar', IO.read(fn)
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
+
+  def test_io_read_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_read_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it.read }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EBADF, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
+
+  def test_io_write_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it.sync = true; it << 'foo' }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EINVAL, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
+  end
+
+  def test_io_write_flush_error
+    fn = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
+    exception = nil
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(fn, 'w+') { it << 'foo' }
+      rescue => e
+        exception = e
+      end
+    end
+    thread.join
+    assert_kind_of Errno::EINVAL, exception
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(fn)
   end
 end
