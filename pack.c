@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -677,43 +678,41 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 }
 
                 while (len-- > 0) {
-                    size_t numbytes;
-                    int sign;
+                    size_t numbytes, nlz_bits;
+                    int sign, extra = 0;
                     char *cp;
+                    const long start = RSTRING_LEN(res);
 
                     from = NEXTFROM;
                     from = rb_to_int(from);
-                    numbytes = rb_absint_numwords(from, 7, NULL);
-                    if (numbytes == 0)
-                        numbytes = 1;
-                    VALUE buf = rb_str_new(NULL, numbytes);
-
-                    sign = rb_integer_pack(from, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, pack_flags);
-
-                    if (sign < 0 && type == 'R') {
+                    if (type == 'R' && rb_int_negative_p(from)) {
                         rb_raise(rb_eArgError, "can't encode negative numbers in ULEB128");
                     }
 
-                    if (type == 'r') {
-                        /* Check if we need an extra byte for sign extension */
-                        unsigned char last_byte = (unsigned char)RSTRING_PTR(buf)[numbytes - 1];
-                        if ((sign >= 0 && (last_byte & 0x40)) ||  /* positive but sign bit set */
-                                (sign < 0 && !(last_byte & 0x40))) {  /* negative but sign bit clear */
-                            /* Need an extra byte */
-                            rb_str_resize(buf, numbytes + 1);
-                            RSTRING_PTR(buf)[numbytes] = sign < 0 ? 0x7f : 0x00;
-                            numbytes++;
-                        }
+                    numbytes = rb_absint_numwords(from, 7, &nlz_bits);
+                    if (numbytes == 0) {
+                        numbytes = 1;
                     }
+                    else if (nlz_bits == 0 && type == 'r') {
+                        /* No leading zero bits, we need an extra byte for sign extension */
+                        extra = 1;
+                    }
+                    rb_str_modify_expand(res, numbytes + extra);
 
-                    cp = RSTRING_PTR(buf);
+                    cp = RSTRING_PTR(res) + start;
+                    sign = rb_integer_pack(from, cp, numbytes, 1, 1, pack_flags);
+
+                    if (extra) {
+                        /* Need an extra byte */
+                        cp[numbytes++] = sign < 0 ? 0x7f : 0x00;
+                    }
+                    rb_str_set_len(res, start + numbytes);
+
                     while (1 < numbytes) {
                         *cp |= 0x80;
                         cp++;
                         numbytes--;
                     }
-
-                    rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
                 }
             }
             break;
