@@ -231,6 +231,22 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_of_unshareable_object_is_unshareable
+    obj = Object.new
+    obj.instance_variable_set(:@unshareable, ->{})
+    refute Ractor.shareable?(obj.freeze), "object with a unshareable Proc is shareable"
+    refute Ractor.shareable?(obj.singleton_class), "singleton class of unshareable object is shareable"
+    GC.verify_internal_consistency
+  end
+
+  def test_module_can_be_included_in_unshareable_object
+    obj = Object.new
+    obj.instance_variable_set(:@unshareable, ->{})
+    obj.extend(Module.new)
+    refute Ractor.shareable?(obj.freeze), "object with a unshareable Proc is shareable"
+    GC.verify_internal_consistency
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

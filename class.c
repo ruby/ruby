@@ -29,6 +29,7 @@
 #include "internal/string.h"
 #include "internal/variable.h"
 #include "ruby/st.h"
+#include "ruby/ractor.h"
 #include "vm_core.h"
 #include "ruby/ractor.h"
 #include "yjit.h"
@@ -2871,6 +2872,12 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
             klass = rb_make_metaclass(obj, klass);
         }
         RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+        if (!RB_OBJ_SHAREABLE_P(obj) && RB_OBJ_SHAREABLE_P(klass)) {
+            RB_FL_UNSET_RAW(klass, RUBY_FL_SHAREABLE);
+        }
+        else if (RB_OBJ_SHAREABLE_P(obj) && !RB_OBJ_SHAREABLE_P(klass)) {
+            RB_FL_SET_RAW(klass, RUBY_FL_SHAREABLE);
+        }
         if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
             /* ensures an exposed class belongs to its own eigenclass */
             (void)ENSURE_EIGENCLASS(klass);
