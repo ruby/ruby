@@ -625,9 +625,9 @@ pub enum SendFallbackReason {
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
     SendWithoutBlockDirectKeywordMismatch,
-    SendWithoutBlockDirectOptionalKeywords,
     SendWithoutBlockDirectKeywordCountMismatch,
     SendWithoutBlockDirectMissingKeyword,
+    SendWithoutBlockDirectNonConstantKeywordDefault,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
@@ -686,9 +686,9 @@ impl Display for SendFallbackReason {
             SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
             SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
             SendWithoutBlockDirectKeywordMismatch => write!(f, "SendWithoutBlockDirect: keyword mismatch"),
-            SendWithoutBlockDirectOptionalKeywords => write!(f, "SendWithoutBlockDirect: optional keywords"),
             SendWithoutBlockDirectKeywordCountMismatch => write!(f, "SendWithoutBlockDirect: keyword count mismatch"),
             SendWithoutBlockDirectMissingKeyword => write!(f, "SendWithoutBlockDirect: missing keyword"),
+            SendWithoutBlockDirectNonConstantKeywordDefault => write!(f, "SendWithoutBlockDirect: non-constant keyword default"),
             SendPolymorphic => write!(f, "Send: polymorphic call site"),
             SendMegamorphic => write!(f, "Send: megamorphic call site"),
             SendNoProfiles => write!(f, "Send: no profile data available"),
@@ -1792,7 +1792,7 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, send_insn: InsnId, args: &[InsnId]) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId]) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1807,26 +1807,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
-    if 0 != params.flags.has_kw() {
-        let keyword = params.keyword;
-        if !keyword.is_null() {
-            let num = unsafe { (*keyword).num };
-            let required_num = unsafe { (*keyword).required_num };
-            // Only support required keywords for now (no optional keywords)
-            if num != required_num {
-                count_failure(complex_arg_pass_param_kw_opt)
-            }
-        }
-    }
 
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
-        return false;
-    }
-
-    // asm.ccall() doesn't support 6+ args
-    if args.len() + 1 > C_ARG_OPNDS.len() { // +1 for self
-        function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
         return false;
     }
 
@@ -1835,14 +1818,30 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     let opt_num = params.opt_num;
     let keyword = params.keyword;
     let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } };
-    let req_num = lead_num + kw_req_num;
+    let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } };
+    // Minimum args: all required positional + all required keywords
+    let min_argc = lead_num + kw_req_num;
+    // Maximum args: all positional (required + optional) + all keywords (required + optional)
+    let max_argc = lead_num + opt_num + kw_total_num;
+
     can_send = c_int::try_from(args.len())
         .as_ref()
-        .map(|argc| (req_num..=req_num + opt_num).contains(argc))
+        .map(|argc| (min_argc..=max_argc).contains(argc))
         .unwrap_or(false);
     if !can_send {
         function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
         return false
+    }
+
+    // asm.ccall() doesn't support 6+ args. Compute the final argc after keyword setup:
+    // final_argc = caller's positional args + callee's total keywords (all kw slots are filled).
+    let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+    let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+    let caller_positional = args.len() - caller_kw_count;
+    let final_argc = caller_positional + kw_total_num as usize;
+    if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
+        function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
+        return false;
     }
 
     can_send
@@ -2596,31 +2595,65 @@ impl Function {
         }
     }
 
-    /// Reorder keyword arguments to match the callee's expectation.
+    /// Prepare arguments for a direct send, handling keyword argument reordering and default synthesis.
+    /// Returns the (state, processed_args) to use for the SendWithoutBlockDirect instruction,
+    /// or Err with the fallback reason if direct send isn't possible.
+    fn prepare_direct_send_args(
+        &mut self,
+        block: BlockId,
+        args: &[InsnId],
+        ci: *const rb_callinfo,
+        iseq: IseqPtr,
+        state: InsnId,
+    ) -> Result<(InsnId, Vec<InsnId>), SendFallbackReason> {
+        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+        let (processed_args, caller_argc) = self.setup_keyword_arguments(block, args, kwarg, iseq)?;
+
+        // If args were reordered or synthesized, create a new snapshot with the updated stack
+        let send_state = if processed_args != args {
+            let new_state = self.frame_state(state).with_replaced_args(&processed_args, caller_argc);
+            self.push_insn(block, Insn::Snapshot { state: new_state })
+        } else {
+            state
+        };
+
+        Ok((send_state, processed_args))
+    }
+
+    /// Reorder keyword arguments to match the callee's expected order, and synthesize
+    /// constant default values for any optional keywords not provided by the caller.
     ///
-    /// Returns Ok with reordered arguments if successful, or Err with the fallback reason if not.
-    fn reorder_keyword_arguments(
-        &self,
+    /// The output always contains all of the callee's keyword arguments (required + optional),
+    /// so the returned vec may be larger than the input args.
+    ///
+    /// Returns Ok with (processed_args, caller_argc) if successful, or Err with the fallback reason if not.
+    /// - caller_argc: number of arguments the caller actually pushed (for stack calculations)
+    fn setup_keyword_arguments(
+        &mut self,
+        block: BlockId,
         args: &[InsnId],
         kwarg: *const rb_callinfo_kwarg,
         iseq: IseqPtr,
-    ) -> Result<Vec<InsnId>, SendFallbackReason> {
+    ) -> Result<(Vec<InsnId>, usize), SendFallbackReason> {
         let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         if callee_keyword.is_null() {
-            // Caller is passing kwargs but callee doesn't expect them.
-            return Err(SendWithoutBlockDirectKeywordMismatch);
+            if !kwarg.is_null() {
+                // Caller is passing kwargs but callee doesn't expect them.
+                return Err(SendWithoutBlockDirectKeywordMismatch);
+            }
+            // Neither caller nor callee have keywords - nothing to do
+            return Ok((args.to_vec(), args.len()));
         }
 
-        let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
+        // kwarg may be null if caller passes no keywords but callee has optional keywords
+        let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
         let callee_kw_count = unsafe { (*callee_keyword).num } as usize;
         let callee_kw_required = unsafe { (*callee_keyword).required_num } as usize;
         let callee_kw_table = unsafe { (*callee_keyword).table };
+        let default_values = unsafe { (*callee_keyword).default_values };
 
-        // For now, only handle the case where all keywords are required.
-        if callee_kw_count != callee_kw_required {
-            return Err(SendWithoutBlockDirectOptionalKeywords);
-        }
-        if caller_kw_count != callee_kw_count {
+        // Caller can't provide more keywords than callee expects (no **kwrest support yet).
+        if caller_kw_count > callee_kw_count {
             return Err(SendWithoutBlockDirectKeywordCountMismatch);
         }
 
@@ -2629,13 +2662,35 @@ impl Function {
 
         // Build a mapping from caller keywords to their positions.
         let mut caller_kw_order: Vec<ID> = Vec::with_capacity(caller_kw_count);
-        for i in 0..caller_kw_count {
-            let sym = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
-            let id = unsafe { rb_sym2id(sym) };
-            caller_kw_order.push(id);
+        if !kwarg.is_null() {
+            for i in 0..caller_kw_count {
+                let sym = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
+                let id = unsafe { rb_sym2id(sym) };
+                caller_kw_order.push(id);
+            }
+        }
+
+        // Verify all caller keywords are expected by callee (no unknown keywords).
+        // Without **kwrest, unexpected keywords should raise ArgumentError at runtime.
+        for &caller_id in &caller_kw_order {
+            let mut found = false;
+            for i in 0..callee_kw_count {
+                let expected_id = unsafe { *callee_kw_table.add(i) };
+                if caller_id == expected_id {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                // Caller is passing an unknown keyword - this will raise ArgumentError.
+                // Fall back to VM dispatch to handle the error.
+                return Err(SendWithoutBlockDirectKeywordMismatch);
+            }
         }
 
         // Reorder keyword arguments to match callee expectation.
+        // Constant defaults are inlined directly, and non-constant defaults (Qundef)
+        // cause fallback to VM dispatch, so we don't need to track kw_bits here.
         let mut reordered_kw_args: Vec<InsnId> = Vec::with_capacity(callee_kw_count);
         for i in 0..callee_kw_count {
             let expected_id = unsafe { *callee_kw_table.add(i) };
@@ -2652,14 +2707,34 @@ impl Function {
 
             if !found {
                 // Required keyword not provided by caller which will raise an ArgumentError.
-                return Err(SendWithoutBlockDirectMissingKeyword);
+                if i < callee_kw_required {
+                    return Err(SendWithoutBlockDirectMissingKeyword);
+                }
+
+                // Optional keyword not provided - use default value
+                let default_idx = i - callee_kw_required;
+                let default_value = unsafe { *default_values.add(default_idx) };
+
+                if default_value == Qundef {
+                    // Non-constant default (e.g., `def foo(a: compute())`).
+                    // These require checkkeyword to compute the default at runtime.
+                    // For now, fall back to VM dispatch for these cases since the
+                    // JIT-to-JIT call path doesn't properly handle Qundef placeholders.
+                    return Err(SendWithoutBlockDirectNonConstantKeywordDefault);
+                } else {
+                    // Constant default value - use it directly
+                    let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(default_value) });
+                    reordered_kw_args.push(const_insn);
+                }
             }
         }
 
         // Replace the keyword arguments with the reordered ones.
+        // Keep track of the original caller argc for stack calculations.
+        let caller_argc = args.len();
         let mut processed_args = args[..kw_args_start].to_vec();
         processed_args.extend(reordered_kw_args);
-        Ok(processed_args)
+        Ok((processed_args, caller_argc))
     }
 
     /// Resolve the receiver type for method dispatch optimization.
@@ -2894,7 +2969,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -2907,21 +2982,12 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let (send_state, processed_args) = if !kwarg.is_null() {
-                                match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => {
-                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
-                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
-                                        (snapshot, reordered)
-                                    }
-                                    Err(reason) => {
-                                        self.set_dynamic_send_reason(insn_id, reason);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                            let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
+                                Ok(result) => result,
+                                Err(reason) => {
+                                    self.set_dynamic_send_reason(insn_id, reason);
+                                    self.push_insn_id(block, insn_id); continue;
                                 }
-                            } else {
-                                (state, args.clone())
                             };
 
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
@@ -2939,7 +3005,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
@@ -2962,21 +3028,12 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let (send_state, processed_args) = if !kwarg.is_null() {
-                                match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => {
-                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
-                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
-                                        (snapshot, reordered)
-                                    }
-                                    Err(reason) => {
-                                        self.set_dynamic_send_reason(insn_id, reason);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                            let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
+                                Ok(result) => result,
+                                Err(reason) => {
+                                    self.set_dynamic_send_reason(insn_id, reason);
+                                    self.push_insn_id(block, insn_id); continue;
                                 }
-                            } else {
-                                (state, args.clone())
                             };
 
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
@@ -3332,7 +3389,7 @@ impl Function {
                         // Check if the super method's parameters support direct send.
                         // If not, we can't do direct dispatch.
                         let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                        if !can_direct_send(self, block, super_iseq, insn_id, args.as_slice()) {
+                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice()) {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                             continue;
@@ -3360,14 +3417,22 @@ impl Function {
                             state
                         });
 
+                        let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, super_iseq, state) {
+                            Ok(result) => result,
+                            Err(reason) => {
+                                self.set_dynamic_send_reason(insn_id, reason);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                        };
+
                         // Use SendWithoutBlockDirect with the super method's CME and ISEQ.
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect {
                             recv,
                             cd,
                             cme: super_cme,
                             iseq: super_iseq,
-                            args,
-                            state
+                            args: processed_args,
+                            state: send_state
                         });
                         self.make_equal_to(insn_id, send_direct);
                     }
@@ -5455,12 +5520,13 @@ impl FrameState {
         state
     }
 
-    /// Return itself with send args reordered. Used when kwargs are reordered for callee.
-    fn with_reordered_args(&self, reordered_args: &[InsnId]) -> Self {
+    /// Return itself with send args replaced. Used when kwargs are reordered/synthesized for callee.
+    /// `original_argc` is the number of args originally on the stack (before processing).
+    fn with_replaced_args(&self, new_args: &[InsnId], original_argc: usize) -> Self {
         let mut state = self.clone();
-        let args_start = state.stack.len() - reordered_args.len();
+        let args_start = state.stack.len() - original_argc;
         state.stack.truncate(args_start);
-        state.stack.extend_from_slice(reordered_args);
+        state.stack.extend_from_slice(new_args);
         state
     }
 }

@@ -842,6 +842,52 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwarg_partial_optional
+    assert_compiles '[[1, 2, 3], [1, 20, 3], [10, 2, 30]]', %q{
+      def test(a: 1, b: 2, c: 3) = [a, b, c]
+      def entry = [test, test(b: 20), test(c: 30, a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_a_lot
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [1, 2, 3, 7, 8, 9], [2, 4, 6, 8, 10, 12]]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6) = [a, b, c, d, e, f]
+      def entry = [test, test(d: 7, f: 9, e: 8), test(f: 12, e: 10, d: 8, c: 6, b: 4, a: 2)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_non_constant_default
+    assert_compiles '[[1, 2], [10, 2]]', %q{
+      def make_default = 2
+      def test(a: 1, b: make_default) = [a, b]
+      def entry = [test, test(a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_static_with_side_exit
+    # verify frame reconstruction with synthesized keyword defaults is correct
+    assert_compiles '[10, 2, 10]', %q{
+      def callee(a: 1, b: 2)
+        # use binding to force side-exit
+        x = binding.local_variable_get(:a)
+        [a, b, x]
+      end
+
+      def entry
+        callee(a: 10) # b should get default value
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_all_arg_types
     assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
       def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
@@ -1391,6 +1437,23 @@ class TestZJIT < Test::Unit::TestCase
       def test
         B.new.foo("image data")
       end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_optional_keyword_args
+    assert_compiles '[1, 2, 3]', %q{
+      class Parent
+        def foo(a, b: 2, c: 3) = [a, b, c]
+      end
+
+      class Child < Parent
+        def foo(a) = super(a)
+      end
+
+      def test = Child.new.foo(1)
 
       test
       test

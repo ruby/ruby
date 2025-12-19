@@ -2968,9 +2968,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v24:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -3035,7 +3035,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_with_positional_and_optional_kw() {
+    fn specialize_call_with_positional_and_optional_kw() {
         eval("
             def foo(x, a: 1) = [x, a]
             def test = foo(0, a: 2)
@@ -3054,10 +3054,12 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[0] = Const Value(0)
           v13:Fixnum[2] = Const Value(2)
-          IncrCounter complex_arg_pass_param_kw_opt
-          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13 # SendFallbackReason: Complex argument passing
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038), v11, v13
           CheckInterrupts
-          Return v15
+          Return v23
         ");
     }
 
@@ -3085,16 +3087,16 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v37:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v39:BasicObject = SendWithoutBlockDirect v37, :foo (0x1038), v11, v13, v15
+          v38:BasicObject = SendWithoutBlockDirect v37, :foo (0x1038), v11, v13, v15
           v20:Fixnum[1] = Const Value(1)
           v22:Fixnum[2] = Const Value(2)
           v24:Fixnum[4] = Const Value(4)
           v26:Fixnum[3] = Const Value(3)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v44:BasicObject = SendWithoutBlockDirect v42, :foo (0x1038), v20, v22, v26, v24
-          v30:ArrayExact = NewArray v39, v44
+          v41:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v43:BasicObject = SendWithoutBlockDirect v41, :foo (0x1038), v20, v22, v26, v24
+          v30:ArrayExact = NewArray v38, v43
           CheckInterrupts
           Return v30
         ");
@@ -3120,15 +3122,20 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[3] = Const Value(3)
-          IncrCounter complex_arg_pass_param_kw_opt
-          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13 # SendFallbackReason: Complex argument passing
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v35:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v36:Fixnum[4] = Const Value(4)
+          v38:BasicObject = SendWithoutBlockDirect v35, :foo (0x1038), v11, v13, v36
           v18:Fixnum[1] = Const Value(1)
           v20:Fixnum[2] = Const Value(2)
           v22:Fixnum[40] = Const Value(40)
           v24:Fixnum[30] = Const Value(30)
-          IncrCounter complex_arg_pass_param_kw_opt
-          v26:BasicObject = SendWithoutBlock v6, :foo, v18, v20, v22, v24 # SendFallbackReason: Complex argument passing
-          v28:ArrayExact = NewArray v15, v26
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v41:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v43:BasicObject = SendWithoutBlockDirect v41, :foo (0x1038), v18, v20, v24, v22
+          v28:ArrayExact = NewArray v38, v43
           CheckInterrupts
           Return v28
         ");
@@ -3156,15 +3163,15 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
           v48:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v50:BasicObject = SendWithoutBlockDirect v48, :target (0x1038), v11
+          v49:BasicObject = SendWithoutBlockDirect v48, :target (0x1038), v11
           v16:Fixnum[10] = Const Value(10)
           v18:Fixnum[20] = Const Value(20)
           v20:Fixnum[30] = Const Value(30)
           v22:Fixnum[6] = Const Value(6)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
-          v53:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v55:BasicObject = SendWithoutBlockDirect v53, :target (0x1038), v16, v18, v20, v22
+          v52:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v53:BasicObject = SendWithoutBlockDirect v52, :target (0x1038), v16, v18, v20, v22
           v27:Fixnum[10] = Const Value(10)
           v29:Fixnum[20] = Const Value(20)
           v31:Fixnum[30] = Const Value(30)
@@ -3172,7 +3179,7 @@ mod hir_opt_tests {
           v35:Fixnum[50] = Const Value(50)
           v37:Fixnum[60] = Const Value(60)
           v39:BasicObject = SendWithoutBlock v6, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
-          v41:ArrayExact = NewArray v50, v55, v39
+          v41:ArrayExact = NewArray v49, v53, v39
           CheckInterrupts
           Return v41
         ");
@@ -3197,10 +3204,12 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[2] = Const Value(2)
-          IncrCounter complex_arg_pass_param_kw_opt
-          v13:BasicObject = SendWithoutBlock v6, :foo, v11 # SendFallbackReason: Complex argument passing
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
           CheckInterrupts
-          Return v13
+          Return v21
         ");
     }
 
@@ -3231,7 +3240,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_optional_param_kw() {
+    fn specialize_call_to_iseq_with_optional_param_kw_using_default() {
         eval("
             def foo(int: 1) = int + 1
             def test = foo
@@ -3248,10 +3257,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          IncrCounter complex_arg_pass_param_kw_opt
-          v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: Complex argument passing
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:Fixnum[1] = Const Value(1)
+          v21:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038), v19
           CheckInterrupts
-          Return v11
+          Return v21
         ");
     }
 
@@ -3625,7 +3637,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           IncrCounter complex_arg_pass_param_block
-          IncrCounter complex_arg_pass_param_kw_opt
           v20:BasicObject = SendWithoutBlock v46, :initialize # SendFallbackReason: Complex argument passing
           CheckInterrupts
           CheckInterrupts
@@ -9955,7 +9966,6 @@ mod hir_opt_tests {
           IncrCounter complex_arg_pass_param_rest
           IncrCounter complex_arg_pass_param_block
           IncrCounter complex_arg_pass_param_kwrest
-          IncrCounter complex_arg_pass_param_kw_opt
           v13:BasicObject = SendWithoutBlock v6, :fancy, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13

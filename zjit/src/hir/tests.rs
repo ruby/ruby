@@ -114,12 +114,11 @@ mod snapshot_tests {
           PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
-          v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          v24:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1050, stack: [v24], locals: [] }
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
+          v16:Any = Snapshot FrameState { pc: 0x1050, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
