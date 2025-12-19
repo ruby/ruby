@@ -105,6 +105,15 @@ Note: We're only listing outstanding class updates.
       waiting on a blocking IO operation when the IO operation is closed.
       [[Feature #21166]]
 
+    * Introduce `Fiber::Scheduler#yield` to allow the fiber scheduler to
+      continue processing when signal exceptions are disabled.
+      [[Bug #21633]]
+
+    * Reintroduce the `Fiber::Scheduler#io_close` hook for asynchronous `IO#close`.
+
+    * Invoke `Fiber::Scheduler#io_write` when flushing the IO write buffer.
+      [[Bug #21789]]
+
 * File
 
     * `File::Stat#birthtime` is now available on Linux via the statx
@@ -265,27 +274,6 @@ Note: We're only listing outstanding class updates.
 
     * Introduce support for `Thread#raise(cause:)` argument similar to
       `Kernel#raise`. [[Feature #21360]]
-
-* Fiber
-
-    * Introduce support for `Fiber#raise(cause:)` argument similar to
-      `Kernel#raise`. [[Feature #21360]]
-
-* Fiber::Scheduler
-
-    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
-      given exception. The initial use case is to interrupt a fiber that is
-      waiting on a blocking IO operation when the IO operation is closed.
-      [[Feature #21166]]
-
-    - Introduce `Fiber::Scheduler#yield` to allow the fiber scheduler to
-      continue processing when signal exceptions are disabled.
-      [[Feature #21633]]
-
-    - Reintroduce the `Fiber::Scheduler#io_close` hook for asynchronous `IO#close`.
-
-    - Invoke `Fiber::Scheduler#io_write` when flushing the IO write buffer.
-      [[feature #21789]]
 
 * Pathname
 
@@ -572,8 +560,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
 [Feature #21552]: https://bugs.ruby-lang.org/issues/21552
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
+[Bug #21633]:     https://bugs.ruby-lang.org/issues/21633
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
 [Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
+[Bug #21789]:     https://bugs.ruby-lang.org/issues/21789
