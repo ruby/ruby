@@ -3691,7 +3691,8 @@ rb_eisel_lemire64(uint64_t mantissa, int exp10, bool negative, double *result)
         }
         mantissa_out >>= (1 - exp2);
         exp2 = 0;
-    } else {
+    }
+    else {
         /* Normal number: remove implicit bit */
         mantissa_out &= ~(1ULL << 52);
     }
@@ -3736,7 +3737,8 @@ rb_parse_decimal_for_eisel_lemire(const char *p, uint64_t *mantissa, int *exp10,
     if (*p == '-') {
         *negative = true;
         p++;
-    } else if (*p == '+') {
+    }
+    else if (*p == '+') {
         p++;
     }
 
@@ -3751,17 +3753,20 @@ rb_parse_decimal_for_eisel_lemire(const char *p, uint64_t *mantissa, int *exp10,
             if (digit_count <= 19) {
                 mant = mant * 10 + (unsigned char)(c - '0');
                 if (has_dot) digits_after_dot++;
-            } else {
+            }
+            else {
                 /* Too many digits for Eisel-Lemire */
                 return false;
             }
             prev = c;
             p++;
-        } else if (c == '.' && !has_dot) {
+        }
+        else if (c == '.' && !has_dot) {
             has_dot = true;
             prev = c;
             p++;
-        } else if (c == '_') {
+        }
+        else if (c == '_') {
             /*
              * Ruby allows underscores only between digits.
              * Reject if: no previous digit, or next char is not a digit.
@@ -3771,7 +3776,8 @@ rb_parse_decimal_for_eisel_lemire(const char *p, uint64_t *mantissa, int *exp10,
             }
             p++;
             /* Don't update prev - underscore doesn't count */
-        } else {
+        }
+        else {
             break;
         }
     }
@@ -3792,7 +3798,8 @@ rb_parse_decimal_for_eisel_lemire(const char *p, uint64_t *mantissa, int *exp10,
         if (*p == '-') {
             exp_negative = true;
             p++;
-        } else if (*p == '+') {
+        }
+        else if (*p == '+') {
             p++;
         }
 
@@ -3805,13 +3812,15 @@ rb_parse_decimal_for_eisel_lemire(const char *p, uint64_t *mantissa, int *exp10,
                 }
                 prev = *p;
                 p++;
-            } else if (*p == '_') {
+            }
+            else if (*p == '_') {
                 /* Underscore in exponent must be between digits */
                 if (!ISDIGIT(prev) || !ISDIGIT(p[1])) {
                     return false;
                 }
                 p++;
-            } else {
+            }
+            else {
                 break;
             }
         }
