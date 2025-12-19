@@ -633,7 +633,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         unsigned int t;
         if (!NIL_P(open_timeout)) {
             t = rsock_value_timeout_to_msec(open_timeout);
-        } else if (!NIL_P(open_timeout)) {
+        } else if (!NIL_P(resolv_timeout)) {
             t = rsock_value_timeout_to_msec(resolv_timeout);
         } else {
             t = 0;
@@ -1340,7 +1340,7 @@ rsock_init_inetsock(
                 unsigned int t;
                 if (!NIL_P(open_timeout)) {
                     t = rsock_value_timeout_to_msec(open_timeout);
-                } else if (!NIL_P(open_timeout)) {
+                } else if (!NIL_P(resolv_timeout)) {
                     t = rsock_value_timeout_to_msec(resolv_timeout);
                 } else {
                     t = 0;
