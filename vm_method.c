@@ -149,9 +149,20 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
     VALUE new_table = (VALUE)data;
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
+
+    if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
+        // Invalidated CME. This entry will be removed from the old table on
+        // the next GC mark, so it's unsafe (and undesirable) to copy
+        return ID_TABLE_CONTINUE;
+    }
+
     size_t memsize = vm_ccs_alloc_size(old_ccs->capa);
     struct rb_class_cc_entries *new_ccs = ruby_xcalloc(1, memsize);
     rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+
+    // We hold the VM lock, so invalidation should not have happened between
+    // our earlier invalidation check and now.
+    VM_ASSERT(!METHOD_ENTRY_INVALIDATED(old_ccs->cme));
 
     memcpy(new_ccs, old_ccs, memsize);
 
@@ -169,6 +180,7 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 VALUE
 rb_vm_cc_table_dup(VALUE old_table)
 {
+    ASSERT_vm_locking();
     VALUE new_table = rb_vm_cc_table_create(rb_managed_id_table_size(old_table));
     rb_managed_id_table_foreach(old_table, vm_cc_table_dup_i, (void *)new_table);
     return new_table;
