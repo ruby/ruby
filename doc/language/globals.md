@@ -41,15 +41,15 @@ require 'English'
 
 ### Streams
 
-|  Variable  |          \English           | Contains                                    | Initially | Read-Only | Reset By             |
-|:----------:|:---------------------------:|:-------------------------------------------:|:---------:|:---------:|----------------------|
-| `$stdin`   |                             | Standard input stream                       | `STDIN`   |    No     |                      |
-| `$stdout`  |                             | Standard output stream                      | `STDOUT`  |    No     |                      |
-| `$stderr`  |                             | Standard error stream                       | `STDERR`  |    No     |                      |
-|    `$<`    |      `$DEFAULT_INPUT`       | Default standard input                      | `ARGF`    |   Yes     |                      |
-|    `$>`    |     `$DEFAULT_OUTPUT`       | Default standard output                     | `STDOUT`  |    No     |                      |
-|    `$.`    | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream |  0        |    No     | Certain read methods |
-|    `$_`    |      `$LAST_READ_LINE`      | String from most recently read stream       |  `nil`    |    No     | Certain read methods |
+|  Variable |                    \English | Contains                                    | Initially | Read-Only | Reset By             |
+|:---------:|----------------------------:|:-------------------------------------------:|:---------:|:---------:|----------------------|
+| `$stdin`  |                             | Standard input stream                       | `STDIN`   |    No     |                      |
+| `$stdout` |                             | Standard output stream                      | `STDOUT`  |    No     |                      |
+| `$stderr` |                             | Standard error stream                       | `STDERR`  |    No     |                      |
+|    `$<`   |            `$DEFAULT_INPUT` | Default standard input                      | `ARGF`    |   Yes     |                      |
+|    `$>`   |           `$DEFAULT_OUTPUT` | Default standard output                     | `STDOUT`  |    No     |                      |
+|    `$.`   | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream |  0        |    No     | Certain read methods |
+|    `$_`   |           `$LAST_READ_LINE` | String from most recently read stream       |  `nil`    |    No     | Certain read methods |
 
 ### Processes
 
@@ -64,11 +64,11 @@ require 'English'
 
 ### Debugging
 
-|   Variable   | \English | Contains                                   |          Initially           | Read-Only | Reset By |
-|:------------:|:--------:|--------------------------------------------|:----------------------------:|:---------:|----------|
-| `$FILENAME`  |          | Value returned by method `ARGF.filename`   | Command-line argument or '-' |   Yes     |          |
-|   `$DEBUG`   |          | Whether option `-d` or `--debug` was given |     Command-line option      |    No     |          |
-|  `$VERBOSE`  |          | Whether option `-V` or `-W` was given      |     Command-line option      |   No      |          |
+|   Variable  | \English | Contains                                   |          Initially           | Read-Only | Reset By |
+|:-----------:|:--------:|--------------------------------------------|:----------------------------:|:---------:|----------|
+| `$FILENAME` |          | Value returned by method `ARGF.filename`   | Command-line argument or '-' |   Yes     |          |
+|   `$DEBUG`  |          | Whether option `-d` or `--debug` was given |     Command-line option      |    No     |          |
+|  `$VERBOSE` |          | Whether option `-V` or `-W` was given      |     Command-line option      |   No      |          |
 
 ### Other Variables
 
