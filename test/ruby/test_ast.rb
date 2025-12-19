@@ -1230,7 +1230,7 @@ dummy
        args: nil
        body:
          (LAMBDA@1:0-2:3
-            (SCOPE@1:2-2:3
+            (SCOPE@1:0-2:3
              tbl: []
              args:
                (ARGS@1:2-1:2

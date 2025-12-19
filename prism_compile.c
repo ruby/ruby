@@ -3284,13 +3284,6 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->parameters = cast->parameters;
         scope->body = cast->body;
         scope->locals = cast->locals;
-
-        if (cast->parameters != NULL) {
-            scope->base.location.start = cast->parameters->location.start;
-        }
-        else {
-            scope->base.location.start = cast->operator_loc.end;
-        }
         break;
       }
       case PM_MODULE_NODE: {
