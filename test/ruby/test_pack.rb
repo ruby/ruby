@@ -283,6 +283,15 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["foo "], "foo ".unpack("a4"))
     assert_equal(["foo"], "foo".unpack("A4"))
     assert_equal(["foo"], "foo".unpack("a4"))
+
+    assert_equal(["foo", 4], "foo\0  ".unpack("A4^"))
+    assert_equal(["foo\0", 4], "foo\0  ".unpack("a4^"))
+    assert_equal(["foo", 4], "foo   ".unpack("A4^"))
+    assert_equal(["foo ", 4], "foo   ".unpack("a4^"))
+    assert_equal(["foo", 3], "foo".unpack("A4^"))
+    assert_equal(["foo", 3], "foo".unpack("a4^"))
+    assert_equal(["foo", 6], "foo\0  ".unpack("A*^"))
+    assert_equal(["foo", 6], "foo   ".unpack("A*^"))
   end
 
   def test_pack_unpack_Z
@@ -298,6 +307,11 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["foo"], "foo".unpack("Z*"))
     assert_equal(["foo"], "foo\0".unpack("Z*"))
     assert_equal(["foo"], "foo".unpack("Z5"))
+
+    assert_equal(["foo", 3], "foo".unpack("Z*^"))
+    assert_equal(["foo", 4], "foo\0".unpack("Z*^"))
+    assert_equal(["foo", 3], "foo".unpack("Z5^"))
+    assert_equal(["foo", 5], "foo\0\0\0".unpack("Z5^"))
   end
 
   def test_pack_unpack_bB
@@ -549,6 +563,8 @@ class TestPack < Test::Unit::TestCase
 
     assert_equal([0, 2], "\x00\x00\x02".unpack("CxC"))
     assert_raise(ArgumentError) { "".unpack("x") }
+
+    assert_equal([0, 1, 2, 2, 3], "\x00\x00\x02".unpack("C^x^C^"))
   end
 
   def test_pack_unpack_X
@@ -558,6 +574,7 @@ class TestPack < Test::Unit::TestCase
 
     assert_equal([0, 2, 2], "\x00\x02".unpack("CCXC"))
     assert_raise(ArgumentError) { "".unpack("X") }
+    assert_equal([0, 1, 2, 2, 1, 2, 2], "\x00\x02".unpack("C^C^X^C^"))
   end
 
   def test_pack_unpack_atmark
@@ -571,6 +588,17 @@ class TestPack < Test::Unit::TestCase
 
     pos = RbConfig::LIMITS["UINTPTR_MAX"] - 99 # -100
     assert_raise(RangeError) {"0123456789".unpack("@#{pos}C10")}
+
+    assert_equal([1, 3, 4], "\x01\x00\x00\x02".unpack("x^@3^x^"))
+  end
+
+  def test_unpack_carret
+    assert_equal([0], "abc".unpack("^"))
+    assert_equal([2], "abc".unpack("^", offset: 2))
+    assert_equal([97, nil, 1], "a".unpack("CC^"))
+
+    assert_raise(ArgumentError) { "".unpack("^!") }
+    assert_raise(ArgumentError) { "".unpack("^_") }
   end
 
   def test_pack_unpack_percent

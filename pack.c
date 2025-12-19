@@ -1520,6 +1520,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             s += len;
             break;
 
+          case '^':
+            UNPACK_PUSH(SSIZET2NUM(s - RSTRING_PTR(str)));
+            break;
+
           case 'P':
             if (sizeof(char *) <= (size_t)(send - s)) {
                 VALUE tmp = Qnil;
