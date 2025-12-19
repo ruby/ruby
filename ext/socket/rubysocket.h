@@ -327,8 +327,8 @@ void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 int rsock_fd_family(int fd);
-struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, unsigned int timeout);
-struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, unsigned int timeout);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
+struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
 
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
@@ -453,7 +453,6 @@ void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shar
 #  endif
 #endif
 
-unsigned int rsock_value_timeout_to_msec(VALUE);
 NORETURN(void rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port));
 
 void rsock_init_basicsocket(void);

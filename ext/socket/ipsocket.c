@@ -83,15 +83,13 @@ init_inetsock_internal(VALUE v)
     VALUE open_timeout = arg->open_timeout;
     VALUE timeout;
     VALUE starts_at;
-    unsigned int timeout_msec;
 
     timeout = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
-    timeout_msec = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
     starts_at = current_clocktime();
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
                                      family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0, timeout_msec);
+                                     (type == INET_SERVER) ? AI_PASSIVE : 0, timeout);
 
     /*
      * Maybe also accept a local address
@@ -99,7 +97,7 @@ init_inetsock_internal(VALUE v)
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
         arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
-                                        family, SOCK_STREAM, 0, 0);
+                                        family, SOCK_STREAM, 0, timeout);
     }
 
     VALUE io = Qnil;
@@ -630,14 +628,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
-        unsigned int t;
-        if (!NIL_P(open_timeout)) {
-            t = rsock_value_timeout_to_msec(open_timeout);
-        } else if (!NIL_P(resolv_timeout)) {
-            t = rsock_value_timeout_to_msec(resolv_timeout);
-        } else {
-            t = 0;
-        }
+        VALUE t = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
 
         arg->remote.res = rsock_addrinfo(
             arg->remote.host,
@@ -1337,15 +1328,7 @@ rsock_init_inetsock(
              * Maybe also accept a local address
              */
             if (!NIL_P(local_host) || !NIL_P(local_serv)) {
-                unsigned int t;
-                if (!NIL_P(open_timeout)) {
-                    t = rsock_value_timeout_to_msec(open_timeout);
-                } else if (!NIL_P(resolv_timeout)) {
-                    t = rsock_value_timeout_to_msec(resolv_timeout);
-                } else {
-                    t = 0;
-                }
-
+                VALUE t = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
                 local_res = rsock_addrinfo(
                     local_host,
                     local_serv,
@@ -1609,7 +1592,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0, Qnil);
     socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */

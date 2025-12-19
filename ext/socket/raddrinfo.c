@@ -293,7 +293,7 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
     xfree(ai);
 }
 
-unsigned int
+static int
 rsock_value_timeout_to_msec(VALUE timeout)
 {
     double seconds = NUM2DBL(timeout);
@@ -308,7 +308,7 @@ rsock_value_timeout_to_msec(VALUE timeout)
 #if GETADDRINFO_IMPL == 0
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int _timeout)
 {
     return getaddrinfo(hostp, portp, hints, ai);
 }
@@ -346,7 +346,7 @@ fork_safe_getaddrinfo(void *arg)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int _timeout)
 {
     struct getaddrinfo_arg arg;
     MEMZERO(&arg, struct getaddrinfo_arg, 1);
@@ -367,11 +367,11 @@ struct getaddrinfo_arg
     int err, gai_errno, refcount, done, cancelled, timedout;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
-    unsigned int timeout;
+    int timeout;
 };
 
 static struct getaddrinfo_arg *
-allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints, unsigned int timeout)
+allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints, int timeout)
 {
     size_t hostp_offset = sizeof(struct getaddrinfo_arg);
     size_t portp_offset = hostp_offset + (hostp ? strlen(hostp) + 1 : 0);
@@ -465,8 +465,11 @@ wait_getaddrinfo(void *ptr)
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
     rb_nativethread_lock_lock(&arg->lock);
     while (!arg->done && !arg->cancelled) {
-        unsigned long msec = arg->timeout;
-        if (msec > 0) {
+        long msec = arg->timeout;
+        if (msec == 0) {
+            arg->cancelled = 1;
+            arg->timedout = 1;
+        } else if (msec > 0) {
             rb_native_cond_timedwait(&arg->cond, &arg->lock, msec);
             if (!arg->done) {
                 arg->cancelled = 1;
@@ -549,7 +552,7 @@ fork_safe_do_getaddrinfo(void *ptr)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int timeout)
 {
     int retry;
     struct getaddrinfo_arg *arg;
@@ -1021,7 +1024,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
 }
 
 struct rb_addrinfo*
-rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, unsigned int timeout)
+rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
 {
     struct rb_addrinfo* res = NULL;
     struct addrinfo *ai;
@@ -1056,7 +1059,8 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         }
 
         if (!resolved) {
-            error = rb_getaddrinfo(hostp, portp, hints, &ai, timeout);
+            int t = NIL_P(timeout) ? -1 : rsock_value_timeout_to_msec(timeout);
+            error = rb_getaddrinfo(hostp, portp, hints, &ai, t);
             if (error == 0) {
                 res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
                 res->allocated_by_malloc = 0;
@@ -1089,7 +1093,7 @@ rsock_fd_family(int fd)
 }
 
 struct rb_addrinfo*
-rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, unsigned int timeout)
+rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
 {
     struct addrinfo hints;
 
@@ -1380,8 +1384,7 @@ call_getaddrinfo(VALUE node, VALUE service,
         hints.ai_flags = NUM2INT(flags);
     }
 
-    unsigned int t = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
-    res = rsock_getaddrinfo(node, service, &hints, socktype_hack, t);
+    res = rsock_getaddrinfo(node, service, &hints, socktype_hack, timeout);
 
     if (res == NULL)
         rb_raise(rb_eSocket, "host not found");
