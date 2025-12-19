@@ -308,7 +308,7 @@ The following default gems are updated.
 * openssl 4.0.0
 * optparse 0.8.1
 * pp 0.6.3
-* prism 1.6.0
+* prism 1.7.0
 * psych 5.3.1
 * resolv 0.7.0
 * stringio 3.2.0
