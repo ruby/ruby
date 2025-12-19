@@ -257,8 +257,8 @@ Note: We're only listing outstanding class updates.
       [[Feature #21166]]
 
     - Introduce `Fiber::Scheduler#yield` to allow the fiber scheduler to
-      continue processing when signal exceptions are disabled. [[feature
-      #21633]]
+      continue processing when signal exceptions are disabled.
+      [[Feature #21633]]
 
     - Reintroduce the `Fiber::Scheduler#io_close` hook for asynchronous `IO#close`.
 
