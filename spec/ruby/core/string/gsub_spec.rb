@@ -59,6 +59,11 @@ describe "String#gsub with pattern and replacement" do
     '\d'.gsub('\d', 'a').should == "a"
   end
 
+  it "doesn't interpret regexp metacharacters if pattern is a single char string" do
+    "12345".gsub('5', 'a').should == "1234a"
+    '5'.gsub('5', 'a').should == "a"
+  end
+
   it "replaces \\1 sequences with the regexp's corresponding capture" do
     str = "hello"
 
@@ -88,6 +93,7 @@ describe "String#gsub with pattern and replacement" do
     str.gsub(/.(.{20})?/, '\1').should == ""
   end
 
+
   it "replaces \\& and \\0 with the complete match" do
     str = "hello!"
 
@@ -105,6 +111,7 @@ describe "String#gsub with pattern and replacement" do
     str.gsub(/(.)./, '<\0>').should == "<he><ll><o!>"
   end
 
+
   it "replaces \\` with everything before the current match" do
     str = "hello!"
 
@@ -117,6 +124,7 @@ describe "String#gsub with pattern and replacement" do
     str.gsub(/../, '<\`>').should == "<><he><hell>"
   end
 
+
   it "replaces \\' with everything after the current match" do
     str = "hello!"
 
@@ -128,6 +136,7 @@ describe "String#gsub with pattern and replacement" do
     str.gsub(//, '<\\\'>').should == "<hello!>h<ello!>e<llo!>l<lo!>l<o!>o<!>!<>"
     str.gsub(/../, '<\\\'>').should == "<llo!><o!><>"
   end
+
 
   it "replaces \\+ with the last paren that actually matched" do
     str = "hello!"
@@ -203,6 +212,8 @@ describe "String#gsub with pattern and replacement" do
   it "sets $~ to MatchData of last match and nil when there's none" do
     'hello.'.gsub('hello', 'x')
     $~[0].should == 'hello'
+    $~.begin(0).should == 0
+    $~.end(0).should == 5
 
     'hello.'.gsub('not', 'x')
     $~.should == nil
@@ -224,6 +235,83 @@ describe "String#gsub with pattern and replacement" do
     result = 'été'.gsub('t'.force_encoding(Encoding::US_ASCII), 'u')
     result.should == 'éué'
     result.encoding.should == Encoding::UTF_8
+  end
+
+  describe "when both pattern and replacement are the same byte-length" do
+    it "returns a copy of self with all occurrences replaced" do
+      "hello".gsub('l', 'x').should == "hexxo"
+      "hello".gsub('h', 'j').should == "jello"
+      "hello".gsub('o', '0').should == "hell0"
+      "hello".gsub('e', 'a').should == "hallo"
+    end
+
+    it "returns original string when pattern not found" do
+      "hello".gsub('z', 'x').should == "hello"
+      "hello".gsub('Z', 'x').should == "hello"
+    end
+
+    it "handles multibyte single chars" do
+      "café".gsub('é', 'e').should == "cafe"
+      "naïve".gsub('ï', 'i').should == "naive"
+    end
+
+    it "sets $~ to MatchData of last match" do
+      'hello'.gsub('l', 'x')
+      $~.begin(0).should == 3
+      $~[0].should == 'l'
+      $~.string.should == 'hello'
+      $~.string.should.frozen?
+
+      'hello'.gsub('z', 'x')
+      $~.should == nil
+
+      'hello'.gsub('h', 'j')
+      $~.begin(0).should == 0
+      $~[0].should == 'h'
+    end
+
+    it "ignores a block if supplied" do
+      "food".gsub('f', 'g') { "w" }.should == "good"
+    end
+
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("foo").gsub("o", "x").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub("f", "b").should be_an_instance_of(String)
+    end
+
+    it "handles pattern in a superset encoding" do
+      result = 'abc'.force_encoding(Encoding::US_ASCII).gsub('é', 'è')
+      result.should == 'abc'
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "handles pattern in a subset encoding" do
+      result = 'été'.gsub('t'.force_encoding(Encoding::US_ASCII), 'u')
+      result.should == 'éué'
+      result.encoding.should == Encoding::UTF_8
+    end
+
+    it "handles encoding with same byte-length multibyte replacement" do
+      result = "café".gsub('é', 'e')
+      result.should == "cafe"
+      result.encoding.should == Encoding::UTF_8
+
+      result = "café".gsub('c', 'ç')
+      result.should == "çafé"
+      result.encoding.should == Encoding::UTF_8
+    end
+
+    it "handles ASCII to ASCII replacement preserving encoding" do
+      str = "hello"
+      result = str.gsub('l', 'x')
+      result.encoding.should == Encoding::UTF_8
+      result.should == "hexxo"
+    end
+
+    it "handles multiple consecutive matches" do
+      "aaa".gsub('a', 'b').should == "bbb"
+      "lll".gsub('l', 'x').should == "xxx"
+    end
   end
 end
 
@@ -541,6 +629,129 @@ describe "String#gsub! with pattern and replacement" do
     result.should == string
     string.should == 'éué'
     string.encoding.should == Encoding::UTF_8
+  end
+
+  it "sets $~ to MatchData for single char replacement" do
+    # single char find/replace takes different code path
+    str = 'hello'
+    str.gsub!('z', '_')
+    $~.should == nil
+
+    str = 'hello'
+    str.gsub!('l', '')
+    $~.string.should == 'hello'
+    $~.string.should.frozen?
+    $~.begin(0).should == 3
+    $~.end(0).should == 4
+
+    str = 'ab😀ab😀'
+    str.gsub!('a', '1')
+    $~.string.should == 'ab😀ab😀'
+    $~.string.should.frozen?
+    $~.begin(0).should == 3
+    $~.end(0).should == 4
+  end
+
+  describe "when both pattern and replacement are the same byte-length" do
+    it "modifies self in place and returns self" do
+      a = "hello"
+      a.gsub!('l', 'x').should equal(a)
+      a.should == "hexxo"
+
+      b = "hello"
+      b.gsub!('h', 'j').should equal(b)
+      b.should == "jello"
+
+      c = "hello"
+      c.gsub!('o', '0').should equal(c)
+      c.should == "hell0"
+    end
+
+    it "returns nil if no modifications were made" do
+      a = "hello"
+      a.gsub!('z', 'x').should == nil
+      a.gsub!('Z', 'y').should == nil
+      a.should == "hello"
+    end
+
+    it "raises a FrozenError when self is frozen" do
+      s = "hello"
+      s.freeze
+
+      -> { s.gsub!('h', 'x') }.should raise_error(FrozenError)
+      -> { s.gsub!('e', 'a') }.should raise_error(FrozenError)
+      -> { s.gsub!('z', 'x') }.should raise_error(FrozenError)
+    end
+
+    it "sets $~ to MatchData of last match" do
+      str = 'hello'
+      str.gsub!('l', 'x')
+      $~.string.should == 'hello'
+      $~.string.should.frozen?
+      $~.begin(0).should == 3
+      $~.end(0).should == 4
+      $~[0].should == 'l'
+
+      str = 'hello'
+      str.gsub!('z', 'x')
+      $~.should == nil
+
+      str = 'hello'
+      str.gsub!('h', 'j')
+      $~.string.should == 'hello'
+      $~.begin(0).should == 0
+      $~[0].should == 'h'
+    end
+
+    it "handles pattern in a superset encoding" do
+      string = 'abc'.force_encoding(Encoding::US_ASCII)
+
+      result = string.gsub!('é', 'è')
+
+      result.should == nil
+      string.should == 'abc'
+      string.encoding.should == Encoding::US_ASCII
+    end
+
+    it "handles pattern in a subset encoding" do
+      string = 'été'
+      pattern = 't'.force_encoding(Encoding::US_ASCII)
+
+      result = string.gsub!(pattern, 'u')
+
+      result.should == string
+      string.should == 'éué'
+      string.encoding.should == Encoding::UTF_8
+    end
+
+    it "handles encoding with same byte-length multibyte replacement" do
+      string = "café"
+      string.gsub!('é', 'e').should == string
+      string.should == "cafe"
+      string.encoding.should == Encoding::UTF_8
+
+      string2 = "café"
+      string2.gsub!('c', 'ç').should == string2
+      string2.should == "çafé"
+      string2.encoding.should == Encoding::UTF_8
+    end
+
+    it "handles ASCII to ASCII replacement preserving encoding" do
+      str = "hello"
+      str.gsub!('l', 'x').should == str
+      str.encoding.should == Encoding::UTF_8
+      str.should == "hexxo"
+    end
+
+    it "handles multiple consecutive matches" do
+      str = "aaa"
+      str.gsub!('a', 'b').should == str
+      str.should == "bbb"
+
+      str2 = "lll"
+      str2.gsub!('l', 'x').should == str2
+      str2.should == "xxx"
+    end
   end
 end
 
