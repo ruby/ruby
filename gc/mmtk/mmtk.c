@@ -485,7 +485,9 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
 }
 
-static size_t heap_sizes[6] = {
+#define MMTK_HEAP_COUNT 5
+
+static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
     40, 80, 160, 320, 640, 0
 };
 
@@ -610,7 +612,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 
     if (alloc_size > 640) rb_bug("too big");
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (alloc_size == heap_sizes[i]) break;
         if (alloc_size < heap_sizes[i]) {
             alloc_size = heap_sizes[i];
