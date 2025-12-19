@@ -330,19 +330,19 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
-* minitest 5.27.0
+* minitest 6.0.0
 * power_assert 3.0.1
 * rake 13.3.1
 * test-unit 3.7.3
 * rexml 3.4.4
 * net-ftp 0.3.9
-* net-imap 0.6.1
+* net-imap 0.6.2
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
 * rbs 3.10.0.pre.2
 * typeprof 0.31.0
-* debug 1.11.0
+* debug 1.11.1
 * base64 0.3.0
 * bigdecimal 4.0.1
 * drb 2.2.3
