@@ -1061,10 +1061,15 @@ impl Insn {
             Insn::Param => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::StringCopy { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::NewArray { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
-            // NewHash's operands may be hashed and compared for equalityEffect::from_bits(effect_sets::Any, effect_sets::Allocator), which could have
-            // side-effects.
-            // fix newhash which seems to be different than the rest
-            // Insn::NewHash { elementsEffect::from_bits(effect_sets::Any, effect_sets::Allocator), .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::NewHash { elements, .. } => {
+                // Empty is elidable
+                if elements.is_empty() {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
             Insn::ArrayDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::HashDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::Test { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
@@ -1089,10 +1094,22 @@ impl Insn {
             Insn::LoadEC => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::LoadSelf => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::LoadField { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
-            // Special case, let's fix this
-            // Insn::CCall { elidable, .. } => !elidable Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
-            // Special case, let's fix this one too
-            // Insn::CCallWithFrame { elidable, .. } => !elidable Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::CCall { elidable, .. } => {
+                if *elidable {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
+             Insn::CCallWithFrame { elidable, .. } => {
+                if *elidable {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
             Insn::ObjectAllocClass { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::NewRangeFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::StringGetbyte { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
@@ -1117,7 +1134,6 @@ impl Insn {
     /// collapses to `effects::Allocator.includes(insn_effects.write)`.
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
-    // TODO(Jacob): Replace `has_effects` with `!is_elidable` once `effects_of` is correct.
     // TODO(Jacob): Ensure that `is_elidable` === `!has_effects` for all inputs
     fn is_elidable(&self) -> bool {
         let writes_allocator = Effect::from_bits(effect_sets::Any, effect_sets::Allocator);
@@ -4460,7 +4476,9 @@ impl Function {
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
                 let insn = &self.insns[insn_id.0];
-                if insn.has_effects() {
+                if !insn.is_elidable() {
+                // TODO(Jacob): Remove this comment
+                // if insn.has_effects() {
                     worklist.push_back(*insn_id);
                 }
             }
