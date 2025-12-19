@@ -1738,7 +1738,8 @@ flo_lt(VALUE x, VALUE y)
  *  call-seq:
  *    self <= other -> true or false
  *
- *  Returns +true+ if +self+ is numerically less than or equal to +other+:
+ *  Returns whether the value of +self+ is less than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 <= 3              # => true
  *    2.0 <= 3.0            # => true
@@ -5081,10 +5082,10 @@ fix_le(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    self <= real -> true or false
+ *    self <= other -> true or false
  *
- *  Returns +true+ if the value of +self+ is less than or equal to
- *  that of +other+:
+ * Returns whether the value of +self+ is less than or equal to the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 <= 0              # => false
  *    1 <= 1              # => true
