@@ -33,6 +33,24 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Array
+
+    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
+    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
+
+* Binding
+
+    * `Binding#local_variables` does no longer include numbered parameters.
+      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
+      `Binding#local_variable_defined?` reject to handle numbered parameters.
+      [[Bug #21049]]
+
+    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
+      `Binding#implicit_parameter_defined?` have been added to access
+      numbered parameters and "it" parameter. [[Bug #21049]]
+
 * Enumerator
 
     * `Enumerator.produce` now accepts an optional `size` keyword argument
@@ -56,6 +74,50 @@ Note: We're only listing outstanding class updates.
         ```
 
       [[Feature #21701]]
+
+* ErrorHighlight
+
+    * When an ArgumentError is raised, it now displays code snippets for
+      both the method call (caller) and the method definition (callee).
+      [[Feature #21543]]
+
+      ```
+      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+          caller: test.rb:3
+          | add(1)
+            ^^^
+          callee: test.rb:1
+          | def add(x, y) = x + y
+                ^^^
+              from test.rb:3:in '<main>'
+      ```
+
+* Fiber
+
+    * Introduce support for `Fiber#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
+* Fiber::Scheduler
+
+    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
+      given exception. The initial use case is to interrupt a fiber that is
+      waiting on a blocking IO operation when the IO operation is closed.
+      [[Feature #21166]]
+
+* File
+
+    * `File::Stat#birthtime` is now available on Linux via the statx
+      system call when supported by the kernel and filesystem.
+      [[Feature #21205]]
+
+* IO
+
+    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
+      [[Feature #20610]]
+
+    * A deprecated behavior, process creation by `IO` class methods
+      with a leading `|`, was removed.  [[Feature #19630]]
 
 * Kernel
 
@@ -82,60 +144,14 @@ Note: We're only listing outstanding class updates.
     * A deprecated behavior, process creation by `Kernel#open` with a
       leading `|`, was removed.  [[Feature #19630]]
 
-* Array
-
-    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
-    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
-
-    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
-      and signed LEB128 encoded integers. [[Feature #21785]]
-
-* Binding
-
-    * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
-      `Binding#local_variable_defined?` reject to handle numbered parameters.
-      [[Bug #21049]]
-
-    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
-      `Binding#implicit_parameter_defined?` have been added to access
-      numbered parameters and "it" parameter. [[Bug #21049]]
-
-* ErrorHighlight
-
-    * When an ArgumentError is raised, it now displays code snippets for
-      both the method call (caller) and the method definition (callee).
-      [[Feature #21543]]
-
-      ```
-      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
-
-          caller: test.rb:3
-          | add(1)
-            ^^^
-          callee: test.rb:1
-          | def add(x, y) = x + y
-                ^^^
-              from test.rb:3:in '<main>'
-      ```
-
-* File
-
-    * `File::Stat#birthtime` is now available on Linux via the statx
-      system call when supported by the kernel and filesystem.
-      [[Feature #21205]]
-
-* IO
-
-    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
-      [[Feature #20610]]
-
-    * A deprecated behavior, process creation by `IO` class methods
-      with a leading `|`, was removed.  [[Feature #19630]]
-
 * Math
 
     * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
+
+* Pathname
+
+    * Pathname has been promoted from a default gem to a core class of Ruby.
+      [[Feature #17473]]
 
 * Proc
 
@@ -249,23 +265,6 @@ Note: We're only listing outstanding class updates.
 
     * Introduce support for `Thread#raise(cause:)` argument similar to
       `Kernel#raise`. [[Feature #21360]]
-
-* Fiber
-
-    * Introduce support for `Fiber#raise(cause:)` argument similar to
-      `Kernel#raise`. [[Feature #21360]]
-
-* Fiber::Scheduler
-
-    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
-      given exception. The initial use case is to interrupt a fiber that is
-      waiting on a blocking IO operation when the IO operation is closed.
-      [[Feature #21166]]
-
-* Pathname
-
-    * Pathname has been promoted from a default gem to a core class of Ruby.
-      [[Feature #17473]]
 
 ## Stdlib updates
 
