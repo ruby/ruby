@@ -342,6 +342,22 @@ for one element in the input or output array.
     s.unpack('U*')
     # => [4194304]
 
+- <tt>'r'</tt> - Signed LEB128-encoded integer
+  (see {Signed LEB128}[https://en.wikipedia.org/wiki/LEB128#Signed_LEB128])
+
+    s = [1, 127, -128, 16383, -16384].pack("r*")
+    # => "\x01\xFF\x00\x80\x7F\xFF\xFF\x00\x80\x80\x7F"
+    s.unpack('r*')
+    # => [1, 127, -128, 16383, -16384]
+
+- <tt>'R'</tt> - Unsigned LEB128-encoded integer
+  (see {Unsigned LEB128}[https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128])
+
+    s = [1, 127, 128, 16383, 16384].pack("R*")
+    # => "\x01\x7F\x80\x01\xFF\x7F\x80\x80\x01"
+    s.unpack('R*')
+    # => [1, 127, 128, 16383, 16384]
+
 - <tt>'w'</tt> - BER-encoded integer
   (see {BER encoding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
 
