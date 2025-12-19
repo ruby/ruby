@@ -6338,6 +6338,11 @@ fn gen_send_iseq(
                 gen_counter_incr(asm, Counter::send_iseq_clobbering_block_arg);
                 return None;
             }
+            if iseq_has_rest {
+                // The proc would be stored above the current stack top, where GC can't see it
+                gen_counter_incr(asm, Counter::send_iseq_block_arg_gc_unsafe);
+                return None;
+            }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
             let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
             asm.store(callee_specval, proc);
