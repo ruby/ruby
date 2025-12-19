@@ -284,7 +284,7 @@ The following bundled gems are promoted from default gems.
 We only list stdlib changes that are notable feature changes.
 
 Other changes are listed in the following sections. We also listed release
-history from the previous bundled version that is Ruby 3.3.0 if it has GitHub
+history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
 releases.
 
 The following default gem is added.
@@ -324,9 +324,6 @@ The following default gems are updated.
 * weakref 0.1.4
 * zlib 3.2.2
 
-The following bundled gems are added.
-
-
 The following bundled gems are updated.
 
 * minitest 6.0.0
@@ -348,6 +345,15 @@ The following bundled gems are updated.
 * syslog 0.3.0
 * csv 3.3.5
 * repl_type_completor 0.1.12
+
+### RubyGems and Bundler
+
+see the following links for details.
+
+* [Upgrading to RubyGems/Bundler 4 - RubyGems Blog](https://blog.rubygems.org/2025/12/03/upgrade-to-rubygems-bundler-4.html)
+* [4.0.0 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/03/4.0.0-released.html)
+* [4.0.1 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/09/4.0.1-released.html)
+* [4.0.2 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/17/4.0.2-released.html)
 
 ## Supported platforms
 
