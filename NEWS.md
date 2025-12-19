@@ -87,6 +87,9 @@ Note: We're only listing outstanding class updates.
     * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
     * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
 
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
+
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
@@ -238,6 +241,9 @@ Note: We're only listing outstanding class updates.
 
     * `String#strip`, `strip!`, `lstrip`, `lstrip!`, `rstrip`, and `rstrip!`
        are extended to accept `*selectors` arguments. [[Feature #21552]]
+
+    * `String#unpack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Thread
 
@@ -545,3 +551,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
 [Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
+[Feature #21785]: https://bugs.ruby-lang.org/issues/21785
