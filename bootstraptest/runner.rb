@@ -16,6 +16,7 @@ rescue LoadError
   $:.unshift File.join(File.dirname(__FILE__), '../lib')
   retry
 end
+require_relative '../tool/lib/test/jobserver'
 
 if !Dir.respond_to?(:mktmpdir)
   # copied from lib/tmpdir.rb
@@ -110,35 +111,7 @@ BT = Class.new(bt) do
 
   def wn=(wn)
     unless wn == 1
-      if /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ ENV.delete("MAKEFLAGS")
-        begin
-          if fifo = $3
-            fifo.gsub!(/\\(?=.)/, '')
-            r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
-            w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
-          else
-            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-          end
-        rescue
-          r.close if r
-        else
-          r.close_on_exec = true
-          w.close_on_exec = true
-          tokens = r.read_nonblock(wn > 0 ? wn : 1024, exception: false)
-          r.close
-          if String === tokens
-            tokens.freeze
-            auth = w
-            w = nil
-            at_exit {auth << tokens; auth.close}
-            wn = tokens.size + 1
-          else
-            w.close
-            wn = 1
-          end
-        end
-      end
+      wn = Test::JobServer.max_jobs(wn > 0 ? wn : 1024, ENV.delete("MAKEFLAGS")) || wn
       if wn <= 0
         require 'etc'
         wn = [Etc.nprocessors / 2, 1].max

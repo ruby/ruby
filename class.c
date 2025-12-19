@@ -30,6 +30,7 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
+#include "ruby/ractor.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -2823,7 +2824,7 @@ rb_special_singleton_class(VALUE obj)
  *       consistency of the metaclass hierarchy.
  */
 static VALUE
-singleton_class_of(VALUE obj)
+singleton_class_of(VALUE obj, bool ensure_eigenclass)
 {
     VALUE klass;
 
@@ -2851,13 +2852,26 @@ singleton_class_of(VALUE obj)
         }
     }
 
-    klass = METACLASS_OF(obj);
-    if (!(RCLASS_SINGLETON_P(klass) &&
-          RCLASS_ATTACHED_OBJECT(klass) == obj)) {
-        klass = rb_make_metaclass(obj, klass);
+    bool needs_lock = rb_multi_ractor_p() && rb_ractor_shareable_p(obj);
+    unsigned int lev;
+    if (needs_lock) {
+        RB_VM_LOCK_ENTER_LEV(&lev);
     }
-
-    RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+    {
+        klass = METACLASS_OF(obj);
+        if (!(RCLASS_SINGLETON_P(klass) &&
+            RCLASS_ATTACHED_OBJECT(klass) == obj)) {
+            klass = rb_make_metaclass(obj, klass);
+        }
+        RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+        if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
+            /* ensures an exposed class belongs to its own eigenclass */
+            (void)ENSURE_EIGENCLASS(klass);
+        }
+    }
+    if (needs_lock) {
+        RB_VM_LOCK_LEAVE_LEV(&lev);
+    }
 
     return klass;
 }
@@ -2900,12 +2914,7 @@ rb_singleton_class_get(VALUE obj)
 VALUE
 rb_singleton_class(VALUE obj)
 {
-    VALUE klass = singleton_class_of(obj);
-
-    /* ensures an exposed class belongs to its own eigenclass */
-    if (RB_TYPE_P(obj, T_CLASS)) (void)ENSURE_EIGENCLASS(klass);
-
-    return klass;
+    return singleton_class_of(obj, true);
 }
 
 /*!
@@ -2923,7 +2932,7 @@ rb_singleton_class(VALUE obj)
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_define_method(singleton_class_of(obj), name, func, argc);
+    rb_define_method(singleton_class_of(obj, false), name, func, argc);
 }
 
 #ifdef rb_define_module_function

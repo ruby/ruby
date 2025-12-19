@@ -1,0 +1,46 @@
+p(p a, x: b => value)
+            ^~ unexpected '=>'; expected a `)` to close the arguments
+                    ^ unexpected ')', expecting end-of-input
+                    ^ unexpected ')', ignoring it
+
+p(p a, x: => value)
+          ^~ unexpected '=>'; expected a `)` to close the arguments
+                  ^ unexpected ')', expecting end-of-input
+                  ^ unexpected ')', ignoring it
+
+p(p a, &block => value)
+              ^~ unexpected '=>'; expected a `)` to close the arguments
+                      ^ unexpected ')', expecting end-of-input
+                      ^ unexpected ')', ignoring it
+
+p(p a do end => value)
+             ^~ unexpected '=>'; expected a `)` to close the arguments
+                     ^ unexpected ')', expecting end-of-input
+                     ^ unexpected ')', ignoring it
+
+p(p a, *args => value)
+             ^~ unexpected '=>'; expected a `)` to close the arguments
+                     ^ unexpected ')', expecting end-of-input
+                     ^ unexpected ')', ignoring it
+
+p(p a, **kwargs => value)
+                ^~ unexpected '=>'; expected a `)` to close the arguments
+                        ^ unexpected ')', expecting end-of-input
+                        ^ unexpected ')', ignoring it
+
+p p 1, &block => 2, &block
+              ^~ unexpected '=>', expecting end-of-input
+              ^~ unexpected '=>', ignoring it
+                  ^ unexpected ',', expecting end-of-input
+                  ^ unexpected ',', ignoring it
+                    ^ unexpected '&', ignoring it
+
+p p p 1 => 2 => 3 => 4
+                  ^~ unexpected '=>', expecting end-of-input
+                  ^~ unexpected '=>', ignoring it
+
+p[p a, x: b => value]
+           ^ expected a matching `]`
+                    ^ unexpected ']', expecting end-of-input
+                    ^ unexpected ']', ignoring it
+

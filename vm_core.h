@@ -1048,6 +1048,7 @@ struct rb_execution_context_struct {
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
     rb_serial_t serial;
+    rb_serial_t ractor_id;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;
@@ -2068,6 +2069,14 @@ rb_ec_ractor_ptr(const rb_execution_context_t *ec)
     else {
         return NULL;
     }
+}
+
+static inline rb_serial_t
+rb_ec_ractor_id(const rb_execution_context_t *ec)
+{
+    rb_serial_t ractor_id = ec->ractor_id;
+    RUBY_ASSERT(ractor_id);
+    return ractor_id;
 }
 
 static inline rb_vm_t *

@@ -1122,6 +1122,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         local_size += VM_ENV_DATA_SIZE;
     }
 
+    // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
+    // This is done before creating the imemo_env because VM_STACK_ENV_WRITE
+    // below leaves the on-stack ep in a state that is unsafe to GC.
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        rb_yjit_invalidate_ep_is_bp(cfp->iseq);
+        rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+    }
+
     /*
      * # local variables on a stack frame (N == local_size)
      * [lvar1, lvar2, ..., lvarN, SPECVAL]
@@ -1164,12 +1172,6 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         }
     }
 #endif
-
-    // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
-    if (env->iseq) {
-        rb_yjit_invalidate_ep_is_bp(env->iseq);
-        rb_zjit_invalidate_no_ep_escape(env->iseq);
-    }
 
     return (VALUE)env;
 }
@@ -3953,6 +3955,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 
     th->ec->storage = Qnil;
+    th->ec->ractor_id = rb_ractor_id(th->ractor);
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;

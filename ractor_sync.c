@@ -1267,7 +1267,11 @@ static size_t
 ractor_selector_memsize(const void *ptr)
 {
     const struct ractor_selector *s = ptr;
-    return sizeof(struct ractor_selector) + st_memsize(s->ports);
+    size_t size = sizeof(struct ractor_selector);
+    if (s->ports) {
+        size += st_memsize(s->ports);
+    }
+    return size;
 }
 
 static const rb_data_type_t ractor_selector_data_type = {

@@ -53,6 +53,8 @@ These tables summarize the directives for packing and unpacking.
 
   U             | UTF-8 character
   w             | BER-compressed integer
+  R             | LEB128 encoded unsigned integer
+  r             | LEB128 encoded signed integer
 
 === For Floats
 

@@ -860,6 +860,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 #endif
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
+        th->ec->ractor_id = rb_ractor_id(th->ractor);
         th->ractor->threads.main = th;
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));

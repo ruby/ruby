@@ -316,7 +316,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
 } unless (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
-assert_match /specify at least one ractor/, %q{
+assert_match /specify at least one Ractor::Port or Ractor/, %q{
   begin
     Ractor.select
   rescue ArgumentError => e

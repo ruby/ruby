@@ -12,8 +12,6 @@ exclude:
 - \.gemspec\z
 - lib/set/subclass_compatible.rb
 
-generator_name: aliki
-
 autolink_excluded_words:
 - Box
 - Class

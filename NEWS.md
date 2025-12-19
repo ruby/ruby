@@ -12,7 +12,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Logical binary operators (`||`, `&&`, `and` and `or`) at the
   beginning of a line continue the previous line, like fluent dot.
-  The following two code are equal:
+  The following two code examples are equal:
 
     ```ruby
     if condition1
@@ -32,6 +32,24 @@ Note that each entry is kept to a minimum, see links for details.
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
+
+* Array
+
+    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
+    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
+
+* Binding
+
+    * `Binding#local_variables` does no longer include numbered parameters.
+      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
+      `Binding#local_variable_defined?` reject to handle numbered parameters.
+      [[Bug #21049]]
+
+    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
+      `Binding#implicit_parameter_defined?` have been added to access
+      numbered parameters and "it" parameter. [[Bug #21049]]
 
 * Enumerator
 
@@ -56,6 +74,50 @@ Note: We're only listing outstanding class updates.
         ```
 
       [[Feature #21701]]
+
+* ErrorHighlight
+
+    * When an ArgumentError is raised, it now displays code snippets for
+      both the method call (caller) and the method definition (callee).
+      [[Feature #21543]]
+
+      ```
+      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+          caller: test.rb:3
+          | add(1)
+            ^^^
+          callee: test.rb:1
+          | def add(x, y) = x + y
+                ^^^
+              from test.rb:3:in '<main>'
+      ```
+
+* Fiber
+
+    * Introduce support for `Fiber#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
+* Fiber::Scheduler
+
+    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
+      given exception. The initial use case is to interrupt a fiber that is
+      waiting on a blocking IO operation when the IO operation is closed.
+      [[Feature #21166]]
+
+* File
+
+    * `File::Stat#birthtime` is now available on Linux via the statx
+      system call when supported by the kernel and filesystem.
+      [[Feature #21205]]
+
+* IO
+
+    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
+      [[Feature #20610]]
+
+    * A deprecated behavior, process creation by `IO` class methods
+      with a leading `|`, was removed.  [[Feature #19630]]
 
 * Kernel
 
@@ -82,57 +144,14 @@ Note: We're only listing outstanding class updates.
     * A deprecated behavior, process creation by `Kernel#open` with a
       leading `|`, was removed.  [[Feature #19630]]
 
-* Array
-
-    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
-    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
-
-* Binding
-
-    * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
-      `Binding#local_variable_defined?` reject to handle numbered parameters.
-      [[Bug #21049]]
-
-    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
-      `Binding#implicit_parameter_defined?` have been added to access
-      numbered parameters and "it" parameter. [[Bug #21049]]
-
-* ErrorHighlight
-
-    * When an ArgumentError is raised, it now displays code snippets for
-      both the method call (caller) and the method definition (callee).
-      [[Feature #21543]]
-
-      ```
-      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
-
-          caller: test.rb:3
-          | add(1)
-            ^^^
-          callee: test.rb:1
-          | def add(x, y) = x + y
-                ^^^
-              from test.rb:3:in '<main>'
-      ```
-
-* File
-
-    * `File::Stat#birthtime` is now available on Linux via the statx
-      system call when supported by the kernel and filesystem.
-      [[Feature #21205]]
-
-* IO
-
-    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
-      [[Feature #20610]]
-
-    * A deprecated behavior, process creation by `IO` class methods
-      with a leading `|`, was removed.  [[Feature #19630]]
-
 * Math
 
     * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
+
+* Pathname
+
+    * Pathname has been promoted from a default gem to a core class of Ruby.
+      [[Feature #17473]]
 
 * Proc
 
@@ -165,7 +184,7 @@ Note: We're only listing outstanding class updates.
         * `Ractor::Port#close`
         * `Ractor::Port#closed?`
 
-        As result, `Ractor.yield` and `Ractor#take` were removed.
+        As a result, `Ractor.yield` and `Ractor#take` were removed.
 
     * `Ractor#join` and `Ractor#value` were added to wait for the
       termination of a Ractor. These are similar to `Thread#join`
@@ -182,7 +201,7 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
-    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` is introduced
+    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` are introduced
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
@@ -214,7 +233,7 @@ Note: We're only listing outstanding class updates.
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
 
-    * `Set#inspect` now uses a simpler displays, similar to literal arrays.
+    * `Set#inspect` now uses a simpler display, similar to literal arrays.
       (e.g., `Set[1, 2, 3]` instead of `#<Set: {1, 2, 3}>`). [[Feature #21389]]
 
     * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
@@ -238,6 +257,9 @@ Note: We're only listing outstanding class updates.
 
     * `String#strip`, `strip!`, `lstrip`, `lstrip!`, `rstrip`, and `rstrip!`
        are extended to accept `*selectors` arguments. [[Feature #21552]]
+
+    * `String#unpack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Thread
 
@@ -278,7 +300,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.5.0
 * logger 1.7.0
-* rdoc 6.17.0
+* rdoc 7.0.1
 * win32ole 1.9.2
 * irb 1.16.0
 * reline 0.6.3
@@ -317,7 +339,7 @@ The following default gems are updated.
 * openssl 4.0.0
 * optparse 0.8.1
 * pp 0.6.3
-* prism 1.6.0
+* prism 1.7.0
 * psych 5.3.1
 * resolv 0.7.0
 * stringio 3.2.0
@@ -333,19 +355,19 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
-* minitest 5.27.0
+* minitest 6.0.0
 * power_assert 3.0.1
 * rake 13.3.1
 * test-unit 3.7.3
 * rexml 3.4.4
 * net-ftp 0.3.9
-* net-imap 0.6.1
+* net-imap 0.6.2
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
 * rbs 3.10.0.pre.2
 * typeprof 0.31.0
-* debug 1.11.0
+* debug 1.11.1
 * base64 0.3.0
 * bigdecimal 4.0.1
 * drb 2.2.3
@@ -367,7 +389,7 @@ The following bundled gems are updated.
     * `Ractor.yield`
     * `Ractor#take`
     * `Ractor#close_incoming`
-    * `Ractor#close_outgoging`
+    * `Ractor#close_outgoing`
 
     [[Feature #21262]]
 
@@ -378,7 +400,7 @@ The following bundled gems are updated.
 
 * `rb_path_check` has been removed. This function was used for
   `$SAFE` path checking which was removed in Ruby 2.7,
-  and was already deprecated,.
+  and was already deprecated.
   [[Feature #20971]]
 
 * A backtrace for `ArgumentError` of "wrong number of arguments" now
@@ -458,15 +480,27 @@ The following bundled gems are updated.
 
 ## Implementation improvements
 
+* `Class#new` (ex. `Object.new`) is faster in all cases, but especially when passing keyword arguments. This has also been integrated into YJIT and ZJIT. [[Feature #21254]]
+* GC heaps of different size pools now grow independently, reducing memory usage when only some pools contain long-lived objects
+* GC sweeping is faster on pages of large objects
+* "Generic ivar" objects (String, Array, `TypedData`, etc.) now use a new internal "fields" object for faster instance variable access
+* The GC avoids maintaining an internal `id2ref` table until it is first used, making `object_id` allocation and GC sweeping faster
+* `object_id` and `hash` are faster on Class and Module objects
+* Larger bignum Integers can remain embedded using variable width allocation
+* `Random`, `Enumerator::Product`, `Enumerator::Chain`, `Addrinfo`,
+  `StringScanner`, and some internal objects are now write-barrier protected,
+  which reduces GC overhead.
+
 ### Ractor
 
-A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
 * Performance improvements
-    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Frozen strings and the symbol table internally use a lock-free hash set [[Feature #21268]]
     * Method cache lookups avoid locking in most cases
-    * Class (and geniv) instance variable access is faster and avoids locking
-    * Cache contention is avoided during object allocation
+    * Class (and generic ivar) instance variable access is faster and avoids locking
+    * CPU cache contention is avoided in object allocation by using a per-ractor counter
+    * CPU cache contention is avoided in xmalloc/xfree by using a thread-local counter
     * `object_id` avoids locking in most cases
 * Bug fixes and stability
     * Fixed possible deadlocks when combining Ractors and Threads
@@ -474,6 +508,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * Fixed encoding/transcoding issues across Ractors
     * Fixed race conditions in GC operations and method invalidation
     * Fixed issues with processes forking after starting a Ractor
+    * GC allocation counts are now accurate under Ractors
+    * Fixed TracePoints not working after GC [[Bug #19112]]
 
 ## JIT
 
@@ -497,6 +533,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
+[Bug #19112]:     https://bugs.ruby-lang.org/issues/19112
 [Feature #19630]: https://bugs.ruby-lang.org/issues/19630
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
@@ -519,6 +556,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
 [Feature #21254]: https://bugs.ruby-lang.org/issues/21254
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
+[Feature #21268]: https://bugs.ruby-lang.org/issues/21268
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
@@ -532,8 +570,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
 [Feature #21543]: https://bugs.ruby-lang.org/issues/21543
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
+[Feature #21552]: https://bugs.ruby-lang.org/issues/21552
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
 [Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
 [Feature #21678]: https://bugs.ruby-lang.org/issues/21678
 [Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
+[Feature #21785]: https://bugs.ruby-lang.org/issues/21785

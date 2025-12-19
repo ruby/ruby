@@ -47,7 +47,7 @@
 # frozen objects can be unshareable if they contain (through their instance variables) unfrozen
 # objects.
 #
-# Shareable objects are those which can be used by several threads without compromising
+# Shareable objects are those which can be used by several ractors at once without compromising
 # thread-safety, for example numbers, +true+ and +false+. Ractor.shareable? allows you to check this,
 # and Ractor.make_shareable tries to make the object shareable if it's not already, and gives an error
 # if it can't do it.
@@ -65,12 +65,12 @@
 #     ary[0].frozen?              #=> true
 #     ary[1].frozen?              #=> true
 #
-# When a shareable object is sent (via #send or Ractor.yield), no additional processing occurs
-# on it. It just becomes usable by both ractors. When an unshareable object is sent, it can be
+# When a shareable object is sent via #send, no additional processing occurs
+# on it and it becomes usable by both ractors. When an unshareable object is sent, it can be
 # either _copied_ or _moved_. The first is the default, and it copies the object fully by
 # deep cloning (Object#clone) the non-shareable parts of its structure.
 #
-#     data = ['foo', 'bar'.freeze]
+#     data = ['foo'.dup, 'bar'.freeze]
 #     r = Ractor.new do
 #       data2 = Ractor.receive
 #       puts "In ractor: #{data2.object_id}, #{data2[0].object_id}, #{data2[1].object_id}"
@@ -81,8 +81,8 @@
 #
 # This will output something like:
 #
-#     In ractor: 340, 360, 320
-#     Outside  : 380, 400, 320
+#     In ractor: 8, 16, 24
+#     Outside  : 32, 40, 24
 #
 # Note that the object ids of the array and the non-frozen string inside the array have changed in
 # the ractor because they are different objects. The second array's element, which is a
@@ -267,7 +267,7 @@ class Ractor
   #
   # TBD
   def self.select(*ports)
-    raise ArgumentError, 'specify at least one ractor or `yield_value`' if ports.empty?
+    raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
     monitors = {} # Ractor::Port => Ractor
 
@@ -371,7 +371,7 @@ class Ractor
   #
   # Checks if the object is shareable by ractors.
   #
-  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen
+  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are shareable
   #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # frozen_string_literal: true
   #     Ractor.shareable?('foo'.freeze) #=> true
   #
@@ -460,9 +460,9 @@ class Ractor
   # call-seq:
   #   Ractor.store_if_absent(key){ init_block }
   #
-  # If the corresponding value is not set, yield a value with
-  # init_block and store the value in thread-safe manner.
-  # This method returns corresponding stored value.
+  # If the corresponding ractor-local value is not set, yield a value with
+  # init_block and store the value in a thread-safe manner.
+  # This method returns the stored value.
   #
   #   (1..10).map{
   #     Thread.new(it){|i|
@@ -578,10 +578,10 @@ class Ractor
   # call-seq:
   #    ractor.monitor(port) -> self
   #
-  # Register port as a monitoring port. If the ractor terminated,
-  # the port received a Symbol object.
+  # Add another ractor's port to the monitored list of the receiver. If +self+ terminates,
+  # the port is sent a Symbol object.
   # :exited will be sent if the ractor terminated without an exception.
-  # :aborted will be sent if the ractor terminated with a exception.
+  # :aborted will be sent if the ractor terminated with an exception.
   #
   #     r = Ractor.new{ some_task() }
   #     r.monitor(port = Ractor::Port.new)
@@ -589,7 +589,7 @@ class Ractor
   #
   #     r = Ractor.new{ raise "foo" }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :terminated and r is terminated with an exception "foo"
+  #     port.receive #=> :aborted and r is terminated with an exception "foo"
   #
   def monitor port
     __builtin_ractor_monitor(port)
@@ -599,7 +599,7 @@ class Ractor
   # call-seq:
   #    ractor.unmonitor(port) -> self
   #
-  # Unregister port from the monitoring ports.
+  # Remove the given port from the ractor's monitored list.
   #
   def unmonitor port
     __builtin_ractor_unmonitor(port)
@@ -609,11 +609,11 @@ class Ractor
   # call-seq:
   #   Ractor.shareable_proc(self: nil){} -> shareable proc
   #
-  # It returns shareable Proc object. The Proc object is
-  # shareable and the self in a block will be replaced with
-  # the value passed via `self:` keyword.
+  # Returns a shareable copy of the given block's Proc. The value of +self+
+  # in the Proc will be replaced with the value passed via the `self:` keyword,
+  # or +nil+ if not given.
   #
-  # In a shareable Proc, you can not access to the outer variables.
+  # In a shareable Proc, you can not access any outer variables.
   #
   #     a = 42
   #     Ractor.shareable_proc{ p a }
@@ -634,9 +634,9 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.shareable_proc{} -> shareable proc
+  #   Ractor.shareable_lambda{} -> shareable lambda
   #
-  # Same as Ractor.shareable_proc, but returns lambda proc.
+  # Same as Ractor.shareable_proc, but returns a lambda.
   #
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block
@@ -652,7 +652,7 @@ class Ractor
     # call-seq:
     #    port.receive -> msg
     #
-    # Receive a message to the port (which was sent there by Port#send).
+    # Receive a message from the port (which was sent there by Port#send).
     #
     #     port = Ractor::Port.new
     #     r = Ractor.new port do |port|
@@ -662,7 +662,7 @@ class Ractor
     #     v1 = port.receive
     #     puts "Received: #{v1}"
     #     r.join
-    #     # Here will be printed: "Received: message1"
+    #     # This will print: "Received: message1"
     #
     # The method blocks if the message queue is empty.
     #
@@ -690,7 +690,7 @@ class Ractor
     #     Still received only one
     #     Received: message2
     #
-    # If close_incoming was called on the ractor, the method raises Ractor::ClosedError
+    # If the port is closed, the method raises Ractor::ClosedError
     # if there are no more messages in the message queue:
     #
     #     port = Ractor::Port.new
@@ -710,8 +710,8 @@ class Ractor
     # Send a message to a port to be accepted by port.receive.
     #
     #     port = Ractor::Port.new
-    #     r = Ractor.new do
-    #       r.send 'message'
+    #     r = Ractor.new(port) do |port|
+    #       port.send 'message'
     #     end
     #     value = port.receive
     #     puts "Received #{value}"
@@ -722,7 +722,7 @@ class Ractor
     #
     #     port = Ractor::Port.new
     #     r = Ractor.new(port) do |port|
-    #       port.send 'test'}
+    #       port.send 'test'
     #       puts "Sent successfully"
     #       # Prints: "Sent successfully" immediately
     #     end
@@ -752,7 +752,7 @@ class Ractor
     # call-seq:
     #    port.close
     #
-    # Close the port. On the closed port, sending is not prohibited.
+    # Close the port. On the closed port, sending is prohibited.
     # Receiving is also not allowed if there is no sent messages arrived before closing.
     #
     #     port = Ractor::Port.new

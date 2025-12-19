@@ -2943,6 +2943,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         $$ = new_args_tail(p, 0, 0, $1, &@1);
                     /*% ripper: [Qnil, Qnil, $:1] %*/
                     }
+                ;
 
 %rule def_endless_method(bodystmt) <node>
                 : defn_head[head] f_opt_paren_args[args] '=' bodystmt

@@ -23,7 +23,14 @@ enum jit_bindgen_constants {
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 
     // Field offsets for the RString struct
-    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
+    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
+
+    // Field offsets for rb_execution_context_t
+    RUBY_OFFSET_EC_CFP = offsetof(rb_execution_context_t, cfp),
+    RUBY_OFFSET_EC_INTERRUPT_FLAG = offsetof(rb_execution_context_t, interrupt_flag),
+    RUBY_OFFSET_EC_INTERRUPT_MASK = offsetof(rb_execution_context_t, interrupt_mask),
+    RUBY_OFFSET_EC_THREAD_PTR = offsetof(rb_execution_context_t, thread_ptr),
+    RUBY_OFFSET_EC_RACTOR_ID = offsetof(rb_execution_context_t, ractor_id),
 };
 
 // Manually bound in rust since this is out-of-range of `int`,

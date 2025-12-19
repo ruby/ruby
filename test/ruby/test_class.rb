@@ -930,4 +930,19 @@ CODE
       end.each(&:join)
     end;
   end
+
+  def test_safe_multi_ractor_singleton_class_access
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class A; end
+      4.times.map do
+        Ractor.new do
+          a = A
+          100.times do
+            a = a.singleton_class
+          end
+        end
+      end.each(&:join)
+    end;
+  end
 end
