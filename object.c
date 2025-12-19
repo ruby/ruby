@@ -3510,6 +3510,152 @@ is_digit_char(unsigned char c, int base)
     return (i >= 0 && i < base);
 }
 
+/* ============================================================================
+ * Fast paths for simple float parsing
+ *
+ * These optimizations bypass strtod for common number formats, providing
+ * significant speedup for typical Ruby workloads (prices, coordinates, etc.)
+ *
+ * Based on insights from:
+ * - Eisel-Lemire algorithm (https://arxiv.org/abs/2101.11408)
+ * - Nigel Tao's blog post (https://nigeltao.github.io/blog/2020/eisel-lemire.html)
+ * ============================================================================ */
+
+/* Maximum exponent for exact power-of-10 representation in double */
+#define MAX_EXACT_POW10 22
+
+/*
+ * Exact powers of 10 for fast path.
+ * 10^0 through 10^22 are exactly representable in IEEE 754 double.
+ */
+static const double EXACT_POWERS_OF_10[] = {
+    1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,
+    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+    1e20, 1e21, 1e22
+};
+
+/*
+ * Ultra-fast path for small integers (0-999).
+ * Handles patterns: "5", "42", "-123" (up to 3 digits)
+ * Returns true if handled, false to continue with regular parsing.
+ */
+static inline bool
+try_small_integer_fast_path(const char *p, double *result)
+{
+    bool negative = false;
+    uint64_t val;
+
+    /* Handle optional sign */
+    if (*p == '-') {
+        negative = true;
+        p++;
+    }
+    else if (*p == '+') {
+        p++;
+    }
+
+    /* Must start with a digit */
+    if (!ISDIGIT(*p)) {
+        return false;
+    }
+
+    /* Parse up to 3 digits */
+    val = (unsigned char)(*p++ - '0');
+
+    if (ISDIGIT(*p)) {
+        val = val * 10 + (unsigned char)(*p++ - '0');
+        if (ISDIGIT(*p)) {
+            val = val * 10 + (unsigned char)(*p++ - '0');
+        }
+    }
+
+    /* Must end with null, whitespace, or end of number */
+    if (*p != '\0' && !ISSPACE(*p)) {
+        return false;  /* Has decimal point, exponent, or more digits */
+    }
+
+    *result = negative ? -(double)val : (double)val;
+    return true;
+}
+
+/*
+ * Ultra-fast path for simple decimals like "1.5", "9.99", "3.14".
+ * Handles patterns: D.D, D.DD, D.DDD, DD.D, DD.DD (up to 3 integer + 3 decimal digits)
+ * These are the most common float formats in real Ruby applications.
+ */
+static inline bool
+try_simple_decimal_fast_path(const char *p, double *result)
+{
+    bool negative = false;
+    uint64_t int_part = 0;
+    uint64_t frac_part = 0;
+    int frac_digits = 0;
+    static const double divisors[] = { 1.0, 10.0, 100.0, 1000.0 };
+
+    /* Handle optional sign */
+    if (*p == '-') {
+        negative = true;
+        p++;
+    }
+    else if (*p == '+') {
+        p++;
+    }
+
+    /* Must start with a digit */
+    if (!ISDIGIT(*p)) {
+        return false;
+    }
+
+    /* Parse integer part (up to 3 digits) */
+    int_part = (unsigned char)(*p++ - '0');
+    if (ISDIGIT(*p)) {
+        int_part = int_part * 10 + (unsigned char)(*p++ - '0');
+        if (ISDIGIT(*p)) {
+            int_part = int_part * 10 + (unsigned char)(*p++ - '0');
+            if (ISDIGIT(*p)) {
+                return false;  /* Too many integer digits, use regular path */
+            }
+        }
+    }
+
+    /* Must have decimal point */
+    if (*p != '.') {
+        return false;  /* No decimal point, try integer path instead */
+    }
+    p++;
+
+    /* Must have at least one fractional digit */
+    if (!ISDIGIT(*p)) {
+        return false;
+    }
+
+    /* Parse fractional part (up to 3 digits for speed) */
+    frac_part = (unsigned char)(*p++ - '0');
+    frac_digits = 1;
+
+    if (ISDIGIT(*p)) {
+        frac_part = frac_part * 10 + (unsigned char)(*p++ - '0');
+        frac_digits = 2;
+        if (ISDIGIT(*p)) {
+            frac_part = frac_part * 10 + (unsigned char)(*p++ - '0');
+            frac_digits = 3;
+            if (ISDIGIT(*p)) {
+                return false;  /* Too many fractional digits, use regular path */
+            }
+        }
+    }
+
+    /* Must end cleanly (no exponent, no underscore) */
+    if (*p != '\0' && !ISSPACE(*p)) {
+        return false;
+    }
+
+    /* Compute result using precomputed divisors */
+    double val = (double)int_part + (double)frac_part / divisors[frac_digits];
+    *result = negative ? -val : val;
+    return true;
+}
+
 static double
 rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, int *error)
 {
@@ -3530,6 +3676,22 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
 
     if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
         return 0.0;
+    }
+
+    /*
+     * Fast paths for simple numbers (only when badcheck is false).
+     * These bypass strtod for common patterns like "42", "1.5", "9.99".
+     * When badcheck is true, we need full validation so skip fast paths.
+     */
+    if (!badcheck) {
+        /* Try small integer fast path: "5", "42", "-123" */
+        if (try_small_integer_fast_path(p, &d)) {
+            return d;
+        }
+        /* Try simple decimal fast path: "1.5", "9.99", "3.14" */
+        if (try_simple_decimal_fast_path(p, &d)) {
+            return d;
+        }
     }
 
     d = strtod(p, &end);
