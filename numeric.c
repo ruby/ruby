@@ -1702,7 +1702,8 @@ flo_ge(VALUE x, VALUE y)
  *  call-seq:
  *    self < other -> true or false
  *
- *  Returns +true+ if +self+ is numerically less than +other+:
+ *  Returns whether the value of +self+ is less than the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 < 3              # => true
  *    2.0 < 3.0            # => true
@@ -1710,7 +1711,6 @@ flo_ge(VALUE x, VALUE y)
  *    2.0 < 2.0            # => false
  *
  *  <tt>Float::NAN < Float::NAN</tt> returns an implementation-dependent value.
- *
  */
 
 static VALUE
@@ -5038,15 +5038,14 @@ fix_lt(VALUE x, VALUE y)
  * call-seq:
  *    self < other -> true or false
  *
- * Returns +true+ if the value of +self+ is less than that of +other+:
+ * Returns whether the value of +self+ is less than the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 < 0              # => false
  *    1 < 1              # => false
  *    1 < 2              # => true
  *    1 < 0.5            # => false
  *    1 < Rational(1, 2) # => false
- *
- *  Raises an exception if the comparison cannot be made.
  *
  */
 
