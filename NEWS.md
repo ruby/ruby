@@ -295,6 +295,9 @@ The following bundled gems are promoted from default gems.
 * readline 0.0.4
 * fiddle 1.1.8
 
+The following bundled gems are added.
+
+
 We only list stdlib changes that are notable feature changes.
 
 Other changes are listed in the following sections. We also listed release
@@ -345,6 +348,7 @@ The following bundled gems are updated.
 * rake 13.3.1
 * test-unit 3.7.3
 * rexml 3.4.4
+* rss 0.3.2
 * net-ftp 0.3.9
 * net-imap 0.6.2
 * net-smtp 0.5.1
