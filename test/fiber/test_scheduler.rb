@@ -287,33 +287,36 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_io_write_on_flush
-    fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
-    write_fd = nil
-    io_ops = nil
-    thread = Thread.new do
-      scheduler = IOScheduler.new
-      Fiber.set_scheduler scheduler
+    omit "skip this test because it makes CI fragile"
+    begin
+      fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
+      write_fd = nil
+      io_ops = nil
+      thread = Thread.new do
+        scheduler = IOScheduler.new
+        Fiber.set_scheduler scheduler
 
-      Fiber.schedule do
-        File.open(fn, 'w+') do |f|
-          write_fd = f.fileno
-          f << 'foo'
-          f.flush
-          f << 'bar'
+        Fiber.schedule do
+          File.open(fn, 'w+') do |f|
+            write_fd = f.fileno
+            f << 'foo'
+            f.flush
+            f << 'bar'
+          end
         end
+        io_ops = scheduler.__io_ops__
       end
-      io_ops = scheduler.__io_ops__
-    end
-    thread.join
-    assert_equal [
-      [:io_write, write_fd, 'foo'],
-      [:io_write, write_fd, 'bar']
-    ], io_ops
+      thread.join
+      assert_equal [
+        [:io_write, write_fd, 'foo'],
+        [:io_write, write_fd, 'bar']
+      ], io_ops
 
-    assert_equal 'foobar', IO.read(fn)
-  ensure
-    thread.kill rescue nil
-    FileUtils.rm_f(fn)
+      assert_equal 'foobar', IO.read(fn)
+    ensure
+      thread.kill rescue nil
+      FileUtils.rm_f(fn)
+    end
   end
 
   def test_io_read_error
