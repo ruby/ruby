@@ -21,16 +21,16 @@ require 'English'
 
 ### Pattern Matching
 
-|    Variable     |      \English       | Contains                          | Initially | Read-Only | Reset By        |
-|:---------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
-|      `$~`       | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
-|      `$&`       |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
-|    `` $` ``     |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
-|      `$'`       |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
-|      `$+`       | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
-|      `$1`       |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
-|      `$2`       |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
-| <tt>$_n_</tt>   |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
+|   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
+|:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
+|    `$~`       | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
+|     `$&`      |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
+|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
+|     `$'`      |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
+|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
+|     `$1`      |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
+|     `$2`      |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
+| <tt>$_n_</tt> |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
 
 ### Separators
 
@@ -379,7 +379,7 @@ An alias of ARGF.inplace_mode.
 
 ### `$-l`
 
-Whether command-line option `-l` was set; read-only.
+Whether [command-line option `-l`] was set; read-only.
 
 ### `$-p`
 
