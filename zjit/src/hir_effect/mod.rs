@@ -9,7 +9,6 @@ type EffectBits = u8;
 
 // NOTE: Effect very intentionally does not support Eq or PartialEq; we almost never want to check
 // bit equality of types in the compiler but instead check subtyping, intersection, union, etc.
-#[derive(Copy, Clone, Debug)]
 /// The main work horse of effect inference and specialization. The main interfaces
 /// will look like:
 ///
@@ -24,6 +23,9 @@ type EffectBits = u8;
 /// This enables more complex analyses compared to prior ZJIT implementations such as "has_effect",
 /// a function that returns a boolean value. Such functions impose an implicit single bit effect
 /// system. This explicit design with a lattice allows us many bits for effects.
+// TODO(Jacob): Fix orphan rule and implement partialord
+// #[derive(PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug)]
 pub struct EffectSet {
     bits: EffectBits
 }
@@ -89,32 +91,32 @@ impl std::fmt::Display for EffectSet {
 // TODO(Jacob): Modify union and effect to work on an arbitrary number of args
 // TODO(Jacob): These `from_bits` functions used to be `const fn` not `pub fn`. Have I done something bad by making them public?
 impl EffectSet {
-    const fn from_bits(bits: EffectBits) -> EffectSet {
-        EffectSet { bits }
+    const fn from_bits(bits: EffectBits) -> Self {
+        Self { bits }
     }
 
-    pub fn union(&self, other: EffectSet) -> EffectSet {
-        EffectSet::from_bits(self.bits | other.bits)
+    pub fn union(&self, other: Self) -> Self {
+        Self::from_bits(self.bits | other.bits)
     }
 
-    pub fn intersect(&self, other: EffectSet) -> EffectSet {
-        EffectSet::from_bits(self.bits & other.bits)
+    pub fn intersect(&self, other: Self) -> Self {
+        Self::from_bits(self.bits & other.bits)
     }
 
-    pub fn exclude(&self, other: EffectSet) -> EffectSet {
-        EffectSet::from_bits(self.bits - (self.bits & other.bits))
+    pub fn exclude(&self, other: Self) -> Self {
+        Self::from_bits(self.bits - (self.bits & other.bits))
     }
 
     /// Check bit equality of two `Effect`s. Do not use! You are probably looking for [`Effect::includes`].
-    pub fn bit_equal(&self, other: EffectSet) -> bool {
+    pub fn bit_equal(&self, other: Self) -> bool {
         self.bits == other.bits
     }
 
-    pub fn includes(&self, other: EffectSet) -> bool {
-        self.bit_equal(EffectSet::union(self, other))
+    pub fn includes(&self, other: Self) -> bool {
+        self.bit_equal(Self::union(self, other))
     }
 
-    pub fn overlaps(&self, other: EffectSet) -> bool {
+    pub fn overlaps(&self, other: Self) -> bool {
         !self.intersect(other).bit_equal(effect_sets::Empty)
     }
 
@@ -122,6 +124,32 @@ impl EffectSet {
         EffectSetPrinter { inner: self, ptr_map }
     }
 }
+
+// impl PartialEq for EffectSet {
+//     fn eq(&self, other: Self) -> bool {
+//         self.bit_equal(other)
+//     }
+// }
+
+// TODO(Jacob): Clean up this logic. It can be simplified with one `mut`
+// impl PartialOrd for EffectSet {
+//     fn partial_cmp(&self, other: Self) -> Option<std::cmp::Ordering> {
+//         if self.bit_equal(other) {
+//             return Some(std::cmp::Ordering::Equal)
+//         }
+//         else if self.includes(other) {
+//             return Some(std::cmp::Ordering::Greater)
+//         }
+//         else if other.includes(*self) {
+//             return Some(std::cmp::Ordering::Less)
+//         }
+//         // If one EffectSet is not included in another, they cannot be compared
+//         // This case corresponds to different branches in the lattice
+//         else {
+//             return None
+//         }
+//     }
+// }
 
 impl Effect {
     pub fn from_bits(read: EffectSet, write: EffectSet) -> Effect {
