@@ -4315,6 +4315,9 @@ rb_str_eql(VALUE str1, VALUE str2)
  *    'ab' <=> 'a'  # => 1
  *    'a'  <=> :a   # => nil
  *
+ *  \Class \String includes module Comparable,
+ *  each of whose methods uses String#<=> for comparison.
+ *
  *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
 
