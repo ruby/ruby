@@ -39,6 +39,10 @@ void rb_node_list_prepend(rb_node_list2_t *list, rb_node_t *node);
  */
 void rb_node_list_concat(rb_node_list2_t *list, rb_node_list2_t *other);
 
+rb_node_t *rb_node_list_last(rb_node_list2_t *list);
+rb_node_t *rb_node_list_pop(rb_node_list2_t *list);
+
+
 /**
  * Free the internal memory associated with the given node list.
  *

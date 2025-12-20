@@ -16,7 +16,7 @@ static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const rb_code_location_t *location) {
     rb_code_position_t start = location->beg_pos;
     rb_code_position_t end = location->end_pos;
-    pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIu32 ")-(%" PRIi32 ",%" PRIu32 ")", start.lineno, start.column, end.lineno, end.column);
+    pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIi32 ")-(%" PRIi32 ",%" PRIi32 ")", start.lineno, start.column, end.lineno, end.column);
 }
 
 static inline void
