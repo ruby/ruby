@@ -12,7 +12,7 @@ describe :string_unpack_basic, shared: true do
   ruby_version_is "3.3" do
     # https://bugs.ruby-lang.org/issues/19150
     it 'raise ArgumentError when a directive is unknown' do
-      -> { "abcdefgh".unpack("a K" + unpack_format) }.should raise_error(ArgumentError, /unknown unpack directive 'K'/)
+      -> { "abcdefgh".unpack("a R" + unpack_format) }.should raise_error(ArgumentError, /unknown unpack directive 'R'/)
       -> { "abcdefgh".unpack("a 0" + unpack_format) }.should raise_error(ArgumentError, /unknown unpack directive '0'/)
       -> { "abcdefgh".unpack("a :" + unpack_format) }.should raise_error(ArgumentError, /unknown unpack directive ':'/)
     end
