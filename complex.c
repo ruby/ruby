@@ -1282,8 +1282,8 @@ nucomp_real_p(VALUE self)
  *   Complex.rect(1) <=> Complex.rect(1, 1) # => nil # object.imag not zero.
  *   Complex.rect(1) <=> 'Foo'              # => nil # object.imag not defined.
  *
- *  \Class \Complex includes module Comparable,
- *  each of whose methods uses Complex#<=> for comparison.
+ * \Class \Complex includes module Comparable,
+ * each of whose methods uses Complex#<=> for comparison.
  */
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
