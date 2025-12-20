@@ -4073,17 +4073,16 @@ rb_method_compose_to_left(VALUE self, VALUE g)
  *  call-seq:
  *     self >> g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls this method
- *  with them then calls <i>g</i> with the result.
+ *  Returns a proc that is the composition of this method and the given +g+.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +self+
+ *  with the arguments, then calls +g+ with the return value of +self+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f >> g).call(2) #=> 8
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f >> g).call([]) # => ["in f", "in proc"]
  */
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)
