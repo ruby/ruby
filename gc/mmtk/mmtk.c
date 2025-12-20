@@ -657,7 +657,7 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (size == heap_sizes[i]) return i;
         if (size < heap_sizes[i])  return i;
     }
