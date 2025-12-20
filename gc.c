@@ -1001,7 +1001,10 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
-            memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
+            size_t slot_size = rb_gc_obj_slot_size(obj);
+            if (slot_size > RVALUE_SIZE) {
+                memset((char *)obj + RVALUE_SIZE, 0, slot_size - RVALUE_SIZE);
+            }
 
             /* We must disable GC here because the callback could call xmalloc
              * which could potentially trigger a GC, and a lot of code is unsafe
