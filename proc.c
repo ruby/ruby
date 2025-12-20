@@ -4071,7 +4071,7 @@ rb_method_compose_to_left(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth >> g -> a_proc
+ *     self >> g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls this method
