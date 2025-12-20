@@ -2012,13 +2012,15 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     self <=> object -> -1, 0, +1, or nil
+ *     self <=> other -> -1, 0, 1, or nil
+ *
+ *  Compares +self+ and +other+.
  *
  *  Returns:
  *
- *  - +-1+, if +self+ includes +object+, if or +self+ is a subclass of +object+.
- *  - +0+, if +self+ and +object+ are the same.
- *  - +1+, if +object+ includes +self+, or if +object+ is a subclass of +self+.
+ *  - +-1+, if +self+ includes +other+, if or +self+ is a subclass of +other+.
+ *  - +0+, if +self+ and +other+ are the same.
+ *  - +1+, if +other+ includes +self+, or if +other+ is a subclass of +self+.
  *  - +nil+, if none of the above is true.
  *
  *  Examples:
@@ -2029,8 +2031,10 @@ rb_mod_gt(VALUE mod, VALUE arg)
  *        Enumerable <=> Array      # =>  1
  *    # Class File is a subclass of class IO.
  *              File <=> IO         # => -1
- *                IO <=> File       # =>  1
  *              File <=> File       # =>  0
+ *                IO <=> File       # =>  1
+ *    # Class File has no relationship to class String.
+ *              File <=> String     # => nil
  *
  */
 
