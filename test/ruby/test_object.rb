@@ -359,11 +359,13 @@ class TestObject < Test::Unit::TestCase
     require "objspace"
 
     c = Class.new do
-      def a = @a
+      attr_reader :a, :b, :c
 
-      def b = @b
-
-      def c = @c
+      def initialize
+        @a = nil
+        @b = nil
+        @c = nil
+      end
     end
 
     o1 = c.new
