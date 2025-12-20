@@ -11,7 +11,7 @@ Ruby Box is designed to provide separated spaces in a Ruby process, to isolate a
 
 ## TODOs
 
-* Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
+* Add the loaded box on iseq to check if another box tries running the iseq (add a field only when VM_CHECK_MODE?)
 * Assign its own TOPLEVEL_BINDING in boxes
 * Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
 * Make an internal data container class `Ruby::Box::Entry` invisible
@@ -22,7 +22,7 @@ Ruby Box is designed to provide separated spaces in a Ruby process, to isolate a
 ### Enabling Ruby Box
 
 First, an environment variable should be set at the ruby process bootup: `RUBY_BOX=1`.
-The only valid value is `1` to enable namespace. Other values (or unset `RUBY_BOX`) means disabling namespace. And setting the value after Ruby program starts doesn't work.
+The only valid value is `1` to enable Ruby Box. Other values (or unset `RUBY_BOX`) means disabling Ruby Box. And setting the value after Ruby program starts doesn't work.
 
 ### Using Ruby Box
 
@@ -75,7 +75,7 @@ There are two box types:
 
 There is the root box, just a single box in a Ruby process. Ruby bootstrap runs in the root box, and all builtin classes/modules are defined in the root box. (See "Builtin classes and modules".)
 
-User boxes are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" box, which is a user namespace automatically created at the end of Ruby's bootstrap, copied from the root box.
+User boxes are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" box, which is a user box automatically created at the end of Ruby's bootstrap, copied from the root box.
 
 When `Ruby::Box.new` is called, an "optional" box (a user, non-main box) is created, copied from the root box. All user boxes are flat, copied from the root box.
 
