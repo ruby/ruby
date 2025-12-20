@@ -1230,6 +1230,24 @@ enumerator_inspect(VALUE obj)
  *   (1..100).to_a.permutation(4).size # => 94109400
  *   loop.size # => Float::INFINITY
  *   (1..100).drop_while.size # => nil
+ *
+ * Note that enumerator size might be inaccurate, and should be rather treated as a hint.
+ * For example, there is no check that the size provided to ::new is accurate:
+ *
+ *   e = Enumerator.new(5) { |y| 2.times { y << it} }
+ *   e.size # => 5
+ *   e.to_a.size # => 2
+ *
+ * Another example is an enumerator created by ::produce without a +size+ argument.
+ * Such enumerators return +Infinity+ for size, but this is inaccurate if the passed
+ * block raises StopIteration:
+ *
+ *   e = Enumerator.produce(1) { it + 1 }
+ *   e.size # => Infinity
+ *
+ *   e = Enumerator.produce(1) { it > 3 ? raise(StopIteration) : it + 1 }
+ *   e.size # => Infinity
+ *   e.to_a.size # => 4
  */
 
 static VALUE
@@ -3051,6 +3069,12 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *     File.dirname(it)
  *   }
  *   traverser.size  # => 4
+ *
+ *   # Finite enumerator with unknown size
+ *   calendar = Enumerator.produce(Date.today, size: nil) {
+ *     it.monday? ? raise(StopIteration) : it + 1
+ *   }
+ *   calendar.size  # => nil
  */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
