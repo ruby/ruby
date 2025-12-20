@@ -4048,7 +4048,7 @@ rb_proc_compose_to_right(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth << g -> a_proc
+ *     self << g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
