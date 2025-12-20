@@ -48,6 +48,8 @@ struct MMTk_ractor_cache {
 
     MMTk_Mutator *mutator;
     bool gc_mutator_p;
+
+    MMTk_BumpPointer *bump_pointer;
 };
 
 struct MMTk_final_job {
@@ -447,6 +449,7 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     ccan_list_add(&objspace->ractor_caches, &cache->list_node);
 
     cache->mutator = mmtk_bind_mutator(cache);
+    cache->bump_pointer = mmtk_get_bump_pointer_allocator(cache->mutator);
 
     return cache;
 }
@@ -612,6 +615,24 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 
 // Object allocation
 
+static VALUE
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size)
+{
+    MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
+    if (bump_pointer == NULL) return 0;
+
+    uintptr_t new_cursor = bump_pointer->cursor + size;
+
+    if (new_cursor > bump_pointer->limit) {
+        return 0;
+    }
+    else {
+        VALUE obj = (VALUE)bump_pointer->cursor;
+        bump_pointer->cursor = new_cursor;
+        return obj;
+    }
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -632,13 +653,20 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    VALUE *alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size + 8, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    alloc_size += sizeof(VALUE);
+
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
+    if (!alloc_obj) {
+        alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    }
+
     alloc_obj++;
-    alloc_obj[-1] = alloc_size;
+    alloc_obj[-1] = alloc_size - sizeof(VALUE);
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
-    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    // TODO: implement fast path for mmtk_post_alloc
+    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
     // TODO: only add when object needs obj_free to be called
     mmtk_add_obj_free_candidate(alloc_obj);

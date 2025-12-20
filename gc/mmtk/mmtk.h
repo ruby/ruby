@@ -20,6 +20,11 @@ typedef void *MMTk_ObjectReference;
 typedef void *MMTk_NullableObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
 
+typedef struct MMTk_BumpPointer {
+    uintptr_t cursor;
+    uintptr_t limit;
+} MMTk_BumpPointer;
+
 
 #define MMTk_OBJREF_OFFSET 8
 
@@ -92,6 +97,8 @@ void mmtk_init_binding(MMTk_Builder *builder,
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
+
+MMTk_BumpPointer *mmtk_get_bump_pointer_allocator(MMTk_Mutator *m);
 
 void mmtk_destroy_mutator(MMTk_Mutator *mutator);
 
