@@ -440,7 +440,9 @@ class TestTime < Test::Unit::TestCase
     t = Time.utc(2013, 2, 24)
     assert_equal('UTC', t.zone)
     assert_equal('UTC', Marshal.load(Marshal.dump(t)).zone)
+  end
 
+  def test_marshal_zone_ractor_unsafe
     in_timezone('JST-9') do
       t = Time.local(2013, 2, 24)
       assert_equal('JST', Time.local(2013, 2, 24).zone)
@@ -472,7 +474,7 @@ class TestTime < Test::Unit::TestCase
       "[ruby-dev:44827] [Bug #5586]")
   end
 
-  Bug8795 = '[ruby-core:56648] [Bug #8795]'
+  Bug8795 = '[ruby-core:56648] [Bug #8795]'.freeze
 
   def test_marshal_broken_offset
     data = "\x04\bIu:\tTime\r\xEFF\x1C\x80\x00\x00\x00\x00\x06:\voffset"
@@ -579,9 +581,11 @@ class TestTime < Test::Unit::TestCase
     assert_raise(ArgumentError) { m.sleep(-1) }
     assert_raise(TypeError) { m.sleep("") }
     assert_raise(TypeError) { sleep("") }
-    obj = eval("class C\u{1f5ff}; self; end").new
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {m.sleep(obj)}
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {sleep(obj)}
+    unless multiple_ractors?
+      obj = eval("class C\u{1f5ff}; self; end").new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {m.sleep(obj)}
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {sleep(obj)}
+    end
   end
 
   def test_to_f

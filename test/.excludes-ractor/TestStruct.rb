@@ -1,0 +1,7 @@
+exclude(:test_struct, "global side effects")
+exclude(:test_struct_new, "global side effects")
+exclude(:test_struct_new_with_keyword_init, "global side effects")
+exclude(:test_redefinition_warning, "global side effects")
+exclude(:test_nonascii, "global side effects")
+exclude(:test_junk, "global side effects")
+exclude(:test_inspect_ractor_unsafe, "global side effects")

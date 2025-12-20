@@ -487,9 +487,11 @@ class TestVariable < Test::Unit::TestCase
     objects = [Object.new, Hash.new, Module.new]
     objects.each do |obj|
       1000.times do |i|
+        next if obj.is_a?(Module) && !main_ractor?
         obj.instance_variable_set("@var#{i}", i)
       end
       1000.times do |i|
+        next if obj.is_a?(Module) && !main_ractor?
         assert_equal(i, obj.instance_variable_get("@var#{i}"))
       end
     end

@@ -659,7 +659,9 @@ class TestArray < Test::Unit::TestCase
 
     assert_raise(TypeError) { @cls[0].concat(:foo) }
     assert_raise(FrozenError) { @cls[0].freeze.concat(:foo) }
+  end
 
+  def test_concat_under_gc_stress
     a = @cls[nil]
     def (x = Object.new).to_ary
       ary = Array.new(2)
@@ -1174,6 +1176,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_join
     assert_deprecated_warning {$, = ""}
+
     a = @cls[]
     assert_equal("", assert_deprecated_warn(/non-nil value/) {a.join})
     assert_equal("", a.join(','))
@@ -1975,14 +1978,14 @@ class TestArray < Test::Unit::TestCase
     $, = nil
   end
 
-  StubToH = [
+  StubToH = Ractor.make_shareable([
     [:key, :value],
     Object.new.tap do |kvp|
       def kvp.to_ary
         [:obtained, :via_to_ary]
       end
     end,
-  ]
+  ])
 
   def test_to_h
     array = StubToH
@@ -1992,12 +1995,15 @@ class TestArray < Test::Unit::TestCase
       [[:first_one, :ok], :not_ok].to_h
     }
     assert_equal "wrong element type Symbol at 1 (expected array)", e.message
-    array = [eval("class C\u{1f5ff}; self; end").new]
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h}
     e = assert_raise(ArgumentError) {
       [[:first_one, :ok], [1, 2], [:not_ok]].to_h
     }
     assert_equal "wrong array length at 2 (expected 2, was 1)", e.message
+  end
+
+  def test_to_h_single_element_with_object
+    array = [eval("class C\u{1f5ff}; self; end").new]
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h}
   end
 
   def test_to_h_block
@@ -2012,13 +2018,16 @@ class TestArray < Test::Unit::TestCase
       [[:first_one, :ok], :not_ok].to_h {|k, v| v ? [k, v] : k}
     }
     assert_equal "wrong element type Symbol at 1 (expected array)", e.message
-    array = [1]
-    k = eval("class C\u{1f5ff}; self; end").new
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h {k}}
     e = assert_raise(ArgumentError) {
       [[:first_one, :ok], [1, 2], [:not_ok]].to_h {|kv| kv}
     }
     assert_equal "wrong array length at 2 (expected 2, was 1)", e.message
+  end
+
+  def test_to_h_block_single_element_with_object
+    array = [1]
+    k = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h {k}}
   end
 
   def test_min
@@ -2435,13 +2444,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[[1],[2]], @cls[1,2].product)
     assert_equal(@cls[], @cls[1,2].product([]))
 
-    bug3394 = '[ruby-dev:41540]'
-    acc = []
-    EnvUtil.under_gc_stress {[1,2].product([3,4,5],[6,8]){|array| acc << array}}
-    assert_equal([[1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
-                  [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]],
-                 acc, bug3394)
-
     def (o = Object.new).to_ary; GC.start; [3,4] end
     acc = [1,2].product(*[o]*10)
     assert_equal([1,2].product([3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4]),
@@ -2450,6 +2452,15 @@ class TestArray < Test::Unit::TestCase
     a = []
     [1, 2].product([0, 1, 2, 3, 4][1, 4]) {|x| a << x }
     a.all? {|x| assert_not_include(x, 0)}
+  end
+
+  def test_product_under_gc_stress
+    bug3394 = '[ruby-dev:41540]'
+    acc = []
+    EnvUtil.under_gc_stress {[1,2].product([3,4,5],[6,8]){|array| acc << array}}
+    assert_equal([[1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
+                  [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]],
+                acc, bug3394)
   end
 
   def test_permutation
@@ -3330,9 +3341,11 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) do
       [1, 2, 42, 100, 666].bsearch{ "not ok" }
     end
-    c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
-    assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
-      [0,1].bsearch {c.new}
+    unless multiple_ractors?
+      c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
+      assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
+        [0,1].bsearch {c.new}
+      end
     end
     assert_equal [1, 2, 42, 100, 666].bsearch{}, [1, 2, 42, 100, 666].bsearch{false}
   end

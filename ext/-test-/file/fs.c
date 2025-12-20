@@ -105,6 +105,9 @@ get_noatime_p(VALUE self, VALUE str)
 void
 Init_fs(VALUE module)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     VALUE fs = rb_define_module_under(module, "Fs");
     rb_define_module_function(fs, "fsname", get_fsname, 1);
     rb_define_module_function(fs, "noatime?", get_noatime_p, 1);

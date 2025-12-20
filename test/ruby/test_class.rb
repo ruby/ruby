@@ -243,6 +243,9 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.new(c) }
     assert_raise(TypeError) { Class.new(Class) }
     assert_raise(TypeError) { eval("class Foo < Class; end") }
+  end
+
+  def test_check_inheritable_break_with_object
     m = "M\u{1f5ff}"
     o = Class.new {break eval("class #{m}; self; end.new")}
     assert_raise_with_message(TypeError, /#{m}/) {Class.new(o)}
@@ -505,23 +508,30 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
-  define_method :test_invalid_reset_superclass do
-    class A; end
-    class SuperclassCannotBeReset < A
-    end
-    assert_equal A, SuperclassCannotBeReset.superclass
+  def test_invalid_reset_superclass
+    m = Module.new
+    m.module_eval <<-RUBY
+      class A; end
+      class SuperclassCannotBeReset < A
+      end
+    RUBY
+    assert_equal m::A, m::SuperclassCannotBeReset.superclass
 
     assert_raise_with_message(TypeError, /superclass mismatch/) {
-      class SuperclassCannotBeReset < String
-      end
+      m.module_eval <<-RUBY
+        class SuperclassCannotBeReset < String
+        end
+      RUBY
     }
 
     assert_raise_with_message(TypeError, /superclass mismatch/, "[ruby-core:75446]") {
-      class SuperclassCannotBeReset < Object
-      end
+      m.module_eval <<-RUBY
+        class SuperclassCannotBeReset < Object
+        end
+      RUBY
     }
 
-    assert_equal A, SuperclassCannotBeReset.superclass
+    assert_equal m::A, m::SuperclassCannotBeReset.superclass
   end
 
   def test_cloned_singleton_method_added
@@ -805,7 +815,11 @@ class TestClass < Test::Unit::TestCase
     ssc = Class.new(sc)
     [c, sc, ssc].each do |k|
       k.include Module.new
-      k.new.define_singleton_method(:force_singleton_class){}
+      k.new.define_singleton_method(:force_singleton_class, &Ractor.make_shareable(
+        nil.instance_eval do
+          proc { }
+        end
+      ))
     end
     assert_equal([sc], c.subclasses)
     assert_equal([ssc], sc.subclasses)

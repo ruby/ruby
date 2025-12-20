@@ -213,7 +213,9 @@ class TestSuper < Test::Unit::TestCase
       overlaid.call([1,2,3])
       str.reverse
     end
+  end
 
+  def test_overlaid_ractor_unsafe
     assert_nothing_raised('[ruby-core:27230]') do
       mid=Indexed.new
       mid.instance_eval(&Overlaid)
@@ -427,9 +429,9 @@ class TestSuper < Test::Unit::TestCase
   end
 
   class Y < X
-    define_method(:foo) do |*args|
+    define_method(:foo, &Ractor.make_shareable(proc do |*args|
       super(*args)
-    end
+    end))
   end
 
   def test_super_splat

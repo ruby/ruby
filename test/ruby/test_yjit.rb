@@ -1806,7 +1806,7 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles(script)
   end
 
-  ANY = Object.new
+  ANY = Object.new.freeze
   def assert_compiles(
     test_script, insns: [],
     call_threshold: 1,

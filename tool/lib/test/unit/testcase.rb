@@ -50,6 +50,23 @@ module Test
         /mingw/ =~ platform
       end
 
+      def main_ractor?
+        return true if !defined?(Ractor)
+        Ractor.current == Ractor.main
+      end
+
+      def non_main_ractor?
+        not main_ractor?
+      end
+
+      def multiple_ractors?
+        EnvUtil.multiple_ractors?
+      end
+
+      # In order to guard generating methods dynamically that will run inside another ractor
+      def will_run_in_main_ractor?
+        EnvUtil::RUBY_TESTS_WITH_RACTORS == 0
+      end
     end
 
     ##
@@ -141,7 +158,7 @@ module Test
       alias method_name __name__
 
       PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException,
-                                Interrupt, SystemExit] # :nodoc:
+        Interrupt, SystemExit].freeze # :nodoc:
 
       ##
       # Runs the tests reporting the status to +runner+
@@ -198,22 +215,24 @@ module Test
 
       RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
       def run_test(name)
-        progname, $0 = $0, "#{$0}: #{self.class}##{name}"
+        progname, $0 = $0, "#{$0}: #{self.class}##{name}" if main_ractor?
         self.__send__(name)
       ensure
-        $@.delete(RUN_TEST_TRACE) if $@
-        $0 = progname
+        if main_ractor?
+          $@.delete(RUN_TEST_TRACE) if $@
+          $0 = progname
+        end
       end
 
       def initialize name # :nodoc:
         @__name__ = name
         @__io__ = nil
         @__passed__ = nil
-        @@__current__ = self # FIX: make thread local
+        Ractor.current[:__test_current__] = self
       end
 
       def self.current # :nodoc:
-        @@__current__ # FIX: make thread local
+        Ractor.current[:__test_current__]
       end
 
       ##
