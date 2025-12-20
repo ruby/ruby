@@ -47,7 +47,7 @@ ZJIT.
 
 Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequists.
 Additionally, ZJIT requires Rust 1.85.0 or later. Release builds need only `rustc`. Development
-builds require `cargo` and may download dependencies.
+builds require `cargo` and may download dependencies. GNU Make is required.
 
 ### For normal use
 
@@ -352,7 +352,7 @@ Ruby execution involves three distinct stacks and understanding them will help y
 
 The Ruby VM uses a single contiguous memory region (`ec->vm_stack`) containing two sub-stacks that grow toward each other. When they meet, stack overflow occurs.
 
-See [doc/contributing/vm_stack_and_frames.md](contributing/vm_stack_and_frames.md) for detailed architecture and frame layout.
+See [doc/contributing/vm_stack_and_frames.md](rdoc-ref:contributing/vm_stack_and_frames.md) for detailed architecture and frame layout.
 
 **Control Frame Stack:**
 
