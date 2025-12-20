@@ -14,6 +14,8 @@ Each of these instance methods accepts one or more character selectors:
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
 - String#squeeze!(*selectors): returns +self+ or +nil+.
+- String#strip(*selectors): returns a new string.
+- String#strip!(*selectors): returns +self+ or +nil+.
 
 A character selector identifies zero or more characters in +self+
 that are to be operands for the method.
@@ -79,6 +81,8 @@ These instance methods accept multiple character selectors:
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
 - String#squeeze!(*selectors): returns +self+ or +nil+.
+- String#strip(*selectors): returns a new string.
+- String#strip!(*selectors): returns +self+ or +nil+.
 
 In effect, the given selectors are formed into a single selector
 consisting of only those characters common to _all_ of the given selectors.

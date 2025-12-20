@@ -3246,28 +3246,37 @@ rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     fiber.raise                                 -> obj
- *     fiber.raise(string)                         -> obj
- *     fiber.raise(exception [, string [, array]]) -> obj
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception in the fiber at the point at which the last
- *  +Fiber.yield+ was called. If the fiber has not been started or has
+ *  +Fiber.yield+ was called.
+ *
+ *     f = Fiber.new {
+ *       puts "Before the yield"
+ *       Fiber.yield 1 # -- exception will be raised here
+ *       puts "After the yield"
+ *     }
+ *
+ *     p f.resume
+ *     f.raise "Gotcha"
+ *
+ *  Output
+ *
+ *     Before the first yield
+ *     1
+ *     t.rb:8:in 'Fiber.yield': Gotcha (RuntimeError)
+ *       from t.rb:8:in 'block in <main>'
+ *
+ *  If the fiber has not been started or has
  *  already run to completion, raises +FiberError+. If the fiber is
  *  yielding, it is resumed. If it is transferring, it is transferred into.
  *  But if it is resuming, raises +FiberError+.
  *
- *  With no arguments, raises a +RuntimeError+. With a single +String+
- *  argument, raises a +RuntimeError+ with the string as a message.  Otherwise,
- *  the first parameter should be the name of an +Exception+ class (or an
- *  object that returns an +Exception+ object when sent an +exception+
- *  message). The optional second parameter sets the message associated with
- *  the exception, and the third parameter is an array of callback information.
- *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
- *  blocks.
- *
  *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  *
- *  See Kernel#raise for more information.
+ *  See Kernel#raise for more information on arguments.
+ *
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
