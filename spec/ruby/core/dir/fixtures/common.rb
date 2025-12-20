@@ -115,6 +115,7 @@ module DirSpecs
   end
 
   def self.create_mock_dirs
+    delete_mock_dirs
     mock_dir_files.each do |name|
       file = File.join mock_dir, name
       mkdir_p File.dirname(file)
@@ -172,24 +173,28 @@ module DirSpecs
     end
   end
 
+  def self.expected_paths_with_type
+    [
+      [".", :directory],
+      ["..", :directory],
+      [".dotfile", :file],
+      [".dotsubdir", :directory],
+      ["brace", :directory],
+      ["deeply", :directory],
+      ["dir", :directory],
+      ["dir_filename_ordering", :file],
+      ["file_one.ext", :file],
+      ["file_two.ext", :file],
+      ["nested", :directory],
+      ["nondotfile", :file],
+      ["special", :directory],
+      ["subdir_one", :directory],
+      ["subdir_two", :directory],
+   ]
+  end
+
   def self.expected_paths
-    %w[
-      .
-      ..
-      .dotfile
-      .dotsubdir
-      brace
-      deeply
-      dir
-      dir_filename_ordering
-      file_one.ext
-      file_two.ext
-      nested
-      nondotfile
-      special
-      subdir_one
-      subdir_two
-    ]
+    expected_paths_with_type.map(&:first)
   end
 
   def self.expected_glob_paths
