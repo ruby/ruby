@@ -12374,18 +12374,24 @@ sym_succ(VALUE sym)
 
 /*
  *  call-seq:
- *   symbol <=> object -> -1, 0, +1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  If +object+ is a symbol,
- *  returns the equivalent of <tt>symbol.to_s <=> object.to_s</tt>:
+ *  Compares +self+ and +other+, using String#<=>.
  *
- *    :bar <=> :foo # => -1
- *    :foo <=> :foo # => 0
- *    :foo <=> :bar # => 1
+ *  Returns:
  *
- *  Otherwise, returns +nil+:
+ *  - <tt>symbol.to_s <=> other.to_s</tt>, if +other+ is a symbol.
+ *  - +nil+, otherwise.
  *
- *   :foo <=> 'bar' # => nil
+ *  Examples:
+ *
+ *    :bar <=> :foo  # => -1
+ *    :foo <=> :foo  # => 0
+ *    :foo <=> :bar  # => 1
+ *    :foo <=> 'bar' # => nil
+ *
+ *  \Class \Symbol includes module Comparable,
+ *  each of whose methods uses Symbol#<=> for comparison.
  *
  *  Related: String#<=>.
  */

@@ -1260,14 +1260,16 @@ nucomp_real_p(VALUE self)
 
 /*
  * call-seq:
- *   complex <=> object -> -1, 0, 1, or nil
+ *   self <=> other -> -1, 0, 1, or nil
+ *
+ * Compares +self+ and +other+.
  *
  * Returns:
  *
- * - <tt>self.real <=> object.real</tt> if both of the following are true:
+ * - <tt>self.real <=> other.real</tt> if both of the following are true:
  *
  *   - <tt>self.imag == 0</tt>.
- *   - <tt>object.imag == 0</tt>. # Always true if object is numeric but not complex.
+ *   - <tt>other.imag == 0</tt> (always true if +other+ is numeric but not complex).
  *
  * - +nil+ otherwise.
  *
@@ -1280,6 +1282,8 @@ nucomp_real_p(VALUE self)
  *   Complex.rect(1) <=> Complex.rect(1, 1) # => nil # object.imag not zero.
  *   Complex.rect(1) <=> 'Foo'              # => nil # object.imag not defined.
  *
+ *  \Class \Complex includes module Comparable,
+ *  each of whose methods uses Complex#<=> for comparison.
  */
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
