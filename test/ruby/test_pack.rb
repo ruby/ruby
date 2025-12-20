@@ -993,6 +993,18 @@ EXPECTED
     # Round-trip test
     values = [0, 1, 127, 128, 0x3fff, 0x4000, 0xffffffff, 0x100000000]
     assert_equal(values, values.pack("R*").unpack("R*"))
+
+    # Offset
+    assert_equal([0, 1], "\x00".unpack("Ro"))
+    assert_equal([0, 2], "\x80\x00".unpack("Ro"))
+    assert_equal([127, 1], "\x7f".unpack("Ro"))
+    assert_equal([127, 2], "\xff\x00".unpack("Ro"))
+    assert_equal([128, 2], "\x80\x01".unpack("Ro"))
+    assert_equal([128, 3], "\x80\x81\x00".unpack("Ro"))
+    assert_equal([1, 2, 2], "\x01\x02".unpack("R*o"))
+    assert_equal([127, 128, 3], "\x7f\x80\x01".unpack("R*o"))
+    assert_equal([1, 2, 4], "\x81\x00\x82\x00".unpack("R*o"))
+    assert_equal([127, 128, 5], "\xff\x00\x80\x81\x00".unpack("R*o"))
   end
 
   def test_pack_unpack_r
@@ -1047,5 +1059,21 @@ EXPECTED
     # Round-trip test
     values = [0, 1, -1, 127, -127, 128, -128, 0x3fff, -0x3fff, 0x4000, -0x4000]
     assert_equal(values, values.pack("r*").unpack("r*"))
+
+    # Offset
+    assert_equal([0, 1], "\x00".unpack("ro"))
+    assert_equal([0, 2], "\x80\x00".unpack("ro"))
+    assert_equal([-1, 1], "\x7f".unpack("ro"))
+    assert_equal([-1, 2], "\xff\x7f".unpack("ro"))
+    assert_equal([-2, 1], "\x7e".unpack("ro"))
+    assert_equal([-2, 2], "\xfe\x7f".unpack("ro"))
+    assert_equal([127, 2], "\xff\x00".unpack("ro"))
+    assert_equal([128, 2], "\x80\x01".unpack("ro"))
+    assert_equal([-127, 2], "\x81\x7f".unpack("ro"))
+    assert_equal([-128, 2], "\x80\x7f".unpack("ro"))
+    assert_equal([127, 3], "\xff\x80\x00".unpack("ro"))
+    assert_equal([128, 3], "\x80\x81\x00".unpack("ro"))
+    assert_equal([-127, 3], "\x81\xff\x7f".unpack("ro"))
+    assert_equal([-128, 3], "\x80\xff\x7f".unpack("ro"))
   end
 end
