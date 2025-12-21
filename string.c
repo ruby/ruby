@@ -12380,7 +12380,7 @@ sym_succ(VALUE sym)
  *
  *  Returns:
  *
- *  - <tt>symbol.to_s <=> other.to_s</tt>, if +other+ is a symbol.
+ *  - <tt>self.to_s <=> other.to_s</tt>, if +other+ is a symbol.
  *  - +nil+, otherwise.
  *
  *  Examples:
