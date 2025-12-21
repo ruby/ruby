@@ -605,17 +605,31 @@ statx_mtimespec(const rb_io_stat_data *st)
 
 /*
  *  call-seq:
- *     stat <=> other_stat    -> -1, 0, 1, nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares File::Stat objects by comparing their respective modification
- *  times.
+ *  Compares +self+ and +other+, by comparing their modification times;
+ *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
  *
- *  +nil+ is returned if +other_stat+ is not a File::Stat object
+ *  Returns:
  *
- *     f1 = File.new("f1", "w")
- *     sleep 1
- *     f2 = File.new("f2", "w")
- *     f1.stat <=> f2.stat   #=> -1
+ *  - +-1+, if <tt>self.mtime</tt> is earlier.
+ *  - +0+, if the two values are equal.
+ *  - +1+, if <tt>self.mtime</tt> is later.
+ *  - +nil+, if +other+ is not a File::Stat object.
+ *
+ *  Examples:
+ *
+ *    stat0 = File.stat('README.md')
+ *    stat1 = File.stat('NEWS.md')
+ *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
+ *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
+ *    stat0 <=> stat1     # => -1
+ *    stat0 <=> stat0.dup # => 0
+ *    stat1 <=> stat0     # => 1
+ *    stat0 <=> :foo      # => nil
+ *
+ *  \Class \File::Stat includes module Comparable,
+ *  each of whose methods uses File::Stat#<=> for comparison.
  */
 
 static VALUE
