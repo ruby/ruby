@@ -1079,7 +1079,7 @@ rb_rational_pow(VALUE self, VALUE other)
  * call-seq:
  *   self <=> other -> -1, 0, 1, or nil
  *
- * Compared +self+ and +other+.
+ * Compares +self+ and +other+.
  *
  * Returns:
  *
