@@ -117,7 +117,7 @@ Foo.foo.blank? #=> false
 
 # in main.rb
 box = Ruby::Box.new
-box.require('foo')
+box.require_relative('foo')
 
 box::Foo.foo_is_blank? #=> false   (#blank? called in box)
 
@@ -151,7 +151,7 @@ end
 
 # main.rb
 box = Ruby::Box.new
-box.require('foo')
+box.require_relative('foo')
 
 box::String.foo  # NoMethodError
 ```
@@ -174,7 +174,7 @@ Array.const_get(:V)              #=> "FOO"
 
 # main.rb
 box = Ruby::Box.new
-box.require('foo')
+box.require_relative('foo')
 
 Array.instance_variable_get(:@v) #=> nil
 Array.class_variable_get(:@@v)   # NameError
@@ -197,7 +197,7 @@ p $foo      #=> nil
 p $VERBOSE  #=> false
 
 box = Ruby::Box.new
-box.require('foo')  # "This appears: 'foo'"
+box.require_relative('foo')  # "This appears: 'foo'"
 
 p $foo      #=> nil
 p $VERBOSE  #=> false
@@ -216,7 +216,7 @@ Object::FOO #=> 100
 
 # main.rb
 box = Ruby::Box.new
-box.require('foo')
+box.require_relative('foo')
 
 box::FOO      #=> 100
 
@@ -241,7 +241,7 @@ yay     #=> "foo"
 
 # main.rb
 box = Ruby::Box.new
-box.require('foo')
+box.require_relative('foo')
 
 box.Foo.say  #=> "foo"
 
