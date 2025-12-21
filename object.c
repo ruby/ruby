@@ -1772,7 +1772,8 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *
  *  Returns:
  *
- *  - +0+, if +self+ and +other+ are the same object.
+ *  - +0+, if +self+ and +other+ are the same object,
+ *    or if <tt>self == other</tt>.
  *  - +nil+, otherwise.
  *
  *  Examples:
