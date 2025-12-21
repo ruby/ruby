@@ -14,16 +14,16 @@ require 'English'
 
 ### Exceptions
 
-| Variable |     \English      | Contains                                | Initially | Read-Only | Reset By      |
-|:--------:|:-----------------:|-----------------------------------------|:---------:|:---------:|---------------|
-|  `$!`    |  `$ERROR_INFO`    | \Exception object or `nil`              |  `nil`    |   Yes     | Kernel#raise  |
-|   `$@`   | `$ERROR_POSITION` | \Array of backtrace positions or `nil`  |   `nil`   |   Yes     | Kernel#raise  |
+| Variable |     \English      | Contains                               | Initially | Read-Only | Reset By     |
+|:--------:|:-----------------:|----------------------------------------|:---------:|:---------:|--------------|
+|   `$!`   |   `$ERROR_INFO`   | \Exception object or `nil`             |   `nil`   |    Yes    | Kernel#raise |
+|   `$@`   | `$ERROR_POSITION` | \Array of backtrace positions or `nil` |   `nil`   |    Yes    | Kernel#raise |
 
 ### Pattern Matching
 
 |   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
 |:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
-|    `$~`       | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
+|     `$~`      | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
 |     `$&`      |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
 |   `` $` ``    |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
 |     `$'`      |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
@@ -41,15 +41,15 @@ require 'English'
 
 ### Streams
 
-|  Variable |           \English           | Contains                                    | Initially | Read-Only | Reset By             |
-|:---------:|:----------------------------:|:-------------------------------------------:|:---------:|:---------:|----------------------|
-| `$stdin`  |                              | Standard input stream                       | `STDIN`   |    No     |                      |
+| Variable  |           \English           | Contains                                    | Initially | Read-Only | Reset By             |
+|:---------:|:----------------------------:|---------------------------------------------|:---------:|:---------:|----------------------|
+| `$stdin`  |                              | Standard input stream                       |  `STDIN`  |    No     |                      |
 | `$stdout` |                              | Standard output stream                      | `STDOUT`  |    No     |                      |
 | `$stderr` |                              | Standard error stream                       | `STDERR`  |    No     |                      |
-|    `$<`   |       `$DEFAULT_INPUT`       | Default standard input                      | `ARGF`    |   Yes     |                      |
-|    `$>`   |      `$DEFAULT_OUTPUT`       | Default standard output                     | `STDOUT`  |    No     |                      |
-|    `$.`   | `$INPUT_LINE_NUMBER`, `$NR`  | Input position of most recently read stream |  0        |    No     | Certain read methods |
-|    `$_`   |      `$LAST_READ_LINE`       | String from most recently read stream       |  `nil`    |    No     | Certain read methods |
+|   `$<`    |       `$DEFAULT_INPUT`       | Default standard input                      |  `ARGF`   |    Yes    |                      |
+|   `$>`    |      `$DEFAULT_OUTPUT`       | Default standard output                     | `STDOUT`  |    No     |                      |
+|   `$.`    | `$INPUT_LINE_NUMBER`, `$NR`  | Input position of most recently read stream |     0     |    No     | Certain read methods |
+|   `$_`    |      `$LAST_READ_LINE`       | String from most recently read stream       |   `nil`   |    No     | Certain read methods |
 
 ### Processes
 
@@ -64,11 +64,11 @@ require 'English'
 
 ### Debugging
 
-|   Variable  | \English | Contains                                   |          Initially           | Read-Only | Reset By |
+|  Variable   | \English | Contains                                   |          Initially           | Read-Only | Reset By |
 |:-----------:|:--------:|--------------------------------------------|:----------------------------:|:---------:|----------|
-| `$FILENAME` |          | Value returned by method `ARGF.filename`   | Command-line argument or '-' |   Yes     |          |
-|   `$DEBUG`  |          | Whether option `-d` or `--debug` was given |     Command-line option      |    No     |          |
-|  `$VERBOSE` |          | Whether option `-V` or `-W` was given      |     Command-line option      |   No      |          |
+| `$FILENAME` |          | Value returned by method `ARGF.filename`   | Command-line argument or '-' |    Yes    |          |
+|  `$DEBUG`   |          | Whether option `-d` or `--debug` was given |     Command-line option      |    No     |          |
+| `$VERBOSE`  |          | Whether option `-V` or `-W` was given      |     Command-line option      |    No     |          |
 
 ### Other Variables
 
@@ -351,10 +351,6 @@ When `nil`, disables warnings, including those from Kernel#warn.
 Aliased as `$-v` and `$-w`.
 
 ## Other Variables
-
-### `$-a`
-
-Whether command-line option `-a` was given; read-only.
 
 ### `$-F`
 
