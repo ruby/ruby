@@ -269,11 +269,6 @@ Note: We're only listing outstanding class updates.
     * Introduce support for `Thread#raise(cause:)` argument similar to
       `Kernel#raise`. [[Feature #21360]]
 
-* Pathname
-
-    * Pathname has been promoted from a default gem to a core class of Ruby.
-      [[Feature #17473]]
-
 ## Stdlib updates
 
 The following bundled gems are promoted from default gems.
