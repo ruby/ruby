@@ -759,6 +759,7 @@ rb_box_cleanup_local_extension(VALUE cleanup)
 #ifndef _WIN32
     if (p) box_ext_cleanup_free(p);
 #endif
+    (void)p;
 }
 
 static int
