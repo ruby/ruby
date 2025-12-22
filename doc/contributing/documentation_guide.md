@@ -328,8 +328,7 @@ Alternatives:
 
 ### Languages in Examples
 
-A string or symbol in an example is of course in a particular language;
-for the language of such a string or symbol:
+For symbols and strings in documentation examples:
 
 - Prefer \English in \English documentation:  <tt>'Hello'</tt>.
 - Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
