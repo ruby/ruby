@@ -243,7 +243,7 @@ yay     #=> "foo"
 box = Ruby::Box.new
 box.require('foo')
 
-box.Foo.say  #=> "foo"
+box::Foo.say  #=> "foo"
 
 yay  # NoMethodError
 ```
