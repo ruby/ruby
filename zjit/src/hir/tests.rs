@@ -1500,10 +1500,11 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = Send v9, 0x1000, :each # SendFallbackReason: Uncategorized(send)
-          v15:BasicObject = GetLocal :a, l0, EP@3
+          v13:BasicObject = GetLocal :a, l0, EP@3
+          v15:BasicObject = Send v13, 0x1000, :each # SendFallbackReason: Uncategorized(send)
+          v16:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v14
+          Return v15
         ");
     }
 
@@ -3615,6 +3616,69 @@ pub mod hir_build_tests {
           Jump bb2(v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72)
         bb2(v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject):
           SideExit TooManyKeywordParameters
+        ");
+    }
+
+    #[test]
+    fn test_invalidate_locals_after_all_non_leaf_opcodes() {
+        eval(r#"
+            def a(b:, c:)
+              if c == :b
+                return -> {}
+              end
+
+              raise "c is :b!" if c == :b
+            end
+
+            def test
+              # note opposite order of kwargs
+              a(c: :c, b: :b)
+            end
+        "#);
+        assert_snapshot!(hir_string("a"), @r"
+        fn a@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :b, l0, SP@6
+          v3:BasicObject = GetLocal :c, l0, SP@5
+          v4:BasicObject = GetLocal <empty>, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:Fixnum[0] = Const Value(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          v19:BasicObject = GetLocal :c, l0, EP@4
+          v21:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v24:BasicObject = SendWithoutBlock v19, :==, v21 # SendFallbackReason: Uncategorized(opt_eq)
+          CheckInterrupts
+          v27:CBool = Test v24
+          IfFalse v27, bb3(v12, v13, v19, v15)
+          v31:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v33:BasicObject = Send v31, 0x1010, :lambda # SendFallbackReason: Uncategorized(send)
+          v34:BasicObject = GetLocal :b, l0, EP@5
+          v35:BasicObject = GetLocal :c, l0, EP@4
+          v36:BasicObject = GetLocal <empty>, l0, EP@3
+          CheckInterrupts
+          Return v33
+        bb3(v41:BasicObject, v42:BasicObject, v43:BasicObject, v44:BasicObject):
+          PatchPoint NoEPEscape(a)
+          v50:BasicObject = GetLocal :c, l0, EP@4
+          v52:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v55:BasicObject = SendWithoutBlock v50, :==, v52 # SendFallbackReason: Uncategorized(opt_eq)
+          CheckInterrupts
+          v58:CBool = Test v55
+          IfFalse v58, bb4(v41, v42, v50, v44)
+          v62:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v63:StringExact = StringCopy v62
+          v65:BasicObject = SendWithoutBlock v41, :raise, v63 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v65
+        bb4(v70:BasicObject, v71:BasicObject, v72:BasicObject, v73:BasicObject):
+          v76:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v76
         ");
     }
  }
