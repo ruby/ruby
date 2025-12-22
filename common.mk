@@ -269,21 +269,15 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2021 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2024 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/zjit/src/lib.rs'
 
