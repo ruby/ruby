@@ -12,7 +12,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Logical binary operators (`||`, `&&`, `and` and `or`) at the
   beginning of a line continue the previous line, like fluent dot.
-  The following two code examples are equal:
+  The following code examples are equal:
 
     ```ruby
     if condition1
@@ -21,8 +21,17 @@ Note that each entry is kept to a minimum, see links for details.
     end
     ```
 
+    Previously:
+
     ```ruby
     if condition1 && condition2
+      ...
+    end
+    ```
+
+    ```ruby
+    if condition1 &&
+       condition2
       ...
     end
     ```
