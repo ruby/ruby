@@ -334,7 +334,7 @@ for the language of such a string or symbol:
 - Prefer \English in \English documentation:  <tt>'Hello'</tt>.
 - Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
 - If a second language is needed (as, for example, characters with different byte-sizes),
-  prefer Japanese in \English documentation, \English in Japanese documentation.
+  prefer Japanese in \English documentation and \English in Japanese documentation.
 - Use other languages examples only as necessary:  see String#capitalize.
 
 ## Documenting Classes and Modules
