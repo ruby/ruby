@@ -69,6 +69,7 @@ dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
+AC_ARG_VAR([rustc_flags], [additional RUSTC_FLAGS])dnl
 
 [begin]_group "environment section" && {
 HAVE_BASERUBY=yes
@@ -4049,6 +4050,11 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
+RUSTC_FLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
+AS_IF([test -n "${rustc_flags}"], [
+    RUSTC_FLAGS="${RUSTC_FLAGS} ${rustc_flags}"
+])
+
 JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
 RLIB_DIR=
 AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
@@ -4106,6 +4112,7 @@ AS_IF([test -n "$RUST_LIB"], [
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(RUSTC)dnl Rust compiler command
 AC_SUBST(JIT_RUST_FLAGS)dnl the common rustc flags for JIT crates such as zjit
+AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
@@ -4838,6 +4845,7 @@ config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "ZJIT support"        "$ZJIT_SUPPORT"
+config_summary "RUSTC_FLAGS"         "$RUSTC_FLAGS"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
