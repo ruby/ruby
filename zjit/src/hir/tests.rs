@@ -1500,11 +1500,10 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v13:BasicObject = GetLocal :a, l0, EP@3
-          v15:BasicObject = Send v13, 0x1000, :each # SendFallbackReason: Uncategorized(send)
-          v16:BasicObject = GetLocal :a, l0, EP@3
+          v14:BasicObject = Send v9, 0x1000, :each # SendFallbackReason: Uncategorized(send)
+          v15:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v15
+          Return v14
         ");
     }
 
@@ -3649,36 +3648,35 @@ pub mod hir_build_tests {
           v10:Fixnum[0] = Const Value(0)
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          v19:BasicObject = GetLocal :c, l0, EP@4
-          v21:StaticSymbol[:b] = Const Value(VALUE(0x1000))
-          v24:BasicObject = SendWithoutBlock v19, :==, v21 # SendFallbackReason: Uncategorized(opt_eq)
+          v20:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v23:BasicObject = SendWithoutBlock v14, :==, v20 # SendFallbackReason: Uncategorized(opt_eq)
           CheckInterrupts
-          v27:CBool = Test v24
-          IfFalse v27, bb3(v12, v13, v19, v15)
-          v31:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v33:BasicObject = Send v31, 0x1010, :lambda # SendFallbackReason: Uncategorized(send)
-          v34:BasicObject = GetLocal :b, l0, EP@5
-          v35:BasicObject = GetLocal :c, l0, EP@4
-          v36:BasicObject = GetLocal <empty>, l0, EP@3
+          v26:CBool = Test v23
+          IfFalse v26, bb3(v12, v13, v14, v15)
+          v30:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v32:BasicObject = Send v30, 0x1010, :lambda # SendFallbackReason: Uncategorized(send)
+          v33:BasicObject = GetLocal :b, l0, EP@5
+          v34:BasicObject = GetLocal :c, l0, EP@4
+          v35:BasicObject = GetLocal <empty>, l0, EP@3
           CheckInterrupts
-          Return v33
-        bb3(v41:BasicObject, v42:BasicObject, v43:BasicObject, v44:BasicObject):
+          Return v32
+        bb3(v40:BasicObject, v41:BasicObject, v42:BasicObject, v43:BasicObject):
           PatchPoint NoEPEscape(a)
-          v50:BasicObject = GetLocal :c, l0, EP@4
-          v52:StaticSymbol[:b] = Const Value(VALUE(0x1000))
-          v55:BasicObject = SendWithoutBlock v50, :==, v52 # SendFallbackReason: Uncategorized(opt_eq)
+          v49:BasicObject = GetLocal :c, l0, EP@4
+          v51:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v54:BasicObject = SendWithoutBlock v49, :==, v51 # SendFallbackReason: Uncategorized(opt_eq)
           CheckInterrupts
-          v58:CBool = Test v55
-          IfFalse v58, bb4(v41, v42, v50, v44)
-          v62:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
-          v63:StringExact = StringCopy v62
-          v65:BasicObject = SendWithoutBlock v41, :raise, v63 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v57:CBool = Test v54
+          IfFalse v57, bb4(v40, v41, v49, v43)
+          v61:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v62:StringExact = StringCopy v61
+          v64:BasicObject = SendWithoutBlock v40, :raise, v62 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v65
-        bb4(v70:BasicObject, v71:BasicObject, v72:BasicObject, v73:BasicObject):
-          v76:NilClass = Const Value(nil)
+          Return v64
+        bb4(v69:BasicObject, v70:BasicObject, v71:BasicObject, v72:BasicObject):
+          v75:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v76
+          Return v75
         ");
     }
  }

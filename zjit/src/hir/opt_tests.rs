@@ -819,14 +819,13 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v13:BasicObject = GetLocal :o, l0, EP@3
           PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
-          v24:ArraySubclass[class_exact:C] = GuardType v13, ArraySubclass[class_exact:C]
-          v25:BasicObject = CCallWithFrame v24, :C#fun_new_map@0x1038, block=0x1040
-          v16:BasicObject = GetLocal :o, l0, EP@3
+          v23:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
+          v24:BasicObject = CCallWithFrame v23, :C#fun_new_map@0x1038, block=0x1040
+          v15:BasicObject = GetLocal :o, l0, EP@3
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -3137,16 +3136,15 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           v16:ArrayExact = NewArray
           SetLocal :a, l0, EP@3, v16
-          v21:BasicObject = GetLocal :s, l0, EP@4
-          v23:TrueClass = Const Value(true)
+          v22:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
-          v25:BasicObject = Send v21, 0x1000, :each_line, v23 # SendFallbackReason: Complex argument passing
-          v26:BasicObject = GetLocal :s, l0, EP@4
-          v27:BasicObject = GetLocal :a, l0, EP@3
+          v24:BasicObject = Send v11, 0x1000, :each_line, v22 # SendFallbackReason: Complex argument passing
+          v25:BasicObject = GetLocal :s, l0, EP@4
+          v26:BasicObject = GetLocal :a, l0, EP@3
           PatchPoint NoEPEscape(test)
-          v33:BasicObject = GetLocal :a, l0, EP@3
+          v32:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v33
+          Return v32
         ");
     }
 
@@ -9642,34 +9640,29 @@ mod hir_opt_tests {
          v12:NilClass = Const Value(nil)
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
-         v22:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         v25:CBool = Test v22
-         IfTrue v25, bb3(v14, v15, v16, v17, v22)
          PatchPoint NoEPEscape(read_nil_local)
-         v30:BasicObject = GetLocal :a, l0, EP@6
-         SetLocal :formatted, l0, EP@3, v30
-         Jump bb3(v14, v30, v16, v17, v30)
-       bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject, v37:BasicObject, v38:BasicObject):
+         v29:BasicObject = GetLocal :a, l0, EP@6
+         SetLocal :formatted, l0, EP@3, v29
          PatchPoint NoEPEscape(read_nil_local)
-         v44:BasicObject = GetLocal :formatted, l0, EP@3
+         v43:BasicObject = GetLocal :formatted, l0, EP@3
          PatchPoint SingleRactorMode
-         v61:HeapBasicObject = GuardType v34, HeapBasicObject
-         v62:HeapBasicObject = GuardShape v61, 0x1000
-         StoreField v62, :@formatted@0x1001, v44
-         WriteBarrier v62, v44
-         v65:CShape[0x1002] = Const CShape(0x1002)
-         StoreField v62, :_shape_id@0x1003, v65
-         v50:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v60:HeapBasicObject = GuardType v14, HeapBasicObject
+         v61:HeapBasicObject = GuardShape v60, 0x1000
+         StoreField v61, :@formatted@0x1001, v43
+         WriteBarrier v61, v43
+         v64:CShape[0x1002] = Const CShape(0x1002)
+         StoreField v61, :_shape_id@0x1003, v64
+         v49:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
          PatchPoint NoSingletonClass(Class@0x1010)
-         v70:BasicObject = CCallWithFrame v50, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v53:BasicObject = GetLocal :a, l0, EP@6
-         v54:BasicObject = GetLocal :_b, l0, EP@5
-         v55:BasicObject = GetLocal :_c, l0, EP@4
-         v56:BasicObject = GetLocal :formatted, l0, EP@3
+         v69:BasicObject = CCallWithFrame v49, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v52:BasicObject = GetLocal :a, l0, EP@6
+         v53:BasicObject = GetLocal :_b, l0, EP@5
+         v54:BasicObject = GetLocal :_c, l0, EP@4
+         v55:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v70
+         Return v69
        ");
     }
 
