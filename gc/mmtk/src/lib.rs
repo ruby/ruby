@@ -25,6 +25,7 @@ pub mod active_plan;
 pub mod api;
 pub mod binding;
 pub mod collection;
+pub mod heap;
 pub mod object_model;
 pub mod reference_glue;
 pub mod scanning;

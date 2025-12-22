@@ -4,6 +4,7 @@
 
 use mmtk::util::alloc::BumpPointer;
 use mmtk::util::alloc::ImmixAllocator;
+use mmtk::util::conversions;
 use mmtk::util::options::PlanSelector;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
@@ -13,6 +14,8 @@ use crate::abi::RubyBindingOptions;
 use crate::abi::RubyUpcalls;
 use crate::binding;
 use crate::binding::RubyBinding;
+use crate::heap::RubyHeapTriggerConfig;
+use crate::heap::RUBY_HEAP_TRIGGER_CONFIG;
 use crate::mmtk;
 use crate::utils::default_heap_max;
 use crate::utils::parse_capacity;
@@ -79,6 +82,29 @@ fn mmtk_builder_default_parse_heap_max() -> usize {
     parse_env_var_with("MMTK_HEAP_MAX", parse_capacity).unwrap_or_else(default_heap_max)
 }
 
+fn parse_float_env_var(key: &str, default: f64, min: f64, max: f64) -> f64 {
+    parse_env_var_with(key, |s| {
+        let mut float = f64::from_str(s).unwrap_or(default);
+
+        if float <= min {
+            eprintln!(
+                "{key} has value {float} which must be greater than {min}, using default instead"
+            );
+            float = default;
+        }
+
+        if float >= max {
+            eprintln!(
+                "{key} has value {float} which must be less than {max}, using default instead"
+            );
+            float = default;
+        }
+
+        Some(float)
+    })
+    .unwrap_or(default)
+}
+
 fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCTriggerSelector {
     let make_fixed = || GCTriggerSelector::FixedHeapSize(heap_max);
     let make_dynamic = || GCTriggerSelector::DynamicHeapSize(heap_min, heap_max);
@@ -86,6 +112,25 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
     parse_env_var_with("MMTK_HEAP_MODE", |s| match s {
         "fixed" => Some(make_fixed()),
         "dynamic" => Some(make_dynamic()),
+        "ruby" => {
+            let min_ratio = parse_float_env_var("RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO", 0.2, 0.0, 1.0);
+            let goal_ratio =
+                parse_float_env_var("RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO", 0.4, min_ratio, 1.0);
+            let max_ratio =
+                parse_float_env_var("RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO", 0.65, goal_ratio, 1.0);
+
+            crate::heap::RUBY_HEAP_TRIGGER_CONFIG
+                .set(RubyHeapTriggerConfig {
+                    min_heap_pages: conversions::bytes_to_pages_up(heap_min),
+                    max_heap_pages: conversions::bytes_to_pages_up(heap_max),
+                    heap_pages_min_ratio: min_ratio,
+                    heap_pages_goal_ratio: goal_ratio,
+                    heap_pages_max_ratio: max_ratio,
+                })
+                .unwrap_or_else(|_| panic!("RUBY_HEAP_TRIGGER_CONFIG is already set"));
+
+            Some(GCTriggerSelector::Delegated)
+        }
         _ => None,
     })
     .unwrap_or_else(make_dynamic)
@@ -146,7 +191,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
 
     crate::set_panic_hook();
 
-    let builder = unsafe { Box::from_raw(builder) };
+    let builder: Box<MMTKBuilder> = unsafe { Box::from_raw(builder) };
     let binding_options = RubyBindingOptions {
         ractor_check_mode: false,
         suffix_size: 0,
@@ -388,11 +433,12 @@ pub extern "C" fn mmtk_plan() -> *const u8 {
 pub extern "C" fn mmtk_heap_mode() -> *const u8 {
     static FIXED_HEAP: &[u8] = b"fixed\0";
     static DYNAMIC_HEAP: &[u8] = b"dynamic\0";
+    static RUBY_HEAP: &[u8] = b"ruby\0";
 
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(_) => FIXED_HEAP.as_ptr(),
         GCTriggerSelector::DynamicHeapSize(_, _) => DYNAMIC_HEAP.as_ptr(),
-        _ => panic!("Unknown heap mode"),
+        GCTriggerSelector::Delegated => RUBY_HEAP.as_ptr(),
     }
 }
 
@@ -401,7 +447,12 @@ pub extern "C" fn mmtk_heap_min() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(_) => 0,
         GCTriggerSelector::DynamicHeapSize(min_size, _) => min_size,
-        _ => panic!("Unknown heap mode"),
+        GCTriggerSelector::Delegated => conversions::pages_to_bytes(
+            RUBY_HEAP_TRIGGER_CONFIG
+                .get()
+                .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
+                .min_heap_pages,
+        ),
     }
 }
 
@@ -410,7 +461,12 @@ pub extern "C" fn mmtk_heap_max() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(max_size) => max_size,
         GCTriggerSelector::DynamicHeapSize(_, max_size) => max_size,
-        _ => panic!("Unknown heap mode"),
+        GCTriggerSelector::Delegated => conversions::pages_to_bytes(
+            RUBY_HEAP_TRIGGER_CONFIG
+                .get()
+                .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
+                .max_heap_pages,
+        ),
     }
 }
 
