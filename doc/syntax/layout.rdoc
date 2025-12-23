@@ -12,6 +12,10 @@ Line breaks also used as logical separators of the headers of some of control st
       puts "more"
     end
 
+    while x < 3    # line break ends the condition and starts the body
+      x += 1
+    end
+
 <tt>;</tt> can be used as an expressions separator instead of a line break:
 
     x = 1; y = 2; z = x + y
@@ -19,7 +23,9 @@ Line breaks also used as logical separators of the headers of some of control st
 
 Traditionally, expressions separated by <tt>;</tt> is used only in short scripts and experiments.
 
-In some control structures, an optional +then+ keyword can be used instead of a line break to separate their elements:
+In some control structures, there is an optional keyword that can be used instead of a line break to separate their elements:
+
+    # if, elsif, until and case ... when: 'then' is an optional separator:
 
     if z > 3 then puts "more" end
 
@@ -29,7 +35,10 @@ In some control structures, an optional +then+ keyword can be used instead of a 
     else "object"
     end
 
-Also, line breaks can be skipped in some places where it doesn't create any ambiguity. Note in the example above: no line break needed after <tt>puts "more"</tt> and before +end+, just as no line break needed after +else+.
+    # while and until: 'do' is an optional separator
+    while x < 3 do x +=1 end
+
+Also, line breaks can be skipped in some places where it doesn't create any ambiguity. Note in the example above: no line break needed before +end+, just as no line break needed after +else+.
 
 == Breaking expressions in lines
 
@@ -54,7 +63,7 @@ These would not:
     File.read "test.txt"           # already complete expression
               , encoding: "utf-8"  # attempt to parse as a new expression, SyntaxError
 
-The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" style of method calls), boolean operators <tt>&&</tt>/<tt>||</tt>, or control flow operators <tt>and<tt>/<tt>or</tt>:
+The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" style of method calls), boolean operators <tt>&&</tt>/<tt>||</tt>, or control flow operators <tt>and</tt>/<tt>or</tt>:
 
     # OK, interpreted as a chain of calls
     File.read('test.txt')
