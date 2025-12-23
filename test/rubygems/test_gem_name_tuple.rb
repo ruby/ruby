@@ -57,4 +57,41 @@ class TestGemNameTuple < Gem::TestCase
 
     assert_equal 1, a_p.<=>(a)
   end
+
+  def test_deconstruct
+    name_tuple = Gem::NameTuple.new "rails", Gem::Version.new("7.0.0"), "ruby"
+    assert_equal ["rails", Gem::Version.new("7.0.0"), "ruby"], name_tuple.deconstruct
+  end
+
+  def test_deconstruct_keys
+    name_tuple = Gem::NameTuple.new "rails", Gem::Version.new("7.0.0"), "x86_64-linux"
+    keys = name_tuple.deconstruct_keys(nil)
+    assert_equal "rails", keys[:name]
+    assert_equal Gem::Version.new("7.0.0"), keys[:version]
+    assert_equal "x86_64-linux", keys[:platform]
+  end
+
+  def test_pattern_matching_array
+    name_tuple = Gem::NameTuple.new "rails", Gem::Version.new("7.0.0"), "ruby"
+    result =
+      case name_tuple
+      in [name, version, "ruby"]
+        "#{name}-#{version}"
+      else
+        "no match"
+      end
+    assert_equal "rails-7.0.0", result
+  end
+
+  def test_pattern_matching_hash
+    name_tuple = Gem::NameTuple.new "rails", Gem::Version.new("7.0.0"), "ruby"
+    result =
+      case name_tuple
+      in name: "rails", version:, platform: "ruby"
+        version.to_s
+      else
+        "no match"
+      end
+    assert_equal "7.0.0", result
+  end
 end

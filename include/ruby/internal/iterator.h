@@ -337,7 +337,8 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_cal
  * @param[in]      kw_splat  Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @return         What `obj.mid` returns.
  */
 VALUE rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t proc, VALUE data2, int kw_splat);

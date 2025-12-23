@@ -996,7 +996,7 @@ class TestStringIO < Test::Unit::TestCase
     intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
     return if intptr_max > StringIO::MAX_LENGTH
     limit = intptr_max - 0x10
-    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-W0 -rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
       ary = []
@@ -1062,6 +1062,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_not_predicate(s.string, :ascii_only?)
     s.write('aaaa')
     assert_predicate(s.string, :ascii_only?)
+  end
+
+  def test_coderange_after_read_into_buffer
+    s = StringIO.new("01234567890".b)
+
+    buf = "¿Cómo estás? Ça va bien?"
+    assert_not_predicate(buf, :ascii_only?)
+
+    assert_predicate(s.string, :ascii_only?)
+
+    s.read(10, buf)
+
+    assert_predicate(buf, :ascii_only?)
+    assert_equal '0123456789', buf
   end
 
   require "objspace"

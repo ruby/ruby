@@ -2,7 +2,10 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
+use crate::payload::{IseqVersionRef, IseqStatus, get_or_create_iseq_payload};
+use crate::codegen::{MAX_ISEQ_VERSIONS, gen_iseq_call};
+use crate::cruby::{rb_iseq_reset_jit_func, iseq_get_location};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -18,7 +21,25 @@ macro_rules! compile_patch_points {
                     asm.compile(cb).expect("can write existing code");
                 });
                 // Stop marking GC offsets corrupted by the jump instruction
-                remove_gc_offsets(patch_point.payload_ptr, &written_range);
+                remove_gc_offsets(patch_point.version, &written_range);
+
+                // If the ISEQ doesn't have max versions, invalidate this version.
+                let mut version = patch_point.version;
+                let iseq = unsafe { version.as_ref() }.iseq;
+                if !iseq.is_null() {
+                    let payload = get_or_create_iseq_payload(iseq);
+                    if unsafe { version.as_ref() }.status != IseqStatus::Invalidated && payload.versions.len() < MAX_ISEQ_VERSIONS {
+                        unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+                        unsafe { rb_iseq_reset_jit_func(version.as_ref().iseq) };
+
+                        // Recompile JIT-to-JIT calls into the invalidated ISEQ
+                        for incoming in unsafe { version.as_ref() }.incoming.iter() {
+                            if let Err(err) = gen_iseq_call($cb, incoming) {
+                                debug!("{err:?}: gen_iseq_call failed on PatchPoint: {}", iseq_get_location(incoming.iseq.get(), 0));
+                            }
+                        }
+                    }
+                }
             }
         });
     };
@@ -31,8 +52,19 @@ struct PatchPoint {
     patch_point_ptr: CodePtr,
     /// Code pointer to a side exit
     side_exit_ptr: CodePtr,
-    /// Raw pointer to the ISEQ payload
-    payload_ptr: *mut IseqPayload,
+    /// ISEQ version to be invalidated
+    version: IseqVersionRef,
+}
+
+impl PatchPoint {
+    /// PatchPointer constructor
+    fn new(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, version: IseqVersionRef) -> PatchPoint {
+        Self {
+            patch_point_ptr,
+            side_exit_ptr,
+            version,
+        }
+    }
 }
 
 /// Used to track all of the various block references that contain assumptions
@@ -194,14 +226,14 @@ pub fn track_no_ep_escape_assumption(
     iseq: IseqPtr,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
-    payload_ptr: *mut IseqPayload,
+    version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint {
+    invariants.no_ep_escape_iseq_patch_points.entry(iseq).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
@@ -215,14 +247,14 @@ pub fn track_bop_assumption(
     bop: ruby_basic_operators,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
-    payload_ptr: *mut IseqPayload,
+    version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint {
+    invariants.bop_patch_points.entry((klass, bop)).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 /// Track a patch point for a callable method entry (CME).
@@ -230,14 +262,14 @@ pub fn track_cme_assumption(
     cme: *const rb_callable_method_entry_t,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
-    payload_ptr: *mut IseqPayload,
+    version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint {
+    invariants.cme_patch_points.entry(cme).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 /// Track a patch point for each constant name in a constant path assumption.
@@ -245,7 +277,7 @@ pub fn track_stable_constant_names_assumption(
     idlist: *const ID,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
-    payload_ptr: *mut IseqPayload,
+    version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
 
@@ -256,11 +288,11 @@ pub fn track_stable_constant_names_assumption(
             break;
         }
 
-        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint {
+        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint::new(
             patch_point_ptr,
             side_exit_ptr,
-            payload_ptr,
-        });
+            version,
+        ));
 
         idx += 1;
     }
@@ -271,14 +303,14 @@ pub fn track_no_singleton_class_assumption(
     klass: VALUE,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
-    payload_ptr: *mut IseqPayload,
+    version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint {
+    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 /// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
@@ -327,13 +359,17 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 }
 
 /// Track the JIT code that assumes that the interpreter is running with only one ractor
-pub fn track_single_ractor_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
+pub fn track_single_ractor_assumption(
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    version: IseqVersionRef,
+) {
     let invariants = ZJITState::get_invariants();
-    invariants.single_ractor_patch_points.insert(PatchPoint {
+    invariants.single_ractor_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 /// Callback for when Ruby is about to spawn a ractor. In that case we need to
@@ -356,19 +392,23 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
     });
 }
 
-pub fn track_no_trace_point_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
+pub fn track_no_trace_point_assumption(
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    version: IseqVersionRef,
+) {
     let invariants = ZJITState::get_invariants();
-    invariants.no_trace_point_patch_points.insert(PatchPoint {
+    invariants.no_trace_point_patch_points.insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
-        payload_ptr,
-    });
+        version,
+    ));
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_tracing_invalidate_all() {
-    use crate::gc::{get_or_create_iseq_payload, IseqStatus};
-    use crate::cruby::{for_each_iseq, rb_iseq_reset_jit_func};
+    use crate::payload::{get_or_create_iseq_payload, IseqStatus};
+    use crate::cruby::for_each_iseq;
 
     if !zjit_enabled_p() {
         return;
@@ -381,7 +421,9 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         for_each_iseq(|iseq| {
             let payload = get_or_create_iseq_payload(iseq);
 
-            payload.status = IseqStatus::NotCompiled;
+            if let Some(version) = payload.versions.last_mut() {
+                unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+            }
             unsafe { rb_iseq_reset_jit_func(iseq) };
         });
 

@@ -7,7 +7,12 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
+  # Blocks that are called when YJIT is enabled
+  @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
+  if Primitive.rb_zjit_get_stats_file_path_p
+    at_exit { print_stats_file }
+  end
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
   end
@@ -20,6 +25,18 @@ class << RubyVM::ZJIT
   # Check if ZJIT is enabled
   def enabled?
     Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
+  end
+
+  # Enable ZJIT compilation.
+  def enable
+    return false if enabled?
+
+    if Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
+      warn("Only one JIT can be enabled at the same time.")
+      return false
+    end
+
+    Primitive.rb_zjit_enable
   end
 
   # Check if `--zjit-trace-exits` is used
@@ -151,27 +168,38 @@ class << RubyVM::ZJIT
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
     stats = self.stats
 
-    stats[:guard_type_exit_ratio] = stats[:exit_guard_type_failure].to_f / stats[:guard_type_count] * 100
+    if stats[:guard_type_count].nonzero?
+      stats[:guard_type_exit_ratio] = stats[:exit_guard_type_failure].to_f / stats[:guard_type_count] * 100
+    end
+    if stats[:guard_shape_count].nonzero?
+      stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
+    end
 
     # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'ccall_', prompt: 'calls to C functions from JIT code', buf:, stats:, limit: 20)
     # Don't show not_annotated_cfuncs right now because it mostly duplicates not_inlined_cfuncs
     # print_counters_with_prefix(prefix: 'not_annotated_cfuncs_', prompt: 'not annotated C methods', buf:, stats:, limit: 20)
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'not_optimized_yarv_insn_', prompt: 'not optimized instructions', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'setivar_fallback_', prompt: 'setivar fallback reasons', buf:, stats:, limit: 5)
+    print_counters_with_prefix(prefix: 'getivar_fallback_', prompt: 'getivar fallback reasons', buf:, stats:, limit: 5)
+    print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
+    print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
 
     # Show most popular unsupported call features. Because each call can
-    # use multiple fancy features, a decrease in this number does not
+    # use multiple complex features, a decrease in this number does not
     # necessarily mean an increase in number of optimized calls.
-    print_counters_with_prefix(prefix: 'fancy_arg_pass_', prompt: 'popular unsupported argument-parameter features', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'complex_arg_pass_', prompt: 'popular complex argument-parameter features not optimized', buf:, stats:, limit: 10)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
-    print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unhandled_hir_insn_', prompt: 'unhandled HIR insns', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
 
     # Show no-prefix counters, having the most important stat `ratio_in_zjit` at the end
@@ -179,6 +207,9 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
+      :dynamic_setivar_count,
+      :dynamic_getivar_count,
+      :dynamic_definedivar_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
@@ -186,9 +217,6 @@ class << RubyVM::ZJIT
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
-      :dynamic_getivar_count,
-      :dynamic_setivar_count,
-
       :compiled_iseq_count,
       :failed_iseq_count,
 
@@ -206,8 +234,13 @@ class << RubyVM::ZJIT
 
       :guard_type_count,
       :guard_type_exit_ratio,
+      :guard_shape_count,
+      :guard_shape_exit_ratio,
 
       :code_region_bytes,
+      :zjit_alloc_bytes,
+      :total_mem_bytes,
+
       :side_exit_count,
       :total_insn_count,
       :vm_insn_count,
@@ -226,6 +259,17 @@ class << RubyVM::ZJIT
   # :stopdoc:
   private
 
+  # Register a block to be called when ZJIT is enabled
+  def add_jit_hook(hook)
+    @jit_hooks << hook
+  end
+
+  # Run ZJIT hooks registered by `#with_jit`
+  def call_jit_hooks
+    @jit_hooks.each(&:call)
+    @jit_hooks.clear
+  end
+
   def print_counters(keys, buf:, stats:, right_align: false, base: nil)
     key_pad = keys.map { |key| key.to_s.sub(/_time_ns\z/, '_time').size }.max + 1
     key_align = '-' unless right_align
@@ -236,13 +280,16 @@ class << RubyVM::ZJIT
       next unless stats.key?(key)
       value = stats[key]
       if base && key != base
-        ratio = " (%4.1f%%)" % (100.0 * value / stats[base])
+        total = stats[base]
+        if total.nonzero?
+          ratio = " (%4.1f%%)" % (100.0 * value / total)
+        end
       end
 
       case key
       when :ratio_in_zjit
         value = '%0.1f%%' % value
-      when :guard_type_exit_ratio
+      when :guard_type_exit_ratio, :guard_shape_exit_ratio
         value = '%0.1f%%' % value
       when /_time_ns\z/
         key = key.to_s.sub(/_time_ns\z/, '_time')
@@ -257,7 +304,7 @@ class << RubyVM::ZJIT
 
   def print_counters_with_prefix(buf:, stats:, prefix:, prompt:, limit: nil)
     counters = stats.select { |key, value| key.start_with?(prefix) && value > 0 }
-    return if stats.empty?
+    return if counters.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
     key_pad = counters.keys.map(&:size).max
@@ -287,6 +334,14 @@ class << RubyVM::ZJIT
   # Print ZJIT stats
   def print_stats
     $stderr.write stats_string
+  end
+
+  # Print ZJIT stats to file
+  def print_stats_file
+    filename = Primitive.rb_zjit_get_stats_file_path_p
+    File.open(filename, "wb") do |file|
+      file.write stats_string
+    end
   end
 
   def dump_locations # :nodoc:

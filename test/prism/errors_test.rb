@@ -64,13 +64,31 @@ module Prism
       assert_equal :"", Prism.parse_statement("+.@foo,+=foo").write_name
     end
 
+    def test_regexp_encoding_option_mismatch_error
+      # UTF-8 char with ASCII-8BIT modifier
+      result = Prism.parse('/Ȃ/n')
+      assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
+
+      # UTF-8 char with EUC-JP modifier
+      result = Prism.parse('/Ȃ/e')
+      assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
+
+      # UTF-8 char with Windows-31J modifier
+      result = Prism.parse('/Ȃ/s')
+      assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
+
+      # UTF-8 char with UTF-8 modifier
+      result = Prism.parse('/Ȃ/u')
+      assert_empty result.errors
+    end
+
     private
 
     def assert_errors(filepath, version)
       expected = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
       source = expected.lines.grep_v(/^\s*\^/).join.gsub(/\n*\z/, "")
-      refute_valid_syntax(source) if current_major_minor == version
+      refute_valid_syntax(source) if CURRENT_MAJOR_MINOR == version
 
       result = Prism.parse(source, version: version)
       errors = result.errors

@@ -1104,7 +1104,7 @@ class Gem::Net::HTTPResponse
     '3' => Gem::Net::HTTPRedirection,
     '4' => Gem::Net::HTTPClientError,
     '5' => Gem::Net::HTTPServerError
-  }
+  }.freeze
   CODE_TO_OBJ = {
     '100' => Gem::Net::HTTPContinue,
     '101' => Gem::Net::HTTPSwitchProtocol,
@@ -1170,5 +1170,5 @@ class Gem::Net::HTTPResponse
     '508' => Gem::Net::HTTPLoopDetected,
     '510' => Gem::Net::HTTPNotExtended,
     '511' => Gem::Net::HTTPNetworkAuthenticationRequired,
-  }
+  }.freeze
 end

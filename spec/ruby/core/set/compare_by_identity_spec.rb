@@ -90,7 +90,7 @@ describe "Set#compare_by_identity" do
     set.to_a.sort.should == [a1, a2].sort
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "raises a FrozenError on frozen sets" do
       set = Set.new.freeze
       -> {
@@ -99,7 +99,7 @@ describe "Set#compare_by_identity" do
     end
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "raises a FrozenError on frozen sets" do
       set = Set.new.freeze
       -> {

@@ -9,6 +9,7 @@ end
 
 require "open-uri"
 require "yaml"
+require_relative "./ruby-version"
 
 Diffy::Diff.default_options.merge!(
   include_diff_info: true,
@@ -30,10 +31,9 @@ class Tarball
 
   def gz?;  @url.end_with?('.gz'); end
   def zip?; @url.end_with?('.zip'); end
-  def bz2?; @url.end_with?('.bz2'); end
   def xz?;  @url.end_with?('.xz'); end
 
-  def ext; @url[/(?:zip|tar\.(?:gz|bz2|xz))\z/]; end
+  def ext; @url[/(?:zip|tar\.(?:gz|xz))\z/]; end
 
   def to_md
     <<eom
@@ -55,25 +55,10 @@ eom
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
-    x = $1.to_i
-    y = $2.to_i
-    z = $3.to_i
-    # previous tag for git diff --shortstat
-    # It's only for x.y.0 release
-    if z != 0
-      prev_tag = nil
-    elsif y != 0
-      prev_tag = "v#{x}_#{y-1}_0"
-      prev_ver = "#{x}.#{y-1}.0"
-    elsif x == 3 && y == 0 && z == 0
-      prev_tag = "v2_7_0"
-      prev_ver = "2.7.0"
-    else
-      raise "unexpected version for prev_ver '#{version}'"
-    end
+    teeny = Integer($3)
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
-    info = YAML.load(URI(uri).read)
+    info = YAML.unsafe_load(URI(uri).read)
     if info.size != 1
       raise "unexpected info.yml '#{uri}'"
     end
@@ -88,9 +73,10 @@ eom
       tarballs << tarball
     end
 
-    if prev_tag
+    if teeny == 0
       # show diff shortstat
-      tag = "v#{version.gsub(/[.\-]/, '_')}"
+      tag = RubyVersion.tag(version)
+      prev_tag = RubyVersion.tag(RubyVersion.previous(version))
       stat = `git -C #{rubydir} diff -l0 --shortstat #{prev_tag}..#{tag}`
       files_changed, insertions, deletions = stat.scan(/\d+/)
     end
@@ -184,7 +170,7 @@ eom
     if /\.0(?:-\w+)?\z/ =~ ver
       # preview, rc, or first release
       entry <<= <<eom
-  tag: v#{ver.tr('.-', '_')}
+  tag: #{RubyVersion.tag(ver)}
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}
@@ -196,33 +182,24 @@ eom
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
-    bz2: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.bz2
     xz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.xz
   size:
     gz:  #{ary.find{|x|x.gz? }.size}
     zip: #{ary.find{|x|x.zip?}.size}
-    bz2: #{ary.find{|x|x.bz2?}&.size}
     xz:  #{ary.find{|x|x.xz? }.size}
   sha1:
     gz:  #{ary.find{|x|x.gz? }.sha1}
     zip: #{ary.find{|x|x.zip?}.sha1}
-    bz2: #{ary.find{|x|x.bz2?}&.sha1}
     xz:  #{ary.find{|x|x.xz? }.sha1}
   sha256:
     gz:  #{ary.find{|x|x.gz? }.sha256}
     zip: #{ary.find{|x|x.zip?}.sha256}
-    bz2: #{ary.find{|x|x.bz2?}&.sha256}
     xz:  #{ary.find{|x|x.xz? }.sha256}
   sha512:
     gz:  #{ary.find{|x|x.gz? }.sha512}
     zip: #{ary.find{|x|x.zip?}.sha512}
-    bz2: #{ary.find{|x|x.bz2?}&.sha512}
     xz:  #{ary.find{|x|x.xz? }.sha512}
 eom
-
-    if ver.start_with?("3.")
-      entry = entry.gsub(/    bz2: .*\n/, "")
-    end
 
     if data.include?("\n- version: #{ver}\n")
       # update existing entry

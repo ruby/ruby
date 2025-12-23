@@ -20,6 +20,11 @@ typedef void *MMTk_ObjectReference;
 typedef void *MMTk_NullableObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
 
+typedef struct MMTk_BumpPointer {
+    uintptr_t cursor;
+    uintptr_t limit;
+} MMTk_BumpPointer;
+
 
 #define MMTk_OBJREF_OFFSET 8
 
@@ -69,6 +74,7 @@ typedef struct MMTk_RubyUpcalls {
     int (*global_tables_count)(void);
     void (*update_finalizer_table)(void);
     bool (*special_const_p)(MMTk_ObjectReference object);
+    void (*mutator_thread_panic_handler)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
@@ -91,6 +97,8 @@ void mmtk_init_binding(MMTk_Builder *builder,
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
+
+MMTk_BumpPointer *mmtk_get_bump_pointer_allocator(MMTk_Mutator *m);
 
 void mmtk_destroy_mutator(MMTk_Mutator *mutator);
 

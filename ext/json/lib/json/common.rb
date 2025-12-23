@@ -71,8 +71,13 @@ module JSON
             end
           when object_class
             if opts[:create_additions] != false
-              if class_name = object[JSON.create_id]
-                klass = JSON.deep_const_get(class_name)
+              if class_path = object[JSON.create_id]
+                klass = begin
+                  Object.const_get(class_path)
+                rescue NameError => e
+                  raise ArgumentError, "can't get const #{class_path}: #{e}"
+                end
+
                 if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
                   create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
@@ -145,16 +150,6 @@ module JSON
       @parser = parser
       remove_const :Parser if const_defined?(:Parser, false)
       const_set :Parser, parser
-    end
-
-    # Return the constant located at _path_. The format of _path_ has to be
-    # either ::A::B::C or A::B::C. In any case, A has to be located at the top
-    # level (absolute namespace path?). If there doesn't exist a constant at
-    # the given path, an ArgumentError is raised.
-    def deep_const_get(path) # :nodoc:
-      Object.const_get(path)
-    rescue NameError => e
-      raise ArgumentError, "can't get const #{path}: #{e}"
     end
 
     # Set the module _generator_ to be used by JSON.
@@ -555,6 +550,7 @@ module JSON
     :create_additions => nil,
   }
   # :call-seq:
+  #   JSON.unsafe_load(source, options = {}) -> object
   #   JSON.unsafe_load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -686,7 +682,12 @@ module JSON
   #
   def unsafe_load(source, proc = nil, options = nil)
     opts = if options.nil?
-      _unsafe_load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _unsafe_load_default_options
+      end
     else
       _unsafe_load_default_options.merge(options)
     end
@@ -714,6 +715,7 @@ module JSON
   end
 
   # :call-seq:
+  #   JSON.load(source, options = {}) -> object
   #   JSON.load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -850,8 +852,18 @@ module JSON
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
   def load(source, proc = nil, options = nil)
+    if proc && options.nil? && proc.is_a?(Hash)
+      options = proc
+      proc = nil
+    end
+
     opts = if options.nil?
-      _load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _load_default_options
+      end
     else
       _load_default_options.merge(options)
     end
@@ -1053,7 +1065,7 @@ module JSON
       options[:as_json] = as_json if as_json
 
       @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options))
+      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options)).freeze
     end
 
     # call-seq:
@@ -1062,7 +1074,7 @@ module JSON
     #
     # Serialize the given object into a \JSON document.
     def dump(object, io = nil)
-      @state.generate_new(object, io)
+      @state.generate(object, io)
     end
     alias_method :generate, :dump
 

@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
+# :stopdoc
 class CGI
   module Escape; end
   include Escape
   extend Escape
+  module EscapeExt; end # :nodoc:
 end
+# :startdoc:
 
+# Escape/unescape for CGI, HTML, URI.
 module CGI::Escape
   @@accept_charset = Encoding::UTF_8 unless defined?(@@accept_charset)
 

@@ -235,7 +235,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --add-platform ruby"
@@ -269,7 +269,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       expect(lockfile).to eq good_lockfile
@@ -420,7 +420,7 @@ RSpec.describe "bundle install across platforms" do
         platform_specific
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 end
@@ -486,7 +486,7 @@ RSpec.describe "bundle install with platform conditionals" do
         tzinfo (~> 1.2)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install --verbose"
@@ -589,7 +589,7 @@ RSpec.describe "bundle install with platform conditionals" do
         myrack
       #{checksums_section_when_enabled}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 

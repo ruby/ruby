@@ -32,6 +32,18 @@
 #define rb_int_new  rb_int2inum  /**< @alias{rb_int2inum} */
 #define rb_uint_new rb_uint2inum /**< @alias{rb_uint2inum} */
 
+// These definitions are same as fiddle/conversions.h
+#if SIZEOF_VOIDP <= SIZEOF_LONG
+# define PTR2NUM(x) (LONG2NUM((long)(x)))
+# define NUM2PTR(x) ((void*)(NUM2ULONG(x)))
+#elif SIZEOF_VOIDP <= SIZEOF_LONG_LONG
+# define PTR2NUM(x) (LL2NUM((LONG_LONG)(x)))
+# define NUM2PTR(x) ((void*)(NUM2ULL(x)))
+#else
+// should have been an error in ruby/internal/value.h
+# error Need integer for VALUE
+#endif
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /**

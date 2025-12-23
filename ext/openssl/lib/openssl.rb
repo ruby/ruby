@@ -12,7 +12,6 @@
 
 require 'openssl.so'
 
-require_relative 'openssl/asn1'
 require_relative 'openssl/bn'
 require_relative 'openssl/cipher'
 require_relative 'openssl/digest'
@@ -24,12 +23,16 @@ require_relative 'openssl/version'
 require_relative 'openssl/x509'
 
 module OpenSSL
-  # call-seq:
-  #   OpenSSL.secure_compare(string, string) -> boolean
+  # :call-seq:
+  #    OpenSSL.secure_compare(string, string) -> true or false
   #
   # Constant time memory comparison. Inputs are hashed using SHA-256 to mask
   # the length of the secret. Returns +true+ if the strings are identical,
   # +false+ otherwise.
+  #
+  # This method is expensive due to the SHA-256 hashing. In most cases, where
+  # the input lengths are known to be equal or are not sensitive,
+  # OpenSSL.fixed_length_secure_compare should be used instead.
   def self.secure_compare(a, b)
     hashed_a = OpenSSL::Digest.digest('SHA256', a)
     hashed_b = OpenSSL::Digest.digest('SHA256', b)

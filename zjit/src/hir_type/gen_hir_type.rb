@@ -25,20 +25,20 @@ class Type
 end
 
 # Helper to generate graphviz.
-def to_graphviz_rec type
+def to_graphviz_rec type, f
   type.subtypes.each {|subtype|
-    puts type.name + "->" + subtype.name + ";"
+    f.puts type.name + "->" + subtype.name + ";"
   }
   type.subtypes.each {|subtype|
-    to_graphviz_rec subtype
+    to_graphviz_rec subtype, f
   }
 end
 
 # Generate graphviz.
-def to_graphviz type
-  puts "digraph G {"
-  to_graphviz_rec type
-  puts "}"
+def to_graphviz type, f
+  f.puts "digraph G {"
+  to_graphviz_rec type, f
+  f.puts "}"
 end
 
 # ===== Start generating the type DAG =====
@@ -139,6 +139,7 @@ unsigned = cvalue_int.subtype "CUnsigned"
   signed.subtype "CInt#{width}"
   unsigned.subtype "CUInt#{width}"
 }
+unsigned.subtype "CShape"
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
@@ -218,3 +219,7 @@ $inexact_c_names.each {|type_name, c_name|
 }
 puts "  ];"
 puts "}"
+
+File.open("zjit_types.dot", "w") do |f|
+  to_graphviz(any, f)
+end

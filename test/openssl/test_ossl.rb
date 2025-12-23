@@ -66,16 +66,27 @@ class OpenSSL::TestOSSL < OpenSSL::TestCase
   end if ENV["OSSL_TEST_ALL"] == "1"
 
   def test_error_data
-    # X509V3_EXT_nconf_nid() called from OpenSSL::X509::ExtensionFactory#create_ext is a function
-    # that uses ERR_raise_data() to append additional information about the error.
+    # X509V3_EXT_nconf_nid() called from
+    # OpenSSL::X509::ExtensionFactory#create_ext is a function that uses
+    # ERR_raise_data() to append additional information about the error.
     #
     # The generated message should look like:
     #     "subjectAltName = IP:not.a.valid.ip.address: bad ip address (value=not.a.valid.ip.address)"
     #     "subjectAltName = IP:not.a.valid.ip.address: error in extension (name=subjectAltName, value=IP:not.a.valid.ip.address)"
+    #
+    # The string inside parentheses is the ERR_TXT_STRING data, and is appended
+    # by ossl_make_error(), so we check it here.
     ef = OpenSSL::X509::ExtensionFactory.new
-    assert_raise_with_message(OpenSSL::X509::ExtensionError, /value=(IP:)?not.a.valid.ip.address\)/) {
+    e = assert_raise(OpenSSL::X509::ExtensionError) {
       ef.create_ext("subjectAltName", "IP:not.a.valid.ip.address")
     }
+    assert_match(/not.a.valid.ip.address\)\z/, e.message)
+
+    # We currently craft the strings based on ERR_error_string()'s style:
+    #     error:<error code in hex>:<library>:<function>:<reason> (data)
+    assert_instance_of(Array, e.errors)
+    assert_match(/\Aerror:.*not.a.valid.ip.address\)\z/, e.errors.last)
+    assert_include(e.detailed_message, "not.a.valid.ip.address")
   end
 end
 

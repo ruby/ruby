@@ -148,4 +148,16 @@ class TestGemRequestConnectionPool < Gem::TestCase
       end
     end.join
   end
+
+  def test_checkouts_multiple_connections_from_the_pool
+    uri = Gem::URI.parse("http://example/some_endpoint")
+    pools = Gem::Request::ConnectionPools.new nil, [], 2
+    pool  = pools.pool_for uri
+
+    pool.checkout
+
+    Thread.new do
+      assert_not_nil(pool.checkout)
+    end.join
+  end
 end

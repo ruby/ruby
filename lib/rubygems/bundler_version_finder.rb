@@ -2,7 +2,10 @@
 
 module Gem::BundlerVersionFinder
   def self.bundler_version
+    return if bundle_config_version == "system"
+
     v = ENV["BUNDLER_VERSION"]
+    v = nil if v&.empty?
 
     v ||= bundle_update_bundler_version
     return if v == true
@@ -64,9 +67,12 @@ module Gem::BundlerVersionFinder
 
     return unless gemfile
 
-    lockfile = case gemfile
-               when "gems.rb" then "gems.locked"
-               else "#{gemfile}.lock"
+    lockfile = ENV["BUNDLE_LOCKFILE"]
+    lockfile = nil if lockfile&.empty?
+
+    lockfile ||= case gemfile
+                 when "gems.rb" then "gems.locked"
+                 else "#{gemfile}.lock"
     end
 
     return unless File.file?(lockfile)
@@ -74,4 +80,33 @@ module Gem::BundlerVersionFinder
     File.read(lockfile)
   end
   private_class_method :lockfile_contents
+
+  def self.bundle_config_version
+    config_file = bundler_config_file
+    return unless config_file && File.file?(config_file)
+
+    contents = File.read(config_file)
+    contents =~ /^BUNDLE_VERSION:\s*["']?([^"'\s]+)["']?\s*$/
+
+    $1
+  end
+  private_class_method :bundle_config_version
+
+  def self.bundler_config_file
+    # see Bundler::Settings#global_config_file and local_config_file
+    # global
+    if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
+      ENV["BUNDLE_CONFIG"]
+    elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
+      ENV["BUNDLE_USER_CONFIG"]
+    elsif ENV["BUNDLE_USER_HOME"] && !ENV["BUNDLE_USER_HOME"].empty?
+      ENV["BUNDLE_USER_HOME"] + "config"
+    elsif Gem.user_home && !Gem.user_home.empty?
+      Gem.user_home + ".bundle/config"
+    else
+      # local
+      "config"
+    end
+  end
+  private_class_method :bundler_config_file
 end

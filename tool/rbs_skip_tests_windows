@@ -1,5 +1,8 @@
 ARGFTest     Failing on Windows
 
+RactorSingletonTest     Hangs up on Windows
+RactorInstanceTest      Hangs up on Windows
+
 # NotImplementedError: fileno() function is unimplemented on this machine
 test_fileno(DirInstanceTest)
 test_fchdir(DirSingletonTest)

@@ -13,14 +13,14 @@
     TypedData_Wrap_Struct((klass), &ossl_x509store_type, 0)
 #define SetX509Store(obj, st) do { \
     if (!(st)) { \
-	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
     RTYPEDDATA_DATA(obj) = (st); \
 } while (0)
 #define GetX509Store(obj, st) do { \
     TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
     if (!(st)) { \
-	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
 
@@ -28,14 +28,14 @@
     TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, 0)
 #define SetX509StCtx(obj, ctx) do { \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
     RTYPEDDATA_DATA(obj) = (ctx); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
     TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
+        ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
 } while (0)
 
@@ -62,7 +62,7 @@ call_verify_cb_proc(VALUE arg)
 {
     struct ossl_verify_cb_args *args = (struct ossl_verify_cb_args *)arg;
     return rb_funcall(args->proc, rb_intern("call"), 2,
-		      args->preverify_ok, args->store_ctx);
+                      args->preverify_ok, args->store_ctx);
 }
 
 int
@@ -73,33 +73,33 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
     int state;
 
     if (NIL_P(proc))
-	return ok;
+        return ok;
 
     ret = Qfalse;
     rctx = rb_protect(ossl_x509stctx_new_i, (VALUE)ctx, &state);
     if (state) {
-	rb_set_errinfo(Qnil);
-	rb_warn("StoreContext initialization failure");
+        rb_set_errinfo(Qnil);
+        rb_warn("StoreContext initialization failure");
     }
     else {
-	args.proc = proc;
-	args.preverify_ok = ok ? Qtrue : Qfalse;
-	args.store_ctx = rctx;
-	ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
-	if (state) {
-	    rb_set_errinfo(Qnil);
-	    rb_warn("exception in verify_callback is ignored");
-	}
-	RTYPEDDATA_DATA(rctx) = NULL;
+        args.proc = proc;
+        args.preverify_ok = ok ? Qtrue : Qfalse;
+        args.store_ctx = rctx;
+        ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
+        if (state) {
+            rb_set_errinfo(Qnil);
+            rb_warn("exception in verify_callback is ignored");
+        }
+        RTYPEDDATA_DATA(rctx) = NULL;
     }
     if (ret == Qtrue) {
-	X509_STORE_CTX_set_error(ctx, X509_V_OK);
-	ok = 1;
+        X509_STORE_CTX_set_error(ctx, X509_V_OK);
+        ok = 1;
     }
     else {
-	if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
-	    X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-	ok = 0;
+        if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+        ok = 0;
     }
 
     return ok;
@@ -159,10 +159,10 @@ x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 
     proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
     if (!proc)
-	proc = (VALUE)X509_STORE_get_ex_data(X509_STORE_CTX_get0_store(ctx),
-					     store_ex_verify_cb_idx);
+        proc = (VALUE)X509_STORE_get_ex_data(X509_STORE_CTX_get0_store(ctx),
+                                             store_ex_verify_cb_idx);
     if (!proc)
-	return ok;
+        return ok;
 
     return ossl_verify_cb_call(proc, ok, ctx);
 }
@@ -484,7 +484,7 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &cert, &chain);
     ctx = rb_funcall(cX509StoreContext, rb_intern("new"), 3, self, cert, chain);
     proc = rb_block_given_p() ?  rb_block_proc() :
-	   rb_iv_get(self, "@verify_callback");
+           rb_iv_get(self, "@verify_callback");
     rb_iv_set(ctx, "@verify_callback", proc);
     result = rb_funcall(ctx, rb_intern("verify"), 0);
 
@@ -513,9 +513,9 @@ ossl_x509stctx_free(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
     if (X509_STORE_CTX_get0_untrusted(ctx))
-	sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
+        sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
     if (X509_STORE_CTX_get0_cert(ctx))
-	X509_free(X509_STORE_CTX_get0_cert(ctx));
+        X509_free(X509_STORE_CTX_get0_cert(ctx));
     X509_STORE_CTX_free(ctx);
 }
 
@@ -763,7 +763,7 @@ ossl_x509stctx_get_curr_crl(VALUE self)
     GetX509StCtx(self, ctx);
     crl = X509_STORE_CTX_get0_current_crl(ctx);
     if (!crl)
-	return Qnil;
+        return Qnil;
 
     return ossl_x509crl_new(crl);
 }
@@ -859,19 +859,13 @@ void
 Init_ossl_x509store(void)
 {
 #undef rb_intern
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     /* Register ext_data slot for verify callback Proc */
     stctx_ex_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"stctx_ex_verify_cb_idx", 0, 0, 0);
     if (stctx_ex_verify_cb_idx < 0)
-	ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
+        ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
     store_ex_verify_cb_idx = X509_STORE_get_ex_new_index(0, (void *)"store_ex_verify_cb_idx", 0, 0, 0);
     if (store_ex_verify_cb_idx < 0)
-	ossl_raise(eOSSLError, "X509_STORE_get_ex_new_index");
+        ossl_raise(eOSSLError, "X509_STORE_get_ex_new_index");
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 

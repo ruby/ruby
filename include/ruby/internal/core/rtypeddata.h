@@ -157,6 +157,12 @@ rbimpl_typeddata_flags {
      */
     RUBY_TYPED_FROZEN_SHAREABLE = RUBY_FL_SHAREABLE,
 
+    // experimental flag
+    // Similar to RUBY_TYPED_FROZEN_SHAREABLE, but doesn't make shareable
+    // reachable objects from this T_DATA object on the Ractor.make_shareable.
+    // If it refers to unshareable objects, simply raise an error.
+    // RUBY_TYPED_FROZEN_SHAREABLE_NO_REC = RUBY_FL_FINALIZE,
+
     /**
      * This flag  has something to do  with our garbage collector.   These days
      * ruby  objects are  "generational".  There  are those  who are  young and
@@ -507,19 +513,6 @@ RBIMPL_SYMBOL_EXPORT_END()
         sizeof(type))
 #endif
 
-/**
- * Obtains a C struct from inside of a wrapper Ruby object.
- *
- * @param      obj            An instance of ::RTypedData.
- * @param      type           Type name of the C struct.
- * @param      data_type      The data type describing `type`.
- * @param      sval           Variable name of obtained C struct.
- * @exception  rb_eTypeError  `obj` is not a kind of `data_type`.
- * @return     Unwrapped C struct that `obj` holds.
- */
-#define TypedData_Get_Struct(obj,type,data_type,sval) \
-    ((sval) = RBIMPL_CAST((type *)rb_check_typeddata((obj), (data_type))))
-
 static inline bool
 RTYPEDDATA_EMBEDDED_P(VALUE obj)
 {
@@ -613,6 +606,48 @@ RTYPEDDATA_TYPE(VALUE obj)
 
     return (const struct rb_data_type_struct *)(RTYPEDDATA(obj)->type & TYPED_DATA_PTR_MASK);
 }
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of  TypedData_Get_Struct().  Don't use  it
+ * directly.
+ */
+static inline void *
+rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *expected_type)
+{
+    if (RB_LIKELY(RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj))) {
+        const rb_data_type_t *actual_type = RTYPEDDATA_TYPE(obj);
+        void *data = RTYPEDDATA_GET_DATA(obj);
+        if (RB_LIKELY(actual_type == expected_type)) {
+            return data;
+        }
+
+        while (actual_type) {
+            actual_type = actual_type->parent;
+            if (actual_type == expected_type) {
+                return data;
+            }
+        }
+    }
+
+    return rb_check_typeddata(obj, expected_type);
+}
+
+
+/**
+ * Obtains a C struct from inside of a wrapper Ruby object.
+ *
+ * @param      obj            An instance of ::RTypedData.
+ * @param      type           Type name of the C struct.
+ * @param      data_type      The data type describing `type`.
+ * @param      sval           Variable name of obtained C struct.
+ * @exception  rb_eTypeError  `obj` is not a kind of `data_type`.
+ * @return     Unwrapped C struct that `obj` holds.
+ */
+#define TypedData_Get_Struct(obj,type,data_type,sval) \
+    ((sval) = RBIMPL_CAST((type *)rbimpl_check_typeddata((obj), (data_type))))
 
 /**
  * While  we don't  stop  you from  using  this  function, it  seems  to be  an

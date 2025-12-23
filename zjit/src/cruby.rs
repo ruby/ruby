@@ -130,7 +130,6 @@ unsafe extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
-    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
@@ -147,6 +146,7 @@ unsafe extern "C" {
     ) -> bool;
     pub fn rb_vm_set_ivar_id(obj: VALUE, idx: u32, val: VALUE) -> VALUE;
     pub fn rb_vm_setinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, val: VALUE, ic: IVC);
+    pub fn rb_vm_getinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, ic: IVC) -> VALUE;
     pub fn rb_aliased_callable_method_entry(
         me: *const rb_callable_method_entry_t,
     ) -> *const rb_callable_method_entry_t;
@@ -190,21 +190,7 @@ pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
-pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
-pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
-pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
-pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
-pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
-pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
-pub use rb_get_iseq_flags_ambiguous_param0 as get_iseq_flags_ambiguous_param0;
-pub use rb_get_iseq_flags_accepts_no_kwarg as get_iseq_flags_accepts_no_kwarg;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
-pub use rb_get_iseq_body_param_keyword as get_iseq_body_param_keyword;
-pub use rb_get_iseq_body_param_size as get_iseq_body_param_size;
-pub use rb_get_iseq_body_param_lead_num as get_iseq_body_param_lead_num;
-pub use rb_get_iseq_body_param_opt_num as get_iseq_body_param_opt_num;
-pub use rb_get_iseq_body_param_opt_table as get_iseq_body_param_opt_table;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
@@ -245,10 +231,12 @@ pub fn insn_len(opcode: usize) -> u32 {
     }
 }
 
-/// Opaque iseq type for opaque iseq pointers from vm_core.h
+/// We avoid using bindgen for `rb_iseq_constant_body` since its definition changes depending
+/// on build configuration while we need one bindgen file that works for all configurations.
+/// Use an opaque type for it instead.
 /// See: <https://doc.rust-lang.org/nomicon/ffi.html#representing-opaque-structs>
 #[repr(C)]
-pub struct rb_iseq_t {
+pub struct rb_iseq_constant_body {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -283,6 +271,10 @@ impl ShapeId {
     pub fn is_too_complex(self) -> bool {
         unsafe { rb_jit_shape_too_complex_p(self.0) }
     }
+
+    pub fn is_frozen(self) -> bool {
+        (self.0 & SHAPE_ID_FL_FROZEN) != 0
+    }
 }
 
 // Given an ISEQ pointer, convert PC to insn_idx
@@ -312,11 +304,10 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
 }
 
 /// Index of the local variable that has a rest parameter if any
-pub fn iseq_rest_param_idx(iseq: IseqPtr) -> Option<i32> {
-    if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        Some(opt_num + lead_num)
+pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
+    // TODO(alan): replace with `params.rest_start`
+    if params.flags.has_rest() != 0 {
+        Some(params.opt_num + params.lead_num)
     } else {
         None
     }
@@ -690,6 +681,29 @@ impl VALUE {
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
     }
+
+    /// Call the write barrier after separately writing val to self.
+    pub fn write_barrier(self, val: VALUE) {
+        // rb_gc_writebarrier() asserts it is not called with a special constant
+        if !val.special_const_p() {
+            unsafe { rb_gc_writebarrier(self, val) };
+        }
+    }
+}
+
+pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
+
+/// Extension trait to enable method calls on [`IseqPtr`]
+pub trait IseqAccess {
+    unsafe fn params<'a>(self) -> &'a IseqParameters;
+}
+
+impl IseqAccess for IseqPtr {
+    /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
+    unsafe fn params<'a>(self) -> &'a IseqParameters {
+        use crate::cast::IntoUsize;
+        unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
 }
 
 impl From<IseqPtr> for VALUE {
@@ -775,11 +789,17 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
 
-/// Produce a Ruby symbol from a Rust string slice
-pub fn rust_str_to_sym(str: &str) -> VALUE {
+/// Produce a Ruby ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
+}
+
+/// Produce a Ruby symbol from a Rust string slice
+pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
 }
 
 /// Produce an owned Rust String from a C char pointer
@@ -974,7 +994,7 @@ pub fn rb_bug_panic_hook() {
         // You may also use ZJIT_RB_BUG=1 to trigger this on dev builds.
         if release_build || env::var("ZJIT_RB_BUG").is_ok() {
             // Abort with rb_bug(). It has a length limit on the message.
-            let panic_message = &format!("{}", panic_info)[..];
+            let panic_message = &format!("{panic_info}")[..];
             let len = std::cmp::min(0x100, panic_message.len()) as c_int;
             unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
         } else {
@@ -998,8 +1018,9 @@ mod manual_defs {
     use super::*;
 
     pub const SIZEOF_VALUE: usize = 8;
+    pub const BITS_PER_BYTE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
-    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
+    pub const VALUE_BITS: u8 = BITS_PER_BYTE as u8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -1052,12 +1073,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
     pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
-    // Constants from rb_execution_context_t vm_core.h
-    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
-
     // Constants from rb_thread_t in vm_core.h
     pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;
 
@@ -1071,7 +1086,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_enabled_p, ZJITState}};
+    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_entry, ZJITState}};
 
     use super::*;
 
@@ -1114,10 +1129,10 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        ZJITState::init();
+        let zjit_entry = ZJITState::init();
 
         // Enable zjit_* instructions
-        unsafe { rb_zjit_enabled_p = true; }
+        unsafe { rb_zjit_entry = zjit_entry; }
     }
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
@@ -1376,7 +1391,12 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: len
         name: _as_heap
+        name: thread_ptr
+        name: self_              content: b"self"
+        name: rb_ivar_get_at_no_ractor_check
+        name: _shape_id
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

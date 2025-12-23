@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_args.c - process method call arguments.
+  vm_args.c - process method call arguments. Included into vm.c.
 
   $Author$
 
@@ -318,8 +318,6 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
-#define KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
-
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -355,7 +353,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             if (UNDEF_P(default_values[di])) {
                 locals[i] = Qnil;
 
-                if (LIKELY(i < KW_SPECIFIED_BITS_MAX)) {
+                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
                     unspecified_bits |= 0x01 << di;
                 }
                 else {
@@ -364,7 +362,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
                         int j;
                         unspecified_bits_value = rb_hash_new();
 
-                        for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
+                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
                                 rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
                             }
@@ -450,7 +448,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
             if (UNDEF_P(default_values[di])) {
                 locals[i] = Qnil;
 
-                if (LIKELY(i < KW_SPECIFIED_BITS_MAX)) {
+                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
                     unspecified_bits |= 0x01 << di;
                 }
                 else {
@@ -459,7 +457,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
                         int j;
                         unspecified_bits_value = rb_hash_new();
 
-                        for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
+                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
                                 rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
                             }
@@ -640,12 +638,26 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 given_argc == ISEQ_BODY(iseq)->param.lead_num + (kw_flag ? 2 : 1) &&
                 !ISEQ_BODY(iseq)->param.flags.has_opt &&
                 !ISEQ_BODY(iseq)->param.flags.has_post &&
-                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
-                (!kw_flag ||
-                !ISEQ_BODY(iseq)->param.flags.has_kw ||
-                !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
-                !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg)) {
-            args->rest_dupped = true;
+                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords) {
+            if (kw_flag) {
+                if (ISEQ_BODY(iseq)->param.flags.has_kw ||
+                    ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                    args->rest_dupped = true;
+                }
+                else if (kw_flag & VM_CALL_KW_SPLAT) {
+                    VALUE kw_hash = locals[args->argc - 1];
+                    if (kw_hash == Qnil ||
+                            (RB_TYPE_P(kw_hash, T_HASH) && RHASH_EMPTY_P(kw_hash))) {
+                        args->rest_dupped = true;
+                    }
+                }
+
+            }
+            else if (!ISEQ_BODY(iseq)->param.flags.has_kw &&
+                    !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                    !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
+                args->rest_dupped = true;
+            }
         }
     }
 

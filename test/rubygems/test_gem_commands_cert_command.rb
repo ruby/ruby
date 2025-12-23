@@ -498,7 +498,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -527,7 +527,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -559,7 +559,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -591,7 +591,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end

@@ -32,12 +32,15 @@ struct objspace {
     unsigned long live_ractor_cache_count;
 
     pthread_mutex_t mutex;
+    rb_atomic_t mutator_blocking_count;
     bool world_stopped;
     pthread_cond_t cond_world_stopped;
     pthread_cond_t cond_world_started;
     size_t start_the_world_count;
 
     struct rb_gc_vm_context vm_context;
+
+    unsigned int fork_hook_vm_lock_lev;
 };
 
 struct MMTk_ractor_cache {
@@ -45,6 +48,8 @@ struct MMTk_ractor_cache {
 
     MMTk_Mutator *mutator;
     bool gc_mutator_p;
+
+    MMTk_BumpPointer *bump_pointer;
 };
 
 struct MMTk_final_job {
@@ -129,7 +134,9 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     struct objspace *objspace = rb_gc_get_objspace();
 
     size_t starting_gc_count = objspace->gc_count;
+    RUBY_ATOMIC_INC(objspace->mutator_blocking_count);
     int lock_lev = RB_GC_VM_LOCK();
+    RUBY_ATOMIC_DEC(objspace->mutator_blocking_count);
     int err;
     if ((err = pthread_mutex_lock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot lock objspace->mutex: %s", strerror(err));
@@ -350,6 +357,12 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
     return RB_SPECIAL_CONST_P(obj);
 }
 
+static void
+rb_mmtk_mutator_thread_panic_handler(void)
+{
+    rb_bug("Ruby mutator thread panicked");
+}
+
 // Bootup
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -369,6 +382,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
     rb_mmtk_special_const_p,
+    rb_mmtk_mutator_thread_panic_handler,
 };
 
 // Use max 80% of the available memory by default for MMTk
@@ -435,6 +449,7 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     ccan_list_add(&objspace->ractor_caches, &cache->list_node);
 
     cache->mutator = mmtk_bind_mutator(cache);
+    cache->bump_pointer = mmtk_get_bump_pointer_allocator(cache->mutator);
 
     return cache;
 }
@@ -457,6 +472,13 @@ void rb_gc_impl_set_params(void *objspace_ptr) { }
 
 static VALUE gc_verify_internal_consistency(VALUE self) { return Qnil; }
 
+#define MMTK_HEAP_COUNT 6
+#define MMTK_MAX_OBJ_SIZE 640
+
+static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
+    32, 40, 80, 160, 320, MMTK_MAX_OBJ_SIZE, 0
+};
+
 void
 rb_gc_impl_init(void)
 {
@@ -464,7 +486,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(640));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
     // Pretend we have 5 size pools
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(5));
     OBJ_FREEZE(gc_constants);
@@ -479,10 +501,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
 }
-
-static size_t heap_sizes[6] = {
-    40, 80, 160, 320, 640, 0
-};
 
 size_t *
 rb_gc_impl_heap_sizes(void *objspace_ptr)
@@ -597,6 +615,24 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 
 // Object allocation
 
+static VALUE
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size)
+{
+    MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
+    if (bump_pointer == NULL) return 0;
+
+    uintptr_t new_cursor = bump_pointer->cursor + size;
+
+    if (new_cursor > bump_pointer->limit) {
+        return 0;
+    }
+    else {
+        VALUE obj = (VALUE)bump_pointer->cursor;
+        bump_pointer->cursor = new_cursor;
+        return obj;
+    }
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -604,8 +640,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     struct objspace *objspace = objspace_ptr;
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 
-    if (alloc_size > 640) rb_bug("too big");
-    for (int i = 0; i < 5; i++) {
+    if (alloc_size > MMTK_MAX_OBJ_SIZE) rb_bug("too big");
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (alloc_size == heap_sizes[i]) break;
         if (alloc_size < heap_sizes[i]) {
             alloc_size = heap_sizes[i];
@@ -617,13 +653,20 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    VALUE *alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size + 8, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    alloc_size += sizeof(VALUE);
+
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
+    if (!alloc_obj) {
+        alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    }
+
     alloc_obj++;
-    alloc_obj[-1] = alloc_size;
+    alloc_obj[-1] = alloc_size - sizeof(VALUE);
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
-    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    // TODO: implement fast path for mmtk_post_alloc
+    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
     // TODO: only add when object needs obj_free to be called
     mmtk_add_obj_free_candidate(alloc_obj);
@@ -642,7 +685,7 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (size == heap_sizes[i]) return i;
         if (size < heap_sizes[i])  return i;
     }
@@ -653,7 +696,7 @@ rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size <= 640;
+    return size <= MMTK_MAX_OBJ_SIZE;
 }
 
 // Malloc
@@ -1022,16 +1065,20 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         gc_run_finalizers(objspace);
     }
 
-    struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
-    for (size_t i = 0; i < registered_candidates.len; i++) {
-        VALUE obj = (VALUE)registered_candidates.ptr[i];
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
+        struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
+        for (size_t i = 0; i < registered_candidates.len; i++) {
+            VALUE obj = (VALUE)registered_candidates.ptr[i];
 
-        if (rb_gc_shutdown_call_finalizer_p(obj)) {
-            rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            if (rb_gc_shutdown_call_finalizer_p(obj)) {
+                rb_gc_obj_free(objspace_ptr, obj);
+                RBASIC(obj)->flags = 0;
+            }
         }
+        mmtk_free_raw_vec_of_obj_ref(registered_candidates);
     }
-    mmtk_free_raw_vec_of_obj_ref(registered_candidates);
+    RB_GC_VM_UNLOCK(lev);
 
     gc_run_finalizers(objspace);
 }
@@ -1041,13 +1088,39 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
+    struct objspace *objspace = objspace_ptr;
+
+  retry:
+    objspace->fork_hook_vm_lock_lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+
+    /* At this point, we know that all the Ractors are paused because of the
+     * rb_gc_vm_barrier above. Since rb_mmtk_block_for_gc is a barrier point,
+     * one or more Ractors could be paused there. However, mmtk_before_fork is
+     * not compatible with that because it assumes that the MMTk workers are idle,
+     * but the workers are not idle because they are busy working on a GC.
+     *
+     * This essentially implements a trylock. It will optimistically lock but will
+     * release the lock if it detects that any other Ractors are waiting in
+     * rb_mmtk_block_for_gc.
+     */
+    rb_atomic_t mutator_blocking_count = RUBY_ATOMIC_LOAD(objspace->mutator_blocking_count);
+    if (mutator_blocking_count != 0) {
+        RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
+        goto retry;
+    }
+
     mmtk_before_fork();
 }
 
 void
 rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 {
+    struct objspace *objspace = objspace_ptr;
+
     mmtk_after_fork(rb_gc_get_ractor_newobj_cache());
+
+    RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
 }
 
 // Statistics
@@ -1258,12 +1331,6 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
 
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
-}
-
-bool
-rb_gc_impl_checking_shareable(void *ptr)
-{
-    return false;
 }
 
 // GC Identification

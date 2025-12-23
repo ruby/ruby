@@ -236,6 +236,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
 
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa1, 1, [], nil, nil, digest: "SHA256")
+    assert_equal("sha256WithRSAEncryption", cert.signature_algorithm) # ln
     assert_equal(true, cert.verify(@rsa1))
     assert_equal(false, cert.verify(@rsa2))
     assert_equal(false, certificate_error_returns_false { cert.verify(@ec1) })
@@ -295,6 +296,14 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     assert_equal false, cert1 == cert3
     assert_equal false, cert1 == cert4
     assert_equal false, cert3 == cert4
+  end
+
+  def test_inspect
+    cacert = issue_cert(@ca, @rsa1, 1, [], nil, nil)
+    assert_include(cacert.inspect, "subject=#{@ca.inspect}")
+
+    # Do not raise an exception for an invalid certificate
+    assert_instance_of(String, OpenSSL::X509::Certificate.new.inspect)
   end
 
   def test_marshal

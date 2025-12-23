@@ -81,6 +81,12 @@ class Gem::NameTuple
     [@name, @version, @platform]
   end
 
+  alias_method :deconstruct, :to_a
+
+  def deconstruct_keys(keys)
+    { name: @name, version: @version, platform: @platform }
+  end
+
   def inspect # :nodoc:
     "#<Gem::NameTuple #{@name}, #{@version}, #{@platform}>"
   end

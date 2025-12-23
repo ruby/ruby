@@ -1,4 +1,4 @@
-# NEWS for Ruby 3.5.0
+# NEWS for Ruby 4.0.0
 
 This document is a list of user-visible feature changes
 since the **3.4.0** release, except for bug fixes.
@@ -12,7 +12,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Logical binary operators (`||`, `&&`, `and` and `or`) at the
   beginning of a line continue the previous line, like fluent dot.
-  The following two code are equal:
+  The following code examples are equal:
 
     ```ruby
     if condition1
@@ -21,8 +21,17 @@ Note that each entry is kept to a minimum, see links for details.
     end
     ```
 
+    Previously:
+
     ```ruby
     if condition1 && condition2
+      ...
+    end
+    ```
+
+    ```ruby
+    if condition1 &&
+       condition2
       ...
     end
     ```
@@ -32,6 +41,98 @@ Note that each entry is kept to a minimum, see links for details.
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
+
+* Array
+
+    * `Array#rfind` has been added as a more efficient alternative to `array.reverse_each.find` [[Feature #21678]]
+    * `Array#find` has been added as a more efficient override of `Enumerable#find` [[Feature #21678]]
+* Binding
+
+    * `Binding#local_variables` does no longer include numbered parameters.
+      Also, `Binding#local_variable_get`, `Binding#local_variable_set`, and
+      `Binding#local_variable_defined?` reject to handle numbered parameters.
+      [[Bug #21049]]
+
+    * `Binding#implicit_parameters`, `Binding#implicit_parameter_get`, and
+      `Binding#implicit_parameter_defined?` have been added to access
+      numbered parameters and "it" parameter. [[Bug #21049]]
+
+* Enumerator
+
+    * `Enumerator.produce` now accepts an optional `size` keyword argument
+      to specify the size of the enumerator.  It can be an integer,
+      `Float::INFINITY`, a callable object (such as a lambda), or `nil` to
+      indicate unknown size.  When not specified, the size defaults to
+      `Float::INFINITY`.
+
+        ```ruby
+        # Infinite enumerator
+        enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
+        enum.size  # => Float::INFINITY
+
+        # Finite enumerator with known/computable size
+        abs_dir = File.expand_path("./baz") # => "/foo/bar/baz"
+        traverser = Enumerator.produce(abs_dir, size: -> { abs_dir.count("/") + 1 }) {
+          raise StopIteration if it == "/"
+          File.dirname(it)
+        }
+        traverser.size  # => 4
+        ```
+
+      [[Feature #21701]]
+
+* ErrorHighlight
+
+    * When an ArgumentError is raised, it now displays code snippets for
+      both the method call (caller) and the method definition (callee).
+      [[Feature #21543]]
+
+      ```
+      test.rb:1:in 'Object#add': wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+          caller: test.rb:3
+          | add(1)
+            ^^^
+          callee: test.rb:1
+          | def add(x, y) = x + y
+                ^^^
+              from test.rb:3:in '<main>'
+      ```
+
+* Fiber
+
+    * Introduce support for `Fiber#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
+* Fiber::Scheduler
+
+    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
+      given exception. The initial use case is to interrupt a fiber that is
+      waiting on a blocking IO operation when the IO operation is closed.
+      [[Feature #21166]]
+
+    * Introduce `Fiber::Scheduler#yield` to allow the fiber scheduler to
+      continue processing when signal exceptions are disabled.
+      [[Bug #21633]]
+
+    * Reintroduce the `Fiber::Scheduler#io_close` hook for asynchronous `IO#close`.
+
+    * Invoke `Fiber::Scheduler#io_write` when flushing the IO write buffer.
+      [[Bug #21789]]
+
+* File
+
+    * `File::Stat#birthtime` is now available on Linux via the statx
+      system call when supported by the kernel and filesystem.
+      [[Feature #21205]]
+
+* IO
+
+    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
+      [[Feature #20610]]
+
+    * A deprecated behavior, process creation by `IO` class methods
+      with a leading `|`, was removed.  [[Feature #19630]]
 
 * Kernel
 
@@ -55,25 +156,23 @@ Note: We're only listing outstanding class updates.
 
         [[Feature #21219]]
 
-* Binding
-
-    * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject
-      to handle numbered parameters.  [[Bug #21049]]
-
-* IO
-
-    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
-      [[Feature #20610]]
+    * A deprecated behavior, process creation by `Kernel#open` with a
+      leading `|`, was removed.  [[Feature #19630]]
 
 * Math
 
     * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
 
-* Socket
+* Pathname
 
-    * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
-      the timeout for the initial connection. [[Feature #21347]]
+    * Pathname has been promoted from a default gem to a core class of Ruby.
+      [[Feature #17473]]
+
+* Proc
+
+    * `Proc#parameters` now shows anonymous optional parameters as `[:opt]`
+      instead of `[:opt, nil]`, making the output consistent with when the
+      anonymous parameter is required. [[Bug #20974]]
 
 * Ractor
 
@@ -100,7 +199,7 @@ Note: We're only listing outstanding class updates.
         * `Ractor::Port#close`
         * `Ractor::Port#closed?`
 
-        As result, `Ractor.yield` and `Ractor#take` were removed.
+        As a result, `Ractor.yield` and `Ractor#take` were removed.
 
     * `Ractor#join` and `Ractor#value` were added to wait for the
       termination of a Ractor. These are similar to `Thread#join`
@@ -117,41 +216,67 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
-    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` is introduced
+    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` are introduced
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
-* `Set`
+* Range
+
+    * `Range#to_set` now performs size checks to prevent issues with
+      endless ranges. [[Bug #21654]]
+
+    * `Range#overlap?` now correctly handles infinite (unbounded) ranges.
+      [[Bug #21185]]
+
+    * `Range#max` behavior on beginless integer ranges has been fixed.
+      [[Bug #21174]] [[Bug #21175]]
+
+* Ruby
+
+    * A new toplevel module `Ruby` has been defined, which contains
+      Ruby-related constants. This module was reserved in Ruby 3.4
+      and is now officially defined. [[Feature #20884]]
+
+* Ruby::Box
+
+    * A new (experimental) feature to provide separation about definitions.
+      For the detail of "Ruby Box", see [doc/language/box.md](doc/language/box.md).
+      [[Feature #21311]] [[Misc #21385]]
+
+* Set
 
     * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
 
+    * `Set#inspect` now uses a simpler display, similar to literal arrays.
+      (e.g., `Set[1, 2, 3]` instead of `#<Set: {1, 2, 3}>`). [[Feature #21389]]
+
+    * Passing arguments to `Set#to_set` and `Enumerable#to_set` is now deprecated.
+      [[Feature #21390]]
+
+* Socket
+
+    * `Socket.tcp` & `TCPSocket.new` accepts an `open_timeout` keyword argument to specify
+      the timeout for the initial connection. [[Feature #21347]]
+    * When a user-specified timeout occurred in `TCPSocket.new`, either `Errno::ETIMEDOUT`
+      or `IO::TimeoutError` could previously be raised depending on the situation.
+      This behavior has been unified so that `IO::TimeoutError` is now consistently raised.
+      (Please note that, in `Socket.tcp`, there are still cases where `Errno::ETIMEDOUT`
+      may be raised in similar situations, and that in both cases `Errno::ETIMEDOUT` may be
+      raised when the timeout occurs at the OS level.)
+
 * String
 
-    * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
-      [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
+    * Update Unicode to Version 17.0.0 and Emoji Version 17.0.
+      [[Feature #19908]][[Feature #20724]][[Feature #21275]] (also applies to Regexp)
+
+    * `String#strip`, `strip!`, `lstrip`, `lstrip!`, `rstrip`, and `rstrip!`
+       are extended to accept `*selectors` arguments. [[Feature #21552]]
 
 * Thread
 
     * Introduce support for `Thread#raise(cause:)` argument similar to
       `Kernel#raise`. [[Feature #21360]]
-
-* Fiber
-
-    * Introduce support for `Fiber#raise(cause:)` argument similar to
-      `Kernel#raise`. [[Feature #21360]]
-
-* Fiber::Scheduler
-
-    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
-      given exception. The initial use case is to interrupt a fiber that is
-      waiting on a blocking IO operation when the IO operation is closed.
-      [[Feature #21166]]
-
-* Pathname
-
-    * Pathname has been promoted from a default gem to a core class of Ruby.
-      [[Feature #17473]]
 
 ## Stdlib updates
 
@@ -161,89 +286,145 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.5.0
 * logger 1.7.0
-* rdoc 6.15.1
+* rdoc 7.0.2
 * win32ole 1.9.2
-* irb 1.15.2
-* reline 0.6.2
+* irb 1.16.0
+* reline 0.6.3
 * readline 0.0.4
 * fiddle 1.1.8
-
-We only list stdlib changes that are notable feature changes.
-
-Other changes are listed in the following sections. We also listed release
-history from the previous bundled version that is Ruby 3.3.0 if it has GitHub
-releases.
-
-The following default gem is added.
-
-* win32-registry 0.1.1
-
-The following default gems are updated.
-
-* RubyGems 4.0.0.dev
-* bundler 4.0.0.dev
-* date 3.5.0
-* digest 3.2.1
-* english 0.8.1
-* erb 5.1.3
-* etc 1.4.6
-* fcntl 1.3.0
-* fileutils 1.8.0
-* io-console 0.8.1
-* io-nonblock 0.3.2
-* io-wait 0.3.2
-* json 2.15.2
-* net-http 0.7.0
-* openssl 4.0.0.pre
-* optparse 0.8.0
-* pp 0.6.3
-* prism 1.6.0
-* psych 5.2.6
-* resolv 0.6.3
-* stringio 3.1.8.dev
-* strscan 3.1.6.dev
-* timeout 0.4.4
-* uri 1.1.0
-* weakref 0.1.4
-* zlib 3.2.2
 
 The following bundled gems are added.
 
 
+We only list stdlib changes that are notable feature changes.
+
+Other changes are listed in the following sections. We also listed release
+history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
+releases.
+
+The following default gem is added.
+
+* win32-registry 0.1.2
+
+The following default gems are updated.
+
+* RubyGems 4.0.3
+* bundler 4.0.3
+* date 3.5.1
+* delegate 0.6.1
+* digest 3.2.1
+* english 0.8.1
+* erb 6.0.1
+* error_highlight 0.7.1
+* etc 1.4.6
+* fcntl 1.3.0
+* fileutils 1.8.0
+* forwardable 1.4.0
+* io-console 0.8.2
+* io-nonblock 0.3.2
+* io-wait 0.4.0
+* ipaddr 1.2.8
+* json 2.18.0
+* net-http 0.9.1
+* openssl 4.0.0
+* optparse 0.8.1
+* pp 0.6.3
+* prism 1.7.0
+* psych 5.3.1
+* resolv 0.7.0
+* stringio 3.2.0
+* strscan 3.1.6
+* time 0.4.2
+* timeout 0.6.0
+* uri 1.1.1
+* weakref 0.1.4
+* zlib 3.2.2
+
 The following bundled gems are updated.
 
-* minitest 5.26.0
+* minitest 6.0.0
+* power_assert 3.0.1
 * rake 13.3.1
-* test-unit 3.7.0
+* test-unit 3.7.3
 * rexml 3.4.4
+* rss 0.3.2
 * net-ftp 0.3.9
-* net-imap 0.5.12
+* net-imap 0.6.2
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
-* rbs 3.9.5
-* debug 1.11.0
+* rbs 3.10.0
+* typeprof 0.31.1
+* debug 1.11.1
 * base64 0.3.0
-* bigdecimal 3.3.1
+* bigdecimal 4.0.1
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.5
-* repl_type_completor 0.1.11
+* repl_type_completor 0.1.12
+
+### RubyGems and Bundler
+
+see the following links for details.
+
+* [Upgrading to RubyGems/Bundler 4 - RubyGems Blog](https://blog.rubygems.org/2025/12/03/upgrade-to-rubygems-bundler-4.html)
+* [4.0.0 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/03/4.0.0-released.html)
+* [4.0.1 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/09/4.0.1-released.html)
+* [4.0.2 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/17/4.0.2-released.html)
+* [4.0.3 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/23/4.0.3-released.html)
 
 ## Supported platforms
 
+* Windows
+
+    * Dropped support for MSVC versions older than 14.0 (_MSC_VER 1900).
+      This means Visual Studio 2015 or later is now required.
+
 ## Compatibility issues
 
-* The following methods were removed from Ractor due because of `Ractor::Port`:
+* The following methods were removed from Ractor due to the addition of `Ractor::Port`:
 
     * `Ractor.yield`
     * `Ractor#take`
     * `Ractor#close_incoming`
-    * `Ractor#close_outgoging`
+    * `Ractor#close_outgoing`
 
     [[Feature #21262]]
 
 * `ObjectSpace._id2ref` is deprecated. [[Feature #15408]]
+
+* `Process::Status#&` and `Process::Status#>>` have been removed.
+  They were deprecated in Ruby 3.3. [[Bug #19868]]
+
+* `rb_path_check` has been removed. This function was used for
+  `$SAFE` path checking which was removed in Ruby 2.7,
+  and was already deprecated.
+  [[Feature #20971]]
+
+* A backtrace for `ArgumentError` of "wrong number of arguments" now
+  include the receiver's class or module name (e.g., in `Foo#bar`
+  instead of in `bar`). [[Bug #21698]]
+
+* Backtraces no longer display `internal` frames.
+  These methods now appear as if it is in the Ruby source file,
+  consistent with other C-implemented methods. [[Bug #20968]]
+
+  Before:
+  ```
+  ruby -e '[1].fetch_values(42)'
+  <internal:array>:211:in 'Array#fetch': index 42 outside of array bounds: -1...1 (IndexError)
+          from <internal:array>:211:in 'block in Array#fetch_values'
+          from <internal:array>:211:in 'Array#map!'
+          from <internal:array>:211:in 'Array#fetch_values'
+          from -e:1:in '<main>'
+  ```
+
+  After:
+  ```
+  $ ruby -e '[1].fetch_values(42)'
+  -e:1:in 'Array#fetch_values': index 42 outside of array bounds: -1...1 (IndexError)
+          from -e:1:in '<main>'
+  ```
 
 ## Stdlib compatibility issues
 
@@ -275,17 +456,49 @@ The following bundled gems are updated.
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
+* GVL
+
+    * `rb_thread_call_with_gvl` now works with or without the GVL.
+      This allows gems to avoid checking `ruby_thread_has_gvl_p`.
+      Please still be diligent about the GVL. [[Feature #20750]]
+
+* Set
+
+    * A C API for `Set` has been added. The following methods are supported:
+      [[Feature #21459]]
+
+        * `rb_set_foreach`
+        * `rb_set_new`
+        * `rb_set_new_capa`
+        * `rb_set_lookup`
+        * `rb_set_add`
+        * `rb_set_clear`
+        * `rb_set_delete`
+        * `rb_set_size`
+
 ## Implementation improvements
+
+* `Class#new` (ex. `Object.new`) is faster in all cases, but especially when passing keyword arguments. This has also been integrated into YJIT and ZJIT. [[Feature #21254]]
+* GC heaps of different size pools now grow independently, reducing memory usage when only some pools contain long-lived objects
+* GC sweeping is faster on pages of large objects
+* "Generic ivar" objects (String, Array, `TypedData`, etc.) now use a new internal "fields" object for faster instance variable access
+* The GC avoids maintaining an internal `id2ref` table until it is first used, making `object_id` allocation and GC sweeping faster
+* `object_id` and `hash` are faster on Class and Module objects
+* Larger bignum Integers can remain embedded using variable width allocation
+* `Random`, `Enumerator::Product`, `Enumerator::Chain`, `Addrinfo`,
+  `StringScanner`, and some internal objects are now write-barrier protected,
+  which reduces GC overhead.
 
 ### Ractor
 
-A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
 * Performance improvements
-    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Frozen strings and the symbol table internally use a lock-free hash set [[Feature #21268]]
     * Method cache lookups avoid locking in most cases
-    * Class (and geniv) instance variable access is faster and avoids locking
-    * Cache contention is avoided during object allocation
+    * Class (and generic ivar) instance variable access is faster and avoids locking
+    * CPU cache contention is avoided in object allocation by using a per-ractor counter
+    * CPU cache contention is avoided in xmalloc/xfree by using a thread-local counter
     * `object_id` avoids locking in most cases
 * Bug fixes and stability
     * Fixed possible deadlocks when combining Ractors and Threads
@@ -293,21 +506,24 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * Fixed encoding/transcoding issues across Ractors
     * Fixed race conditions in GC operations and method invalidation
     * Fixed issues with processes forking after starting a Ractor
+    * GC allocation counts are now accurate under Ractors
+    * Fixed TracePoints not working after GC [[Bug #19112]]
 
 ## JIT
 
+* ZJIT
+    * Introduce an [experimental method-based JIT compiler](https://docs.ruby-lang.org/en/master/jit/zjit_md.html).
+      To enable `--zjit` support, build Ruby with Rust 1.85.0 or later.
+    * As of Ruby 4.0.0, ZJIT is faster than the interpreter, but not yet as fast as YJIT.
+      We encourage experimentation with ZJIT, but advise against deploying it in production for now.
+    * Our goal is to make ZJIT faster than YJIT and production-ready in Ruby 4.1.
 * YJIT
-    * YJIT stats
+    * `RubyVM::YJIT.runtime_stats`
         * `ratio_in_yjit` no longer works in the default build.
           Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
         * Add `invalidate_everything` to default stats, which is
           incremented when every code is invalidated by TracePoint.
     * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
-* ZJIT
-    * Add an experimental method-based JIT compiler.
-      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
-    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
-      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
 * RJIT
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
@@ -315,20 +531,48 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
+[Bug #19112]:     https://bugs.ruby-lang.org/issues/19112
+[Feature #19630]: https://bugs.ruby-lang.org/issues/19630
+[Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
+[Feature #20750]: https://bugs.ruby-lang.org/issues/20750
+[Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20925]: https://bugs.ruby-lang.org/issues/20925
+[Bug #20968]:     https://bugs.ruby-lang.org/issues/20968
+[Feature #20971]: https://bugs.ruby-lang.org/issues/20971
+[Bug #20974]:     https://bugs.ruby-lang.org/issues/20974
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21166]: https://bugs.ruby-lang.org/issues/21166
+[Bug #21174]:     https://bugs.ruby-lang.org/issues/21174
+[Bug #21175]:     https://bugs.ruby-lang.org/issues/21175
+[Bug #21185]:     https://bugs.ruby-lang.org/issues/21185
+[Feature #21205]: https://bugs.ruby-lang.org/issues/21205
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21219]: https://bugs.ruby-lang.org/issues/21219
+[Feature #21254]: https://bugs.ruby-lang.org/issues/21254
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
+[Feature #21268]: https://bugs.ruby-lang.org/issues/21268
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
+[Feature #21275]: https://bugs.ruby-lang.org/issues/21275
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
+[Feature #21311]: https://bugs.ruby-lang.org/issues/21311
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Misc #21385]:    https://bugs.ruby-lang.org/issues/21385
+[Feature #21389]: https://bugs.ruby-lang.org/issues/21389
+[Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21459]: https://bugs.ruby-lang.org/issues/21459
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
+[Feature #21543]: https://bugs.ruby-lang.org/issues/21543
 [Feature #21550]: https://bugs.ruby-lang.org/issues/21550
+[Feature #21552]: https://bugs.ruby-lang.org/issues/21552
 [Feature #21557]: https://bugs.ruby-lang.org/issues/21557
+[Bug #21633]:     https://bugs.ruby-lang.org/issues/21633
+[Bug #21654]:     https://bugs.ruby-lang.org/issues/21654
+[Feature #21678]: https://bugs.ruby-lang.org/issues/21678
+[Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
+[Feature #21701]: https://bugs.ruby-lang.org/issues/21701
+[Bug #21789]:     https://bugs.ruby-lang.org/issues/21789

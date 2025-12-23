@@ -65,7 +65,8 @@ class << Merger = Object.new
     if teeny
       v[2].succ!
     end
-    if pl != '-1' # trunk does not have patchlevel
+    # We stopped bumping RUBY_PATCHLEVEL at Ruby 4.0.0.
+    if Integer(v[0]) <= 3
       pl.succ!
     end
 
@@ -113,7 +114,13 @@ class << Merger = Object.new
         abort 'no relname is given and not in a release branch even if this is patch release'
       end
     end
-    tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
+    if /^(?:preview|rc)/ =~ pl
+      tagname = "v#{v.join('.')}-#{pl}"
+    elsif Integer(v[0]) >= 4
+      tagname = "v#{v.join('.')}"
+    else
+      tagname = "v#{v.join('_')}"
+    end
 
     unless execute('git', 'diff', '--exit-code')
       abort 'uncommitted changes'
@@ -135,10 +142,12 @@ class << Merger = Object.new
     unless relname
       raise ArgumentError, 'relname is not specified'
     end
-    if /^v/ !~ relname
-      tagname = "v#{relname.gsub(/[.-]/, '_')}"
-    else
+    if relname.start_with?('v')
       tagname = relname
+    elsif Integer(relname.split('.', 2).first) >= 4
+      tagname = "v#{relname}"
+    else
+      tagname = "v#{relname.gsub(/[.-]/, '_')}"
     end
 
     execute('git', 'tag', '-d', tagname)

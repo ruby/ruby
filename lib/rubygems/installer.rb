@@ -8,7 +8,6 @@
 
 require_relative "installer_uninstaller_utils"
 require_relative "exceptions"
-require_relative "deprecate"
 require_relative "package"
 require_relative "ext"
 require_relative "user_interaction"
@@ -27,8 +26,6 @@ require_relative "user_interaction"
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
-  extend Gem::Deprecate
-
   ##
   # Paths where env(1) might live.  Some systems are broken and have it in
   # /bin
@@ -382,15 +379,6 @@ class Gem::Installer
   end
 
   ##
-  # Unpacks the gem into the given directory.
-
-  def unpack(directory)
-    @gem_dir = directory
-    extract_files
-  end
-  rubygems_deprecate :unpack
-
-  ##
   # The location of the spec file that is installed.
   #
 
@@ -647,6 +635,7 @@ class Gem::Installer
     @build_root          = options[:build_root]
 
     @build_args = options[:build_args]
+    @build_jobs = options[:build_jobs]
 
     @gem_home = @install_dir || user_install_dir || Gem.dir
 
@@ -815,7 +804,7 @@ class Gem::Installer
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig
+    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig, build_jobs
 
     builder.build_extensions
   end
@@ -951,6 +940,10 @@ class Gem::Installer
                       require_relative "command"
                       Gem::Command.build_args
                     end
+  end
+
+  def build_jobs
+    @build_jobs ||= Etc.nprocessors + 1
   end
 
   def rb_config

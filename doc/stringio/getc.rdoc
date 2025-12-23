@@ -1,0 +1,34 @@
+Reads and returns the next character (or byte; see below) from the stream:
+
+  strio = StringIO.new('foo')
+  strio.getc # => "f"
+  strio.getc # => "o"
+  strio.getc # => "o"
+
+Returns +nil+ if at end-of-stream:
+
+  strio.eof? # => true
+  strio.getc # => nil
+
+Returns characters, not bytes:
+
+  strio = StringIO.new('Привет')
+  strio.getc # => "П"
+  strio.getc # => "р"
+
+  strio = StringIO.new('こんにちは')
+  strio.getc # => "こ"
+  strio.getc # => "ん"
+
+In each of the examples above, the stream is positioned at the beginning of a character;
+in other cases that need not be true:
+
+   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+   strio.pos = 3 # => 3     # At beginning of second character; returns character.
+   strio.getc    # => "ん"
+   strio.pos = 4 # => 4     # At second byte of second character; returns byte.
+   strio.getc    # => "\x82"
+   strio.pos = 5 # => 5     # At third byte of second character; returns byte.
+   strio.getc    # => "\x93"
+
+Related: #getbyte, #putc, #ungetc.

@@ -293,7 +293,7 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
     xfree(ai);
 }
 
-unsigned int
+static int
 rsock_value_timeout_to_msec(VALUE timeout)
 {
     double seconds = NUM2DBL(timeout);
@@ -308,7 +308,7 @@ rsock_value_timeout_to_msec(VALUE timeout)
 #if GETADDRINFO_IMPL == 0
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int _timeout)
 {
     return getaddrinfo(hostp, portp, hints, ai);
 }
@@ -346,7 +346,7 @@ fork_safe_getaddrinfo(void *arg)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int _timeout)
 {
     struct getaddrinfo_arg arg;
     MEMZERO(&arg, struct getaddrinfo_arg, 1);
@@ -367,11 +367,11 @@ struct getaddrinfo_arg
     int err, gai_errno, refcount, done, cancelled, timedout;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
-    unsigned int timeout;
+    int timeout;
 };
 
 static struct getaddrinfo_arg *
-allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints, unsigned int timeout)
+allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints, int timeout)
 {
     size_t hostp_offset = sizeof(struct getaddrinfo_arg);
     size_t portp_offset = hostp_offset + (hostp ? strlen(hostp) + 1 : 0);
@@ -465,8 +465,11 @@ wait_getaddrinfo(void *ptr)
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
     rb_nativethread_lock_lock(&arg->lock);
     while (!arg->done && !arg->cancelled) {
-        unsigned long msec = arg->timeout;
-        if (msec > 0) {
+        long msec = arg->timeout;
+        if (msec == 0) {
+            arg->cancelled = 1;
+            arg->timedout = 1;
+        } else if (msec > 0) {
             rb_native_cond_timedwait(&arg->cond, &arg->lock, msec);
             if (!arg->done) {
                 arg->cancelled = 1;
@@ -496,13 +499,49 @@ int
 raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
+    int saved_errno;
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    pthread_attr_t attr;
+    pthread_attr_t *attr_p = &attr;
+    int err;
+    int init_retries = 0;
+    int init_retries_max = 3;
+retry_attr_init:
+    if ((err = pthread_attr_init(attr_p)) != 0) {
+        if (err == ENOMEM && init_retries < init_retries_max) {
+            init_retries++;
+            rb_gc();
+            goto retry_attr_init;
+        }
+        return err;
+    }
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+        saved_errno = errno;
+        pthread_attr_destroy(attr_p);
+        errno = saved_errno;
+        return err; // EINVAL - shouldn't happen
+    }
+#else
+    pthread_attr_t *attr_p = NULL;
+#endif
     do {
         // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
         //
         // https://bugs.openjdk.org/browse/JDK-8268605
         // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, 0, start_routine, arg);
+        ret = pthread_create(th, attr_p, start_routine, arg);
     } while (ret == EAGAIN && limit-- > 0);
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    saved_errno = errno;
+    pthread_attr_destroy(attr_p);
+    if (ret != 0) {
+        errno = saved_errno;
+    }
+#else
+    if (ret == 0) {
+        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
+    }
+#endif
     return ret;
 }
 
@@ -513,7 +552,7 @@ fork_safe_do_getaddrinfo(void *ptr)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int timeout)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, int timeout)
 {
     int retry;
     struct getaddrinfo_arg *arg;
@@ -534,7 +573,6 @@ start:
         errno = err;
         return EAI_SYSTEM;
     }
-    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -562,7 +600,15 @@ start:
 
     if (need_free) free_getaddrinfo_arg(arg);
 
-    if (timedout) rsock_raise_user_specified_timeout();
+    if (timedout) {
+        if (arg->ai) {
+            rsock_raise_user_specified_timeout(arg->ai, Qnil, Qnil);
+        } else {
+            VALUE host = rb_str_new_cstr(hostp);
+            VALUE port = rb_str_new_cstr(portp);
+            rsock_raise_user_specified_timeout(NULL, host, port);
+        }
+    }
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
     // But if the current thread is interrupted by timer thread, the following returns; we need to manually retry.
@@ -770,7 +816,6 @@ start:
         errno = err;
         return EAI_SYSTEM;
     }
-    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
@@ -979,7 +1024,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
 }
 
 struct rb_addrinfo*
-rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, unsigned int timeout)
+rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
 {
     struct rb_addrinfo* res = NULL;
     struct addrinfo *ai;
@@ -1014,7 +1059,8 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         }
 
         if (!resolved) {
-            error = rb_getaddrinfo(hostp, portp, hints, &ai, timeout);
+            int t = NIL_P(timeout) ? -1 : rsock_value_timeout_to_msec(timeout);
+            error = rb_getaddrinfo(hostp, portp, hints, &ai, t);
             if (error == 0) {
                 res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
                 res->allocated_by_malloc = 0;
@@ -1047,7 +1093,7 @@ rsock_fd_family(int fd)
 }
 
 struct rb_addrinfo*
-rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, unsigned int timeout)
+rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
 {
     struct addrinfo hints;
 
@@ -1338,8 +1384,7 @@ call_getaddrinfo(VALUE node, VALUE service,
         hints.ai_flags = NUM2INT(flags);
     }
 
-    unsigned int t = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
-    res = rsock_getaddrinfo(node, service, &hints, socktype_hack, t);
+    res = rsock_getaddrinfo(node, service, &hints, socktype_hack, timeout);
 
     if (res == NULL)
         rb_raise(rb_eSocket, "host not found");

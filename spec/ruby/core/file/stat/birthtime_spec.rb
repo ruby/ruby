@@ -1,7 +1,7 @@
 require_relative '../../../spec_helper'
 
 platform_is(:windows, :darwin, :freebsd, :netbsd,
-            *ruby_version_is("3.5") { :linux },
+            *ruby_version_is("4.0") { :linux },
            ) do
   not_implemented_messages = [
     "birthtime() function is unimplemented", # unsupported OS/version

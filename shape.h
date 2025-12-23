@@ -163,10 +163,8 @@ bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
 #endif
 
 static inline void
-RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 {
-    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
@@ -174,10 +172,20 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 #endif
+}
+
+static inline void
+RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+{
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+
+    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
-void rb_set_namespaced_class_shape_id(VALUE obj, shape_id_t shape_id);
+void rb_set_boxed_class_shape_id(VALUE obj, shape_id_t shape_id);
 
 static inline void
 RB_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
@@ -185,7 +193,7 @@ RB_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        rb_set_namespaced_class_shape_id(obj, shape_id);
+        rb_set_boxed_class_shape_id(obj, shape_id);
         break;
       default:
         RBASIC_SET_SHAPE_ID(obj, shape_id);
@@ -217,7 +225,7 @@ shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
-shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
+shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
@@ -368,22 +376,34 @@ ROBJECT_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 }
 
 static inline uint32_t
+ROBJECT_FIELDS_COUNT_COMPLEX(VALUE obj)
+{
+    return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+}
+
+static inline uint32_t
+ROBJECT_FIELDS_COUNT_NOT_COMPLEX(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
+}
+
+static inline uint32_t
 ROBJECT_FIELDS_COUNT(VALUE obj)
 {
     if (rb_shape_obj_too_complex_p(obj)) {
-        return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+        return ROBJECT_FIELDS_COUNT_COMPLEX(obj);
     }
     else {
-        RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-        RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-        return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
+        return ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
     }
 }
 
 static inline uint32_t
 RBASIC_FIELDS_COUNT(VALUE obj)
 {
-    return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
+    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
 }
 
 static inline bool
@@ -417,7 +437,7 @@ rb_shape_obj_has_fields(VALUE obj)
 }
 
 static inline bool
-rb_obj_exivar_p(VALUE obj)
+rb_obj_gen_fields_p(VALUE obj)
 {
     switch (TYPE(obj)) {
         case T_NONE:

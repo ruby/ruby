@@ -28,6 +28,10 @@ void rb_vm_lock_leave_body_nb(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
 
+RUBY_SYMBOL_EXPORT_BEGIN
+VALUE rb_vm_lock_with_barrier(VALUE (*func)(void *args), void *args);
+RUBY_SYMBOL_EXPORT_END
+
 #if RUBY_DEBUG
 // GET_VM()
 #include "vm_core.h"

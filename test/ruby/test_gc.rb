@@ -231,6 +231,9 @@ class TestGc < Test::Unit::TestCase
       end
 
       assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
+      assert_operator stat_heap[:heap_live_slots], :<=, stat[:heap_live_slots]
+      assert_operator stat_heap[:heap_free_slots], :<=, stat[:heap_free_slots]
+      assert_operator stat_heap[:heap_final_slots], :<=, stat[:heap_final_slots]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
       assert_operator stat_heap[:total_allocated_pages], :>=, 0
@@ -261,7 +264,7 @@ class TestGc < Test::Unit::TestCase
       GC.stat_heap(i, stat_heap)
 
       # Remove keys that can vary between invocations
-      %i(total_allocated_objects).each do |sym|
+      %i(total_allocated_objects heap_live_slots heap_free_slots).each do |sym|
         stat_heap[sym] = stat_heap_all[i][sym] = 0
       end
 
@@ -286,6 +289,9 @@ class TestGc < Test::Unit::TestCase
       hash.each { |k, v| stat_heap_sum[k] += v }
     end
 
+    assert_equal stat[:heap_live_slots], stat_heap_sum[:heap_live_slots]
+    assert_equal stat[:heap_free_slots], stat_heap_sum[:heap_free_slots]
+    assert_equal stat[:heap_final_slots], stat_heap_sum[:heap_final_slots]
     assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
@@ -913,5 +919,26 @@ class TestGc < Test::Unit::TestCase
       GC.start
       assert_include ObjectSpace.dump(young_obj), '"old":true'
     end
+  end
+
+  def test_finalizer_not_run_with_vm_lock
+    assert_ractor(<<~'RUBY')
+      Thread.new do
+        loop do
+          Encoding.list.each do |enc|
+            enc.names
+          end
+        end
+      end
+
+      o = Object.new
+      ObjectSpace.define_finalizer(o, proc do
+        sleep 0.5 # finalizer shouldn't be run with VM lock, otherwise this context switch will crash
+      end)
+      o = nil
+      4.times do
+        GC.start
+      end
+    RUBY
   end
 end

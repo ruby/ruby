@@ -207,15 +207,15 @@ RSpec.describe "bundle cache" do
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
-    it "prints an error when using legacy windows rubies" do
+    it "prints a warn when using legacy windows rubies" do
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]
       D
 
       bundle "cache --all-platforms", raise_on_error: false
-      expect(err).to include("removed")
-      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).not_to exist
+      expect(err).to include("will be removed in the future")
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
     it "does not attempt to install gems in without groups" do
@@ -293,7 +293,7 @@ RSpec.describe "bundle cache" do
           myrack-obama
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
       bundle :cache, raise_on_error: false
       expect(exitstatus).to eq(16)
@@ -322,7 +322,7 @@ RSpec.describe "bundle cache" do
           myrack
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
       FileUtils.mkdir_p app_cache
 
@@ -359,7 +359,7 @@ RSpec.describe "bundle cache" do
           bar
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "cache --no-install"
@@ -502,7 +502,7 @@ RSpec.describe "bundle install with gem sources" do
           foo
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "x86_64-linux" do
@@ -589,7 +589,7 @@ RSpec.describe "bundle install with gem sources" do
           bcrypt_pbkdf
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform "arm64-darwin-23" do

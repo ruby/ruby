@@ -306,9 +306,6 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             if (!rb_gc_checking_shareable()) {
                 rb_gc_mark_and_move(&def->body.bmethod.proc);
             }
-            if (def->body.bmethod.hooks) {
-                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
-            }
             break;
           case VM_METHOD_TYPE_ALIAS:
             rb_gc_mark_and_move_ptr(&def->body.alias.original_me);
@@ -425,6 +422,13 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             }
 
             rb_gc_mark_and_move_ptr(&env->iseq);
+
+            if (VM_ENV_LOCAL_P(env->ep) && VM_ENV_BOXED_P(env->ep)) {
+                const rb_box_t *box = VM_ENV_BOX(env->ep);
+                if (BOX_USER_P(box)) {
+                    rb_gc_mark_and_move((VALUE *)&box->box_object);
+                }
+            }
 
             if (reference_updating) {
                 ((VALUE *)env->ep)[VM_ENV_DATA_INDEX_ENV] = rb_gc_location(env->ep[VM_ENV_DATA_INDEX_ENV]);

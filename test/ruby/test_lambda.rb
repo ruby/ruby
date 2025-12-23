@@ -276,27 +276,27 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def test_do_lambda_source_location
-    exp = [__LINE__ + 1, 12, __LINE__ + 5, 7]
+    exp_lineno = __LINE__ + 3
     lmd = ->(x,
              y,
              z) do
       #
     end
-    file, *loc = lmd.source_location
+    file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp, loc)
+    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
   end
 
   def test_brace_lambda_source_location
-    exp = [__LINE__ + 1, 12, __LINE__ + 5, 5]
+    exp_lineno = __LINE__ + 3
     lmd = ->(x,
              y,
              z) {
       #
     }
-    file, *loc = lmd.source_location
+    file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp, loc)
+    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
   end
 
   def test_not_orphan_return

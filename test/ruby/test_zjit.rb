@@ -28,7 +28,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats_quiet
-    # Test that --zjit-stats=quiet collects stats but doesn't print them
+    # Test that --zjit-stats-quiet collects stats but doesn't print them
     script = <<~RUBY
       def test = 42
       test
@@ -44,11 +44,24 @@ class TestZJIT < Test::Unit::TestCase
     assert_includes(err, stats_header)
     assert_equal("true\n", out)
 
-    # With --zjit-stats=quiet, stats should NOT be printed but still enabled
+    # With --zjit-stats-quiet, stats should NOT be printed but still enabled
     out, err, status = eval_with_jit(script, stats: :quiet)
     assert_success(out, err, status)
     refute_includes(err, stats_header)
     assert_equal("true\n", out)
+
+    # With --zjit-stats=<path>, stats should be printed to the path
+    Tempfile.create("zjit-stats-") {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+      assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
+    }
   end
 
   def test_enable_through_env
@@ -57,6 +70,46 @@ class TestZJIT < Test::Unit::TestCase
       assert_includes(stdout.first, '+ZJIT')
       assert_equal([], stderr)
     end
+  end
+
+  def test_zjit_enable
+    # --disable-all is important in case the build/environment has YJIT enabled by
+    # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
+    assert_separately(["--disable-all"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      refute_predicate RubyVM::ZJIT, :stats_enabled?
+      refute_includes RUBY_DESCRIPTION, "+ZJIT"
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      refute_predicate RubyVM::ZJIT, :stats_enabled?
+      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_disable
+    assert_separately(["--zjit", "--zjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+ZJIT"
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_enable_respects_existing_options
+    assert_separately(['--zjit-disable', '--zjit-stats-quiet'], <<~RUBY)
+      refute_predicate RubyVM::ZJIT, :enabled?
+      assert_predicate RubyVM::ZJIT, :stats_enabled?
+
+      RubyVM::ZJIT.enable
+
+      assert_predicate RubyVM::ZJIT, :enabled?
+      assert_predicate RubyVM::ZJIT, :stats_enabled?
+    RUBY
   end
 
   def test_call_itself
@@ -300,6 +353,36 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_return_nonparam_local
+    # Use dead code (if false) to create a local without initialization instructions.
+    assert_compiles 'nil', %q{
+      def foo(a)
+        if false
+          x = nil
+        end
+        x
+      end
+      def test = foo(1)
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_nonparam_local_nil_in_jit_call
+    # Non-parameter locals must be initialized to nil in JIT-to-JIT calls.
+    # Use dead code (if false) to create locals without initialization instructions.
+    # Then eval a string that accesses the uninitialized locals.
+    assert_compiles '["x", "x", "x", "x"]', %q{
+      def f(a)
+        a ||= 1
+        if false; b = 1; end
+        eval("-> { p 'x#{b}' }")
+      end
+
+      4.times.map { f(1).call }
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval
     assert_compiles '1', %q{
       @b = binding
@@ -487,6 +570,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_variadic_with_block
+    assert_compiles '[[1, "a"], [2, "b"], [3, "c"]]', %q{
+      A = [1, 2, 3]
+      B = ["a", "b", "c"]
+
+      def test
+        result = []
+        A.zip(B) { |x, y| result << [x, y] }
+        result
+      end
+
+      test; test
+    }, call_threshold: 2
+  end
+
   def test_send_splat
     assert_runs '[1, 2]', %q{
       def test(a, b) = [a, b]
@@ -498,9 +596,145 @@ class TestZJIT < Test::Unit::TestCase
   def test_send_kwarg
     assert_runs '[1, 2]', %q{
       def test(a:, b:) = [a, b]
-      def entry = test(a: 1, b: 2)
+      def entry = test(b: 2, a: 1) # change order
       entry
-    }
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional
+    assert_compiles '[1, 2]', %q{
+      def test(a: 1, b: 2) = [a, b]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_too_many
+    assert_compiles '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10) = [a, b, c, d, e, f, g, h, i, j]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_required_and_optional
+    assert_compiles '[3, 2]', %q{
+      def test(a:, b: 2) = [a, b]
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_to_hash
+    assert_compiles '{a: 3}', %q{
+      def test(hash) = hash
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s) = s.each_line(chomp: true).to_a
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_and_block_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s)
+        a = []
+        s.each_line(chomp: true) { |l| a << l }
+        a
+      end
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_with_too_many_args_to_c_call
+    assert_compiles '"a b c d {kwargs: :e}"', %q{
+      def test(a:, b:, c:, d:, e:) = sprintf("%s %s %s %s %s", a, b, c, d, kwargs: e)
+      def entry = test(e: :e, d: :d, c: :c, a: :a, b: :b)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwsplat
+    assert_compiles '3', %q{
+      def test(a:) = a
+      def entry = test(**{a: 3})
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwrest
+    assert_compiles '{a: 3}', %q{
+      def test(**kwargs) = kwargs
+      def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_kwreq
+    assert_compiles '[1, 3]', %q{
+      def test(a, c:) = [a, c]
+      def entry = test(1, c: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq
+    assert_compiles '[[1, 2, 3], [-1, -2, -3]]', %q{
+      def test(a, b = 2, c:) = [a, b, c]
+      def entry = [test(1, c: 3), test(-1, -2, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq_kwopt
+    assert_compiles '[[1, 2, 3, 4], [-1, -2, -3, -4]]', %q{
+      def test(a, b = 2, c:, d: 4) = [a, b, c, d]
+      def entry = [test(1, c: 3), test(-1, -2, d: -4, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_unexpected_keyword
+    assert_compiles ':error', %q{
+      def test(a: 1) = a*2
+      def entry
+        test(z: 2)
+      rescue ArgumentError
+        :error
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_all_arg_types
+    assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
+      def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
+      def entry = test(:req, :post, d: :kwr) {}
+      entry
+      entry
+    }, call_threshold: 2
   end
 
   def test_send_ccall_variadic_with_different_receiver_classes
@@ -869,6 +1103,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_mult]
   end
 
+  def test_fixnum_div
+    assert_compiles '12', %q{
+      C = 48
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_floor
+    assert_compiles '0', %q{
+      C = 3
+      def test(n) = C / n
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
+  def test_fixnum_div_zero
+    assert_runs '"divided by 0"', %q{
+      def test(n)
+        n / 0
+      rescue ZeroDivisionError => e
+        e.message
+      end
+
+      test(0)
+      test(0)
+    }, call_threshold: 2, insns: [:opt_div]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
@@ -909,7 +1174,7 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new]
   end
 
-  def test_opt_new_with_redefinition
+  def test_opt_new_with_redefined
     assert_compiles '"foo"', %q{
       class Foo
         def self.new = "foo"
@@ -955,6 +1220,125 @@ class TestZJIT < Test::Unit::TestCase
       end
       [test, test]
     }, insns: [:opt_new], call_threshold: 2
+  end
+
+  def test_opt_newarray_send_include_p
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        [:y, 1, Object.new].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_include_p_redefined
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
+        end
+      end
+
+      def test(x)
+        [:y, 1, Object.new].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_duparray_send_include_p
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
+  def test_opt_duparray_send_include_p_redefined
+    assert_compiles '[:true, :false]', %q{
+      class Array
+        alias_method :old_include?, :include?
+        def include?(x)
+          old_include?(x) ? :true : :false
+        end
+      end
+
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer
+    assert_compiles '["ABC", "ABC", "ABC", "ABC"]', %q{
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), test(66, buf), test(67, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer_redefined
+    assert_compiles '["b", "A"]', %q{
+      class Array
+        alias_method :old_pack, :pack
+        def pack(fmt, buffer: nil)
+          old_pack(fmt, buffer: buffer)
+          "b"
+        end
+      end
+
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_hash
+    assert_compiles 'Integer', %q{
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20).class
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_hash_redefined
+    assert_compiles '42', %q{
+      Array.class_eval { def hash = 42 }
+
+      def test(x)
+        [1, 2, x].hash
+      end
+      test(20)
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max
+    assert_compiles '[20, 40]', %q{
+      def test(a,b) = [a,b].max
+      [test(10, 20), test(40, 30)]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_max_redefined
+    assert_compiles '[60, 90]', %q{
+      class Array
+        alias_method :old_max, :max
+        def max
+          old_max * 2
+        end
+      end
+
+      def test(a,b) = [a,b].max
+      [test(15, 30), test(45, 35)]
+    }, insns: [:opt_newarray_send], call_threshold: 1
   end
 
   def test_new_hash_empty
@@ -1086,6 +1470,77 @@ class TestZJIT < Test::Unit::TestCase
       def test = {}.freeze
       test
     }, insns: [:opt_hash_freeze], call_threshold: 1
+  end
+
+  def test_opt_aset_hash
+    assert_compiles '42', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_opt_aset_hash_returns_value
+    assert_compiles '100', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      test({}, :key, 100)
+      test({}, :key, 100)
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_string_key
+    assert_compiles '"bar"', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, "foo", "bar")
+      test(h, "foo", "bar")
+      h["foo"]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_subclass
+    assert_compiles '42', %q{
+      class MyHash < Hash; end
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = MyHash.new
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_few_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h.[]= 123
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_many_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h[:a, :b] = :c
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
   end
 
   def test_opt_ary_freeze
@@ -1725,7 +2180,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_setclassvariable_raises
-    assert_compiles '"can\'t modify frozen #<Class:Foo>: Foo"', %q{
+    assert_compiles '"can\'t modify frozen Class: Foo"', %q{
       class Foo
         def self.test = @@x = 42
         freeze
@@ -2241,6 +2696,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_require_rubygems_with_auto_compact
+    omit("GC.auto_compact= support is required for this test") unless GC.respond_to?(:auto_compact=)
     assert_runs 'true', %q{
       GC.auto_compact = true
       require 'rubygems'
@@ -2323,7 +2779,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_bop_redefinition
+  def test_bop_redefined
     assert_runs '[3, :+, 100]', %q{
       def test
         1 + 2
@@ -2334,7 +2790,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_bop_redefinition_with_adjacent_patch_points
+  def test_bop_redefined_with_adjacent_patch_points
     assert_runs '[15, :+, 100]', %q{
       def test
         1 + 2 + 3 + 4 + 5
@@ -2347,7 +2803,7 @@ class TestZJIT < Test::Unit::TestCase
 
   # ZJIT currently only generates a MethodRedefined patch point when the method
   # is called on the top-level self.
-  def test_method_redefinition_with_top_self
+  def test_method_redefined_with_top_self
     assert_runs '["original", "redefined"]', %q{
       def foo
         "original"
@@ -2370,7 +2826,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_method_redefinition_with_module
+  def test_method_redefined_with_module
     assert_runs '["original", "redefined"]', %q{
       module Foo
         def self.foo = "original"
@@ -2547,6 +3003,16 @@ class TestZJIT < Test::Unit::TestCase
 
       test('hello')
       test('world')
+    }, call_threshold: 2
+  end
+
+  def test_string_bytesize_multibyte
+    assert_compiles '4', %q{
+      def test(s)
+        s.bytesize
+      end
+
+      test("💎")
     }, call_threshold: 2
   end
 
@@ -2827,7 +3293,35 @@ class TestZJIT < Test::Unit::TestCase
       test
 
       Ractor.new { test }.value
-    }
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_already_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+      r = Ractor.new {
+        Ractor.receive
+        Foo.bar
+      }
+
+      Foo.bar
+      Foo.bar
+
+      r << :go
+      r.value
+    }, call_threshold: 2
   end
 
   def test_ivar_set_with_multi_ractor_mode
@@ -2853,6 +3347,25 @@ class TestZJIT < Test::Unit::TestCase
 
       Ractor.new { test }.value
     }
+  end
+
+  def test_struct_set
+    assert_compiles '[42, 42, :frozen_error]', %q{
+      C = Struct.new(:foo).new(1)
+
+      def test
+        C.foo = Object.new
+        42
+      end
+
+      r = [test, test]
+      C.freeze
+      r << begin
+        test
+      rescue FrozenError
+        :frozen_error
+      end
+    }, call_threshold: 2
   end
 
   def test_global_tracepoint
@@ -3136,6 +3649,35 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_regression_cfp_sp_set_correctly_before_leaf_gc_call
+    assert_compiles ':ok', %q{
+      def check(l, r)
+        return 1 unless l
+        1 + check(*l) + check(*r)
+      end
+
+      def tree(depth)
+        # This duparray is our leaf-gc target.
+        return [nil, nil] unless depth > 0
+
+        # Modify the local and pass it to the following calls.
+        depth -= 1
+        [tree(depth), tree(depth)]
+      end
+
+      def test
+        GC.stress = true
+        2.times do
+          t = tree(11)
+          check(*t)
+        end
+        :ok
+      end
+
+      test
+    }, call_threshold: 14, num_profiles: 5
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -3203,7 +3745,14 @@ class TestZJIT < Test::Unit::TestCase
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
-      args << "--zjit-stats#{"=#{stats}" unless stats == true}" if stats
+      case stats
+      when true
+        args << "--zjit-stats"
+      when :quiet
+        args << "--zjit-stats-quiet"
+      else
+        args << "--zjit-stats=#{stats}" if stats
+      end
       args << "--zjit-debug" if debug
       if allowed_iseqs
         jitlist = Tempfile.new("jitlist")

@@ -1,4 +1,4 @@
-#include "ruby.h"
+#include "../json.h"
 #include "../fbuffer/fbuffer.h"
 #include "../vendor/fpconv.c"
 
@@ -36,13 +36,9 @@ typedef struct JSON_Generator_StateStruct {
     bool strict;
 } JSON_Generator_State;
 
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(cond) (cond)
-#endif
-
 static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
 
-static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
+static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
              sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
 
@@ -64,6 +60,7 @@ struct generate_json_data {
     JSON_Generator_State *state;
     VALUE obj;
     generator_func func;
+    long depth;
 };
 
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
@@ -85,10 +82,7 @@ static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *d
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_generator_error_str(VALUE invalid_object, VALUE str)
+NORETURN(static void) raise_generator_error_str(VALUE invalid_object, VALUE str)
 {
     rb_enc_associate_index(str, utf8_encindex);
     VALUE exc = rb_exc_new_str(eGeneratorError, str);
@@ -96,13 +90,10 @@ static void raise_generator_error_str(VALUE invalid_object, VALUE str)
     rb_exc_raise(exc);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
 #ifdef RBIMPL_ATTR_FORMAT
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
 #endif
-static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
+NORETURN(static void) raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -137,13 +128,7 @@ typedef struct _search_state {
 #endif /* HAVE_SIMD */
 } search_state;
 
-#if (defined(__GNUC__ ) || defined(__clang__))
-#define FORCE_INLINE __attribute__((always_inline))
-#else
-#define FORCE_INLINE
-#endif
-
-static inline FORCE_INLINE void search_flush(search_state *search)
+ALWAYS_INLINE(static) void search_flush(search_state *search)
 {
     // Do not remove this conditional without profiling, specifically escape-heavy text.
     // escape_UTF8_char_basic will advance search->ptr and search->cursor (effectively a search_flush).
@@ -186,7 +171,7 @@ static inline unsigned char search_escape_basic(search_state *search)
     return 0;
 }
 
-static inline FORCE_INLINE void escape_UTF8_char_basic(search_state *search)
+ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
 {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch) {
@@ -273,7 +258,7 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 #ifdef HAVE_SIMD
 
-static inline FORCE_INLINE char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
+ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
@@ -296,7 +281,7 @@ static inline FORCE_INLINE char *copy_remaining_bytes(search_state *search, unsi
 
 #ifdef HAVE_SIMD_NEON
 
-static inline FORCE_INLINE unsigned char neon_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char neon_next_match(search_state *search)
 {
     uint64_t mask = search->matches_mask;
     uint32_t index = trailing_zeros64(mask) >> 2;
@@ -410,7 +395,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
 
 #ifdef HAVE_SIMD_SSE2
 
-static inline FORCE_INLINE unsigned char sse2_next_match(search_state *search)
+ALWAYS_INLINE(static) unsigned char sse2_next_match(search_state *search)
 {
     int mask = search->matches_mask;
     int index = trailing_zeros(mask);
@@ -434,7 +419,7 @@ static inline FORCE_INLINE unsigned char sse2_next_match(search_state *search)
 #define TARGET_SSE2
 #endif
 
-static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(search_state *search)
+ALWAYS_INLINE(static) TARGET_SSE2 unsigned char search_escape_basic_sse2(search_state *search)
 {
     if (RB_UNLIKELY(search->has_matches)) {
         // There are more matches if search->matches_mask > 0.
@@ -942,11 +927,6 @@ static size_t State_memsize(const void *ptr)
     return sizeof(JSON_Generator_State);
 }
 
-#ifndef HAVE_RB_EXT_RACTOR_SAFE
-#   undef RUBY_TYPED_FROZEN_SHAREABLE
-#   define RUBY_TYPED_FROZEN_SHAREABLE 0
-#endif
-
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {
@@ -988,21 +968,24 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
 }
 
-static inline VALUE vstate_get(struct generate_json_data *data)
+static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(!data->vstate)) {
         vstate_spill(data);
     }
-    return data->vstate;
+    GET_STATE(data->vstate);
+    state->depth = data->depth;
+    VALUE tmp = rb_funcall(obj, i_to_json, 1, data->vstate);
+    // no need to restore state->depth, vstate is just a temporary State
+    return tmp;
 }
 
-struct hash_foreach_arg {
-    VALUE hash;
-    struct generate_json_data *data;
-    int first_key_type;
-    bool first;
-    bool mixed_keys_encountered;
-};
+static VALUE
+json_call_as_json(JSON_Generator_State *state, VALUE object, VALUE is_key)
+{
+    VALUE proc_args[2] = {object, is_key};
+    return rb_proc_call_with_block(state->as_json, 2, proc_args, Qnil);
+}
 
 static VALUE
 convert_string_subclass(VALUE key)
@@ -1019,8 +1002,130 @@ convert_string_subclass(VALUE key)
     return key_to_s;
 }
 
-NOINLINE()
-static void
+static bool enc_utf8_compatible_p(int enc_idx)
+{
+    if (enc_idx == usascii_encindex) return true;
+    if (enc_idx == utf8_encindex) return true;
+    return false;
+}
+
+static VALUE encode_json_string_try(VALUE str)
+{
+    return rb_funcall(str, i_encode, 1, Encoding_UTF_8);
+}
+
+static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
+{
+    raise_generator_error_str(str, rb_funcall(exception, rb_intern("message"), 0));
+    return Qundef;
+}
+
+static inline bool valid_json_string_p(VALUE str)
+{
+    int coderange = rb_enc_str_coderange(str);
+
+    if (RB_LIKELY(coderange == ENC_CODERANGE_7BIT)) {
+        return true;
+    }
+
+    if (RB_LIKELY(coderange == ENC_CODERANGE_VALID)) {
+        return enc_utf8_compatible_p(RB_ENCODING_GET_INLINED(str));
+    }
+
+    return false;
+}
+
+static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+{
+    if (RB_LIKELY(valid_json_string_p(str))) {
+        return str;
+    }
+
+    if (!as_json_called && data->state->strict && RTEST(data->state->as_json)) {
+        VALUE coerced_str = json_call_as_json(data->state, str, Qfalse);
+        if (coerced_str != str) {
+            if (RB_TYPE_P(coerced_str, T_STRING)) {
+                if (!valid_json_string_p(coerced_str)) {
+                    raise_generator_error(str, "source sequence is illegal/malformed utf-8");
+                }
+            } else {
+                // as_json could return another type than T_STRING
+                if (is_key) {
+                    raise_generator_error(coerced_str, "%"PRIsVALUE" not allowed as object key in JSON", CLASS_OF(coerced_str));
+                }
+            }
+
+            return coerced_str;
+        }
+    }
+
+    if (RB_ENCODING_GET_INLINED(str) == binary_encindex) {
+        VALUE utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
+        switch (rb_enc_str_coderange(utf8_string)) {
+            case ENC_CODERANGE_7BIT:
+                return utf8_string;
+            case ENC_CODERANGE_VALID:
+                // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
+                // TODO: Raise in 3.0.0
+                rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
+                return utf8_string;
+                break;
+        }
+    }
+
+    return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
+}
+
+static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    fbuffer_append_char(buffer, '"');
+
+    long len;
+    search_state search;
+    search.buffer = buffer;
+    RSTRING_GETMEM(obj, search.ptr, len);
+    search.cursor = search.ptr;
+    search.end = search.ptr + len;
+
+#ifdef HAVE_SIMD
+    search.matches_mask = 0;
+    search.has_matches = false;
+    search.chunk_base = NULL;
+#endif /* HAVE_SIMD */
+
+    switch (rb_enc_str_coderange(obj)) {
+        case ENC_CODERANGE_7BIT:
+        case ENC_CODERANGE_VALID:
+            if (RB_UNLIKELY(data->state->ascii_only)) {
+                convert_UTF8_to_ASCII_only_JSON(&search, data->state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+            } else if (RB_UNLIKELY(data->state->script_safe)) {
+                convert_UTF8_to_script_safe_JSON(&search);
+            } else {
+                convert_UTF8_to_JSON(&search);
+            }
+            break;
+        default:
+            raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
+            break;
+    }
+    fbuffer_append_char(buffer, '"');
+}
+
+static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    obj = ensure_valid_encoding(data, obj, false, false);
+    raw_generate_json_string(buffer, data, obj);
+}
+
+struct hash_foreach_arg {
+    VALUE hash;
+    struct generate_json_data *data;
+    int first_key_type;
+    bool first;
+    bool mixed_keys_encountered;
+};
+
+NOINLINE(static) void
 json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
 {
     if (arg->mixed_keys_encountered) {
@@ -1035,13 +1140,6 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
     }
 }
 
-static VALUE
-json_call_as_json(JSON_Generator_State *state, VALUE object, VALUE is_key)
-{
-    VALUE proc_args[2] = {object, is_key};
-    return rb_proc_call_with_block(state->as_json, 2, proc_args, Qnil);
-}
-
 static int
 json_object_i(VALUE key, VALUE val, VALUE _arg)
 {
@@ -1051,7 +1149,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     FBuffer *buffer = data->buffer;
     JSON_Generator_State *state = data->state;
 
-    long depth = state->depth;
+    long depth = data->depth;
     int key_type = rb_type(key);
 
     if (arg->first) {
@@ -1107,8 +1205,10 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             break;
     }
 
+    key_to_s = ensure_valid_encoding(data, key_to_s, as_json_called, true);
+
     if (RB_LIKELY(RBASIC_CLASS(key_to_s) == rb_cString)) {
-        generate_json_string(buffer, data, key_to_s);
+        raw_generate_json_string(buffer, data, key_to_s);
     } else {
         generate_json(buffer, data, key_to_s);
     }
@@ -1123,9 +1223,9 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
 static inline long increase_depth(struct generate_json_data *data)
 {
     JSON_Generator_State *state = data->state;
-    long depth = ++state->depth;
+    long depth = ++data->depth;
     if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
-        rb_raise(eNestingError, "nesting of %ld is too deep. Did you try to serialize objects with circular references?", --state->depth);
+        rb_raise(eNestingError, "nesting of %ld is too deep. Did you try to serialize objects with circular references?", --data->depth);
     }
     return depth;
 }
@@ -1136,7 +1236,7 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
 
     if (RHASH_SIZE(obj) == 0) {
         fbuffer_append(buffer, "{}", 2);
-        --data->state->depth;
+        --data->depth;
         return;
     }
 
@@ -1149,7 +1249,7 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
     };
     rb_hash_foreach(obj, json_object_i, (VALUE)&arg);
 
-    depth = --data->state->depth;
+    depth = --data->depth;
     if (RB_UNLIKELY(data->state->object_nl)) {
         fbuffer_append_str(buffer, data->state->object_nl);
         if (RB_UNLIKELY(data->state->indent)) {
@@ -1165,7 +1265,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     if (RARRAY_LEN(obj) == 0) {
         fbuffer_append(buffer, "[]", 2);
-        --data->state->depth;
+        --data->depth;
         return;
     }
 
@@ -1181,7 +1281,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
         }
         generate_json(buffer, data, RARRAY_AREF(obj, i));
     }
-    data->state->depth = --depth;
+    data->depth = --depth;
     if (RB_UNLIKELY(data->state->array_nl)) {
         fbuffer_append_str(buffer, data->state->array_nl);
         if (RB_UNLIKELY(data->state->indent)) {
@@ -1191,90 +1291,11 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
     fbuffer_append_char(buffer, ']');
 }
 
-static inline int enc_utf8_compatible_p(int enc_idx)
-{
-    if (enc_idx == usascii_encindex) return 1;
-    if (enc_idx == utf8_encindex) return 1;
-    return 0;
-}
-
-static VALUE encode_json_string_try(VALUE str)
-{
-    return rb_funcall(str, i_encode, 1, Encoding_UTF_8);
-}
-
-static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
-{
-    raise_generator_error_str(str, rb_funcall(exception, rb_intern("message"), 0));
-    return Qundef;
-}
-
-static inline VALUE ensure_valid_encoding(VALUE str)
-{
-    int encindex = RB_ENCODING_GET(str);
-    VALUE utf8_string;
-    if (RB_UNLIKELY(!enc_utf8_compatible_p(encindex))) {
-        if (encindex == binary_encindex) {
-            utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
-            switch (rb_enc_str_coderange(utf8_string)) {
-                case ENC_CODERANGE_7BIT:
-                    return utf8_string;
-                case ENC_CODERANGE_VALID:
-                    // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-                    // TODO: Raise in 3.0.0
-                    rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
-                    return utf8_string;
-                    break;
-            }
-        }
-
-        str = rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
-    }
-    return str;
-}
-
-static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
-{
-    obj = ensure_valid_encoding(obj);
-
-    fbuffer_append_char(buffer, '"');
-
-    long len;
-    search_state search;
-    search.buffer = buffer;
-    RSTRING_GETMEM(obj, search.ptr, len);
-    search.cursor = search.ptr;
-    search.end = search.ptr + len;
-
-#ifdef HAVE_SIMD
-    search.matches_mask = 0;
-    search.has_matches = false;
-    search.chunk_base = NULL;
-#endif /* HAVE_SIMD */
-
-    switch (rb_enc_str_coderange(obj)) {
-        case ENC_CODERANGE_7BIT:
-        case ENC_CODERANGE_VALID:
-            if (RB_UNLIKELY(data->state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(&search, data->state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
-            } else if (RB_UNLIKELY(data->state->script_safe)) {
-                convert_UTF8_to_script_safe_JSON(&search);
-            } else {
-                convert_UTF8_to_JSON(&search);
-            }
-            break;
-        default:
-            raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
-            break;
-    }
-    fbuffer_append_char(buffer, '"');
-}
-
 static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     VALUE tmp;
     if (rb_respond_to(obj, i_to_json)) {
-        tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
+        tmp = json_call_to_json(data, obj);
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
     } else {
@@ -1341,7 +1362,7 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
                 if (casted_obj != obj) {
                     increase_depth(data);
                     generate_json(buffer, data, casted_obj);
-                    data->state->depth--;
+                    data->depth--;
                     return;
                 }
             }
@@ -1408,7 +1429,16 @@ start:
                 break;
             case T_STRING:
                 if (klass != rb_cString) goto general;
-                generate_json_string(buffer, data, obj);
+
+                if (RB_LIKELY(valid_json_string_p(obj))) {
+                    raw_generate_json_string(buffer, data, obj);
+                } else if (as_json_called) {
+                    raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
+                } else {
+                    obj = ensure_valid_encoding(data, obj, false, false);
+                    as_json_called = true;
+                    goto start;
+                }
                 break;
             case T_SYMBOL:
                 generate_json_symbol(buffer, data, obj);
@@ -1467,8 +1497,9 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
 
     struct generate_json_data data = {
         .buffer = &buffer,
-        .vstate = self,
+        .vstate = Qfalse, // don't use self as it may be frozen and its depth is mutated when calling to_json
         .state = state,
+        .depth = state->depth,
         .obj = obj,
         .func = func
     };
@@ -1489,36 +1520,6 @@ static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
     VALUE obj = argv[0];
     VALUE io = argc > 1 ? argv[1] : Qnil;
     return cState_partial_generate(self, obj, generate_json, io);
-}
-
-static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 1, 2);
-    VALUE obj = argv[0];
-    VALUE io = argc > 1 ? argv[1] : Qnil;
-
-    GET_STATE(self);
-
-    JSON_Generator_State new_state;
-    MEMCPY(&new_state, state, JSON_Generator_State, 1);
-
-    // FIXME: depth shouldn't be part of JSON_Generator_State, as that prevents it from being used concurrently.
-    new_state.depth = 0;
-
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    FBuffer buffer = {
-        .io = RTEST(io) ? io : Qfalse,
-    };
-    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
-
-    struct generate_json_data data = {
-        .buffer = &buffer,
-        .vstate = Qfalse,
-        .state = &new_state,
-        .obj = obj,
-        .func = generate_json
-    };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -1599,6 +1600,7 @@ static VALUE string_config(VALUE config)
  */
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->indent, string_config(indent));
     return Qnil;
@@ -1624,6 +1626,7 @@ static VALUE cState_space(VALUE self)
  */
 static VALUE cState_space_set(VALUE self, VALUE space)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->space, string_config(space));
     return Qnil;
@@ -1647,6 +1650,7 @@ static VALUE cState_space_before(VALUE self)
  */
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->space_before, string_config(space_before));
     return Qnil;
@@ -1672,6 +1676,7 @@ static VALUE cState_object_nl(VALUE self)
  */
 static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->object_nl, string_config(object_nl));
     return Qnil;
@@ -1695,6 +1700,7 @@ static VALUE cState_array_nl(VALUE self)
  */
 static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->array_nl, string_config(array_nl));
     return Qnil;
@@ -1718,6 +1724,7 @@ static VALUE cState_as_json(VALUE self)
  */
 static VALUE cState_as_json_set(VALUE self, VALUE as_json)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     RB_OBJ_WRITE(self, &state->as_json, rb_convert_type(as_json, T_DATA, "Proc", "to_proc"));
     return Qnil;
@@ -1760,6 +1767,7 @@ static long long_config(VALUE num)
  */
 static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->max_nesting = long_config(depth);
     return Qnil;
@@ -1785,6 +1793,7 @@ static VALUE cState_script_safe(VALUE self)
  */
 static VALUE cState_script_safe_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->script_safe = RTEST(enable);
     return Qnil;
@@ -1816,6 +1825,7 @@ static VALUE cState_strict(VALUE self)
  */
 static VALUE cState_strict_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->strict = RTEST(enable);
     return Qnil;
@@ -1840,6 +1850,7 @@ static VALUE cState_allow_nan_p(VALUE self)
  */
 static VALUE cState_allow_nan_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->allow_nan = RTEST(enable);
     return Qnil;
@@ -1864,6 +1875,7 @@ static VALUE cState_ascii_only_p(VALUE self)
  */
 static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->ascii_only = RTEST(enable);
     return Qnil;
@@ -1901,6 +1913,7 @@ static VALUE cState_depth(VALUE self)
  */
 static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     state->depth = long_config(depth);
     return Qnil;
@@ -1934,6 +1947,7 @@ static void buffer_initial_length_set(JSON_Generator_State *state, VALUE buffer_
  */
 static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     buffer_initial_length_set(state, buffer_initial_length);
     return Qnil;
@@ -2000,6 +2014,7 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
 
 static VALUE cState_configure(VALUE self, VALUE opts)
 {
+    rb_check_frozen(self);
     GET_STATE(self);
     configure_state(state, self, opts);
     return self;
@@ -2021,6 +2036,7 @@ static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
         .buffer = &buffer,
         .vstate = Qfalse,
         .state = &state,
+        .depth = state.depth,
         .obj = obj,
         .func = generate_json,
     };
@@ -2094,7 +2110,6 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
-    rb_define_method(cState, "generate_new", cState_generate_new, -1); // :nodoc:
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
@@ -2142,10 +2157,6 @@ void Init_generator(void)
     i_to_s = rb_intern("to_s");
     i_to_json = rb_intern("to_json");
     i_new = rb_intern("new");
-    i_pack = rb_intern("pack");
-    i_unpack = rb_intern("unpack");
-    i_create_id = rb_intern("create_id");
-    i_extend = rb_intern("extend");
     i_encode = rb_intern("encode");
 
     sym_indent = ID2SYM(rb_intern("indent"));

@@ -304,7 +304,7 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
 
   def test_empty_signed_data_ruby_bug_19974
     data = "-----BEGIN PKCS7-----\nMAsGCSqGSIb3DQEHAg==\n-----END PKCS7-----\n"
-    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(data) }
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { OpenSSL::PKCS7.new(data) }
 
     data = <<END
 MIME-Version: 1.0
@@ -319,7 +319,7 @@ END
 
   def test_graceful_parsing_failure #[ruby-core:43250]
     contents = "not a valid PKCS #7 PEM block"
-    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { OpenSSL::PKCS7.new(contents) }
   end
 
   def test_set_type_signed

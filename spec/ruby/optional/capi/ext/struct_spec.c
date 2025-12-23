@@ -62,6 +62,10 @@ static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st) {
   return rb_struct_size(st);
 }
 
+static VALUE struct_spec_rb_struct_initialize(VALUE self, VALUE st, VALUE values) {
+  return rb_struct_initialize(st, values);
+}
+
 #if defined(RUBY_VERSION_IS_3_3)
 /* Only allow setting three attributes, should be sufficient for testing. */
 static VALUE struct_spec_rb_data_define(VALUE self, VALUE superclass,
@@ -90,6 +94,7 @@ void Init_struct_spec(void) {
   rb_define_method(cls, "rb_struct_define_under", struct_spec_rb_struct_define_under, 5);
   rb_define_method(cls, "rb_struct_new", struct_spec_rb_struct_new, 4);
   rb_define_method(cls, "rb_struct_size", struct_spec_rb_struct_size, 1);
+  rb_define_method(cls, "rb_struct_initialize", struct_spec_rb_struct_initialize, 2);
 #if defined(RUBY_VERSION_IS_3_3)
   rb_define_method(cls, "rb_data_define", struct_spec_rb_data_define, 4);
 #endif

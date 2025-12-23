@@ -515,6 +515,36 @@ class TestVariable < Test::Unit::TestCase
     assert_equal 4, instance.instance_variable_get(:@a4), bug21547
   end
 
+  def test_genivar_cache_free
+    str = +"hello"
+    str.instance_variable_set(:@x, :old_value)
+
+    str.instance_variable_get(:@x) # populate cache
+
+    Fiber.new {
+      str.remove_instance_variable(:@x)
+      str.instance_variable_set(:@x, :new_value)
+    }.resume
+
+    assert_equal :new_value, str.instance_variable_get(:@x)
+  end
+
+  def test_genivar_cache_invalidated_by_gc
+    str = +"hello"
+    str.instance_variable_set(:@x, :old_value)
+
+    str.instance_variable_get(:@x) # populate cache
+
+    Fiber.new {
+      str.remove_instance_variable(:@x)
+      str.instance_variable_set(:@x, :new_value)
+    }.resume
+
+    GC.start
+
+    assert_equal :new_value, str.instance_variable_get(:@x)
+  end
+
   private
   def with_kwargs_11(v1:, v2:, v3:, v4:, v5:, v6:, v7:, v8:, v9:, v10:, v11:)
     local_variables

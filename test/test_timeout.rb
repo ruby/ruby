@@ -4,6 +4,23 @@ require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
+  private def kill_timeout_thread
+    thread = Timeout.const_get(:State).instance.instance_variable_get(:@timeout_thread)
+    if thread
+      thread.kill
+      thread.join
+    end
+  end
+
+  def test_public_methods
+    assert_equal [:timeout], Timeout.private_instance_methods(false)
+    assert_equal [], Timeout.public_instance_methods(false)
+
+    assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+
+    assert_equal [:Error, :ExitException, :VERSION], Timeout.constants.sort
+  end
+
   def test_work_is_done_in_same_thread_as_caller
     assert_equal Thread.current, Timeout.timeout(10){ Thread.current }
   end
@@ -212,6 +229,24 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_handle_interrupt_with_exception_class
+    bug11344 = '[ruby-dev:49179] [Bug #11344]'
+    ok = false
+    assert_raise(Timeout::Error) {
+      Thread.handle_interrupt(Timeout::Error => :never) {
+        Timeout.timeout(0.01, Timeout::Error) {
+          sleep 0.2
+          ok = true
+          Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+            sleep 0.2
+            raise "unreachable"
+          }
+        }
+      }
+    }
+    assert(ok, bug11344)
+  end
+
   def test_handle_interrupt
     bug11344 = '[ruby-dev:49179] [Bug #11344]'
     ok = false
@@ -222,11 +257,100 @@ class TestTimeout < Test::Unit::TestCase
           ok = true
           Thread.handle_interrupt(Timeout::ExitException => :on_blocking) {
             sleep 0.2
+            raise "unreachable"
           }
         }
       }
     }
     assert(ok, bug11344)
+  end
+
+  def test_handle_interrupt_with_interrupt_mask_inheritance
+    issue = 'https://github.com/ruby/timeout/issues/41'
+
+    [
+      -> {}, # not blocking so no opportunity to interrupt
+      -> { sleep 5 }
+    ].each_with_index do |body, idx|
+      # We need to create a new Timeout thread
+      kill_timeout_thread
+
+      # Create the timeout thread under a handle_interrupt(:never)
+      # due to the interrupt mask being inherited
+      Thread.handle_interrupt(Object => :never) {
+        assert_equal :ok, Timeout.timeout(1) { :ok }
+      }
+
+      # Ensure a simple timeout works and the interrupt mask was not inherited
+      assert_raise(Timeout::Error) {
+        Timeout.timeout(0.001) { sleep 1 }
+      }
+
+      r = []
+      # This raises Timeout::ExitException and not Timeout::Error for the non-blocking body
+      # because of the handle_interrupt(:never) which delays raising Timeout::ExitException
+      # on the main thread until getting outside of that handle_interrupt(:never) call.
+      # For this reason we document handle_interrupt(Timeout::ExitException) should not be used.
+      exc = idx == 0 ? Timeout::ExitException : Timeout::Error
+      assert_raise(exc) {
+        Thread.handle_interrupt(Timeout::ExitException => :never) {
+          Timeout.timeout(0.1) do
+            sleep 0.2
+            r << :sleep_before_done
+            Thread.handle_interrupt(Timeout::ExitException => :on_blocking) {
+              r << :body
+              body.call
+            }
+          ensure
+            sleep 0.2
+            r << :ensure_sleep_done
+          end
+        }
+      }
+      assert_equal([:sleep_before_done, :body, :ensure_sleep_done], r, issue)
+    end
+  end
+
+  # Same as above but with an exception class
+  def test_handle_interrupt_with_interrupt_mask_inheritance_with_exception_class
+    issue = 'https://github.com/ruby/timeout/issues/41'
+
+    [
+      -> {}, # not blocking so no opportunity to interrupt
+      -> { sleep 5 }
+    ].each do |body|
+      # We need to create a new Timeout thread
+      kill_timeout_thread
+
+      # Create the timeout thread under a handle_interrupt(:never)
+      # due to the interrupt mask being inherited
+      Thread.handle_interrupt(Object => :never) {
+        assert_equal :ok, Timeout.timeout(1) { :ok }
+      }
+
+      # Ensure a simple timeout works and the interrupt mask was not inherited
+      assert_raise(Timeout::Error) {
+        Timeout.timeout(0.001) { sleep 1 }
+      }
+
+      r = []
+      assert_raise(Timeout::Error) {
+        Thread.handle_interrupt(Timeout::Error => :never) {
+          Timeout.timeout(0.1, Timeout::Error) do
+            sleep 0.2
+            r << :sleep_before_done
+            Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+              r << :body
+              body.call
+            }
+          ensure
+            sleep 0.2
+            r << :ensure_sleep_done
+          end
+        }
+      }
+      assert_equal([:sleep_before_done, :body, :ensure_sleep_done], r, issue)
+    end
   end
 
   def test_fork
@@ -273,5 +397,60 @@ class TestTimeout < Test::Unit::TestCase
         assert_equal 42, Timeout.timeout(1) { 42 }
       }.join
     end;
+  end
+
+  def test_ractor
+    assert_separately(%w[-rtimeout -W0], <<-'end;')
+      r = Ractor.new do
+        Timeout.timeout(1) { 42 }
+      end.value
+
+      assert_equal 42, r
+
+      r = Ractor.new do
+        begin
+          Timeout.timeout(0.1) { sleep }
+        rescue Timeout::Error
+          :ok
+        end
+      end.value
+
+      assert_equal :ok, r
+    end;
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
+
+  def test_timeout_in_trap_handler
+    # https://github.com/ruby/timeout/issues/17
+
+    # Test as if this was the first timeout usage
+    kill_timeout_thread
+
+    rd, wr = IO.pipe
+
+    signal = :TERM
+
+    original_handler = trap(signal) do
+      begin
+        Timeout.timeout(0.1) do
+          sleep 1
+        end
+      rescue Timeout::Error
+        wr.write "OK"
+        wr.close
+      else
+        wr.write "did not raise"
+      ensure
+        wr.close
+      end
+    end
+
+    begin
+      Process.kill signal, Process.pid
+
+      assert_equal "OK", rd.read
+      rd.close
+    ensure
+      trap(signal, original_handler)
+    end
   end
 end

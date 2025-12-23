@@ -56,7 +56,7 @@ int rb_encdb_alias(const char *alias, const char *orig);
 #pragma GCC visibility pop
 #endif
 
-static ID id_encoding;
+static ID id_encoding, id_i_name;
 VALUE rb_cEncoding;
 
 #define ENCODING_LIST_CAPA 256
@@ -97,6 +97,8 @@ static rb_encoding *global_enc_ascii,
                    *global_enc_utf_8,
                    *global_enc_us_ascii;
 
+static int filesystem_encindex = ENCINDEX_ASCII_8BIT;
+
 #define GLOBAL_ENC_TABLE_LOCKING(tbl) \
     for (struct enc_table *tbl = &global_enc_table, **locking = &tbl; \
          locking; \
@@ -136,6 +138,7 @@ static VALUE
 enc_new(rb_encoding *encoding)
 {
     VALUE enc = TypedData_Wrap_Struct(rb_cEncoding, &encoding_data_type, (void *)encoding);
+    rb_ivar_set(enc, id_i_name, rb_fstring_cstr(encoding->name));
     RB_OBJ_SET_FROZEN_SHAREABLE(enc);
     return enc;
 }
@@ -222,7 +225,7 @@ enc_check_encoding(VALUE obj)
     if (!is_obj_encoding(obj)) {
         return -1;
     }
-    return check_encoding(RDATA(obj)->data);
+    return check_encoding(RTYPEDDATA_GET_DATA(obj));
 }
 
 NORETURN(static void not_encoding(VALUE enc));
@@ -240,7 +243,7 @@ must_encoding(VALUE enc)
     if (index < 0) {
         not_encoding(enc);
     }
-    return DATA_PTR(enc);
+    return RTYPEDDATA_GET_DATA(enc);
 }
 
 static rb_encoding *
@@ -328,7 +331,7 @@ str_to_encoding(VALUE enc)
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     return str_to_encoding(enc);
 }
 
@@ -336,7 +339,7 @@ rb_encoding *
 rb_find_encoding(VALUE enc)
 {
     int idx;
-    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    if (enc_check_encoding(enc) >= 0) return RTYPEDDATA_GET_DATA(enc);
     idx = str_find_encindex(enc);
     if (idx < 0) return NULL;
     return rb_enc_from_index(idx);
@@ -1345,7 +1348,7 @@ enc_inspect(VALUE self)
     if (!is_data_encoding(self)) {
         not_encoding(self);
     }
-    if (!(enc = DATA_PTR(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
+    if (!(enc = RTYPEDDATA_GET_DATA(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
         rb_raise(rb_eTypeError, "broken Encoding");
     }
 
@@ -1356,20 +1359,6 @@ enc_inspect(VALUE self)
                           rb_enc_autoload_p(enc) ? " (autoload)" : "");
 }
 
-/*
- * call-seq:
- *   enc.name -> string
- *   enc.to_s -> string
- *
- * Returns the name of the encoding.
- *
- *   Encoding::UTF_8.name      #=> "UTF-8"
- */
-static VALUE
-enc_name(VALUE self)
-{
-    return rb_fstring_cstr(rb_enc_name((rb_encoding*)DATA_PTR(self)));
-}
 
 static int
 enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
@@ -1513,7 +1502,7 @@ static VALUE
 enc_dump(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 1);
-    return enc_name(self);
+    return rb_attr_get(self, id_i_name);
 }
 
 /* :nodoc: */
@@ -1602,12 +1591,7 @@ rb_locale_encoding(void)
 int
 rb_filesystem_encindex(void)
 {
-    int idx;
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        idx = enc_registered(enc_table, "filesystem");
-    }
-    if (idx < 0) idx = ENCINDEX_ASCII_8BIT;
-    return idx;
+    return filesystem_encindex;
 }
 
 rb_encoding *
@@ -1659,7 +1643,9 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         }
 
         if (def == &default_external) {
-            enc_alias_internal(enc_table, "filesystem", Init_enc_set_filesystem_encoding());
+            int fs_idx = Init_enc_set_filesystem_encoding();
+            enc_alias_internal(enc_table, "filesystem", fs_idx);
+            filesystem_encindex = fs_idx;
         }
     }
 
@@ -2002,12 +1988,19 @@ Init_Encoding(void)
     VALUE list;
     int i;
 
+    id_i_name = rb_intern_const("@name");
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_define_alloc_func(rb_cEncoding, enc_s_alloc);
     rb_undef_method(CLASS_OF(rb_cEncoding), "new");
-    rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
+
+    /* The name of the encoding.
+     *
+     *   Encoding::UTF_8.name      #=> "UTF-8"
+     */
+    rb_attr(rb_cEncoding, rb_intern("name"), TRUE, FALSE, Qfalse);
+    rb_define_alias(rb_cEncoding, "to_s", "name");
+
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
-    rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_method(rb_cEncoding, "names", enc_names, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_method(rb_cEncoding, "ascii_compatible?", enc_ascii_compatible_p, 0);

@@ -1,0 +1,99 @@
+Reads and returns a line from the stream;
+returns +nil+ if at end-of-stream.
+
+Side effects:
+
+- Increments stream position by the number of bytes read.
+- Assigns the return value to global variable <tt>$_</tt>.
+
+With no arguments given, reads a line using the default record separator
+(global variable <tt>$/</tt>,* whose initial value is <tt>"\n"</tt>):
+
+  strio = StringIO.new(TEXT)
+  strio.pos  # => 0
+  strio.gets # => "First line\n"
+  strio.pos  # => 11
+  $_         # => "First line\n"
+  strio.gets # => "Second line\n"
+  strio.read # => "\nFourth line\nFifth line\n"
+  strio.eof? # => true
+  strio.gets # => nil
+
+  strio = StringIO.new('Привет')  # Six 2-byte characters
+  strio.pos  # => 0
+  strio.gets # => "Привет"
+  strio.pos  # => 12
+
+<b>Argument +sep+</b>
+
+With only string argument +sep+ given, reads a line using that string as the record separator:
+
+  strio = StringIO.new(TEXT)
+  strio.gets(' ') # => "First "
+  strio.gets(' ') # => "line\nSecond "
+  strio.gets(' ') # => "line\n\nFourth "
+
+<b>Argument +limit+</b>
+
+With only integer argument +limit+ given,
+reads a line using the default record separator;
+limits the size (in characters) of each line to the given limit:
+
+  strio = StringIO.new(TEXT)
+  strio.gets(10) # => "First line"
+  strio.gets(10) # => "\n"
+  strio.gets(10) # => "Second lin"
+  strio.gets(10) # => "e\n"
+
+<b>Arguments +sep+ and +limit+</b>
+
+With arguments +sep+ and +limit+ both given, honors both:
+
+  strio = StringIO.new(TEXT)
+  strio.gets(' ', 10) # => "First "
+  strio.gets(' ', 10) # => "line\nSecon"
+  strio.gets(' ', 10) # => "d "
+
+<b>Position</b>
+
+As stated above, method +gets+ reads and returns the next line in the stream.
+
+In the examples above each +strio+ object starts with its position at beginning-of-stream;
+but in other cases the position may be anywhere:
+
+  strio = StringIO.new(TEXT)
+  strio.pos = 12
+  strio.gets # => "econd line\n"
+
+The position need not be at a character boundary:
+
+  strio = StringIO.new('Привет') # Six 2-byte characters.
+  strio.pos = 2                  # At beginning of second character.
+  strio.gets # => "ривет"
+  strio.pos = 3                  # In middle of second character.
+  strio.gets # => "\x80ивет"
+
+<b>Special Record Separators</b>
+
+Like some methods in class IO, method +gets+ honors two special record separators;
+see {Special Line Separators}[https://docs.ruby-lang.org/en/master/IO.html#class-IO-label-Special+Line+Separator+Values]:
+
+  strio = StringIO.new(TEXT)
+  strio.gets('')  # Read "paragraph" (up to empty line).
+  # => "First line\nSecond line\n\n"
+
+  strio = StringIO.new(TEXT)
+  strio.gets(nil) # "Slurp": read all.
+  # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+
+<b>Keyword Argument +chomp+</b>
+
+With keyword argument +chomp+ given as +true+ (the default is +false+),
+removes the trailing newline (if any) from the returned line:
+
+  strio = StringIO.new(TEXT)
+  strio.gets              # => "First line\n"
+  strio.gets(chomp: true) # => "Second line"
+
+Related: #each_line, #readlines,
+{Kernel#puts}[rdoc-ref:Kernel#puts].

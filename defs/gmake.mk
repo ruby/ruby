@@ -2,6 +2,7 @@
 
 reconfig config.status: export MAKE:=$(MAKE)
 export BASERUBY:=$(BASERUBY)
+export GIT
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
@@ -275,7 +276,7 @@ pull-github: fetch-github
 	$(call pull-github,$(PR))
 
 define pull-github
-	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_LOG_FORMAT):%H -1)
+	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_LOG_FORMAT)%H -1)
 	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT_IN_SRC) symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	$(GIT_IN_SRC) worktree prune
@@ -528,11 +529,7 @@ RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(
 rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
 	@ $(NULLCMD)
 
-ifeq ($(ENABLE_SHARED),yes)
-exts: rubyspec-capiext
-endif
-
-spec/%/ spec/%_spec.rb: programs exts PHONY
+spec/%/ spec/%_spec.rb: programs exts $(RUBYSPEC_CAPIEXT_BUILD) PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
@@ -548,13 +545,17 @@ matz: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
 matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
 matz: MINOR := $(word 2,$(subst ., ,$(NEW)))
-matz: .WAIT bump_news
+matz: $(DOT_WAIT) bump_news
+bump_news$(DOT_WAIT): up
+bump_headers$(DOT_WAIT): bump_news
 else
 matz: MINOR := $(shell expr $(MINOR) + 1)
-matz: .WAIT reset_news
+matz: $(DOT_WAIT) reset_news
+flush_news$(DOT_WAIT): up
+bump_headers$(DOT_WAIT): reset_news
 endif
 
-matz: .WAIT bump_headers
+matz: $(DOT_WAIT) bump_headers
 matz: override NEW := $(MAJOR).$(MINOR).0
 matz: files := include/ruby/version.h include/ruby/internal/abi.h
 matz: message := Development of $(NEW) started.

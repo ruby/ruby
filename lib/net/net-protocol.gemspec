@@ -25,9 +25,8 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z 2>#{IO::NULL}`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
-  end
+  excludes = %W[/.git* /bin /test /*file /#{File.basename(__FILE__)}]
+  spec.files = IO.popen(%W[git -C #{__dir__} ls-files -z --] + excludes.map {|e| ":^#{e}"}, &:read).split("\x0")
   spec.require_paths = ["lib"]
 
   spec.add_dependency "timeout"

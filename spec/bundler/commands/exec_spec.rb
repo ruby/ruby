@@ -1020,7 +1020,7 @@ RSpec.describe "bundle exec" do
     context "signal handling" do
       let(:test_signals) do
         open3_reserved_signals = %w[CHLD CLD PIPE]
-        reserved_signals = %w[SEGV BUS ILL FPE VTALRM KILL STOP EXIT]
+        reserved_signals = %w[SEGV BUS ILL FPE ABRT IOT VTALRM KILL STOP EXIT]
         bundler_signals = %w[INT]
 
         Signal.list.keys - (bundler_signals + reserved_signals + open3_reserved_signals)
@@ -1034,7 +1034,7 @@ RSpec.describe "bundle exec" do
               puts 'Started' # For process sync
               STDOUT.flush
               sleep 1 # ignore quality_spec
-              raise "Didn't receive INT at all"
+              raise RuntimeError, "Didn't receive expected INT"
             end.join
           rescue Interrupt
             puts "foo"
@@ -1218,7 +1218,7 @@ RSpec.describe "bundle exec" do
         build_repo4 do
           build_gem "openssl", openssl_version do |s|
             s.write("lib/openssl.rb", <<-RUBY)
-              raise "custom openssl should not be loaded, it's not in the gemfile!"
+              raise ArgumentError, "custom openssl should not be loaded"
             RUBY
           end
         end

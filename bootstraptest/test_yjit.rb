@@ -2680,6 +2680,22 @@ assert_equal '[1, 2]', %q{
   expandarray_redefined_nilclass
 }
 
+assert_equal 'not_array', %q{
+  def expandarray_not_array(obj)
+    a, = obj
+    a
+  end
+
+  obj = Object.new
+  def obj.method_missing(m, *args, &block)
+    return [:not_array] if m == :to_ary
+    super
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
+}
+
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
     a, b, c = [1, 2]
@@ -4081,6 +4097,26 @@ assert_equal '1', %q{
   bar { }
 }
 
+# unshareable bmethod call through Method#to_proc#call
+assert_equal '1000', %q{
+  define_method(:bmethod) do
+    self
+  end
+
+  Ractor.new do
+    errors = 0
+    1000.times do
+      p = method(:bmethod).to_proc
+      begin
+        p.call
+      rescue RuntimeError
+        errors += 1
+      end
+    end
+    errors
+  end.value
+}
+
 # test for return stub lifetime issue
 assert_equal '1', %q{
   def foo(n)
@@ -4853,6 +4889,16 @@ assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for splat with &proc{} when the target has rest (Bug #21266)
+assert_equal '[]', %q{
+  def foo(args) = bar(*args, &proc { _1 })
+  def bar(_, _, _, _, *rest) = yield rest
+
+  GC.stress = true
+  foo([1,2,3,4])
+  foo([1,2,3,4])
+}
+
 # regression test for invalidating an empty block
 assert_equal '0', %q{
   def foo = (* = 1).pred
@@ -5368,4 +5414,49 @@ assert_equal 'false', %{
   end
 
   RESULT.any?
+}
+
+# throw and String#dup with GC stress
+assert_equal 'foo', %{
+  GC.stress = true
+
+  def foo
+    1.times { return "foo".dup }
+  end
+
+  10.times.map { foo.dup }.last
+}
+
+# regression test for [Bug #21772]
+# local variable type tracking desync
+assert_normal_exit %q{
+  def some_method = 0
+
+  def test_body(key)
+    some_method
+    key = key.to_s # setting of local relevant
+
+    key == "symbol"
+  end
+
+  def jit_caller = test_body("session_id")
+
+  jit_caller # first iteration, non-escaped environment
+  alias some_method binding # induce environment escape
+  test_body(:symbol)
+}
+
+# regression test for missing check in identity method inlining
+assert_normal_exit %q{
+  # Use dead code (if false) to create a local
+  # without initialization instructions.
+  def foo(a)
+    if false
+      x = nil
+    end
+    x
+  end
+  def test = foo(1)
+  test
+  test
 }

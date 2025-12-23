@@ -605,17 +605,31 @@ statx_mtimespec(const rb_io_stat_data *st)
 
 /*
  *  call-seq:
- *     stat <=> other_stat    -> -1, 0, 1, nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares File::Stat objects by comparing their respective modification
- *  times.
+ *  Compares +self+ and +other+, by comparing their modification times;
+ *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
  *
- *  +nil+ is returned if +other_stat+ is not a File::Stat object
+ *  Returns:
  *
- *     f1 = File.new("f1", "w")
- *     sleep 1
- *     f2 = File.new("f2", "w")
- *     f1.stat <=> f2.stat   #=> -1
+ *  - +-1+, if <tt>self.mtime</tt> is earlier.
+ *  - +0+, if the two values are equal.
+ *  - +1+, if <tt>self.mtime</tt> is later.
+ *  - +nil+, if +other+ is not a File::Stat object.
+ *
+ *  Examples:
+ *
+ *    stat0 = File.stat('README.md')
+ *    stat1 = File.stat('NEWS.md')
+ *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
+ *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
+ *    stat0 <=> stat1     # => -1
+ *    stat0 <=> stat0.dup # => 0
+ *    stat1 <=> stat0     # => 1
+ *    stat0 <=> :foo      # => nil
+ *
+ *  \Class \File::Stat includes module Comparable,
+ *  each of whose methods uses File::Stat#<=> for comparison.
  */
 
 static VALUE
@@ -2172,7 +2186,7 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *    File.owned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
- * effective used id of the calling process is the owner of
+ * effective user id of the calling process is the owner of
  * the file.
  *
  * _file_name_ can be an IO object.
@@ -6492,96 +6506,6 @@ rb_is_absolute_path(const char *path)
     if (path[0] == '/') return 1;
 #endif
     return 0;
-}
-
-#ifndef ENABLE_PATH_CHECK
-# if defined DOSISH || defined __CYGWIN__
-#   define ENABLE_PATH_CHECK 0
-# else
-#   define ENABLE_PATH_CHECK 1
-# endif
-#endif
-
-#if ENABLE_PATH_CHECK
-static int
-path_check_0(VALUE path)
-{
-    struct stat st;
-    const char *p0 = StringValueCStr(path);
-    const char *e0;
-    rb_encoding *enc;
-    char *p = 0, *s;
-
-    if (!rb_is_absolute_path(p0)) {
-        char *buf = ruby_getcwd();
-        VALUE newpath;
-
-        newpath = rb_str_new2(buf);
-        xfree(buf);
-
-        rb_str_cat2(newpath, "/");
-        rb_str_cat2(newpath, p0);
-        path = newpath;
-        p0 = RSTRING_PTR(path);
-    }
-    e0 = p0 + RSTRING_LEN(path);
-    enc = rb_enc_get(path);
-    for (;;) {
-#ifndef S_IWOTH
-# define S_IWOTH 002
-#endif
-        if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
-#ifdef S_ISVTX
-            && !(p && (st.st_mode & S_ISVTX))
-#endif
-            && !access(p0, W_OK)) {
-            rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
-#if SIZEOF_DEV_T > SIZEOF_INT
-                        PRI_MODET_PREFIX"o",
-#else
-                        "o",
-#endif
-                        p0, st.st_mode);
-            if (p) *p = '/';
-            RB_GC_GUARD(path);
-            return 0;
-        }
-        s = strrdirsep(p0, e0, enc);
-        if (p) *p = '/';
-        if (!s || s == p0) return 1;
-        p = s;
-        e0 = p;
-        *p = '\0';
-    }
-}
-#endif
-
-int
-rb_path_check(const char *path)
-{
-    rb_warn_deprecated_to_remove_at(3.6, "rb_path_check", NULL);
-#if ENABLE_PATH_CHECK
-    const char *p0, *p, *pend;
-    const char sep = PATH_SEP_CHAR;
-
-    if (!path) return 1;
-
-    pend = path + strlen(path);
-    p0 = path;
-    p = strchr(path, sep);
-    if (!p) p = pend;
-
-    for (;;) {
-        if (!path_check_0(rb_str_new(p0, p - p0))) {
-            return 0;		/* not safe */
-        }
-        p0 = p + 1;
-        if (p0 > pend) break;
-        p = strchr(p0, sep);
-        if (!p) p = pend;
-    }
-#endif
-    return 1;
 }
 
 int

@@ -224,6 +224,7 @@ setinstancevariable
 (VALUE val)
 ()
 // attr bool leaf = false; /* has rb_check_frozen() */
+// attr bool zjit_profile = true;
 {
     vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
@@ -745,6 +746,7 @@ definedivar
 ()
 (VALUE val)
 // attr bool leaf  = false;
+// attr bool zjit_profile = true;
 {
     val = Qnil;
     if (!UNDEF_P(vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef))) {
@@ -803,13 +805,13 @@ defineclass
 (VALUE val)
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_box_t *box = rb_current_box();
 
     rb_iseq_check(class_iseq);
 
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
-                  GC_GUARDED_PTR(ns),
+                  GC_GUARDED_PTR(box),
                   (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
@@ -1137,6 +1139,7 @@ invokeblock
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
+// attr bool zjit_profile = true;
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);

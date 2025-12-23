@@ -31,7 +31,7 @@ describe "Net::HTTPGenericRequest#exec when passed socket, version, path" do
   end
 
   describe "when a request body is set" do
-    ruby_version_is ""..."3.5" do
+    ruby_version_is ""..."4.0" do
       it "sets the 'Content-Type' header to 'application/x-www-form-urlencoded' unless the 'Content-Type' header is supplied" do
         request = Net::HTTPGenericRequest.new("POST", true, true, "/some/path")
         request.body = "Some Content"
@@ -64,7 +64,7 @@ describe "Net::HTTPGenericRequest#exec when passed socket, version, path" do
   end
 
   describe "when a body stream is set" do
-    ruby_version_is ""..."3.5" do
+    ruby_version_is ""..."4.0" do
       it "sets the 'Content-Type' header to 'application/x-www-form-urlencoded' unless the 'Content-Type' header is supplied" do
         request = Net::HTTPGenericRequest.new("POST", true, true, "/some/path",
                                               "Content-Length" => "10")

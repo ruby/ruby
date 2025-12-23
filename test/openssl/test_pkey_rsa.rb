@@ -9,8 +9,8 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     rsa = Fixtures.pkey("rsa-1")
     key.set_key(rsa.n, rsa.e, nil)
     key.set_factors(rsa.p, rsa.q)
-    assert_raise(OpenSSL::PKey::RSAError){ key.private_encrypt("foo") }
-    assert_raise(OpenSSL::PKey::RSAError){ key.private_decrypt("foo") }
+    assert_raise(OpenSSL::PKey::PKeyError){ key.private_encrypt("foo") }
+    assert_raise(OpenSSL::PKey::PKeyError){ key.private_decrypt("foo") }
   end if !openssl?(3, 0, 0) # Impossible state in OpenSSL 3.0
 
   def test_private
@@ -180,7 +180,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     # Failure cases
     assert_raise(ArgumentError){ key.private_encrypt() }
     assert_raise(ArgumentError){ key.private_encrypt("hi", 1, nil) }
-    assert_raise(OpenSSL::PKey::RSAError){ key.private_encrypt(plain0, 666) }
+    assert_raise(OpenSSL::PKey::PKeyError){ key.private_encrypt(plain0, 666) }
   end
 
 
@@ -231,7 +231,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
         key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
     end
 
-    assert_raise(OpenSSL::PKey::RSAError) {
+    assert_raise(OpenSSL::PKey::PKeyError) {
       key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA256")
     }
   end
@@ -373,7 +373,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
     exported = rsa.to_pem(cipher, "abcdef\0\1")
     assert_same_rsa rsa, OpenSSL::PKey::RSA.new(exported, "abcdef\0\1")
-    assert_raise(OpenSSL::PKey::RSAError) {
+    assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey::RSA.new(exported, "abcdef")
     }
   end

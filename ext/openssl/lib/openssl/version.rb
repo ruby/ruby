@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
 module OpenSSL
-  VERSION = "4.0.0.pre"
+  # The version string of Ruby/OpenSSL.
+  VERSION = "4.0.0"
 end

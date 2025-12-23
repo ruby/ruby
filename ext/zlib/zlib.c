@@ -1456,6 +1456,7 @@ rb_zstream_finish(VALUE obj)
  * call-seq:
  *   flush_next_in -> input
  *
+ * Flushes input buffer and returns all data in that buffer.
  */
 static VALUE
 rb_zstream_flush_next_in(VALUE obj)

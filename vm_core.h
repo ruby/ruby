@@ -118,7 +118,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
-#include "internal/namespace.h"
+#include "internal/box.h"
 #include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/set_table.h"
@@ -317,6 +317,8 @@ struct rb_calling_info {
 #define VM_ARGC_STACK_MAX 128
 #endif
 
+#define VM_KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
+
 # define CALLING_ARGC(calling) ((calling)->heap_argv ? RARRAY_LENINT((calling)->heap_argv) : (calling)->argc)
 
 struct rb_execution_context_struct;
@@ -398,6 +400,7 @@ enum rb_builtin_attr {
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+typedef VALUE (*rb_zjit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *, rb_jit_func_t);
 
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
@@ -428,7 +431,7 @@ struct rb_iseq_constant_body {
      *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
      */
 
-    struct {
+    struct rb_iseq_parameters {
         struct {
             unsigned int has_lead   : 1;
             unsigned int has_opt    : 1;
@@ -581,7 +584,7 @@ struct rb_iseq_struct {
         } loader;
 
         struct {
-            struct rb_hook_list_struct *local_hooks;
+            unsigned int local_hooks_cnt;
             rb_event_flag_t global_trace_events;
         } exec;
     } aux;
@@ -647,14 +650,20 @@ void *rb_objspace_alloc(void);
 void rb_objspace_free(void *objspace);
 void rb_objspace_call_finalizer(void);
 
+enum rb_hook_list_type {
+    hook_list_type_ractor_local,
+    hook_list_type_targeted_iseq,
+    hook_list_type_targeted_def, // C function
+    hook_list_type_global
+};
+
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
     rb_event_flag_t events;
     unsigned int running;
+    enum rb_hook_list_type type;
     bool need_clean;
-    bool is_local;
 } rb_hook_list_t;
-
 
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
@@ -753,9 +762,9 @@ typedef struct rb_vm_struct {
     struct global_object_list *global_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
-    /* namespace */
-    rb_namespace_t *root_namespace;
-    rb_namespace_t *main_namespace;
+    /* Ruby Box */
+    rb_box_t *root_box;
+    rb_box_t *main_box;
 
     /* load */
     // For running the init function of statically linked
@@ -766,6 +775,9 @@ typedef struct rb_vm_struct {
     struct {
         VALUE cmd[RUBY_NSIG];
     } trap_list;
+
+    /* hook (for internal events: NEWOBJ, FREEOBJ, GC events, etc.) */
+    rb_hook_list_t global_hooks;
 
     /* postponed_job (async-signal-safe, and thread-safe) */
     struct rb_postponed_job_queue *postponed_job_queue;
@@ -843,7 +855,7 @@ extern bool ruby_vm_during_cleanup;
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 #endif
 
-#if __has_feature(memory_sanitizer) || __has_feature(address_sanitizer)
+#if __has_feature(memory_sanitizer) || __has_feature(address_sanitizer) || __has_feature(leak_sanitizer)
 /* It seems sanitizers consume A LOT of machine stacks */
 #undef  RUBY_VM_THREAD_MACHINE_STACK_SIZE
 #define RUBY_VM_THREAD_MACHINE_STACK_SIZE     (1024 * 1024 * sizeof(VALUE))
@@ -1035,6 +1047,8 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
+    rb_serial_t serial;
+    rb_serial_t ractor_id;
 
     /* storage (ec (fiber) local) */
     struct rb_id_table *local_storage;
@@ -1100,6 +1114,10 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // Clear (set to `NULL`) the vm_stack pointer.
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
+
+// Close an execution context and free related resources that are no longer needed.
+// @param ec the execution context to close.
+void rb_ec_close(rb_execution_context_t *ec);
 
 struct rb_ext_config {
     bool ractor_safe;
@@ -1388,7 +1406,7 @@ enum vm_frame_env_flags {
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW  = 0x0400,
     VM_FRAME_FLAG_PASSED     = 0x0800,
-    VM_FRAME_FLAG_NS_REQUIRE = 0x1000,
+    VM_FRAME_FLAG_BOX_REQUIRE = 0x1000,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1527,7 +1545,7 @@ VM_FRAME_RUBYFRAME_P_UNCHECKED(const rb_control_frame_t *cfp)
 static inline int
 VM_FRAME_NS_REQUIRE_P(const rb_control_frame_t *cfp)
 {
-    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE) != 0;
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE) != 0;
 }
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
@@ -1562,7 +1580,7 @@ VM_ENV_PREV_EP(const VALUE *ep)
 }
 
 static inline bool
-VM_ENV_NAMESPACED_P(const VALUE *ep)
+VM_ENV_BOXED_P(const VALUE *ep)
 {
     return VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CLASS) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP);
 }
@@ -1570,7 +1588,7 @@ VM_ENV_NAMESPACED_P(const VALUE *ep)
 static inline VALUE
 VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
-    if (VM_ENV_NAMESPACED_P(ep)) {
+    if (VM_ENV_BOXED_P(ep)) {
         VM_ASSERT(VM_ENV_LOCAL_P(ep));
         return VM_BLOCK_HANDLER_NONE;
     }
@@ -1579,18 +1597,18 @@ VM_ENV_BLOCK_HANDLER(const VALUE *ep)
     return ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
-static inline const rb_namespace_t *
-VM_ENV_NAMESPACE(const VALUE *ep)
+static inline const rb_box_t *
+VM_ENV_BOX(const VALUE *ep)
 {
-    VM_ASSERT(VM_ENV_NAMESPACED_P(ep));
+    VM_ASSERT(VM_ENV_BOXED_P(ep));
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
-    return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+    return (const rb_box_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }
 
-static inline const rb_namespace_t *
-VM_ENV_NAMESPACE_UNCHECKED(const VALUE *ep)
+static inline const rb_box_t *
+VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 {
-    return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+    return (const rb_box_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }
 
 #if VM_CHECK_MODE > 0
@@ -1913,7 +1931,7 @@ NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int 
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_iseq_eval(const rb_iseq_t *iseq, const rb_namespace_t *ns);
+VALUE rb_iseq_eval(const rb_iseq_t *iseq, const rb_box_t *box);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
@@ -2018,13 +2036,21 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
-RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
-RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
+RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags; // only ever added to
+RUBY_EXTERN unsigned int ruby_vm_iseq_events_enabled;
+RUBY_EXTERN unsigned int ruby_vm_c_events_enabled;
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()
 #define GET_THREAD() rb_current_thread()
 #define GET_EC()     rb_current_execution_context(true)
+
+static inline rb_serial_t
+rb_ec_serial(struct rb_execution_context_struct *ec)
+{
+    VM_ASSERT(ec->serial >= 1);
+    return ec->serial;
+}
 
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
@@ -2043,6 +2069,14 @@ rb_ec_ractor_ptr(const rb_execution_context_t *ec)
     else {
         return NULL;
     }
+}
+
+static inline rb_serial_t
+rb_ec_ractor_id(const rb_execution_context_t *ec)
+{
+    rb_serial_t ractor_id = ec->ractor_id;
+    RUBY_ASSERT(ractor_id);
+    return ractor_id;
 }
 
 static inline rb_vm_t *
@@ -2073,9 +2107,9 @@ rb_current_execution_context(bool expect_ec)
      * and the address of the `ruby_current_ec` can be stored on a function
      * frame. However, this address can be mis-used after native thread
      * migration of a coroutine.
-     *   1) Get `ptr =&ruby_current_ec` op NT1 and store it on the frame.
+     *   1) Get `ptr = &ruby_current_ec` on NT1 and store it on the frame.
      *   2) Context switch and resume it on the NT2.
-     *   3) `ptr` is used on NT2 but it accesses to the TLS on NT1.
+     *   3) `ptr` is used on NT2 but it accesses the TLS of NT1.
      * This assertion checks such misusage.
      *
      * To avoid accidents, `GET_EC()` should be called once on the frame.
@@ -2254,8 +2288,9 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
-void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
-void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);
+void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
+bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
+unsigned int rb_hook_list_count(rb_hook_list_t *list);
 
 void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *hooks, int pop_p);
 
@@ -2294,6 +2329,8 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
+    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 
 static inline rb_hook_list_t *
@@ -2303,11 +2340,31 @@ rb_ec_ractor_hooks(const rb_execution_context_t *ec)
     return &cr_pub->hooks;
 }
 
+static inline rb_hook_list_t *
+rb_vm_global_hooks(const rb_execution_context_t *ec)
+{
+    return &rb_ec_vm_ptr(ec)->global_hooks;
+}
+
+static inline rb_hook_list_t *
+rb_ec_hooks(const rb_execution_context_t *ec, rb_event_flag_t event)
+{
+    // Should be a single bit set
+    VM_ASSERT(event != 0 && ((event - 1) & event) == 0);
+
+    if (event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK) {
+        return rb_vm_global_hooks(ec);
+    }
+    else {
+        return rb_ec_ractor_hooks(ec);
+    }
+}
+
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_hooks(ec_, flag_), flag_, self_, id_, called_id_, klass_, data_, 0)
 
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_hooks(ec_, flag_), flag_, self_, id_, called_id_, klass_, data_, 1)
 
 static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)

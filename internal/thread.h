@@ -56,8 +56,8 @@ VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 void ruby_mn_threads_params(void);
 
-int rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout);
-int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
+int rb_thread_io_wait(struct rb_thread_struct *th, struct rb_io *io, int events, struct timeval * timeout);
+int rb_thread_wait_for_single_fd(struct rb_thread_struct *th, int fd, int events, struct timeval * timeout);
 
 size_t rb_thread_io_close_interrupt(struct rb_io *);
 void rb_thread_io_close_wait(struct rb_io *);

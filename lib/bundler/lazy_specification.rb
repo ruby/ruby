@@ -138,24 +138,16 @@ module Bundler
       source.local!
 
       if use_exact_resolved_specifications?
-        materialize(self) do |matching_specs|
-          choose_compatible(matching_specs)
+        spec = materialize(self) {|specs| choose_compatible(specs, fallback_to_non_installable: false) }
+        return spec if spec
+
+        # Exact spec is incompatible; in frozen mode, try to find a compatible platform variant
+        # In non-frozen mode, return nil to trigger re-resolution and lockfile update
+        if Bundler.frozen_bundle?
+          materialize([name, version]) {|specs| resolve_best_platform(specs) }
         end
       else
-        materialize([name, version]) do |matching_specs|
-          target_platform = source.is_a?(Source::Path) ? platform : Bundler.local_platform
-
-          installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, target_platform)
-
-          specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
-          return specification unless specification.nil?
-
-          if target_platform != platform
-            installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, platform)
-          end
-
-          choose_compatible(installable_candidates)
-        end
+        materialize([name, version]) {|specs| resolve_best_platform(specs) }
       end
     end
 
@@ -188,6 +180,39 @@ module Bundler
 
     def use_exact_resolved_specifications?
       !source.is_a?(Source::Path) && ruby_platform_materializes_to_ruby_platform?
+    end
+
+    # Try platforms in order of preference until finding a compatible spec.
+    # Used for legacy lockfiles and as a fallback when the exact locked spec
+    # is incompatible. Falls back to frozen bundle behavior if none match.
+    def resolve_best_platform(specs)
+      find_compatible_platform_spec(specs) || frozen_bundle_fallback(specs)
+    end
+
+    def find_compatible_platform_spec(specs)
+      candidate_platforms.each do |plat|
+        candidates = MatchPlatform.select_best_platform_match(specs, plat)
+        spec = choose_compatible(candidates, fallback_to_non_installable: false)
+        return spec if spec
+      end
+      nil
+    end
+
+    # Platforms to try in order of preference. Ruby platform is last since it
+    # requires compilation, but works when precompiled gems are incompatible.
+    def candidate_platforms
+      target = source.is_a?(Source::Path) ? platform : Bundler.local_platform
+      [target, platform, Gem::Platform::RUBY].uniq
+    end
+
+    # In frozen mode, accept any candidate. Will error at install time.
+    # When target differs from locked platform, prefer locked platform's candidates
+    # to preserve lockfile integrity.
+    def frozen_bundle_fallback(specs)
+      target = source.is_a?(Source::Path) ? platform : Bundler.local_platform
+      fallback_platform = target == platform ? target : platform
+      candidates = MatchPlatform.select_best_platform_match(specs, fallback_platform)
+      choose_compatible(candidates)
     end
 
     def ruby_platform_materializes_to_ruby_platform?

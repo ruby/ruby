@@ -2,6 +2,9 @@
 #define INTERNAL_ATOMIC_H
 
 #include "ruby/atomic.h"
+#ifdef HAVE_STDATOMIC_H
+# include <stdatomic.h>
+#endif
 
 #define RUBY_ATOMIC_VALUE_LOAD(x) rbimpl_atomic_value_load(&(x), RBIMPL_ATOMIC_SEQ_CST)
 
@@ -43,6 +46,8 @@ rbimpl_atomic_u64_load_relaxed(const volatile rbimpl_atomic_uint64_t *value)
     uint64_t val = *value;
     return atomic_cas_64(value, val, val);
 #else
+    // TODO: stdatomic
+
     return *value;
 #endif
 }
@@ -58,6 +63,8 @@ rbimpl_atomic_u64_set_relaxed(volatile rbimpl_atomic_uint64_t *address, uint64_t
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_swap_64(address, value);
 #else
+    // TODO: stdatomic
+
     *address = value;
 #endif
 }

@@ -5,14 +5,10 @@ rescue LoadError
 end
 require 'test/unit'
 
+return unless defined?(OpenSSL::SSL)
+
 class HTTPSProxyTest < Test::Unit::TestCase
   def test_https_proxy_authentication
-    begin
-      OpenSSL
-    rescue LoadError
-      omit 'autoload problem. see [ruby-dev:45021][Bug #5786]'
-    end
-
     TCPServer.open("127.0.0.1", 0) {|serv|
       _, port, _, _ = serv.addr
       client_thread = Thread.new {
@@ -50,12 +46,6 @@ class HTTPSProxyTest < Test::Unit::TestCase
   end
 
   def test_https_proxy_ssl_connection
-    begin
-      OpenSSL
-    rescue LoadError
-      omit 'autoload problem. see [ruby-dev:45021][Bug #5786]'
-    end
-
     TCPServer.open("127.0.0.1", 0) {|tcpserver|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.key = OpenSSL::PKey.read(read_fixture("server.key"))
@@ -91,4 +81,4 @@ class HTTPSProxyTest < Test::Unit::TestCase
       assert_join_threads([client_thread, server_thread])
     }
   end
-end if defined?(OpenSSL)
+end

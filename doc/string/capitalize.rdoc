@@ -1,0 +1,28 @@
+Returns a string containing the characters in +self+,
+each with possibly changed case:
+
+- The first character made uppercase.
+- All other characters are made lowercase.
+
+Examples:
+
+  'hello'.capitalize  # => "Hello"
+  'HELLO'.capitalize  # => "Hello"
+  'straße'.capitalize # => "Straße"  # Lowercase 'ß' not changed.
+  'STRAẞE'.capitalize # => "Straße"  # Uppercase 'ẞ' downcased to 'ß'.
+  'привет'.capitalize # => "Привет"
+  'ПРИВЕТ'.capitalize # => "Привет"
+
+Some characters (and some character sets) do not have upcase and downcase versions;
+see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+
+  s = '1, 2, 3, ...'
+  s.capitalize == s # => true
+  s = 'こんにちは'
+  s.capitalize == s # => true
+
+The casing is affected by the given +mapping+,
+which may be +:ascii+, +:fold+, or +:turkic+;
+see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

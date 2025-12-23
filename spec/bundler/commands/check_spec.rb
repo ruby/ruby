@@ -336,7 +336,7 @@ RSpec.describe "bundle check" do
           myrack
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -411,7 +411,7 @@ RSpec.describe "bundle check" do
           depends_on_myrack!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -482,7 +482,7 @@ RSpec.describe "bundle check" do
           dex-dispatch-engine!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end

@@ -2,14 +2,14 @@
 
 # Load CGI.escapeHTML and CGI.escapeURIComponent.
 # CRuby:
-#   cgi.gem v0.1.0+ (Ruby 2.7-3.4) and Ruby 3.5+ stdlib have 'cgi/escape' and CGI.escapeHTML.
-#   cgi.gem v0.3.3+ (Ruby 3.2-3.4) and Ruby 3.5+ stdlib have CGI.escapeURIComponent.
+#   cgi.gem v0.1.0+ (Ruby 2.7-3.4) and Ruby 4.0+ stdlib have 'cgi/escape' and CGI.escapeHTML.
+#   cgi.gem v0.3.3+ (Ruby 3.2-3.4) and Ruby 4.0+ stdlib have CGI.escapeURIComponent.
 # JRuby: cgi.gem has a Java extension 'cgi/escape'.
 # TruffleRuby: lib/truffle/cgi/escape.rb requires 'cgi/util'.
 require 'cgi/escape'
 
 # Load or define ERB::Escape#html_escape.
-# We don't build the C extention 'cgi/escape' for JRuby, TruffleRuby, and WASM.
+# We don't build the C extension 'cgi/escape' for JRuby, TruffleRuby, and WASM.
 # miniruby (used by CRuby build scripts) also fails to load erb/escape.so.
 begin
   require 'erb/escape'
@@ -19,6 +19,7 @@ rescue LoadError
   # A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope
   # Rails will not monkey-patch ERB::Escape#html_escape.
   module ERB::Escape
+    # :stopdoc:
     def html_escape(s)
       CGI.escapeHTML(s.to_s)
     end

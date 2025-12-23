@@ -31,6 +31,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     gemspec = util_spec "bundler", "9.9.9" do |s|
       s.bindir = "exe"
       s.executables = ["bundle", "bundler"]
+      s.files = ["lib/bundler.rb"]
     end
 
     File.open "bundler/bundler.gemspec", "w" do |io|
@@ -222,6 +223,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     assert_path_exist "#{Gem.dir}/gems/bundler-#{bundler_version}"
     assert_path_exist "#{Gem.dir}/gems/bundler-audit-1.0.0"
+
+    assert_path_exist "#{Gem.dir}/gems/bundler-#{bundler_version}/exe/bundle"
+    assert_path_not_exist "#{Gem.dir}/gems/bundler-#{bundler_version}/lib/bundler.rb"
   end
 
   def test_install_default_bundler_gem_with_default_gems_not_installed_at_default_dir

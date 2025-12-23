@@ -8,7 +8,7 @@
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args = [], lib_dir = nil, extension_dir = Dir.pwd,
-    target_rbconfig = Gem.target_rbconfig)
+    target_rbconfig = Gem.target_rbconfig, n_jobs: nil)
     require "fileutils"
     require "tempfile"
 
@@ -41,7 +41,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       ENV["DESTDIR"] = nil
 
-      make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig
+      make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig, n_jobs: n_jobs
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 

@@ -6,7 +6,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "deprecate"
 require_relative "text"
 
 ##
@@ -170,8 +169,6 @@ end
 # Gem::StreamUI implements a simple stream based user interface.
 
 class Gem::StreamUI
-  extend Gem::Deprecate
-
   ##
   # The input stream
 

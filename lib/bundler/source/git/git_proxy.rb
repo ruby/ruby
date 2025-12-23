@@ -121,7 +121,7 @@ module Bundler
                 FileUtils.rm_rf(p)
               end
               git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
-              File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
+              File.chmod((File.stat(destination).mode | 0o777) & ~File.umask, destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
               raise GitError, "Bundler could not install a gem because it needs to " \

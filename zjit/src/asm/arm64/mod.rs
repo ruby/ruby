@@ -241,7 +241,7 @@ pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
 
             SBFM::asr(rd.reg_no, rn.reg_no, shift.try_into().unwrap(), rd.num_bits).into()
         },
-        _ => panic!("Invalid operand combination to asr instruction: asr {:?}, {:?}, {:?}", rd, rn, shift),
+        _ => panic!("Invalid operand combination to asr instruction: asr {rd:?}, {rn:?}, {shift:?}"),
     };
 
     cb.write_bytes(&bytes);
@@ -649,7 +649,7 @@ pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
 
             ShiftImm::lsl(rd.reg_no, rn.reg_no, uimm as u8, rd.num_bits).into()
         },
-        _ => panic!("Invalid operands combination to lsl instruction")
+        _ => panic!("Invalid operands combination {rd:?} {rn:?} {shift:?} to lsl instruction")
     };
 
     cb.write_bytes(&bytes);
@@ -1026,7 +1026,21 @@ pub fn sturh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 
             LoadStore::sturh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
         },
-        _ => panic!("Invalid operand combination to stur instruction.")
+        _ => panic!("Invalid operand combination to sturh instruction: {rt:?}, {rn:?}")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+pub fn sturb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rn.num_bits == 8);
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement {} to be 9 bits or less", rn.disp);
+
+            LoadStore::sturb(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to sturb instruction: {rt:?}, {rn:?}")
     };
 
     cb.write_bytes(&bytes);

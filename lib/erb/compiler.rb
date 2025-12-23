@@ -225,7 +225,7 @@ class ERB::Compiler # :nodoc:
       end
     end
 
-    ERB_STAG = %w(<%= <%# <%)
+    ERB_STAG = %w(<%= <%# <%).freeze
     def is_erb_stag?(s)
       ERB_STAG.member?(s)
     end
@@ -480,7 +480,6 @@ class ERB::Compiler # :nodoc:
     end
   }.new(caller(0)).c
   private_constant :WARNING_UPLEVEL
-  # :startdoc:
 
   def warn_invalid_trim_mode(mode, uplevel:)
     warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + WARNING_UPLEVEL

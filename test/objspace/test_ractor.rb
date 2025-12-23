@@ -52,4 +52,32 @@ class TestObjSpaceRactor < Test::Unit::TestCase
       ractors.each(&:join)
     RUBY
   end
+
+  def test_trace_object_allocations_with_ractor_tracepoint
+    # Test that ObjectSpace.trace_object_allocations works globally across all Ractors
+    assert_ractor(<<~'RUBY', require: 'objspace')
+      ObjectSpace.trace_object_allocations do
+        obj1 = Object.new; line1 = __LINE__
+        assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj1)
+        assert_equal line1, ObjectSpace.allocation_sourceline(obj1)
+
+        r = Ractor.new {
+          obj = Object.new; line = __LINE__
+          [line, obj]
+        }
+
+        obj2 = Object.new; line2 = __LINE__
+        assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj2)
+        assert_equal line2, ObjectSpace.allocation_sourceline(obj2)
+
+        expected_line, ractor_obj = r.value
+        assert_equal __FILE__, ObjectSpace.allocation_sourcefile(ractor_obj)
+        assert_equal expected_line, ObjectSpace.allocation_sourceline(ractor_obj)
+
+        obj3 = Object.new; line3 = __LINE__
+        assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj3)
+        assert_equal line3, ObjectSpace.allocation_sourceline(obj3)
+      end
+    RUBY
+  end
 end

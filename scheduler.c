@@ -28,6 +28,8 @@ static ID id_scheduler_close;
 static ID id_block;
 static ID id_unblock;
 
+static ID id_yield;
+
 static ID id_timeout_after;
 static ID id_kernel_sleep;
 static ID id_process_wait;
@@ -321,6 +323,7 @@ Init_Fiber_Scheduler(void)
 
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
+    id_yield = rb_intern_const("yield");
 
     id_timeout_after = rb_intern_const("timeout_after");
     id_kernel_sleep = rb_intern_const("kernel_sleep");
@@ -448,7 +451,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
 }
 
 static VALUE
-rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
+fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
     RUBY_ASSERT(thread);
 
@@ -460,15 +463,22 @@ rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
     }
 }
 
-VALUE
-rb_fiber_scheduler_current(void)
+VALUE rb_fiber_scheduler_current(void)
 {
-    return rb_fiber_scheduler_current_for_threadptr(GET_THREAD());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
+    return fiber_scheduler_current_for_threadptr(GET_THREAD());
 }
 
+// This function is allowed to be called without holding the GVL.
 VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 {
-    return rb_fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
+    return fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
+}
+
+VALUE rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
+{
+    return fiber_scheduler_current_for_threadptr(thread);
 }
 
 /*
@@ -534,6 +544,23 @@ VALUE
 rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
 {
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
+}
+
+/**
+ *  Document-method: Fiber::Scheduler#yield
+ *  call-seq: yield
+ *
+ *  Yield to the scheduler, to be resumed on the next scheduling cycle.
+ */
+VALUE
+rb_fiber_scheduler_yield(VALUE scheduler)
+{
+    // First try to call the scheduler's yield method, if it exists:
+    VALUE result = rb_check_funcall(scheduler, id_yield, 0, NULL);
+    if (!UNDEF_P(result)) return result;
+
+    // Otherwise, we can emulate yield by sleeping for 0 seconds:
+    return rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2NUM(0));
 }
 
 #if 0
@@ -929,6 +956,8 @@ fiber_scheduler_io_pwrite(VALUE _argument) {
 VALUE
 rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
 {
+
+
     if (!rb_respond_to(scheduler, id_io_pwrite)) {
         return RUBY_Qundef;
     }

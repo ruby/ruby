@@ -1,9 +1,11 @@
 use crate::abi::GCThreadTLS;
 
 use crate::api::RubyMutator;
+use crate::heap::RubyHeapTrigger;
 use crate::{mmtk, upcalls, Ruby};
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
+use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::{VMMutatorThread, VMThread, VMWorkerThread};
 use mmtk::vm::{Collection, GCThreadContext};
 use std::sync::atomic::Ordering;
@@ -66,6 +68,10 @@ impl Collection<Ruby> for VMCollection {
 
     fn vm_live_bytes() -> usize {
         (upcalls().vm_live_bytes)()
+    }
+
+    fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {
+        Box::new(RubyHeapTrigger::default())
     }
 }
 

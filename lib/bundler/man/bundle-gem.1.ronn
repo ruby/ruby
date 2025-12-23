@@ -51,8 +51,8 @@ configuration file using the following names:
   Do not create a `CHANGELOG.md` (overrides `--changelog` specified in the
   global config).
 
-* `--ext=c`, `--ext=rust`:
-  Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
+* `--ext=c`, `--ext=go`, `--ext=rust`:
+  Add boilerplate for C, Go (currently [go-gem-wrapper](https://github.com/ruby-go-gem/go-gem-wrapper) based) or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
 
 * `--no-ext`:

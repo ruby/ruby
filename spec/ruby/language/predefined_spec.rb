@@ -687,7 +687,7 @@ describe "Predefined global $/" do
     $VERBOSE = @verbose
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "can be assigned a String" do
       str = +"abc"
       $/ = str
@@ -695,7 +695,7 @@ describe "Predefined global $/" do
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "makes a new frozen String from the assigned String" do
       string_subclass = Class.new(String)
       str = string_subclass.new("abc")
@@ -748,6 +748,10 @@ describe "Predefined global $/" do
   it "raises a TypeError if assigned a boolean" do
     -> { $/ = true }.should raise_error(TypeError, 'value of $/ must be String')
   end
+
+  it "warns if assigned non-nil" do
+    -> { $/ = "_" }.should complain(/warning: (?:non-nil )?[`']\$\/' is deprecated/)
+  end
 end
 
 describe "Predefined global $-0" do
@@ -763,7 +767,7 @@ describe "Predefined global $-0" do
     $VERBOSE = @verbose
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "can be assigned a String" do
       str = +"abc"
       $-0 = str
@@ -771,7 +775,7 @@ describe "Predefined global $-0" do
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "makes a new frozen String from the assigned String" do
       string_subclass = Class.new(String)
       str = string_subclass.new("abc")
@@ -825,6 +829,10 @@ describe "Predefined global $-0" do
   it "raises a TypeError if assigned a boolean" do
     -> { $-0 = true }.should raise_error(TypeError, 'value of $-0 must be String')
   end
+
+  it "warns if assigned non-nil" do
+    -> { $-0 = "_" }.should complain(/warning: (?:non-nil )?[`']\$-0' is deprecated/)
+  end
 end
 
 describe "Predefined global $\\" do
@@ -864,6 +872,10 @@ describe "Predefined global $\\" do
     -> { $\ = 1 }.should raise_error(TypeError, 'value of $\ must be String')
     -> { $\ = true }.should raise_error(TypeError, 'value of $\ must be String')
   end
+
+  it "warns if assigned non-nil" do
+    -> { $\ = "_" }.should complain(/warning: (?:non-nil )?[`']\$\\' is deprecated/)
+  end
 end
 
 describe "Predefined global $," do
@@ -880,7 +892,7 @@ describe "Predefined global $," do
   end
 
   it "warns if assigned non-nil" do
-    -> { $, = "_" }.should complain(/warning: [`']\$,' is deprecated/)
+    -> { $, = "_" }.should complain(/warning: (?:non-nil )?[`']\$,' is deprecated/)
   end
 end
 
@@ -917,7 +929,7 @@ describe "Predefined global $;" do
   end
 
   it "warns if assigned non-nil" do
-    -> { $; = "_" }.should complain(/warning: [`']\$;' is deprecated/)
+    -> { $; = "_" }.should complain(/warning: (?:non-nil )?[`']\$;' is deprecated/)
   end
 end
 

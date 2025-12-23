@@ -92,6 +92,46 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"World"', "World".to_json(strict: true)
   end
 
+  def test_state_depth_to_json
+    depth = Object.new
+    def depth.to_json(state)
+      JSON::State.from_state(state).depth.to_s
+    end
+
+    assert_equal "0", JSON.generate(depth)
+    assert_equal "[1]", JSON.generate([depth])
+    assert_equal %({"depth":1}), JSON.generate(depth: depth)
+    assert_equal "[[2]]", JSON.generate([[depth]])
+    assert_equal %([{"depth":2}]), JSON.generate([{depth: depth}])
+
+    state = JSON::State.new
+    assert_equal "0", state.generate(depth)
+    assert_equal "[1]", state.generate([depth])
+    assert_equal %({"depth":1}), state.generate(depth: depth)
+    assert_equal "[[2]]", state.generate([[depth]])
+    assert_equal %([{"depth":2}]), state.generate([{depth: depth}])
+  end
+
+  def test_state_depth_to_json_recursive
+    recur = Object.new
+    def recur.to_json(state = nil, *)
+      state = JSON::State.from_state(state)
+      if state.depth < 3
+        state.generate([state.depth, self])
+      else
+        state.generate([state.depth])
+      end
+    end
+
+    assert_raise(NestingError) { JSON.generate(recur, max_nesting: 3) }
+    assert_equal "[0,[1,[2,[3]]]]", JSON.generate(recur, max_nesting: 4)
+
+    state = JSON::State.new(max_nesting: 3)
+    assert_raise(NestingError) { state.generate(recur) }
+    state.max_nesting = 4
+    assert_equal "[0,[1,[2,[3]]]]", JSON.generate(recur, max_nesting: 4)
+  end
+
   def test_generate_pretty
     json = pretty_generate({})
     assert_equal('{}', json)
@@ -183,7 +223,9 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal('{"1":2}', json)
     s = JSON.state.new
     assert s.check_circular?
-    assert s[:check_circular?]
+    assert_deprecated_warning(/JSON::State/) do
+      assert s[:check_circular?]
+    end
     h = { 1=>2 }
     h[3] = h
     assert_raise(JSON::NestingError) {  generate(h) }
@@ -193,7 +235,9 @@ class JSONGeneratorTest < Test::Unit::TestCase
     a << a
     assert_raise(JSON::NestingError) {  generate(a, s) }
     assert s.check_circular?
-    assert s[:check_circular?]
+    assert_deprecated_warning(/JSON::State/) do
+      assert s[:check_circular?]
+    end
   end
 
   def test_falsy_state
@@ -277,14 +321,100 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  # An object that changes state.depth when it receives to_json(state)
+  def bad_to_json
+    obj = Object.new
+    def obj.to_json(state)
+      state.depth += 1
+      "{#{state.object_nl}"\
+        "#{state.indent * state.depth}\"foo\":#{state.space}1#{state.object_nl}"\
+        "#{state.indent * (state.depth - 1)}}"
+    end
+    obj
+  end
+
+  def test_depth_restored_bad_to_json
+    state = JSON::State.new
+    state.generate(bad_to_json)
+    assert_equal 0, state.depth
+  end
+
+  def test_depth_restored_bad_to_json_in_Array
+    assert_equal <<~JSON.chomp, JSON.pretty_generate([bad_to_json] * 2)
+      [
+        {
+          "foo": 1
+        },
+        {
+          "foo": 1
+        }
+      ]
+    JSON
+    state = JSON::State.new
+    state.generate([bad_to_json])
+    assert_equal 0, state.depth
+  end
+
+  def test_depth_restored_bad_to_json_in_Hash
+    assert_equal <<~JSON.chomp, JSON.pretty_generate(a: bad_to_json, b: bad_to_json)
+      {
+        "a": {
+          "foo": 1
+        },
+        "b": {
+          "foo": 1
+        }
+      }
+    JSON
+    state = JSON::State.new
+    state.generate(a: bad_to_json)
+    assert_equal 0, state.depth
+  end
+
   def test_depth
+    pretty = { object_nl: "\n", array_nl: "\n", space: " ", indent: "  " }
+    state = JSON.state.new(**pretty)
+    assert_equal %({\n  "foo": 42\n}), JSON.generate({ foo: 42 }, pretty)
+    assert_equal %({\n  "foo": 42\n}), state.generate(foo: 42)
+    state.depth = 1
+    assert_equal %({\n    "foo": 42\n  }), JSON.generate({ foo: 42 }, pretty.merge(depth: 1))
+    assert_equal %({\n    "foo": 42\n  }), state.generate(foo: 42)
+  end
+
+  def test_depth_nesting_error
     ary = []; ary << ary
     assert_raise(JSON::NestingError) { generate(ary) }
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
-    s = JSON.state.new
-    assert_equal 0, s.depth
+  end
+
+  def test_depth_nesting_error_to_json
+    ary = []; ary << ary
+    s = JSON.state.new(depth: 1)
     assert_raise(JSON::NestingError) { ary.to_json(s) }
-    assert_equal 100, s.depth
+    assert_equal 1, s.depth
+  end
+
+  def test_depth_nesting_error_Hash_to_json
+    hash = {}; hash[:a] = hash
+    s = JSON.state.new(depth: 1)
+    assert_raise(JSON::NestingError) { hash.to_json(s) }
+    assert_equal 1, s.depth
+  end
+
+  def test_depth_nesting_error_generate
+    ary = []; ary << ary
+    s = JSON.state.new(depth: 1)
+    assert_raise(JSON::NestingError) { s.generate(ary) }
+    assert_equal 1, s.depth
+  end
+
+  def test_depth_exception_calling_to_json
+    def (obj = Object.new).to_json(*)
+      raise
+    end
+    s = JSON.state.new(depth: 1).freeze
+    assert_raise(RuntimeError) { s.generate([{ hash: obj }]) }
+    assert_equal 1, s.depth
   end
 
   def test_buffer_initial_length
@@ -375,28 +505,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_hash_likeness_set_symbol
-    state = JSON.state.new
-    assert_equal nil, state[:foo]
-    assert_equal nil.class, state[:foo].class
-    assert_equal nil, state['foo']
-    state[:foo] = :bar
-    assert_equal :bar, state[:foo]
-    assert_equal :bar, state['foo']
-    state_hash = state.to_hash
-    assert_kind_of Hash, state_hash
-    assert_equal :bar, state_hash[:foo]
+    assert_deprecated_warning(/JSON::State/) do
+      state = JSON.state.new
+      assert_equal nil, state[:foo]
+      assert_equal nil.class, state[:foo].class
+      assert_equal nil, state['foo']
+      state[:foo] = :bar
+      assert_equal :bar, state[:foo]
+      assert_equal :bar, state['foo']
+      state_hash = state.to_hash
+      assert_kind_of Hash, state_hash
+      assert_equal :bar, state_hash[:foo]
+    end
   end
 
   def test_hash_likeness_set_string
-    state = JSON.state.new
-    assert_equal nil, state[:foo]
-    assert_equal nil, state['foo']
-    state['foo'] = :bar
-    assert_equal :bar, state[:foo]
-    assert_equal :bar, state['foo']
-    state_hash = state.to_hash
-    assert_kind_of Hash, state_hash
-    assert_equal :bar, state_hash[:foo]
+    assert_deprecated_warning(/JSON::State/) do
+      state = JSON.state.new
+      assert_equal nil, state[:foo]
+      assert_equal nil, state['foo']
+      state['foo'] = :bar
+      assert_equal :bar, state[:foo]
+      assert_equal :bar, state['foo']
+      state_hash = state.to_hash
+      assert_kind_of Hash, state_hash
+      assert_equal :bar, state_hash[:foo]
+    end
   end
 
   def test_json_state_to_h_roundtrip
@@ -825,6 +959,15 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
   end
 
+  def test_as_json_nan_does_not_call_to_json
+    def (obj = Object.new).to_json(*)
+      "null"
+    end
+    assert_raise(JSON::GeneratorError) do
+      JSON.generate(Float::NAN, strict: true, as_json: proc { obj })
+    end
+  end
+
   def assert_float_roundtrip(expected, actual)
     assert_equal(expected, JSON.generate(actual))
     assert_equal(actual, JSON.parse(JSON.generate(actual)), "JSON: #{JSON.generate(actual)}")
@@ -892,5 +1035,29 @@ class JSONGeneratorTest < Test::Unit::TestCase
       JSON.generate(hash, allow_duplicate_key: false)
     end
     assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
+  end
+
+  def test_frozen
+    state = JSON::State.new.freeze
+    assert_raise(FrozenError) do
+      state.configure(max_nesting: 1)
+    end
+    setters = state.methods.grep(/\w=$/)
+    assert_not_empty setters
+    setters.each do |setter|
+      assert_raise(FrozenError) do
+        state.send(setter, 1)
+      end
+    end
+  end
+
+  # The case when the State is frozen is tested in JSONCoderTest#test_nesting_recovery
+  def test_nesting_recovery
+    state = JSON::State.new
+    ary = []
+    ary << ary
+    assert_raise(JSON::NestingError) { state.generate(ary) }
+    assert_equal 0, state.depth
+    assert_equal '{"a":1}', state.generate({ a: 1 })
   end
 end
