@@ -157,6 +157,11 @@ RSpec.describe "bundle install with specific platforms" do
   end
 
   context "when running on a legacy lockfile locked only to ruby" do
+    # Exercises the legacy lockfile path (use_exact_resolved_specifications? = false)
+    # because most_specific_locked_platform is ruby, matching the generic platform.
+    # Key insight: when target (arm64-darwin-22) != platform (ruby), the code tries
+    # both platforms before falling back, preserving lockfile integrity.
+
     around do |example|
       build_repo4 do
         build_gem "nokogiri", "1.3.10"
@@ -192,13 +197,69 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     it "still installs the generic ruby variant if necessary" do
-      bundle "install --verbose"
-      expect(out).to include("Installing nokogiri 1.3.10")
+      bundle "install"
+      expect(the_bundle).to include_gem("nokogiri 1.3.10")
+      expect(the_bundle).not_to include_gem("nokogiri 1.3.10 arm64-darwin")
     end
 
     it "still installs the generic ruby variant if necessary, even in frozen mode" do
-      bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }
-      expect(out).to include("Installing nokogiri 1.3.10")
+      bundle "install", env: { "BUNDLE_FROZEN" => "true" }
+      expect(the_bundle).to include_gem("nokogiri 1.3.10")
+      expect(the_bundle).not_to include_gem("nokogiri 1.3.10 arm64-darwin")
+    end
+  end
+
+  context "when platform-specific gem has incompatible required_ruby_version" do
+    # Key insight: candidate_platforms tries [target, platform, ruby] in order.
+    # Ruby platform is last since it requires compilation, but works when
+    # precompiled gems are incompatible with the current Ruby version.
+    #
+    # Note: This fix requires the lockfile to include both ruby and platform-
+    # specific variants (typical after `bundle lock --add-platform`). If the
+    # lockfile only has platform-specific gems, frozen mode cannot help because
+    # Bundler.setup would still expect the locked (incompatible) gem.
+
+    # Exercises the exact spec path (use_exact_resolved_specifications? = true)
+    # because lockfile has platform-specific entry as most_specific_locked_platform
+    it "falls back to ruby platform in frozen mode when lockfile includes both variants" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.10"
+        build_gem "nokogiri", "1.18.10" do |s|
+          s.platform = "x86_64-linux"
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+
+      # Lockfile has both ruby and platform-specific gem (typical after `bundle lock --add-platform`)
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10)
+            nokogiri (1.18.10-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "install", env: { "BUNDLE_FROZEN" => "true" }
+        expect(the_bundle).to include_gem("nokogiri 1.18.10")
+        expect(the_bundle).not_to include_gem("nokogiri 1.18.10 x86_64-linux")
+      end
     end
   end
 
