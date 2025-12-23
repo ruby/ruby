@@ -780,7 +780,7 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
-  def test_loading_extension_libs_in_main_box
+  def test_loading_extension_libs_in_main_box_1
     pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -797,6 +797,15 @@ class TestBox < Test::Unit::TestCase
       require "json"
       require "psych"
       require "yaml"
+      expected = 1
+      assert_equal expected, 1
+    end;
+  end
+
+  def test_loading_extension_libs_in_main_box_2
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
       require "zlib"
       require "open3"
       require "ipaddr"
