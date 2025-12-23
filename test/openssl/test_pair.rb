@@ -395,6 +395,28 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_puts
+    ssl_pair {|s1, s2|
+      s1.puts "a\n", "b"
+      s1.puts nil
+      s1.close
+      assert_equal("a\nb\n\n", s2.read)
+    }
+  end
+
+  def test_puts_array
+    ssl_pair {|s1, s2|
+      s1.puts ["a\n", ["b", ["c"]]]
+      s1.puts [], [[]]
+      def (obj = Object.new).to_ary
+        ["d", []]
+      end
+      s1.puts obj
+      s1.close
+      assert_equal("a\nb\nc\nd\n", s2.read)
+    }
+  end
+
   def test_puts_empty
     ssl_pair {|s1, s2|
       s1.puts

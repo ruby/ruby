@@ -524,19 +524,24 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Writes _args_ to the stream along with a record separator.
+  # Writes _args_ to the stream along with a newline.
   #
   # See IO#puts for full details.
 
   def puts(*args)
-    s = String.new
     if args.empty?
-      s.append_as_bytes("\n")
+      do_write("\n")
+      return nil
     end
-    args.each{|arg|
-      s.append_as_bytes(arg.to_s)
-      s.sub!(/(?<!\n)\z/, "\n")
-    }
+    # IO#puts writes "[...]" when it encounters a recursion (undocumented).
+    # We ignore that for now.
+    s = String.new
+    args.flatten!
+    args.each do |arg|
+      b = arg.to_s
+      s.append_as_bytes(b)
+      s.append_as_bytes("\n") unless b.getbyte(-1) == 0x0a
+    end
     do_write(s)
     nil
   end
