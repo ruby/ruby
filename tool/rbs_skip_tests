@@ -45,7 +45,3 @@ test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
-
-# BigDecimal v4.0.0 changed behavior
-test_divmod(BigDecimalTest)
-test_precs(BigDecimalTest)
