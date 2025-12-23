@@ -1615,9 +1615,10 @@ strio_write(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *   strio.putc(obj)    -> obj
+ *   putc(object) -> object
  *
- * See IO#putc.
+ * :include: stringio/putc.rdoc
+ *
  */
 static VALUE
 strio_putc(VALUE self, VALUE ch)
