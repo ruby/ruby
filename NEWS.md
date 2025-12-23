@@ -308,8 +308,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.2
-* bundler 4.0.2
+* RubyGems 4.0.3
+* bundler 4.0.3
 * date 3.5.1
 * delegate 0.6.1
 * digest 3.2.1
@@ -371,6 +371,7 @@ see the following links for details.
 * [4.0.0 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/03/4.0.0-released.html)
 * [4.0.1 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/09/4.0.1-released.html)
 * [4.0.2 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/17/4.0.2-released.html)
+* [4.0.3 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/23/4.0.3-released.html)
 
 ## Supported platforms
 
