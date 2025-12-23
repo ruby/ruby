@@ -1650,9 +1650,10 @@ strio_putc(VALUE self, VALUE ch)
 
 /*
  * call-seq:
- *   strio.read([length [, outbuf]])    -> string, outbuf, or nil
+ *   read(maxlen = nil, out_string = nil) → new_string, out_string, or nil
  *
- * See IO#read.
+ * :include: stringio/read.rdoc
+ *
  */
 static VALUE
 strio_read(int argc, VALUE *argv, VALUE self)
