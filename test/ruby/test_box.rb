@@ -3,10 +3,10 @@
 require 'test/unit'
 
 class TestBox < Test::Unit::TestCase
-  EXPERIMENTAL_WARNINGS = [
-    "warning: Ruby::Box is experimental, and the behavior may change in the future!",
-    "See doc/language/box.md for known issues, etc."
-  ].join("\n")
+  EXPERIMENTAL_WARNING_LINE_PATTERNS = [
+    /ruby(\.exe)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
+    %r{See https://docs.ruby-lang.org/en/(master|\d\.\d)/Ruby/Box.html for known issues, etc.}
+  ]
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
   def setup
@@ -650,8 +650,9 @@ class TestBox < Test::Unit::TestCase
       end;
 
       # No additional warnings except for experimental warnings
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
       assert_equal 2, error.size
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
       assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
@@ -672,8 +673,9 @@ class TestBox < Test::Unit::TestCase
         puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
       end;
 
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
       assert_equal 2, error.size
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
