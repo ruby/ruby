@@ -12,7 +12,7 @@ Note that each entry is kept to a minimum, see links for details.
 
 * Logical binary operators (`||`, `&&`, `and` and `or`) at the
   beginning of a line continue the previous line, like fluent dot.
-  The following two code examples are equal:
+  The following code examples are equal:
 
     ```ruby
     if condition1
@@ -21,8 +21,17 @@ Note that each entry is kept to a minimum, see links for details.
     end
     ```
 
+    Previously:
+
     ```ruby
     if condition1 && condition2
+      ...
+    end
+    ```
+
+    ```ruby
+    if condition1 &&
+       condition2
       ...
     end
     ```
@@ -277,7 +286,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.5.0
 * logger 1.7.0
-* rdoc 7.0.1
+* rdoc 7.0.2
 * win32ole 1.9.2
 * irb 1.16.0
 * reline 0.6.3
@@ -299,13 +308,14 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.2
-* bundler 4.0.2
+* RubyGems 4.0.3
+* bundler 4.0.3
 * date 3.5.1
 * delegate 0.6.1
 * digest 3.2.1
 * english 0.8.1
 * erb 6.0.1
+* error_highlight 0.7.1
 * etc 1.4.6
 * fcntl 1.3.0
 * fileutils 1.8.0
@@ -343,8 +353,8 @@ The following bundled gems are updated.
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
-* rbs 3.10.0.pre.2
-* typeprof 0.31.0
+* rbs 3.10.0
+* typeprof 0.31.1
 * debug 1.11.1
 * base64 0.3.0
 * bigdecimal 4.0.1
@@ -361,6 +371,7 @@ see the following links for details.
 * [4.0.0 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/03/4.0.0-released.html)
 * [4.0.1 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/09/4.0.1-released.html)
 * [4.0.2 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/17/4.0.2-released.html)
+* [4.0.3 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/23/4.0.3-released.html)
 
 ## Supported platforms
 

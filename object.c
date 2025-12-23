@@ -1766,21 +1766,33 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj <=> other -> 0 or nil
+ *     self <=> other -> 0 or nil
  *
- *  Returns 0 if +obj+ and +other+ are the same object
- *  or <code>obj == other</code>, otherwise nil.
+ *  Compares +self+ and +other+.
  *
- *  The #<=> is used by various methods to compare objects, for example
- *  Enumerable#sort, Enumerable#max etc.
+ *  Returns:
  *
- *  Your implementation of #<=> should return one of the following values: -1, 0,
- *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
- *  1 means self is bigger than other. Nil means the two values could not be
- *  compared.
+ *  - +0+, if +self+ and +other+ are the same object,
+ *    or if <tt>self == other</tt>.
+ *  - +nil+, otherwise.
  *
- *  When you define #<=>, you can include Comparable to gain the
- *  methods #<=, #<, #==, #>=, #> and #between?.
+ *  Examples:
+ *
+ *    o = Object.new
+ *    o <=> o     # => 0
+ *    o <=> o.dup # => nil
+ *
+ *  A class that includes module Comparable
+ *  should override this method by defining an instance method that:
+ *
+ *  - Take one argument, +other+.
+ *  - Returns:
+ *
+ *    - +-1+, if +self+ is less than +other+.
+ *    - +0+, if +self+ is equal to +other+.
+ *    - +1+, if +self+ is greater than +other+.
+ *    - +nil+, if the two values are incommensurate.
+ *
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)

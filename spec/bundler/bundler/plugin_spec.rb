@@ -279,6 +279,7 @@ RSpec.describe Bundler::Plugin do
         s.write "plugins.rb", code
       end
 
+      @old_constants = Bundler::Plugin::Events.constants.map {|name| [name, Bundler::Plugin::Events.const_get(name)] }
       Bundler::Plugin::Events.send(:reset)
       Bundler::Plugin::Events.send(:define, :EVENT1, "event-1")
       Bundler::Plugin::Events.send(:define, :EVENT2, "event-2")
@@ -289,6 +290,13 @@ RSpec.describe Bundler::Plugin do
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
+    end
+
+    after do
+      Bundler::Plugin::Events.send(:reset)
+      Hash[@old_constants].each do |name, value|
+        Bundler::Plugin::Events.send(:define, name, value)
+      end
     end
 
     let(:code) { <<-RUBY }
