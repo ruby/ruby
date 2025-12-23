@@ -287,8 +287,6 @@ static VALUE str_new(VALUE klass, const char *ptr, long len);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
 static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
-static VALUE rb_str_tr(VALUE str, VALUE src, VALUE repl);
-static VALUE rb_str_tr_bang(VALUE str, VALUE src, VALUE repl);
 static inline VALUE str_alloc_embed(VALUE klass, size_t capa);
 
 static inline void
@@ -6319,42 +6317,52 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub_one_to_one(VALUE str, VALUE pat, VALUE repl, int bang)
 {
+    /* This optimization is invoked when the byte-length of `pat` is equal to
+     * the byte-length of `repl`.
+     */
+
     VALUE result;
+    if (bang) {
+        str_modify_keep_cr(str);
+        result = str;
+    }
+    else {
+        result = str_duplicate(rb_cString, str);
+    }
+
+    long pat_len = RSTRING_LEN(pat);
+    long str_len = RSTRING_LEN(str);
     long last_match_pos = -1;
     VALUE frozen_str = Qnil;
 
-    if (RSTRING_LEN(str) > 0) {
-        const char *ptr = RSTRING_PTR(str);
-        long len = RSTRING_LEN(str);
-        char pat_char = RSTRING_PTR(pat)[0];
+    long pos = 0;
+    while (pos <= str_len - pat_len) {
+        long match_pos = rb_str_byteindex(result, pat, pos);
+        if (match_pos < 0) break;
 
-        for (long i = len - 1; i >= 0; i--) {
-            if (ptr[i] == pat_char) {
-                last_match_pos = i;
-                break;
-            }
+        if (NIL_P(frozen_str)) {
+            frozen_str = rb_str_new_frozen(result);
         }
 
-        if (last_match_pos >= 0) {
-            frozen_str = rb_str_new_frozen(str);
-        }
+        memcpy(RSTRING_PTR(result) + match_pos, RSTRING_PTR(repl), pat_len);
+        last_match_pos = match_pos;
+        pos = match_pos + pat_len;
     }
 
-    if (bang) {
-        result = rb_str_tr_bang(str, pat, repl);
-    }
-    else {
-        result = rb_str_tr(str, pat, repl);
-    }
-
-    if (result && last_match_pos >= 0) {
-        rb_backref_set_string(frozen_str, last_match_pos, 1);
-    }
-    else {
+    if (NIL_P(frozen_str)) {
         rb_backref_set(Qnil);
-    }
 
-    return result;
+        if (bang) {
+            return Qnil;
+        }
+        else {
+            return result;
+        }
+    }
+    else {
+        rb_backref_set_string(frozen_str, last_match_pos, pat_len);
+        return result;
+    }
 }
 
 static VALUE
@@ -6379,9 +6387,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         if (NIL_P(hash)) {
             StringValue(repl);
 
-            if (RSTRING_LEN(repl) == 1 &&
-                OBJ_BUILTIN_TYPE(argv[0]) == T_STRING &&
-                RSTRING_LEN(argv[0]) == 1) {
+            /* Optimization: equal byte-length string replacement */
+            if (OBJ_BUILTIN_TYPE(argv[0]) == T_STRING &&
+                RSTRING_LEN(argv[0]) == RSTRING_LEN(repl) &&
+                RSTRING_LEN(argv[0]) > 0 &&
+                rb_enc_get_index(str) == rb_enc_get_index(repl) &&
+                rb_enc_get_index(argv[0]) == rb_enc_get_index(repl)) {
                 return str_gsub_one_to_one(str, argv[0], repl, bang);
             }
         }

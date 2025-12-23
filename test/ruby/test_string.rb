@@ -1321,6 +1321,11 @@ CODE
     assert_equal(S("jello"), S("hello").gsub(S('h'), S('j')))
     assert_equal(S("hello"), S("hello").gsub(S('z'), S('x')))
 
+    # handles multibyte chars
+    assert_equal(S("cafï"), S("café").gsub(S('é'), S('ï')))
+    assert_equal(S("😄"), S("🥺").gsub(S("🥺"), S("😄")))
+
+    # sets $~ to MatchData of last match
     S('hello').gsub(S('l'), S('x'))
     assert_equal(3, $~.begin(0))
     assert_equal(4, $~.end(0))
@@ -1351,6 +1356,13 @@ CODE
       String,
       my_string_klass.new(S("foo")).gsub(S("-"), S("-"))
     )
+
+    # converts to super-set encoding only if needed
+    str = S("aa").force_encoding(Encoding::US_ASCII)
+    repl_ascii_compat = S("e")
+    repl_utf8_req = S("é")
+    assert_equal(Encoding::US_ASCII, str.gsub(str, repl_ascii_compat).encoding)
+    assert_equal(Encoding::UTF_8, str.gsub(str, repl_utf8_req).encoding)
   end
 
   def test_gsub!
@@ -1397,6 +1409,11 @@ CODE
     a = S("hello")
     assert_nil(a.gsub!(S('z'), S('x')))
     assert_equal(S("hello"), a)
+
+    # handles multibyte chars
+    a = S("café")
+    assert_same(a, a.gsub!(S('é'), S('ï')))
+    assert_equal(S("cafï"), a)
 
     s = S("hello")
     s.freeze
