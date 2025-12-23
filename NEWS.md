@@ -353,8 +353,8 @@ The following bundled gems are updated.
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
-* rbs 3.10.0.pre.2
-* typeprof 0.31.0
+* rbs 3.10.0
+* typeprof 0.31.1
 * debug 1.11.1
 * base64 0.3.0
 * bigdecimal 4.0.1
