@@ -22,23 +22,20 @@
 module OpenSSL::Buffering
   include Enumerable
 
-  # A buffer which will retain binary encoding.
-  class Buffer < String
-    unless String.method_defined?(:append_as_bytes)
-      alias_method :_append, :<<
-      def append_as_bytes(string)
-        if string.encoding == Encoding::BINARY
-          _append(string)
-        else
-          _append(string.b)
+  unless String.method_defined?(:append_as_bytes)
+    using Module.new {
+      refine String do
+        def append_as_bytes(string)
+          if string.encoding == Encoding::BINARY
+            self << string
+          else
+            self << string.b
+          end
+
+          self
         end
-
-        self
       end
-    end
-
-    undef_method :concat
-    undef_method :<<
+    }
   end
 
   ##
@@ -59,7 +56,7 @@ module OpenSSL::Buffering
   def initialize(*)
     super
     @eof = false
-    @rbuffer = Buffer.new
+    @rbuffer = String.new
     @sync = @io.sync
   end
 
@@ -341,7 +338,7 @@ module OpenSSL::Buffering
   # buffer is flushed to the underlying socket.
 
   def do_write(s)
-    @wbuffer = Buffer.new unless defined? @wbuffer
+    @wbuffer = String.new unless defined? @wbuffer
     @wbuffer.append_as_bytes(s)
 
     @sync ||= false
@@ -438,7 +435,7 @@ module OpenSSL::Buffering
   # See IO#puts for full details.
 
   def puts(*args)
-    s = Buffer.new
+    s = String.new
     if args.empty?
       s.append_as_bytes("\n")
     end
@@ -456,7 +453,7 @@ module OpenSSL::Buffering
   # See IO#print for full details.
 
   def print(*args)
-    s = Buffer.new
+    s = String.new
     args.each{ |arg| s.append_as_bytes(arg.to_s) }
     do_write(s)
     nil
