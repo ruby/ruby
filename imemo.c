@@ -97,6 +97,17 @@ rb_free_tmp_buffer(volatile VALUE *store)
     }
 }
 
+struct MEMO *
+rb_imemo_memo_new(VALUE a, VALUE b, VALUE c)
+{
+    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
+    *((VALUE *)&memo->v1) = a;
+    *((VALUE *)&memo->v2) = b;
+    *((VALUE *)&memo->u3.value) = c;
+
+    return memo;
+}
+
 static VALUE
 imemo_fields_new(VALUE owner, size_t capa, bool shareable)
 {
