@@ -914,7 +914,7 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/language/box.md for known issues, etc.");
+                         "See https://github.com/ruby/ruby/blob/HEAD/doc/language/box.md for known issues, etc.");
         box_experimental_warned = 1;
     }
 
