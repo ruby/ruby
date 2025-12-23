@@ -69,7 +69,7 @@ dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
-AC_ARG_VAR([jit_rust_optflags], [additional JIT_RUST_OPTFLAGS (ignored when JIT_RUST_OPTFLAGS is given)])dnl
+AC_ARG_VAR([jit_rust_optflags], [additional JIT_RUST_OPTFLAGS])dnl
 
 [begin]_group "environment section" && {
 HAVE_BASERUBY=yes
