@@ -402,7 +402,7 @@ void rb_vm_update_references(void *ptr);
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
-    if (rb_gc_impl_object_moved_p((_objspace), (VALUE)(_thing))) {    \
+    if (gc_object_moved_p_internal((_objspace), (VALUE)(_thing))) {    \
         *(_type *)&(_thing) = (_type)gc_location_internal(_objspace, (VALUE)_thing); \
     } \
 } while (0)
@@ -2868,6 +2868,16 @@ gc_mark_machine_stack_location_maybe(VALUE obj, void *data)
 #endif
 }
 
+static bool
+gc_object_moved_p_internal(void *objspace, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return false;
+    }
+
+    return rb_gc_impl_object_moved_p(objspace, obj);
+}
+
 static VALUE
 gc_location_internal(void *objspace, VALUE value)
 {
@@ -3646,7 +3656,7 @@ check_id_table_move(VALUE value, void *data)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)value)) {
         return ID_TABLE_REPLACE;
     }
 
@@ -3690,7 +3700,7 @@ update_id_table(VALUE *value, void *data, int existing)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)*value)) {
         *value = gc_location_internal(objspace, (VALUE)*value);
     }
 
@@ -3733,11 +3743,11 @@ update_const_tbl_i(VALUE value, void *objspace)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->value)) {
+    if (gc_object_moved_p_internal(objspace, ce->value)) {
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->file)) {
+    if (gc_object_moved_p_internal(objspace, ce->file)) {
         ce->file = gc_location_internal(objspace, ce->file);
     }
 

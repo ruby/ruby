@@ -1375,16 +1375,12 @@ check_rvalue_consistency(rb_objspace_t *objspace, const VALUE obj)
 static inline bool
 gc_object_moved_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RB_SPECIAL_CONST_P(obj)) {
-        return FALSE;
+
+    bool ret;
+    asan_unpoisoning_object(obj) {
+        ret = BUILTIN_TYPE(obj) == T_MOVED;
     }
-    else {
-        int ret;
-        asan_unpoisoning_object(obj) {
-            ret = BUILTIN_TYPE(obj) == T_MOVED;
-        }
-        return ret;
-    }
+    return ret;
 }
 
 static inline int
