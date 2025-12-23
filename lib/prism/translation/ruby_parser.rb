@@ -1422,7 +1422,7 @@ module Prism
         # ```
         def visit_parameters_node(node)
           children =
-            node.compact_child_nodes.map do |element|
+            node.each_child_node.map do |element|
               if element.is_a?(MultiTargetNode)
                 visit_destructured_parameter(element)
               else
