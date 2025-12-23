@@ -425,6 +425,22 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_putc
+    ssl_pair {|s1, s2|
+      ret = s1.putc("a")
+      assert_equal("a", ret)
+      s1.putc(98)
+      s1.putc(99 + 256)
+      s1.putc(100 - 256)
+      def (obj = Object.new).to_int() 101 end
+      s1.putc(obj)
+      s1.putc("")
+      s1.putc("\u3042") # \xe3\x81\x82
+      s1.close
+      assert_equal("abcde\u3042".b, s2.read)
+    }
+  end
+
   def test_multibyte_read_write
     # German a umlaut
     auml = [%w{ C3 A4 }.join('')].pack('H*')

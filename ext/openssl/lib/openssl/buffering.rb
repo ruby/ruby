@@ -547,6 +547,16 @@ module OpenSSL::Buffering
   end
 
   ##
+  # Writes character _ch_ to the stream.
+  #
+  # See IO#putc for full details.
+
+  def putc(ch)
+    do_write(String === ch ? ch.chr : (ch.to_int & 0xff).chr)
+    ch
+  end
+
+  ##
   # Writes _args_ to the stream.
   #
   # See IO#print for full details.
