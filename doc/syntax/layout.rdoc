@@ -63,7 +63,7 @@ These would not:
     File.read "test.txt"           # already complete expression
               , encoding: "utf-8"  # attempt to parse as a new expression, SyntaxError
 
-The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" style of method calls), boolean operators <tt>&&</tt>/<tt>||</tt>, or control flow operators <tt>and</tt>/<tt>or</tt>:
+The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" style of method calls) or logical operators <tt>&&</tt>/<tt>||</tt> and <tt>and</tt>/<tt>or</tt>:
 
     # OK, interpreted as a chain of calls
     File.read('test.txt')
@@ -71,14 +71,10 @@ The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" sty
         .split("\t")
         .sort
 
-    # OK, interpreted as a chain of boolean conditions:
+    # OK, interpreted as a chain of logical operators:
     File.empty?('test.txt')
       || File.size('test.txt') < 10
       || File.read('test.txt').strip.empty?
-
-    # OK, interpreted as a chain of control flow:
-    File.empty?('test.txt')
-      or raise ArgumentError, "Target file not empty"
 
 If the expressions is broken into multiple lines in any of the ways described above, comments between separate lines are allowed:
 
