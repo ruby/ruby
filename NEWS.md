@@ -308,8 +308,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 4.0.2
-* bundler 4.0.2
+* RubyGems 4.0.3
+* bundler 4.0.3
 * date 3.5.1
 * delegate 0.6.1
 * digest 3.2.1
