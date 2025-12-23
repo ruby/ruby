@@ -239,8 +239,9 @@ jobs:
       - name: Checkout ruby-bench
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          repository: ruby/ruby-bench
+          repository: nobu/ruby-bench
           path: ruby-bench
+          ref: fork-deps
 
       # If you want to skip failing benchmark, consider using `--excludes`.
       # e.g. `bench_opts: '--warmup=1 --bench=1 --excludes=railsbench,lobsters'`
