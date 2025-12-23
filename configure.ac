@@ -4053,7 +4053,7 @@ AS_CASE(["${ZJIT_SUPPORT}"],
 AS_IF([test -z "${JIT_RUST_OPTFLAGS+set}"], [
    JIT_RUST_OPTFLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
 ])
-AS_IF([test -n "${jit_rust_optflags+set}"], [
+AS_IF([test -n "${jit_rust_optflags}"], [
    JIT_RUST_OPTFLAGS="${JIT_RUST_OPTFLAGS} ${jit_rust_optflags}"
 ])
 
