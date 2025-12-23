@@ -54,6 +54,8 @@ rb_imemo_tmpbuf_new(void)
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
     NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
+    rb_gc_register_pinning_obj((VALUE)obj);
+
     obj->ptr = NULL;
     obj->cnt = 0;
 
@@ -101,6 +103,9 @@ struct MEMO *
 rb_imemo_memo_new(VALUE a, VALUE b, VALUE c)
 {
     struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
+
+    rb_gc_register_pinning_obj((VALUE)memo);
+
     *((VALUE *)&memo->v1) = a;
     *((VALUE *)&memo->v2) = b;
     *((VALUE *)&memo->u3.value) = c;
