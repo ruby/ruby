@@ -287,7 +287,6 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_io_write_on_flush
-    omit "skip this test because it makes CI fragile"
     begin
       fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
       write_fd = nil
