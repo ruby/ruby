@@ -45,3 +45,4 @@ test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
+test_reachable_objects_from_root(ObjectSpaceTest) NoMemoryError with test-unit 3.7.5
