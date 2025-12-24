@@ -287,92 +287,100 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_io_write_on_flush
-    omit "skip this test because it makes CI fragile"
     begin
-      fn = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
-      write_fd = nil
-      io_ops = nil
+      path = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
+      descriptor = nil
+      operations = nil
+
       thread = Thread.new do
         scheduler = IOScheduler.new
         Fiber.set_scheduler scheduler
 
         Fiber.schedule do
-          File.open(fn, 'w+') do |f|
-            write_fd = f.fileno
-            f << 'foo'
-            f.flush
-            f << 'bar'
+          File.open(path, 'w+') do |file|
+            descriptor = file.fileno
+            file << 'foo'
+            file.flush
+            file << 'bar'
           end
         end
-        io_ops = scheduler.__io_ops__
+
+        operations = scheduler.operations
       end
+
       thread.join
       assert_equal [
-        [:io_write, write_fd, 'foo'],
-        [:io_write, write_fd, 'bar']
-      ], io_ops
+        [:io_write, descriptor, 'foo'],
+        [:io_write, descriptor, 'bar']
+      ], operations
 
-      assert_equal 'foobar', IO.read(fn)
+      assert_equal 'foobar', IO.read(path)
     ensure
       thread.kill rescue nil
-      FileUtils.rm_f(fn)
+      FileUtils.rm_f(path)
     end
   end
 
   def test_io_read_error
-    fn = File.join(Dir.tmpdir, "ruby_test_io_read_error_#{SecureRandom.hex}")
-    exception = nil
+    path = File.join(Dir.tmpdir, "ruby_test_io_read_error_#{SecureRandom.hex}")
+    error = nil
+
     thread = Thread.new do
       scheduler = IOErrorScheduler.new
       Fiber.set_scheduler scheduler
       Fiber.schedule do
-        File.open(fn, 'w+') { it.read }
-      rescue => e
-        exception = e
+        File.open(path, 'w+') { it.read }
+      rescue => error
+        # Ignore.
       end
     end
+
     thread.join
-    assert_kind_of Errno::EBADF, exception
+    assert_kind_of Errno::EBADF, error
   ensure
     thread.kill rescue nil
-    FileUtils.rm_f(fn)
+    FileUtils.rm_f(path)
   end
 
   def test_io_write_error
-    fn = File.join(Dir.tmpdir, "ruby_test_io_write_error_#{SecureRandom.hex}")
-    exception = nil
+    path = File.join(Dir.tmpdir, "ruby_test_io_write_error_#{SecureRandom.hex}")
+    error = nil
+
     thread = Thread.new do
       scheduler = IOErrorScheduler.new
       Fiber.set_scheduler scheduler
       Fiber.schedule do
-        File.open(fn, 'w+') { it.sync = true; it << 'foo' }
-      rescue => e
-        exception = e
+        File.open(path, 'w+') { it.sync = true; it << 'foo' }
+      rescue => error
+        # Ignore.
       end
     end
+
     thread.join
-    assert_kind_of Errno::EINVAL, exception
+    assert_kind_of Errno::EINVAL, error
   ensure
     thread.kill rescue nil
-    FileUtils.rm_f(fn)
+    FileUtils.rm_f(path)
   end
 
   def test_io_write_flush_error
-    fn = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
-    exception = nil
+    path = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
+    error = nil
+
     thread = Thread.new do
       scheduler = IOErrorScheduler.new
       Fiber.set_scheduler scheduler
       Fiber.schedule do
-        File.open(fn, 'w+') { it << 'foo' }
-      rescue => e
-        exception = e
+        File.open(path, 'w+') { it << 'foo' }
+      rescue => error
+        # Ignore.
       end
     end
+
     thread.join
-    assert_kind_of Errno::EINVAL, exception
+    assert_kind_of Errno::EINVAL, error
   ensure
     thread.kill rescue nil
-    FileUtils.rm_f(fn)
+    FileUtils.rm_f(path)
   end
 end

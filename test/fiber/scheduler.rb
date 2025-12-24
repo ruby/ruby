@@ -489,15 +489,19 @@ class IOBufferScheduler < Scheduler
 end
 
 class IOScheduler < Scheduler
-  def __io_ops__
-    @__io_ops__ ||= []
+  def operations
+    @operations ||= []
   end
 
   def io_write(io, buffer, length, offset)
-    fd = io.fileno
-    str = buffer.get_string
-    __io_ops__ << [:io_write, fd, str]
-    Fiber.blocking { buffer.write(IO.for_fd(fd), 0, offset) }
+    descriptor = io.fileno
+    string = buffer.get_string
+
+    self.operations << [:io_write, descriptor, string]
+
+    Fiber.blocking do
+      buffer.write(io, 0, offset)
+    end
   end
 end
 

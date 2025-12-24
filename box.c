@@ -902,6 +902,8 @@ rb_box_eval(VALUE box_value, VALUE str)
 
 static int box_experimental_warned = 0;
 
+RUBY_EXTERN const char ruby_api_version_name[];
+
 void
 rb_initialize_main_box(void)
 {
@@ -914,7 +916,8 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/language/box.md for known issues, etc.");
+                         "See https://docs.ruby-lang.org/en/%s/Ruby/Box.html for known issues, etc.",
+                         ruby_api_version_name);
         box_experimental_warned = 1;
     }
 

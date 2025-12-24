@@ -1,3 +1,4 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 require "forwardable"
@@ -7,7 +8,8 @@ require_relative "grammar/code"
 require_relative "grammar/counter"
 require_relative "grammar/destructor"
 require_relative "grammar/error_token"
-require_relative "grammar/parameterizing_rule"
+require_relative "grammar/inline"
+require_relative "grammar/parameterized"
 require_relative "grammar/percent_code"
 require_relative "grammar/precedence"
 require_relative "grammar/printer"
@@ -23,19 +25,89 @@ require_relative "lexer"
 module Lrama
   # Grammar is the result of parsing an input grammar file
   class Grammar
+    # @rbs!
+    #
+    #   interface _DelegatedMethods
+    #     def rules: () -> Array[Rule]
+    #     def accept_symbol: () -> Grammar::Symbol
+    #     def eof_symbol: () -> Grammar::Symbol
+    #     def undef_symbol: () -> Grammar::Symbol
+    #     def precedences: () -> Array[Precedence]
+    #
+    #     # delegate to @symbols_resolver
+    #     def symbols: () -> Array[Grammar::Symbol]
+    #     def terms: () -> Array[Grammar::Symbol]
+    #     def nterms: () -> Array[Grammar::Symbol]
+    #     def find_symbol_by_s_value!: (::String s_value) -> Grammar::Symbol
+    #     def ielr_defined?: () -> bool
+    #   end
+    #
+    #   include Symbols::Resolver::_DelegatedMethods
+    #
+    #   @rule_counter: Counter
+    #   @percent_codes: Array[PercentCode]
+    #   @printers: Array[Printer]
+    #   @destructors: Array[Destructor]
+    #   @error_tokens: Array[ErrorToken]
+    #   @symbols_resolver: Symbols::Resolver
+    #   @types: Array[Type]
+    #   @rule_builders: Array[RuleBuilder]
+    #   @rules: Array[Rule]
+    #   @sym_to_rules: Hash[Integer, Array[Rule]]
+    #   @parameterized_resolver: Parameterized::Resolver
+    #   @empty_symbol: Grammar::Symbol
+    #   @eof_symbol: Grammar::Symbol
+    #   @error_symbol: Grammar::Symbol
+    #   @undef_symbol: Grammar::Symbol
+    #   @accept_symbol: Grammar::Symbol
+    #   @aux: Auxiliary
+    #   @no_stdlib: bool
+    #   @locations: bool
+    #   @define: Hash[String, String]
+    #   @required: bool
+    #   @union: Union
+    #   @precedences: Array[Precedence]
+    #   @start_nterm: Lrama::Lexer::Token::Base?
+
     extend Forwardable
 
-    attr_reader :percent_codes, :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux, :parameterizing_rule_resolver
-    attr_accessor :union, :expect, :printers, :error_tokens, :lex_param, :parse_param, :initial_action,
-                  :after_shift, :before_reduce, :after_reduce, :after_shift_error_token, :after_pop_stack,
-                  :symbols_resolver, :types, :rules, :rule_builders, :sym_to_rules, :no_stdlib, :locations, :define
+    attr_reader :percent_codes #: Array[PercentCode]
+    attr_reader :eof_symbol #: Grammar::Symbol
+    attr_reader :error_symbol #: Grammar::Symbol
+    attr_reader :undef_symbol #: Grammar::Symbol
+    attr_reader :accept_symbol #: Grammar::Symbol
+    attr_reader :aux #: Auxiliary
+    attr_reader :parameterized_resolver #: Parameterized::Resolver
+    attr_reader :precedences #: Array[Precedence]
+    attr_accessor :union #: Union
+    attr_accessor :expect #: Integer
+    attr_accessor :printers #: Array[Printer]
+    attr_accessor :error_tokens #: Array[ErrorToken]
+    attr_accessor :lex_param #: String
+    attr_accessor :parse_param #: String
+    attr_accessor :initial_action #: Grammar::Code::InitialActionCode
+    attr_accessor :after_shift #: Lexer::Token::Base
+    attr_accessor :before_reduce #: Lexer::Token::Base
+    attr_accessor :after_reduce #: Lexer::Token::Base
+    attr_accessor :after_shift_error_token #: Lexer::Token::Base
+    attr_accessor :after_pop_stack #: Lexer::Token::Base
+    attr_accessor :symbols_resolver #: Symbols::Resolver
+    attr_accessor :types #: Array[Type]
+    attr_accessor :rules #: Array[Rule]
+    attr_accessor :rule_builders #: Array[RuleBuilder]
+    attr_accessor :sym_to_rules #: Hash[Integer, Array[Rule]]
+    attr_accessor :no_stdlib #: bool
+    attr_accessor :locations #: bool
+    attr_accessor :define #: Hash[String, String]
+    attr_accessor :required #: bool
 
     def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term, :find_term_by_s_value,
                                         :find_symbol_by_number!, :find_symbol_by_id!, :token_to_symbol,
                                         :find_symbol_by_s_value!, :fill_symbol_number, :fill_nterm_type,
                                         :fill_printer, :fill_destructor, :fill_error_token, :sort_by_number!
 
-    def initialize(rule_counter, define = {})
+    # @rbs (Counter rule_counter, bool locations, Hash[String, String] define) -> void
+    def initialize(rule_counter, locations, define = {})
       @rule_counter = rule_counter
 
       # Code defined by "%code"
@@ -48,7 +120,7 @@ module Lrama
       @rule_builders = []
       @rules = []
       @sym_to_rules = {}
-      @parameterizing_rule_resolver = ParameterizingRule::Resolver.new
+      @parameterized_resolver = Parameterized::Resolver.new
       @empty_symbol = nil
       @eof_symbol = nil
       @error_symbol = nil
@@ -56,93 +128,131 @@ module Lrama
       @accept_symbol = nil
       @aux = Auxiliary.new
       @no_stdlib = false
-      @locations = false
-      @define = define.map {|d| d.split('=') }.to_h
+      @locations = locations
+      @define = define
+      @required = false
+      @precedences = []
+      @start_nterm = nil
 
       append_special_symbols
     end
 
+    # @rbs (Counter rule_counter, Counter midrule_action_counter) -> RuleBuilder
     def create_rule_builder(rule_counter, midrule_action_counter)
-      RuleBuilder.new(rule_counter, midrule_action_counter, @parameterizing_rule_resolver)
+      RuleBuilder.new(rule_counter, midrule_action_counter, @parameterized_resolver)
     end
 
+    # @rbs (id: Lexer::Token::Base, code: Lexer::Token::UserCode) -> Array[PercentCode]
     def add_percent_code(id:, code:)
       @percent_codes << PercentCode.new(id.s_value, code.s_value)
     end
 
+    # @rbs (ident_or_tags: Array[Lexer::Token::Ident|Lexer::Token::Tag], token_code: Lexer::Token::UserCode, lineno: Integer) -> Array[Destructor]
     def add_destructor(ident_or_tags:, token_code:, lineno:)
       @destructors << Destructor.new(ident_or_tags: ident_or_tags, token_code: token_code, lineno: lineno)
     end
 
+    # @rbs (ident_or_tags: Array[Lexer::Token::Ident|Lexer::Token::Tag], token_code: Lexer::Token::UserCode, lineno: Integer) -> Array[Printer]
     def add_printer(ident_or_tags:, token_code:, lineno:)
       @printers << Printer.new(ident_or_tags: ident_or_tags, token_code: token_code, lineno: lineno)
     end
 
+    # @rbs (ident_or_tags: Array[Lexer::Token::Ident|Lexer::Token::Tag], token_code: Lexer::Token::UserCode, lineno: Integer) -> Array[ErrorToken]
     def add_error_token(ident_or_tags:, token_code:, lineno:)
       @error_tokens << ErrorToken.new(ident_or_tags: ident_or_tags, token_code: token_code, lineno: lineno)
     end
 
+    # @rbs (id: Lexer::Token::Base, tag: Lexer::Token::Tag) -> Array[Type]
     def add_type(id:, tag:)
       @types << Type.new(id: id, tag: tag)
     end
 
-    def add_nonassoc(sym, precedence)
-      set_precedence(sym, Precedence.new(type: :nonassoc, precedence: precedence))
+    # @rbs (Grammar::Symbol sym, Integer precedence, String s_value, Integer lineno) -> Precedence
+    def add_nonassoc(sym, precedence, s_value, lineno)
+      set_precedence(sym, Precedence.new(symbol: sym, s_value: s_value, type: :nonassoc, precedence: precedence, lineno: lineno))
     end
 
-    def add_left(sym, precedence)
-      set_precedence(sym, Precedence.new(type: :left, precedence: precedence))
+    # @rbs (Grammar::Symbol sym, Integer precedence, String s_value, Integer lineno) -> Precedence
+    def add_left(sym, precedence, s_value, lineno)
+      set_precedence(sym, Precedence.new(symbol: sym, s_value: s_value, type: :left, precedence: precedence, lineno: lineno))
     end
 
-    def add_right(sym, precedence)
-      set_precedence(sym, Precedence.new(type: :right, precedence: precedence))
+    # @rbs (Grammar::Symbol sym, Integer precedence, String s_value, Integer lineno) -> Precedence
+    def add_right(sym, precedence, s_value, lineno)
+      set_precedence(sym, Precedence.new(symbol: sym, s_value: s_value, type: :right, precedence: precedence, lineno: lineno))
     end
 
-    def add_precedence(sym, precedence)
-      set_precedence(sym, Precedence.new(type: :precedence, precedence: precedence))
+    # @rbs (Grammar::Symbol sym, Integer precedence, String s_value, Integer lineno) -> Precedence
+    def add_precedence(sym, precedence, s_value, lineno)
+      set_precedence(sym, Precedence.new(symbol: sym, s_value: s_value, type: :precedence, precedence: precedence, lineno: lineno))
     end
 
+    # @rbs (Lrama::Lexer::Token::Base id) -> Lrama::Lexer::Token::Base
+    def set_start_nterm(id)
+      # When multiple `%start` directives are defined, Bison does not generate an error,
+      # whereas Lrama does generate an error.
+      # Related Bison's specification are
+      #   refs: https://www.gnu.org/software/bison/manual/html_node/Multiple-start_002dsymbols.html
+      if @start_nterm.nil?
+        @start_nterm = id
+      else
+        start = @start_nterm #: Lrama::Lexer::Token::Base
+        raise "Start non-terminal is already set to #{start.s_value} (line: #{start.first_line}). Cannot set to #{id.s_value} (line: #{id.first_line})."
+      end
+    end
+
+    # @rbs (Grammar::Symbol sym, Precedence precedence) -> (Precedence | bot)
     def set_precedence(sym, precedence)
-      raise "" if sym.nterm?
+      @precedences << precedence
       sym.precedence = precedence
     end
 
+    # @rbs (Grammar::Code::NoReferenceCode code, Integer lineno) -> Union
     def set_union(code, lineno)
       @union = Union.new(code: code, lineno: lineno)
     end
 
+    # @rbs (RuleBuilder builder) -> Array[RuleBuilder]
     def add_rule_builder(builder)
       @rule_builders << builder
     end
 
-    def add_parameterizing_rule(rule)
-      @parameterizing_rule_resolver.add_parameterizing_rule(rule)
+    # @rbs (Parameterized::Rule rule) -> Array[Parameterized::Rule]
+    def add_parameterized_rule(rule)
+      @parameterized_resolver.add_rule(rule)
     end
 
-    def parameterizing_rules
-      @parameterizing_rule_resolver.rules
+    # @rbs () -> Array[Parameterized::Rule]
+    def parameterized_rules
+      @parameterized_resolver.rules
     end
 
-    def insert_before_parameterizing_rules(rules)
-      @parameterizing_rule_resolver.rules = rules + @parameterizing_rule_resolver.rules
+    # @rbs (Array[Parameterized::Rule] rules) -> Array[Parameterized::Rule]
+    def prepend_parameterized_rules(rules)
+      @parameterized_resolver.rules = rules + @parameterized_resolver.rules
     end
 
+    # @rbs (Integer prologue_first_lineno) -> Integer
     def prologue_first_lineno=(prologue_first_lineno)
       @aux.prologue_first_lineno = prologue_first_lineno
     end
 
+    # @rbs (String prologue) -> String
     def prologue=(prologue)
       @aux.prologue = prologue
     end
 
+    # @rbs (Integer epilogue_first_lineno) -> Integer
     def epilogue_first_lineno=(epilogue_first_lineno)
       @aux.epilogue_first_lineno = epilogue_first_lineno
     end
 
+    # @rbs (String epilogue) -> String
     def epilogue=(epilogue)
       @aux.epilogue = epilogue
     end
 
+    # @rbs () -> void
     def prepare
       resolve_inline_rules
       normalize_rules
@@ -151,6 +261,7 @@ module Lrama
       fill_default_precedence
       fill_symbols
       fill_sym_to_rules
+      sort_precedence
       compute_nullable
       compute_first_set
       set_locations
@@ -159,25 +270,51 @@ module Lrama
     # TODO: More validation methods
     #
     # * Validation for no_declared_type_reference
+    #
+    # @rbs () -> void
     def validate!
       @symbols_resolver.validate!
+      validate_no_precedence_for_nterm!
       validate_rule_lhs_is_nterm!
+      validate_duplicated_precedence!
     end
 
+    # @rbs (Grammar::Symbol sym) -> Array[Rule]
     def find_rules_by_symbol!(sym)
       find_rules_by_symbol(sym) || (raise "Rules for #{sym} not found")
     end
 
+    # @rbs (Grammar::Symbol sym) -> Array[Rule]?
     def find_rules_by_symbol(sym)
       @sym_to_rules[sym.number]
     end
 
+    # @rbs (String s_value) -> Array[Rule]
+    def select_rules_by_s_value(s_value)
+      @rules.select {|rule| rule.lhs.id.s_value == s_value }
+    end
+
+    # @rbs () -> Array[String]
+    def unique_rule_s_values
+      @rules.map {|rule| rule.lhs.id.s_value }.uniq
+    end
+
+    # @rbs () -> bool
     def ielr_defined?
       @define.key?('lr.type') && @define['lr.type'] == 'ielr'
     end
 
     private
 
+    # @rbs () -> void
+    def sort_precedence
+      @precedences.sort_by! do |prec|
+        prec.symbol.number
+      end
+      @precedences.freeze
+    end
+
+    # @rbs () -> Array[Grammar::Symbol]
     def compute_nullable
       @rules.each do |rule|
         case
@@ -227,6 +364,7 @@ module Lrama
       end
     end
 
+    # @rbs () -> Array[Grammar::Symbol]
     def compute_first_set
       terms.each do |term|
         term.first_set = Set.new([term]).freeze
@@ -262,12 +400,14 @@ module Lrama
       end
     end
 
+    # @rbs () -> Array[RuleBuilder]
     def setup_rules
       @rule_builders.each do |builder|
         builder.setup_rules
       end
     end
 
+    # @rbs () -> Grammar::Symbol
     def append_special_symbols
       # YYEMPTY (token_id: -2, number: -2) is added when a template is evaluated
       # term = add_term(id: Token.new(Token::Ident, "YYEMPTY"), token_id: -2)
@@ -298,11 +438,12 @@ module Lrama
       @accept_symbol = term
     end
 
+    # @rbs () -> void
     def resolve_inline_rules
       while @rule_builders.any?(&:has_inline_rules?) do
         @rule_builders = @rule_builders.flat_map do |builder|
           if builder.has_inline_rules?
-            builder.resolve_inline_rules
+            Inline::Resolver.new(builder).resolve
           else
             builder
           end
@@ -310,14 +451,10 @@ module Lrama
       end
     end
 
+    # @rbs () -> void
     def normalize_rules
-      # Add $accept rule to the top of rules
-      rule_builder = @rule_builders.first # : RuleBuilder
-      lineno = rule_builder ? rule_builder.line : 0
-      @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [rule_builder.lhs, @eof_symbol.id], token_code: nil, lineno: lineno)
-
+      add_accept_rule
       setup_rules
-
       @rule_builders.each do |builder|
         builder.rules.each do |rule|
           add_nterm(id: rule._lhs, tag: rule.lhs_tag)
@@ -325,23 +462,42 @@ module Lrama
         end
       end
 
-      @rules.sort_by!(&:id)
+      nterms.freeze
+      @rules.sort_by!(&:id).freeze
+    end
+
+    # Add $accept rule to the top of rules
+    def add_accept_rule
+      if @start_nterm
+        start = @start_nterm #: Lrama::Lexer::Token::Base
+        @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [start, @eof_symbol.id], token_code: nil, lineno: start.line)
+      else
+        rule_builder = @rule_builders.first #: RuleBuilder
+        lineno = rule_builder ? rule_builder.line : 0
+        lhs = rule_builder.lhs #: Lexer::Token::Base
+        @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [lhs, @eof_symbol.id], token_code: nil, lineno: lineno)
+      end
     end
 
     # Collect symbols from rules
+    #
+    # @rbs () -> void
     def collect_symbols
       @rules.flat_map(&:_rhs).each do |s|
         case s
         when Lrama::Lexer::Token::Char
           add_term(id: s)
-        when Lrama::Lexer::Token
+        when Lrama::Lexer::Token::Base
           # skip
         else
           raise "Unknown class: #{s}"
         end
       end
+
+      terms.freeze
     end
 
+    # @rbs () -> void
     def set_lhs_and_rhs
       @rules.each do |rule|
         rule.lhs = token_to_symbol(rule._lhs) if rule._lhs
@@ -355,6 +511,8 @@ module Lrama
     # Rule inherits precedence from the last term in RHS.
     #
     # https://www.gnu.org/software/bison/manual/html_node/How-Precedence.html
+    #
+    # @rbs () -> void
     def fill_default_precedence
       @rules.each do |rule|
         # Explicitly specified precedence has the highest priority
@@ -369,6 +527,7 @@ module Lrama
       end
     end
 
+    # @rbs () -> Array[Grammar::Symbol]
     def fill_symbols
       fill_symbol_number
       fill_nterm_type(@types)
@@ -378,6 +537,7 @@ module Lrama
       sort_by_number!
     end
 
+    # @rbs () -> Array[Rule]
     def fill_sym_to_rules
       @rules.each do |rule|
         key = rule.lhs.number
@@ -386,13 +546,14 @@ module Lrama
       end
     end
 
-    def validate_rule_lhs_is_nterm!
+    # @rbs () -> void
+    def validate_no_precedence_for_nterm!
       errors = [] #: Array[String]
 
-      rules.each do |rule|
-        next if rule.lhs.nterm?
+      nterms.each do |nterm|
+        next if nterm.precedence.nil?
 
-        errors << "[BUG] LHS of #{rule.display_name} (line: #{rule.lineno}) is term. It should be nterm."
+        errors << "[BUG] Precedence #{nterm.name} (line: #{nterm.precedence.lineno}) is defined for nonterminal symbol (line: #{nterm.id.first_line}). Precedence can be defined for only terminal symbol."
       end
 
       return if errors.empty?
@@ -400,6 +561,41 @@ module Lrama
       raise errors.join("\n")
     end
 
+    # @rbs () -> void
+    def validate_rule_lhs_is_nterm!
+      errors = [] #: Array[String]
+
+      rules.each do |rule|
+        next if rule.lhs.nterm?
+
+        errors << "[BUG] LHS of #{rule.display_name} (line: #{rule.lineno}) is terminal symbol. It should be nonterminal symbol."
+      end
+
+      return if errors.empty?
+
+      raise errors.join("\n")
+    end
+
+    # # @rbs () -> void
+    def validate_duplicated_precedence!
+      errors = [] #: Array[String]
+      seen = {} #: Hash[String, Precedence]
+
+      precedences.each do |prec|
+        s_value = prec.s_value
+        if first = seen[s_value]
+          errors << "%#{prec.type} redeclaration for #{s_value} (line: #{prec.lineno}) previous declaration was %#{first.type} (line: #{first.lineno})"
+        else
+          seen[s_value] = prec
+        end
+      end
+
+      return if errors.empty?
+
+      raise errors.join("\n")
+    end
+
+    # @rbs () -> void
     def set_locations
       @locations = @locations || @rules.any? {|rule| rule.contains_at_reference? }
     end

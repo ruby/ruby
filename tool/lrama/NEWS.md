@@ -1,8 +1,343 @@
 # NEWS for Lrama
 
+## Lrama 0.7.1 (2025-12-24)
+
+### Optimize IELR
+
+Optimized performance to a level that allows for IELR testing in practical applications.
+
+https://github.com/ruby/lrama/pull/595
+https://github.com/ruby/lrama/pull/605
+https://github.com/ruby/lrama/pull/685
+https://github.com/ruby/lrama/pull/700
+
+### Introduce counterexamples timeout
+
+Counterexample searches can sometimes take a long time, so we've added a timeout to abort the process after a set period. The current limits are:
+
+* 10 seconds per case
+* 120 seconds total (cumulative)
+
+Please note that these are hard-coded and cannot be modified by the user in the current version.
+
+https://github.com/ruby/lrama/pull/623
+
+### Optimize Counterexamples
+
+Optimized counterexample search performance.
+
+https://github.com/ruby/lrama/pull/607
+https://github.com/ruby/lrama/pull/610
+https://github.com/ruby/lrama/pull/614
+https://github.com/ruby/lrama/pull/622
+https://github.com/ruby/lrama/pull/627
+https://github.com/ruby/lrama/pull/629
+https://github.com/ruby/lrama/pull/659
+
+### Support parameterized rule's arguments include inline
+
+Allow to use %inline directive with Parameterized rules arguments. When an inline rule is used as an argument to a Parameterized rule, it expands inline at the point of use.
+
+```yacc
+%rule %inline op : '+'
+                 | '-'
+                 ;
+%%
+operation : op?
+          ;
+```
+
+This expands to:
+
+```yacc
+operation : /* empty */
+          | '+'
+          | '-'
+          ;
+```
+
+https://github.com/ruby/lrama/pull/637
+
+### Render conflicts of each state on output file
+
+Added token information for conflicts in the output file.
+These information are useful when a state has many actions.
+
+```
+State 1
+
+    4 class: keyword_class • tSTRING "end"
+    5 $@1: ε •  [tSTRING]
+    7 class: keyword_class • $@1 tSTRING '!' "end" $@2
+    8 $@3: ε •  [tSTRING]
+   10 class: keyword_class • $@3 tSTRING '?' "end" $@4
+
+    Conflict on tSTRING. shift/reduce($@1)
+    Conflict on tSTRING. shift/reduce($@3)
+    Conflict on tSTRING. reduce($@1)/reduce($@3)
+
+    tSTRING  shift, and go to state 6
+
+    tSTRING  reduce using rule 5 ($@1)
+    tSTRING  reduce using rule 8 ($@3)
+
+    $@1  go to state 7
+    $@3  go to state 8
+```
+
+https://github.com/ruby/lrama/pull/541
+
+### Render the origin of conflicted tokens on output file
+
+For example, for the grammar file like below:
+
+```
+%%
+
+program: expr
+       ;
+
+expr: expr '+' expr
+    | tNUMBER
+    ;
+
+%%
+```
+
+Lrama generates output file which describes where `"plus"` (`'+'`) look ahead tokens come from:
+
+```
+State 6
+
+    2 expr: expr • "plus" expr
+    2     | expr "plus" expr •  ["end of file", "plus"]
+
+    Conflict on "plus". shift/reduce(expr)
+      "plus" comes from state 0 goto by expr
+      "plus" comes from state 5 goto by expr
+```
+
+state 0 and state 5 look like below:
+
+```
+State 0
+
+    0 $accept: • program "end of file"
+    1 program: • expr
+    2 expr: • expr "plus" expr
+    3     | • tNUMBER
+
+    tNUMBER  shift, and go to state 1
+
+    program  go to state 2
+    expr     go to state 3
+
+State 5
+
+    2 expr: • expr "plus" expr
+    2     | expr "plus" • expr
+    3     | • tNUMBER
+
+    tNUMBER  shift, and go to state 1
+
+    expr  go to state 6
+```
+
+https://github.com/ruby/lrama/pull/726
+
+### Render precedences usage information on output file
+
+For example, for the grammar file like below:
+
+```
+%left  tPLUS
+%right tUPLUS
+
+%%
+
+program: expr ;
+
+expr: tUPLUS expr
+    | expr tPLUS expr
+    | tNUMBER
+    ;
+
+%%
+```
+
+Lrama generates output file which describes where these precedences are used to resolve conflicts:
+
+```
+Precedences
+  precedence on "unary+" is used to resolve conflict on
+    LALR
+      state 5. Conflict between reduce by "expr -> tUPLUS expr" and shift "+" resolved as reduce ("+" < "unary+").
+  precedence on "+" is used to resolve conflict on
+    LALR
+      state 5. Conflict between reduce by "expr -> tUPLUS expr" and shift "+" resolved as reduce ("+" < "unary+").
+      state 8. Conflict between reduce by "expr -> expr tPLUS expr" and shift "+" resolved as reduce (%left "+").
+```
+
+https://github.com/ruby/lrama/pull/741
+
+### Add support for reporting Rule Usage Frequency
+
+Support to report rule usage frequency statistics for analyzing grammar characteristics.
+Run `exe/lrama --report=rules` to show how frequently each terminal and non-terminal symbol is used in the grammar rules.
+
+```console
+$ exe/lrama --report=rules sample/calc.y
+Rule Usage Frequency
+    0 tSTRING (4 times)
+    1 keyword_class (3 times)
+    2 keyword_end (3 times)
+    3 '+' (2 times)
+    4 string (2 times)
+    5 string_1 (2 times)
+    6 '!' (1 times)
+    7 '-' (1 times)
+    8 '?' (1 times)
+    9 EOI (1 times)
+   10 class (1 times)
+   11 program (1 times)
+   12 string_2 (1 times)
+   13 strings_1 (1 times)
+   14 strings_2 (1 times)
+   15 tNUMBER (1 times)
+```
+
+This feature provides insights into the language characteristics by showing:
+- Which symbols are most frequently used in the grammar
+- The distribution of terminal and non-terminal usage
+- Potential areas for grammar optimization or refactoring
+
+The frequency statistics help developers understand the grammar structure and can be useful for:
+- Grammar complexity analysis
+- Performance optimization hints
+- Language design decisions
+- Documentation and educational purposes
+
+https://github.com/ruby/lrama/pull/677
+
+### Render Split States information on output file
+
+For example, for the grammar file like below:
+
+```
+%token a
+%token b
+%token c
+%define lr.type ielr
+
+%precedence tLOWEST
+%precedence a
+%precedence tHIGHEST
+
+%%
+
+S: a A B a
+ | b A B b
+ ;
+
+A: a C D E
+ ;
+
+B: c
+ | // empty
+ ;
+
+C: D
+ ;
+
+D: a
+ ;
+
+E: a
+ | %prec tHIGHEST // empty
+ ;
+
+%%
+```
+
+Lrama generates output file which describes where which new states are created when IELR is enabled:
+
+```
+Split States
+
+    State 19 is split from state 4
+    State 20 is split from state 9
+    State 21 is split from state 14
+```
+
+https://github.com/ruby/lrama/pull/624
+
+### Add ioption support to the Standard library
+
+Support `ioption` (inline option) rule, which is expanded inline without creating intermediate rules.
+
+Unlike the regular `option` rule that generates a separate rule, `ioption` directly expands at the point of use:
+
+```yacc
+program: ioption(number) expr
+
+// Expanded inline to:
+
+program: expr
+       | number expr
+```
+
+This differs from the regular `option` which would generate:
+
+```yacc
+program: option(number) expr
+
+// Expanded to:
+
+program: option_number expr
+option_number: %empty
+             | number
+```
+
+The `ioption` rule provides more compact grammar generation by avoiding intermediate rule creation, which can be beneficial for reducing the parser's rule count and potentially improving performance.
+
+This feature is inspired by Menhir's standard library and maintains compatibility with [Menhir's `ioption` behavior](https://github.com/let-def/menhir/blob/e8ba7bef219acd355798072c42abbd11335ecf09/src/standard.mly#L33-L41).
+
+https://github.com/ruby/lrama/pull/666
+
+### Syntax Diagrams
+
+Lrama provides an API for generating HTML syntax diagrams. These visual diagrams are highly useful as grammar development tools and can also serve as a form of automatic self-documentation.
+
+![Syntax Diagrams](https://github.com/user-attachments/assets/5d9bca77-93fd-4416-bc24-9a0f70693a22)
+
+If you use syntax diagrams, you add `--diagram` option.
+
+```console
+$ exe/lrama --diagram sample.y
+```
+
+https://github.com/ruby/lrama/pull/523
+
+### Support `--profile` option
+
+You can profile parser generation process without modification for Lrama source code.
+Currently `--profile=call-stack` and `--profile=memory` are supported.
+
+```console
+$ exe/lrama --profile=call-stack sample/calc.y
+```
+
+Then "tmp/stackprof-cpu-myapp.dump" is generated.
+
+https://github.com/ruby/lrama/pull/525
+
+### Add support Start-Symbol: `%start`
+
+https://github.com/ruby/lrama/pull/576
+
 ## Lrama 0.7.0 (2025-01-21)
 
-## [EXPERIMENTAL] Support the generation of the IELR(1) parser described in this paper
+### [EXPERIMENTAL] Support the generation of the IELR(1) parser described in this paper
 
 Support the generation of the IELR(1) parser described in this paper.
 https://www.sciencedirect.com/science/article/pii/S0167642309001191
@@ -15,12 +350,12 @@ If you use IELR(1) parser, you can write the following directive in your grammar
 
 But, currently IELR(1) parser is experimental feature. If you find any bugs, please report it to us. Thank you.
 
-## Support `-t` option as same as `--debug` option
+### Support `-t` option as same as `--debug` option
 
 Support to `-t` option as same as `--debug` option.
 These options align with Bison behavior. So same as `--debug` option.
 
-## Trace only explicit rules
+### Trace only explicit rules
 
 Support to trace only explicit rules.
 If you use `--trace=rules` option, it shows include mid-rule actions. If you want to show only explicit rules, you can use `--trace=only-explicit-rules` option.
@@ -97,9 +432,9 @@ nterm.y:6:7: symbol EOI redeclared as a nonterminal
 
 ## Lrama 0.6.10 (2024-09-11)
 
-### Aliased Named References for actions of RHS in parameterizing rules
+### Aliased Named References for actions of RHS in Parameterizing rules
 
-Allow to use aliased named references for actions of RHS in parameterizing rules.
+Allow to use aliased named references for actions of RHS in Parameterizing rules.
 
 ```yacc
 %rule sum(X, Y): X[summand] '+' Y[addend] { $$ = $summand + $addend }
@@ -109,9 +444,9 @@ Allow to use aliased named references for actions of RHS in parameterizing rules
 https://github.com/ruby/lrama/pull/410
 
 
-### Named References for actions of RHS in parameterizing rules caller side
+### Named References for actions of RHS in Parameterizing rules caller side
 
-Allow to use named references for actions of RHS in parameterizing rules caller side.
+Allow to use named references for actions of RHS in Parameterizing rules caller side.
 
 ```yacc
 opt_nl: '\n'?[nl] <str> { $$ = $nl; }
@@ -120,9 +455,9 @@ opt_nl: '\n'?[nl] <str> { $$ = $nl; }
 
 https://github.com/ruby/lrama/pull/414
 
-### Widen the definable position of parameterizing rules
+### Widen the definable position of Parameterizing rules
 
-Allow to define parameterizing rules in the middle of the grammar.
+Allow to define Parameterizing rules in the middle of the grammar.
 
 ```yacc
 %rule defined_option(X): /* empty */
@@ -186,15 +521,15 @@ Change to `%locations` directive not set by default.
 
 https://github.com/ruby/lrama/pull/446
 
-### Diagnostics report for parameterizing rules redefine
+### Diagnostics report for parameterized rules redefine
 
-Support to warning redefined parameterizing rules.
-Run `exe/lrama -W` or  `exe/lrama --warnings` to show redefined parameterizing rules.
+Support to warning redefined parameterized rules.
+Run `exe/lrama -W` or  `exe/lrama --warnings` to show redefined parameterized rules.
 
 ```console
 $ exe/lrama -W sample/calc.y
-parameterizing rule redefined: redefined_method(X)
-parameterizing rule redefined: redefined_method(X)
+parameterized rule redefined: redefined_method(X)
+parameterized rule redefined: redefined_method(X)
 ```
 
 https://github.com/ruby/lrama/pull/448
@@ -208,9 +543,9 @@ https://github.com/ruby/lrama/pull/457
 
 ## Lrama 0.6.9 (2024-05-02)
 
-### Callee side tag specification of parameterizing rules
+### Callee side tag specification of Parameterizing rules
 
-Allow to specify tag on callee side of parameterizing rules.
+Allow to specify tag on callee side of Parameterizing rules.
 
 ```yacc
 %union {
@@ -221,9 +556,9 @@ Allow to specify tag on callee side of parameterizing rules.
                      ;
 ```
 
-### Named References for actions of RHS in parameterizing rules
+### Named References for actions of RHS in Parameterizing rules
 
-Allow to use named references for actions of RHS in parameterizing rules.
+Allow to use named references for actions of RHS in Parameterizing rules.
 
 ```yacc
 %rule option(number): /* empty */
@@ -233,9 +568,9 @@ Allow to use named references for actions of RHS in parameterizing rules.
 
 ## Lrama 0.6.8 (2024-04-29)
 
-### Nested parameterizing rules with tag
+### Nested Parameterizing rules with tag
 
-Allow to nested parameterizing rules with tag.
+Allow to nested Parameterizing rules with tag.
 
 ```yacc
 %union {
@@ -257,9 +592,9 @@ Allow to nested parameterizing rules with tag.
 
 ## Lrama 0.6.7 (2024-04-28)
 
-### RHS of user defined parameterizing rules contains `'symbol'?`, `'symbol'+` and `'symbol'*`.
+### RHS of user defined Parameterizing rules contains `'symbol'?`, `'symbol'+` and `'symbol'*`.
 
-User can use `'symbol'?`, `'symbol'+` and `'symbol'*` in RHS of user defined parameterizing rules.
+User can use `'symbol'?`, `'symbol'+` and `'symbol'*` in RHS of user defined Parameterizing rules.
 
 ```
 %rule with_word_seps(X): /* empty */
@@ -319,7 +654,7 @@ expr : number { $$ = $1; }
 
 ### Typed Midrule Actions
 
-User can specify the type of mid rule action by tag (`<bar>`) instead of specifying it with in an action.
+User can specify the type of mid-rule action by tag (`<bar>`) instead of specifying it with in an action.
 
 ```yacc
 primary: k_case expr_value terms?
@@ -394,7 +729,7 @@ https://github.com/ruby/lrama/pull/382
 
 User can set codes for freeing semantic value resources by using `%destructor`.
 In general, these resources are freed by actions or after parsing.
-However if syntax error happens in parsing, these codes may not be executed.
+However, if syntax error happens in parsing, these codes may not be executed.
 Codes associated to `%destructor` are executed when semantic value is popped from the stack by an error.
 
 ```yacc
@@ -432,7 +767,7 @@ Lrama introduces two features to support another semantic value stack by parser 
 1. Callback entry points
 
 User can emulate semantic value stack by these callbacks.
-Lrama provides these five callbacks. Registered functions are called when each event happen. For example %after-shift function is called when shift happens on original semantic value stack.
+Lrama provides these five callbacks. Registered functions are called when each event happens. For example %after-shift function is called when shift happens on original semantic value stack.
 
 * `%after-shift` function_name
 * `%before-reduce` function_name
@@ -460,15 +795,15 @@ https://github.com/ruby/lrama/pull/367
 ### %no-stdlib directive
 
 If `%no-stdlib` directive is set, Lrama doesn't load Lrama standard library for
-parameterizing rules, stdlib.y.
+parameterized rules, stdlib.y.
 
 https://github.com/ruby/lrama/pull/344
 
 ## Lrama 0.6.1 (2024-01-13)
 
-### Nested parameterizing rules
+### Nested Parameterizing rules
 
-Allow to pass an instantiated rule to other parameterizing rules.
+Allow to pass an instantiated rule to other Parameterizing rules.
 
 ```yacc
 %rule constant(X) : X
@@ -485,7 +820,7 @@ program         : option(constant(number)) // Nested rule
 %%
 ```
 
-Allow to use nested parameterizing rules when define parameterizing rules.
+Allow to use nested Parameterizing rules when define Parameterizing rules.
 
 ```yacc
 %rule option(x) : /* empty */
@@ -510,9 +845,9 @@ https://github.com/ruby/lrama/pull/337
 
 ## Lrama 0.6.0 (2023-12-25)
 
-### User defined parameterizing rules
+### User defined Parameterizing rules
 
-Allow to define parameterizing rule by `%rule` directive.
+Allow to define Parameterizing rule by `%rule` directive.
 
 ```yacc
 %rule pair(X, Y): X Y { $$ = $1 + $2; }
@@ -532,7 +867,7 @@ https://github.com/ruby/lrama/pull/285
 
 ## Lrama 0.5.11 (2023-12-02)
 
-### Type specification of parameterizing rules
+### Type specification of Parameterizing rules
 
 Allow to specify type of rules by specifying tag, `<i>` in below example.
 Tag is post-modification style.
@@ -556,13 +891,13 @@ https://github.com/ruby/lrama/pull/272
 
 ### Parameterizing rules (option, nonempty_list, list)
 
-Support function call style parameterizing rules for `option`, `nonempty_list` and `list`.
+Support function call style Parameterizing rules for `option`, `nonempty_list` and `list`.
 
 https://github.com/ruby/lrama/pull/197
 
 ### Parameterizing rules (separated_list)
 
-Support `separated_list` and `separated_nonempty_list` parameterizing rules.
+Support `separated_list` and `separated_nonempty_list` Parameterizing rules.
 
 ```text
 program: separated_list(',', number)
@@ -618,7 +953,7 @@ https://github.com/ruby/lrama/pull/181
 
 ### Racc parser
 
-Replace Lrama's parser from hand written parser to LR parser generated by Racc.
+Replace Lrama's parser from handwritten parser to LR parser generated by Racc.
 Lrama uses `--embedded` option to generate LR parser because Racc is changed from default gem to bundled gem by Ruby 3.3 (https://github.com/ruby/lrama/pull/132).
 
 https://github.com/ruby/lrama/pull/62
