@@ -550,7 +550,7 @@ static int iseq_set_optargs_table(rb_iseq_t *iseq);
 static int iseq_set_parameters_lvar_state(const rb_iseq_t *iseq);
 
 static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr, bool ignore);
-static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped);
+static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *line_node, const rb_node_list2_t *list, int method_call_keywords, int popped);
 
 /*
  * To make Array to LinkedList, use link_anchor
@@ -5235,22 +5235,25 @@ static VALUE
 get_symbol_value(rb_iseq_t *iseq, const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_SYM:
-        return rb_node_sym_string_val(node);
+      case RB_SYMBOL_NODE:
+        return rb_node_sym_string_val2(node);
       default:
         UNKNOWN_NODE("get_symbol_value", node, Qnil);
     }
 }
 
 static VALUE
-node_hash_unique_key_index(rb_iseq_t *iseq, rb_node_hash_t *node_hash, int *count_ptr)
+node_hash_unique_key_index(rb_iseq_t *iseq, rb_keyword_hash_node_t *node_hash, int *count_ptr)
 {
-    NODE *node = node_hash->nd_head;
+    NODE *node;
     VALUE hash = rb_hash_new();
     VALUE ary = rb_ary_new();
+    rb_node_list2_t *list = &node_hash->elements;
 
-    for (int i = 0; node != NULL; i++, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
-        VALUE key = get_symbol_value(iseq, RNODE_LIST(node)->nd_head);
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        node = list->nodes[i];
+        RUBY_ASSERT(nd_type_p(node, RB_ASSOC_NODE));
+        VALUE key = get_symbol_value(iseq, RB_NODE_ASSOC(node)->key);
         VALUE idx = rb_hash_aref(hash, key);
         if (!NIL_P(idx)) {
             rb_ary_store(ary, FIX2INT(idx), Qfalse);
@@ -5266,48 +5269,54 @@ node_hash_unique_key_index(rb_iseq_t *iseq, rb_node_hash_t *node_hash, int *coun
 
 static int
 compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-                    const NODE *const root_node,
+                    const rb_keyword_hash_node_t *const root_node,
                     struct rb_callinfo_kwarg **const kw_arg_ptr,
                     unsigned int *flag)
 {
-    RUBY_ASSERT(nd_type_p(root_node, NODE_HASH));
     RUBY_ASSERT(kw_arg_ptr != NULL);
     RUBY_ASSERT(flag != NULL);
 
-    if (RNODE_HASH(root_node)->nd_head && nd_type_p(RNODE_HASH(root_node)->nd_head, NODE_LIST)) {
-        const NODE *node = RNODE_HASH(root_node)->nd_head;
-        int seen_nodes = 0;
+    rb_node_list2_t *list = &root_node->elements;
 
-        while (node) {
-            const NODE *key_node = RNODE_LIST(node)->nd_head;
+    if (RB_NODE_LIST_LEN(list)) {
+        int seen_nodes = 0;
+        const NODE *node;
+
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+            node = list->nodes[i];
             seen_nodes++;
 
-            RUBY_ASSERT(nd_type_p(node, NODE_LIST));
-            if (key_node && nd_type_p(key_node, NODE_SYM)) {
-                /* can be keywords */
-            }
-            else {
-                if (flag) {
-                    *flag |= VM_CALL_KW_SPLAT;
-                    if (seen_nodes > 1 || RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
-                        /* A new hash will be created for the keyword arguments
-                         * in this case, so mark the method as passing mutable
-                         * keyword splat.
-                         */
-                        *flag |= VM_CALL_KW_SPLAT_MUT;
-                    }
+            switch (nd_type(node)) {
+              case RB_ASSOC_NODE:
+              case RB_ASSOC_SPLAT_NODE:
+                if (nd_type_p(node, RB_ASSOC_NODE) && nd_type_p(RB_NODE_ASSOC(node)->key, RB_SYMBOL_NODE)) {
+                    /* can be keywords */
                 }
-                return FALSE;
+                else {
+                    if (flag) {
+                        // TODO: Remove this line? Because caller set the flag.
+                        *flag |= VM_CALL_KW_SPLAT;
+                        // TODO: Enough to check `RB_NODE_LIST_LEN(list) > 1` ?
+                        if (seen_nodes > 1 || RB_NODE_LIST_LEN(list) > 1) {
+                            /* A new hash will be created for the keyword arguments
+                             * in this case, so mark the method as passing mutable
+                             * keyword splat.
+                             */
+                            *flag |= VM_CALL_KW_SPLAT_MUT;
+                        }
+                    }
+                    return FALSE;
+                }
+                break;
+              default:
+                rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
             }
-            node = RNODE_LIST(node)->nd_next; /* skip value node */
-            node = RNODE_LIST(node)->nd_next;
         }
 
         /* may be keywords */
-        node = RNODE_HASH(root_node)->nd_head;
         {
             int len = 0;
-            VALUE key_index = node_hash_unique_key_index(iseq, RNODE_HASH(root_node), &len);
+            VALUE key_index = node_hash_unique_key_index(iseq, root_node, &len);
 
             if (len > VM_CALL_KW_LEN_MAX) {
                 COMPILE_ERROR(ERROR_ARGS_AT(root_node) "too many keyword arguments (%d, maximum is %d)",
@@ -5324,9 +5333,13 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
             *kw_arg_ptr = kw_arg;
 
-            for (i=0; node != NULL; i++, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
-                const NODE *key_node = RNODE_LIST(node)->nd_head;
-                const NODE *val_node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+                node = list->nodes[i];
+
+                RUBY_ASSERT(nd_type_p(node, RB_ASSOC_NODE));
+
+                const NODE *key_node = RB_NODE_ASSOC(node)->key;
+                const NODE *val_node = RB_NODE_ASSOC(node)->value;
                 int popped = TRUE;
                 if (rb_ary_entry(key_index, i)) {
                     keywords[j] = get_symbol_value(iseq, key_node);
@@ -5376,38 +5389,38 @@ static inline VALUE
 static_literal_value(const NODE *node, rb_iseq_t *iseq)
 {
     switch (nd_type(node)) {
-      case NODE_INTEGER:
+      case RB_INTEGER_NODE:
         {
             VALUE lit = rb_node_integer_literal_val(node);
             if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
             return lit;
         }
-      case NODE_FLOAT:
+      case RB_FLOAT_NODE:
         {
             VALUE lit = rb_node_float_literal_val(node);
             if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
             return lit;
         }
-      case NODE_RATIONAL:
+      case RB_RATIONAL_NODE:
         return rb_ractor_make_shareable(rb_node_rational_literal_val(node));
-      case NODE_IMAGINARY:
+      case RB_IMAGINARY_NODE:
         return rb_ractor_make_shareable(rb_node_imaginary_literal_val(node));
-      case NODE_NIL:
+      case RB_NIL_NODE:
         return Qnil;
-      case NODE_TRUE:
+      case RB_TRUE_NODE:
         return Qtrue;
-      case NODE_FALSE:
+      case RB_FALSE_NODE:
         return Qfalse;
-      case NODE_SYM:
-        return rb_node_sym_string_val(node);
-      case NODE_REGX:
+      case RB_SYMBOL_NODE:
+        return rb_node_sym_string_val2(node);
+      case RB_REGULAR_EXPRESSION_NODE:
         return RB_OBJ_SET_SHAREABLE(rb_node_regx_string_val(node));
-      case NODE_LINE:
+      case RB_SOURCE_LINE_NODE:
         return rb_node_line_lineno_val(node);
-      case NODE_ENCODING:
+      case RB_SOURCE_ENCODING_NODE:
         return rb_node_encoding_val(node);
-      case NODE_FILE:
-      case NODE_STR:
+      case RB_SOURCE_FILE_NODE:
+      case RB_STRING_NODE:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
             VALUE lit = get_string_value(node);
             VALUE str = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), (int)nd_line(node));
@@ -5569,28 +5582,36 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const r
 static inline int
 static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
 {
-    return RNODE_LIST(node)->nd_head && static_literal_node_p(RNODE_LIST(node)->nd_head, iseq, true) && static_literal_node_p(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq, false);
+    return nd_type_p(node, RB_ASSOC_NODE) && static_literal_node_p(RB_NODE_ASSOC(node)->key, iseq, true) && static_literal_node_p(RB_NODE_ASSOC(node)->value, iseq, false);
 }
 
 static int
-compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped)
+compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *line_node, const rb_node_list2_t *list, int method_call_keywords, int popped)
 {
-    const NODE *line_node = node;
+    const NODE *node;
 
-    node = RNODE_HASH(node)->nd_head;
-
-    if (!node || nd_type_p(node, NODE_ZLIST)) {
+    if (!list || RB_NODE_LIST_LEN(list) == 0) {
         if (!popped) {
             ADD_INSN1(ret, line_node, newhash, INT2FIX(0));
         }
         return 0;
     }
 
-    EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
-
     if (popped) {
-        for (; node; node = RNODE_LIST(node)->nd_next) {
-            NO_CHECK(COMPILE_(ret, "hash element", RNODE_LIST(node)->nd_head, popped));
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+            node = list->nodes[i];
+
+            switch (nd_type(node)) {
+              case RB_ASSOC_NODE:
+                NO_CHECK(COMPILE_(ret, "hash element", RB_NODE_ASSOC(node)->key, popped));
+                NO_CHECK(COMPILE_(ret, "hash element", RB_NODE_ASSOC(node)->value, popped));
+                break;
+              case RB_ASSOC_SPLAT_NODE:
+                NO_CHECK(COMPILE_(ret, "hash element", RB_NODE_ASSOC_SPLAT(node)->value, popped));
+                break;
+              default:
+                rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+            }
         }
         return 1;
     }
@@ -5637,26 +5658,28 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
         first_chunk = stack_len = 0;                                                    \
     }
 
-    while (node) {
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list);) {
         int count = 1;
+        node = list->nodes[i];
 
         /* pre-allocation check (this branch can be omittable) */
         if (static_literal_node_pair_p(node, iseq)) {
             /* count the elements that are optimizable */
-            const NODE *node_tmp = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next;
-            for (; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = RNODE_LIST(RNODE_LIST(node_tmp)->nd_next)->nd_next)
+            size_t j = i + 1;
+            for (; j < RB_NODE_LIST_LEN(list) && static_literal_node_pair_p(list->nodes[j], iseq); j++)
                 count++;
 
-            if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
+            if ((first_chunk && stack_len == 0 && (j == RB_NODE_LIST_LEN(list))) || count >= min_tmp_hash_len) {
                 /* The literal contains only optimizable elements, or the subsequence is long enough */
-                VALUE ary = rb_ary_hidden_new(count);
+                VALUE ary = rb_ary_hidden_new(count * 2);
 
                 /* Create a hidden hash */
-                for (; count; count--, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
+                for (; count; count--, i++) {
                     VALUE elem[2];
-                    elem[0] = static_literal_value(RNODE_LIST(node)->nd_head, iseq);
+                    node = list->nodes[i];
+                    elem[0] = static_literal_value(RB_NODE_ASSOC(node)->key, iseq);
                     if (!RB_SPECIAL_CONST_P(elem[0])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[0]);
-                    elem[1] = static_literal_value(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq);
+                    elem[1] = static_literal_value(RB_NODE_ASSOC(node)->value, iseq);
                     if (!RB_SPECIAL_CONST_P(elem[1])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[1]);
                     rb_ary_cat(ary, elem, 2);
                 }
@@ -5684,32 +5707,31 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
         }
 
         /* Base case: Compile "count" elements */
-        for (; count; count--, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
+        for (; count; count--, i++) {
+            node = list->nodes[i];
 
-            if (CPDEBUG > 0) {
-                EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
-            }
-
-            if (RNODE_LIST(node)->nd_head) {
+            switch (nd_type(node)) {
+              case RB_ASSOC_NODE: {
                 /* Normal key-value pair */
-                NO_CHECK(COMPILE_(anchor, "hash key element", RNODE_LIST(node)->nd_head, 0));
-                NO_CHECK(COMPILE_(anchor, "hash value element", RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, 0));
+                NO_CHECK(COMPILE_(anchor, "hash key element", RB_NODE_ASSOC(node)->key, 0));
+                NO_CHECK(COMPILE_(anchor, "hash value element", RB_NODE_ASSOC(node)->value, 0));
                 stack_len += 2;
 
                 /* If there are many pushed elements, flush them to avoid stack overflow */
                 if (stack_len >= max_stack_len) FLUSH_CHUNK();
-            }
-            else {
+                break;
+              }
+              case RB_ASSOC_SPLAT_NODE: {
                 /* kwsplat case: foo(..., **kw, ...) */
                 FLUSH_CHUNK();
 
-                const NODE *kw = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
-                int empty_kw = nd_type_p(kw, NODE_HASH) && (!RNODE_HASH(kw)->nd_head); /* foo(  ..., **{}, ...) */
+                const NODE *kw = RB_NODE_ASSOC_SPLAT(node)->value;
+                int empty_kw = nd_type_p(kw, RB_HASH_NODE) && (!RB_NODE_LIST_LEN(&RB_NODE_HASH(kw)->elements)); /* foo(  ..., **{}, ...) */
                 int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
-                int last_kw = !RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next; /* foo(  ..., **kw) */
+                int last_kw = i == RB_NODE_LIST_LEN(list) - 1; /* foo(  ..., **kw) */
                 int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
 
-                empty_kw = empty_kw || nd_type_p(kw, NODE_NIL); /* foo(  ..., **nil, ...) */
+                empty_kw = empty_kw || nd_type_p(kw, RB_NIL_NODE); /* foo(  ..., **nil, ...) */
                 if (empty_kw) {
                     if (only_kw && method_call_keywords) {
                         /* **{} appears at the only keyword argument in method call,
@@ -5756,9 +5778,135 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 }
 
                 first_chunk = 0;
+                break;
+              }
+            default:
+                rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
             }
         }
     }
+
+    // while (node) {
+    //     int count = 1;
+
+    //     /* pre-allocation check (this branch can be omittable) */
+    //     if (static_literal_node_pair_p(node, iseq)) {
+    //         /* count the elements that are optimizable */
+    //         const NODE *node_tmp = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next;
+    //         for (; node_tmp && static_literal_node_pair_p(node_tmp, iseq); node_tmp = RNODE_LIST(RNODE_LIST(node_tmp)->nd_next)->nd_next)
+    //             count++;
+
+    //         if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
+    //             /* The literal contains only optimizable elements, or the subsequence is long enough */
+    //             VALUE ary = rb_ary_hidden_new(count);
+
+    //             /* Create a hidden hash */
+    //             for (; count; count--, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
+    //                 VALUE elem[2];
+    //                 elem[0] = static_literal_value(RNODE_LIST(node)->nd_head, iseq);
+    //                 if (!RB_SPECIAL_CONST_P(elem[0])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[0]);
+    //                 elem[1] = static_literal_value(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq);
+    //                 if (!RB_SPECIAL_CONST_P(elem[1])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[1]);
+    //                 rb_ary_cat(ary, elem, 2);
+    //             }
+    //             VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+    //             rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+    //             hash = RB_OBJ_SET_FROZEN_SHAREABLE(rb_obj_hide(hash));
+
+    //             /* Emit optimized code */
+    //             FLUSH_CHUNK();
+    //             if (first_chunk) {
+    //                 ADD_INSN1(ret, line_node, duphash, hash);
+    //                 first_chunk = 0;
+    //             }
+    //             else {
+    //                 ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    //                 ADD_INSN(ret, line_node, swap);
+
+    //                 ADD_INSN1(ret, line_node, putobject, hash);
+
+    //                 ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+    //             }
+    //             RB_OBJ_WRITTEN(iseq, Qundef, hash);
+    //         }
+    //     }
+
+    //     /* Base case: Compile "count" elements */
+    //     for (; count; count--, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
+
+    //         if (CPDEBUG > 0) {
+    //             EXPECT_NODE("compile_hash", node, NODE_LIST, -1);
+    //         }
+
+    //         if (RNODE_LIST(node)->nd_head) {
+    //             /* Normal key-value pair */
+    //             NO_CHECK(COMPILE_(anchor, "hash key element", RNODE_LIST(node)->nd_head, 0));
+    //             NO_CHECK(COMPILE_(anchor, "hash value element", RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, 0));
+    //             stack_len += 2;
+
+    //             /* If there are many pushed elements, flush them to avoid stack overflow */
+    //             if (stack_len >= max_stack_len) FLUSH_CHUNK();
+    //         }
+    //         else {
+    //             /* kwsplat case: foo(..., **kw, ...) */
+    //             FLUSH_CHUNK();
+
+    //             const NODE *kw = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
+    //             int empty_kw = nd_type_p(kw, NODE_HASH) && (!RNODE_HASH(kw)->nd_head); /* foo(  ..., **{}, ...) */
+    //             int first_kw = first_chunk && stack_len == 0; /* foo(1,2,3, **kw, ...) */
+    //             int last_kw = !RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next; /* foo(  ..., **kw) */
+    //             int only_kw = last_kw && first_kw;            /* foo(1,2,3, **kw) */
+
+    //             empty_kw = empty_kw || nd_type_p(kw, NODE_NIL); /* foo(  ..., **nil, ...) */
+    //             if (empty_kw) {
+    //                 if (only_kw && method_call_keywords) {
+    //                     /* **{} appears at the only keyword argument in method call,
+    //                      * so it won't be modified.
+    //                      * kw is a special NODE_LIT that contains a special empty hash,
+    //                      * so this emits: putobject {}.
+    //                      * This is only done for method calls and not for literal hashes,
+    //                      * because literal hashes should always result in a new hash.
+    //                      */
+    //                     NO_CHECK(COMPILE(ret, "keyword splat", kw));
+    //                 }
+    //                 else if (first_kw) {
+    //                     /* **{} appears as the first keyword argument, so it may be modified.
+    //                      * We need to create a fresh hash object.
+    //                      */
+    //                     ADD_INSN1(ret, line_node, newhash, INT2FIX(0));
+    //                 }
+    //                 /* Any empty keyword splats that are not the first can be ignored.
+    //                  * since merging an empty hash into the existing hash is the same
+    //                  * as not merging it. */
+    //             }
+    //             else {
+    //                 if (only_kw && method_call_keywords) {
+    //                     /* **kw is only keyword argument in method call.
+    //                      * Use directly.  This will be not be flagged as mutable.
+    //                      * This is only done for method calls and not for literal hashes,
+    //                      * because literal hashes should always result in a new hash.
+    //                      */
+    //                     NO_CHECK(COMPILE(ret, "keyword splat", kw));
+    //                 }
+    //                 else {
+    //                     /* There is more than one keyword argument, or this is not a method
+    //                      * call.  In that case, we need to add an empty hash (if first keyword),
+    //                      * or merge the hash to the accumulated hash (if not the first keyword).
+    //                      */
+    //                     ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    //                     if (first_kw) ADD_INSN1(ret, line_node, newhash, INT2FIX(0));
+    //                     else ADD_INSN(ret, line_node, swap);
+
+    //                     NO_CHECK(COMPILE(ret, "keyword splat", kw));
+
+    //                     ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+    //                 }
+    //             }
+
+    //             first_chunk = 0;
+    //         }
+    //     }
+    // }
 
     FLUSH_CHUNK();
 #undef FLUSH_CHUNK
@@ -6857,23 +7005,21 @@ check_keyword(const NODE *node)
 #endif
 
 static bool
-keyword_node_single_splat_p(NODE *kwnode)
+keyword_node_single_splat_p(rb_keyword_hash_node_t *kwnode)
 {
-    RUBY_ASSERT(keyword_node_p(kwnode));
-
-    NODE *node = RNODE_HASH(kwnode)->nd_head;
-    return RNODE_LIST(node)->nd_head == NULL &&
-           RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next == NULL;
+    rb_node_list2_t *list = &kwnode->elements;
+    return RB_NODE_LIST_LEN(list) == 1 &&
+           nd_type_p(list->nodes[0], RB_ASSOC_SPLAT_NODE);
 }
 
 static void
 compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
-                                     NODE *kwnode, unsigned int *flag_ptr)
+                                     rb_keyword_hash_node_t *kwnode, unsigned int *flag_ptr)
 {
     *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
     ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_INSN1(args, argn, newhash, INT2FIX(0));
-    compile_hash(iseq, args, kwnode, TRUE, FALSE);
+    compile_hash(iseq, args, kwnode, &kwnode->elements, TRUE, FALSE);
     ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
 }
 
@@ -6882,7 +7028,7 @@ compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, c
 #define DUP_SINGLE_KW_SPLAT 2
 
 static int
-compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t *nd_args, unsigned int *dup_rest, unsigned int *flag_ptr, NODE **kwnode_ptr)
+compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t *nd_args, unsigned int *dup_rest, unsigned int *flag_ptr, rb_keyword_hash_node_t **kwnode_ptr)
 {
     int len = 0;
     int stack_len = 0;
@@ -6914,7 +7060,9 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
             if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
             break;
           case RB_KEYWORD_HASH_NODE:
-            // *kwnode_ptr = node;
+            // kwnode is processed by setup_args_core
+            // then do nothing here
+            *kwnode_ptr = (rb_keyword_hash_node_t *)node;
             break;
           default:
             NO_CHECK(COMPILE_(ret, "array element", node, FALSE));
@@ -6927,18 +7075,6 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
             }
             break;
         }
-
-        // if (CPDEBUG > 0) {
-        //     EXPECT_NODE("compile_args", node, NODE_LIST, -1);
-        // }
-
-        // if (RNODE_LIST(node)->nd_next == NULL && keyword_node_p(RNODE_LIST(node)->nd_head)) { /* last node is kwnode */
-        //     *kwnode_ptr = RNODE_LIST(node)->nd_head;
-        // }
-        // else {
-            // RUBY_ASSERT(!keyword_node_p(RNODE_LIST(node)->nd_head));
-            // NO_CHECK(COMPILE_(ret, "array element", list->nodes[i], FALSE));
-        // }
     }
 
     if (stack_len) {
@@ -6955,15 +7091,29 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_nod
 {
     if (!argn) return 0;
 
-    NODE *kwnode = NULL;
+    rb_keyword_hash_node_t *kwnode = NULL;
 
-    {
-        // f(x, y, z)
-        int len = compile_args(iseq, args, argn, dup_rest, flag_ptr, &kwnode);
-        RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_ARGS_SPLAT) == 0);
+    // processe `a, b, *c` of `f(a, b, *c, k: 1, **kw)`
+    int len = compile_args(iseq, args, argn, dup_rest, flag_ptr, &kwnode);
 
-        return len;
+    // processe keyword arguments
+    if (kwnode) {
+        if (((*flag_ptr & VM_CALL_ARGS_SPLAT) == 0) && compile_keyword_arg(iseq, args, kwnode, kwarg_ptr, flag_ptr)) {
+            // Do nothing
+        }
+        else if (keyword_node_single_splat_p(kwnode) && (*dup_rest & DUP_SINGLE_KW_SPLAT)) {
+            *flag_ptr |= VM_CALL_KW_SPLAT;
+            compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
+            len++;
+        }
+        else {
+            *flag_ptr |= VM_CALL_KW_SPLAT;
+            compile_hash(iseq, args, kwnode, &kwnode->elements, TRUE, FALSE);
+            len++;
+        }
     }
+
+    return len;
 
     // switch (nd_type(argn)) {
     //   case NODE_LIST: {
@@ -11436,7 +11586,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-
+      case RB_HASH_NODE: {
+        CHECK(compile_hash(iseq, ret, node, &RB_NODE_HASH(node)->elements, FALSE, popped) >= 0);
+        break;
+      }
       case RB_RETURN_NODE: {
         CHECK(compile_return(iseq, ret, node, popped));
         break;
