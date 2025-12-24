@@ -201,6 +201,26 @@ static inline void ccan_list_add_tail_(struct ccan_list_head *h,
 }
 
 /**
+ * ccan_node_linked - is a node embedded in any list?
+ * @n: the ccan_list_node
+ *
+ * Returns false if the node belongs to any list.
+ * We tolerate two "unlinked" states. One created by ccan_list_node_init
+ * and one where the pointers are set to NULL, as by ccan_list_del when
+ * CCAN_LIST_DEBUG is enabled.
+ *
+ * Example:
+ *  ccan_list_del(&child->list);
+ *	assert(!ccan_node_linked(&child->list));
+ */
+#define ccan_node_linked(n) ccan_node_linked_(n, CCAN_LIST_LOC)
+static inline int ccan_node_linked_(const struct ccan_list_node *n, const char* abortstr)
+{
+	(void)ccan_list_debug_node(n, abortstr);
+	return n != n->next && n->next;
+}
+
+/**
  * ccan_list_empty - is a list empty?
  * @h: the ccan_list_head
  *
