@@ -337,7 +337,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
  *     Coverage.peek_result  => hash
  *
  * Returns a hash that contains filename as key and coverage array as value.
- * This is the same as `Coverage.result(stop: false, clear: false)`.
+ * This is the same as <tt>Coverage.result(stop: false, clear: false)</tt>.
  *
  *   {
  *     "file.rb" => [1, 2, nil],
