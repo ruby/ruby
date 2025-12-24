@@ -41,7 +41,8 @@ blocking_operation(void *argument)
 {
     struct blocking_state *blocking_state = (struct blocking_state *)argument;
 
-    write(blocking_state->notify_descriptor, "x", 1);
+    ssize_t ret = write(blocking_state->notify_descriptor, "x", 1);
+    (void)ret; // ignore the result for now
 
     while (!blocking_state->interrupted) {
         struct timeval tv = {1, 0};  // 1 second timeout.
