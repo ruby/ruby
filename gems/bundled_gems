@@ -6,10 +6,11 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
+rbs                 3.10.0  https://github.com/ruby/rbs 0fefe6485f565b41db33ae1d30e27705bd2a22b7
+test-unit           3.7.5   https://github.com/test-unit/test-unit
 minitest            6.0.0  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
 rake                13.3.1  https://github.com/ruby/rake
-test-unit           3.7.3   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.2   https://github.com/ruby/rss
 net-ftp             0.3.9   https://github.com/ruby/net-ftp
@@ -18,7 +19,6 @@ net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.10.0  https://github.com/ruby/rbs
 typeprof            0.31.1  https://github.com/ruby/typeprof
 debug               1.11.1  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
