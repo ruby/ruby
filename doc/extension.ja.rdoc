@@ -1,7 +1,6 @@
-{English}[rdoc-ref:extension.rdoc]
-
-
 # extension.ja.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
+
+{English}[rdoc-ref:extension.rdoc]
 
 = Rubyの拡張ライブラリの作り方
 
