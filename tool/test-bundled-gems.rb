@@ -10,11 +10,9 @@ ENV.delete("GNUMAKEFLAGS")
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
-  'rbs',
   'debug',
   'irb',
-  'power_assert',
-  'net-imap',
+  'csv',
 ] : []
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
