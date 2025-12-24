@@ -1,24 +1,54 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Grammar
     class Symbols
       class Resolver
-        attr_reader :terms, :nterms
+        # @rbs!
+        #
+        #   interface _DelegatedMethods
+        #     def symbols: () -> Array[Grammar::Symbol]
+        #     def nterms: () -> Array[Grammar::Symbol]
+        #     def terms: () -> Array[Grammar::Symbol]
+        #     def add_nterm: (id: Lexer::Token::Base, ?alias_name: String?, ?tag: Lexer::Token::Tag?) -> Grammar::Symbol
+        #     def add_term: (id: Lexer::Token::Base, ?alias_name: String?, ?tag: Lexer::Token::Tag?, ?token_id: Integer?, ?replace: bool) -> Grammar::Symbol
+        #     def find_symbol_by_number!: (Integer number) -> Grammar::Symbol
+        #     def find_symbol_by_id!: (Lexer::Token::Base id) -> Grammar::Symbol
+        #     def token_to_symbol: (Lexer::Token::Base token) -> Grammar::Symbol
+        #     def find_symbol_by_s_value!: (::String s_value) -> Grammar::Symbol
+        #     def fill_nterm_type: (Array[Grammar::Type] types) -> void
+        #     def fill_symbol_number: () -> void
+        #     def fill_printer: (Array[Grammar::Printer] printers) -> void
+        #     def fill_destructor: (Array[Destructor] destructors) -> (Destructor | bot)
+        #     def fill_error_token: (Array[Grammar::ErrorToken] error_tokens) -> void
+        #     def sort_by_number!: () -> Array[Grammar::Symbol]
+        #   end
+        #
+        #   @symbols: Array[Grammar::Symbol]?
+        #   @number: Integer
+        #   @used_numbers: Hash[Integer, bool]
 
+        attr_reader :terms #: Array[Grammar::Symbol]
+        attr_reader :nterms #: Array[Grammar::Symbol]
+
+        # @rbs () -> void
         def initialize
           @terms = []
           @nterms = []
         end
 
+        # @rbs () -> Array[Grammar::Symbol]
         def symbols
           @symbols ||= (@terms + @nterms)
         end
 
+        # @rbs () -> Array[Grammar::Symbol]
         def sort_by_number!
           symbols.sort_by!(&:number)
         end
 
+        # @rbs (id: Lexer::Token::Base, ?alias_name: String?, ?tag: Lexer::Token::Tag?, ?token_id: Integer?, ?replace: bool) -> Grammar::Symbol
         def add_term(id:, alias_name: nil, tag: nil, token_id: nil, replace: false)
           if token_id && (sym = find_symbol_by_token_id(token_id))
             if replace
@@ -43,6 +73,7 @@ module Lrama
           term
         end
 
+        # @rbs (id: Lexer::Token::Base, ?alias_name: String?, ?tag: Lexer::Token::Tag?) -> Grammar::Symbol
         def add_nterm(id:, alias_name: nil, tag: nil)
           if (sym = find_symbol_by_id(id))
             return sym
@@ -57,32 +88,39 @@ module Lrama
           nterm
         end
 
+        # @rbs (::String s_value) -> Grammar::Symbol?
         def find_term_by_s_value(s_value)
           terms.find { |s| s.id.s_value == s_value }
         end
 
+        # @rbs (::String s_value) -> Grammar::Symbol?
         def find_symbol_by_s_value(s_value)
           symbols.find { |s| s.id.s_value == s_value }
         end
 
+        # @rbs (::String s_value) -> Grammar::Symbol
         def find_symbol_by_s_value!(s_value)
           find_symbol_by_s_value(s_value) || (raise "Symbol not found. value: `#{s_value}`")
         end
 
+        # @rbs (Lexer::Token::Base id) -> Grammar::Symbol?
         def find_symbol_by_id(id)
           symbols.find do |s|
             s.id == id || s.alias_name == id.s_value
           end
         end
 
+        # @rbs (Lexer::Token::Base id) -> Grammar::Symbol
         def find_symbol_by_id!(id)
           find_symbol_by_id(id) || (raise "Symbol not found. #{id}")
         end
 
+        # @rbs (Integer token_id) -> Grammar::Symbol?
         def find_symbol_by_token_id(token_id)
           symbols.find {|s| s.token_id == token_id }
         end
 
+        # @rbs (Integer number) -> Grammar::Symbol
         def find_symbol_by_number!(number)
           sym = symbols[number]
 
@@ -92,6 +130,7 @@ module Lrama
           sym
         end
 
+        # @rbs () -> void
         def fill_symbol_number
           # YYEMPTY = -2
           # YYEOF   =  0
@@ -102,6 +141,7 @@ module Lrama
           fill_nterms_number
         end
 
+        # @rbs (Array[Grammar::Type] types) -> void
         def fill_nterm_type(types)
           types.each do |type|
             nterm = find_nterm_by_id!(type.id)
@@ -109,6 +149,7 @@ module Lrama
           end
         end
 
+        # @rbs (Array[Grammar::Printer] printers) -> void
         def fill_printer(printers)
           symbols.each do |sym|
             printers.each do |printer|
@@ -126,6 +167,7 @@ module Lrama
           end
         end
 
+        # @rbs (Array[Destructor] destructors) -> (Array[Grammar::Symbol] | bot)
         def fill_destructor(destructors)
           symbols.each do |sym|
             destructors.each do |destructor|
@@ -143,6 +185,7 @@ module Lrama
           end
         end
 
+        # @rbs (Array[Grammar::ErrorToken] error_tokens) -> void
         def fill_error_token(error_tokens)
           symbols.each do |sym|
             error_tokens.each do |token|
@@ -160,28 +203,33 @@ module Lrama
           end
         end
 
+        # @rbs (Lexer::Token::Base token) -> Grammar::Symbol
         def token_to_symbol(token)
           case token
-          when Lrama::Lexer::Token
+          when Lrama::Lexer::Token::Base
             find_symbol_by_id!(token)
           else
             raise "Unknown class: #{token}"
           end
         end
 
+        # @rbs () -> void
         def validate!
           validate_number_uniqueness!
           validate_alias_name_uniqueness!
+          validate_symbols!
         end
 
         private
 
+        # @rbs (Lexer::Token::Base id) -> Grammar::Symbol
         def find_nterm_by_id!(id)
           @nterms.find do |s|
             s.id == id
           end || (raise "Symbol not found. #{id}")
         end
 
+        # @rbs () -> void
         def fill_terms_number
           # Character literal in grammar file has
           # token id corresponding to ASCII code by default,
@@ -245,6 +293,7 @@ module Lrama
           end
         end
 
+        # @rbs () -> void
         def fill_nterms_number
           token_id = 0
 
@@ -266,6 +315,7 @@ module Lrama
           end
         end
 
+        # @rbs () -> Hash[Integer, bool]
         def used_numbers
           return @used_numbers if defined?(@used_numbers)
 
@@ -276,6 +326,7 @@ module Lrama
           @used_numbers
         end
 
+        # @rbs () -> void
         def validate_number_uniqueness!
           invalid = symbols.group_by(&:number).select do |number, syms|
             syms.count > 1
@@ -286,6 +337,7 @@ module Lrama
           raise "Symbol number is duplicated. #{invalid}"
         end
 
+        # @rbs () -> void
         def validate_alias_name_uniqueness!
           invalid = symbols.select(&:alias_name).group_by(&:alias_name).select do |alias_name, syms|
             syms.count > 1
@@ -294,6 +346,15 @@ module Lrama
           return if invalid.empty?
 
           raise "Symbol alias name is duplicated. #{invalid}"
+        end
+
+        # @rbs () -> void
+        def validate_symbols!
+          symbols.each { |sym| sym.id.validate }
+          errors = symbols.map { |sym| sym.id.errors }.flatten.compact
+          return if errors.empty?
+
+          raise errors.join("\n")
         end
       end
     end
