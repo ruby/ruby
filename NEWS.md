@@ -280,6 +280,12 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+We only list stdlib changes that are notable feature changes.
+
+Other changes are listed in the following sections. We also listed release
+history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
+releases.
+
 The following bundled gems are promoted from default gems.
 
 * ostruct 0.6.3
@@ -292,15 +298,6 @@ The following bundled gems are promoted from default gems.
 * reline 0.6.3
 * readline 0.0.4
 * fiddle 1.1.8
-
-The following bundled gems are added.
-
-
-We only list stdlib changes that are notable feature changes.
-
-Other changes are listed in the following sections. We also listed release
-history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
-releases.
 
 The following default gem is added.
 
@@ -365,7 +362,7 @@ The following bundled gems are updated.
 
 ### RubyGems and Bundler
 
-see the following links for details.
+Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for details.
 
 * [Upgrading to RubyGems/Bundler 4 - RubyGems Blog](https://blog.rubygems.org/2025/12/03/upgrade-to-rubygems-bundler-4.html)
 * [4.0.0 Released - RubyGems Blog](https://blog.rubygems.org/2025/12/03/4.0.0-released.html)
