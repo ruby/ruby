@@ -28,6 +28,7 @@ extern int yydebug;
   <%-# b4_declare_yylstype -%>
     <%-# b4_value_type_define -%>
 /* Value type.  */
+<% if output.grammar.union %>
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
@@ -40,6 +41,13 @@ typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
+<% else %>
+#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+typedef int YYSTYPE;
+# define YYSTYPE_IS_TRIVIAL 1
+# define YYSTYPE_IS_DECLARED 1
+#endif
+<% end %>
 
     <%-# b4_location_type_define -%>
 /* Location type.  */

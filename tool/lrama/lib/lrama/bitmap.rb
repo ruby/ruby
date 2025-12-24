@@ -3,7 +3,10 @@
 
 module Lrama
   module Bitmap
-    # @rbs (Array[Integer] ary) -> Integer
+    # @rbs!
+    #   type bitmap = Integer
+
+    # @rbs (Array[Integer] ary) -> bitmap
     def self.from_array(ary)
       bit = 0
 
@@ -14,21 +17,31 @@ module Lrama
       bit
     end
 
-    # @rbs (Integer int) -> Array[Integer]
+    # @rbs (Integer int) -> bitmap
+    def self.from_integer(int)
+      1 << int
+    end
+
+    # @rbs (bitmap int) -> Array[Integer]
     def self.to_array(int)
       a = [] #: Array[Integer]
       i = 0
 
-      while int > 0 do
-        if int & 1 == 1
+      len = int.bit_length
+      while i < len do
+        if int[i] == 1
           a << i
         end
 
         i += 1
-        int >>= 1
       end
 
       a
+    end
+
+    # @rbs (bitmap int, Integer size) -> Array[bool]
+    def self.to_bool_array(int, size)
+      Array.new(size) { |i| int[i] == 1 }
     end
   end
 end
