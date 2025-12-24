@@ -59,6 +59,7 @@ jobs:
         id: bundled_gems
         run: |
           ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems >> $GITHUB_OUTPUT
+        if: ${{ env.UPDATE_NEWS_ENABLED == 'true' }}
 
       - name: Update spec/bundler/support/builders.rb
         run: |
@@ -66,6 +67,7 @@ jobs:
           rake_version = File.read("gems/bundled_gems")[/^rake\s+(\S+)/, 1]
           print ARGF.read.sub(/^ *def rake_version\s*\K".*?"/) {rake_version.dump}
         shell: ruby -i~ {0} spec/bundler/support/builders.rb
+        if: ${{ env.UPDATE_NEWS_ENABLED == 'true' }}
 
       - name: Maintain updated gems list in NEWS
         run: |
