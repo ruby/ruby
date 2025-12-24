@@ -440,6 +440,16 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   install the `sorted_set` gem and `require 'sorted_set'` to use `SortedSet`.
   [[Feature #21287]]
 
+* Net::HTTP
+
+    * The default behavior of automatically setting the `Content-Type` header
+      to `application/x-www-form-urlencoded` for requests with a body
+      (e.g., `POST`, `PUT`) when the header was not explicitly set has been
+      removed. If your application relied on this automatic default, your
+      requests will now be sent without a Content-Type header, potentially
+      breaking compatibility with certain servers.
+      [[GH-net-http #205]]
+
 ## C API updates
 
 * IO
@@ -573,3 +583,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #21698]:     https://bugs.ruby-lang.org/issues/21698
 [Feature #21701]: https://bugs.ruby-lang.org/issues/21701
 [Bug #21789]:     https://bugs.ruby-lang.org/issues/21789
+[GH-net-http #205]: https://github.com/ruby/net-http/issues/205
