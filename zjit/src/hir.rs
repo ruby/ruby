@@ -5309,7 +5309,6 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
         | YARVINSN_branchnil
         | YARVINSN_leave => false,
         // TODO(max): Read the invokebuiltin target from operands and determine if it's leaf
-        YARVINSN_invokebuiltin => true,
         _ => unsafe { !rb_zjit_insn_leaf(opcode as i32, operands) }
     }
 }
