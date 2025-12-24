@@ -6,7 +6,7 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-rbs                 3.10.0  https://github.com/ruby/rbs 72d79776b0da7f528c0144fa5f8a59d413c6ee86
+rbs                 3.10.0  https://github.com/ruby/rbs f3f3f8697ac3bd6d5f3090c0956b26f391a30826
 test-unit           3.7.5   https://github.com/test-unit/test-unit
 minitest            6.0.0  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
