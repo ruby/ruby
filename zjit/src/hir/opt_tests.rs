@@ -2742,9 +2742,10 @@ mod hir_opt_tests {
           SetLocal :a, l0, EP@3, v13
           v19:BasicObject = Send v8, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
           v20:BasicObject = GetLocal :a, l0, EP@3
-          v24:BasicObject = GetLocal :a, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v26:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -3140,9 +3141,10 @@ mod hir_opt_tests {
           v24:BasicObject = Send v11, 0x1000, :each_line, v22 # SendFallbackReason: Complex argument passing
           v25:BasicObject = GetLocal :s, l0, EP@4
           v26:BasicObject = GetLocal :a, l0, EP@3
-          v30:BasicObject = GetLocal :a, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v32:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v30
+          Return v32
         ");
     }
 
@@ -5906,17 +5908,18 @@ mod hir_opt_tests {
           SetLocal :result, l0, EP@3, v13
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
-          v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v38:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, B)
-          v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v41:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
           PatchPoint NoSingletonClass(Array@0x1020)
-          v43:BasicObject = CCallVariadic v36, :zip@0x1058, v39
+          v45:BasicObject = CCallVariadic v38, :zip@0x1058, v41
           v25:BasicObject = GetLocal :result, l0, EP@3
-          v29:BasicObject = GetLocal :result, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v31:BasicObject = GetLocal :result, l0, EP@3
           CheckInterrupts
-          Return v29
+          Return v31
         ");
     }
 
@@ -9638,26 +9641,28 @@ mod hir_opt_tests {
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
          CheckInterrupts
-         v27:BasicObject = GetLocal :a, l0, EP@6
-         SetLocal :formatted, l0, EP@3, v27
-         v39:BasicObject = GetLocal :formatted, l0, EP@3
+         PatchPoint NoEPEscape(read_nil_local)
+         v29:BasicObject = GetLocal :a, l0, EP@6
+         SetLocal :formatted, l0, EP@3, v29
+         PatchPoint NoEPEscape(read_nil_local)
+         v43:BasicObject = GetLocal :formatted, l0, EP@3
          PatchPoint SingleRactorMode
-         v56:HeapBasicObject = GuardType v14, HeapBasicObject
-         v57:HeapBasicObject = GuardShape v56, 0x1000
-         StoreField v57, :@formatted@0x1001, v39
-         WriteBarrier v57, v39
-         v60:CShape[0x1002] = Const CShape(0x1002)
-         StoreField v57, :_shape_id@0x1003, v60
-         v45:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v60:HeapBasicObject = GuardType v14, HeapBasicObject
+         v61:HeapBasicObject = GuardShape v60, 0x1000
+         StoreField v61, :@formatted@0x1001, v43
+         WriteBarrier v61, v43
+         v64:CShape[0x1002] = Const CShape(0x1002)
+         StoreField v61, :_shape_id@0x1003, v64
+         v49:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
          PatchPoint NoSingletonClass(Class@0x1010)
-         v65:BasicObject = CCallWithFrame v45, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v48:BasicObject = GetLocal :a, l0, EP@6
-         v49:BasicObject = GetLocal :_b, l0, EP@5
-         v50:BasicObject = GetLocal :_c, l0, EP@4
-         v51:BasicObject = GetLocal :formatted, l0, EP@3
+         v69:BasicObject = CCallWithFrame v49, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v52:BasicObject = GetLocal :a, l0, EP@6
+         v53:BasicObject = GetLocal :_b, l0, EP@5
+         v54:BasicObject = GetLocal :_c, l0, EP@4
+         v55:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v65
+         Return v69
        ");
     }
 

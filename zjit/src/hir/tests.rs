@@ -3617,6 +3617,68 @@ pub mod hir_build_tests {
           SideExit TooManyKeywordParameters
         ");
     }
+
+    #[test]
+    fn test_invalidate_locals_after_all_non_leaf_opcodes() {
+        eval(r#"
+            def a(b:, c:)
+              if c == :b
+                return -> {}
+              end
+
+              raise "c is :b!" if c == :b
+            end
+
+            def test
+              # note opposite order of kwargs
+              a(c: :c, b: :b)
+            end
+        "#);
+        assert_snapshot!(hir_string("a"), @r"
+        fn a@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :b, l0, SP@6
+          v3:BasicObject = GetLocal :c, l0, SP@5
+          v4:BasicObject = GetLocal <empty>, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:Fixnum[0] = Const Value(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          v20:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v23:BasicObject = SendWithoutBlock v14, :==, v20 # SendFallbackReason: Uncategorized(opt_eq)
+          CheckInterrupts
+          v26:CBool = Test v23
+          IfFalse v26, bb3(v12, v13, v14, v15)
+          v30:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v32:BasicObject = Send v30, 0x1010, :lambda # SendFallbackReason: Uncategorized(send)
+          v33:BasicObject = GetLocal :b, l0, EP@5
+          v34:BasicObject = GetLocal :c, l0, EP@4
+          v35:BasicObject = GetLocal <empty>, l0, EP@3
+          CheckInterrupts
+          Return v32
+        bb3(v40:BasicObject, v41:BasicObject, v42:BasicObject, v43:BasicObject):
+          PatchPoint NoEPEscape(a)
+          v49:BasicObject = GetLocal :c, l0, EP@4
+          v51:StaticSymbol[:b] = Const Value(VALUE(0x1000))
+          v54:BasicObject = SendWithoutBlock v49, :==, v51 # SendFallbackReason: Uncategorized(opt_eq)
+          CheckInterrupts
+          v57:CBool = Test v54
+          IfFalse v57, bb4(v40, v41, v49, v43)
+          v61:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v62:StringExact = StringCopy v61
+          v64:BasicObject = SendWithoutBlock v40, :raise, v62 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v64
+        bb4(v69:BasicObject, v70:BasicObject, v71:BasicObject, v72:BasicObject):
+          v75:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v75
+        ");
+    }
  }
 
  /// Test successor and predecessor set computations.
