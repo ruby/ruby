@@ -326,6 +326,8 @@ The following default gems are updated.
   * 0.8.0 to [v0.8.1][english-v0.8.1]
 * erb 6.0.1
   * 4.0.4 to [v5.1.2][erb-v5.1.2], [v5.1.3][erb-v5.1.3], [v6.0.0][erb-v6.0.0], [v6.0.1][erb-v6.0.1]
+* error_highlight 0.7.1
+* etc 1.4.6
 * fcntl 1.3.0
   * 1.2.0 to [v1.3.0][fcntl-v1.3.0]
 * fileutils 1.8.0
@@ -334,8 +336,10 @@ The following default gems are updated.
   * 1.3.3 to [v1.4.0][forwardable-v1.4.0]
 * io-console 0.8.2
   * 0.8.1 to [v0.8.2][io-console-v0.8.2]
+* io-nonblock 0.3.2
 * io-wait 0.4.0
   * 0.3.2 to [v0.3.3][io-wait-v0.3.3], [v0.3.5.test1][io-wait-v0.3.5.test1], [v0.3.5][io-wait-v0.3.5], [v0.3.6][io-wait-v0.3.6], [v0.4.0][io-wait-v0.4.0]
+* ipaddr 1.2.8
 * json 2.18.0
   * 2.9.1 to [v2.10.0][json-v2.10.0], [v2.10.1][json-v2.10.1], [v2.10.2][json-v2.10.2], [v2.11.0][json-v2.11.0], [v2.11.1][json-v2.11.1], [v2.11.2][json-v2.11.2], [v2.11.3][json-v2.11.3], [v2.12.0][json-v2.12.0], [v2.12.1][json-v2.12.1], [v2.12.2][json-v2.12.2], [v2.13.0][json-v2.13.0], [v2.13.1][json-v2.13.1], [v2.13.2][json-v2.13.2], [v2.14.0][json-v2.14.0], [v2.14.1][json-v2.14.1], [v2.15.0][json-v2.15.0], [v2.15.1][json-v2.15.1], [v2.15.2][json-v2.15.2], [v2.16.0][json-v2.16.0], [v2.17.0][json-v2.17.0], [v2.17.1][json-v2.17.1], [v2.18.0][json-v2.18.0]
 * net-http 0.9.1
@@ -376,6 +380,7 @@ The following bundled gems are updated.
   * 13.2.1 to [v13.3.0][rake-v13.3.0], [v13.3.1][rake-v13.3.1]
 * test-unit 3.7.5
   * 3.6.7 to [3.6.8][test-unit-3.6.8], [3.6.9][test-unit-3.6.9], [3.7.0][test-unit-3.7.0], [3.7.1][test-unit-3.7.1], [3.7.2][test-unit-3.7.2], [3.7.3][test-unit-3.7.3], [3.7.4][test-unit-3.7.4], [3.7.5][test-unit-3.7.5]
+* rexml 3.4.4
 * rss 0.3.2
   * 0.3.1 to [0.3.2][rss-0.3.2]
 * net-ftp 0.3.9
@@ -390,6 +395,7 @@ The following bundled gems are updated.
   * 0.1.3 to [v0.1.4][prime-v0.1.4]
 * rbs 3.10.0
   * 3.8.0 to [v3.8.1][rbs-v3.8.1], [v3.9.0.dev.1][rbs-v3.9.0.dev.1], [v3.9.0.pre.1][rbs-v3.9.0.pre.1], [v3.9.0.pre.2][rbs-v3.9.0.pre.2], [v3.9.0][rbs-v3.9.0], [v3.9.1][rbs-v3.9.1], [v3.9.2][rbs-v3.9.2], [v3.9.3][rbs-v3.9.3], [v3.9.4][rbs-v3.9.4], [v3.9.5][rbs-v3.9.5], [v3.10.0.pre.1][rbs-v3.10.0.pre.1], [v3.10.0.pre.2][rbs-v3.10.0.pre.2], [v3.10.0][rbs-v3.10.0]
+* typeprof 0.31.1
 * debug 1.11.1
   * 1.11.0 to [v1.11.1][debug-v1.11.1]
 * base64 0.3.0
@@ -402,6 +408,7 @@ The following bundled gems are updated.
   * 0.2.0 to [v0.3.0][syslog-v0.3.0]
 * csv 3.3.5
   * 3.3.2 to [v3.3.3][csv-v3.3.3], [v3.3.4][csv-v3.3.4], [v3.3.5][csv-v3.3.5]
+* repl_type_completor 0.1.12
 
 ### RubyGems and Bundler
 
