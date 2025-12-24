@@ -1137,8 +1137,8 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
  * call-seq: fiber_interrupt(fiber, exception)
  *
  * Invoked by Ruby's core methods to notify the scheduler that the blocked fiber should be interrupted
- * with an exception. For example, IO#close uses this method to notify the fiber that waits for
- * the closed IO object.
+ * with an exception. For example, IO#close uses this method to interrupt fibers that are performing
+ * blocking IO operations.
  *
  */
 VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
