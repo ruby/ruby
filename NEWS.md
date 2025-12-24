@@ -296,8 +296,8 @@ The following bundled gems are promoted from default gems.
   * 0.4.0 to [v0.4.1][benchmark-v0.4.1], [v0.5.0][benchmark-v0.5.0]
 * logger 1.7.0
   * 1.6.4 to [v1.6.5][logger-v1.6.5], [v1.6.6][logger-v1.6.6], [v1.7.0][logger-v1.7.0]
-* rdoc 7.0.2
-  * 6.14.0 to [v6.14.1][rdoc-v6.14.1], [v6.14.2][rdoc-v6.14.2], [v6.15.0][rdoc-v6.15.0], [v6.15.1][rdoc-v6.15.1], [v6.16.0][rdoc-v6.16.0], [v6.16.1][rdoc-v6.16.1], [v6.17.0][rdoc-v6.17.0], [v7.0.0][rdoc-v7.0.0], [v7.0.1][rdoc-v7.0.1], [v7.0.2][rdoc-v7.0.2]
+* rdoc 7.0.3
+  * 6.14.0 to [v6.14.1][rdoc-v6.14.1], [v6.14.2][rdoc-v6.14.2], [v6.15.0][rdoc-v6.15.0], [v6.15.1][rdoc-v6.15.1], [v6.16.0][rdoc-v6.16.0], [v6.16.1][rdoc-v6.16.1], [v6.17.0][rdoc-v6.17.0], [v7.0.0][rdoc-v7.0.0], [v7.0.1][rdoc-v7.0.1], [v7.0.2][rdoc-v7.0.2], [v7.0.3][rdoc-v7.0.3]
 * win32ole 1.9.2
   * 1.9.1 to [v1.9.2][win32ole-v1.9.2]
 * irb 1.16.0
@@ -652,6 +652,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rdoc-v7.0.0]: https://github.com/ruby/rdoc/releases/tag/v7.0.0
 [rdoc-v7.0.1]: https://github.com/ruby/rdoc/releases/tag/v7.0.1
 [rdoc-v7.0.2]: https://github.com/ruby/rdoc/releases/tag/v7.0.2
+[rdoc-v7.0.3]: https://github.com/ruby/rdoc/releases/tag/v7.0.3
 [win32ole-v1.9.2]: https://github.com/ruby/win32ole/releases/tag/v1.9.2
 [irb-v1.15.0]: https://github.com/ruby/irb/releases/tag/v1.15.0
 [irb-v1.15.1]: https://github.com/ruby/irb/releases/tag/v1.15.1
