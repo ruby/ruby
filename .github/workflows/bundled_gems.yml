@@ -1,5 +1,8 @@
 name: bundled_gems
 
+env:
+  UPDATE_NEWS_ENABLED: false
+
 on:
   push:
     branches: ['master']
@@ -67,6 +70,7 @@ jobs:
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb bundled
+        if: ${{ env.UPDATE_NEWS_ENABLED == 'true' }}
 
       - name: Check diffs
         id: diff
