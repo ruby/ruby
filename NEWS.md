@@ -373,7 +373,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.27.0
+* minitest 6.0.0
 * power_assert 3.0.1
   * 2.0.5 to [v3.0.0][power_assert-v3.0.0], [v3.0.1][power_assert-v3.0.1]
 * rake 13.3.1
