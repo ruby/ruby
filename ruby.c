@@ -410,9 +410,6 @@ usage(const char *name, int help, int highlight, int columns)
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
-    printf("\n""Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
-           ruby_api_version_name);
-
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 

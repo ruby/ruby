@@ -426,7 +426,7 @@ class TestBox < Test::Unit::TestCase
     EnvUtil.verbose_warning do
       @box.require_relative('box/consts')
     end
-    return
+
     assert_equal 999, String::STR_CONST0
     assert_raise(NameError) { String::STR_CONST1 }
     assert_raise(NameError) { String::STR_CONST2 }

@@ -19,7 +19,7 @@ require 'English'
 |   `$!`   |   `$ERROR_INFO`   | \Exception object or `nil`             |   `nil`   |    Yes    | Kernel#raise |
 |   `$@`   | `$ERROR_POSITION` | \Array of backtrace positions or `nil` |   `nil`   |    Yes    | Kernel#raise |
 
-### Regular Expression
+### Matched \Data
 
 |   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
 |:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
@@ -127,7 +127,7 @@ Output:
 
 English - `$ERROR_POSITION`.
 
-## Regular Expression
+## Matched \Data
 
 These global variables store information about the most recent
 successful match in the current scope.
