@@ -109,11 +109,11 @@
 # +delegate.rb+.
 #
 module Forwardable
-  require 'forwardable/impl'
-
   # Version of +forwardable.rb+
-  VERSION = "1.3.3"
+  VERSION = "1.4.0"
   VERSION.freeze
+
+  # Version for backward compatibility
   FORWARDABLE_VERSION = VERSION
   FORWARDABLE_VERSION.freeze
 
@@ -190,9 +190,7 @@ module Forwardable
 
     # If it's not a class or module, it's an instance
     mod = Module === self ? self : singleton_class
-    ret = mod.module_eval(&gen)
-    mod.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
-    ret
+    mod.module_eval(&gen)
   end
 
   alias delegate instance_delegate
@@ -206,36 +204,33 @@ module Forwardable
     if Module === obj ?
          obj.method_defined?(accessor) || obj.private_method_defined?(accessor) :
          obj.respond_to?(accessor, true)
-      accessor = "#{accessor}()"
+      accessor = "(#{accessor}())"
     end
 
-    method_call = ".__send__(:#{method}, *args, &block)"
-    if _valid_method?(method)
+    args = RUBY_VERSION >= '2.7' ? '...' : '*args, &block'
+    method_call = ".__send__(:#{method}, #{args})"
+    if method.match?(/\A[_a-zA-Z]\w*[?!]?\z/)
       loc, = caller_locations(2,1)
       pre = "_ ="
       mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
-      method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
-        begin;
-          unless defined? _.#{method}
-            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
-            _#{method_call}
-          else
-            _.#{method}(*args, &block)
-          end
-        end;
+      method_call = <<~RUBY.chomp
+        if defined?(_.#{method})
+          _.#{method}(#{args})
+        else
+          ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
+          _#{method_call}
+        end
+      RUBY
     end
 
-    _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
-    begin;
+    eval(<<~RUBY, nil, __FILE__, __LINE__ + 1)
       proc do
-        def #{ali}(*args, &block)
-          #{pre}
-          begin
-            #{accessor}
-          end#{method_call}
+        def #{ali}(#{args})
+          #{pre}#{accessor}
+          #{method_call}
         end
       end
-    end;
+    RUBY
   end
 end
 
@@ -310,9 +305,7 @@ module SingleForwardable
   def def_single_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
-    ret = instance_eval(&gen)
-    singleton_class.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
-    ret
+    instance_eval(&gen)
   end
 
   alias delegate single_delegate

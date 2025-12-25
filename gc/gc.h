@@ -63,6 +63,7 @@ const char *rb_obj_info(VALUE obj);
 size_t rb_obj_memsize_of(VALUE obj);
 bool ruby_free_at_exit_p(void);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
+void rb_gc_verify_shareable(VALUE);
 
 MODULAR_GC_FN unsigned int rb_gc_vm_lock(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev, const char *file, int line);

@@ -784,7 +784,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  *
  *  Returns an element from +self+ selected by a binary search.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  */
 
@@ -1016,6 +1016,29 @@ range_to_a(VALUE range)
         rb_raise(rb_eRangeError, "cannot convert endless range to an array");
     }
     return rb_call_super(0, 0);
+}
+
+/*
+ *  call-seq:
+ *    to_set -> set
+ *
+ *  Returns a set containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
+ *
+ *    (1..4).to_set   # => Set[1, 2, 3, 4]
+ *    (1...4).to_set   # => Set[1, 2, 3]
+ *
+ *    (1..).to_set
+ *    # in 'Range#to_set': cannot convert endless range to a set (RangeError)
+ *
+ */
+static VALUE
+range_to_set(int argc, VALUE *argv, VALUE range)
+{
+    if (NIL_P(RANGE_END(range))) {
+        rb_raise(rb_eRangeError, "cannot convert endless range to a set");
+    }
+    return rb_call_super(argc, argv);
 }
 
 static VALUE
@@ -2845,6 +2868,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
+    rb_define_method(rb_cRange, "to_set", range_to_set, -1);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

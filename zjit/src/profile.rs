@@ -3,7 +3,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, gc::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
+use crate::{cruby::*, payload::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
 use crate::stats::with_time_stat;
@@ -43,6 +43,10 @@ impl Profiler {
     fn peek_at_self(&self) -> VALUE {
         unsafe { rb_get_cfp_self(self.cfp) }
     }
+
+    fn peek_at_block_handler(&self) -> VALUE {
+        unsafe { rb_vm_get_untagged_block_handler(self.cfp) }
+    }
 }
 
 /// API called from zjit_* instruction. opcode is the bare (non-zjit_*) instruction.
@@ -78,11 +82,14 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
         YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_setinstancevariable => profile_self(profiler, profile),
+        YARVINSN_definedivar   => profile_self(profiler, profile),
         YARVINSN_opt_regexpmatch2    => profile_operands(profiler, profile, 2),
         YARVINSN_objtostring   => profile_operands(profiler, profile, 1),
         YARVINSN_opt_length    => profile_operands(profiler, profile, 1),
         YARVINSN_opt_size      => profile_operands(profiler, profile, 1),
         YARVINSN_opt_succ      => profile_operands(profiler, profile, 1),
+        YARVINSN_invokeblock   => profile_block_handler(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -117,7 +124,7 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
-        unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+        VALUE::from(profiler.iseq).write_barrier(ty.class());
         profile_type.observe(ty);
     }
 }
@@ -131,7 +138,18 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
     // drop them or something
     let ty = ProfiledType::new(obj);
-    unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    VALUE::from(profiler.iseq).write_barrier(ty.class());
+    types[0].observe(ty);
+}
+
+fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.is_empty() {
+        types.resize(1, TypeDistribution::new());
+    }
+    let obj = profiler.peek_at_block_handler();
+    let ty = ProfiledType::object(obj);
+    VALUE::from(profiler.iseq).write_barrier(ty.class());
     types[0].observe(ty);
 }
 
@@ -147,6 +165,8 @@ impl Flags {
     const IS_T_OBJECT: u32 = 1 << 2;
     /// Object is a struct with embedded fields
     const IS_STRUCT_EMBEDDED: u32 = 1 << 3;
+    /// Set if the ProfiledType is used for profiling specific objects, not just classes/shapes
+    const IS_OBJECT_PROFILING: u32 = 1 << 4;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -155,6 +175,7 @@ impl Flags {
     pub fn is_embedded(self) -> bool { (self.0 & Self::IS_EMBEDDED) != 0 }
     pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
     pub fn is_struct_embedded(self) -> bool { (self.0 & Self::IS_STRUCT_EMBEDDED) != 0 }
+    pub fn is_object_profiling(self) -> bool { (self.0 & Self::IS_OBJECT_PROFILING) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -182,6 +203,14 @@ impl Default for ProfiledType {
 }
 
 impl ProfiledType {
+    /// Profile the object itself
+    fn object(obj: VALUE) -> Self {
+        let mut flags = Flags::none();
+        flags.0 |= Flags::IS_OBJECT_PROFILING;
+        Self { class: obj, shape: INVALID_SHAPE_ID, flags }
+    }
+
+    /// Profile the class and shape of the given object
     fn new(obj: VALUE) -> Self {
         if obj == Qfalse {
             return Self { class: unsafe { rb_cFalseClass },
@@ -251,6 +280,9 @@ impl ProfiledType {
     }
 
     pub fn is_string(&self) -> bool {
+        if self.flags.is_object_profiling() {
+            panic!("should not call is_string on object-profiled ProfiledType");
+        }
         // Fast paths for immediates and exact-class
         if self.flags.is_immediate() {
             return false;
@@ -329,5 +361,19 @@ impl IseqProfile {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cruby::*;
+
+    #[test]
+    fn can_profile_block_handler() {
+        with_rubyvm(|| eval("
+            def foo = yield
+            foo rescue 0
+            foo rescue 0
+        "));
     }
 }

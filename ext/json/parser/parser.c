@@ -1,53 +1,13 @@
-#include "ruby.h"
-#include "ruby/encoding.h"
+#include "../json.h"
 #include "../vendor/ryu.h"
-
-/* shims */
-/* This is the fallback definition from Ruby 3.4 */
-
-#ifndef RBIMPL_STDBOOL_H
-#if defined(__cplusplus)
-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
-#  include <cstdbool>
-# endif
-#elif defined(HAVE_STDBOOL_H)
-# include <stdbool.h>
-#elif !defined(HAVE__BOOL)
-typedef unsigned char _Bool;
-# define bool  _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)+0)
-# define __bool_true_false_are_defined
-#endif
-#endif
-
-#if SIZEOF_UINT64_T == SIZEOF_LONG_LONG
-# define INT64T2NUM(x) LL2NUM(x)
-# define UINT64T2NUM(x) ULL2NUM(x)
-#elif SIZEOF_UINT64_T == SIZEOF_LONG
-# define INT64T2NUM(x) LONG2NUM(x)
-# define UINT64T2NUM(x) ULONG2NUM(x)
-#else
-# error No uint64_t conversion
-#endif
-
 #include "../simd/simd.h"
-
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(expr) expr
-#endif
-
-#ifndef RB_LIKELY
-#define RB_LIKELY(expr) expr
-#endif
 
 static VALUE mJSON, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
-static ID i_chr, i_aset, i_aref,
-          i_leftshift, i_new, i_try_convert, i_uminus, i_encode;
+static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters, sym_symbolize_names, sym_freeze,
              sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
 
 static int binary_encindex;
@@ -55,7 +15,7 @@ static int utf8_encindex;
 
 #ifndef HAVE_RB_HASH_BULK_INSERT
 // For TruffleRuby
-void
+static void
 rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
 {
     long index = 0;
@@ -72,6 +32,12 @@ rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
 #define rb_hash_new_capa(n) rb_hash_new()
 #endif
 
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
+static VALUE rb_str_to_interned_str(VALUE str)
+{
+    return rb_funcall(rb_str_freeze(str), i_uminus, 0);
+}
+#endif
 
 /* name cache */
 
@@ -117,116 +83,104 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
     cache->entries[index] = rstring;
 }
 
-static inline int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+#define rstring_cache_memcmp memcmp
+
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+#if __has_builtin(__builtin_bswap64)
+#undef rstring_cache_memcmp
+ALWAYS_INLINE(static) int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
-    long rstring_length = RSTRING_LEN(rstring);
+    // The libc memcmp has numerous complex optimizations, but in this particular case,
+    // we know the string is small (JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH), so being able to
+    // inline a simpler memcmp outperforms calling the libc version.
+    long i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        uint64_t a, b;
+        memcpy(&a, str + i, 8);
+        memcpy(&b, rptr + i, 8);
+        if (a != b) {
+            a = __builtin_bswap64(a);
+            b = __builtin_bswap64(b);
+            return (a < b) ? -1 : 1;
+        }
+    }
+
+    for (; i < length; i++) {
+        if (str[i] != rptr[i]) {
+            return (str[i] < rptr[i]) ? -1 : 1;
+        }
+    }
+
+    return 0;
+}
+#endif
+#endif
+
+ALWAYS_INLINE(static) int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+{
+    const char *rstring_ptr;
+    long rstring_length;
+
+    RSTRING_GETMEM(rstring, rstring_ptr, rstring_length);
+
     if (length == rstring_length) {
-        return memcmp(str, RSTRING_PTR(rstring), length);
+        return rstring_cache_memcmp(str, rstring_ptr, length);
     } else {
         return (int)(length - rstring_length);
     }
 }
 
-static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+ALWAYS_INLINE(static) VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
-    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
-        // Common names aren't likely to be very long. So we just don't
-        // cache names above an arbitrary threshold.
-        return Qfalse;
-    }
-
-    if (RB_UNLIKELY(!rb_isalpha((unsigned char)str[0]))) {
-        // Simple heuristic, if the first character isn't a letter,
-        // we're much less likely to see this string again.
-        // We mostly want to cache strings that are likely to be repeated.
-        return Qfalse;
-    }
-
     int low = 0;
     int high = cache->length - 1;
-    int mid = 0;
-    int last_cmp = 0;
 
     while (low <= high) {
-        mid = (high + low) >> 1;
+        int mid = (high + low) >> 1;
         VALUE entry = cache->entries[mid];
-        last_cmp = rstring_cache_cmp(str, length, entry);
+        int cmp = rstring_cache_cmp(str, length, entry);
 
-        if (last_cmp == 0) {
+        if (cmp == 0) {
             return entry;
-        } else if (last_cmp > 0) {
+        } else if (cmp > 0) {
             low = mid + 1;
         } else {
             high = mid - 1;
         }
     }
 
-    if (RB_UNLIKELY(memchr(str, '\\', length))) {
-        // We assume the overwhelming majority of names don't need to be escaped.
-        // But if they do, we have to fallback to the slow path.
-        return Qfalse;
-    }
-
     VALUE rstring = build_interned_string(str, length);
 
     if (cache->length < JSON_RVALUE_CACHE_CAPA) {
-        if (last_cmp > 0) {
-            mid += 1;
-        }
-
-        rvalue_cache_insert_at(cache, mid, rstring);
+        rvalue_cache_insert_at(cache, low, rstring);
     }
     return rstring;
 }
 
 static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
-    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
-        // Common names aren't likely to be very long. So we just don't
-        // cache names above an arbitrary threshold.
-        return Qfalse;
-    }
-
-    if (RB_UNLIKELY(!rb_isalpha((unsigned char)str[0]))) {
-        // Simple heuristic, if the first character isn't a letter,
-        // we're much less likely to see this string again.
-        // We mostly want to cache strings that are likely to be repeated.
-        return Qfalse;
-    }
-
     int low = 0;
     int high = cache->length - 1;
-    int mid = 0;
-    int last_cmp = 0;
 
     while (low <= high) {
-        mid = (high + low) >> 1;
+        int mid = (high + low) >> 1;
         VALUE entry = cache->entries[mid];
-        last_cmp = rstring_cache_cmp(str, length, rb_sym2str(entry));
+        int cmp = rstring_cache_cmp(str, length, rb_sym2str(entry));
 
-        if (last_cmp == 0) {
+        if (cmp == 0) {
             return entry;
-        } else if (last_cmp > 0) {
+        } else if (cmp > 0) {
             low = mid + 1;
         } else {
             high = mid - 1;
         }
     }
 
-    if (RB_UNLIKELY(memchr(str, '\\', length))) {
-        // We assume the overwhelming majority of names don't need to be escaped.
-        // But if they do, we have to fallback to the slow path.
-        return Qfalse;
-    }
-
     VALUE rsymbol = build_symbol(str, length);
 
     if (cache->length < JSON_RVALUE_CACHE_CAPA) {
-        if (last_cmp > 0) {
-            mid += 1;
-        }
-
-        rvalue_cache_insert_at(cache, mid, rsymbol);
+        rvalue_cache_insert_at(cache, low, rsymbol);
     }
     return rsymbol;
 }
@@ -341,15 +295,6 @@ static void rvalue_stack_eagerly_release(VALUE handle)
     }
 }
 
-
-#ifndef HAVE_STRNLEN
-static size_t strnlen(const char *s, size_t maxlen)
-{
-    char *p;
-    return ((p = memchr(s, '\0', maxlen)) ? p - s : maxlen);
-}
-#endif
-
 static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 {
     int len = 1;
@@ -390,7 +335,7 @@ typedef struct JSON_ParserStruct {
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
-    bool parsing_name;
+    bool allow_control_characters;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
@@ -405,6 +350,22 @@ typedef struct JSON_ParserStateStruct {
     int in_array;
     int current_nesting;
 } JSON_ParserState;
+
+static inline size_t rest(JSON_ParserState *state) {
+    return state->end - state->cursor;
+}
+
+static inline bool eos(JSON_ParserState *state) {
+    return state->cursor >= state->end;
+}
+
+static inline char peek(JSON_ParserState *state)
+{
+    if (RB_UNLIKELY(eos(state))) {
+        return 0;
+    }
+    return *state->cursor;
+}
 
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
@@ -541,61 +502,82 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const unsigned char *p
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
-static const bool whitespace[256] = {
-    [' '] = 1,
-    ['\t'] = 1,
-    ['\n'] = 1,
-    ['\r'] = 1,
-    ['/'] = 1,
-};
-
 static void
 json_eat_comments(JSON_ParserState *state)
 {
-    if (state->cursor + 1 < state->end) {
-        switch (state->cursor[1]) {
-            case '/': {
-                state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
-                if (!state->cursor) {
-                    state->cursor = state->end;
-                } else {
-                    state->cursor++;
-                }
-                break;
+    const char *start = state->cursor;
+    state->cursor++;
+
+    switch (peek(state)) {
+        case '/': {
+            state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
+            if (!state->cursor) {
+                state->cursor = state->end;
+            } else {
+                state->cursor++;
             }
-            case '*': {
-                state->cursor += 2;
-                while (true) {
-                    state->cursor = memchr(state->cursor, '*', state->end - state->cursor);
-                    if (!state->cursor) {
-                        raise_parse_error_at("unexpected end of input, expected closing '*/'", state, state->end);
-                    } else {
-                        state->cursor++;
-                        if (state->cursor < state->end && *state->cursor == '/') {
-                            state->cursor++;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            default:
-                raise_parse_error("unexpected token %s", state);
-                break;
+            break;
         }
-    } else {
-        raise_parse_error("unexpected token %s", state);
+        case '*': {
+            state->cursor++;
+
+            while (true) {
+                const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
+                if (!next_match) {
+                    raise_parse_error_at("unterminated comment, expected closing '*/'", state, start);
+                }
+
+                state->cursor = next_match + 1;
+                if (peek(state) == '/') {
+                    state->cursor++;
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            raise_parse_error_at("unexpected token %s", state, start);
+            break;
     }
 }
 
-static inline void
+ALWAYS_INLINE(static) void
 json_eat_whitespace(JSON_ParserState *state)
 {
-    while (state->cursor < state->end && RB_UNLIKELY(whitespace[(unsigned char)*state->cursor])) {
-        if (RB_LIKELY(*state->cursor != '/')) {
-            state->cursor++;
-        } else {
-            json_eat_comments(state);
+    while (true) {
+        switch (peek(state)) {
+            case ' ':
+                state->cursor++;
+                break;
+            case '\n':
+                state->cursor++;
+
+                // Heuristic: if we see a newline, there is likely consecutive spaces after it.
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+                while (rest(state) > 8) {
+                    uint64_t chunk;
+                    memcpy(&chunk, state->cursor, sizeof(uint64_t));
+                    if (chunk == 0x2020202020202020) {
+                        state->cursor += 8;
+                        continue;
+                    }
+
+                    uint32_t consecutive_spaces = trailing_zeros64(chunk ^ 0x2020202020202020) / CHAR_BIT;
+                    state->cursor += consecutive_spaces;
+                    break;
+                }
+#endif
+                break;
+            case '\t':
+            case '\r':
+                state->cursor++;
+                break;
+            case '/':
+                json_eat_comments(state);
+                break;
+
+            default:
+                return;
         }
     }
 }
@@ -626,11 +608,22 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
-static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
+static inline bool json_string_cacheable_p(const char *string, size_t length)
 {
+    //  We mostly want to cache strings that are likely to be repeated.
+    // Simple heuristics:
+    //  - Common names aren't likely to be very long. So we just don't cache names above an arbitrary threshold.
+    //  - If the first character isn't a letter, we're much less likely to see this string again.
+    return length <= JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH && rb_isalpha(string[0]);
+}
+
+static inline VALUE json_string_fastpath(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name)
+{
+    bool intern = is_name || config->freeze;
+    bool symbolize = is_name && config->symbolize_names;
     size_t bufferSize = stringEnd - string;
 
-    if (is_name && state->in_array) {
+    if (is_name && state->in_array && RB_LIKELY(json_string_cacheable_p(string, bufferSize))) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
             cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
@@ -646,60 +639,73 @@ static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *st
     return build_string(string, stringEnd, intern, symbolize);
 }
 
-static VALUE json_string_unescape(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
+#define JSON_MAX_UNESCAPE_POSITIONS 16
+typedef struct _json_unescape_positions {
+    long size;
+    const char **positions;
+    bool has_more;
+} JSON_UnescapePositions;
+
+static inline const char *json_next_backslash(const char *pe, const char *stringEnd, JSON_UnescapePositions *positions)
 {
-    size_t bufferSize = stringEnd - string;
-    const char *p = string, *pe = string, *unescape, *bufferStart;
-    char *buffer;
-    int unescape_len;
-    char buf[4];
-
-    if (is_name && state->in_array) {
-        VALUE cached_key;
-        if (RB_UNLIKELY(symbolize)) {
-            cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
-        } else {
-            cached_key = rstring_cache_fetch(&state->name_cache, string, bufferSize);
-        }
-
-        if (RB_LIKELY(cached_key)) {
-            return cached_key;
+    while (positions->size) {
+        positions->size--;
+        const char *next_position = positions->positions[0];
+        positions->positions++;
+        if (next_position >= pe) {
+            return next_position;
         }
     }
+
+    if (positions->has_more) {
+        return memchr(pe, '\\', stringEnd - pe);
+    }
+
+    return NULL;
+}
+
+NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_ParserConfig *config, const char *string, const char *stringEnd, bool is_name, JSON_UnescapePositions *positions)
+{
+    bool intern = is_name || config->freeze;
+    bool symbolize = is_name && config->symbolize_names;
+    size_t bufferSize = stringEnd - string;
+    const char *p = string, *pe = string, *bufferStart;
+    char *buffer;
 
     VALUE result = rb_str_buf_new(bufferSize);
     rb_enc_associate_index(result, utf8_encindex);
     buffer = RSTRING_PTR(result);
     bufferStart = buffer;
 
-    while (pe < stringEnd && (pe = memchr(pe, '\\', stringEnd - pe))) {
-        unescape = (char *) "?";
-        unescape_len = 1;
+#define APPEND_CHAR(chr) *buffer++ = chr; p = ++pe;
+
+    while (pe < stringEnd && (pe = json_next_backslash(pe, stringEnd, positions))) {
         if (pe > p) {
           MEMCPY(buffer, p, char, pe - p);
           buffer += pe - p;
         }
         switch (*++pe) {
-            case 'n':
-                unescape = (char *) "\n";
-                break;
-            case 'r':
-                unescape = (char *) "\r";
-                break;
-            case 't':
-                unescape = (char *) "\t";
-                break;
             case '"':
-                unescape = (char *) "\"";
+            case '/':
+                p = pe; // nothing to unescape just need to skip the backslash
                 break;
             case '\\':
-                unescape = (char *) "\\";
+                APPEND_CHAR('\\');
+                break;
+            case 'n':
+                APPEND_CHAR('\n');
+                break;
+            case 'r':
+                APPEND_CHAR('\r');
+                break;
+            case 't':
+                APPEND_CHAR('\t');
                 break;
             case 'b':
-                unescape = (char *) "\b";
+                APPEND_CHAR('\b');
                 break;
             case 'f':
-                unescape = (char *) "\f";
+                APPEND_CHAR('\f');
                 break;
             case 'u':
                 if (pe > stringEnd - 5) {
@@ -737,18 +743,29 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                             break;
                         }
                     }
-                    unescape_len = convert_UTF32_to_UTF8(buf, ch);
-                    unescape = buf;
+
+                    char buf[4];
+                    int unescape_len = convert_UTF32_to_UTF8(buf, ch);
+                    MEMCPY(buffer, buf, char, unescape_len);
+                    buffer += unescape_len;
+                    p = ++pe;
                 }
                 break;
             default:
-                p = pe;
-                continue;
+                if ((unsigned char)*pe < 0x20) {
+                    if (!config->allow_control_characters) {
+                        if (*pe == '\n') {
+                            raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        }
+                        raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                    }
+                } else {
+                    raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
+                }
+                break;
         }
-        MEMCPY(buffer, unescape, char, unescape_len);
-        buffer += unescape_len;
-        p = ++pe;
     }
+#undef APPEND_CHAR
 
     if (stringEnd > p) {
       MEMCPY(buffer, p, char, stringEnd - p);
@@ -759,7 +776,7 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
     if (symbolize) {
         result = rb_str_intern(result);
     } else if (intern) {
-        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+        result = rb_str_to_interned_str(result);
     }
 
     return result;
@@ -912,20 +929,6 @@ static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfi
     return object;
 }
 
-static inline VALUE json_decode_string(JSON_ParserState *state, JSON_ParserConfig *config, const char *start, const char *end, bool escaped, bool is_name)
-{
-    VALUE string;
-    bool intern = is_name || config->freeze;
-    bool symbolize = is_name && config->symbolize_names;
-    if (escaped) {
-        string = json_string_unescape(state, start, end, is_name, intern, symbolize);
-    } else {
-        string = json_string_fastpath(state, start, end, is_name, intern, symbolize);
-    }
-
-    return string;
-}
-
 static inline VALUE json_push_value(JSON_ParserState *state, JSON_ParserConfig *config, VALUE value)
 {
     if (RB_UNLIKELY(config->on_load_proc)) {
@@ -948,17 +951,11 @@ static const bool string_scan_table[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-#if (defined(__GNUC__ ) || defined(__clang__))
-#define FORCE_INLINE __attribute__((always_inline))
-#else
-#define FORCE_INLINE
-#endif
-
 #ifdef HAVE_SIMD
 static SIMD_Implementation simd_impl = SIMD_NONE;
 #endif /* HAVE_SIMD */
 
-static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
+ALWAYS_INLINE(static) bool string_scan(JSON_ParserState *state)
 {
 #ifdef HAVE_SIMD
 #if defined(HAVE_SIMD_NEON)
@@ -966,7 +963,7 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
     uint64_t mask = 0;
     if (string_scan_simd_neon(&state->cursor, state->end, &mask)) {
         state->cursor += trailing_zeros64(mask) >> 2;
-        return 1;
+        return true;
     }
 
 #elif defined(HAVE_SIMD_SSE2)
@@ -974,64 +971,232 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
         int mask = 0;
         if (string_scan_simd_sse2(&state->cursor, state->end, &mask)) {
             state->cursor += trailing_zeros(mask);
-            return 1;
+            return true;
         }
     }
 #endif /* HAVE_SIMD_NEON or HAVE_SIMD_SSE2 */
 #endif /* HAVE_SIMD */
 
-    while (state->cursor < state->end) {
+    while (!eos(state)) {
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
-            return 1;
+            return true;
         }
         state->cursor++;
     }
-    return 0;
+    return false;
 }
 
-static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name, const char *start)
 {
-    state->cursor++;
-    const char *start = state->cursor;
-    bool escaped = false;
+    const char *backslashes[JSON_MAX_UNESCAPE_POSITIONS];
+    JSON_UnescapePositions positions = {
+        .size = 0,
+        .positions = backslashes,
+        .has_more = false,
+    };
 
-    while (RB_UNLIKELY(string_scan(state))) {
+    do {
         switch (*state->cursor) {
             case '"': {
-                VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
+                VALUE string = json_string_unescape(state, config, start, state->cursor, is_name, &positions);
                 state->cursor++;
                 return json_push_value(state, config, string);
             }
             case '\\': {
-                state->cursor++;
-                escaped = true;
-                if ((unsigned char)*state->cursor < 0x20) {
-                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                if (RB_LIKELY(positions.size < JSON_MAX_UNESCAPE_POSITIONS)) {
+                    backslashes[positions.size] = state->cursor;
+                    positions.size++;
+                } else {
+                    positions.has_more = true;
                 }
+                state->cursor++;
                 break;
             }
             default:
-                raise_parse_error("invalid ASCII control character in string: %s", state);
+                if (!config->allow_control_characters) {
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                }
                 break;
         }
 
         state->cursor++;
-    }
+    } while (string_scan(state));
 
     raise_parse_error("unexpected end of input, expected closing \"", state);
     return Qfalse;
 }
 
+ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
+{
+    state->cursor++;
+    const char *start = state->cursor;
+
+    if (RB_UNLIKELY(!string_scan(state))) {
+        raise_parse_error("unexpected end of input, expected closing \"", state);
+    }
+
+    if (RB_LIKELY(*state->cursor == '"')) {
+        VALUE string = json_string_fastpath(state, config, start, state->cursor, is_name);
+        state->cursor++;
+        return json_push_value(state, config, string);
+    }
+    return json_parse_escaped_string(state, config, is_name, start);
+}
+
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+// From: https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
+// Additional References:
+// https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
+// http://0x80.pl/notesen/2014-10-12-parsing-decimal-numbers-part-1-swar.html
+static inline uint64_t decode_8digits_unrolled(uint64_t val) {
+    const uint64_t mask = 0x000000FF000000FF;
+    const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+    const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+    val -= 0x3030303030303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+    return val;
+}
+
+static inline uint64_t decode_4digits_unrolled(uint32_t val) {
+    const uint32_t mask = 0x000000FF;
+    const uint32_t mul1 = 100;
+    val -= 0x30303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = ((val & mask) * mul1) + (((val >> 16) & mask));
+    return val;
+}
+#endif
+
+static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
+{
+    const char *start = state->cursor;
+
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+    while (rest(state) >= sizeof(uint64_t)) {
+        uint64_t next_8bytes;
+        memcpy(&next_8bytes, state->cursor, sizeof(uint64_t));
+
+        // From: https://github.com/simdjson/simdjson/blob/32b301893c13d058095a07d9868edaaa42ee07aa/include/simdjson/generic/numberparsing.h#L333
+        // Branchless version of: http://0x80.pl/articles/swar-digits-validate.html
+        uint64_t match = (next_8bytes & 0xF0F0F0F0F0F0F0F0) | (((next_8bytes + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4);
+
+        if (match == 0x3333333333333333) { // 8 consecutive digits
+            *accumulator = (*accumulator * 100000000) + decode_8digits_unrolled(next_8bytes);
+            state->cursor += 8;
+            continue;
+        }
+
+        uint32_t consecutive_digits = trailing_zeros64(match ^ 0x3333333333333333) / CHAR_BIT;
+
+        if (consecutive_digits >= 4) {
+            *accumulator = (*accumulator * 10000) + decode_4digits_unrolled((uint32_t)next_8bytes);
+            state->cursor += 4;
+            consecutive_digits -= 4;
+        }
+
+        while (consecutive_digits) {
+            *accumulator = *accumulator * 10 + (*state->cursor - '0');
+            consecutive_digits--;
+            state->cursor++;
+        }
+
+        return (int)(state->cursor - start);
+    }
+#endif
+
+    char next_char;
+    while (rb_isdigit(next_char = peek(state))) {
+        *accumulator = *accumulator * 10 + (next_char - '0');
+        state->cursor++;
+    }
+    return (int)(state->cursor - start);
+}
+
+static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
+{
+    bool integer = true;
+    const char first_digit = *state->cursor;
+
+    // Variables for Ryu optimization - extract digits during parsing
+    int32_t exponent = 0;
+    int decimal_point_pos = -1;
+    uint64_t mantissa = 0;
+
+    // Parse integer part and extract mantissa digits
+    int mantissa_digits = json_parse_digits(state, &mantissa);
+
+    if (RB_UNLIKELY((first_digit == '0' && mantissa_digits > 1) || (negative && mantissa_digits == 0))) {
+        raise_parse_error_at("invalid number: %s", state, start);
+    }
+
+    // Parse fractional part
+    if (peek(state) == '.') {
+        integer = false;
+        decimal_point_pos = mantissa_digits;  // Remember position of decimal point
+        state->cursor++;
+
+        int fractional_digits = json_parse_digits(state, &mantissa);
+        mantissa_digits += fractional_digits;
+
+        if (RB_UNLIKELY(!fractional_digits)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+    }
+
+    // Parse exponent
+    if (rb_tolower(peek(state)) == 'e') {
+        integer = false;
+        state->cursor++;
+
+        bool negative_exponent = false;
+        const char next_char = peek(state);
+        if (next_char == '-' || next_char == '+') {
+            negative_exponent = next_char == '-';
+            state->cursor++;
+        }
+
+        uint64_t abs_exponent = 0;
+        int exponent_digits = json_parse_digits(state, &abs_exponent);
+
+        if (RB_UNLIKELY(!exponent_digits)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+
+        exponent = negative_exponent ? -((int32_t)abs_exponent) : ((int32_t)abs_exponent);
+    }
+
+    if (integer) {
+        return json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor);
+    }
+
+    // Adjust exponent based on decimal point position
+    if (decimal_point_pos >= 0) {
+        exponent -= (mantissa_digits - decimal_point_pos);
+    }
+
+    return json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor);
+}
+
+static inline VALUE json_parse_positive_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    return json_parse_number(state, config, false, state->cursor);
+}
+
+static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    const char *start = state->cursor;
+    state->cursor++;
+    return json_parse_number(state, config, true, start);
+}
+
 static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
-    if (state->cursor >= state->end) {
-        raise_parse_error("unexpected end of input", state);
-    }
 
-    switch (*state->cursor) {
+    switch (peek(state)) {
         case 'n':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "null", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "null", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qnil);
             }
@@ -1039,7 +1204,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 't':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "true", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qtrue);
             }
@@ -1048,7 +1213,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'f':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 5) && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
+            if (rest(state) >= 5 && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
                 state->cursor += 5;
                 return json_push_value(state, config, Qfalse);
             }
@@ -1057,7 +1222,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if (config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
+            if (config->allow_nan && rest(state) >= 3 && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
                 state->cursor += 3;
                 return json_push_value(state, config, CNaN);
             }
@@ -1065,16 +1230,16 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 'I':
-            if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
+            if (config->allow_nan && rest(state) >= 8 && (memcmp(state->cursor, "Infinity", 8) == 0)) {
                 state->cursor += 8;
                 return json_push_value(state, config, CInfinity);
             }
 
             raise_parse_error("unexpected token %s", state);
             break;
-        case '-':
+        case '-': {
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
+            if (rest(state) >= 9 && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
                 if (config->allow_nan) {
                     state->cursor += 9;
                     return json_push_value(state, config, CMinusInfinity);
@@ -1082,95 +1247,12 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     raise_parse_error("unexpected token %s", state);
                 }
             }
-            // Fallthrough
-        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-            bool integer = true;
-
-            // Variables for Ryu optimization - extract digits during parsing
-            uint64_t mantissa = 0;
-            int mantissa_digits = 0;
-            int32_t exponent = 0;
-            bool negative = false;
-            int decimal_point_pos = -1;
-
-            // /\A-?(0|[1-9]\d*)(\.\d+)?([Ee][-+]?\d+)?/
-            const char *start = state->cursor;
-
-            // Handle optional negative sign
-            if (*state->cursor == '-') {
-                negative = true;
-                state->cursor++;
-                if (state->cursor >= state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-            }
-
-            // Parse integer part and extract mantissa digits
-            while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                mantissa = mantissa * 10 + (*state->cursor - '0');
-                mantissa_digits++;
-                state->cursor++;
-            }
-
-            if (RB_UNLIKELY(start[0] == '0' && mantissa_digits > 1)) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            } else if (RB_UNLIKELY(mantissa_digits > 1 && negative && start[1] == '0')) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            }
-
-            // Parse fractional part
-            if ((state->cursor < state->end) && (*state->cursor == '.')) {
-                integer = false;
-                decimal_point_pos = mantissa_digits;  // Remember position of decimal point
-                state->cursor++;
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    mantissa = mantissa * 10 + (*state->cursor - '0');
-                    mantissa_digits++;
-                    state->cursor++;
-                }
-            }
-
-            // Parse exponent
-            if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
-                integer = false;
-                state->cursor++;
-
-                bool negative_exponent = false;
-                if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
-                    negative_exponent = (*state->cursor == '-');
-                    state->cursor++;
-                }
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    exponent = exponent * 10 + (*state->cursor - '0');
-                    state->cursor++;
-                }
-
-                if (negative_exponent) {
-                    exponent = -exponent;
-                }
-            }
-
-            if (integer) {
-                return json_push_value(state, config, json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor));
-            }
-
-            // Adjust exponent based on decimal point position
-            if (decimal_point_pos >= 0) {
-                exponent -= (mantissa_digits - decimal_point_pos);
-            }
-
-            return json_push_value(state, config, json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor));
+            return json_push_value(state, config, json_parse_negative_number(state, config));
+            break;
         }
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            return json_push_value(state, config, json_parse_positive_number(state, config));
+            break;
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
             return json_parse_string(state, config, false);
@@ -1181,7 +1263,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == ']')) {
+            if (peek(state) == ']') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_array(state, config, 0));
             } else {
@@ -1196,26 +1278,26 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == ']') {
-                        state->cursor++;
-                        long count = state->stack->head - stack_head;
-                        state->current_nesting--;
-                        state->in_array--;
-                        return json_push_value(state, config, json_decode_array(state, config, count));
-                    }
+                const char next_char = peek(state);
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        if (config->allow_trailing_comma) {
-                            json_eat_whitespace(state);
-                            if ((state->cursor < state->end) && (*state->cursor == ']')) {
-                                continue;
-                            }
+                if (RB_LIKELY(next_char == ',')) {
+                    state->cursor++;
+                    if (config->allow_trailing_comma) {
+                        json_eat_whitespace(state);
+                        if (peek(state) == ']') {
+                            continue;
                         }
-                        json_parse_any(state, config);
-                        continue;
                     }
+                    json_parse_any(state, config);
+                    continue;
+                }
+
+                if (next_char == ']') {
+                    state->cursor++;
+                    long count = state->stack->head - stack_head;
+                    state->current_nesting--;
+                    state->in_array--;
+                    return json_push_value(state, config, json_decode_array(state, config, count));
                 }
 
                 raise_parse_error("expected ',' or ']' after array value", state);
@@ -1229,7 +1311,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == '}')) {
+            if (peek(state) == '}') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_object(state, config, 0));
             } else {
@@ -1238,13 +1320,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
                 }
 
-                if (*state->cursor != '"') {
+                if (peek(state) != '"') {
                     raise_parse_error("expected object key, got %s", state);
                 }
                 json_parse_string(state, config, true);
 
                 json_eat_whitespace(state);
-                if ((state->cursor >= state->end) || (*state->cursor != ':')) {
+                if (peek(state) != ':') {
                     raise_parse_error("expected ':' after object key", state);
                 }
                 state->cursor++;
@@ -1255,46 +1337,45 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == '}') {
-                        state->cursor++;
-                        state->current_nesting--;
-                        size_t count = state->stack->head - stack_head;
+                const char next_char = peek(state);
+                if (next_char == '}') {
+                    state->cursor++;
+                    state->current_nesting--;
+                    size_t count = state->stack->head - stack_head;
 
-                        // Temporary rewind cursor in case an error is raised
-                        const char *final_cursor = state->cursor;
-                        state->cursor = object_start_cursor;
-                        VALUE object = json_decode_object(state, config, count);
-                        state->cursor = final_cursor;
+                    // Temporary rewind cursor in case an error is raised
+                    const char *final_cursor = state->cursor;
+                    state->cursor = object_start_cursor;
+                    VALUE object = json_decode_object(state, config, count);
+                    state->cursor = final_cursor;
 
-                        return json_push_value(state, config, object);
+                    return json_push_value(state, config, object);
+                }
+
+                if (next_char == ',') {
+                    state->cursor++;
+                    json_eat_whitespace(state);
+
+                    if (config->allow_trailing_comma) {
+                        if (peek(state) == '}') {
+                            continue;
+                        }
                     }
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        json_eat_whitespace(state);
-
-                        if (config->allow_trailing_comma) {
-                            if ((state->cursor < state->end) && (*state->cursor == '}')) {
-                                continue;
-                            }
-                        }
-
-                        if (*state->cursor != '"') {
-                            raise_parse_error("expected object key, got: %s", state);
-                        }
-                        json_parse_string(state, config, true);
-
-                        json_eat_whitespace(state);
-                        if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                            raise_parse_error("expected ':' after object key, got: %s", state);
-                        }
-                        state->cursor++;
-
-                        json_parse_any(state, config);
-
-                        continue;
+                    if (RB_UNLIKELY(peek(state) != '"')) {
+                        raise_parse_error("expected object key, got: %s", state);
                     }
+                    json_parse_string(state, config, true);
+
+                    json_eat_whitespace(state);
+                    if (RB_UNLIKELY(peek(state) != ':')) {
+                        raise_parse_error("expected ':' after object key, got: %s", state);
+                    }
+                    state->cursor++;
+
+                    json_parse_any(state, config);
+
+                    continue;
                 }
 
                 raise_parse_error("expected ',' or '}' after object value, got: %s", state);
@@ -1302,18 +1383,23 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         }
 
+        case 0:
+            raise_parse_error("unexpected end of input", state);
+            break;
+
         default:
             raise_parse_error("unexpected character: %s", state);
             break;
     }
 
     raise_parse_error("unreachable: %s", state);
+    return Qundef;
 }
 
 static void json_ensure_eof(JSON_ParserState *state)
 {
     json_eat_whitespace(state);
-    if (state->cursor != state->end) {
+    if (!eos(state)) {
         raise_parse_error("unexpected token at end of stream %s", state);
     }
 }
@@ -1350,14 +1436,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
     JSON_ParserConfig *config = (JSON_ParserConfig *)data;
 
-         if (key == sym_max_nesting)          { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
-    else if (key == sym_allow_nan)            { config->allow_nan = RTEST(val); }
-    else if (key == sym_allow_trailing_comma) { config->allow_trailing_comma = RTEST(val); }
-    else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
-    else if (key == sym_freeze)               { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_allow_duplicate_key)  { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
-    else if (key == sym_decimal_class)        {
+         if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
+    else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
+    else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
+    else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
+    else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
+    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
                 config->decimal_class = val;
@@ -1430,6 +1517,7 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts)
  */
 static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
 {
+    rb_check_frozen(self);
     GET_PARSER_CONFIG;
 
     parser_config_init(config, opts);
@@ -1525,7 +1613,7 @@ static const rb_data_type_t JSON_ParserConfig_type = {
         JSON_ParserConfig_memsize,
     },
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
@@ -1569,16 +1657,13 @@ void Init_parser(void)
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
     sym_on_load = ID2SYM(rb_intern("on_load"));
     sym_decimal_class = ID2SYM(rb_intern("decimal_class"));
     sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));
 
-    i_chr = rb_intern("chr");
-    i_aset = rb_intern("[]=");
-    i_aref = rb_intern("[]");
-    i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
     i_uminus = rb_intern("-@");

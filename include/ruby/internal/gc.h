@@ -785,7 +785,9 @@ rb_obj_written(
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
 #endif
 
-    rb_gc_writebarrier(a, b);
+    if (!RB_SPECIAL_CONST_P(b)) {
+        rb_gc_writebarrier(a, b);
+    }
 
     return a;
 }

@@ -12,9 +12,13 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create(symbolize_names: false, freeze: false, strict_integer: false)
+      unless RUBY_VERSION < "3.2"
+        DATA_INITIALIZE = Data.instance_method(:initialize)
+      end
+
+      def self.create(symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true)
         class_loader = ClassLoader.new
-        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer
+        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer, parse_symbols: parse_symbols
         new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
       end
 
@@ -219,7 +223,7 @@ module Psych
             revive_data_members(members, o)
           end
           data ||= allocate_anon_data(o, members)
-          init_struct(data, **members)
+          DATA_INITIALIZE.bind_call(data, **members)
           data.freeze
           data
 

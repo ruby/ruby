@@ -94,11 +94,14 @@ module Bundler
     end
 
     def self.gem_not_found_message(missing_gem_name, alternatives)
-      require_relative "../similarity_detector"
       message = "Could not find gem '#{missing_gem_name}'."
       alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
-      suggestions = SimilarityDetector.new(alternate_names).similar_word_list(missing_gem_name)
-      message += "\nDid you mean #{suggestions}?" if suggestions
+      if alternate_names.include?(missing_gem_name.downcase)
+        message += "\nDid you mean '#{missing_gem_name.downcase}'?"
+      elsif defined?(DidYouMean::SpellChecker)
+        suggestions = DidYouMean::SpellChecker.new(dictionary: alternate_names).correct(missing_gem_name)
+        message += "\nDid you mean #{word_list(suggestions)}?" unless suggestions.empty?
+      end
       message
     end
 
@@ -133,6 +136,20 @@ module Bundler
       clean ||= Bundler.feature_flag.bundler_5_mode? && Bundler.settings[:path].nil?
       clean &&= !Bundler.use_system_gems?
       clean
+    end
+
+    def self.word_list(words)
+      if words.empty?
+        return ""
+      end
+
+      words = words.map {|word| "'#{word}'" }
+
+      if words.length == 1
+        return words[0]
+      end
+
+      [words[0..-2].join(", "), words[-1]].join(" or ")
     end
   end
 end

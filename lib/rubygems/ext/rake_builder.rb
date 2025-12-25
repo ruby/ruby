@@ -8,7 +8,7 @@
 
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args = [], lib_dir = nil, extension_dir = Dir.pwd,
-    target_rbconfig = Gem.target_rbconfig)
+    target_rbconfig = Gem.target_rbconfig, n_jobs: nil)
     if target_rbconfig.path
       warn "--target-rbconfig is not yet supported for Rake extensions. Ignoring"
     end

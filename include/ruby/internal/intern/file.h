@@ -211,22 +211,6 @@ int rb_is_absolute_path(const char *path);
  */
 rb_off_t rb_file_size(VALUE file);
 
-#ifdef RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY
-RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY()
-#endif
-/**
- * If the PATH_SEPARATOR-separated list of directory names contains the name of
- * a world-writable directory, issue a warning  for it.  This may do nothing on
- * some platforms.
- *
- * @param[in]  path       A local path.
- * @retval     0          The "check" succeeded.
- * @retval     otherwise  The "check" failed.
- * @note       This  feature may  be  disabled  by setting  `ENABLE_PATH_CHECK`
- *             macro to zero at compilation time.
- */
-int rb_path_check(const char *path);
-
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_FILE_H */

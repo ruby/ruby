@@ -38,8 +38,12 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
 $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
+# Missing in TruffleRuby
+have_func("rb_call_super_kw(0, NULL, 0)", "ruby.h")
+# Ruby 3.1
 have_func("rb_io_descriptor", "ruby/io.h")
-have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
+have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h")
+# Ruby 3.2
 have_func("rb_io_timeout", "ruby/io.h")
 
 Logging::message "=== Checking for system dependent stuff... ===\n"

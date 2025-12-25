@@ -16,7 +16,7 @@ describe "Set#flatten" do
     -> { set.flatten }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     context "when Set contains a Set-like object" do
       it "returns a copy of self with each included Set-like object flattened" do
         Set[SetSpecs::SetLike.new([1])].flatten.should == Set[1]
@@ -48,7 +48,7 @@ describe "Set#flatten!" do
   end
 
   version_is(set_version, ""..."1.1.0") do #ruby_version_is ""..."3.3" do
-    ruby_version_is ""..."3.5" do
+    ruby_version_is ""..."4.0" do
       context "when Set contains a Set-like object" do
         it "flattens self, including Set-like objects" do
           Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]

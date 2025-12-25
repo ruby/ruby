@@ -1458,6 +1458,12 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1..).to_a }
   end
 
+  def test_to_set
+    assert_equal(Set[1,2,3,4,5], (1..5).to_set)
+    assert_equal(Set[1,2,3,4], (1...5).to_set)
+    assert_raise(RangeError) { (1..).to_set }
+  end
+
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
   end

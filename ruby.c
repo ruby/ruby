@@ -326,7 +326,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-a",		   "",                     "Split each input line ($_) into fields ($F)."),
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
-        M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
+        M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) and $VERBOSE to true."),
         M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
@@ -410,9 +410,6 @@ usage(const char *name, int help, int highlight, int columns)
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
-    printf("\n""Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
-           ruby_api_version_name);
-
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
@@ -449,7 +446,7 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
 {
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
-    VALUE load_path = rb_root_namespace()->load_path;
+    VALUE load_path = rb_root_box()->load_path;
 #ifdef __CYGWIN__
     char rubylib[FILENAME_MAX];
     VALUE buf = 0;
@@ -754,7 +751,7 @@ ruby_init_loadpath(void)
     rb_gc_register_address(&ruby_archlibdir_path);
     ruby_archlibdir_path = archlibdir;
 
-    load_path = rb_root_namespace()->load_path;
+    load_path = rb_root_box()->load_path;
 
     ruby_push_include(getenv("RUBYLIB"), identical_path);
 
@@ -1473,7 +1470,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         ruby_verbose = Qtrue;
     }
     else if (strcmp("jit", s) == 0) {
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
         FEATURE_SET(opt->features, FEATURE_BIT(jit));
 #else
         rb_warn("Ruby was built without JIT support");
@@ -1831,21 +1828,19 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     ruby_init_prelude();
 
-    /* Initialize the main namespace after loading libraries (including rubygems)
+    /* Initialize the main box after loading libraries (including rubygems)
      * to enable those in both root and main */
-    if (rb_namespace_available())
-        rb_initialize_main_namespace();
-    rb_namespace_init_done();
+    if (rb_box_available())
+        rb_initialize_main_box();
+    rb_box_init_done();
 
     // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
 #if USE_ZJIT
-    if (opt->zjit) {
-        extern void rb_zjit_init(void);
-        rb_zjit_init();
-    }
+    extern void rb_zjit_init(bool);
+    rb_zjit_init(opt->zjit);
 #endif
 
     ruby_set_script_name(opt->script_name);
@@ -2334,8 +2329,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
-    const rb_namespace_t *ns = rb_root_namespace();
-    const long loaded_before_enc = RARRAY_LEN(ns->loaded_features);
+    const rb_box_t *box = rb_root_box();
+    const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         const char *const progname =
@@ -2368,6 +2363,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
+
+            // When the --zjit flag is specified, we would have call setup_zjit_options(""),
+            // which would have called rb_zjit_prepare_options() internally. This ensures we
+            // go through the same set up but with less overhead than setup_zjit_options("").
+            extern void rb_zjit_prepare_options();
+            rb_zjit_prepare_options();
         }
 #endif
     }
@@ -2383,10 +2384,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 #endif
 #if USE_ZJIT
-    if (FEATURE_SET_P(opt->features, zjit) && !opt->zjit) {
-        extern void rb_zjit_prepare_options(void);
-        rb_zjit_prepare_options();
-        opt->zjit = true;
+    if (FEATURE_SET_P(opt->features, zjit)) {
+        bool rb_zjit_option_enable(void);
+        opt->zjit = rb_zjit_option_enable(); // set opt->zjit for Init_ruby_description() and calling rb_zjit_init()
     }
 #endif
 
@@ -2483,7 +2483,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
         long i;
-        VALUE load_path = ns->load_path;
+        VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
 
@@ -2506,11 +2506,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             RARRAY_ASET(load_path, i, path);
         }
         if (modifiable) {
-            rb_ary_replace(ns->load_path_snapshot, load_path);
+            rb_ary_replace(box->load_path_snapshot, load_path);
         }
     }
     {
-        VALUE loaded_features = ns->loaded_features;
+        VALUE loaded_features = box->loaded_features;
         bool modified = false;
         for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
             VALUE path = RARRAY_AREF(loaded_features, i);
@@ -2522,7 +2522,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             RARRAY_ASET(loaded_features, i, path);
         }
         if (modified) {
-            rb_ary_replace(ns->loaded_features_snapshot, loaded_features);
+            rb_ary_replace(box->loaded_features_snapshot, loaded_features);
         }
     }
 

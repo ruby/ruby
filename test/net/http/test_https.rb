@@ -7,6 +7,8 @@ rescue LoadError
   # should skip this test
 end
 
+return unless defined?(OpenSSL::SSL)
+
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
 
@@ -19,7 +21,6 @@ class TestNetHTTPS < Test::Unit::TestCase
   CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
   SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
   SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
-  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
   TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
@@ -29,25 +30,16 @@ class TestNetHTTPS < Test::Unit::TestCase
     'ssl_enable' => true,
     'ssl_certificate' => SERVER_CERT,
     'ssl_private_key' => SERVER_KEY,
-    'ssl_tmp_dh_callback' => proc { DHPARAMS },
   }
 
   def test_get
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
-    certs = []
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      certs << store_ctx.current_cert
-      preverify_ok
-    end
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
+      assert_equal(SERVER_CERT.to_der, http.peer_cert.to_der)
     }
-    # TODO: OpenSSL 1.1.1h seems to yield only SERVER_CERT; need to check the incompatibility
-    certs.zip([CA_CERT, SERVER_CERT][-certs.size..-1]) do |actual, expected|
-      assert_equal(expected.to_der, actual.to_der)
-    end
   end
 
   def test_get_SNI
@@ -55,18 +47,10 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.ipaddr = config('host')
     http.use_ssl = true
     http.cert_store = TEST_STORE
-    certs = []
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      certs << store_ctx.current_cert
-      preverify_ok
-    end
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
+      assert_equal(SERVER_CERT.to_der, http.peer_cert.to_der)
     }
-    # TODO: OpenSSL 1.1.1h seems to yield only SERVER_CERT; need to check the incompatibility
-    certs.zip([CA_CERT, SERVER_CERT][-certs.size..-1]) do |actual, expected|
-      assert_equal(expected.to_der, actual.to_der)
-    end
   end
 
   def test_get_SNI_proxy
@@ -78,11 +62,6 @@ class TestNetHTTPS < Test::Unit::TestCase
         http.ipaddr = "192.0.2.1"
         http.use_ssl = true
         http.cert_store = TEST_STORE
-        certs = []
-        http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-          certs << store_ctx.current_cert
-          preverify_ok
-        end
         begin
           http.start
         rescue EOFError
@@ -114,11 +93,6 @@ class TestNetHTTPS < Test::Unit::TestCase
       http.ipaddr = config('host')
       http.use_ssl = true
       http.cert_store = TEST_STORE
-      certs = []
-      http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-        certs << store_ctx.current_cert
-        preverify_ok
-      end
       @log_tester = lambda {|_| }
       assert_raise(OpenSSL::SSL::SSLError){ http.start }
     end
@@ -135,10 +109,6 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse
-    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
-    # See https://github.com/openssl/openssl/pull/5967 for details.
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
-
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -165,9 +135,6 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_session_reuse_but_expire
-    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
-
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
@@ -240,6 +207,21 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(/certificate verify failed/, ex.message)
   end
 
+  def test_verify_callback
+    http = Net::HTTP.new(HOST, config("port"))
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
+    http.verify_callback = Proc.new {|preverify_ok, store_ctx|
+      certs << store_ctx.current_cert
+      preverify_ok
+    }
+    http.request_get("/") {|res|
+      assert_equal($test_net_http_data, res.body)
+    }
+    assert_equal(SERVER_CERT.to_der, certs.last.to_der)
+  end
+
   def test_timeout_during_SSL_handshake
     bug4246 = "expected the SSL connection to have timed out but have not. [ruby-core:34203]"
 
@@ -275,9 +257,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.max_version = :SSL2
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      true
-    end
+    http.cert_store = TEST_STORE
     @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
@@ -286,7 +266,25 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(re_msg, ex.message)
   end
 
-end if defined?(OpenSSL::SSL)
+  def test_ractor
+    assert_ractor(<<~RUBY, require: 'net/https')
+      expected = #{$test_net_http_data.dump}.b
+      ret = Ractor.new {
+        host = #{HOST.dump}
+        port = #{config('port')}
+        ca_cert_pem = #{CA_CERT.to_pem.dump}
+        cert_store = OpenSSL::X509::Store.new.tap { |s|
+          s.add_cert(OpenSSL::X509::Certificate.new(ca_cert_pem))
+        }
+        Net::HTTP.start(host, port, use_ssl: true, cert_store: cert_store) { |http|
+          res = http.get('/')
+          res.body
+        }
+      }.value
+      assert_equal expected, ret
+    RUBY
+  end if defined?(Ractor) && Ractor.method_defined?(:value)
+end
 
 class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
   include TestNetHTTPUtils
@@ -300,7 +298,6 @@ class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
   CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
   SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
   SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
-  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
   TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
@@ -310,7 +307,6 @@ class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
     'ssl_enable' => true,
     'ssl_certificate' => SERVER_CERT,
     'ssl_private_key' => SERVER_KEY,
-    'ssl_tmp_dh_callback' => proc { DHPARAMS },
   }
 
   def test_identity_verify_failure
@@ -326,4 +322,4 @@ class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
     re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
     assert_match(re_msg, ex.message)
   end
-end if defined?(OpenSSL::SSL)
+end

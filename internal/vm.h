@@ -69,6 +69,7 @@ const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);
+VALUE rb_ec_yield(struct rb_execution_context_struct *ec, VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
@@ -78,6 +79,7 @@ void rb_check_stack_overflow(void);
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
 VALUE rb_gccct_clear_table(VALUE);
+VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
 #if USE_YJIT || USE_ZJIT
 /* vm_exec.c */

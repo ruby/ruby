@@ -24,7 +24,7 @@ module Bundler
           @path = Pathname.new(options["path"])
           expanded_path = expand(@path)
           @path = if @path.relative?
-            expanded_path.relative_path_from(root_path.expand_path)
+            expanded_path.relative_path_from(File.expand_path(root_path))
           else
             expanded_path
           end

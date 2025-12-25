@@ -90,7 +90,9 @@ pub extern "C" fn incr_iseq_counter(idx: usize) {
     iseq_call_count[idx] += 1;
 }
 
-// YJIT exit counts for each instruction type
+/// YJIT exit counts for each instruction type.
+/// Note that `VM_INSTRUCTION_SIZE` is an upper bound and the actual number
+/// of VM opcodes may be different in the build. See [`rb_vm_instruction_size()`]
 const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
@@ -352,6 +354,7 @@ make_counters! {
     send_iseq_arity_error,
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
+    send_iseq_block_arg_gc_unsafe,
     send_iseq_complex_discard_extras,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
@@ -496,6 +499,7 @@ make_counters! {
     expandarray_postarg,
     expandarray_not_array,
     expandarray_to_ary,
+    expandarray_method_missing,
     expandarray_chain_max_depth,
 
     // getblockparam
@@ -803,7 +807,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 
         // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME"
         // and the value is the count of side exits for that instruction.
-        for op_idx in 0..VM_INSTRUCTION_SIZE_USIZE {
+        use crate::utils::IntoUsize;
+        for op_idx in 0..rb_vm_instruction_size().as_usize() {
             let op_name = insn_name(op_idx);
             let key_string = "exit_".to_owned() + &op_name;
             let count = EXIT_OP_COUNT[op_idx];

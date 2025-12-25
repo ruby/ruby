@@ -221,7 +221,18 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
         th->pending_interrupt_queue_checked = 0;
         RUBY_VM_SET_INTERRUPT(ec);
     }
-    return rb_threadptr_execute_interrupts(th, 1);
+
+    int result = rb_threadptr_execute_interrupts(th, 1);
+
+    // When a signal is received, we yield to the scheduler as soon as possible:
+    if (result || RUBY_VM_INTERRUPTED(ec)) {
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+        if (scheduler != Qnil) {
+            rb_fiber_scheduler_yield(scheduler);
+        }
+    }
+
+    return result;
 }
 
 int
@@ -442,8 +453,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         th->keeping_mutexes = mutex->next_mutex;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->fiber);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
+        VM_ASSERT(mutex->ec_serial);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
@@ -849,6 +860,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 #endif
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
+        th->ec->ractor_id = rb_ractor_id(th->ractor);
         th->ractor->threads.main = th;
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
@@ -1013,7 +1025,7 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         .args = args,
         .proc = proc,
     };
-    return thread_create_core(rb_thread_alloc(rb_cThread), &params);;
+    return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
 
 
@@ -1064,7 +1076,7 @@ thread_join_sleep(VALUE arg)
     }
 
     while (!thread_finished(target_th)) {
-        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
         if (!limit) {
             if (scheduler != Qnil) {
@@ -1413,17 +1425,18 @@ rb_thread_sleep_deadly(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
         RUBY_DEBUG_LOG("...");
         if (end) {
-            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+            sleep_hrtime_until(th, end, SLEEP_SPURIOUS_CHECK);
         }
         else {
-            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+            sleep_forever(th, SLEEP_DEADLOCKABLE);
         }
     }
 }
@@ -2042,6 +2055,9 @@ rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, voi
  *       created as Ruby thread (created by Thread.new or so).  In other
  *       words, this function *DOES NOT* associate or convert a NON-Ruby
  *       thread to a Ruby thread.
+ *
+ * NOTE: If this thread has already acquired the GVL, then the method call
+ *       is performed without acquiring or releasing the GVL (from Ruby 4.0).
  */
 void *
 rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
@@ -2065,7 +2081,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     prev_unblock = th->unblock;
 
     if (brb == 0) {
-        rb_bug("rb_thread_call_with_gvl: called by a thread which has GVL.");
+        /* the GVL is already acquired, call method directly */
+        return (*func)(data1);
     }
 
     blocking_region_end(th, brb);
@@ -2891,12 +2908,11 @@ rb_thread_fd_close(int fd)
 
 /*
  *  call-seq:
- *     thr.raise
- *     thr.raise(string)
- *     thr.raise(exception [, string [, array]])
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception from the given thread. The caller does not have to be
- *  +thr+. See Kernel#raise for more information.
+ *  +thr+. See Kernel#raise for more information on arguments.
  *
  *     Thread.abort_on_exception = true
  *     a = Thread.new { sleep(200) }
@@ -2935,7 +2951,10 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
  *
  *  Terminates +thr+ and schedules another thread to be run, returning
  *  the terminated Thread.  If this is the main thread, or the last
- *  thread, exits the process.
+ *  thread, exits the process. Note that the caller does not wait for
+ *  the thread to terminate if the receiver is different from the currently
+ *  running thread. The termination is asynchronous, and the thread can still
+ *  run a small amount of ruby code before exiting.
  */
 
 VALUE
@@ -4583,7 +4602,7 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
  * returns a mask of events
  */
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1] = {{
         .fd = fd,
@@ -4596,8 +4615,8 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     enum ruby_tag_type state;
     volatile int lerrno;
 
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    RUBY_ASSERT(th);
+    rb_execution_context_t *ec = th->ec;
 
     if (io) {
         blocking_operation.ec = ec;
@@ -4731,7 +4750,7 @@ init_set_fd(int fd, rb_fdset_t *fds)
 }
 
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
@@ -4740,7 +4759,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     struct rb_io_blocking_operation blocking_operation;
     if (io) {
         args.io = io;
-        blocking_operation.ec = GET_EC();
+        blocking_operation.ec = th->ec;
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     }
@@ -4765,15 +4784,15 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 #endif /* ! USE_POLL */
 
 int
-rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(rb_thread_t *th, int fd, int events, struct timeval *timeout)
 {
-    return thread_io_wait(NULL, fd, events, timeout);
+    return thread_io_wait(th, NULL, fd, events, timeout);
 }
 
 int
-rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout)
+rb_thread_io_wait(rb_thread_t *th, struct rb_io *io, int events, struct timeval * timeout)
 {
-    return thread_io_wait(io, io->fd, events, timeout);
+    return thread_io_wait(th, io, io->fd, events, timeout);
 }
 
 /*
@@ -4976,6 +4995,9 @@ static void
 terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 {
     if (th != current_th) {
+        // Clear the scheduler as it is no longer operational:
+        th->scheduler = Qnil;
+
         rb_native_mutex_initialize(&th->interrupt_lock);
         rb_mutex_abandon_keeping_mutexes(th);
         rb_mutex_abandon_locking_mutex(th);
@@ -4991,6 +5013,7 @@ rb_thread_atfork(void)
     rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
+    th->scheduler = Qnil;
     rb_fiber_atfork(th);
 
     /* We don't want reproduce CVE-2003-0900. */
@@ -5260,7 +5283,7 @@ rb_thread_shield_owned(VALUE self)
 
     rb_mutex_t *m = mutex_ptr(mutex);
 
-    return m->fiber == GET_EC()->fiber_ptr;
+    return m->ec_serial == rb_ec_serial(GET_EC());
 }
 
 /*
@@ -5279,7 +5302,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber == GET_EC()->fiber_ptr) return Qnil;
+    if (m->ec_serial == rb_ec_serial(GET_EC())) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5796,8 +5819,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-                        (void *)mutex->fiber, rb_mutex_num_waiting(mutex));
+            rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
+                        (unsigned long long)mutex->ec_serial, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5837,7 +5860,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !ccan_list_empty(&mutex->waitq))) {
+            if (mutex->ec_serial == rb_ec_serial(th->ec) || (!mutex->ec_serial && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }

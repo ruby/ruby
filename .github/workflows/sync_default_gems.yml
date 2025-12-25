@@ -1,4 +1,8 @@
 name: Sync default gems
+
+env:
+  DEFAULT_GEM_SYNC_ENABLED: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -27,10 +31,15 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         name: Check out ruby/ruby
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+        with:
+          ruby-version: '3.4'
+          bundler: none
 
       - name: Run tool/sync_default_gems.rb
         id: sync
@@ -51,9 +60,13 @@ jobs:
 
       - name: Push
         run: |
-          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git pull --rebase origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
-        if: ${{ steps.sync.outputs.update }}
+        if: ${{ steps.sync.outputs.update && env.DEFAULT_GEM_SYNC_ENABLED == 'true' }}
+        env:
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
 
       - uses: ./.github/actions/slack
         with:

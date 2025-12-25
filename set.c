@@ -102,6 +102,8 @@ static ID id_any_p;
 static ID id_new;
 static ID id_i_hash;
 static ID id_set_iter_lev;
+static ID id_subclass_compatible;
+static ID id_class_methods;
 
 #define RSET_INITIALIZED FL_USER1
 #define RSET_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
@@ -424,6 +426,19 @@ set_s_create(int argc, VALUE *argv, VALUE klass)
     return set;
 }
 
+static VALUE
+set_s_inherited(VALUE klass, VALUE subclass)
+{
+    if (klass == rb_cSet) {
+        // When subclassing directly from Set, include the compatibility layer
+        rb_require("set/subclass_compatible.rb");
+        VALUE subclass_compatible = rb_const_get(klass, id_subclass_compatible);
+        rb_include_module(subclass, subclass_compatible);
+        rb_extend_object(subclass, rb_const_get(subclass_compatible, id_class_methods));
+    }
+    return Qnil;
+}
+
 static void
 check_set(VALUE arg)
 {
@@ -480,11 +495,11 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *  If a block is given, the elements of enum are preprocessed by the
  *  given block.
  *
- *    Set.new([1, 2])                       #=> #<Set: {1, 2}>
- *    Set.new([1, 2, 1])                    #=> #<Set: {1, 2}>
- *    Set.new([1, 'c', :s])                 #=> #<Set: {1, "c", :s}>
- *    Set.new(1..5)                         #=> #<Set: {1, 2, 3, 4, 5}>
- *    Set.new([1, 2, 3]) { |x| x * x }      #=> #<Set: {1, 4, 9}>
+ *    Set.new([1, 2])                       #=> Set[1, 2]
+ *    Set.new([1, 2, 1])                    #=> Set[1, 2]
+ *    Set.new([1, 'c', :s])                 #=> Set[1, "c", :s]
+ *    Set.new(1..5)                         #=> Set[1, 2, 3, 4, 5]
+ *    Set.new([1, 2, 3]) { |x| x * x }      #=> Set[1, 4, 9]
  */
 static VALUE
 set_i_initialize(int argc, VALUE *argv, VALUE set)
@@ -509,14 +524,6 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
             }
         }
         else {
-            ID id_size = rb_intern("size");
-            if (rb_obj_is_kind_of(other, rb_mEnumerable) && rb_respond_to(other, id_size)) {
-                VALUE size = rb_funcall(other, id_size, 0);
-                if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
-                    rb_raise(rb_eArgError, "cannot initialize Set from an object with infinite size");
-                }
-            }
-
             rb_block_call(other, enum_method_id(other), 0, 0,
                 rb_block_given_p() ? set_initialize_with_block : set_initialize_without_block,
                 set);
@@ -588,11 +595,11 @@ set_inspect(VALUE set, VALUE dummy, int recur)
  *  Returns a new string containing the set entries:
  *
  *    s = Set.new
- *    s.inspect # => "#<Set: {}>"
+ *    s.inspect # => "Set[]"
  *    s.add(1)
- *    s.inspect # => "#<Set: {1}>"
+ *    s.inspect # => "Set[1]"
  *    s.add(2)
- *    s.inspect # => "#<Set: {1, 2}>"
+ *    s.inspect # => "Set[1, 2]"
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
@@ -643,11 +650,11 @@ set_i_to_a(VALUE set)
  *  call-seq:
  *    to_set(klass = Set, *args, &block) -> self or new_set
  *
- *  Returns self if receiver is an instance of +Set+ and no arguments or
- *  block are given.  Otherwise, converts the set to another with
- *  <tt>klass.new(self, *args, &block)</tt>.
+ *  Without arguments, returns +self+ (for duck-typing in methods that
+ *  accept "set, or set-convertible" arguments).
  *
- *  In subclasses, returns `klass.new(self, *args, &block)` unless overridden.
+ *  A form with arguments is _deprecated_. It converts the set to another
+ *  with <tt>klass.new(self, *args, &block)</tt>.
  */
 static VALUE
 set_i_to_set(int argc, VALUE *argv, VALUE set)
@@ -690,12 +697,12 @@ set_i_join(int argc, VALUE *argv, VALUE set)
  *  call-seq:
  *    add(obj) -> self
  *
- *  Adds the given object to the set and returns self.  Use `merge` to
+ *  Adds the given object to the set and returns self. Use Set#merge to
  *  add many elements at once.
  *
- *    Set[1, 2].add(3)                    #=> #<Set: {1, 2, 3}>
- *    Set[1, 2].add([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
- *    Set[1, 2].add(2)                    #=> #<Set: {1, 2}>
+ *    Set[1, 2].add(3)                    #=> Set[1, 2, 3]
+ *    Set[1, 2].add([3, 4])               #=> Set[1, 2, [3, 4]]
+ *    Set[1, 2].add(2)                    #=> Set[1, 2]
  */
 static VALUE
 set_i_add(VALUE set, VALUE item)
@@ -719,8 +726,8 @@ set_i_add(VALUE set, VALUE item)
  *  Adds the given object to the set and returns self. If the object is
  *  already in the set, returns nil.
  *
- *    Set[1, 2].add?(3)                    #=> #<Set: {1, 2, 3}>
- *    Set[1, 2].add?([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
+ *    Set[1, 2].add?(3)                    #=> Set[1, 2, 3]
+ *    Set[1, 2].add?([3, 4])               #=> Set[1, 2, [3, 4]]
  *    Set[1, 2].add?(2)                    #=> nil
  */
 static VALUE
@@ -849,9 +856,9 @@ set_classify_i(st_data_t key, st_data_t tmp)
  *
  *    files = Set.new(Dir.glob("*.rb"))
  *    hash = files.classify { |f| File.mtime(f).year }
- *    hash       #=> {2000 => #<Set: {"a.rb", "b.rb"}>,
- *               #    2001 => #<Set: {"c.rb", "d.rb", "e.rb"}>,
- *               #    2002 => #<Set: {"f.rb"}>}
+ *    hash       #=> {2000 => Set["a.rb", "b.rb"],
+ *               #    2001 => Set["c.rb", "d.rb", "e.rb"],
+ *               #    2002 => Set["f.rb"]}
  *
  *  Returns an enumerator if no block is given.
  */
@@ -952,10 +959,10 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *
  *    numbers = Set[1, 3, 4, 6, 9, 10, 11]
  *    set = numbers.divide { |i,j| (i - j).abs == 1 }
- *    set        #=> #<Set: {#<Set: {1}>,
- *               #           #<Set: {3, 4}>,
- *               #           #<Set: {6}>}>
- *               #           #<Set: {9, 10, 11}>,
+ *    set        #=> Set[Set[1],
+ *               #       Set[3, 4],
+ *               #       Set[6],
+ *               #       Set[9, 10, 11]]
  *
  *  Returns an enumerator if no block is given.
  */
@@ -986,9 +993,9 @@ set_clear_i(st_data_t key, st_data_t dummy)
  *
  *  Removes all elements and returns self.
  *
- *    set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
- *    set.clear                         #=> #<Set: {}>
- *    set                               #=> #<Set: {}>
+ *    set = Set[1, 'c', :s]             #=> Set[1, "c", :s]
+ *    set.clear                         #=> Set[]
+ *    set                               #=> Set[]
  */
 static VALUE
 set_i_clear(VALUE set)
@@ -1036,8 +1043,8 @@ set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
  *  Returns a new set containing elements common to the set and the given
  *  enumerable object.
  *
- *    Set[1, 3, 5] & Set[3, 2, 1]             #=> #<Set: {3, 1}>
- *    Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> #<Set: {"a", "b"}>
+ *    Set[1, 3, 5] & Set[3, 2, 1]             #=> Set[3, 1]
+ *    Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> Set["a", "b"]
  */
 static VALUE
 set_i_intersection(VALUE set, VALUE other)
@@ -1278,21 +1285,23 @@ set_xor_i(st_data_t key, st_data_t data)
  *  given enumerable object.  <tt>(set ^ enum)</tt> is equivalent to
  *  <tt>((set | enum) - (set & enum))</tt>.
  *
- *    Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
- *    Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
+ *    Set[1, 2] ^ Set[2, 3]                   #=> Set[3, 1]
+ *    Set[1, 'b', 'c'] ^ ['b', 'd']           #=> Set["d", 1, "c"]
  */
 static VALUE
 set_i_xor(VALUE set, VALUE other)
 {
-    VALUE new_set;
+    VALUE new_set = rb_obj_dup(set);
+
     if (rb_obj_is_kind_of(other, rb_cSet)) {
-        new_set = other;
+        set_iter(other, set_xor_i, (st_data_t)new_set);
     }
     else {
-        new_set = set_s_alloc(rb_obj_class(set));
-        set_merge_enum_into(new_set, other);
+        VALUE tmp = set_s_alloc(rb_cSet);
+        set_merge_enum_into(tmp, other);
+        set_iter(tmp, set_xor_i, (st_data_t)new_set);
     }
-    set_iter(set, set_xor_i, (st_data_t)new_set);
+
     return new_set;
 }
 
@@ -1303,8 +1312,8 @@ set_i_xor(VALUE set, VALUE other)
  *  Returns a new set built by merging the set and the elements of the
  *  given enumerable object.
  *
- *    Set[1, 2, 3] | Set[2, 4, 5]         #=> #<Set: {1, 2, 3, 4, 5}>
- *    Set[1, 5, 'z'] | (1..6)             #=> #<Set: {1, 5, "z", 2, 3, 4, 6}>
+ *    Set[1, 2, 3] | Set[2, 4, 5]         #=> Set[1, 2, 3, 4, 5]
+ *    Set[1, 5, 'z'] | (1..6)             #=> Set[1, 5, "z", 2, 3, 4, 6]
  */
 static VALUE
 set_i_union(VALUE set, VALUE other)
@@ -1362,8 +1371,8 @@ set_i_subtract(VALUE set, VALUE other)
  *  Returns a new set built by duplicating the set, removing every
  *  element that appears in the given enumerable object.
  *
- *    Set[1, 3, 5] - Set[1, 5]                #=> #<Set: {3}>
- *    Set['a', 'b', 'z'] - ['a', 'c']         #=> #<Set: {"b", "z"}>
+ *    Set[1, 3, 5] - Set[1, 5]                #=> Set[3]
+ *    Set['a', 'b', 'z'] - ['a', 'c']         #=> Set["b", "z"]
  */
 static VALUE
 set_i_difference(VALUE set, VALUE other)
@@ -1479,9 +1488,9 @@ set_i_select(VALUE set)
  *  Replaces the contents of the set with the contents of the given
  *  enumerable object and returns self.
  *
- *    set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
- *    set.replace([1, 2])               #=> #<Set: {1, 2}>
- *    set                               #=> #<Set: {1, 2}>
+ *    set = Set[1, 'c', :s]             #=> Set[1, "c", :s]
+ *    set.replace([1, 2])               #=> Set[1, 2]
+ *    set                               #=> Set[1, 2]
  */
 static VALUE
 set_i_replace(VALUE set, VALUE other)
@@ -1757,7 +1766,7 @@ set_i_disjoint(VALUE set, VALUE other)
  *    set <=> other -> -1, 0, 1, or nil
  *
  *  Returns 0 if the set are equal, -1 / 1 if the set is a
- *  proper subset / superset of the given set, or or nil if
+ *  proper subset / superset of the given set, or nil if
  *  they both have unique elements.
  */
 static VALUE
@@ -1979,21 +1988,14 @@ rb_set_size(VALUE set)
 /*
  *  Document-class: Set
  *
- * Copyright (c) 2002-2024 Akinori MUSHA <knu@iDaemons.org>
- *
- * Documentation by Akinori MUSHA and Gavin Sinclair.
- *
- * All rights reserved.  You can redistribute and/or modify it under the same
- * terms as Ruby.
- *
  * The Set class implements a collection of unordered values with no
  * duplicates. It is a hybrid of Array's intuitive inter-operation
  * facilities and Hash's fast lookup.
  *
- * Set is easy to use with Enumerable objects (implementing `each`).
+ * Set is easy to use with Enumerable objects (implementing #each).
  * Most of the initializer methods and binary operators accept generic
  * Enumerable objects besides sets and arrays.  An Enumerable object
- * can be converted to Set using the `to_set` method.
+ * can be converted to Set using the +to_set+ method.
  *
  * Set uses a data structure similar to Hash for storage, except that
  * it only has keys and no values.
@@ -2017,11 +2019,11 @@ rb_set_size(VALUE set)
  *
  * == Example
  *
- *   s1 = Set[1, 2]                        #=> #<Set: {1, 2}>
- *   s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
+ *   s1 = Set[1, 2]                        #=> Set[1, 2]
+ *   s2 = [1, 2].to_set                    #=> Set[1, 2]
  *   s1 == s2                              #=> true
- *   s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
- *   s1.merge([2, 6])                      #=> #<Set: {1, 2, "foo", 6}>
+ *   s1.add("foo")                         #=> Set[1, 2, "foo"]
+ *   s1.merge([2, 6])                      #=> Set[1, 2, "foo", 6]
  *   s1.subset?(s2)                        #=> false
  *   s2.subset?(s1)                        #=> true
  *
@@ -2029,9 +2031,39 @@ rb_set_size(VALUE set)
  *
  * - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
  *
- * == What's Here
+ * == Inheriting from \Set
  *
- *  First, what's elsewhere. \Class \Set:
+ * Before Ruby 4.0 (released December 2025), \Set had a different, less
+ * efficient implementation. It was reimplemented in C, and the behavior
+ * of some of the core methods were adjusted.
+ *
+ * To keep backward compatibility, when a class is inherited from \Set,
+ * additional module +Set::SubclassCompatible+ is included, which makes
+ * the inherited class behavior, as well as internal method names,
+ * closer to what it was before Ruby 4.0.
+ *
+ * It can be easily seen, for example, in the #inspect method behavior:
+ *
+ *    p Set[1, 2, 3]
+ *    # prints "Set[1, 2, 3]"
+ *
+ *    class MySet < Set
+ *    end
+ *    p MySet[1, 2, 3]
+ *    # prints "#<MySet: {1, 2, 3}>", like it was in Ruby 3.4
+ *
+ * For new code, if backward compatibility is not necessary,
+ * it is recommended to instead inherit from +Set::CoreSet+, which
+ * avoids including the "compatibility" layer:
+ *
+ *    class MyCoreSet < Set::CoreSet
+ *    end
+ *    p MyCoreSet[1, 2, 3]
+ *    # prints "MyCoreSet[1, 2, 3]"
+ *
+ * == Set's methods
+ *
+ * First, what's elsewhere. \Class \Set:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
@@ -2043,16 +2075,15 @@ rb_set_size(VALUE set)
  *
  * Here, class \Set provides methods that are useful for:
  *
- * - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
  * - {Creating a Set}[rdoc-ref:Set@Methods+for+Creating+a+Set]
  * - {Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations]
- * - {Comparing}[rdoc-ref:Array@Methods+for+Comparing]
- * - {Querying}[rdoc-ref:Array@Methods+for+Querying]
- * - {Assigning}[rdoc-ref:Array@Methods+for+Assigning]
- * - {Deleting}[rdoc-ref:Array@Methods+for+Deleting]
- * - {Converting}[rdoc-ref:Array@Methods+for+Converting]
- * - {Iterating}[rdoc-ref:Array@Methods+for+Iterating]
- * - {And more....}[rdoc-ref:Array@Other+Methods]
+ * - {Comparing}[rdoc-ref:Set@Methods+for+Comparing]
+ * - {Querying}[rdoc-ref:Set@Methods+for+Querying]
+ * - {Assigning}[rdoc-ref:Set@Methods+for+Assigning]
+ * - {Deleting}[rdoc-ref:Set@Methods+for+Deleting]
+ * - {Converting}[rdoc-ref:Set@Methods+for+Converting]
+ * - {Iterating}[rdoc-ref:Set@Methods+for+Iterating]
+ * - {And more....}[rdoc-ref:Set@Other+Methods]
  *
  * === Methods for Creating a \Set
  *
@@ -2195,6 +2226,8 @@ Init_Set(void)
     id_any_p = rb_intern_const("any?");
     id_new = rb_intern_const("new");
     id_i_hash = rb_intern_const("@hash");
+    id_subclass_compatible = rb_intern_const("SubclassCompatible");
+    id_class_methods = rb_intern_const("ClassMethods");
     id_set_iter_lev = rb_make_internal_id();
 
     rb_define_alloc_func(rb_cSet, set_s_alloc);
@@ -2264,6 +2297,11 @@ Init_Set(void)
     /* :nodoc: */
     VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);
     rb_marshal_define_compat(rb_cSet, compat, compat_dumper, compat_loader);
+
+    // Create Set::CoreSet before defining inherited, so it does not include
+    // the backwards compatibility layer.
+    rb_define_class_under(rb_cSet, "CoreSet", rb_cSet);
+    rb_define_private_method(rb_singleton_class(rb_cSet), "inherited", set_s_inherited, 1);
 
     rb_provide("set.rb");
 }

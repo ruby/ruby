@@ -326,6 +326,16 @@ Alternatives:
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
     - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
 
+### Languages in Examples
+
+For symbols and strings in documentation examples:
+
+- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
+- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
+- If a second language is needed (as, for example, characters with different byte-sizes),
+  prefer Japanese in \English documentation and \English in Japanese documentation.
+- Use other languages examples only as necessary:  see String#capitalize.
+
 ## Documenting Classes and Modules
 
 The general structure of the class or module documentation should be:

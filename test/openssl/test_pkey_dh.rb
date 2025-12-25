@@ -140,7 +140,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
     # AWS-LC automatically does parameter checks on the parsed params.
     if aws_lc?
-      assert_raise(OpenSSL::PKey::DHError) {
+      assert_raise(OpenSSL::PKey::PKeyError) {
         OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
           OpenSSL::ASN1::Integer(dh0.p + 1),
           OpenSSL::ASN1::Integer(dh0.g)

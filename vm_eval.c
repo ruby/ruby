@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_eval.c -
+  vm_eval.c - Included into vm.c.
 
   $Author$
   created at: Sat May 24 16:02:32 JST 2008
@@ -400,9 +400,9 @@ static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE rec
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 static VALUE
-gccct_hash(VALUE klass, VALUE namespace, ID mid)
+gccct_hash(VALUE klass, VALUE box_value, ID mid)
 {
-    return ((klass ^ namespace) >> 3) ^ (VALUE)mid;
+    return ((klass ^ box_value) >> 3) ^ (VALUE)mid;
 }
 
 NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo * ci));
@@ -447,8 +447,8 @@ scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
 static inline const struct rb_callcache *
 gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
-    VALUE klass, ns_value;
-    const rb_namespace_t *ns = rb_current_namespace();
+    VALUE klass, box_value;
+    const rb_box_t *box = rb_current_box();
 
     if (!SPECIAL_CONST_P(recv)) {
         klass = RBASIC_CLASS(recv);
@@ -458,14 +458,14 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
         klass = CLASS_OF(recv);
     }
 
-    if (NAMESPACE_USER_P(ns)) {
-        ns_value = ns->ns_object;
+    if (BOX_USER_P(box)) {
+        box_value = box->box_object;
     }
     else {
-        ns_value = 0;
+        box_value = 0;
     }
     // search global method cache
-    unsigned int index = (unsigned int)(gccct_hash(klass, ns_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+    unsigned int index = (unsigned int)(gccct_hash(klass, box_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     const struct rb_callcache *cc = vm->global_cc_cache_table[index];
 
@@ -1379,6 +1379,17 @@ rb_yield(VALUE val)
     }
 }
 
+VALUE
+rb_ec_yield(rb_execution_context_t *ec, VALUE val)
+{
+    if (UNDEF_P(val)) {
+        return vm_yield(ec, 0, NULL, RB_NO_KEYWORDS);
+    }
+    else {
+        return vm_yield(ec, 1, &val, RB_NO_KEYWORDS);
+    }
+}
+
 #undef rb_yield_values
 VALUE
 rb_yield_values(int n, ...)
@@ -2148,6 +2159,17 @@ rb_eval_string_wrap(const char *str, int *pstate)
 VALUE
 rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
 {
+    Check_Type(arg, T_ARRAY);
+    int argc = RARRAY_LENINT(arg);
+    const VALUE *argv = RARRAY_CONST_PTR(arg);
+    VALUE val = rb_eval_cmd_call_kw(cmd, argc, argv, kw_splat);
+    RB_GC_GUARD(arg);
+    return val;
+}
+
+VALUE
+rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat)
+{
     enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
     rb_execution_context_t * volatile ec = GET_EC();
@@ -2155,8 +2177,7 @@ rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         if (!RB_TYPE_P(cmd, T_STRING)) {
-            val = rb_funcallv_kw(cmd, idCall, RARRAY_LENINT(arg),
-                              RARRAY_CONST_PTR(arg), kw_splat);
+            val = rb_funcallv_kw(cmd, idCall, argc, argv, kw_splat);
         }
         else {
             val = eval_string_with_cref(rb_vm_top_self(), cmd, NULL, 0, 0);

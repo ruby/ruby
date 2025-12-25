@@ -60,6 +60,28 @@ module Bundler
       end
     end
 
+    # needed for binstubs
+    def executables
+      if @remote_specification
+        @remote_specification.executables
+      elsif _local_specification
+        _local_specification.executables
+      else
+        super
+      end
+    end
+
+    # needed for bundle clean
+    def bindir
+      if @remote_specification
+        @remote_specification.bindir
+      elsif _local_specification
+        _local_specification.bindir
+      else
+        super
+      end
+    end
+
     # needed for post_install_messages during install
     def post_install_message
       if @remote_specification

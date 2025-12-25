@@ -47,6 +47,7 @@ grouped ${srcdir}/configure        \
     --enable-debug-env             \
     --disable-install-doc          \
     --with-ext=-test-/cxxanyargs,+ \
+    --without-git                  \
     ${enable_shared}               \
     ${INPUT_APPEND_CONFIGURE}      \
     CFLAGS="${INPUT_CFLAGS}"       \

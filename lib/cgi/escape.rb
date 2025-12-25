@@ -1,16 +1,28 @@
 # frozen_string_literal: true
 
+# Since Ruby 4.0, \CGI is a small holder for various escaping methods, included from CGI::Escape
+#
+#    require 'cgi/escape'
+#
+#    CGI.escape("Ruby programming language")
+#    #=> "Ruby+programming+language"
+#    CGI.escapeURIComponent("Ruby programming language")
+#    #=> "Ruby%20programming%20language"
+#
+# See CGI::Escape module for methods list and their description.
 class CGI
   module Escape; end
   include Escape
   extend Escape
+  module EscapeExt; end # :nodoc:
 end
 
+# Web-related escape/unescape functionality.
 module CGI::Escape
   @@accept_charset = Encoding::UTF_8 unless defined?(@@accept_charset)
 
   # URL-encode a string into application/x-www-form-urlencoded.
-  # Space characters (+" "+) are encoded with plus signs (+"+"+)
+  # Space characters (<tt>" "</tt>) are encoded with plus signs (<tt>"+"</tt>)
   #   url_encoded_string = CGI.escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
@@ -37,7 +49,7 @@ module CGI::Escape
   end
 
   # URL-encode a string following RFC 3986
-  # Space characters (+" "+) are encoded with (+"%20"+)
+  # Space characters (<tt>" "</tt>) are encoded with (<tt>"%20"</tt>)
   #   url_encoded_string = CGI.escapeURIComponent("'Stop!' said Fred")
   #      # => "%27Stop%21%27%20said%20Fred"
   def escapeURIComponent(string)
@@ -65,7 +77,7 @@ module CGI::Escape
   alias unescape_uri_component unescapeURIComponent
 
   # The set of special characters and their escaped values
-  TABLE_FOR_ESCAPE_HTML__ = {
+  TABLE_FOR_ESCAPE_HTML__ = { # :nodoc:
     "'" => '&#39;',
     '&' => '&amp;',
     '"' => '&quot;',
@@ -73,7 +85,7 @@ module CGI::Escape
     '>' => '&gt;',
   }
 
-  # Escape special characters in HTML, namely '&\"<>
+  # \Escape special characters in HTML, namely <tt>'&\"<></tt>
   #   CGI.escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def escapeHTML(string)
@@ -156,11 +168,9 @@ module CGI::Escape
     string.force_encoding enc
   end
 
-  # Synonym for CGI.escapeHTML(str)
   alias escape_html escapeHTML
   alias h escapeHTML
 
-  # Synonym for CGI.unescapeHTML(str)
   alias unescape_html unescapeHTML
 
   # TruffleRuby runs the pure-Ruby variant faster, do not use the C extension there
@@ -171,7 +181,7 @@ module CGI::Escape
     end
   end
 
-  # Escape only the tags of certain HTML elements in +string+.
+  # \Escape only the tags of certain HTML elements in +string+.
   #
   # Takes an element or elements or array of elements.  Each element
   # is specified by the name of the element, without angle brackets.
@@ -195,7 +205,7 @@ module CGI::Escape
     end
   end
 
-  # Undo escaping such as that done by CGI.escapeElement()
+  # Undo escaping such as that done by CGI.escapeElement
   #
   #   print CGI.unescapeElement(
   #           CGI.escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
@@ -215,10 +225,8 @@ module CGI::Escape
     end
   end
 
-  # Synonym for CGI.escapeElement(str)
   alias escape_element escapeElement
 
-  # Synonym for CGI.unescapeElement(str)
   alias unescape_element unescapeElement
 
 end

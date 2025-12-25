@@ -1077,6 +1077,7 @@ static void
 die(void)
 {
 #if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    /* mingw32 declares in stdlib.h but does not provide. */
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
@@ -4162,7 +4163,7 @@ rb_error_frozen_object(VALUE frozen_obj)
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
 
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
-                            CLASS_OF(frozen_obj));
+                            rb_obj_class(frozen_obj));
     VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
 
     rb_ivar_set(exc, id_recv, frozen_obj);

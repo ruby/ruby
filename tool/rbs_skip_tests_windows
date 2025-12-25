@@ -1,5 +1,8 @@
 ARGFTest     Failing on Windows
 
+RactorSingletonTest     Hangs up on Windows
+RactorInstanceTest      Hangs up on Windows
+
 # NotImplementedError: fileno() function is unimplemented on this machine
 test_fileno(DirInstanceTest)
 test_fchdir(DirSingletonTest)
@@ -102,3 +105,5 @@ test_new(TempfileSingletonTest)
 
 # Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-f8z9pn/test.gz
 test_open(ZlibGzipReaderSingletonTest)
+
+test_reachable_objects_from_root(ObjectSpaceTest) To avoid NoMemoryError with test-unit 3.7.5

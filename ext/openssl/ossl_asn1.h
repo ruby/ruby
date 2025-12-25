@@ -32,10 +32,24 @@ VALUE asn1integer_to_num(const ASN1_INTEGER *);
 ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
 
 /*
+ * ASN1_OBJECT conversions
+ */
+ASN1_OBJECT *ossl_to_asn1obj(VALUE obj);
+/*
+ * Returns the short name if available, the dotted decimal notation otherwise.
+ * This is the most common way to return ASN1_OBJECT to Ruby.
+ */
+VALUE ossl_asn1obj_to_string(const ASN1_OBJECT *a1obj);
+/*
+ * However, some places use long names instead. This is likely unintentional,
+ * but we keep the current behavior in existing methods.
+ */
+VALUE ossl_asn1obj_to_string_long_name(const ASN1_OBJECT *a1obj);
+
+/*
  * ASN1 module
  */
 extern VALUE mASN1;
-extern VALUE eASN1Error;
 
 extern VALUE cASN1Data;
 

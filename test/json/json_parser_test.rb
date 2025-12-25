@@ -131,6 +131,12 @@ class JSONParserTest < Test::Unit::TestCase
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
+  def test_parse_bignum
+    bignum = Integer('1234567890' * 10)
+    assert_equal(bignum, JSON.parse(bignum.to_s))
+    assert_equal(bignum.to_f, JSON.parse(bignum.to_s + ".0"))
+  end
+
   def test_parse_bigdecimals
     assert_equal(BigDecimal,                             JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"].class)
     assert_equal(BigDecimal("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
@@ -155,6 +161,20 @@ class JSONParserTest < Test::Unit::TestCase
       orig_obj = perm.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
       json = pretty_generate(orig_obj)
       assert_equal orig_obj, parse(json)
+    end
+  end
+
+  def test_parse_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_raise JSON::ParserError do
+        parse(%("#{ord.chr}"))
+      end
+    end
+  end
+
+  def test_parse_allowed_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_equal ord.chr, parse(%("#{ord.chr}"), allow_control_characters: true)
     end
   end
 
@@ -319,6 +339,13 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
+  def test_unicode_followed_by_newline
+    # Ref: https://github.com/ruby/json/issues/912
+    assert_equal "🌌\n".bytes, JSON.parse('"\ud83c\udf0c\n"').bytes
+    assert_equal "🌌\n", JSON.parse('"\ud83c\udf0c\n"')
+    assert_predicate JSON.parse('"\ud83c\udf0c\n"'), :valid_encoding?
+  end
+
   def test_invalid_surogates
     assert_raise(JSON::ParserError) { parse('"\\uD800"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
@@ -336,6 +363,18 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal orig, parse(json4)
     json5 = JSON(orig = 1 << 64)
     assert_equal orig, parse(json5)
+  end
+
+  def test_parse_escaped_key
+    doc = {
+      "test\r1" => 1,
+      "entries" => [
+        "test\t2" => 2,
+        "test\n3" => 3,
+      ]
+    }
+
+    assert_equal doc, parse(JSON.generate(doc))
   end
 
   def test_parse_duplicate_key
@@ -492,8 +531,8 @@ class JSONParserTest < Test::Unit::TestCase
     data = ['"']
     assert_equal data, parse(json)
     #
-    json = '["\\\'"]'
-    data = ["'"]
+    json = '["\\/"]'
+    data = ["/"]
     assert_equal data, parse(json)
 
     json = '["\/"]'
@@ -795,6 +834,17 @@ class JSONParserTest < Test::Unit::TestCase
     # ref: https://github.com/ruby/ruby/pull/12598
     assert_raise(JSON::ParserError) do
       JSON.parse("/foo/bar")
+    end
+  end
+
+  def test_parse_whitespace_after_newline
+    assert_equal [], JSON.parse("[\n#{' ' * (8 + 8 + 4 + 3)}]")
+  end
+
+  def test_frozen
+    parser_config = JSON::Parser::Config.new({}).freeze
+    assert_raise FrozenError do
+      parser_config.send(:initialize, {})
     end
   end
 

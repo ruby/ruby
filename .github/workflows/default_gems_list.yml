@@ -1,6 +1,9 @@
 name: Update default gems list
 on: [push, pull_request, merge_group]
 
+env:
+  UPDATE_NEWS_ENABLED: false
+
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
@@ -20,7 +23,7 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -65,7 +68,7 @@ jobs:
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb default
-        if: ${{ steps.gems.outcome == 'success' }}
+        if: ${{ steps.gems.outcome == 'success' && env.UPDATE_NEWS_ENABLED == 'true' }}
 
       - name: Check diffs
         id: diff

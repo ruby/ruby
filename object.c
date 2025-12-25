@@ -124,18 +124,17 @@ rb_class_allocate_instance(VALUE klass)
         size = sizeof(struct RObject);
     }
 
-    NEWOBJ_OF(o, struct RObject, klass,
-              T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+    // There might be a NEWOBJ tracepoint callback, and it may set fields.
+    // So the shape must be passed to `NEWOBJ_OF`.
+    VALUE flags = T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
     VALUE obj = (VALUE)o;
-
-    RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(obj), SHAPE_ROOT));
-
-    RBASIC_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     VALUE *ptr = ROBJECT_FIELDS(obj);
-    for (size_t i = 0; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
+    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
     }
     if (rb_obj_class(obj) != rb_class_real(klass)) {
@@ -854,14 +853,21 @@ rb_obj_inspect(VALUE obj)
 {
     VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
     st_index_t n = 0;
-    if (UNDEF_P(ivars)) {
+    if (UNDEF_P(ivars) || NIL_P(ivars)) {
         n = rb_ivar_count(obj);
         ivars = Qnil;
     }
-    else if (!NIL_P(ivars)) {
-        Check_Type(ivars, T_ARRAY);
+    else if (RB_TYPE_P(ivars, T_ARRAY)) {
         n = RARRAY_LEN(ivars);
     }
+    else {
+        rb_raise(
+            rb_eTypeError,
+            "Expected #instance_variables_to_inspect to return an Array or nil, but it returned %"PRIsVALUE,
+            rb_obj_class(ivars)
+        );
+    }
+
     if (n > 0) {
         VALUE c = rb_class_name(CLASS_OF(obj));
         VALUE args[2] = {
@@ -873,6 +879,13 @@ rb_obj_inspect(VALUE obj)
     else {
         return rb_any_to_s(obj);
     }
+}
+
+/* :nodoc: */
+static VALUE
+rb_obj_instance_variables_to_inspect(VALUE obj)
+{
+    return Qnil;
 }
 
 static VALUE
@@ -1753,21 +1766,33 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj <=> other -> 0 or nil
+ *     self <=> other -> 0 or nil
  *
- *  Returns 0 if +obj+ and +other+ are the same object
- *  or <code>obj == other</code>, otherwise nil.
+ *  Compares +self+ and +other+.
  *
- *  The #<=> is used by various methods to compare objects, for example
- *  Enumerable#sort, Enumerable#max etc.
+ *  Returns:
  *
- *  Your implementation of #<=> should return one of the following values: -1, 0,
- *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
- *  1 means self is bigger than other. Nil means the two values could not be
- *  compared.
+ *  - +0+, if +self+ and +other+ are the same object,
+ *    or if <tt>self == other</tt>.
+ *  - +nil+, otherwise.
  *
- *  When you define #<=>, you can include Comparable to gain the
- *  methods #<=, #<, #==, #>=, #> and #between?.
+ *  Examples:
+ *
+ *    o = Object.new
+ *    o <=> o     # => 0
+ *    o <=> o.dup # => nil
+ *
+ *  A class that includes module Comparable
+ *  should override this method by defining an instance method that:
+ *
+ *  - Take one argument, +other+.
+ *  - Returns:
+ *
+ *    - +-1+, if +self+ is less than +other+.
+ *    - +0+, if +self+ is equal to +other+.
+ *    - +1+, if +self+ is greater than +other+.
+ *    - +nil+, if the two values are incommensurate.
+ *
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
@@ -1935,14 +1960,15 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod < other   ->  true, false, or nil
+ *   self < other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is an ancestor of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns whether +self+ is a subclass of +other+,
+ * or +nil+ if there is no relationship between the two:
+ *
+ *   Float < Numeric # => true
+ *   Numeric < Float # => false
+ *   Float < Float   # => false
+ *   Float < Hash    # => nil
  *
  */
 
@@ -1998,14 +2024,30 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     module <=> other_module   -> -1, 0, +1, or nil
+ *     self <=> other -> -1, 0, 1, or nil
  *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
- *  includes +other_module+, they are the same, or if +module+ is included by
- *  +other_module+.
+ *  Compares +self+ and +other+.
  *
- *  Returns +nil+ if +module+ has no relationship with +other_module+, if
- *  +other_module+ is not a module, or if the two values are incomparable.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ includes +other+, if or +self+ is a subclass of +other+.
+ *  - +0+, if +self+ and +other+ are the same.
+ *  - +1+, if +other+ includes +self+, or if +other+ is a subclass of +self+.
+ *  - +nil+, if none of the above is true.
+ *
+ *  Examples:
+ *
+ *    # Class Array includes module Enumerable.
+ *             Array <=> Enumerable # => -1
+ *        Enumerable <=> Enumerable # =>  0
+ *        Enumerable <=> Array      # =>  1
+ *    # Class File is a subclass of class IO.
+ *              File <=> IO         # => -1
+ *              File <=> File       # =>  0
+ *                IO <=> File       # =>  1
+ *    # Class File has no relationship to class String.
+ *              File <=> String     # => nil
+ *
  */
 
 static VALUE
@@ -2213,8 +2255,10 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     obj = (*allocator)(klass);
 
-    if (rb_obj_class(obj) != rb_class_real(klass)) {
-        rb_raise(rb_eTypeError, "wrong instance allocation");
+    if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
+        if (rb_obj_class(obj) != rb_class_real(klass)) {
+            rb_raise(rb_eTypeError, "wrong instance allocation");
+        }
     }
     return obj;
 }
@@ -4094,7 +4138,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *  into +format_string+.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/format_specifications.rdoc].
  */
 
 static VALUE
@@ -4535,6 +4579,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
+    rb_define_private_method(rb_mKernel, "instance_variables_to_inspect", rb_obj_instance_variables_to_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1); /* in class.c */

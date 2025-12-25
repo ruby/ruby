@@ -1995,6 +1995,12 @@ fiber_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
 }
 
+static rb_serial_t
+next_ec_serial(rb_ractor_t *cr)
+{
+    return cr->next_ec_serial++;
+}
+
 static rb_fiber_t*
 fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 {
@@ -2014,6 +2020,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     cont_init(&fiber->cont, th);
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
+    fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
 
     fiber->prev = NULL;
@@ -2185,7 +2192,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
  *  Returns the value of the fiber storage variable identified by +key+.
  *
  *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
- *  Fiber#store.
+ *  Fiber#storage.
  *
  *  See also Fiber::[]=.
  */
@@ -2560,6 +2567,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     }
     fiber->cont.type = FIBER_CONTEXT;
     fiber->cont.saved_ec.fiber_ptr = fiber;
+    fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
     fiber->blocking = 1;
     fiber->killed = 0;
@@ -2890,6 +2898,7 @@ void
 rb_fiber_close(rb_fiber_t *fiber)
 {
     fiber_status_set(fiber, FIBER_TERMINATED);
+    rb_ec_close(&fiber->cont.saved_ec);
 }
 
 static void
@@ -3237,28 +3246,37 @@ rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     fiber.raise                                 -> obj
- *     fiber.raise(string)                         -> obj
- *     fiber.raise(exception [, string [, array]]) -> obj
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception in the fiber at the point at which the last
- *  +Fiber.yield+ was called. If the fiber has not been started or has
+ *  +Fiber.yield+ was called.
+ *
+ *     f = Fiber.new {
+ *       puts "Before the yield"
+ *       Fiber.yield 1 # -- exception will be raised here
+ *       puts "After the yield"
+ *     }
+ *
+ *     p f.resume
+ *     f.raise "Gotcha"
+ *
+ *  Output
+ *
+ *     Before the first yield
+ *     1
+ *     t.rb:8:in 'Fiber.yield': Gotcha (RuntimeError)
+ *       from t.rb:8:in 'block in <main>'
+ *
+ *  If the fiber has not been started or has
  *  already run to completion, raises +FiberError+. If the fiber is
  *  yielding, it is resumed. If it is transferring, it is transferred into.
  *  But if it is resuming, raises +FiberError+.
  *
- *  With no arguments, raises a +RuntimeError+. With a single +String+
- *  argument, raises a +RuntimeError+ with the string as a message.  Otherwise,
- *  the first parameter should be the name of an +Exception+ class (or an
- *  object that returns an +Exception+ object when sent an +exception+
- *  message). The optional second parameter sets the message associated with
- *  the exception, and the third parameter is an array of callback information.
- *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
- *  blocks.
- *
  *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  *
- *  See Kernel#raise for more information.
+ *  See Kernel#raise for more information on arguments.
+ *
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
@@ -3353,6 +3371,8 @@ rb_fiber_atfork(rb_thread_t *th)
             th->root_fiber = th->ec->fiber_ptr;
         }
         th->root_fiber->prev = 0;
+        th->root_fiber->blocking = 1;
+        th->blocking = 1;
     }
 }
 #endif

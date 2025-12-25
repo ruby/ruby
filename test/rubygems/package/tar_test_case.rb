@@ -6,23 +6,7 @@ require "rubygems/package"
 ##
 # A test case for Gem::Package::Tar* classes
 
-class Gem::Package::TarTestCase < Gem::TestCase
-  def ASCIIZ(str, length)
-    str + "\0" * (length - str.length)
-  end
-
-  def SP(s)
-    s + " "
-  end
-
-  def SP_Z(s)
-    s + " \0"
-  end
-
-  def Z(s)
-    s + "\0"
-  end
-
+module Gem::Package::TarTestMethods
   def assert_headers_equal(expected, actual)
     expected = expected.to_s unless String === expected
     actual = actual.to_s unless String === actual
@@ -65,6 +49,26 @@ class Gem::Package::TarTestCase < Gem::TestCase
     end
 
     assert_equal expected[chksum_off, 8], actual[chksum_off, 8]
+  end
+end
+
+class Gem::Package::TarTestCase < Gem::TestCase
+  include Gem::Package::TarTestMethods
+
+  def ASCIIZ(str, length)
+    str + "\0" * (length - str.length)
+  end
+
+  def SP(s)
+    s + " "
+  end
+
+  def SP_Z(s)
+    s + " \0"
+  end
+
+  def Z(s)
+    s + "\0"
   end
 
   def calc_checksum(header)

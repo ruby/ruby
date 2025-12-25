@@ -466,7 +466,7 @@ module URI
     #
     #   uri = URI.parse("http://john:S3nsit1ve@my.example.com")
     #   uri.user = "sam"
-    #   uri.to_s  #=> "http://sam:V3ry_S3nsit1ve@my.example.com"
+    #   uri.to_s  #=> "http://sam@my.example.com"
     #
     def user=(user)
       check_user(user)

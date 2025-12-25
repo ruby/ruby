@@ -25,7 +25,7 @@ describe "Set#divide when passed a block with an arity of 2" do
     set.map{ |x| x.to_a.sort }.sort.should == [[1], [3, 4], [6], [9, 10, 11]]
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "yields each two Object to the block" do
       ret = []
       Set[1, 2].divide { |x, y| ret << [x, y] }
@@ -33,7 +33,7 @@ describe "Set#divide when passed a block with an arity of 2" do
     end
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "yields each two Object to the block" do
       ret = []
       Set[1, 2].divide { |x, y| ret << [x, y] }

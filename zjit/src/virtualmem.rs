@@ -5,7 +5,7 @@
 
 use std::ptr::NonNull;
 use crate::cruby::*;
-use crate::stats::zjit_alloc_size;
+use crate::stats::zjit_alloc_bytes;
 
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
 
@@ -199,7 +199,7 @@ impl<A: Allocator> VirtualMemory<A> {
             // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
             let mut required_region_bytes = page_addr + page_size - start as usize;
             if self.memory_limit_bytes.is_some() {
-                required_region_bytes += zjit_alloc_size();
+                required_region_bytes += zjit_alloc_bytes();
             }
 
             assert!((start..=whole_region_end).contains(&mapped_region_end));
@@ -256,6 +256,13 @@ impl<A: Allocator> VirtualMemory<A> {
         unsafe { raw.write(byte) };
 
         Ok(())
+    }
+
+    /// Return true if write_byte() can allocate a new page
+    pub fn can_allocate(&self) -> bool {
+        let memory_usage_bytes = self.mapped_region_bytes + zjit_alloc_bytes();
+        let memory_limit_bytes = self.memory_limit_bytes.unwrap_or(self.region_size_bytes);
+        memory_usage_bytes + self.page_size_bytes < memory_limit_bytes
     }
 
     /// Make all the code in the region executable. Call this at the end of a write session.

@@ -79,7 +79,6 @@ STATIC_ASSERT(sizeof_bdigit_and_dbl, SIZEOF_BDIGIT*2 <= SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(bdigit_signedness, 0 < (BDIGIT)-1);
 STATIC_ASSERT(bdigit_dbl_signedness, 0 < (BDIGIT_DBL)-1);
 STATIC_ASSERT(bdigit_dbl_signed_signedness, 0 > (BDIGIT_DBL_SIGNED)-1);
-STATIC_ASSERT(rbignum_embed_len_max, BIGNUM_EMBED_LEN_MAX <= (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT));
 
 #if SIZEOF_BDIGIT < SIZEOF_LONG
 STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_LONG % SIZEOF_BDIGIT == 0);
@@ -2990,25 +2989,56 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
             ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
      (void)(RBIGNUM(b)->as.heap.len = (l)))
 
+static size_t
+big_embed_capa(VALUE big)
+{
+    size_t size = rb_gc_obj_slot_size(big) - offsetof(struct RBignum, as.ary);
+    RUBY_ASSERT(size % sizeof(BDIGIT) == 0);
+    size_t capa = size / sizeof(BDIGIT);
+    RUBY_ASSERT(capa <= BIGNUM_EMBED_LEN_MAX);
+    return capa;
+}
+
+static size_t
+big_embed_size(size_t capa)
+{
+    size_t size = offsetof(struct RBignum, as.ary) + (sizeof(BDIGIT) * capa);
+    if (size < sizeof(struct RBignum)) {
+        size = sizeof(struct RBignum);
+    }
+    return size;
+}
+
+static bool
+big_embeddable_p(size_t capa)
+{
+    if (capa > BIGNUM_EMBED_LEN_MAX) {
+        return false;
+    }
+    return rb_gc_size_allocatable_p(big_embed_size(capa));
+}
+
 static void
 rb_big_realloc(VALUE big, size_t len)
 {
     BDIGIT *ds;
+    size_t embed_capa = big_embed_capa(big);
+
     if (BIGNUM_EMBED_P(big)) {
-        if (BIGNUM_EMBED_LEN_MAX < len) {
+        if (embed_capa < len) {
             ds = ALLOC_N(BDIGIT, len);
-            MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, BIGNUM_EMBED_LEN_MAX);
+            MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, embed_capa);
             RBIGNUM(big)->as.heap.len = BIGNUM_LEN(big);
             RBIGNUM(big)->as.heap.digits = ds;
             FL_UNSET_RAW(big, BIGNUM_EMBED_FLAG);
         }
     }
     else {
-        if (len <= BIGNUM_EMBED_LEN_MAX) {
+        if (len <= embed_capa) {
             ds = RBIGNUM(big)->as.heap.digits;
             FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
             BIGNUM_SET_LEN(big, len);
-            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
+            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, embed_capa * sizeof(BDIGIT));
             if (ds) {
                 MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
                 xfree(ds);
@@ -3018,7 +3048,7 @@ rb_big_realloc(VALUE big, size_t len)
             if (BIGNUM_LEN(big) == 0) {
                 RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
             }
-            else {
+            else if (BIGNUM_LEN(big) < len) {
                 REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
             }
         }
@@ -3035,16 +3065,24 @@ rb_big_resize(VALUE big, size_t len)
 static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
-    NEWOBJ_OF(big, struct RBignum, klass,
-            T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
-    VALUE bigv = (VALUE)big;
-    BIGNUM_SET_SIGN(bigv, sign);
-    if (len <= BIGNUM_EMBED_LEN_MAX) {
-        FL_SET_RAW(bigv, BIGNUM_EMBED_FLAG);
+    VALUE bigv;
+
+    if (big_embeddable_p(len)) {
+        size_t size = big_embed_size(len);
+        RUBY_ASSERT(rb_gc_size_allocatable_p(size));
+        NEWOBJ_OF(big, struct RBignum, klass,
+                T_BIGNUM | BIGNUM_EMBED_FLAG | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0),
+                size, 0);
+        bigv = (VALUE)big;
+        BIGNUM_SET_SIGN(bigv, sign);
         BIGNUM_SET_LEN(bigv, len);
-        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, sizeof(big->as.ary));
+        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, len * sizeof(BDIGIT));
     }
     else {
+        NEWOBJ_OF(big, struct RBignum, klass,
+                T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
+        bigv = (VALUE)big;
+        BIGNUM_SET_SIGN(bigv, sign);
         big->as.heap.digits = ALLOC_N(BDIGIT, len);
         big->as.heap.len = len;
     }
@@ -4477,7 +4515,7 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
 
 #if HAVE_LONG_LONG
 
-static VALUE
+VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
     long i;
@@ -4499,7 +4537,7 @@ rb_ull2big(unsigned LONG_LONG n)
     return big;
 }
 
-static VALUE
+VALUE
 rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
@@ -4537,7 +4575,7 @@ rb_ll2inum(LONG_LONG n)
 #endif  /* HAVE_LONG_LONG */
 
 #ifdef HAVE_INT128_T
-static VALUE
+VALUE
 rb_uint128t2big(uint128_t n)
 {
     long i;

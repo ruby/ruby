@@ -507,7 +507,7 @@ RSpec.describe "major deprecations" do
         DEPENDENCIES
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
       bundle "install", raise_on_error: false
 
@@ -562,7 +562,7 @@ RSpec.describe "major deprecations" do
           myrack!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -594,7 +594,7 @@ RSpec.describe "major deprecations" do
           rake
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

@@ -314,4 +314,11 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     rsa = Fixtures.pkey("rsa-1")
     assert_include rsa.to_text, "publicExponent"
   end
+
+  def test_legacy_error_classes
+    assert_same(OpenSSL::PKey::PKeyError, OpenSSL::PKey::DSAError)
+    assert_same(OpenSSL::PKey::PKeyError, OpenSSL::PKey::DHError)
+    assert_same(OpenSSL::PKey::PKeyError, OpenSSL::PKey::ECError)
+    assert_same(OpenSSL::PKey::PKeyError, OpenSSL::PKey::RSAError)
+  end
 end

@@ -16,7 +16,7 @@ pub mod x86_64;
 pub mod arm64;
 
 /// Index to a label created by cb.new_label()
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Label(pub usize);
 
 /// The object that knows how to encode the branch instruction.
@@ -208,6 +208,14 @@ impl CodeBlock {
         self.dropped_bytes
     }
 
+    /// Set dropped_bytes to false if the current zjit_alloc_bytes() + code_region_size
+    /// + page_size is below --zjit-mem-size.
+    pub fn update_dropped_bytes(&mut self) {
+        if self.mem_block.borrow().can_allocate() {
+            self.dropped_bytes = false;
+        }
+    }
+
     /// Allocate a new label with a given name
     pub fn new_label(&mut self, name: String) -> Label {
         assert!(!name.contains(' '), "use underscores in label names, not spaces");
@@ -346,7 +354,7 @@ impl fmt::LowerHex for CodeBlock {
         for pos in 0..self.write_pos {
             let mem_block = &*self.mem_block.borrow();
             let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
-            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+            fmtr.write_fmt(format_args!("{byte:02x}"))?;
         }
         Ok(())
     }

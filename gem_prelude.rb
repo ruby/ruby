@@ -25,4 +25,3 @@ begin
 rescue LoadError
   warn "`syntax_suggest' was not loaded."
 end if defined?(SyntaxSuggest)
-

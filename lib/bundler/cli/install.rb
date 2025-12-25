@@ -44,6 +44,8 @@ module Bundler
       # (rather than some optimizations we perform at app runtime).
       definition = Bundler.definition(strict: true)
       definition.validate_runtime!
+      definition.lockfile = options["lockfile"] if options["lockfile"]
+      definition.lockfile = false if options["no-lock"]
 
       installer = Installer.install(Bundler.root, definition, options)
 
@@ -88,7 +90,7 @@ module Bundler
     end
 
     def gems_installed_for(definition)
-      count = definition.specs.count
+      count = definition.specs.count {|spec| spec.name != "bundler" }
       "#{count} #{count == 1 ? "gem" : "gems"} now installed"
     end
 

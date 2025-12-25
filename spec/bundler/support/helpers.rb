@@ -28,8 +28,8 @@ module Spec
       Gem.clear_paths
     end
 
-    def the_bundle(*args)
-      TheBundle.new(*args)
+    def the_bundle
+      TheBundle.new
     end
 
     MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/
@@ -54,7 +54,7 @@ module Spec
         begin
           #{ruby}
         rescue LoadError => e
-          warn "ZOMG LOAD ERROR" if e.message.include?("-- #{name}")
+          warn e.message if e.message.include?("-- #{name}")
         end
       RUBY
       opts = args.last.is_a?(Hash) ? args.pop : {}
@@ -132,7 +132,7 @@ module Spec
         begin
           #{ruby}
         rescue LoadError => e
-          warn "ZOMG LOAD ERROR" if e.message.include?("-- #{name}")
+          warn e.message if e.message.include?("-- #{name}")
         end
       R
     end
@@ -192,13 +192,7 @@ module Spec
       # command is expired too. So give `gem install` commands a bit more time.
       options[:timeout] = 120
 
-      allowed_warning = options.delete(:allowed_warning)
-
-      output = sys_exec("#{Path.gem_bin} #{command}", options)
-      stderr = last_command.stderr
-
-      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr, allowed_warning)
-      output
+      sys_exec("#{Path.gem_bin} #{command}", options)
     end
 
     def sys_exec(cmd, options = {}, &block)
@@ -330,7 +324,7 @@ module Spec
     end
 
     def install_gem(path, install_dir, default = false)
-      raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+      raise ArgumentError, "`#{path}` does not exist!" unless File.exist?(path)
 
       args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
 
@@ -421,7 +415,7 @@ module Spec
 
       gems.each do |g|
         path = "#{gem_repo}/gems/#{g}.gem"
-        raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+        raise ArgumentError, "`#{path}` does not exist!" unless File.exist?(path)
         FileUtils.cp(path, "#{bundled_app}/vendor/cache")
       end
     end
@@ -536,14 +530,6 @@ module Spec
     end
 
     private
-
-    def allowed_rubygems_warning?(text, extra_allowed_warning)
-      allowed_warnings = ["open-ended", "is a symlink", "rake based", "expected RubyGems version"]
-      allowed_warnings << extra_allowed_warning if extra_allowed_warning
-      allowed_warnings.any? do |warning|
-        text.include?(warning)
-      end
-    end
 
     def match_source(contents)
       match = /source ["']?(?<source>http[^"']+)["']?/.match(contents)

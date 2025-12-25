@@ -27,7 +27,7 @@ impl From<u8> for Hw {
             16 => Hw::LSL16,
             32 => Hw::LSL32,
             48 => Hw::LSL48,
-            _ => panic!("Invalid value for shift: {}", shift)
+            _ => panic!("Invalid value for shift: {shift}"),
         }
     }
 }

@@ -8,12 +8,18 @@ class TestCommitEmail < Test::Unit::TestCase
   STDIN_DELIMITER = "---\n"
 
   def setup
+    omit 'git command is not available' unless system('git', '--version', out: File::NULL, err: File::NULL)
+
     @ruby = Dir.mktmpdir
     Dir.chdir(@ruby) do
       git('init', '--initial-branch=master')
       git('config', 'user.name', 'Jóhän Grübél')
       git('config', 'user.email', 'johan@example.com')
-      env = { 'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z', 'TZ' => 'UTC' }
+      env = {
+        'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z',
+        'GIT_CONFIG_GLOBAL' => @ruby + "/gitconfig",
+        'TZ' => 'UTC',
+      }
       git('commit', '--allow-empty', '-m', 'New repository initialized by cvs2svn.', env:)
       git('commit', '--allow-empty', '-m', 'Initial revision', env:)
       git('commit', '--allow-empty', '-m', 'version　1.0.0', env:)
@@ -30,9 +36,14 @@ class TestCommitEmail < Test::Unit::TestCase
   end
 
   def teardown
-    File.unlink(@sendmail)
-    Dir.rmdir(File.dirname(@sendmail))
-    FileUtils.rm_rf(@ruby)
+    # Clean up temporary files if #setup was not omitted
+    if @sendmail
+      File.unlink(@sendmail)
+      Dir.rmdir(File.dirname(@sendmail))
+    end
+    if @ruby
+      FileUtils.rm_rf(@ruby)
+    end
   end
 
   def test_sendmail_encoding

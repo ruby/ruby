@@ -157,15 +157,15 @@ clean:
 % end
 % unless inplace
 	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
-	$(Q)$(RM) enc/jis/props.h
-	-$(Q)$(RMDIR) enc/unicode<%=ignore_error%>
+	$(Q)$(RM) enc/trans/newline.c enc/jis/props.h
+	-$(Q)$(RMDIR) enc/trnas enc/unicode<%=ignore_error%>
 % end
 % workdirs.reverse_each do|d|
 	-$(Q)$(RMDIR) <%=pathrep[d]%><%=ignore_error%>
 % end
 
 clean-srcs:
-	$(Q)$(RM) <%=pathrep['$(TRANSCSRCS)']%>
+	$(Q)$(RM) <%=pathrep['$(TRANSCSRCS)']%> <%=pathrep['$(BUILTIN_TRANS_CSRCS)']%>
 	-$(Q)$(RMDIR) <%=pathrep['enc/trans']%><%=ignore_error%>
 	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
 	$(Q)$(RM) enc/jis/props.h

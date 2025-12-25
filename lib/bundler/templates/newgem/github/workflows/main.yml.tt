@@ -35,5 +35,11 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 <%- end -%>
+<%- if config[:ext] == 'go' -%>
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ext/<%= config[:underscored_name] %>/go.mod
+<%- end -%>
       - name: Run the default task
         run: bundle exec rake

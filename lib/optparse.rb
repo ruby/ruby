@@ -426,8 +426,9 @@ require 'set' unless defined?(Set)
 #
 class OptionParser
   # The version string
-  VERSION = "0.8.0"
-  Version = VERSION # for compatibility
+  VERSION = "0.8.1"
+  # An alias for compatibility
+  Version = VERSION
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -471,7 +472,6 @@ class OptionParser
       Completion.candidate(key, icase, pat, &method(:each))
     end
 
-    public
     def complete(key, icase = false, pat = nil)
       candidates = candidate(key, icase, pat, &method(:each)).sort_by {|k, v, kn| kn.size}
       if candidates.size == 1
@@ -561,7 +561,7 @@ class OptionParser
     # Parses +arg+ and returns rest of +arg+ and matched portion to the
     # argument pattern. Yields when the pattern doesn't match substring.
     #
-    def parse_arg(arg) # :nodoc:
+    private def parse_arg(arg) # :nodoc:
       pattern or return nil, [arg]
       unless m = pattern.match(arg)
         yield(InvalidArgument, arg)
@@ -579,14 +579,13 @@ class OptionParser
       yield(InvalidArgument, arg) # didn't match whole arg
       return arg[s.length..-1], m
     end
-    private :parse_arg
 
     #
     # Parses argument, converts and returns +arg+, +block+ and result of
     # conversion. Yields at semi-error condition instead of raising an
     # exception.
     #
-    def conv_arg(arg, val = []) # :nodoc:
+    private def conv_arg(arg, val = []) # :nodoc:
       v, = *val
       if conv
         val = conv.call(*val)
@@ -598,7 +597,6 @@ class OptionParser
       end
       return arg, block, val
     end
-    private :conv_arg
 
     #
     # Produces the summary text. Each line of the summary is yielded to the
@@ -882,14 +880,13 @@ class OptionParser
     # +lopts+::  Long style option list.
     # +nlopts+:: Negated long style options list.
     #
-    def update(sw, sopts, lopts, nsw = nil, nlopts = nil) # :nodoc:
+    private def update(sw, sopts, lopts, nsw = nil, nlopts = nil) # :nodoc:
       sopts.each {|o| @short[o] = sw} if sopts
       lopts.each {|o| @long[o] = sw} if lopts
       nlopts.each {|o| @long[o] = nsw} if nsw and nlopts
       used = @short.invert.update(@long.invert)
       @list.delete_if {|o| Switch === o and !used[o]}
     end
-    private :update
 
     #
     # Inserts +switch+ at the head of the list, and associates short, long
@@ -1458,14 +1455,13 @@ XXX
   # +prv+:: Previously specified argument.
   # +msg+:: Exception message.
   #
-  def notwice(obj, prv, msg) # :nodoc:
+  private def notwice(obj, prv, msg) # :nodoc:
     unless !prv or prv == obj
       raise(ArgumentError, "argument #{msg} given twice: #{obj}",
             ParseError.filter_backtrace(caller(2)))
     end
     obj
   end
-  private :notwice
 
   SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
 
@@ -1732,7 +1728,7 @@ XXX
     parse_in_order(argv, setter, **keywords, &nonopt)
   end
 
-  def parse_in_order(argv = default_argv, setter = nil, exact: require_exact, **, &nonopt)  # :nodoc:
+  private def parse_in_order(argv = default_argv, setter = nil, exact: require_exact, **, &nonopt)  # :nodoc:
     opt, arg, val, rest = nil
     nonopt ||= proc {|a| throw :terminate, a}
     argv.unshift(arg) if arg = catch(:terminate) {
@@ -1823,10 +1819,9 @@ XXX
 
     argv
   end
-  private :parse_in_order
 
   # Calls callback with _val_.
-  def callback!(cb, max_arity, *args) # :nodoc:
+  private def callback!(cb, max_arity, *args) # :nodoc:
     args.compact!
 
     if (size = args.size) < max_arity and cb.to_proc.lambda?
@@ -1836,7 +1831,6 @@ XXX
     end
     cb.call(*args)
   end
-  private :callback!
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -1950,24 +1944,22 @@ XXX
   # Traverses @stack, sending each element method +id+ with +args+ and
   # +block+.
   #
-  def visit(id, *args, &block) # :nodoc:
+  private def visit(id, *args, &block) # :nodoc:
     @stack.reverse_each do |el|
       el.__send__(id, *args, &block)
     end
     nil
   end
-  private :visit
 
   #
   # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
-  def search(id, key) # :nodoc:
+  private def search(id, key) # :nodoc:
     block_given = block_given?
     visit(:search, id, key) do |k|
       return block_given ? yield(k) : k
     end
   end
-  private :search
 
   #
   # Completes shortened long style option switch and returns pair of
@@ -1978,7 +1970,7 @@ XXX
   # +icase+:: Search case insensitive if true.
   # +pat+::   Optional pattern for completion.
   #
-  def complete(typ, opt, icase = false, *pat) # :nodoc:
+  private def complete(typ, opt, icase = false, *pat) # :nodoc:
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
@@ -1988,7 +1980,6 @@ XXX
     exc = ambiguous ? AmbiguousOption : InvalidOption
     raise exc.new(opt, additional: proc {|o| additional_message(typ, o)})
   end
-  private :complete
 
   #
   # Returns additional info.
@@ -2323,42 +2314,42 @@ XXX
   # Raises when ambiguously completable string is encountered.
   #
   class AmbiguousOption < ParseError
-    const_set(:Reason, 'ambiguous option')
+    Reason = 'ambiguous option'    # :nodoc:
   end
 
   #
   # Raises when there is an argument for a switch which takes no argument.
   #
   class NeedlessArgument < ParseError
-    const_set(:Reason, 'needless argument')
+    Reason = 'needless argument'    # :nodoc:
   end
 
   #
   # Raises when a switch with mandatory argument has no argument.
   #
   class MissingArgument < ParseError
-    const_set(:Reason, 'missing argument')
+    Reason = 'missing argument'    # :nodoc:
   end
 
   #
   # Raises when switch is undefined.
   #
   class InvalidOption < ParseError
-    const_set(:Reason, 'invalid option')
+    Reason = 'invalid option'    # :nodoc:
   end
 
   #
   # Raises when the given argument does not match required format.
   #
   class InvalidArgument < ParseError
-    const_set(:Reason, 'invalid argument')
+    Reason = 'invalid argument'    # :nodoc:
   end
 
   #
   # Raises when the given argument word can't be completed uniquely.
   #
   class AmbiguousArgument < InvalidArgument
-    const_set(:Reason, 'ambiguous argument')
+    Reason = 'ambiguous argument'    # :nodoc:
   end
 
   #
@@ -2457,9 +2448,11 @@ XXX
   # and DecimalNumeric. See Acceptable argument classes (in source code).
   #
   module Acceptables
-    const_set(:DecimalInteger, OptionParser::DecimalInteger)
-    const_set(:OctalInteger, OptionParser::OctalInteger)
-    const_set(:DecimalNumeric, OptionParser::DecimalNumeric)
+    # :stopdoc:
+    DecimalInteger = OptionParser::DecimalInteger
+    OctalInteger = OptionParser::OctalInteger
+    DecimalNumeric = OptionParser::DecimalNumeric
+    # :startdoc:
   end
 end
 

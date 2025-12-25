@@ -39,6 +39,7 @@ struct rb_thread_sched_waiting {
 #else
         uint64_t timeout;
 #endif
+        uint32_t event_serial;
         int fd; // -1 for timeout only
         int result;
     } data;
@@ -47,7 +48,7 @@ struct rb_thread_sched_waiting {
     struct ccan_list_node node;
 };
 
-// per-Thead scheduler helper data
+// per-Thread scheduler helper data
 struct rb_thread_sched_item {
     struct {
         struct ccan_list_node ubf;
@@ -69,6 +70,7 @@ struct rb_thread_sched_item {
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
+    uint32_t event_serial;
 
     bool finished;
     bool malloc_stack;

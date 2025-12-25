@@ -3016,17 +3016,17 @@ class TestModule < Test::Unit::TestCase
     bug11532 = '[ruby-core:70828] [Bug #11532]'
 
     c = Class.new {const_set(:A, 1)}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {private_constant :A}
     }
 
     c = Class.new {const_set(:A, 1); private_constant :A}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {public_constant :A}
     }
 
     c = Class.new {const_set(:A, 1)}.freeze
-    assert_raise_with_message(FrozenError, /frozen class/, bug11532) {
+    assert_raise_with_message(FrozenError, /frozen Class/, bug11532) {
       c.class_eval {deprecate_constant :A}
     }
   end
@@ -3367,11 +3367,11 @@ class TestModule < Test::Unit::TestCase
     m.const_set(:N, Module.new)
 
     assert_match(/\A#<Module:0x\h+>::N\z/, m::N.name)
-    m::N.set_temporary_name(name = "fake_name_under_M")
+    assert_same m::N, m::N.set_temporary_name(name = "fake_name_under_M")
     name.upcase!
     assert_equal("fake_name_under_M", m::N.name)
     assert_raise(FrozenError) {m::N.name.upcase!}
-    m::N.set_temporary_name(nil)
+    assert_same m::N, m::N.set_temporary_name(nil)
     assert_nil(m::N.name)
 
     m::N.const_set(:O, Module.new)
@@ -3379,14 +3379,14 @@ class TestModule < Test::Unit::TestCase
     m::N.const_set(:Recursive, m)
     m.const_set(:A, 42)
 
-    m.set_temporary_name(name = "fake_name")
+    assert_same m, m.set_temporary_name(name = "fake_name")
     name.upcase!
     assert_equal("fake_name", m.name)
     assert_raise(FrozenError) {m.name.upcase!}
     assert_equal("fake_name::N", m::N.name)
     assert_equal("fake_name::N::O", m::N::O.name)
 
-    m.set_temporary_name(nil)
+    assert_same m, m.set_temporary_name(nil)
     assert_nil m.name
     assert_nil m::N.name
     assert_nil m::N::O.name

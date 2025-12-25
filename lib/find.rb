@@ -27,6 +27,7 @@
 #
 module Find
 
+  # The version string
   VERSION = "0.2.0"
 
   #

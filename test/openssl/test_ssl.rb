@@ -2084,6 +2084,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx_proc = -> ctx {
       # Unset values set by start_server
       ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.sigalgs = "rsa_pss_rsae_sha256:mldsa65"
       ctx.add_certificate(mldsa_cert, mldsa)
       ctx.add_certificate(rsa_cert, rsa)
     }
@@ -2325,12 +2326,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  # OpenSSL::Buffering requires $/ accessible from non-main Ractors (Ruby 3.5)
+  # OpenSSL::Buffering requires $/ accessible from non-main Ractors (Ruby 4.0)
   # https://bugs.ruby-lang.org/issues/21109
   #
   # Hangs on Windows
   # https://bugs.ruby-lang.org/issues/21537
-  if respond_to?(:ractor) && RUBY_VERSION >= "3.5" && RUBY_PLATFORM !~ /mswin|mingw/
+  if respond_to?(:ractor) && RUBY_VERSION >= "4.0" && RUBY_PLATFORM !~ /mswin|mingw/
     ractor
     def test_ractor_client
       start_server { |port|

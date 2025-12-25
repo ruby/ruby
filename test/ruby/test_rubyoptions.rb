@@ -47,15 +47,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "", [], [])
   end
 
-  version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
-  OPTIONS_LINK = "https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html"
-
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
-      _, _, link, *r = r
-      assert_include(link, OPTIONS_LINK)
-      assert_operator(r.size, :<=, 24)
-      longer = r.select {|x| x.size >= 80}
+      assert_operator(r.size, :<=, 25)
+      longer = r[1..-1].select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -63,9 +58,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_usage_long
     assert_in_out_err(%w(--help)) do |r, e|
-      _, _, link, *r = r
-      assert_include(link, OPTIONS_LINK)
-      longer = r.select {|x| x.size > 80}
+      longer = r[1..-1].select {|x| x.size > 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -954,6 +947,27 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_crash_report_pipe_script
+    omit "only runs on Linux" unless RUBY_PLATFORM.include?("linux")
+
+    Tempfile.create(["script", ".sh"]) do |script|
+      Tempfile.create("crash_report") do |crash_report|
+        script.write(<<~BASH)
+          #!/usr/bin/env bash
+
+          cat > #{crash_report.path}
+        BASH
+        script.close
+
+        FileUtils.chmod("+x", script)
+
+        assert_crash_report("| #{script.path}") do
+          assert_include(File.read(crash_report.path), "[BUG] Segmentation fault at")
+        end
+      end
+    end
+  end
+
   def test_DATA
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
       t.puts "puts DATA.read.inspect"
@@ -1297,5 +1311,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_toplevel_ruby
     assert_instance_of Module, ::Ruby
+  end
+
+  def test_ruby_patchlevel
+    # We stopped bumping RUBY_PATCHLEVEL at Ruby 4.0.0.
+    # Released versions have RUBY_PATCHLEVEL 0, and un-released versions have -1.
+    assert_include [-1, 0], RUBY_PATCHLEVEL
   end
 end

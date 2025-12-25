@@ -3,8 +3,11 @@ require 'test/unit'
 require 'set'
 
 class TC_Set < Test::Unit::TestCase
-  class Set2 < Set
+  class SetSubclass < Set
   end
+  class CoreSetSubclass < Set::CoreSet
+  end
+  ALL_SET_CLASSES = [Set, SetSubclass, CoreSetSubclass].freeze
 
   def test_marshal
     set = Set[1, 2, 3]
@@ -81,20 +84,6 @@ class TC_Set < Test::Unit::TestCase
 
     s = Set.new(ary) { |o| o * 2 }
     assert_equal([2,4,6], s.sort)
-
-    assert_raise(ArgumentError) {
-      Set.new((1..))
-    }
-    assert_raise(ArgumentError) {
-      Set.new((1..), &:succ)
-    }
-    assert_raise(ArgumentError) {
-      Set.new(1.upto(Float::INFINITY))
-    }
-
-    assert_raise(ArgumentError) {
-      Set.new(Object.new)
-    }
   end
 
   def test_clone
@@ -278,7 +267,7 @@ class TC_Set < Test::Unit::TestCase
       set.superset?([2])
     }
 
-    [Set, Set2].each { |klass|
+    ALL_SET_CLASSES.each { |klass|
       assert_equal(true, set.superset?(klass[]), klass.name)
       assert_equal(true, set.superset?(klass[1,2]), klass.name)
       assert_equal(true, set.superset?(klass[1,2,3]), klass.name)
@@ -307,7 +296,7 @@ class TC_Set < Test::Unit::TestCase
       set.proper_superset?([2])
     }
 
-    [Set, Set2].each { |klass|
+    ALL_SET_CLASSES.each { |klass|
       assert_equal(true, set.proper_superset?(klass[]), klass.name)
       assert_equal(true, set.proper_superset?(klass[1,2]), klass.name)
       assert_equal(false, set.proper_superset?(klass[1,2,3]), klass.name)
@@ -336,7 +325,7 @@ class TC_Set < Test::Unit::TestCase
       set.subset?([2])
     }
 
-    [Set, Set2].each { |klass|
+    ALL_SET_CLASSES.each { |klass|
       assert_equal(true, set.subset?(klass[1,2,3,4]), klass.name)
       assert_equal(true, set.subset?(klass[1,2,3]), klass.name)
       assert_equal(false, set.subset?(klass[1,2]), klass.name)
@@ -365,7 +354,7 @@ class TC_Set < Test::Unit::TestCase
       set.proper_subset?([2])
     }
 
-    [Set, Set2].each { |klass|
+    ALL_SET_CLASSES.each { |klass|
       assert_equal(true, set.proper_subset?(klass[1,2,3,4]), klass.name)
       assert_equal(false, set.proper_subset?(klass[1,2,3]), klass.name)
       assert_equal(false, set.proper_subset?(klass[1,2]), klass.name)
@@ -385,7 +374,7 @@ class TC_Set < Test::Unit::TestCase
 
     assert_nil(set <=> set.to_a)
 
-    [Set, Set2].each { |klass|
+    ALL_SET_CLASSES.each { |klass|
       assert_equal(-1,  set <=> klass[1,2,3,4], klass.name)
       assert_equal( 0,  set <=> klass[3,2,1]  , klass.name)
       assert_equal(nil, set <=> klass[1,2,4]  , klass.name)
@@ -701,15 +690,28 @@ class TC_Set < Test::Unit::TestCase
   end
 
   def test_xor
-    set = Set[1,2,3,4]
-    ret = set ^ [2,4,5,5]
-    assert_not_same(set, ret)
-    assert_equal(Set[1,3,5], ret)
+    ALL_SET_CLASSES.each { |klass|
+      set = klass[1,2,3,4]
+      ret = set ^ [2,4,5,5]
+      assert_not_same(set, ret)
+      assert_equal(klass[1,3,5], ret)
 
-    set2 = Set2[1,2,3,4]
-    ret2 = set2 ^ [2,4,5,5]
-    assert_instance_of(Set2, ret2)
-    assert_equal(Set2[1,3,5], ret2)
+      set2 = klass[1,2,3,4]
+      ret2 = set2 ^ [2,4,5,5]
+      assert_instance_of(klass, ret2)
+      assert_equal(klass[1,3,5], ret2)
+    }
+  end
+
+  def test_xor_does_not_mutate_other_set
+    a = Set[1]
+    b = Set[1, 2]
+    original_b = b.dup
+
+    result = a ^ b
+
+    assert_equal(original_b, b)
+    assert_equal(Set[2], result)
   end
 
   def test_eq
@@ -861,9 +863,13 @@ class TC_Set < Test::Unit::TestCase
     set1.add(set2)
     assert_equal('Set[Set[0], 1, 2, Set[1, 2, Set[...]]]', set2.inspect)
 
-    c = Class.new(Set)
+    c = Class.new(Set::CoreSet)
     c.set_temporary_name("_MySet")
     assert_equal('_MySet[1, 2]', c[1, 2].inspect)
+
+    c = Class.new(Set)
+    c.set_temporary_name("_MySet")
+    assert_equal('#<_MySet: {1, 2}>', c[1, 2].inspect)
   end
 
   def test_to_s
@@ -936,6 +942,27 @@ class TC_Set < Test::Unit::TestCase
       assert_includes set, i
     end
   end
+
+  def test_subclass_new_calls_add
+    c = Class.new(Set) do
+      def add(o)
+        super
+        super(o+1)
+      end
+    end
+    assert_equal([1, 2], c.new([1]).to_a)
+  end
+
+  def test_subclass_aref_calls_initialize
+    c = Class.new(Set) do
+      def initialize(enum)
+        super
+        add(1)
+      end
+    end
+    assert_equal([2, 1], c[2].to_a)
+  end
+
 end
 
 class TC_Enumerable < Test::Unit::TestCase
@@ -952,6 +979,36 @@ class TC_Enumerable < Test::Unit::TestCase
 
     assert_same set, set.to_set
     assert_not_same set, set.to_set { |o| o }
+  end
+
+  class MyEnum
+    include Enumerable
+
+    def initialize(array)
+      @array = array
+    end
+
+    def each(&block)
+      @array.each(&block)
+    end
+
+    def size
+      raise "should not be called"
+    end
+  end
+
+  def test_to_set_not_calling_size
+    enum = MyEnum.new([1,2,3])
+
+    set = assert_nothing_raised { enum.to_set }
+    assert(set.is_a?(Set))
+    assert_equal(Set[1,2,3], set)
+
+    enumerator = enum.to_enum
+
+    set = assert_nothing_raised { enumerator.to_set }
+    assert(set.is_a?(Set))
+    assert_equal(Set[1,2,3], set)
   end
 end
 

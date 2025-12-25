@@ -66,10 +66,17 @@ class NameMap
   end
 
   def class_or_module(c)
-    const = Object.const_get(c, false)
+    begin
+      const = Object.const_get(c, false)
+    rescue NameError, RuntimeError
+      # Either the constant doesn't exist or it is
+      # explicitly raising an error, like `SortedSet`.
+      return nil
+    end
+    return nil unless Module === const
+
     filtered = @filter && EXCLUDED.include?(const.name)
-    return const if Module === const and !filtered
-  rescue NameError
+    return const unless filtered
   end
 
   def namespace(mod, const)

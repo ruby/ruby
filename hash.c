@@ -492,37 +492,6 @@ RHASH_AR_TABLE_BOUND(VALUE h)
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
 
-void
-rb_hash_dump(VALUE hash)
-{
-    rb_obj_info_dump(hash);
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
-
-        fprintf(stderr, "  size:%u bound:%u\n",
-                RHASH_AR_TABLE_SIZE(hash), bound);
-
-        for (i=0; i<bound; i++) {
-            st_data_t k, v;
-
-            if (!ar_cleared_entry(hash, i)) {
-                char b1[0x100], b2[0x100];
-                ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-                k = pair->key;
-                v = pair->val;
-                fprintf(stderr, "  %d key:%s val:%s hint:%02x\n", i,
-                        rb_raw_obj_info(b1, 0x100, k),
-                        rb_raw_obj_info(b2, 0x100, v),
-                        ar_hint(hash, i));
-            }
-            else {
-                fprintf(stderr, "  %d empty\n", i);
-            }
-        }
-    }
-}
-
 static VALUE
 hash_verify_(VALUE hash, const char *file, int line)
 {
@@ -1585,7 +1554,7 @@ rb_hash_dup(VALUE hash)
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
 
-    if (rb_obj_exivar_p(hash)) {
+    if (rb_obj_gen_fields_p(hash)) {
         rb_copy_generic_ivar(ret, hash);
     }
     return ret;
@@ -2907,7 +2876,7 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 VALUE
 rb_hash_key_str(VALUE key)
 {
-    if (!rb_obj_exivar_p(key) && RBASIC_CLASS(key) == rb_cString) {
+    if (!rb_obj_gen_fields_p(key) && RBASIC_CLASS(key) == rb_cString) {
         return rb_fstring(key);
     }
     else {
@@ -4649,7 +4618,7 @@ rb_hash_compact_bang(VALUE hash)
  *  returns +self+:
  *
  *  By default, two keys are considered to be the same key
- *  if and only if they are _equal_ objects (per method #==):
+ *  if and only if they are _equal_ objects (per method #eql?):
  *
  *    h = {}
  *    h['x'] = 0
@@ -4919,10 +4888,9 @@ hash_le(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    self <= other_hash -> true or false
+ *    self <= other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a subset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a subset of the entries of +other+:
  *
  *    h0 = {foo: 0, bar: 1}
  *    h1 = {foo: 0, bar: 1, baz: 2}
@@ -4930,7 +4898,7 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h0 <= h1 # => true
  *    h1 <= h0 # => false
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4946,10 +4914,9 @@ rb_hash_le(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    self < other_hash -> true or false
+ *    self < other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a proper subset of the entries of +other+:
  *
  *    h = {foo: 0, bar: 1}
  *    h < {foo: 0, bar: 1, baz: 2} # => true   # Proper subset.
@@ -4959,7 +4926,7 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
  *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4986,7 +4953,7 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h0 >= h0 # => true
  *    h1 >= h0 # => false
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -5015,7 +4982,7 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {foo: 0, bar: 1}         # => false  # Different key.
  *    h > {foo: 0, bar: 1}         # => false  # Different value.
  *
- *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *

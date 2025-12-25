@@ -189,6 +189,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can install in parallel. Defaults to the number of
    available processors.
+* `lockfile` (`BUNDLE_LOCKFILE`):
+   The path to the lockfile that bundler should use. By default, Bundler adds
+   `.lock` to the end of the `gemfile` entry. Can be set to `false` in the
+   Gemfile to disable lockfile creation entirely (see gemfile(5)).
 * `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
    Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources. Defaults to true.
 * `no_install` (`BUNDLE_NO_INSTALL`):

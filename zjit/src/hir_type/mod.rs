@@ -77,6 +77,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
         Specialization::Object(val) if val == unsafe { rb_block_param_proxy } => write!(f, "[BlockParamProxy]"),
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
+        Specialization::Object(val) if ty.is_subtype(types::Class) =>
+            write!(f, "[{}@{:p}]", get_class_name(val), printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         // TODO(max): Ensure singleton classes never have Type specialization
         Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
@@ -87,14 +89,16 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::TypeExact(val) =>
             write!(f, "[class_exact:{}]", get_class_name(val)),
         Specialization::Int(val) if ty.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
-        Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val as i64) >> 56),
-        Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val as i64) >> 48),
-        Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val as i64) >> 32),
+        Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val & u8::MAX as u64) as i8),
+        Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val & u16::MAX as u64) as i16),
+        Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val & u32::MAX as u64) as i32),
+        Specialization::Int(val) if ty.is_subtype(types::CShape) =>
+            write!(f, "[{:p}]", printer.ptr_map.map_shape(crate::cruby::ShapeId((val & u32::MAX as u64) as u32))),
         Specialization::Int(val) if ty.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val >> 56),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val >> 48),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val >> 32),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
@@ -256,6 +260,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
             Const::CDouble(v) => Self::from_double(v),
@@ -515,6 +520,22 @@ impl Type {
     pub fn print(self, ptr_map: &PtrPrintMap) -> TypePrinter<'_> {
         TypePrinter { inner: self, ptr_map }
     }
+
+    pub fn num_bits(&self) -> u8 {
+        self.num_bytes() * crate::cruby::BITS_PER_BYTE as u8
+    }
+
+    pub fn num_bytes(&self) -> u8 {
+        if self.is_subtype(types::CUInt8) || self.is_subtype(types::CInt8) { return 1; }
+        if self.is_subtype(types::CUInt16) || self.is_subtype(types::CInt16) { return 2; }
+        if self.is_subtype(types::CUInt32) || self.is_subtype(types::CInt32) { return 4; }
+        if self.is_subtype(types::CShape) {
+            use crate::cruby::{SHAPE_ID_NUM_BITS, BITS_PER_BYTE};
+            return (SHAPE_ID_NUM_BITS as usize / BITS_PER_BYTE).try_into().unwrap();
+        }
+        // CUInt64, CInt64, CPtr, CNull, CDouble, or anything else defaults to 8 bytes
+        crate::cruby::SIZEOF_VALUE as u8
+    }
 }
 
 #[cfg(test)]
@@ -570,6 +591,33 @@ mod tests {
         assert_subtype(Type::from_cint(types::CInt32, 10), types::Any);
         assert_subtype(types::Empty, types::Any);
         assert_subtype(types::Any, types::Any);
+    }
+
+    #[test]
+    fn from_const() {
+        let cint32 = Type::from_const(Const::CInt32(12));
+        assert_subtype(cint32, types::CInt32);
+        assert_eq!(cint32.spec, Specialization::Int(12));
+        assert_eq!(format!("{}", cint32), "CInt32[12]");
+
+        let cint32 = Type::from_const(Const::CInt32(-12));
+        assert_subtype(cint32, types::CInt32);
+        assert_eq!(cint32.spec, Specialization::Int((-12i64) as u64));
+        assert_eq!(format!("{}", cint32), "CInt32[-12]");
+
+        let cuint32 = Type::from_const(Const::CInt32(12));
+        assert_subtype(cuint32, types::CInt32);
+        assert_eq!(cuint32.spec, Specialization::Int(12));
+
+        let cuint32 = Type::from_const(Const::CUInt32(0xffffffff));
+        assert_subtype(cuint32, types::CUInt32);
+        assert_eq!(cuint32.spec, Specialization::Int(0xffffffff));
+        assert_eq!(format!("{}", cuint32), "CUInt32[4294967295]");
+
+        let cuint32 = Type::from_const(Const::CUInt32(0xc00087));
+        assert_subtype(cuint32, types::CUInt32);
+        assert_eq!(cuint32.spec, Specialization::Int(0xc00087));
+        assert_eq!(format!("{}", cuint32), "CUInt32[12583047]");
     }
 
     #[test]

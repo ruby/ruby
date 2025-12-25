@@ -11,7 +11,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
-    EXTENSIONS = ["c", "rust"].freeze
+    EXTENSIONS = ["c", "rust", "go"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -59,17 +59,29 @@ module Bundler
     def initialize(*args)
       super
 
+      current_cmd = args.last[:current_command].name
+
       custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
       if custom_gemfile && !custom_gemfile.empty?
         Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
-        Bundler.reset_settings_and_root!
+        reset_settings = true
       end
+
+      # lock --lockfile works differently than install --lockfile
+      unless current_cmd == "lock"
+        custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
+        if custom_lockfile && !custom_lockfile.empty?
+          Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
+          reset_settings = true
+        end
+      end
+
+      Bundler.reset_settings_and_root! if reset_settings
 
       Bundler.auto_switch
 
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
-      current_cmd = args.last[:current_command].name
       Bundler.auto_install if AUTO_INSTALL_CMDS.include?(current_cmd)
     rescue UnknownArgumentError => e
       raise InvalidOption, e.message
@@ -92,7 +104,7 @@ module Bundler
       primary_commands = ["install", "update", "cache", "exec", "config", "help"]
 
       list = self.class.printable_commands(true)
-      by_name = list.group_by {|name, _message| name.match(/^bundle (\w+)/)[1] }
+      by_name = list.group_by {|name, _message| name.match(/^bundler? (\w+)/)[1] }
       utilities = by_name.keys.sort - primary_commands
       primary_commands.map! {|name| (by_name[name] || raise("no primary command #{name}")).first }
       utilities.map! {|name| by_name[name].first }
@@ -107,7 +119,33 @@ module Bundler
       shell.say
       self.class.send(:class_options_help, shell)
     end
-    default_task(Bundler.settings[:default_cli_command])
+
+    desc "install_or_cli_help", "Deprecated alias of install", hide: true
+    def install_or_cli_help
+      Bundler.ui.warn <<~MSG
+        `bundle install_or_cli_help` is a deprecated alias of `bundle install`.
+        It might be called due to the 'default_cli_command' being set to 'install_or_cli_help',
+        if so fix that by running `bundle config set default_cli_command install --global`.
+      MSG
+      invoke_other_command("install")
+    end
+
+    def self.default_command(meth = nil)
+      return super if meth
+
+      unless Bundler.settings[:default_cli_command]
+        Bundler.ui.info <<~MSG
+          In a future version of Bundler, running `bundle` without argument will no longer run `bundle install`.
+          Instead, the `cli_help` command will be displayed. Please use `bundle install` explicitly for scripts like CI/CD.
+          You can use the future behavior now with `bundle config set default_cli_command cli_help --global`,
+          or you can continue to use the current behavior with `bundle config set default_cli_command install --global`.
+          This message will be removed after a default_cli_command value is set.
+
+        MSG
+      end
+
+      Bundler.settings[:default_cli_command] || "install"
+    end
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
     class_option "retry", type: :numeric, aliases: "-r", banner: "NUM",
@@ -217,8 +255,10 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "jobs", aliases: "-j", type: :numeric, banner: "Specify the number of jobs to run in parallel"
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "lockfile", type: :string, banner: "Use the specified lockfile instead of the default."
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
+    method_option "no-lock", type: :boolean, banner: "Don't create a lockfile."
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache (removed)."
     method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
@@ -245,9 +285,14 @@ module Bundler
       end
 
       require_relative "cli/install"
+      options = self.options.dup
+      options["lockfile"] ||= ENV["BUNDLE_LOCKFILE"]
       Bundler.settings.temporary(no_install: false) do
-        Install.new(options.dup).run
+        Install.new(options).run
       end
+    rescue GemfileNotFound => error
+      invoke_other_command("cli_help")
+      raise error # re-raise to show the error and get a failing exit status
     end
 
     map aliases_for("install")
@@ -692,6 +737,19 @@ module Bundler
     def current_command
       _, _, config = @_initializer
       config[:current_command]
+    end
+
+    def invoke_other_command(name)
+      _, _, config = @_initializer
+      original_command = config[:current_command]
+      command = self.class.all_commands[name]
+      config[:current_command] = command
+      send(name)
+    ensure
+      config[:current_command] = original_command
+    end
+
+    def current_command=(command)
     end
 
     def print_command

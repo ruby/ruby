@@ -649,7 +649,7 @@ RSpec.describe "gemcutter's dependency API" do
 
         bundle "install", artifice: "endpoint_marshal_fail"
       ensure
-        home(".gemrc").rmtree
+        FileUtils.rm_rf home(".gemrc")
       end
     end
   end

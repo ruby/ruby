@@ -100,7 +100,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri (~> 1.11)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<-G
@@ -143,7 +143,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -282,7 +282,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         platform_specific
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -316,7 +316,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install"
@@ -344,7 +344,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         platform_specific
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"

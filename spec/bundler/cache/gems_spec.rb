@@ -226,7 +226,7 @@ RSpec.describe "bundle cache" do
 
     it "re-caches during install" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       bundle :install
       expect(out).to include("Updating files in vendor/cache")
       expect(cached_gem("myrack-1.0.0")).to exist
@@ -307,7 +307,7 @@ RSpec.describe "bundle cache" do
     it "doesn't remove gems cached gems that don't match their remote counterparts, but also refuses to install and prints an error" do
       setup_main_repo
       cached_myrack = cached_gem("myrack-1.0.0")
-      cached_myrack.rmtree
+      FileUtils.rm_rf cached_myrack
       build_gem "myrack", "1.0.0",
         path: cached_myrack.parent,
         rubygems_version: "1.3.2"
@@ -338,7 +338,7 @@ RSpec.describe "bundle cache" do
 
     it "raises an error when a cached gem is altered and produces a different checksum than the remote gem" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
 
       checksums = checksums_section do |c|
@@ -362,14 +362,14 @@ RSpec.describe "bundle cache" do
       expect(err).to include("1. remove the gem at #{cached_gem("myrack-1.0.0")}")
 
       expect(cached_gem("myrack-1.0.0")).to exist
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       bundle :install
       expect(cached_gem("myrack-1.0.0")).to exist
     end
 
     it "installs a modified gem with a non-matching checksum when the API implementation does not provide checksums" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
       pristine_system_gems
 

@@ -21,7 +21,7 @@ gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 16.0.0
+UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -46,7 +46,7 @@ RUN_OPTS      = --disable-gems
 
 GIT_IN_SRC    = $(GIT) -C $(srcdir)
 GIT_LOG       = $(GIT_IN_SRC) log --no-show-signature
-GIT_LOG_FORMAT = $(GIT_LOG) --pretty=format:
+GIT_LOG_FORMAT = $(GIT_LOG) "--pretty=format:"
 
 # GITPULLOPTIONS = --no-tags
 
@@ -119,6 +119,7 @@ COMMONOBJS    = \
 		array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
+		box.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		compile.$(OBJEXT) \
@@ -146,7 +147,6 @@ COMMONOBJS    = \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
 		memory_view.$(OBJEXT) \
-		namespace.$(OBJEXT) \
 		node.$(OBJEXT) \
 		node_dump.$(OBJEXT) \
 		numeric.$(OBJEXT) \
@@ -268,9 +268,8 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2021 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -279,9 +278,8 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
 	--edition=2024 \
-	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -624,15 +622,20 @@ html: PHONY main srcs-doc
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
+RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
+	-x ^lib/bundler -x ^lib/rubygems \
+	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
+
 rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) .
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
 undocumented: PHONY main srcs-doc
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) . | \
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
-	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | sort
+	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | \
+	sort -t: -k1,1 -k2n,2
 
 RDOCBENCHOUT=/tmp/rdocbench
 
@@ -701,7 +704,8 @@ distclean-local:: clean-local
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
-distclean-ext:: PHONY
+distclean-local:: distclean-srcs-local
+distclean-ext:: distclean-srcs-ext
 distclean-golf: clean-golf
 distclean-rdoc: clean-rdoc
 distclean-html: clean-html
@@ -716,6 +720,7 @@ realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean
 realclean-local:: distclean-local realclean-srcs-local
 
 clean-srcs:: clean-srcs-local clean-srcs-ext
+distclean-srcs:: distclean-srcs-local distclean-srcs-ext
 realclean-srcs:: realclean-srcs-local realclean-srcs-ext
 
 clean-srcs-local::
@@ -723,7 +728,9 @@ clean-srcs-local::
 	$(Q)$(RM) id.c id.h probes.dmyh probes.h
 	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
 
-realclean-srcs-local:: clean-srcs-local
+distclean-srcs-local:: clean-srcs-local
+
+realclean-srcs-local:: distclean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(RM) \
 	  parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h \
 	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub \
@@ -731,7 +738,8 @@ realclean-srcs-local:: clean-srcs-local
 	|| $(NULLCMD)
 
 clean-srcs-ext::
-realclean-srcs-ext:: clean-srcs-ext
+distclean-srcs-ext:: clean-srcs-ext
+realclean-srcs-ext:: distclean-srcs-ext
 
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
@@ -791,11 +799,12 @@ clean-capi distclean-capi realclean-capi:
 
 clean-platform distclean-platform realclean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
 RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
 rubyspec-capiext: build-ext $(DOT_WAIT)
 # make-dependent rules should be included after this and built after build-ext.
@@ -897,7 +906,7 @@ test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+test-precheck: $(ENCSTATIC:static=lib)encs $(RUBYSPEC_CAPIEXT_BUILD) exts PHONY $(DOT_WAIT)
 yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
@@ -1002,8 +1011,11 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: test install install-nodoc install-doc dist
 .PHONY: loadpath golf capi rdoc install-prereq clear-installed-list
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
+.PHONY: clean-srcs clean-srcs-local clean-srcs-ext
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
+.PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
+.PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
 .PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
@@ -1555,7 +1567,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
 		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec" "zeitwerk" \
-		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer"
+		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer" "minitest-mock"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
@@ -1715,7 +1727,7 @@ UNICODE_UCD_EMOJI_DOWNLOAD = \
 UNICODE_EMOJI_DOWNLOAD = \
 	$(UNICODE_DOWNLOADER) \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
-	    -p emoji/$(UNICODE_EMOJI_VERSION)
+	    -p $(UNICODE_VERSION)/emoji
 
 update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
@@ -1809,11 +1821,11 @@ $(UNICODE_HDR_DIR)/name2ctype.h:
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_SRC_EMOJI_DATA_DIR) > $@.new
 	$(MV) $@.new $@
 
-srcs-doc: $(srcdir)/doc/regexp/unicode_properties.rdoc
-$(srcdir)/doc/regexp/$(ALWAYS_UPDATE_UNICODE:yes=unicode_properties.rdoc): \
+srcs-doc: $(srcdir)/doc/language/regexp/unicode_properties.rdoc
+$(srcdir)/doc/language/regexp/$(ALWAYS_UPDATE_UNICODE:yes=unicode_properties.rdoc): \
 	$(UNICODE_HDR_DIR)/name2ctype.h $(UNICODE_PROPERTY_FILES)
 
-$(srcdir)/doc/regexp/unicode_properties.rdoc:
+$(srcdir)/doc/language/regexp/unicode_properties.rdoc:
 	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ \
 		$(srcdir)/template/unicode_properties.rdoc.tmpl \
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h || \

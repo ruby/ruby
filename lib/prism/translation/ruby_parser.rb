@@ -2,10 +2,15 @@
 # :markup: markdown
 
 begin
-  require "ruby_parser"
+  require "sexp"
 rescue LoadError
-  warn(%q{Error: Unable to load ruby_parser. Add `gem "ruby_parser"` to your Gemfile.})
+  warn(%q{Error: Unable to load sexp. Add `gem "sexp_processor"` to your Gemfile.})
   exit(1)
+end
+
+class RubyParser # :nodoc:
+  class SyntaxError < RuntimeError # :nodoc:
+  end
 end
 
 module Prism
@@ -415,14 +420,18 @@ module Prism
               visit(node.constant_path)
             end
 
-          if node.body.nil?
-            s(node, :class, name, visit(node.superclass))
-          elsif node.body.is_a?(StatementsNode)
-            compiler = copy_compiler(in_def: false)
-            s(node, :class, name, visit(node.superclass)).concat(node.body.body.map { |child| child.accept(compiler) })
-          else
-            s(node, :class, name, visit(node.superclass), node.body.accept(copy_compiler(in_def: false)))
-          end
+          result =
+            if node.body.nil?
+              s(node, :class, name, visit(node.superclass))
+            elsif node.body.is_a?(StatementsNode)
+              compiler = copy_compiler(in_def: false)
+              s(node, :class, name, visit(node.superclass)).concat(node.body.body.map { |child| child.accept(compiler) })
+            else
+              s(node, :class, name, visit(node.superclass), node.body.accept(copy_compiler(in_def: false)))
+            end
+
+          attach_comments(result, node)
+          result
         end
 
         # ```
@@ -611,7 +620,9 @@ module Prism
               s(node, :defs, visit(node.receiver), name)
             end
 
+          attach_comments(result, node)
           result.line(node.name_loc.start_line)
+
           if node.parameters.nil?
             result << s(node, :args).line(node.name_loc.start_line)
           else
@@ -1270,14 +1281,18 @@ module Prism
               visit(node.constant_path)
             end
 
-          if node.body.nil?
-            s(node, :module, name)
-          elsif node.body.is_a?(StatementsNode)
-            compiler = copy_compiler(in_def: false)
-            s(node, :module, name).concat(node.body.body.map { |child| child.accept(compiler) })
-          else
-            s(node, :module, name, node.body.accept(copy_compiler(in_def: false)))
-          end
+          result =
+            if node.body.nil?
+              s(node, :module, name)
+            elsif node.body.is_a?(StatementsNode)
+              compiler = copy_compiler(in_def: false)
+              s(node, :module, name).concat(node.body.body.map { |child| child.accept(compiler) })
+            else
+              s(node, :module, name, node.body.accept(copy_compiler(in_def: false)))
+            end
+
+          attach_comments(result, node)
+          result
         end
 
         # ```
@@ -1820,6 +1835,17 @@ module Prism
 
         private
 
+        # Attach prism comments to the given sexp.
+        def attach_comments(sexp, node)
+          return unless node.comments
+          return if node.comments.empty?
+
+          extra = node.location.start_line - node.comments.last.location.start_line
+          comments = node.comments.map(&:slice)
+          comments.concat([nil] * [0, extra].max)
+          sexp.comments = comments.join("\n")
+        end
+
         # Create a new compiler with the given options.
         def copy_compiler(in_def: self.in_def, in_pattern: self.in_pattern)
           Compiler.new(file, in_def: in_def, in_pattern: in_pattern)
@@ -1898,6 +1924,14 @@ module Prism
         translate(Prism.parse_file(filepath, partial_script: true), filepath)
       end
 
+      # Parse the give file and translate it into the
+      # seattlerb/ruby_parser gem's Sexp format. This method is
+      # provided for API compatibility to RubyParser and takes an
+      # optional +timeout+ argument.
+      def process(ruby, file = "(string)", timeout = nil)
+        Timeout.timeout(timeout) { parse(ruby, file) }
+      end
+
       class << self
         # Parse the given source and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
@@ -1922,6 +1956,7 @@ module Prism
           raise ::RubyParser::SyntaxError, "#{filepath}:#{error.location.start_line} :: #{error.message}"
         end
 
+        result.attach_comments!
         result.value.accept(Compiler.new(filepath))
       end
     end

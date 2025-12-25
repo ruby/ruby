@@ -122,13 +122,9 @@ def setup_make
 
   opts = {}
   if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
-    begin
-      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-    rescue Errno::EBADF
-    else
-      opts[r] = r
-      opts[w] = w
+    [$1, $2].each do |fd|
+      fd = fd.to_i(10)
+      opts[fd] = fd
     end
   end
 

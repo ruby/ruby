@@ -287,47 +287,6 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal "foobar.rb", check_options[:args].first
   end
 
-  # HACK: move to query command test
-  def test_process_args_query
-    # capture all query options
-    check_options = nil
-    @command_manager["query"].when_invoked do |options|
-      check_options = options
-      true
-    end
-
-    # check defaults
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query]
-    end
-    assert_nil(check_options[:name])
-    assert_equal :local, check_options[:domain]
-    assert_equal false, check_options[:details]
-
-    # check settings
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --name foobar --local --details]
-    end
-    assert_equal(/foobar/i, check_options[:name])
-    assert_equal :local, check_options[:domain]
-    assert_equal true, check_options[:details]
-
-    # remote domain
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --remote]
-    end
-    assert_equal :remote, check_options[:domain]
-
-    # both (local/remote) domains
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --both]
-    end
-    assert_equal :both, check_options[:domain]
-  end
-
   # HACK: move to update command test
   def test_process_args_update
     # capture all update options

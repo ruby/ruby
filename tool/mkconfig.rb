@@ -394,6 +394,7 @@ print <<EOS
     )
   end
 end
+# Non-nil if configured for cross compiling.
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
 

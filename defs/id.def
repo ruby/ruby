@@ -78,6 +78,8 @@ firstline, predefined = __LINE__+1, %[\
   _7  NUMPARAM_7
   _8  NUMPARAM_8
   _9  NUMPARAM_9
+  <it>  ItImplicit
+  it    It
 
   "/*NULL*/"                                            NULL
   empty?

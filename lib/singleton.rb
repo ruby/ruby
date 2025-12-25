@@ -92,9 +92,10 @@
 #    p a.strip #  => nil
 #
 module Singleton
+  # The version string
   VERSION = "0.3.0"
 
-  module SingletonInstanceMethods
+  module SingletonInstanceMethods # :nodoc:
     # Raises a TypeError to prevent cloning.
     def clone
       raise TypeError, "can't clone instance of singleton #{self.class}"
@@ -143,11 +144,11 @@ module Singleton
     end
   end
 
-  def self.module_with_class_methods
+  def self.module_with_class_methods # :nodoc:
     SingletonClassMethods
   end
 
-  module SingletonClassProperties
+  module SingletonClassProperties # :nodoc:
 
     def self.included(c)
       # extending an object with Singleton is a bad idea
@@ -196,10 +197,10 @@ module Singleton
 end
 
 if defined?(Ractor)
-  module RactorLocalSingleton
+  module RactorLocalSingleton # :nodoc:
     include Singleton::SingletonInstanceMethods
 
-    module RactorLocalSingletonClassMethods
+    module RactorLocalSingletonClassMethods # :nodoc:
       include Singleton::SingletonClassMethods
       def instance
         set_mutex(Thread::Mutex.new) if Ractor.current[mutex_key].nil?

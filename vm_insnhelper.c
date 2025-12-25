@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_insnhelper.c - instruction helper functions.
+  vm_insnhelper.c - instruction helper functions. Included into vm.c.
 
   $Author$
 
@@ -1145,7 +1145,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             if (UNLIKELY(!rb_ractor_main_p())) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -1680,6 +1680,7 @@ rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID 
     vm_setclassvariable(iseq, cfp, id, val, ic);
 }
 
+ALWAYS_INLINE(static VALUE vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic));
 static inline VALUE
 vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {
@@ -1721,6 +1722,12 @@ void
 rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {
     vm_setinstancevariable(iseq, obj, id, val, ic);
+}
+
+VALUE
+rb_vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
+{
+    return vm_getinstancevariable(iseq, obj, id, ic);
 }
 
 static VALUE
@@ -2143,30 +2150,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 {
     ASSERT_vm_locking();
 
-    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
-    const VALUE original_cc_table = cc_tbl;
-    struct rb_class_cc_entries *ccs = NULL;
-
-    if (!cc_tbl) {
-        cc_tbl = rb_vm_cc_table_create(1);
-    }
-    else if (rb_multi_ractor_p()) {
-        cc_tbl = rb_vm_cc_table_dup(cc_tbl);
-    }
-
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
 
-    const rb_callable_method_entry_t *cme;
-
-    if (ccs) {
-        cme = ccs->cme;
-        cme = UNDEFINED_METHOD_ENTRY_P(cme) ? NULL : cme;
-
-        VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
-    }
-    else {
-        cme = rb_callable_method_entry(klass, mid);
-    }
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
 
     VM_ASSERT(cme == NULL || IMEMO_TYPE_P(cme, imemo_ment));
 
@@ -2176,13 +2162,24 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         return &vm_empty_cc;
     }
 
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
+    const VALUE original_cc_table = cc_tbl;
+    if (!cc_tbl) {
+        // Is this possible after rb_callable_method_entry ?
+        cc_tbl = rb_vm_cc_table_create(1);
+    }
+    else if (rb_multi_ractor_p()) {
+        cc_tbl = rb_vm_cc_table_dup(cc_tbl);
+    }
+
     VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
 
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
-    if (ccs == NULL) {
-        VM_ASSERT(cc_tbl);
+    VM_ASSERT(cc_tbl);
 
+    struct rb_class_cc_entries *ccs = NULL;
+    {
         VALUE ccs_obj;
         if (UNLIKELY(rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj))) {
             ccs = (struct rb_class_cc_entries *)ccs_obj;
@@ -2528,15 +2525,6 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         double a = RFLOAT_VALUE(recv);
         double b = RFLOAT_VALUE(obj);
 
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a)) {
-            return Qfalse;
-        }
-        else if (isnan(b)) {
-            return Qfalse;
-        }
-        else
-#endif
         return RBOOL(a == b);
     }
     else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
@@ -2634,37 +2622,27 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 }
 
 
-#if MSC_VERSION_BEFORE(1300)
-#define CHECK_CMP_NAN(a, b) if (isnan(a) || isnan(b)) return Qfalse;
-#else
-#define CHECK_CMP_NAN(a, b) /* do nothing */
-#endif
-
 static inline VALUE
 double_cmp_lt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a < b);
 }
 
 static inline VALUE
 double_cmp_le(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a <= b);
 }
 
 static inline VALUE
 double_cmp_gt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a > b);
 }
 
 static inline VALUE
 double_cmp_ge(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a >= b);
 }
 
@@ -3246,8 +3224,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) &&
-                    !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
                     VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
@@ -4143,7 +4120,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4166,7 +4143,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4831,7 +4808,7 @@ NOINLINE(static VALUE vm_call_optimized(rb_execution_context_t *ec, rb_control_f
                                         const struct rb_callinfo *ci, const struct rb_callcache *cc));
 
 #define VM_CALL_METHOD_ATTR(var, func, nohook) \
-    if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
+    if (UNLIKELY(ruby_vm_c_events_enabled > 0)) { \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
                         vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
         var = func; \
@@ -5187,7 +5164,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     if (!klass) {
         /* bound instance method of module */
-        cc = vm_cc_new(klass, NULL, vm_call_method_missing, cc_type_super);
+        cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
     }
     else {
@@ -5818,7 +5795,7 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
 
     if (FIXNUM_P(kw_bits)) {
         unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
-        if ((idx < KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
+        if ((idx < VM_KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
             return Qfalse;
     }
     else {
@@ -6067,6 +6044,35 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
         klass = rb_singleton_class(klass);
         rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
     }
+}
+
+// Return the untagged block handler:
+// * If it's VM_BLOCK_HANDLER_NONE, return nil
+// * If it's an ISEQ or an IFUNC, fetch it from its rb_captured_block
+// * If it's a PROC or SYMBOL, return it as is
+static VALUE
+rb_vm_untag_block_handler(VALUE block_handler)
+{
+    if (VM_BLOCK_HANDLER_NONE == block_handler) return Qnil;
+
+    switch (vm_block_handler_type(block_handler)) {
+      case block_handler_type_iseq:
+      case block_handler_type_ifunc: {
+        struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
+        return captured->code.val;
+      }
+      case block_handler_type_proc:
+      case block_handler_type_symbol:
+        return block_handler;
+      default:
+        rb_bug("rb_vm_untag_block_handler: unreachable");
+    }
+}
+
+VALUE
+rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp)
+{
+    return rb_vm_untag_block_handler(VM_CF_BLOCK_HANDLER(reg_cfp));
 }
 
 static VALUE
@@ -6344,15 +6350,15 @@ rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE 
 }
 
 static VALUE
-vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) > 0) {
@@ -6363,26 +6369,26 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMax, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_max(ec, num, ptr);
+    return vm_opt_newarray_max(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MIN, ARRAY_REDEFINED_OP_FLAG)) {
-        if (num == 0) {
+        if (array_len == 0) {
             return Qnil;
         }
         else {
             VALUE result = *ptr;
-            rb_snum_t i = num - 1;
+            rb_snum_t i = array_len - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
                 if (OPTIMIZED_CMP(v, result) < 0) {
@@ -6393,63 +6399,63 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
         }
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_min(ec, num, ptr);
+    return vm_opt_newarray_min(ec, array_len, ptr);
 }
 
 static VALUE
-vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     // If Array#hash is _not_ monkeypatched, use the optimized call
     if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
-        return rb_ary_hash_values(num, ptr);
+        return rb_ary_hash_values(array_len, ptr);
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    return vm_opt_newarray_hash(ec, num, ptr);
+    return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
 VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
-vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ary_includes(ary, target);
     }
     else {
         VALUE args[1] = {target};
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
-    return vm_opt_newarray_include_p(ec, num, ptr, target);
+    return vm_opt_newarray_include_p(ec, array_len, ptr, target);
 }
 
 static VALUE
-vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary = {RBASIC_INIT};
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
     else {
@@ -6467,20 +6473,20 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALU
             argc++;
         }
 
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idPack, argc, args, kw_splat);
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(array_len, ptr), idPack, argc, args, kw_splat);
     }
 }
 
 VALUE
-rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, buffer);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
 VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt)
+rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
 {
-    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, Qundef);
+    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
 }
 
 #undef id_cmp
@@ -6862,7 +6868,6 @@ vm_opt_lt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
     else {
@@ -6887,7 +6892,6 @@ vm_opt_le(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
     }
     else {
@@ -6912,7 +6916,6 @@ vm_opt_gt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
     else {
@@ -6937,7 +6940,6 @@ vm_opt_ge(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
     }
     else {
@@ -7190,12 +7192,14 @@ NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *re
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
               rb_event_flag_t pc_events, rb_event_flag_t target_event,
-              rb_hook_list_t *global_hooks, rb_hook_list_t *const *local_hooks_ptr, VALUE val)
+              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
 {
     rb_event_flag_t event = pc_events & target_event;
     VALUE self = GET_SELF();
 
     VM_ASSERT(rb_popcount64((uint64_t)event) == 1);
+
+    if (local_hooks) local_hooks->running++; // make sure they don't get deleted while global hooks run
 
     if (event & global_hooks->events) {
         /* increment PC because source line is calculated with PC-1 */
@@ -7205,8 +7209,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         reg_cfp->pc--;
     }
 
-    // Load here since global hook above can add and free local hooks
-    rb_hook_list_t *local_hooks = *local_hooks_ptr;
+    if (local_hooks) local_hooks->running--;
     if (local_hooks != NULL) {
         if (event & local_hooks->events) {
             /* increment PC because source line is calculated with PC-1 */
@@ -7219,7 +7222,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
 
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
-        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks_ptr, (val)); \
+        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
     } \
 } while (0)
 
@@ -7235,22 +7238,28 @@ static void
 vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
     const VALUE *pc = reg_cfp->pc;
-    rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
-    rb_event_flag_t global_events = enabled_flags;
+    rb_ractor_t *r = rb_ec_ractor_ptr(ec);
+    rb_event_flag_t enabled_flags = r->pub.hooks.events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t ractor_events = enabled_flags;
 
-    if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
+    if (enabled_flags == 0 && rb_ractor_targeted_hooks_cnt(r) == 0) {
         return;
     }
     else {
         const rb_iseq_t *iseq = reg_cfp->iseq;
-        VALUE iseq_val = (VALUE)iseq;
         size_t pos = pc - ISEQ_BODY(iseq)->iseq_encoded;
         rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
-        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
-        rb_hook_list_t *const *local_hooks_ptr = &iseq->aux.exec.local_hooks;
+        unsigned int local_hooks_cnt = iseq->aux.exec.local_hooks_cnt;
+        rb_hook_list_t *local_hooks = NULL;
+        if (RB_UNLIKELY(local_hooks_cnt > 0)) {
+            st_data_t val;
+            if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)iseq, &val)) {
+                local_hooks = (rb_hook_list_t*)val;
+            }
+        }
         rb_event_flag_t iseq_local_events = local_hooks != NULL ? local_hooks->events : 0;
+
         rb_hook_list_t *bmethod_local_hooks = NULL;
-        rb_hook_list_t **bmethod_local_hooks_ptr = NULL;
         rb_event_flag_t bmethod_local_events = 0;
         const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
@@ -7260,13 +7269,17 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-            bmethod_local_hooks = me->def->body.bmethod.hooks;
-            bmethod_local_hooks_ptr = &me->def->body.bmethod.hooks;
-            if (bmethod_local_hooks) {
-                bmethod_local_events = bmethod_local_hooks->events;
+            unsigned int bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+            if (RB_UNLIKELY(bmethod_hooks_cnt > 0)) {
+                st_data_t val;
+                if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)me->def, &val)) {
+                    bmethod_local_hooks = (rb_hook_list_t*)val;
+                }
+                if (bmethod_local_hooks) {
+                    bmethod_local_events = bmethod_local_hooks->events;
+                }
             }
         }
-
 
         if ((pc_events & enabled_flags) == 0 && !bmethod_frame) {
 #if 0
@@ -7288,7 +7301,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
             /* Note, not considering iseq local events here since the same
              * iseq could be used in multiple bmethods. */
-            rb_event_flag_t bmethod_events = global_events | bmethod_local_events;
+            rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
                 ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
@@ -7304,7 +7317,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             /* check traces */
             if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
                 /* b_call instruction running as a method. Fire call event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks_ptr, Qundef);
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_RESCUE,                                        rescue_errinfo(ec, reg_cfp));
@@ -7314,15 +7327,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks_ptr, TOPN(0));
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
             }
-
-            // Pin the iseq since `local_hooks_ptr` points inside the iseq's slot on the GC heap.
-            // We need the pointer to stay valid in case compaction happens in a trace hook.
-            //
-            // Similar treatment is unnecessary for `bmethod_local_hooks_ptr` since
-            // storage for `rb_method_definition_t` is not on the GC heap.
-            RB_GC_GUARD(iseq_val);
         }
     }
 }
@@ -7569,4 +7575,3 @@ rb_vm_lvar_exposed(rb_execution_context_t *ec, int index)
     const rb_control_frame_t *cfp = ec->cfp;
     return cfp->ep[index];
 }
-

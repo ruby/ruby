@@ -8,7 +8,9 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--gemfile=GEMFILE]
                  [--jobs=NUMBER]
                  [--local]
+                 [--lockfile=LOCKFILE]
                  [--no-cache]
+                 [--no-lock]
                  [--prefer-local]
                  [--quiet]
                  [--retry=NUMBER]
@@ -60,6 +62,10 @@ update process below under [CONSERVATIVE UPDATING][].
   appropriate platform-specific gem exists on `rubygems.org` it will not be
   found.
 
+* `--lockfile=LOCKFILE`:
+  The location of the lockfile which Bundler should use. This defaults
+  to the Gemfile location with `.lock` appended.
+
 * `--prefer-local`:
   Force using locally installed gems, or gems already present in Rubygems' cache
   or in `vendor/cache`, when resolving, even if newer versions are available
@@ -70,6 +76,15 @@ update process below under [CONSERVATIVE UPDATING][].
   Do not update the cache in `vendor/cache` with the newly bundled gems. This
   does not remove any gems in the cache but keeps the newly bundled gems from
   being cached during the install.
+
+* `--no-lock`:
+  Do not create a lockfile. Useful if you want to install dependencies but not
+  lock versions of gems. Recommended for library development, and other
+  situations where the code is expected to work with a range of dependency
+  versions.
+
+  This has the same effect as using `lockfile false` in the Gemfile.
+  See gemfile(5) for more information.
 
 * `--quiet`:
   Do not print progress information to the standard output.

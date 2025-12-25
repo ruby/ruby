@@ -13,7 +13,7 @@ module Prism
     end
 
     def test_AlternationPatternNode
-      assert_location(AlternationPatternNode, "foo => bar | baz", 7...16, &:pattern)
+      assert_location(AlternationPatternNode, "foo => 0 | 1", 7...12, &:pattern)
     end
 
     def test_AndNode

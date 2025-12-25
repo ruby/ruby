@@ -37,6 +37,7 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "heredoc_percent_q_newline_delimiter.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "method_calls.txt",
@@ -84,8 +85,8 @@ module Prism
 
       "3.4/circular_parameters.txt",
 
-      "3.5/endless_methods_command_call.txt",
-      "3.5/leading_logical.txt",
+      "4.0/endless_methods_command_call.txt",
+      "4.0/leading_logical.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",

@@ -12,6 +12,7 @@
 #include "internal/cmdlineopt.h"
 #include "internal/parse.h"
 #include "internal/gc.h"
+#include "ruby/internal/globals.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -30,12 +31,14 @@
 #  endif
 #  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
 # else
-#  define RUBY_API_VERSION_NAME RUBY_API_VERSION_STR
 #  define RUBY_REVISION_STR " revision "RUBY_REVISION
 # endif
 #else
 # define RUBY_REVISION "HEAD"
 # define RUBY_REVISION_STR ""
+#endif
+#ifndef RUBY_API_VERSION_NAME
+# define RUBY_API_VERSION_NAME RUBY_API_VERSION_STR
 #endif
 #if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
 # undef RUBY_RELEASE_DATETIME
@@ -48,8 +51,7 @@
 
 #define RUBY_API_VERSION_STR \
     STRINGIZE(RUBY_API_VERSION_MAJOR) "." \
-    STRINGIZE(RUBY_API_VERSION_MINOR) "." \
-    ""
+    STRINGIZE(RUBY_API_VERSION_MINOR)
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
     RUBY_API_VERSION_MINOR,
@@ -111,6 +113,12 @@ define_ruby_const(VALUE mod, const char *name, VALUE value, bool toplevel)
 /* RDoc needs rb_define_const */
 #define rb_define_const(mod, name, value) \
     define_ruby_const(mod, (mod == mRuby ? "RUBY_" name : name), value, (mod == mRuby))
+
+void
+Init_Ruby_module(void)
+{
+    rb_define_module("Ruby");
+}
 
 /*! Defines platform-depended Ruby-level constants */
 void
@@ -265,6 +273,15 @@ ruby_set_yjit_description(void)
     rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
     rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
     define_ruby_description(YJIT_DESCRIPTION);
+}
+
+void
+ruby_set_zjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(ZJIT_DESCRIPTION);
 }
 
 void

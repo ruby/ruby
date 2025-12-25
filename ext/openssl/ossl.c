@@ -13,71 +13,71 @@
 /*
  * Data Conversion
  */
-#define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
-VALUE								\
-ossl_##name##_ary2sk0(VALUE ary)				\
-{								\
-    STACK_OF(type) *sk;						\
-    VALUE val;							\
-    type *x;							\
-    int i;							\
-    								\
-    Check_Type(ary, T_ARRAY);					\
-    sk = sk_##type##_new_null();				\
-    if (!sk) ossl_raise(eOSSLError, NULL);			\
-    								\
-    for (i = 0; i < RARRAY_LEN(ary); i++) {			\
-	val = rb_ary_entry(ary, i);				\
-	if (!rb_obj_is_kind_of(val, expected_class)) {		\
-	    sk_##type##_pop_free(sk, type##_free);		\
-	    ossl_raise(eOSSLError, "object in array not"	\
-		       " of class ##type##");			\
-	}							\
-	x = dup(val); /* NEED TO DUP */				\
-	sk_##type##_push(sk, x);				\
-    }								\
-    return (VALUE)sk;						\
-}								\
-								\
-STACK_OF(type) *						\
-ossl_protect_##name##_ary2sk(VALUE ary, int *status)		\
-{								\
-    return (STACK_OF(type)*)rb_protect(				\
-	    (VALUE (*)(VALUE))ossl_##name##_ary2sk0,		\
-	    ary,						\
-	    status);						\
-}								\
-								\
-STACK_OF(type) *						\
-ossl_##name##_ary2sk(VALUE ary)					\
-{								\
-    STACK_OF(type) *sk;						\
-    int status = 0;						\
-    								\
-    sk = ossl_protect_##name##_ary2sk(ary, &status);		\
-    if (status) rb_jump_tag(status);				\
-								\
-    return sk;							\
+#define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)       \
+VALUE                                                           \
+ossl_##name##_ary2sk0(VALUE ary)                                \
+{                                                               \
+    STACK_OF(type) *sk;                                         \
+    VALUE val;                                                  \
+    type *x;                                                    \
+    int i;                                                      \
+                                                                \
+    Check_Type(ary, T_ARRAY);                                   \
+    sk = sk_##type##_new_null();                                \
+    if (!sk) ossl_raise(eOSSLError, NULL);                      \
+                                                                \
+    for (i = 0; i < RARRAY_LEN(ary); i++) {                     \
+        val = rb_ary_entry(ary, i);                             \
+        if (!rb_obj_is_kind_of(val, expected_class)) {          \
+            sk_##type##_pop_free(sk, type##_free);              \
+            ossl_raise(eOSSLError, "object in array not"        \
+                       " of class ##type##");                   \
+        }                                                       \
+        x = dup(val); /* NEED TO DUP */                         \
+        sk_##type##_push(sk, x);                                \
+    }                                                           \
+    return (VALUE)sk;                                           \
+}                                                               \
+                                                                \
+STACK_OF(type) *                                                \
+ossl_protect_##name##_ary2sk(VALUE ary, int *status)            \
+{                                                               \
+    return (STACK_OF(type)*)rb_protect(                         \
+            (VALUE (*)(VALUE))ossl_##name##_ary2sk0,            \
+            ary,                                                \
+            status);                                            \
+}                                                               \
+                                                                \
+STACK_OF(type) *                                                \
+ossl_##name##_ary2sk(VALUE ary)                                 \
+{                                                               \
+    STACK_OF(type) *sk;                                         \
+    int status = 0;                                             \
+                                                                \
+    sk = ossl_protect_##name##_ary2sk(ary, &status);            \
+    if (status) rb_jump_tag(status);                            \
+                                                                \
+    return sk;                                                  \
 }
 OSSL_IMPL_ARY2SK(x509, X509, cX509Cert, DupX509CertPtr)
 
-#define OSSL_IMPL_SK2ARY(name, type)	        \
-VALUE						\
-ossl_##name##_sk2ary(const STACK_OF(type) *sk)	\
-{						\
-    type *t;					\
-    int i, num;					\
-    VALUE ary;					\
-						\
-    RUBY_ASSERT(sk != NULL);			\
-    num = sk_##type##_num(sk);			\
-    ary = rb_ary_new_capa(num);			\
-						\
-    for (i=0; i<num; i++) {			\
-	t = sk_##type##_value(sk, i);		\
-	rb_ary_push(ary, ossl_##name##_new(t));	\
-    }						\
-    return ary;					\
+#define OSSL_IMPL_SK2ARY(name, type)            \
+VALUE                                           \
+ossl_##name##_sk2ary(const STACK_OF(type) *sk)  \
+{                                               \
+    type *t;                                    \
+    int i, num;                                 \
+    VALUE ary;                                  \
+                                                \
+    RUBY_ASSERT(sk != NULL);                    \
+    num = sk_##type##_num(sk);                  \
+    ary = rb_ary_new_capa(num);                 \
+                                                \
+    for (i=0; i<num; i++) {                     \
+        t = sk_##type##_value(sk, i);           \
+        rb_ary_push(ary, ossl_##name##_new(t)); \
+    }                                           \
+    return ary;                                 \
 }
 OSSL_IMPL_SK2ARY(x509, X509)
 OSSL_IMPL_SK2ARY(x509crl, X509_CRL)
@@ -97,14 +97,14 @@ ossl_str_new(const char *ptr, long len, int *pstate)
 
     str = rb_protect(ossl_str_new_i, len, &state);
     if (pstate)
-	*pstate = state;
+        *pstate = state;
     if (state) {
-	if (!pstate)
-	    rb_set_errinfo(Qnil);
-	return Qnil;
+        if (!pstate)
+            rb_set_errinfo(Qnil);
+        return Qnil;
     }
     if (ptr)
-	memcpy(RSTRING_PTR(str), ptr, len);
+        memcpy(RSTRING_PTR(str), ptr, len);
     return str;
 }
 
@@ -117,22 +117,22 @@ ossl_buf2str(char *buf, int len)
     str = ossl_str_new(buf, len, &state);
     OPENSSL_free(buf);
     if (state)
-	rb_jump_tag(state);
+        rb_jump_tag(state);
     return str;
 }
 
 void
-ossl_bin2hex(unsigned char *in, char *out, size_t inlen)
+ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
 {
     const char *hex = "0123456789abcdef";
     size_t i;
 
     assert(inlen <= LONG_MAX / 2);
     for (i = 0; i < inlen; i++) {
-	unsigned char p = in[i];
+        unsigned char p = in[i];
 
-	out[i * 2 + 0] = hex[p >> 4];
-	out[i * 2 + 1] = hex[p & 0x0f];
+        out[i * 2 + 0] = hex[p >> 4];
+        out[i * 2 + 1] = hex[p & 0x0f];
     }
 }
 
@@ -143,14 +143,14 @@ VALUE
 ossl_pem_passwd_value(VALUE pass)
 {
     if (NIL_P(pass))
-	return Qnil;
+        return Qnil;
 
     StringValue(pass);
 
     /* PEM_BUFSIZE is currently used as the second argument of pem_password_cb,
      * that is +max_len+ of ossl_pem_passwd_cb() */
     if (RSTRING_LEN(pass) > PEM_BUFSIZE)
-	ossl_raise(eOSSLError, "password must not be longer than %d bytes", PEM_BUFSIZE);
+        ossl_raise(eOSSLError, "password must not be longer than %d bytes", PEM_BUFSIZE);
 
     return pass;
 }
@@ -160,7 +160,7 @@ ossl_pem_passwd_cb0(VALUE flag)
 {
     VALUE pass = rb_yield(flag);
     if (NIL_P(pass))
-	return Qnil;
+        return Qnil;
     StringValue(pass);
     return pass;
 }
@@ -173,46 +173,46 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
     VALUE rflag, pass = (VALUE)pwd_;
 
     if (RTEST(pass)) {
-	/* PEM_def_callback(buf, max_len, flag, StringValueCStr(pass)) does not
-	 * work because it does not allow NUL characters and truncates to 1024
-	 * bytes silently if the input is over 1024 bytes */
-	if (RB_TYPE_P(pass, T_STRING)) {
-	    len = RSTRING_LEN(pass);
-	    if (len <= max_len) {
-		memcpy(buf, RSTRING_PTR(pass), len);
-		return (int)len;
-	    }
-	}
-	OSSL_Debug("passed data is not valid String???");
-	return -1;
+        /* PEM_def_callback(buf, max_len, flag, StringValueCStr(pass)) does not
+         * work because it does not allow NUL characters and truncates to 1024
+         * bytes silently if the input is over 1024 bytes */
+        if (RB_TYPE_P(pass, T_STRING)) {
+            len = RSTRING_LEN(pass);
+            if (len <= max_len) {
+                memcpy(buf, RSTRING_PTR(pass), len);
+                return (int)len;
+            }
+        }
+        OSSL_Debug("passed data is not valid String???");
+        return -1;
     }
 
     if (!rb_block_given_p()) {
-	return PEM_def_callback(buf, max_len, flag, NULL);
+        return PEM_def_callback(buf, max_len, flag, NULL);
     }
 
     while (1) {
-	/*
-	 * when the flag is nonzero, this password
-	 * will be used to perform encryption; otherwise it will
-	 * be used to perform decryption.
-	 */
-	rflag = flag ? Qtrue : Qfalse;
-	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
-	if (status) {
-	    /* ignore an exception raised. */
-	    rb_set_errinfo(Qnil);
-	    return -1;
-	}
-	if (NIL_P(pass))
-	    return -1;
-	len = RSTRING_LEN(pass);
-	if (len > max_len) {
-	    rb_warning("password must not be longer than %d bytes", max_len);
-	    continue;
-	}
-	memcpy(buf, RSTRING_PTR(pass), len);
-	break;
+        /*
+         * when the flag is nonzero, this password
+         * will be used to perform encryption; otherwise it will
+         * be used to perform decryption.
+         */
+        rflag = flag ? Qtrue : Qfalse;
+        pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
+        if (status) {
+            /* ignore an exception raised. */
+            rb_set_errinfo(Qnil);
+            return -1;
+        }
+        if (NIL_P(pass))
+            return -1;
+        len = RSTRING_LEN(pass);
+        if (len > max_len) {
+            rb_warning("password must not be longer than %d bytes", max_len);
+            continue;
+        }
+        memcpy(buf, RSTRING_PTR(pass), len);
+        break;
     }
     return (int)len;
 }
@@ -247,19 +247,24 @@ VALUE
 ossl_to_der_if_possible(VALUE obj)
 {
     if(rb_respond_to(obj, ossl_s_to_der))
-	return ossl_to_der(obj);
+        return ossl_to_der(obj);
     return obj;
 }
 
 /*
  * Errors
  */
+static ID id_i_errors;
+
+static void collect_errors_into(VALUE ary);
+
 VALUE
 ossl_make_error(VALUE exc, VALUE str)
 {
     unsigned long e;
     const char *data;
     int flags;
+    VALUE errors = rb_ary_new();
 
     if (NIL_P(str))
         str = rb_str_new(NULL, 0);
@@ -276,10 +281,12 @@ ossl_make_error(VALUE exc, VALUE str)
         rb_str_cat_cstr(str, msg ? msg : "(null)");
         if (flags & ERR_TXT_STRING && data)
             rb_str_catf(str, " (%s)", data);
-        ossl_clear_error();
+        collect_errors_into(errors);
     }
 
-    return rb_exc_new_str(exc, str);
+    VALUE obj = rb_exc_new_str(exc, str);
+    rb_ivar_set(obj, id_i_errors, errors);
+    return obj;
 }
 
 void
@@ -289,24 +296,23 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     VALUE err;
 
     if (fmt) {
-	va_start(args, fmt);
-	err = rb_vsprintf(fmt, args);
-	va_end(args);
+        va_start(args, fmt);
+        err = rb_vsprintf(fmt, args);
+        va_end(args);
     }
     else {
-	err = Qnil;
+        err = Qnil;
     }
 
     rb_exc_raise(ossl_make_error(exc, err));
 }
 
-void
-ossl_clear_error(void)
+static void
+collect_errors_into(VALUE ary)
 {
-    if (dOSSL == Qtrue) {
+    if (dOSSL == Qtrue || !NIL_P(ary)) {
         unsigned long e;
         const char *file, *data, *func, *lib, *reason;
-        char append[256] = "";
         int line, flags;
 
 #ifdef HAVE_ERR_GET_ERROR_ALL
@@ -318,13 +324,18 @@ ossl_clear_error(void)
             lib = ERR_lib_error_string(e);
             reason = ERR_reason_error_string(e);
 
+            VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
+                                   func ? func : "", reason ? reason : "");
             if (flags & ERR_TXT_STRING) {
                 if (!data)
                     data = "(null)";
-                snprintf(append, sizeof(append), " (%s)", data);
+                rb_str_catf(str, " (%s)", data);
             }
-            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
-                    func ? func : "", reason ? reason : "", append);
+
+            if (dOSSL == Qtrue)
+                rb_warn("error on stack: %"PRIsVALUE, str);
+            if (!NIL_P(ary))
+                rb_ary_push(ary, str);
         }
     }
     else {
@@ -332,14 +343,59 @@ ossl_clear_error(void)
     }
 }
 
+void
+ossl_clear_error(void)
+{
+    collect_errors_into(Qnil);
+}
+
+/*
+ * call-seq:
+ *    ossl_error.detailed_message(**) -> string
+ *
+ * Returns the exception message decorated with the captured \OpenSSL error
+ * queue entries.
+ */
+static VALUE
+osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str;
+#ifdef HAVE_RB_CALL_SUPER_KW
+    // Ruby >= 3.2
+    if (RTEST(rb_funcall(rb_eException, rb_intern("method_defined?"), 1,
+                         ID2SYM(rb_intern("detailed_message")))))
+        str = rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+    else
+#endif
+        str = rb_funcall(self, rb_intern("message"), 0);
+    VALUE errors = rb_attr_get(self, id_i_errors);
+
+    // OpenSSLError was not created by ossl_make_error()
+    if (!RB_TYPE_P(errors, T_ARRAY))
+        return str;
+
+    str = rb_str_resurrect(str);
+    rb_str_catf(str, "\nOpenSSL error queue reported %ld errors:",
+                RARRAY_LEN(errors));
+    for (long i = 0; i < RARRAY_LEN(errors); i++) {
+        VALUE err = RARRAY_AREF(errors, i);
+        rb_str_catf(str, "\n%"PRIsVALUE, err);
+    }
+    return str;
+}
+
 /*
  * call-seq:
  *   OpenSSL.errors -> [String...]
  *
- * See any remaining errors held in queue.
+ * Returns any remaining errors held in the \OpenSSL thread-local error queue
+ * and clears the queue. This should normally return an empty array.
  *
- * Any errors you see here are probably due to a bug in Ruby's OpenSSL
- * implementation.
+ * This is intended for debugging Ruby/OpenSSL. If you see any errors here,
+ * it likely indicates a bug in the extension. Please file an issue at
+ * https://github.com/ruby/openssl.
+ *
+ * For debugging your program, OpenSSL.debug= may be useful.
  */
 static VALUE
 ossl_get_errors(VALUE _)
@@ -363,6 +419,8 @@ VALUE dOSSL;
 /*
  * call-seq:
  *   OpenSSL.debug -> true | false
+ *
+ * Returns whether Ruby/OpenSSL's debug mode is currently enabled.
  */
 static VALUE
 ossl_debug_get(VALUE self)
@@ -372,9 +430,9 @@ ossl_debug_get(VALUE self)
 
 /*
  * call-seq:
- *   OpenSSL.debug = boolean -> boolean
+ *   OpenSSL.debug = boolean
  *
- * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the \OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE
@@ -388,6 +446,8 @@ ossl_debug_set(VALUE self, VALUE val)
 /*
  * call-seq:
  *   OpenSSL.fips_mode -> true | false
+ *
+ * Returns whether the FIPS mode is currently enabled.
  */
 static VALUE
 ossl_fips_mode_get(VALUE self)
@@ -408,10 +468,10 @@ ossl_fips_mode_get(VALUE self)
 
 /*
  * call-seq:
- *   OpenSSL.fips_mode = boolean -> boolean
+ *   OpenSSL.fips_mode = boolean
  *
  * Turns FIPS mode on or off. Turning on FIPS mode will obviously only have an
- * effect for FIPS-capable installations of the OpenSSL library. Trying to do
+ * effect for FIPS-capable installations of the \OpenSSL library. Trying to do
  * so otherwise will result in an error.
  *
  * === Examples
@@ -434,30 +494,30 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
     return enabled;
 #elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     if (RTEST(enabled)) {
-	int mode = FIPS_mode();
-	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
-	    ossl_raise(eOSSLError, "Turning on FIPS mode failed");
+        int mode = FIPS_mode();
+        if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
+            ossl_raise(eOSSLError, "Turning on FIPS mode failed");
     } else {
-	if(!FIPS_mode_set(0)) /* turning off twice is OK */
-	    ossl_raise(eOSSLError, "Turning off FIPS mode failed");
+        if(!FIPS_mode_set(0)) /* turning off twice is OK */
+            ossl_raise(eOSSLError, "Turning off FIPS mode failed");
     }
     return enabled;
 #else
     if (RTEST(enabled))
-	ossl_raise(eOSSLError, "This version of OpenSSL does not support FIPS mode");
+        ossl_raise(eOSSLError, "This version of OpenSSL does not support FIPS mode");
     return enabled;
 #endif
 }
 
 /*
  * call-seq:
- *   OpenSSL.fixed_length_secure_compare(string, string) -> boolean
+ *   OpenSSL.fixed_length_secure_compare(string, string) -> true or false
  *
  * Constant time memory comparison for fixed length strings, such as results
- * of HMAC calculations.
+ * of \HMAC calculations.
  *
  * Returns +true+ if the strings are identical, +false+ if they are of the same
- * length but not identical. If the length is different, +ArgumentError+ is
+ * length but not identical. If the length is different, ArgumentError is
  * raised.
  */
 static VALUE
@@ -473,13 +533,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
     }
 
     switch (CRYPTO_memcmp(p1, p2, len1)) {
-        case 0:	return Qtrue;
-        default: return Qfalse;
+      case 0: return Qtrue;
+      default: return Qfalse;
     }
 }
 
 /*
- * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
+ * OpenSSL provides \SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[https://www.openssl.org/] library.
  *
  * = Examples
@@ -534,7 +594,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * === Loading an Encrypted Key
  *
- * OpenSSL will prompt you for your password when loading an encrypted key.
+ * \OpenSSL will prompt you for your password when loading an encrypted key.
  * If you will not be able to type in the password you may provide it when
  * loading the key:
  *
@@ -597,7 +657,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * == PBKDF2 Password-based Encryption
  *
- * If supported by the underlying OpenSSL version used, Password-based
+ * If supported by the underlying \OpenSSL version used, Password-based
  * Encryption should use the features of PKCS5. If not supported or if
  * required by legacy applications, the older, less secure methods specified
  * in RFC 2898 are also supported (see below).
@@ -656,7 +716,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   decrypted = cipher.update encrypted
  *   decrypted << cipher.final
  *
- * == X509 Certificates
+ * == \X509 Certificates
  *
  * === Creating a Certificate
  *
@@ -693,7 +753,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
  * The list of supported extensions (and in some cases their possible values)
- * can be derived from the "objects.h" file in the OpenSSL source code.
+ * can be derived from the "objects.h" file in the \OpenSSL source code.
  *
  * === Signing a Certificate
  *
@@ -847,23 +907,23 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     io.write csr_cert.to_pem
  *   end
  *
- * == SSL and TLS Connections
+ * == \SSL and TLS Connections
  *
- * Using our created key and certificate we can create an SSL or TLS connection.
- * An SSLContext is used to set up an SSL session.
+ * Using our created key and certificate we can create an \SSL or TLS
+ * connection. An OpenSSL::SSL::SSLContext is used to set up an \SSL session.
  *
  *   context = OpenSSL::SSL::SSLContext.new
  *
- * === SSL Server
+ * === \SSL Server
  *
- * An SSL server requires the certificate and private key to communicate
+ * An \SSL server requires the certificate and private key to communicate
  * securely with its clients:
  *
  *   context.cert = cert
  *   context.key = key
  *
- * Then create an SSLServer with a TCP server socket and the context.  Use the
- * SSLServer like an ordinary TCP server.
+ * Then create an OpenSSL::SSL::SSLServer with a TCP server socket and the
+ * context.  Use the SSLServer like an ordinary TCP server.
  *
  *   require 'socket'
  *
@@ -882,14 +942,15 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     ssl_connection.close
  *   end
  *
- * === SSL client
+ * === \SSL client
  *
- * An SSL client is created with a TCP socket and the context.
- * SSLSocket#connect must be called to initiate the SSL handshake and start
- * encryption.  A key and certificate are not required for the client socket.
+ * An \SSL client is created with a TCP socket and the context.
+ * OpenSSL::SSL::SSLSocket#connect must be called to initiate the \SSL handshake
+ * and start encryption.  A key and certificate are not required for the client
+ * socket.
  *
- * Note that SSLSocket#close doesn't close the underlying socket by default. Set
- * SSLSocket#sync_close to true if you want.
+ * Note that OpenSSL::SSL::SSLSocket#close doesn't close the underlying socket
+ * by default. Set OpenSSL::SSL::SSLSocket#sync_close to true if you want.
  *
  *   require 'socket'
  *
@@ -905,7 +966,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * === Peer Verification
  *
- * An unverified SSL connection does not provide much security.  For enhanced
+ * An unverified \SSL connection does not provide much security.  For enhanced
  * security the client or server can verify the certificate of its peer.
  *
  * The client can be modified to verify the server's certificate against the
@@ -956,22 +1017,34 @@ Init_openssl(void)
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
-     * Version of OpenSSL the ruby OpenSSL extension was built with
+     * \OpenSSL library version string used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
      */
-    rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+    rb_define_const(mOSSL, "OPENSSL_VERSION",
+                    rb_obj_freeze(rb_str_new_cstr(OPENSSL_VERSION_TEXT)));
 
     /*
-     * Version of OpenSSL the ruby OpenSSL extension is running with
+     * \OpenSSL library version string currently used at runtime.
      */
-    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
+    rb_define_const(
+        mOSSL,
+        "OPENSSL_LIBRARY_VERSION",
+        rb_obj_freeze(rb_str_new_cstr(OpenSSL_version(OPENSSL_VERSION)))
+    );
 
     /*
-     * Version number of OpenSSL the ruby OpenSSL extension was built with
-     * (base 16). The formats are below.
+     * \OpenSSL library version number used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
      *
-     * [OpenSSL 3] <tt>0xMNN00PP0 (major minor 00 patch 0)</tt>
-     * [OpenSSL before 3] <tt>0xMNNFFPPS (major minor fix patch status)</tt>
-     * [LibreSSL] <tt>0x20000000 (fixed value)</tt>
+     * The version number is encoded into a single integer value. The number
+     * follows the format:
+     *
+     * [\OpenSSL 3.0.0 or later]
+     *   <tt>0xMNN00PP0</tt> (major minor 00 patch 0)
+     * [\OpenSSL 1.1.1 or earlier]
+     *   <tt>0xMNNFFPPS</tt> (major minor fix patch status)
+     * [LibreSSL]
+     *   <tt>0x20000000</tt> (a fixed value)
      *
      * See also the man page OPENSSL_VERSION_NUMBER(3).
      */
@@ -979,9 +1052,12 @@ Init_openssl(void)
 
 #if defined(LIBRESSL_VERSION_NUMBER)
     /*
-     * Version number of LibreSSL the ruby OpenSSL extension was built with
-     * (base 16). The format is <tt>0xMNNFF00f (major minor fix 00
-     * status)</tt>. This constant is only defined in LibreSSL cases.
+     * LibreSSL library version number used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
+     *
+     * This constant is only defined if the extension was compiled against
+     * LibreSSL. The number follows the format:
+     * <tt>0xMNNFF00f</tt> (major minor fix 00 status).
      *
      * See also the man page LIBRESSL_VERSION_NUMBER(3).
      */
@@ -989,30 +1065,50 @@ Init_openssl(void)
 #endif
 
     /*
-     * Boolean indicating whether OpenSSL is FIPS-capable or not
+     * Boolean indicating whether the \OpenSSL library is FIPS-capable or not.
+     * Always <tt>true</tt> for \OpenSSL 3.0 and later.
+     *
+     * This is obsolete and will be removed in the future.
+     * See also OpenSSL.fips_mode.
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
 /* OpenSSL 3 is FIPS-capable even when it is installed without fips option */
 #if OSSL_OPENSSL_PREREQ(3, 0, 0)
                     Qtrue
 #elif defined(OPENSSL_FIPS)
-		    Qtrue
+                    Qtrue
 #elif defined(OPENSSL_IS_AWSLC) // AWS-LC FIPS can only be enabled during compile time.
-            FIPS_mode() ? Qtrue : Qfalse
+                    FIPS_mode() ? Qtrue : Qfalse
 #else
-		    Qfalse
+                    Qfalse
 #endif
-		   );
+                   );
 
     rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
     rb_global_variable(&eOSSLError);
     /*
-     * Generic error,
-     * common for all classes under OpenSSL module
+     * Generic error class for OpenSSL. All error classes in this library
+     * inherit from this class.
+     *
+     * This class indicates that an error was reported by the underlying
+     * \OpenSSL library.
      */
-    eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    /*
+     * \OpenSSL error queue entries captured at the time the exception was
+     * raised. The same information is printed to stderr if OpenSSL.debug is
+     * set to +true+.
+     *
+     * This is an array of zero or more strings, ordered from the oldest to the
+     * newest. The format of the strings is not stable and may vary across
+     * versions of \OpenSSL or versions of this Ruby extension.
+     *
+     * See also the man page ERR_get_error(3).
+     */
+    rb_attr(eOSSLError, rb_intern_const("errors"), 1, 0, 0);
+    rb_define_method(eOSSLError, "detailed_message", osslerror_detailed_message, -1);
 
     /*
      * Init debug core
@@ -1028,6 +1124,7 @@ Init_openssl(void)
      * Get ID of to_der
      */
     ossl_s_to_der = rb_intern("to_der");
+    id_i_errors = rb_intern("@errors");
 
     /*
      * Init components

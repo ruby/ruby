@@ -27,6 +27,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 #define RUBY_FIBER_SCHEDULER_VERSION 3
 
 struct timeval;
+struct rb_thread_struct;
 
 /**
  * Wrap a `ssize_t` and `int errno` into a single `VALUE`. This interface should
@@ -118,7 +119,7 @@ VALUE rb_fiber_scheduler_current(void);
 
 /**
  * Identical to rb_fiber_scheduler_current(), except it queries for that of the
- * passed thread instead of the implicit current one.
+ * passed thread value instead of the implicit current one.
  *
  * @param[in]  thread         Target thread.
  * @exception  rb_eTypeError  `thread` is not a thread.
@@ -126,6 +127,17 @@ VALUE rb_fiber_scheduler_current(void);
  * @retval     otherwise      The scheduler that is in effect in `thread`.
  */
 VALUE rb_fiber_scheduler_current_for_thread(VALUE thread);
+
+/**
+ * Identical to rb_fiber_scheduler_current_for_thread(), except it expects
+ * a threadptr instead of a thread value.
+ *
+ * @param[in]  thread         Target thread.
+ * @exception  rb_eTypeError  `thread` is not a thread.
+ * @retval     RUBY_Qnil      No scheduler is in effect in `thread`.
+ * @retval     otherwise      The scheduler that is in effect in `thread`.
+ */
+VALUE rb_fiber_scheduler_current_for_threadptr(struct rb_thread_struct *thread);
 
 /**
  * Converts the passed timeout to an expression that rb_fiber_scheduler_block()
@@ -166,6 +178,14 @@ VALUE rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
  * @return     What `scheduler.kernel_sleep` returns.
  */
 VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
+
+/**
+ * Yield to the scheduler, to be resumed on the next scheduling cycle.
+ *
+ * @param[in]  scheduler  Target scheduler.
+ * @return     What `scheduler.yield` returns.
+ */
+VALUE rb_fiber_scheduler_yield(VALUE scheduler);
 
 /* Description TBW */
 #if 0

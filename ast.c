@@ -32,9 +32,13 @@ static size_t
 node_memsize(const void *ptr)
 {
     struct ASTNodeData *data = (struct ASTNodeData *)ptr;
-    rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+    size_t size = sizeof(struct ASTNodeData);
+    if (data->ast_value) {
+        rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+        size += rb_ast_memsize(ast);
+    }
 
-    return sizeof(struct ASTNodeData) + rb_ast_memsize(ast);
+    return size;
 }
 
 static const rb_data_type_t rb_node_type = {

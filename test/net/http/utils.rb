@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'socket'
-require 'openssl'
 
 module TestNetHTTPUtils
 
@@ -14,10 +13,10 @@ module TestNetHTTPUtils
       @procs = {}
 
       if @config['ssl_enable']
+        require 'openssl'
         context = OpenSSL::SSL::SSLContext.new
         context.cert = @config['ssl_certificate']
         context.key = @config['ssl_private_key']
-        context.tmp_dh_callback = @config['ssl_tmp_dh_callback']
         @ssl_server = OpenSSL::SSL::SSLServer.new(@server, context)
       end
 

@@ -90,6 +90,7 @@ readline/readline.c
 ripper/lib
 socket
 stringio/stringio.c
+strscan/lib
 strscan/strscan.c
 syslog/syslog.c
 syslog/lib

@@ -1,10 +1,9 @@
 # Make recipes that deal with the rust code of YJIT and ZJIT.
-
-# Because of Cargo cache, if the actual binary is not changed from the
-# previous build, the mtime is preserved as the cached file.
-# This means the target is not updated actually, and it will need to
-# rebuild at the next build.
-RUST_LIB_TOUCH = touch $@
+#
+# $(gnumake_recursive) adds the '+' prefix to pass down GNU make's
+# jobserver resources to cargo/rustc as rust-lang.org recommends.
+# Without it, certain make version trigger a warning. It does not
+# add the prefix when `make --dry-run` so dry runs are indeed dry.
 
 ifneq ($(JIT_CARGO_SUPPORT),no)
 
@@ -12,6 +11,12 @@ ifneq ($(JIT_CARGO_SUPPORT),no)
 CARGO_VERBOSE_0 = -q
 CARGO_VERBOSE_1 =
 CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
+
+# Because of Cargo cache, if the actual binary is not changed from the
+# previous build, the mtime is preserved as the cached file.
+# This means the target is not updated actually, and it will need to
+# rebuild at the next build.
+RUST_LIB_TOUCH = touch $@
 
 # NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
 #    ld: warning: object file (target/debug/libjit.a(<libcapstone object>)) was built for
@@ -25,12 +30,37 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 	elif [ '$(YJIT_SUPPORT)' != no ]; then \
 	    echo 'building YJIT ($(JIT_CARGO_SUPPORT) mode)'; \
 	fi
-	+$(Q)CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
+	$(gnumake_recursive)$(Q)CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	    CARGO_TERM_PROGRESS_WHEN='never' \
 	    MACOSX_DEPLOYMENT_TARGET=11.0 \
 	    $(CARGO) $(CARGO_VERBOSE) build --manifest-path '$(top_srcdir)/Cargo.toml' $(CARGO_BUILD_ARGS)
 	$(RUST_LIB_TOUCH)
-endif
+else ifneq ($(strip $(RLIB_DIR)),) # combo build
+
+$(RUST_LIB): $(srcdir)/ruby.rs
+	$(ECHO) 'building $(@F)'
+	$(gnumake_recursive)$(Q) $(RUSTC) --edition=2024 \
+	    '-L$(@D)' \
+	    --extern=yjit \
+	    --extern=zjit \
+	    --crate-type=staticlib \
+	    --cfg 'feature="yjit"' \
+	    --cfg 'feature="zjit"' \
+	    '--out-dir=$(@D)' \
+	    '$(top_srcdir)/ruby.rs'
+
+# Absolute path to avoid VPATH ambiguity
+JIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libjit.rlib
+$(YJIT_RLIB): $(JIT_RLIB)
+$(ZJIT_RLIB): $(JIT_RLIB)
+$(JIT_RLIB):
+	$(ECHO) 'building $(@F)'
+	$(gnumake_recursive)$(Q) $(RUSTC) --crate-name=jit \
+	    --edition=2024 \
+	    $(JIT_RUST_FLAGS) \
+	    '--out-dir=$(@D)' \
+	    '$(top_srcdir)/jit/src/lib.rs'
+endif # ifneq ($(JIT_CARGO_SUPPORT),no)
 
 RUST_LIB_SYMBOLS = $(RUST_LIB:.a=).symbols
 $(RUST_LIBOBJ): $(RUST_LIB)

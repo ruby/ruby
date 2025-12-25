@@ -2,7 +2,7 @@
 
 require_relative "bundler/rubygems_ext"
 require_relative "bundler/vendored_fileutils"
-require "pathname"
+autoload :Pathname, "pathname" unless defined?(Pathname)
 require "rbconfig"
 
 require_relative "bundler/errors"

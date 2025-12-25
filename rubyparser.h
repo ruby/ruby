@@ -782,7 +782,6 @@ struct rb_args_info {
 
     struct RNode_OPT_ARG *opt_args;
     unsigned int no_kwarg: 1;
-    unsigned int ruby2_keywords: 1;
     unsigned int forwarding: 1;
 };
 

@@ -62,7 +62,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry_unchecked(cfp);
-    const rb_namespace_t *ns = NULL;
+    const rb_box_t *box = NULL;
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
         ep = (ptrdiff_t)cfp->ep;
@@ -72,17 +72,17 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     switch (VM_FRAME_TYPE_UNCHECKED(cfp)) {
       case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
-        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
+        box = VM_ENV_BOX_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_METHOD:
         magic = "METHOD";
         if (me) {
-            ns = me->def->ns;
+            box = me->def->box;
         }
         break;
       case VM_FRAME_MAGIC_CLASS:
         magic = "CLASS";
-        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
+        box = VM_ENV_BOX_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_BLOCK:
         magic = "BLOCK";
@@ -134,7 +134,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
@@ -163,11 +163,11 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     kprintf("l:%s ", VM_ENV_LOCAL_P(cfp->ep) ? "y" : "n");
-    if (ns) {
-        kprintf("n:%04ld ", ns->ns_id % 10000);
+    if (box) {
+        kprintf("b:%04ld ", box->box_id % 10000);
     }
     else {
-        kprintf("n:---- ");
+        kprintf("b:---- ");
     }
     kprintf("%-6s", magic);
     if (line) {
@@ -274,7 +274,7 @@ vmdebug_frame_method_entry_unchecked(const VALUE *ep)
 }
 
 static bool
-namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
 {
     ptrdiff_t pc = -1;
     ptrdiff_t ep = env - ec->vm_stack;
@@ -284,7 +284,7 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
     const char *magic, *iseq_name = "-";
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
-    const rb_namespace_t *ns = NULL;
+    const rb_box_t *box = NULL;
     const rb_control_frame_t *cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, env);
     const rb_callable_method_entry_t *me = vmdebug_frame_method_entry_unchecked(env);
 
@@ -298,17 +298,17 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
     switch (VM_ENV_FLAGS_UNCHECKED(env, VM_FRAME_MAGIC_MASK)) {
     case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
-        ns = VM_ENV_NAMESPACE_UNCHECKED(env);
+        box = VM_ENV_BOX_UNCHECKED(env);
         break;
     case VM_FRAME_MAGIC_METHOD:
         magic = "METHOD";
         if (me) {
-            ns = me->def->ns;
+            box = me->def->box;
         }
         break;
     case VM_FRAME_MAGIC_CLASS:
         magic = "CLASS";
-        ns = VM_ENV_NAMESPACE_UNCHECKED(env);
+        box = VM_ENV_BOX_UNCHECKED(env);
         break;
     case VM_FRAME_MAGIC_BLOCK:
         magic = "BLOCK";
@@ -316,7 +316,7 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
     case VM_FRAME_MAGIC_CFUNC:
         magic = "CFUNC";
         if (me) {
-            ns = me->def->ns;
+            box = me->def->box;
         }
         break;
     case VM_FRAME_MAGIC_IFUNC:
@@ -355,7 +355,7 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
@@ -382,11 +382,11 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
     }
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     kprintf("l:%s ", VM_ENV_LOCAL_P(env) ? "y" : "n");
-    if (ns) {
-        kprintf("n:%04ld ", ns->ns_id % 10000);
+    if (box) {
+        kprintf("b:%04ld ", box->box_id % 10000);
     }
     else {
-        kprintf("n:---- ");
+        kprintf("b:---- ");
     }
     kprintf("%-6s", magic);
     if (line) {
@@ -402,58 +402,61 @@ namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_
 }
 
 static bool
-namespace_env_dump_unchecked(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+box_env_dump_unchecked(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
 {
     if (env == NULL) {
-        kprintf("c:---- e:000000 l:- n:---- (none)\n");
+        kprintf("c:---- e:000000 l:- b:---- (none)\n");
         return true;
     }
     else {
-        return namespace_env_dump(ec, env, checkpoint_cfp, errout);
+        return box_env_dump(ec, env, checkpoint_cfp, errout);
     }
   error:
     return false;
 }
 
 bool
-rb_vmdebug_namespace_env_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp, FILE *errout)
+rb_vmdebug_box_env_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp, FILE *errout)
 {
     // See VM_EP_RUBY_LEP for the original logic
     const VALUE *ep = current_cfp->ep;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
-    const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;
+    const rb_control_frame_t *cfp = current_cfp, *checkpoint_cfp = current_cfp;
 
-    kprintf("-- Namespace detection information "
+    kprintf("-- Ruby Box detection information "
             "-----------------------------------------\n");
 
-    namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+    box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
 
-    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
         while (!VM_ENV_LOCAL_P(ep)) {
             ep = VM_ENV_PREV_EP(ep);
-            namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+            box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
         }
-        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
-            if (!cfp) {
-                cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, ep);
-            }
-            if (!cfp) {
-                goto stop;
-            }
-            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-            if (cfp >= eocfp) {
-                kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
-                goto stop;
-            }
-            ep = cfp->ep;
-            namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
-            if (!ep) {
-                goto stop;
-            }
-        }
-        checkpoint_cfp = cfp;
-        cfp = NULL;
+        goto stop;
     }
+
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        if (!cfp) {
+            goto stop;
+        }
+        if (cfp >= eocfp) {
+            kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
+            goto stop;
+        }
+        ep = cfp->ep;
+        box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+        if (!ep) {
+            goto stop;
+        }
+    }
+
+    while (!VM_ENV_LOCAL_P(ep)) {
+        ep = VM_ENV_PREV_EP(ep);
+        box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+    }
+
   stop:
     kprintf("\n");
     return true;
@@ -767,7 +770,7 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <sys/mman.h>
 #  undef backtrace
 
-#  if defined(__arm64__)
+#  if defined(__arm64__) || defined(__POWERPC__)
 static bool
 is_coroutine_start(unw_word_t ip)
 {
@@ -876,19 +879,22 @@ darwin_sigtramp:
     }
     return n;
 
-#  elif defined(__arm64__)
+#  elif defined(__arm64__) || defined(__POWERPC__)
     /* Since Darwin arm64's _sigtramp is implemented as normal function,
      * unwind can unwind frames without special code.
      * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
      */
     while (unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
+#   if defined(__arm64__)
         // Strip Arm64's pointer authentication.
         // https://developer.apple.com/documentation/security/preparing_your_app_to_work_with_pointer_authentication
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
-
+#   else
+        trace[n++] = (void *)ip;
+#   endif
         // Apple's libunwind can't handle our coroutine switching code
         if (is_coroutine_start(ip)) break;
     }
@@ -1374,7 +1380,7 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 bool
 rb_vm_bugreport(const void *ctx, FILE *errout)
 {
-    const char *ns_env = getenv("RUBY_BUGREPORT_NAMESPACE_ENV");
+    const char *box_env = getenv("RUBY_BUGREPORT_BOX_ENV");
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
         char buf[0x100];
@@ -1405,21 +1411,21 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_namespace_t *current_ns = rb_current_namespace_in_crash_report();
+    const rb_box_t *current_box = rb_current_box_in_crash_report();
     const rb_execution_context_t *ec = rb_current_execution_context(false);
     VALUE loaded_features;
 
-    if (current_ns) {
-        loaded_features = current_ns->loaded_features;
+    if (current_box) {
+        loaded_features = current_box->loaded_features;
     }
     else {
-        loaded_features = rb_root_namespace()->loaded_features;
+        loaded_features = rb_root_box()->loaded_features;
     }
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
-        if (ns_env) {
-            rb_vmdebug_namespace_env_dump_raw(ec, ec->cfp, errout);
+        if (box_env) {
+            rb_vmdebug_box_env_dump_raw(ec, ec->cfp, errout);
         }
         rb_backtrace_print_as_bugreport(errout);
         kputs("\n");
@@ -1430,7 +1436,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 "---------------------------------------------------\n");
         kprintf("Total ractor count: %u\n", vm->ractor.cnt);
         kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
-        if (rb_fiber_scheduler_get() != Qnil) {
+        if (ec->thread_ptr->scheduler != Qnil) {
             kprintf("Note that the Fiber scheduler is enabled\n");
         }
         kputs("\n");
@@ -1465,19 +1471,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                     LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
             kprintf("\n");
         }
-        if (rb_namespace_available()) {
-            kprintf("* Namespace: enabled\n");
-            if (current_ns) {
-                kprintf("* Current namespace id: %ld, type: %s\n",
-                        current_ns->ns_id,
-                        NAMESPACE_USER_P(current_ns) ? (NAMESPACE_MAIN_P(current_ns) ? "main" : "user") : "root");
+        if (rb_box_available()) {
+            kprintf("* Ruby Box: enabled\n");
+            if (current_box) {
+                kprintf("* Current box id: %ld, type: %s\n",
+                        current_box->box_id,
+                        BOX_USER_P(current_box) ? (BOX_MAIN_P(current_box) ? "main" : "user") : "root");
             }
             else {
-                kprintf("* Current namespace: NULL (crashed)\n");
+                kprintf("* Current box: NULL (crashed)\n");
             }
         }
         else {
-            kprintf("* Namespace: disabled\n");
+            kprintf("* Ruby Box: disabled\n");
         }
         if (loaded_features) {
             kprintf("* Loaded features:\n\n");

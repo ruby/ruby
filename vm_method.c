@@ -149,9 +149,20 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
     VALUE new_table = (VALUE)data;
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
+
+    if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
+        // Invalidated CME. This entry will be removed from the old table on
+        // the next GC mark, so it's unsafe (and undesirable) to copy
+        return ID_TABLE_CONTINUE;
+    }
+
     size_t memsize = vm_ccs_alloc_size(old_ccs->capa);
     struct rb_class_cc_entries *new_ccs = ruby_xcalloc(1, memsize);
     rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+
+    // We hold the VM lock, so invalidation should not have happened between
+    // our earlier invalidation check and now.
+    VM_ASSERT(!METHOD_ENTRY_INVALIDATED(old_ccs->cme));
 
     memcpy(new_ccs, old_ccs, memsize);
 
@@ -169,6 +180,7 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 VALUE
 rb_vm_cc_table_dup(VALUE old_table)
 {
+    ASSERT_vm_locking();
     VALUE new_table = rb_vm_cc_table_create(rb_managed_id_table_size(old_table));
     rb_managed_id_table_foreach(old_table, vm_cc_table_dup_i, (void *)new_table);
     return new_table;
@@ -384,7 +396,7 @@ struct invalidate_callable_method_entry_foreach_arg {
 };
 
 static void
-invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE namespace, void *data)
+invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
 {
     st_data_t me;
     struct invalidate_callable_method_entry_foreach_arg *arg = (struct invalidate_callable_method_entry_foreach_arg *)data;
@@ -563,6 +575,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+    xfree(ccs);
     return ID_TABLE_DELETE;
 }
 
@@ -825,7 +838,7 @@ rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type opt_type
 }
 
 static void
-rb_method_definition_release(rb_method_definition_t *def)
+method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
         const unsigned int reference_count_was = RUBY_ATOMIC_FETCH_SUB(def->reference_count, 1);
@@ -835,9 +848,6 @@ rb_method_definition_release(rb_method_definition_t *def)
         if (reference_count_was == 1) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:1->0 (remove)\n", (void *)def,
                                       rb_id2name(def->original_id));
-            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
-                xfree(def->body.bmethod.hooks);
-            }
             xfree(def);
         }
         else {
@@ -845,6 +855,12 @@ rb_method_definition_release(rb_method_definition_t *def)
                                       reference_count_was, reference_count_was - 1);
         }
     }
+}
+
+void
+rb_method_definition_release(rb_method_definition_t *def)
+{
+    method_definition_release(def);
 }
 
 static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
@@ -871,7 +887,7 @@ rb_free_method_entry(const rb_method_entry_t *me)
     // to remove from `Invariants` here.
 #endif
 
-    rb_method_definition_release(me->def);
+    method_definition_release(me->def);
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -938,6 +954,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int 
     cfunc->invoker = call_cfunc_invoker_func(argc);
 }
 
+
 static rb_method_definition_t *
 method_definition_addref(rb_method_definition_t *def, bool complemented)
 {
@@ -952,9 +969,15 @@ method_definition_addref(rb_method_definition_t *def, bool complemented)
 }
 
 void
+rb_method_definition_addref(rb_method_definition_t *def)
+{
+    method_definition_addref(def, false);
+}
+
+void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
-    rb_method_definition_release(me->def);
+    method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
     if (!ruby_running) add_opt_method_entry(me);
@@ -1019,7 +1042,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             }
           case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
-            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
+            def->body.bmethod.defined_ractor_id = rb_ec_ractor_id(GET_EC());
             return;
           case VM_METHOD_TYPE_NOTIMPLEMENTED:
             setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), (VALUE(*)(ANYARGS))rb_f_notimplement_internal, -1);
@@ -1059,9 +1082,6 @@ method_definition_reset(const rb_method_entry_t *me)
         break;
       case VM_METHOD_TYPE_BMETHOD:
         RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
-        RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.defined_ractor);
-        /* give up to check all in a list */
-        if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
         break;
       case VM_METHOD_TYPE_REFINED:
         RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
@@ -1089,7 +1109,7 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def->type = type;
     def->original_id = mid;
     def->method_serial = (uintptr_t)RUBY_ATOMIC_FETCH_ADD(method_serial, 1);
-    def->ns = rb_current_namespace();
+    def->box = rb_current_box();
     return def;
 }
 
@@ -1195,7 +1215,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
 void
 rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
-    rb_method_definition_release(dst->def);
+    method_definition_release(dst->def);
     *(rb_method_definition_t **)&dst->def = method_definition_addref(src->def, METHOD_ENTRY_COMPLEMENTED(src));
     method_definition_reset(dst);
     dst->called_id = src->called_id;
@@ -1281,6 +1301,7 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -1321,7 +1342,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
+        bool search_superclass = type == VM_METHOD_TYPE_ZSUPER && !lookup_method_table(refined_class, mid);
         rb_add_refined_method_entry(refined_class, mid);
+        if (search_superclass) {
+            rb_method_entry_t *me = lookup_method_table(refined_class, mid);
+            me->def->body.refined.orig_me = search_method0(refined_class, mid, NULL, true);
+        }
     }
     if (type == VM_METHOD_TYPE_REFINED) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
@@ -1629,10 +1655,20 @@ rb_undef_alloc_func(VALUE klass)
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
-    Check_Type(klass, T_CLASS);
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-    for (; klass; klass = RCLASS_SUPER(klass)) {
-        rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    if (allocator == UNDEF_ALLOC_FUNC) return 0;
+    if (allocator) return allocator;
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        klass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+        allocator = RCLASS_ALLOCATOR(klass);
         if (allocator == UNDEF_ALLOC_FUNC) break;
         if (allocator) return allocator;
     }
@@ -2005,7 +2041,12 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         tmp_me = me->def->body.refined.orig_me;
         if (tmp_me) {
-            if (defined_class_ptr) *defined_class_ptr = tmp_me->defined_class;
+            if (!tmp_me->defined_class) {
+                VM_ASSERT_TYPE(tmp_me->owner, T_MODULE);
+            }
+            else if (defined_class_ptr) {
+                *defined_class_ptr = tmp_me->defined_class;
+            }
             return tmp_me;
         }
 

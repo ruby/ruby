@@ -4,51 +4,63 @@
 module Lrama
   class Grammar
     class Binding
-      # @rbs @actual_args: Array[Lexer::Token]
-      # @rbs @param_to_arg: Hash[String, Lexer::Token]
+      # @rbs @actual_args: Array[Lexer::Token::Base]
+      # @rbs @param_to_arg: Hash[String, Lexer::Token::Base]
 
-      # @rbs (Array[Lexer::Token] params, Array[Lexer::Token] actual_args) -> void
+      # @rbs (Array[Lexer::Token::Base] params, Array[Lexer::Token::Base] actual_args) -> void
       def initialize(params, actual_args)
         @actual_args = actual_args
-        @param_to_arg = map_params_to_args(params, @actual_args)
+        @param_to_arg = build_param_to_arg(params, @actual_args)
       end
 
-      # @rbs (Lexer::Token sym) -> Lexer::Token
+      # @rbs (Lexer::Token::Base sym) -> Lexer::Token::Base
       def resolve_symbol(sym)
-        if sym.is_a?(Lexer::Token::InstantiateRule)
-          Lrama::Lexer::Token::InstantiateRule.new(
-            s_value: sym.s_value, location: sym.location, args: resolved_args(sym), lhs_tag: sym.lhs_tag
-          )
-        else
-          param_to_arg(sym)
-        end
+        return create_instantiate_rule(sym) if sym.is_a?(Lexer::Token::InstantiateRule)
+        find_arg_for_param(sym)
       end
 
       # @rbs (Lexer::Token::InstantiateRule token) -> String
       def concatenated_args_str(token)
-        "#{token.rule_name}_#{token_to_args_s_values(token).join('_')}"
+        "#{token.rule_name}_#{format_args(token)}"
       end
 
       private
 
-      # @rbs (Array[Lexer::Token] params, Array[Lexer::Token] actual_args) -> Hash[String, Lexer::Token]
-      def map_params_to_args(params, actual_args)
+      # @rbs (Lexer::Token::InstantiateRule sym) -> Lexer::Token::InstantiateRule
+      def create_instantiate_rule(sym)
+        Lrama::Lexer::Token::InstantiateRule.new(
+          s_value: sym.s_value,
+          location: sym.location,
+          args: resolve_args(sym.args),
+          lhs_tag: sym.lhs_tag
+        )
+      end
+
+      # @rbs (Array[Lexer::Token::Base]) -> Array[Lexer::Token::Base]
+      def resolve_args(args)
+        args.map { |arg| resolve_symbol(arg) }
+      end
+
+      # @rbs (Lexer::Token::Base sym) -> Lexer::Token::Base
+      def find_arg_for_param(sym)
+        if (arg = @param_to_arg[sym.s_value]&.dup)
+          arg.alias_name = sym.alias_name
+          arg
+        else
+          sym
+        end
+      end
+
+      # @rbs (Array[Lexer::Token::Base] params, Array[Lexer::Token::Base] actual_args) -> Hash[String, Lexer::Token::Base?]
+      def build_param_to_arg(params, actual_args)
         params.zip(actual_args).map do |param, arg|
           [param.s_value, arg]
         end.to_h
       end
 
-      # @rbs (Lexer::Token::InstantiateRule sym) -> Array[Lexer::Token]
-      def resolved_args(sym)
-        sym.args.map { |arg| resolve_symbol(arg) }
-      end
-
-      # @rbs (Lexer::Token sym) -> Lexer::Token
-      def param_to_arg(sym)
-        if (arg = @param_to_arg[sym.s_value].dup)
-          arg.alias_name = sym.alias_name
-        end
-        arg || sym
+      # @rbs (Lexer::Token::InstantiateRule token) -> String
+      def format_args(token)
+        token_to_args_s_values(token).join('_')
       end
 
       # @rbs (Lexer::Token::InstantiateRule token) -> Array[String]

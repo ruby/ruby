@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
-
 ##
 # Available list of platforms for targeting Gem installations.
 #
@@ -19,15 +17,6 @@ class Gem::Platform
       arch = "#{arch}_60" if /mswin(?:32|64)$/.match?(arch)
       new(arch)
     end
-  end
-
-  def self.match(platform)
-    match_platforms?(platform, Gem.platforms)
-  end
-
-  class << self
-    extend Gem::Deprecate
-    rubygems_deprecate :match, "Gem::Platform.match_spec? or match_gem?"
   end
 
   def self.match_platforms?(platform, platforms)
@@ -144,6 +133,37 @@ class Gem::Platform
 
   def to_s
     to_a.compact.join(@cpu.nil? ? "" : "-")
+  end
+
+  ##
+  # Deconstructs the platform into an array for pattern matching.
+  # Returns [cpu, os, version].
+  #
+  #   Gem::Platform.new("x86_64-linux").deconstruct  #=> ["x86_64", "linux", nil]
+  #
+  # This enables array pattern matching:
+  #
+  #   case Gem::Platform.new("arm64-darwin-21")
+  #   in ["arm64", "darwin", version]
+  #     # version => "21"
+  #   end
+  alias_method :deconstruct, :to_a
+
+  ##
+  # Deconstructs the platform into a hash for pattern matching.
+  # Returns a hash with keys +:cpu+, +:os+, and +:version+.
+  #
+  #   Gem::Platform.new("x86_64-darwin-20").deconstruct_keys(nil)
+  #   #=> { cpu: "x86_64", os: "darwin", version: "20" }
+  #
+  # This enables hash pattern matching:
+  #
+  #   case Gem::Platform.new("x86_64-linux")
+  #   in cpu: "x86_64", os: "linux"
+  #     # Matches Linux on x86_64
+  #   end
+  def deconstruct_keys(keys)
+    { cpu: @cpu, os: @os, version: @version }
   end
 
   ##

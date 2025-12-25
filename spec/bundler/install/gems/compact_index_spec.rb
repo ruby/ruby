@@ -698,7 +698,7 @@ RSpec.describe "compact index api" do
 
         bundle :install, artifice: "compact_index_forbidden"
       ensure
-        home(".gemrc").rmtree
+        FileUtils.rm_rf home(".gemrc")
       end
     end
   end
@@ -770,7 +770,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -811,7 +811,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -833,7 +833,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -905,7 +905,7 @@ RSpec.describe "compact index api" do
         DEPENDENCIES
         #{checksums_section}
         BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
       L
     end
 

@@ -1,6 +1,6 @@
 require_relative '../../../spec_helper'
 
-ruby_version_is ""..."3.5" do
+ruby_version_is ""..."4.0" do
   require 'cgi'
 
   describe "CGI::QueryExtension#server_protocol" do

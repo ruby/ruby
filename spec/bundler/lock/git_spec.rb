@@ -60,7 +60,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install", raise_on_error: false
@@ -123,7 +123,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -161,7 +161,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -206,7 +206,7 @@ RSpec.describe "bundle lock with git gems" do
         activesupport
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<~G
@@ -243,7 +243,7 @@ RSpec.describe "bundle lock with git gems" do
         ruby-lsp!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<~G

@@ -45,14 +45,21 @@ pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: NumProfiles,
 
-    /// Enable YJIT statsitics
+    /// Enable ZJIT statistics
     pub stats: bool,
 
     /// Print stats on exit (when stats is also true)
     pub print_stats: bool,
 
+    /// Print stats to file on exit (when stats is also true)
+    pub print_stats_file: Option<std::path::PathBuf>,
+
     /// Enable debug logging
     pub debug: bool,
+
+    // Whether to enable JIT at boot. This option prevents other
+    // ZJIT tuning options from enabling ZJIT at boot.
+    pub disable: bool,
 
     /// Turn off the HIR optimizer
     pub disable_hir_opt: bool,
@@ -65,6 +72,9 @@ pub struct Options {
 
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
+
+    /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
+    pub dump_hir_iongraph: bool,
 
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
@@ -96,11 +106,14 @@ impl Default for Options {
             num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
             print_stats: false,
+            print_stats_file: None,
             debug: false,
+            disable: false,
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: None,
+            dump_hir_iongraph: false,
             dump_lir: None,
             dump_disasm: false,
             trace_side_exits: None,
@@ -117,12 +130,17 @@ impl Default for Options {
 /// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
 pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-mem-size=num",
-                     "Max amount of memory that ZJIT can use (in MiB)."),
+                     "Max amount of memory that ZJIT can use in MiB (default: 128)."),
     ("--zjit-call-threshold=num",
                      "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
-    ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
+    ("--zjit-stats-quiet",
+                     "Collect ZJIT stats and suppress output."),
+    ("--zjit-stats[=file]",
+                     "Collect ZJIT stats (=file to write to a file)."),
+    ("--zjit-disable",
+                     "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
@@ -175,6 +193,10 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::scratch_split,
 ];
 
+/// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
+/// We set 1TiB just to avoid overflow. We could make it smaller.
+const MAX_MEM_MIB: usize = 1024 * 1024;
+
 /// Macro to dump LIR if --zjit-dump-lir is specified
 macro_rules! asm_dump {
     ($asm:expr, $target:ident) => {
@@ -225,11 +247,11 @@ fn parse_jit_list(path_like: &str) -> HashSet<String> {
             }
         }
     } else {
-        eprintln!("Failed to read JIT list from '{}'", path_like);
+        eprintln!("Failed to read JIT list from '{path_like}'");
     }
     eprintln!("JIT list:");
     for item in &result {
-        eprintln!("  {}", item);
+        eprintln!("  {item}");
     }
     result
 }
@@ -257,17 +279,19 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("", "") => {}, // Simply --zjit
 
         ("mem-size", _) => match opt_val.parse::<usize>() {
-            Ok(n) => {
-                // Reject 0 or too large values that could overflow.
-                // The upper bound is 1 TiB but we could make it smaller.
-                if n == 0 || n > 1024 * 1024 {
-                    return None
-                }
+            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
+                // Convert from MiB to bytes internally for convenience
+                options.mem_bytes = n * 1024 * 1024;
+            }
+            _ => return None,
+        },
 
+        ("exec-mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
                 // Convert from MiB to bytes internally for convenience
                 options.exec_mem_bytes = n * 1024 * 1024;
             }
-            Err(_) => return None,
+            _ => return None,
         },
 
         ("call-threshold", _) => match opt_val.parse() {
@@ -286,13 +310,28 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+
+        ("stats-quiet", _) => {
+            options.stats = true;
+            options.print_stats = false;
+        }
+
         ("stats", "") => {
             options.stats = true;
             options.print_stats = true;
         }
-        ("stats", "quiet") => {
+        ("stats", path) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(path)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", path, e))
+                .ok();
+            let canonical_path = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.stats = true;
-            options.print_stats = false;
+            options.print_stats_file = Some(canonical_path);
         }
 
         ("trace-exits", exits) => {
@@ -313,6 +352,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("debug", "") => options.debug = true,
 
+        ("disable", "") => options.disable = true,
+
         ("disable-hir-opt", "") => options.disable_hir_opt = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
@@ -332,11 +373,13 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.dump_hir_graphviz = Some(opt_val);
         }
+
+        ("dump-hir-iongraph", "") => options.dump_hir_iongraph = true,
 
         ("dump-lir", "") => options.dump_lir = Some(HashSet::from([DumpLIR::init])),
         ("dump-lir", filters) => {
@@ -357,7 +400,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
                         eprintln!("invalid --zjit-dump-lir option: '{filter}'");
-                        eprintln!("valid --zjit-dump-lir options: all, {}", valid_options);
+                        eprintln!("valid --zjit-dump-lir options: all, {valid_options}");
                         return None;
                     }
                 };
@@ -378,7 +421,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .write(true)
                 .truncate(true)
                 .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.log_compiled_iseqs = Some(opt_val);
@@ -436,15 +479,13 @@ macro_rules! debug {
 }
 pub(crate) use debug;
 
-/// Return Qtrue if --zjit* has been specified. For the `#with_jit` hook,
-/// this becomes Qtrue before ZJIT is actually initialized and enabled.
+/// Return true if ZJIT should be enabled at boot.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
-    // If any --zjit* option is specified, OPTIONS becomes Some.
-    if unsafe { OPTIONS.is_some() } {
-        Qtrue
+pub extern "C" fn rb_zjit_option_enable() -> bool {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| !opts.disable) {
+        true
     } else {
-        Qfalse
+        false
     }
 }
 
@@ -468,4 +509,15 @@ pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     } else {
         Qfalse
     }
+}
+
+/// Return path if stats should be printed at exit to a specified file, else Qnil.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if let Some(opts) = unsafe { OPTIONS.as_ref() } {
+        if let Some(ref path) = opts.print_stats_file {
+            return rust_str_to_ruby(path.as_os_str().to_str().unwrap());
+        }
+    }
+    Qnil
 }

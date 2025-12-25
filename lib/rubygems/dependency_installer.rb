@@ -7,14 +7,12 @@ require_relative "installer"
 require_relative "spec_fetcher"
 require_relative "user_interaction"
 require_relative "available_set"
-require_relative "deprecate"
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
 
 class Gem::DependencyInstaller
   include Gem::UserInteraction
-  extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
     env_shebang: false,
@@ -85,6 +83,7 @@ class Gem::DependencyInstaller
     @user_install        = options[:user_install]
     @wrappers            = options[:wrappers]
     @build_args          = options[:build_args]
+    @build_jobs          = options[:build_jobs]
     @build_docs_in_background = options[:build_docs_in_background]
     @dir_mode = options[:dir_mode]
     @data_mode = options[:data_mode]
@@ -118,78 +117,6 @@ class Gem::DependencyInstaller
   def consider_remote?
     @domain == :both || @domain == :remote
   end
-
-  ##
-  # Returns a list of pairs of gemspecs and source_uris that match
-  # Gem::Dependency +dep+ from both local (Dir.pwd) and remote (Gem.sources)
-  # sources.  Gems are sorted with newer gems preferred over older gems, and
-  # local gems preferred over remote gems.
-
-  def find_gems_with_sources(dep, best_only = false) # :nodoc:
-    set = Gem::AvailableSet.new
-
-    if consider_local?
-      sl = Gem::Source::Local.new
-
-      if spec = sl.find_gem(dep.name)
-        if dep.matches_spec? spec
-          set.add spec, sl
-        end
-      end
-    end
-
-    if consider_remote?
-      begin
-        # This is pulled from #spec_for_dependency to allow
-        # us to filter tuples before fetching specs.
-        tuples, errors = Gem::SpecFetcher.fetcher.search_for_dependency dep
-
-        if best_only && !tuples.empty?
-          tuples.sort! do |a,b|
-            if b[0].version == a[0].version
-              if b[0].platform != Gem::Platform::RUBY
-                1
-              else
-                -1
-              end
-            else
-              b[0].version <=> a[0].version
-            end
-          end
-          tuples = [tuples.first]
-        end
-
-        specs = []
-        tuples.each do |tup, source|
-          spec = source.fetch_spec(tup)
-        rescue Gem::RemoteFetcher::FetchError => e
-          errors << Gem::SourceFetchProblem.new(source, e)
-        else
-          specs << [spec, source]
-        end
-
-        if @errors
-          @errors += errors
-        else
-          @errors = errors
-        end
-
-        set << specs
-      rescue Gem::RemoteFetcher::FetchError => e
-        # FIX if there is a problem talking to the network, we either need to always tell
-        # the user (no really_verbose) or fail hard, not silently tell them that we just
-        # couldn't find their requested gem.
-        verbose do
-          "Error fetching remote data:\t\t#{e.message}\n" \
-            "Falling back to local-only install"
-        end
-        @domain = :local
-      end
-    end
-
-    set
-  end
-  rubygems_deprecate :find_gems_with_sources
 
   def in_background(what) # :nodoc:
     fork_happened = false
@@ -228,6 +155,7 @@ class Gem::DependencyInstaller
     options = {
       bin_dir: @bin_dir,
       build_args: @build_args,
+      build_jobs: @build_jobs,
       document: @document,
       env_shebang: @env_shebang,
       force: @force,

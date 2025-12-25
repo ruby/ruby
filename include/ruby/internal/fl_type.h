@@ -260,7 +260,7 @@ ruby_fl_type {
     RUBY_FL_EXIVAR
 
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("FL_EXIVAR is an outdated implementation detail, it shoudl be used."))
+    RBIMPL_ATTR_DEPRECATED(("FL_EXIVAR is an outdated implementation detail, it should not be used."))
 #elif defined(_MSC_VER)
 # pragma deprecated(RUBY_FL_EXIVAR)
 #endif

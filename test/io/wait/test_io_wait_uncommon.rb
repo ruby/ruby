@@ -76,25 +76,10 @@ class TestIOWaitUncommon < Test::Unit::TestCase
     check_dev(IO::NULL, :wait_writable)
   end
 
-  def test_after_ungetc_ready?
-    check_dev(IO::NULL, mode: "r") {|fp|
-      assert_respond_to fp, :ready?
-      fp.ungetc(?a)
-      assert_predicate fp, :ready?
-    }
-  end
-
   def test_after_ungetc_wait_readable
     check_dev(IO::NULL, mode: "r") {|fp|
       fp.ungetc(?a)
       assert_predicate fp, :wait_readable
-    }
-  end
-
-  def test_after_ungetc_in_text_ready?
-    check_dev(IO::NULL, mode: "rt") {|fp|
-      fp.ungetc(?a)
-      assert_predicate fp, :ready?
     }
   end
 

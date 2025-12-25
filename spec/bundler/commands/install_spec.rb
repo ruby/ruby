@@ -29,6 +29,53 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app_lock).to exist
     end
 
+    it "creates lockfile based on the lockfile method in Gemfile" do
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install"
+
+      expect(bundled_app("OmgFile.lock")).to exist
+    end
+
+    it "creates lockfile using BUNDLE_LOCKFILE instead of lockfile method" do
+      ENV["BUNDLE_LOCKFILE"] = "ReallyOmgFile.lock"
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    ensure
+      ENV.delete("BUNDLE_LOCKFILE")
+    end
+
+    it "creates lockfile based on --lockfile option is given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+    end
+
+    it "does not make a lockfile if lockfile false is used in Gemfile" do
+      install_gemfile <<-G
+        lockfile false
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+
+      expect(bundled_app_lock).not_to exist
+    end
+
     it "does not create ./.bundle by default" do
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -65,6 +112,29 @@ RSpec.describe "bundle install with gem sources" do
       bundle "install --gemfile OmgFile"
 
       expect(bundled_app("OmgFile.lock")).to exist
+    end
+
+    it "doesn't create a lockfile if --no-lock option is given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --no-lock"
+
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    end
+
+    it "doesn't create a lockfile if --no-lock and --lockfile options are given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --no-lock --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("OmgFile.lock")).not_to exist
+      expect(bundled_app("ReallyOmgFile.lock")).not_to exist
     end
 
     it "doesn't delete the lockfile if one already exists" do
@@ -118,7 +188,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not state that it's constantly reinstalling empty gems" do
       build_repo4 do
-        build_gem "empty", "1.0.0", no_default: true, allowed_warning: "no files specified"
+        build_gem "empty", "1.0.0", no_default: true
       end
 
       install_gemfile <<~G
@@ -346,7 +416,7 @@ RSpec.describe "bundle install with gem sources" do
           myrack
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "install", raise_on_error: false
@@ -688,13 +758,12 @@ RSpec.describe "bundle install with gem sources" do
     it "fails gracefully when downloading an invalid specification from the full index" do
       build_repo2(build_compact_index: false) do
         build_gem "ajp-rails", "0.0.0", gemspec: false, skip_validation: true do |s|
-          bad_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
+          invalid_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
           s.
             instance_variable_get(:@spec).
-            instance_variable_set(:@dependencies, bad_deps)
-
-          raise "failed to set bad deps" unless s.dependencies == bad_deps
+            instance_variable_set(:@dependencies, invalid_deps)
         end
+
         build_gem "ruby-ajp", "1.0.0"
       end
 
@@ -764,10 +833,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -790,10 +859,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -1237,6 +1306,79 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "parallel make" do
+    before do
+      unless Gem::Installer.private_method_defined?(:build_jobs)
+        skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
+      end
+
+      @old_makeflags = ENV["MAKEFLAGS"]
+      @gemspec = nil
+
+      extconf_code = <<~CODE
+        require "mkmf"
+        create_makefile("foo")
+      CODE
+
+      build_repo4 do
+        build_gem "mypsych", "4.0.6" do |s|
+          @gemspec = s
+          extension = "ext/mypsych/extconf.rb"
+          s.extensions = extension
+
+          s.write(extension, extconf_code)
+        end
+      end
+    end
+
+    after do
+      if @old_makeflags
+        ENV["MAKEFLAGS"] = @old_makeflags
+      else
+        ENV.delete("MAKEFLAGS")
+      end
+    end
+
+    it "doesn't pass down -j to make when MAKEFLAGS is set" do
+      ENV["MAKEFLAGS"] = "-j1"
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).not_to include("make -j8")
+    end
+
+    it "pass down the BUNDLE_JOBS to RubyGems when running the compilation of an extension" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j8")
+    end
+
+    it "uses nprocessors by default" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G)
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j#{Etc.nprocessors + 1}")
+    end
+  end
+
   describe "when configured path is UTF-8 and a file inside a gem package too" do
     let(:app_path) do
       path = tmp("♥")
@@ -1330,7 +1472,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform("x86_64-linux", &example)
@@ -1357,7 +1499,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1433,7 +1575,7 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1474,10 +1616,10 @@ RSpec.describe "bundle install with gem sources" do
           loofah (~> 2.12.0)
         #{checksums}
         RUBY VERSION
-           #{Bundler::RubyVersion.system}
+          #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1507,7 +1649,7 @@ RSpec.describe "bundle install with gem sources" do
           myrack_middleware
 
         BUNDLED WITH
-          #{Bundler::VERSION}
+         #{Bundler::VERSION}
       L
     end
 
@@ -1754,7 +1896,7 @@ RSpec.describe "bundle install with gem sources" do
           zzz!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1816,6 +1958,25 @@ RSpec.describe "bundle install with gem sources" do
     expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
   end
 
+  it "prevents removing binstubs when BUNDLE_CLEAN is set" do
+    build_repo4 do
+      build_gem "kamal", "4.0.6" do |s|
+        s.executables = ["kamal"]
+      end
+    end
+
+    gemfile = <<~G
+      source "https://gem.repo4"
+      gem "kamal"
+    G
+
+    install_gemfile(gemfile, env: { "BUNDLE_CLEAN" => "true", "BUNDLE_PATH" => "vendor/bundle" })
+
+    expected_executables = [vendored_gems("bin/kamal").to_s]
+    expected_executables << vendored_gems("bin/kamal.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
+
   it "preserves lockfile versions conservatively" do
     build_repo4 do
       build_gem "mypsych", "4.0.6" do |s|
@@ -1845,7 +2006,7 @@ RSpec.describe "bundle install with gem sources" do
         mypsych (~> 4.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<~G
@@ -1868,7 +2029,7 @@ RSpec.describe "bundle install with gem sources" do
         mypsych (~> 5.0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 end

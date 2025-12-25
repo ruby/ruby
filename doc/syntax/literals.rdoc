@@ -3,7 +3,7 @@
 Literals create objects you can use in your program.  Literals include:
 
 * {Boolean and Nil Literals}[#label-Boolean+and+Nil+Literals]
-* {Number Literals}[#label-Number+Literals]
+* {Numeric Literals}[#label-Numeric+Literals]
 
   * {Integer Literals}[#label-Integer+Literals]
   * {Float Literals}[#label-Float+Literals]
@@ -36,7 +36,7 @@ Literals create objects you can use in your program.  Literals include:
 +true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
 true value in conditional expressions.
 
-== Number Literals
+== \Numeric Literals
 
 === \Integer Literals
 

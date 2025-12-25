@@ -13,14 +13,14 @@
     TypedData_Wrap_Struct((klass), &ossl_x509req_type, 0)
 #define SetX509Req(obj, req) do { \
     if (!(req)) { \
-	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
     RTYPEDDATA_DATA(obj) = (req); \
 } while (0)
 #define GetX509Req(obj, req) do { \
     TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
     if (!(req)) { \
-	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+        ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
 } while (0)
 
@@ -39,7 +39,7 @@ ossl_x509req_free(void *ptr)
 static const rb_data_type_t ossl_x509req_type = {
     "OpenSSL/X509/REQ",
     {
-	0, ossl_x509req_free,
+        0, ossl_x509req_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -68,7 +68,7 @@ ossl_x509req_alloc(VALUE klass)
 
     obj = NewX509Req(klass);
     if (!(req = X509_REQ_new())) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     SetX509Req(obj, req);
 
@@ -84,7 +84,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_check_frozen(self);
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	return self;
+        return self;
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(&arg);
@@ -114,7 +114,7 @@ ossl_x509req_copy(VALUE self, VALUE other)
     GetX509Req(self, a);
     GetX509Req(other, b);
     if (!(req = X509_REQ_dup(b))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     X509_REQ_free(a);
     DATA_PTR(self) = req;
@@ -130,11 +130,11 @@ ossl_x509req_to_pem(VALUE self)
 
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     if (!PEM_write_bio_X509_REQ(out, req)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
+        BIO_free(out);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -150,11 +150,11 @@ ossl_x509req_to_der(VALUE self)
 
     GetX509Req(self, req);
     if ((len = i2d_X509_REQ(req, NULL)) <= 0)
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_X509_REQ(req, &p) <= 0)
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -168,11 +168,11 @@ ossl_x509req_to_text(VALUE self)
 
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     if (!X509_REQ_print(out, req)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
+        BIO_free(out);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -191,7 +191,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
     GetX509Req(self, req);
     ...
     if (!(x509 = X509_REQ_to_X509(req, d, pkey))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_x509_new(x509);
@@ -217,11 +217,11 @@ ossl_x509req_set_version(VALUE self, VALUE version)
     long ver;
 
     if ((ver = NUM2LONG(version)) < 0) {
-	ossl_raise(eX509ReqError, "version must be >= 0!");
+        ossl_raise(eX509ReqError, "version must be >= 0!");
     }
     GetX509Req(self, req);
     if (!X509_REQ_set_version(req, ver)) {
-	ossl_raise(eX509ReqError, "X509_REQ_set_version");
+        ossl_raise(eX509ReqError, "X509_REQ_set_version");
     }
 
     return version;
@@ -235,7 +235,7 @@ ossl_x509req_get_subject(VALUE self)
 
     GetX509Req(self, req);
     if (!(name = X509_REQ_get_subject_name(req))) { /* NO DUP - don't free */
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_x509name_new(name);
@@ -249,33 +249,32 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
     GetX509Req(self, req);
     /* DUPs name */
     if (!X509_REQ_set_subject_name(req, GetX509NamePtr(subject))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return subject;
 }
 
+/*
+ * call-seq:
+ *    req.signature_algorithm -> string
+ *
+ * Returns the signature algorithm used to sign this request.
+ *
+ * Returns the long name of the signature algorithm, or the dotted decimal
+ * notation if \OpenSSL does not define a long name for it.
+ */
 static VALUE
 ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
     const X509_ALGOR *alg;
     const ASN1_OBJECT *obj;
-    BIO *out;
 
     GetX509Req(self, req);
-
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
-    }
     X509_REQ_get0_signature(req, NULL, &alg);
     X509_ALGOR_get0(&obj, NULL, NULL, alg);
-    if (!i2a_ASN1_OBJECT(out, obj)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
-    }
-
-    return ossl_membio2str(out);
+    return ossl_asn1obj_to_string_long_name(obj);
 }
 
 static VALUE
@@ -286,7 +285,7 @@ ossl_x509req_get_public_key(VALUE self)
 
     GetX509Req(self, req);
     if (!(pkey = X509_REQ_get_pubkey(req))) { /* adds reference */
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_pkey_wrap(pkey);
@@ -302,7 +301,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     pkey = GetPKeyPtr(key);
     ossl_pkey_check_public_key(pkey);
     if (!X509_REQ_set_pubkey(req, pkey))
-	ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
+        ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
     return key;
 }
 
@@ -312,17 +311,14 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
     X509_REQ *req;
     EVP_PKEY *pkey;
     const EVP_MD *md;
+    VALUE md_holder;
 
     GetX509Req(self, req);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    if (NIL_P(digest)) {
-        md = NULL; /* needed for some key types, e.g. Ed25519 */
-    } else {
-        md = ossl_evp_get_digestbyname(digest);
-    }
-    if (!X509_REQ_sign(req, pkey, md)) {
-	ossl_raise(eX509ReqError, NULL);
-    }
+    /* NULL needed for some key types, e.g. Ed25519 */
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
+    if (!X509_REQ_sign(req, pkey, md))
+        ossl_raise(eX509ReqError, "X509_REQ_sign");
 
     return self;
 }
@@ -341,12 +337,12 @@ ossl_x509req_verify(VALUE self, VALUE key)
     ossl_pkey_check_public_key(pkey);
     switch (X509_REQ_verify(req, pkey)) {
       case 1:
-	return Qtrue;
+        return Qtrue;
       case 0:
-	ossl_clear_error();
-	return Qfalse;
+        ossl_clear_error();
+        return Qfalse;
       default:
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 }
 
@@ -362,13 +358,13 @@ ossl_x509req_get_attributes(VALUE self)
 
     count = X509_REQ_get_attr_count(req);
     if (count < 0) {
-	OSSL_Debug("count < 0???");
-	return rb_ary_new();
+        OSSL_Debug("count < 0???");
+        return rb_ary_new();
     }
     ary = rb_ary_new2(count);
     for (i=0; i<count; i++) {
-	attr = X509_REQ_get_attr(req, i);
-	rb_ary_push(ary, ossl_x509attr_new(attr));
+        attr = X509_REQ_get_attr(req, i);
+        rb_ary_push(ary, ossl_x509attr_new(attr));
     }
 
     return ary;
@@ -384,17 +380,17 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 
     Check_Type(ary, T_ARRAY);
     for (i=0;i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
+        OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
     for (i = X509_REQ_get_attr_count(req); i > 0; i--)
         X509_ATTRIBUTE_free(X509_REQ_delete_attr(req, 0));
     for (i=0;i<RARRAY_LEN(ary); i++) {
-	item = RARRAY_AREF(ary, i);
-	attr = GetX509AttrPtr(item);
-	if (!X509_REQ_add1_attr(req, attr)) {
-	    ossl_raise(eX509ReqError, "X509_REQ_add1_attr");
-	}
+        item = RARRAY_AREF(ary, i);
+        attr = GetX509AttrPtr(item);
+        if (!X509_REQ_add1_attr(req, attr)) {
+            ossl_raise(eX509ReqError, "X509_REQ_add1_attr");
+        }
     }
     return ary;
 }
@@ -406,7 +402,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 
     GetX509Req(self, req);
     if (!X509_REQ_add1_attr(req, GetX509AttrPtr(attr))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return attr;
@@ -418,12 +414,6 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 void
 Init_ossl_x509req(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
 
     cX509Req = rb_define_class_under(mX509, "Request", rb_cObject);
