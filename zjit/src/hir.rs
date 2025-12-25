@@ -12,6 +12,7 @@ use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
+use crate::hir_effect::{Effect, effect_sets};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
@@ -1008,6 +1009,92 @@ impl Insn {
 
     pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
+    }
+
+    fn get_effects(&self) -> Effect {
+        assert!(self.has_output());
+        match &self {
+            Insn::Const { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::Param => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::StringCopy { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::NewArray { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::NewHash { elements, .. } => {
+                // Empty is elidable
+                if elements.is_empty() {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
+            Insn::ArrayDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::HashDup { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::Test { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::Snapshot { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumAdd  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumSub  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumMult { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumEq   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumNeq  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumLt   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumLe   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumGt   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumGe   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumAnd  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumOr   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumXor  { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumLShift { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::FixnumRShift { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::GetLocal   { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::IsNil      { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::LoadPC => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::LoadEC => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::LoadSelf => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::LoadField { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::CCall { elidable, .. } => {
+                if *elidable {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
+             Insn::CCallWithFrame { elidable, .. } => {
+                if *elidable {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Allocator)
+                }
+                else {
+                    Effect::from_bits(effect_sets::Any, effect_sets::Any)
+                }
+            },
+            Insn::ObjectAllocClass { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::NewRangeFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::StringGetbyte { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::IsBlockGiven => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::BoxFixnum { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::BoxBool { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::IsBitEqual { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            Insn::IsA { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
+            _ => Effect::from_bits(effect_sets::Any, effect_sets::Any),
+        }
+    }
+
+    /// Return true if we can safely omit the instruction. This occurs when one of the following
+    /// conditions are met.
+    /// 1. The instruction does not write anything.
+    /// 2. The instruction only allocates and writes nothing else.
+    /// Calling the effects of our instruction `insn_effects`, we need:
+    /// `effects::Empty` to include `insn_effects.write` or `effects::Allocator` to include
+    /// `insn_effects.write`.
+    /// We can simplify this to `effects::Empty.union(effects::Allocator).includes(insn_effects.write)`.
+    /// But the union of `Allocator` and `Empty` is simply `Allocator`, so our entire function
+    /// collapses to `effects::Allocator.includes(insn_effects.write)`.
+    /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
+    /// `read: effects::Any` could potentially be omitted.
+    // TODO(Jacob): Ensure that `is_elidable` === `!has_effects` for all inputs
+    fn is_elidable(&self) -> bool {
+        let writes_allocator = Effect::from_bits(effect_sets::Any, effect_sets::Allocator);
+        writes_allocator.includes(self.get_effects())
     }
 
     /// Return true if the instruction needs to be kept around. For example, if the instruction
@@ -4104,7 +4191,9 @@ impl Function {
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
                 let insn = &self.insns[insn_id.0];
-                if insn.has_effects() {
+                if !insn.is_elidable() {
+                // TODO(Jacob): Remove this comment
+                // if insn.has_effects() {
                     worklist.push_back(*insn_id);
                 }
             }
