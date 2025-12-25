@@ -3174,6 +3174,14 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA_TYPE(d)->function.dmark
 
 void
+rb_gc_move_obj_during_marking(VALUE from, VALUE to)
+{
+    if (rb_obj_gen_fields_p(to)) {
+        rb_mark_generic_ivar(from);
+    }
+}
+
+void
 rb_gc_mark_children(void *objspace, VALUE obj)
 {
     struct gc_mark_classext_foreach_arg foreach_args;
