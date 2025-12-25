@@ -13839,7 +13839,9 @@ value_expr_check(struct parser_params *p, NODE *node)
           case NODE_RESCUE:
             /* void only if all children are void */
             vn = RNODE_RESCUE(node)->nd_head;
-            if (!vn || !(vn = value_expr_check(p, vn))) return NULL;
+            if (!vn || !(vn = value_expr_check(p, vn))) {
+                if (!RNODE_RESCUE(node)->nd_else) return NULL;
+            }
             if (!void_node) void_node = vn;
             for (NODE *r = RNODE_RESCUE(node)->nd_resq; r; r = RNODE_RESBODY(r)->nd_next) {
                 if (!nd_type_p(r, NODE_RESBODY)) {
@@ -13847,8 +13849,7 @@ value_expr_check(struct parser_params *p, NODE *node)
                     return NULL;
                 }
                 if (!(vn = value_expr_check(p, RNODE_RESBODY(r)->nd_body))) {
-                    void_node = 0;
-                    break;
+                    return NULL;
                 }
                 if (!void_node) void_node = vn;
             }
@@ -13863,19 +13864,43 @@ value_expr_check(struct parser_params *p, NODE *node)
           case NODE_RETRY:
             goto found;
 
+          case NODE_CASE:
+          case NODE_CASE2:
+            for (node = RNODE_CASE(node)->nd_body;
+                 node && nd_type_p(node, NODE_WHEN);
+                 node = RNODE_WHEN(node)->nd_next) {
+                if (!(vn = value_expr_check(p, RNODE_WHEN(node)->nd_body))) {
+                    return NULL;
+                }
+                if (!void_node) void_node = vn;
+            }
+            break;
+
           case NODE_CASE3:
-            if (!RNODE_CASE3(node)->nd_body || !nd_type_p(RNODE_CASE3(node)->nd_body, NODE_IN)) {
-                compile_error(p, "unexpected node");
-                return NULL;
+            {
+                NODE *in = RNODE_CASE3(node)->nd_body;
+                if (!in || !nd_type_p(in, NODE_IN)) {
+                    compile_error(p, "unexpected node");
+                    return NULL;
+                }
+                if (!RNODE_IN(in)->nd_body) {
+                    /* single line pattern matching with "=>" operator */
+                    goto found;
+                }
+                do {
+                    vn = value_expr_check(p, RNODE_IN(in)->nd_body);
+                    if (!vn) return NULL;
+                    if (!void_node) void_node = vn;
+                    in = RNODE_IN(in)->nd_next;
+                } while (in && nd_type_p(in, NODE_IN));
+                node = in;  /* else */
             }
-            if (RNODE_IN(RNODE_CASE3(node)->nd_body)->nd_body) {
-                return NULL;
-            }
-            /* single line pattern matching with "=>" operator */
-            goto found;
+            break;
 
           case NODE_BLOCK:
             while (RNODE_BLOCK(node)->nd_next) {
+                vn = value_expr_check(p, RNODE_BLOCK(node)->nd_head);
+                if (vn) return vn;
                 node = RNODE_BLOCK(node)->nd_next;
             }
             node = RNODE_BLOCK(node)->nd_head;

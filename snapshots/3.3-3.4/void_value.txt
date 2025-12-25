@@ -1,0 +1,151 @@
+@ ProgramNode (location: (1,0)-(17,3))
+├── flags: ∅
+├── locals: [:x]
+└── statements:
+    @ StatementsNode (location: (1,0)-(17,3))
+    ├── flags: ∅
+    └── body: (length: 3)
+        ├── @ LocalVariableWriteNode (location: (1,0)-(7,3))
+        │   ├── flags: newline
+        │   ├── name: :x
+        │   ├── depth: 0
+        │   ├── name_loc: (1,0)-(1,1) = "x"
+        │   ├── value:
+        │   │   @ BeginNode (location: (1,4)-(7,3))
+        │   │   ├── flags: ∅
+        │   │   ├── begin_keyword_loc: (1,4)-(1,9) = "begin"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (2,2)-(2,5))
+        │   │   │   ├── flags: ∅
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ CallNode (location: (2,2)-(2,5))
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │   │           ├── receiver: ∅
+        │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :foo
+        │   │   │           ├── message_loc: (2,2)-(2,5) = "foo"
+        │   │   │           ├── opening_loc: ∅
+        │   │   │           ├── arguments: ∅
+        │   │   │           ├── closing_loc: ∅
+        │   │   │           ├── equal_loc: ∅
+        │   │   │           └── block: ∅
+        │   │   ├── rescue_clause:
+        │   │   │   @ RescueNode (location: (3,0)-(4,8))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
+        │   │   │   ├── exceptions: (length: 0)
+        │   │   │   ├── operator_loc: ∅
+        │   │   │   ├── reference: ∅
+        │   │   │   ├── then_keyword_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (4,2)-(4,8))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ ReturnNode (location: (4,2)-(4,8))
+        │   │   │   │           ├── flags: newline
+        │   │   │   │           ├── keyword_loc: (4,2)-(4,8) = "return"
+        │   │   │   │           └── arguments: ∅
+        │   │   │   └── subsequent: ∅
+        │   │   ├── else_clause:
+        │   │   │   @ ElseNode (location: (5,0)-(7,3))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── else_keyword_loc: (5,0)-(5,4) = "else"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (6,2)-(6,8))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ ReturnNode (location: (6,2)-(6,8))
+        │   │   │   │           ├── flags: newline
+        │   │   │   │           ├── keyword_loc: (6,2)-(6,8) = "return"
+        │   │   │   │           └── arguments: ∅
+        │   │   │   └── end_keyword_loc: (7,0)-(7,3) = "end"
+        │   │   ├── ensure_clause: ∅
+        │   │   └── end_keyword_loc: (7,0)-(7,3) = "end"
+        │   └── operator_loc: (1,2)-(1,3) = "="
+        ├── @ LocalVariableWriteNode (location: (9,0)-(12,3))
+        │   ├── flags: newline
+        │   ├── name: :x
+        │   ├── depth: 0
+        │   ├── name_loc: (9,0)-(9,1) = "x"
+        │   ├── value:
+        │   │   @ CaseNode (location: (9,4)-(12,3))
+        │   │   ├── flags: ∅
+        │   │   ├── predicate: ∅
+        │   │   ├── conditions: (length: 1)
+        │   │   │   └── @ WhenNode (location: (10,2)-(10,20))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── keyword_loc: (10,2)-(10,6) = "when"
+        │   │   │       ├── conditions: (length: 1)
+        │   │   │       │   └── @ IntegerNode (location: (10,7)-(10,8))
+        │   │   │       │       ├── flags: static_literal, decimal
+        │   │   │       │       └── value: 1
+        │   │   │       ├── then_keyword_loc: (10,9)-(10,13) = "then"
+        │   │   │       └── statements:
+        │   │   │           @ StatementsNode (location: (10,14)-(10,20))
+        │   │   │           ├── flags: ∅
+        │   │   │           └── body: (length: 1)
+        │   │   │               └── @ ReturnNode (location: (10,14)-(10,20))
+        │   │   │                   ├── flags: newline
+        │   │   │                   ├── keyword_loc: (10,14)-(10,20) = "return"
+        │   │   │                   └── arguments: ∅
+        │   │   ├── else_clause:
+        │   │   │   @ ElseNode (location: (11,2)-(12,3))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── else_keyword_loc: (11,2)-(11,6) = "else"
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (11,14)-(11,20))
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ ReturnNode (location: (11,14)-(11,20))
+        │   │   │   │           ├── flags: newline
+        │   │   │   │           ├── keyword_loc: (11,14)-(11,20) = "return"
+        │   │   │   │           └── arguments: ∅
+        │   │   │   └── end_keyword_loc: (12,0)-(12,3) = "end"
+        │   │   ├── case_keyword_loc: (9,4)-(9,8) = "case"
+        │   │   └── end_keyword_loc: (12,0)-(12,3) = "end"
+        │   └── operator_loc: (9,2)-(9,3) = "="
+        └── @ LocalVariableWriteNode (location: (14,0)-(17,3))
+            ├── flags: newline
+            ├── name: :x
+            ├── depth: 0
+            ├── name_loc: (14,0)-(14,1) = "x"
+            ├── value:
+            │   @ CaseMatchNode (location: (14,4)-(17,3))
+            │   ├── flags: ∅
+            │   ├── predicate:
+            │   │   @ IntegerNode (location: (14,9)-(14,10))
+            │   │   ├── flags: static_literal, decimal
+            │   │   └── value: 1
+            │   ├── conditions: (length: 1)
+            │   │   └── @ InNode (location: (15,2)-(15,18))
+            │   │       ├── flags: ∅
+            │   │       ├── pattern:
+            │   │       │   @ IntegerNode (location: (15,5)-(15,6))
+            │   │       │   ├── flags: static_literal, decimal
+            │   │       │   └── value: 2
+            │   │       ├── statements:
+            │   │       │   @ StatementsNode (location: (15,12)-(15,18))
+            │   │       │   ├── flags: ∅
+            │   │       │   └── body: (length: 1)
+            │   │       │       └── @ ReturnNode (location: (15,12)-(15,18))
+            │   │       │           ├── flags: newline
+            │   │       │           ├── keyword_loc: (15,12)-(15,18) = "return"
+            │   │       │           └── arguments: ∅
+            │   │       ├── in_loc: (15,2)-(15,4) = "in"
+            │   │       └── then_loc: (15,7)-(15,11) = "then"
+            │   ├── else_clause:
+            │   │   @ ElseNode (location: (16,2)-(17,3))
+            │   │   ├── flags: ∅
+            │   │   ├── else_keyword_loc: (16,2)-(16,6) = "else"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (16,12)-(16,18))
+            │   │   │   ├── flags: ∅
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ ReturnNode (location: (16,12)-(16,18))
+            │   │   │           ├── flags: newline
+            │   │   │           ├── keyword_loc: (16,12)-(16,18) = "return"
+            │   │   │           └── arguments: ∅
+            │   │   └── end_keyword_loc: (17,0)-(17,3) = "end"
+            │   ├── case_keyword_loc: (14,4)-(14,8) = "case"
+            │   └── end_keyword_loc: (17,0)-(17,3) = "end"
+            └── operator_loc: (14,2)-(14,3) = "="
