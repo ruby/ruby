@@ -198,11 +198,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
-    let binding = RubyBinding::new(
-        mmtk_static,
-        &binding_options,
-        upcalls,
-    );
+    let binding = RubyBinding::new(mmtk_static, &binding_options, upcalls);
 
     crate::BINDING
         .set(binding)
