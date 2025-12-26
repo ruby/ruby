@@ -62,13 +62,16 @@ typedef struct MMTk_RubyUpcalls {
     void (*stop_the_world)(void);
     void (*resume_mutators)(void);
     void (*block_for_gc)(MMTk_VMMutatorThread tls);
+    void (*before_updating_jit_code)(void);
+    void (*after_updating_jit_code)(void);
     size_t (*number_of_mutators)(void);
     void (*get_mutators)(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
     void (*scan_gc_roots)(void);
     void (*scan_objspace)(void);
-    void (*scan_object_ruby_style)(MMTk_ObjectReference object);
+    void (*move_obj_during_marking)(MMTk_ObjectReference from, MMTk_ObjectReference to);
+    void (*update_object_references)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
-    void (*handle_weak_references)(MMTk_ObjectReference object);
+    void (*handle_weak_references)(MMTk_ObjectReference object, bool moving);
     void (*call_obj_free)(MMTk_ObjectReference object);
     size_t (*vm_live_bytes)(void);
     void (*update_global_tables)(int tbl_idx);
@@ -124,6 +127,8 @@ void mmtk_add_obj_free_candidate(MMTk_ObjectReference object);
 void mmtk_declare_weak_references(MMTk_ObjectReference object);
 
 bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
+
+void mmtk_register_pinning_obj(MMTk_ObjectReference obj);
 
 void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);
 
