@@ -2644,8 +2644,8 @@ method_dup(VALUE self)
 
 /*
  *  call-seq:
- *     meth.call(args, ...) -> obj
- *     meth[args, ...] -> obj
+ *     meth.call(...) -> obj
+ *     meth[...] -> obj
  *     method === obj -> result_of_method
  *
  *  Invokes the <i>meth</i> with the specified arguments, returning the
