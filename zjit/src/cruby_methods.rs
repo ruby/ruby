@@ -225,6 +225,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
+    annotate!(rb_cArray, "[]=", inline_array_aset);
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
     annotate!(rb_cArray, "pop", inline_array_pop);
@@ -327,6 +328,19 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
             return Some(result);
+        }
+    }
+    None
+}
+
+fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if let &[index, val] = args {
+        if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(val, types::BasicObject, state) {
+          let index = fun.coerce_to(block, index, types::Fixnum, state);
+          let val = fun.coerce_to(block, val, types::BasicObject, state);
+
+          let _ = fun.push_insn(block, hir::Insn::ArrayAsetFixnum { array: recv, index, val, state });
+          return Some(val);
         }
     }
     None

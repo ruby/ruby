@@ -728,6 +728,7 @@ pub enum Insn {
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayArefFixnum { array: InsnId, index: InsnId },
+    ArrayAsetFixnum { array: InsnId, index: InsnId, val: InsnId, state: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
@@ -993,7 +994,7 @@ impl Insn {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. }
-            | Insn::HashAset { .. } => false,
+            | Insn::HashAset { .. } | Insn::ArrayAsetFixnum { .. }=> false,
             _ => true,
         }
     }
@@ -1120,6 +1121,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayArefFixnum { array, index, .. } => {
                 write!(f, "ArrayArefFixnum {array}, {index}")
+            }
+            Insn::ArrayAsetFixnum { array, index, val, ..} => {
+                write!(f, "ArrayAsetFixnum {array}, {index}, {val}")
             }
             Insn::ArrayPop { array, .. } => {
                 write!(f, "ArrayPop {array}")
@@ -2071,6 +2075,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayAsetFixnum { array, index, val, state } => ArrayAsetFixnum { array: find!(array), index: find!(index), val: find!(val), state },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -2143,7 +2148,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAsetFixnum { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -4004,6 +4009,12 @@ impl Function {
                 worklist.push_back(array);
                 worklist.push_back(index);
             }
+            &Insn::ArrayAsetFixnum { array, index, val, state } => {
+                worklist.push_back(array);
+                worklist.push_back(index);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
             &Insn::ArrayPop { array, state } => {
                 worklist.push_back(array);
                 worklist.push_back(state);
@@ -4713,6 +4724,10 @@ impl Function {
                 self.assert_subtype(insn_id, array, types::Array)
             }
             Insn::ArrayArefFixnum { array, index } => {
+                self.assert_subtype(insn_id, array, types::Array)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
+            }
+            Insn::ArrayAsetFixnum { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
             }
