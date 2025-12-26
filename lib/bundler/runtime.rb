@@ -175,6 +175,12 @@ module Bundler
       spec_gemspec_paths   = []
       spec_extension_paths = []
       specs_to_keep = Bundler.rubygems.add_default_gems_to(specs).values
+
+      current_bundler = Bundler.rubygems.find_bundler(Bundler.gem_version)
+      if current_bundler
+        specs_to_keep << current_bundler
+      end
+
       specs_to_keep.each do |spec|
         spec_gem_paths << spec.full_gem_path
         # need to check here in case gems are nested like for the rails git repo
