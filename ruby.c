@@ -1811,13 +1811,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         }
     }
 
-    /* [Feature #19785] Warning for removed GC environment variable.
-     * Remove this in Ruby 3.4. */
-    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
-        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
-                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
-    }
-
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
 

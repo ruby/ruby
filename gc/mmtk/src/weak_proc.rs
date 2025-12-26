@@ -13,7 +13,7 @@ pub struct WeakProcessor {
     /// If it is a bottleneck, replace it with a lock-free data structure,
     /// or add candidates in batch.
     obj_free_candidates: Mutex<Vec<ObjectReference>>,
-    weak_references: Mutex<Vec<&'static mut ObjectReference>>,
+    weak_references: Mutex<Vec<ObjectReference>>,
 }
 
 impl Default for WeakProcessor {
@@ -53,19 +53,9 @@ impl WeakProcessor {
         std::mem::take(obj_free_candidates.as_mut())
     }
 
-    pub fn add_weak_reference(&self, ptr: &'static mut ObjectReference) {
+    pub fn add_weak_reference(&self, object: ObjectReference) {
         let mut weak_references = self.weak_references.lock().unwrap();
-        weak_references.push(ptr);
-    }
-
-    pub fn remove_weak_reference(&self, ptr: &ObjectReference) {
-        let mut weak_references = self.weak_references.lock().unwrap();
-        for (i, curr_ptr) in weak_references.iter().enumerate() {
-            if *curr_ptr == ptr {
-                weak_references.swap_remove(i);
-                break;
-            }
-        }
+        weak_references.push(object);
     }
 
     pub fn process_weak_stuff(
@@ -133,17 +123,15 @@ impl GCWork<Ruby> for ProcessWeakReferences {
             .try_lock()
             .expect("Mutators should not be holding the lock.");
 
-        for ptr_ptr in weak_references.iter_mut() {
-            if (upcalls().special_const_p)(**ptr_ptr) {
-                continue;
-            }
+        weak_references.retain(|&object| {
+            if object.is_reachable() {
+                (upcalls().handle_weak_references)(object);
 
-            if !(**ptr_ptr).is_reachable() {
-                **ptr_ptr = crate::binding().weak_reference_dead_value;
+                true
+            } else {
+                false
             }
-        }
-
-        weak_references.clear();
+        });
     }
 }
 

@@ -54,6 +54,12 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_raise_for_string_argument
+    assert_raise(NoMethodError) do
+      Timeout.timeout("1") { sleep(0.01) }
+    end
+  end
+
   def test_included
     c = Class.new do
       include Timeout
