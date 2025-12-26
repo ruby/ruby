@@ -25,6 +25,10 @@ The following default gem is added.
 
 The following default gems are updated.
 
+* RubyGems 4.1.0.dev
+* bundler 4.1.0.dev
+* stringio 3.2.1.dev
+* strscan 3.1.7.dev
 
 The following bundled gems are updated.
 
