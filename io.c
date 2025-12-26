@@ -8256,9 +8256,6 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
  *
  *  Creates an IO object connected to the given file.
  *
- *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  With no block given, file stream is returned:
  *
  *    open('t.txt') # => #<File:t.txt>
@@ -12054,10 +12051,6 @@ io_s_foreach(VALUE v)
  *
  *  Calls the block with each successive line read from the stream.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
@@ -12157,10 +12150,6 @@ io_s_readlines(VALUE v)
  *
  *  Returns an array of all lines read from the stream.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
@@ -12246,10 +12235,6 @@ seek_before_access(VALUE argp)
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, reads in text mode and returns the entire content
@@ -12316,10 +12301,6 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
- *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -12421,10 +12402,6 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, writes the given +data+ to the file at that path:
@@ -12470,10 +12447,6 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
- *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
