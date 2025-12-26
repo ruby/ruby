@@ -198,11 +198,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
-    let binding = RubyBinding::new(
-        mmtk_static,
-        &binding_options,
-        upcalls,
-    );
+    let binding = RubyBinding::new(mmtk_static, &binding_options, upcalls);
 
     crate::BINDING
         .set(binding)
@@ -314,6 +310,13 @@ pub extern "C" fn mmtk_declare_weak_references(object: ObjectReference) {
 #[no_mangle]
 pub extern "C" fn mmtk_weak_references_alive_p(object: ObjectReference) -> bool {
     object.is_reachable()
+}
+
+// =============== Compaction ===============
+
+#[no_mangle]
+pub extern "C" fn mmtk_register_pinning_obj(obj: ObjectReference) {
+    crate::binding().pinning_registry.register(obj);
 }
 
 // =============== Write barriers ===============

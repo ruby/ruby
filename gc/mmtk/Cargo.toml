@@ -21,7 +21,7 @@ probe = "0.5"
 sysinfo = "0.32.0"
 
 [dependencies.mmtk]
-features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery", "immix_non_moving"]
+features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery"]
 
 # Uncomment the following lines to use mmtk-core from the official repository.
 git = "https://github.com/mmtk/mmtk-core.git"
