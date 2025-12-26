@@ -2644,11 +2644,11 @@ method_dup(VALUE self)
 
 /*
  *  call-seq:
- *     meth.call(...) -> obj
- *     meth[...] -> obj
- *     method === obj -> result_of_method
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     self === obj -> result_of_method
  *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
+ *  Invokes +self+ with the specified arguments, returning the
  *  method's return value.
  *
  *     m = 12.method("+")
