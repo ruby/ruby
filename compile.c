@@ -828,6 +828,19 @@ get_nd_args(const NODE *node)
     }
 }
 
+static NODE *
+get_nd_block(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_CALL_NODE:
+        return RB_NODE_CALL(node)->block;
+      case NODE_ATTRASGN:
+        return NULL;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 static ID
 get_node_colon_nd_mid(const NODE *node)
 {
@@ -925,6 +938,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     }
     /* assume node is T_NODE */
     else if (nd_type_p(node, RB_PROGRAM_NODE) ||
+             nd_type_p(node, RB_BLOCK_NODE) ||
              nd_type_p(node, RB_DEF_NODE)) {
         const rb_ast_id_table_t *locals = NULL;
         const NODE *args = NULL;
@@ -977,7 +991,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             }
           case RB_BLOCK_NODE:
             {
-                // args = cast->parameters;
+                const rb_block_node_t *cast = (const rb_block_node_t *) node;
+                locals = cast->locals;
+                args = cast->parameters;
+                body = (NODE *) cast->body;
                 break;
             }
           case RB_LAMBDA_NODE:
@@ -2256,144 +2273,160 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        rb_parameters_node_t *args = RB_NODE_PARAMETERS(node_args);
+        rb_parameters_node_t *args;
         NODE *rest = 0;
         int last_comma = 0;
         rb_block_parameter_node_t *block = 0;
         int arg_size;
 
-        EXPECT_NODE("iseq_set_arguments", node_args, RB_PARAMETERS_NODE, COMPILE_NG);
+        switch (nd_type(node_args)) {
+          case RB_IT_PARAMETERS_NODE:
+            body->param.lead_num = body->param.size = 1;
+            break;
+          case RB_NUMBERED_PARAMETERS_NODE:
+            body->param.lead_num = body->param.size = RB_NODE_NUMBERED_PARAMETERS(node_args)->maximum;
+            break;
+          case RB_PARAMETERS_NODE:
+            args = RB_NODE_PARAMETERS(node_args);
+            goto parameters;
+          case RB_BLOCK_PARAMETERS_NODE:
+            args = RB_NODE_BLOCK_PARAMETERS(node_args)->parameters;
+          parameters: {
+            // body->param.flags.ruby2_keywords = args->ruby2_keywords;
+            body->param.lead_num = arg_size = (int)RB_NODE_LIST_LEN(&args->requireds);
+            if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
+            debugs("  - argc: %d\n", body->param.lead_num);
 
-        // body->param.flags.ruby2_keywords = args->ruby2_keywords;
-        body->param.lead_num = arg_size = (int)RB_NODE_LIST_LEN(&args->requireds);
-        if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
-        debugs("  - argc: %d\n", body->param.lead_num);
+            rest = args->rest;
+            if (rest && nd_type_p(rest, RB_IMPLICIT_REST_NODE)) {
+                last_comma = 1;
+                rest = 0;
+            }
+            block = args->block;
 
-        rest = args->rest;
-        if (rest && nd_type_p(rest, RB_IMPLICIT_REST_NODE)) {
-            last_comma = 1;
-            rest = 0;
-        }
-        block = args->block;
+            bool optimized_forward = (NODE_ARG_FORWARDING_P(args) && RB_NODE_LIST_EMPTY_P(&args->requireds) && RB_NODE_LIST_EMPTY_P(&args->optionals));
 
-        bool optimized_forward = (NODE_ARG_FORWARDING_P(args) && RB_NODE_LIST_EMPTY_P(&args->requireds) && RB_NODE_LIST_EMPTY_P(&args->optionals));
+            if (optimized_forward) {
+                rest = 0;
+                block = 0;
+            }
 
-        if (optimized_forward) {
-            rest = 0;
-            block = 0;
-        }
+            if (RB_NODE_LIST_LEN(&args->optionals)) {
+                const rb_node_list2_t *list = &args->optionals;
+                LABEL *label;
+                VALUE labels = rb_ary_hidden_new(1);
+                VALUE *opt_table;
+                int i = 0, j;
 
-        if (RB_NODE_LIST_LEN(&args->optionals)) {
-            const rb_node_list2_t *list = &args->optionals;
-            LABEL *label;
-            VALUE labels = rb_ary_hidden_new(1);
-            VALUE *opt_table;
-            int i = 0, j;
+                for (size_t k = 0; k < list->size; k++) {
+                    NODE *node = list->nodes[k];
+                    label = NEW_LABEL(nd_line(node));
+                    rb_ary_push(labels, (VALUE)label | 1);
+                    ADD_LABEL(optargs, label);
+                    NO_CHECK(COMPILE_POPPED(optargs, "optarg", node));
+                    i += 1;
+                }
 
-            for (size_t k = 0; k < list->size; k++) {
-                NODE *node = list->nodes[k];
-                label = NEW_LABEL(nd_line(node));
+                /* last label */
+                label = NEW_LABEL(nd_line(node_args));
                 rb_ary_push(labels, (VALUE)label | 1);
                 ADD_LABEL(optargs, label);
-                NO_CHECK(COMPILE_POPPED(optargs, "optarg", node));
-                i += 1;
+
+                opt_table = ALLOC_N(VALUE, i+1);
+
+                MEMCPY(opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
+                for (j = 0; j < i+1; j++) {
+                    opt_table[j] &= ~1;
+                }
+                rb_ary_clear(labels);
+
+                body->param.flags.has_opt = TRUE;
+                body->param.opt_num = i;
+                body->param.opt_table = opt_table;
+                arg_size += i;
             }
 
-            /* last label */
-            label = NEW_LABEL(nd_line(node_args));
-            rb_ary_push(labels, (VALUE)label | 1);
-            ADD_LABEL(optargs, label);
-
-            opt_table = ALLOC_N(VALUE, i+1);
-
-            MEMCPY(opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
-            for (j = 0; j < i+1; j++) {
-                opt_table[j] &= ~1;
+            if (rest) {
+                EXPECT_NODE("iseq_set_arguments/rest", rest, RB_REST_PARAMETER_NODE, COMPILE_NG);
+                body->param.rest_start = arg_size++;
+                body->param.flags.has_rest = TRUE;
+                if (RB_NODE_REST_PARAMETER(rest)->name == '*') body->param.flags.anon_rest = TRUE;
+                RUBY_ASSERT(body->param.rest_start != -1);
             }
-            rb_ary_clear(labels);
 
-            body->param.flags.has_opt = TRUE;
-            body->param.opt_num = i;
-            body->param.opt_table = opt_table;
-            arg_size += i;
-        }
+            if (RB_NODE_LIST_LEN(&args->posts)) {
+                body->param.post_start = arg_size;
+                body->param.post_num = RB_NODE_LIST_LEN(&args->posts);
+                body->param.flags.has_post = TRUE;
+                arg_size += RB_NODE_LIST_LEN(&args->posts);
 
-        if (rest) {
-            EXPECT_NODE("iseq_set_arguments/rest", rest, RB_REST_PARAMETER_NODE, COMPILE_NG);
-            body->param.rest_start = arg_size++;
-            body->param.flags.has_rest = TRUE;
-            if (RB_NODE_REST_PARAMETER(rest)->name == '*') body->param.flags.anon_rest = TRUE;
-            RUBY_ASSERT(body->param.rest_start != -1);
-        }
-
-        if (RB_NODE_LIST_LEN(&args->posts)) {
-            body->param.post_start = arg_size;
-            body->param.post_num = RB_NODE_LIST_LEN(&args->posts);
-            body->param.flags.has_post = TRUE;
-            arg_size += RB_NODE_LIST_LEN(&args->posts);
-
-            if (body->param.flags.has_rest) { /* TODO: why that? */
-                body->param.post_start = body->param.rest_start + 1;
-            }
-        }
-
-        if (RB_NODE_LIST_LEN(&args->keywords)) {
-            arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
-        }
-        else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE) && !optimized_forward) {
-            ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
-            struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-            keyword->rest_start = arg_size++;
-            body->param.keyword = keyword;
-            body->param.flags.has_kwrest = TRUE;
-
-            static ID anon_kwrest = 0;
-            if (!anon_kwrest) anon_kwrest = rb_intern("**");
-            if (kw_id == anon_kwrest) body->param.flags.anon_kwrest = TRUE;
-        }
-        else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_NO_KEYWORDS_PARAMETER_NODE)) {
-            body->param.flags.accepts_no_kwarg = TRUE;
-        }
-
-        if (block && block->name == idNil) {
-            body->param.flags.accepts_no_block = TRUE;
-        }
-        else if (block) {
-            body->param.block_start = arg_size++;
-            body->param.flags.has_block = TRUE;
-            iseq_set_use_block(iseq);
-        }
-
-        // Only optimize specifically methods like this: `foo(...)`
-        if (optimized_forward) {
-            body->param.flags.use_block = 1;
-            body->param.flags.forwardable = TRUE;
-            arg_size = 1;
-        }
-
-        iseq_calc_param_size(iseq);
-        body->param.size = arg_size;
-
-        // TODO: def m4((a, b), c, (d, e), f = false, (g, h)); end
-        // if (args->pre_init) { /* m_init */
-        //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
-        // }
-        // if (args->post_init) { /* p_init */
-        //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
-        // }
-
-        if (body->type == ISEQ_TYPE_BLOCK) {
-            if (body->param.flags.has_opt    == FALSE &&
-                body->param.flags.has_post   == FALSE &&
-                body->param.flags.has_rest   == FALSE &&
-                body->param.flags.has_kw     == FALSE &&
-                body->param.flags.has_kwrest == FALSE) {
-
-                if (body->param.lead_num == 1 && last_comma == 0) {
-                    /* {|a|} */
-                    body->param.flags.ambiguous_param0 = TRUE;
+                if (body->param.flags.has_rest) { /* TODO: why that? */
+                    body->param.post_start = body->param.rest_start + 1;
                 }
             }
+
+            if (RB_NODE_LIST_LEN(&args->keywords)) {
+                arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
+            }
+            else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE) && !optimized_forward) {
+                ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
+                struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                keyword->rest_start = arg_size++;
+                body->param.keyword = keyword;
+                body->param.flags.has_kwrest = TRUE;
+
+                static ID anon_kwrest = 0;
+                if (!anon_kwrest) anon_kwrest = rb_intern("**");
+                if (kw_id == anon_kwrest) body->param.flags.anon_kwrest = TRUE;
+            }
+            else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_NO_KEYWORDS_PARAMETER_NODE)) {
+                body->param.flags.accepts_no_kwarg = TRUE;
+            }
+
+            if (block && block->name == idNil) {
+                body->param.flags.accepts_no_block = TRUE;
+            }
+            else if (block) {
+                body->param.block_start = arg_size++;
+                body->param.flags.has_block = TRUE;
+                iseq_set_use_block(iseq);
+            }
+
+            // Only optimize specifically methods like this: `foo(...)`
+            if (optimized_forward) {
+                body->param.flags.use_block = 1;
+                body->param.flags.forwardable = TRUE;
+                arg_size = 1;
+            }
+
+            iseq_calc_param_size(iseq);
+            body->param.size = arg_size;
+
+            // TODO: def m4((a, b), c, (d, e), f = false, (g, h)); end
+            // if (args->pre_init) { /* m_init */
+            //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
+            // }
+            // if (args->post_init) { /* p_init */
+            //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
+            // }
+
+            if (body->type == ISEQ_TYPE_BLOCK) {
+                if (body->param.flags.has_opt    == FALSE &&
+                    body->param.flags.has_post   == FALSE &&
+                    body->param.flags.has_rest   == FALSE &&
+                    body->param.flags.has_kw     == FALSE &&
+                    body->param.flags.has_kwrest == FALSE) {
+
+                    if (body->param.lead_num == 1 && last_comma == 0) {
+                        /* {|a|} */
+                        body->param.flags.ambiguous_param0 = TRUE;
+                    }
+                }
+            }
+            break;
+          }
+          default:
+            rb_bug("unexpected node: %s", ruby_node_name(nd_type(node_args)));
         }
     }
 
@@ -6592,7 +6625,10 @@ enum node_call_type {
 static enum node_call_type get_node_call_type(rb_call_node_t *node);
 
 static int
-compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver);
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped);
+
+static int
+compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver);
 
 static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
@@ -6747,7 +6783,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
               case NODE_FCALL:
               case NODE_ATTRASGN:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[2]);
-                compile_call(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, get_node_call_type(RB_NODE_CALL(node)), 0, true);
+                compile_call_core(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, get_node_call_type(RB_NODE_CALL(node)), 0, true);
                 break;
               default:
                 ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
@@ -7291,7 +7327,7 @@ setup_args_splat_last_p(rb_node_list2_t *list)
 
 static VALUE
 setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *argn,
-           unsigned int *flag, struct rb_callinfo_kwarg **keywords)
+           const rb_block_argument_node_t *block, unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
     unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
@@ -7365,11 +7401,12 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
     }
     initial_dup_rest = dup_rest;
 
-    if (argn && nd_type_p(argn, NODE_BLOCK_PASS)) {
+    // BlockNode is also stored in `block` however it should be handled by `compile_iter`
+    if (block && nd_type_p(block, RB_BLOCK_ARGUMENT_NODE)) {
         DECL_ANCHOR(arg_block);
         INIT_ANCHOR(arg_block);
 
-        if (RNODE_BLOCK_PASS(argn)->forwarding && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+        if (false && RNODE_BLOCK_PASS(argn)->forwarding && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
             int idx = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size;// - get_local_var_idx(iseq, idDot3);
 
             RUBY_ASSERT(nd_type_p(RNODE_BLOCK_PASS(argn)->nd_head, NODE_ARGSPUSH));
@@ -7394,7 +7431,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
         else {
             *flag |= VM_CALL_ARGS_BLOCKARG;
 
-            NO_CHECK(COMPILE(arg_block, "block", RNODE_BLOCK_PASS(argn)->nd_body));
+            NO_CHECK(COMPILE(arg_block, "block", block->expression));
         }
 
         if (LIST_INSN_SIZE_ONE(arg_block)) {
@@ -7406,7 +7443,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
                 }
             }
         }
-        ret = INT2FIX(setup_args_core(iseq, args, RNODE_BLOCK_PASS(argn)->nd_head, &dup_rest, flag, keywords));
+        ret = INT2FIX(setup_args_core(iseq, args, argn, &dup_rest, flag, keywords));
         ADD_SEQ(args, arg_block);
     }
     else {
@@ -9006,7 +9043,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 }
 
 static int
-compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_iter0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped)
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
@@ -9016,19 +9053,22 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     const rb_iseq_t *child_iseq;
 
     ADD_LABEL(ret, retry_label);
-    if (nd_type_p(node, NODE_FOR)) {
-        CHECK(COMPILE(ret, "iter caller (for)", RNODE_FOR(node)->nd_iter));
+    switch (type) {
+      // case RB_FOR_NODE: {
+      //   CHECK(COMPILE(ret, "iter caller (for)", RNODE_FOR(node)->nd_iter));
 
+      //   ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+      //       NEW_CHILD_ISEQ(RNODE_FOR(node)->nd_body, make_name_for_block(iseq),
+      //                      ISEQ_TYPE_BLOCK, line);
+      //   ADD_SEND_WITH_BLOCK(ret, line_node, idEach, INT2FIX(0), child_iseq);
+      // }
+      case RB_CALL_NODE: {
+        EXPECT_NODE("compile_iter0", RB_NODE_CALL(node)->block, RB_BLOCK_NODE, COMPILE_NG);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-            NEW_CHILD_ISEQ(RNODE_FOR(node)->nd_body, make_name_for_block(iseq),
+            NEW_CHILD_ISEQ(RB_NODE_CALL(node)->block, make_name_for_block(iseq),
                            ISEQ_TYPE_BLOCK, line);
-        ADD_SEND_WITH_BLOCK(ret, line_node, idEach, INT2FIX(0), child_iseq);
-    }
-    else {
-        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-            NEW_CHILD_ISEQ(RNODE_ITER(node)->nd_body, make_name_for_block(iseq),
-                           ISEQ_TYPE_BLOCK, line);
-        CHECK(COMPILE(ret, "iter caller", RNODE_ITER(node)->nd_iter));
+        CHECK(compile_call(iseq, ret, node, type, popped));
+      }
     }
 
     {
@@ -9063,6 +9103,29 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 
     ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
     return COMPILE_OK;
+}
+
+#define block_node_p(block) ((block) && nd_type_p((block), RB_BLOCK_NODE))
+
+static int
+compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped)
+{
+    switch (type) {
+      // case RB_FOR_NODE:
+      case RB_CALL_NODE: {
+        if (block_node_p(RB_NODE_CALL(node)->block)) {
+            return compile_iter0(iseq, ret, node, type, popped);
+        }
+        else {
+            return compile_call(iseq, ret, node, type, popped);
+        }
+        break;
+      }
+      // case RB_SUPER_NODE:
+      // case RB_FORWARDING_SUPER_NODE:
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
 }
 
 static int
@@ -10020,7 +10083,8 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 
         unsigned int flag = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
-        VALUE argc = setup_args(iseq, args, args_node, &flag, &keywords);
+        // TODO: block
+        VALUE argc = setup_args(iseq, args, args_node, NULL, &flag, &keywords);
 
         if (FIX2INT(argc) != bf->argc) {
             COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
@@ -10043,7 +10107,27 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 }
 
 static int
-compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver)
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped)
+{
+    rb_call_node_t *cast = RB_NODE_CALL(node);
+    enum node_call_type call_type = get_node_call_type(cast);
+
+    switch (call_type) {
+      case N_CALL:   /* obj.foo */
+      case N_OPCALL: /* foo[] */
+        if (compile_call_precheck_freeze(iseq, ret, cast, node, popped) == TRUE) {
+            break;
+        }
+      case N_QCALL: /* obj&.foo */
+      case N_FCALL: /* foo() */
+      case N_VCALL: /* foo (variable or call) */
+        return compile_call_core(iseq, ret, node, type, node, call_type, popped, false);
+    }
+    return COMPILE_OK;
+}
+
+static int
+compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver)
 {
     /* call:  obj.method(...)
      * fcall: func(...)
@@ -10151,7 +10235,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     /* args */
     if (call_type != N_VCALL) {
-        argc = setup_args(iseq, args, get_nd_args(node), &flag, &keywords);
+        argc = setup_args(iseq, args, get_nd_args(node), get_nd_block(node), &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
@@ -10267,7 +10351,8 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         argc = INT2FIX(0);
         break;
       default:
-        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_index, &flag, NULL);
+        // TODO: block
+        argc = setup_args(iseq, ret, RNODE_OP_ASGN1(node)->nd_index, NULL, &flag, NULL);
         CHECK(!NIL_P(argc));
     }
     int dup_argn = FIX2INT(argc) + 1;
@@ -10612,7 +10697,8 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
     if (type == NODE_SUPER) {
-        VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, &flag, &keywords);
+        // TODO: block
+        VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, NULL, &flag, &keywords);
         CHECK(!NIL_P(vargc));
         argc = FIX2INT(vargc);
         if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
@@ -10766,7 +10852,8 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
 
     if (RNODE_YIELD(node)->nd_head) {
-        argc = setup_args(iseq, args, RNODE_YIELD(node)->nd_head, &flag, &keywords);
+        // TODO: block
+        argc = setup_args(iseq, args, RNODE_YIELD(node)->nd_head, NULL, &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
@@ -11005,7 +11092,8 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
-    argc = setup_args(iseq, args, RNODE_ATTRASGN(node)->nd_args, &flag, NULL);
+    // TODO: block
+    argc = setup_args(iseq, args, RNODE_ATTRASGN(node)->nd_args, NULL, &flag, NULL);
     CHECK(!NIL_P(argc));
 
     int asgnflag = COMPILE_RECV(recv, "recv", node, RNODE_ATTRASGN(node)->nd_recv);
@@ -11552,21 +11640,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case RB_CALL_NODE: {
-        rb_call_node_t *cast = RB_NODE_CALL(node);
-        enum node_call_type call_type = get_node_call_type(cast);
-
-        switch (call_type) {
-          case N_CALL:   /* obj.foo */
-          case N_OPCALL: /* foo[] */
-            if (compile_call_precheck_freeze(iseq, ret, cast, node, popped) == TRUE) {
-                break;
-            }
-          case N_QCALL: /* obj&.foo */
-          case N_FCALL: /* foo() */
-          case N_VCALL: /* foo (variable or call) */
-            if (compile_call(iseq, ret, node, type, node, call_type, popped, false) == COMPILE_NG) {
-                goto ng;
-            }
+        if (compile_iter(iseq, ret, node, type, popped) == COMPILE_NG) {
+            goto ng;
         }
         break;
       }
