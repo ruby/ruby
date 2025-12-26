@@ -4720,10 +4720,11 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
  *  Calls the given block with each byte (0..255) in the stream; returns +self+.
  *  See {Byte IO}[rdoc-ref:IO@Byte+IO].
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_byte {|b| a << b }
- *    a # => [209, 130, 208, 181, 209, 129, 209, 130]
+ *    a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -4868,10 +4869,11 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
  *  Calls the given block with each character in the stream; returns +self+.
  *  See {Character IO}[rdoc-ref:IO@Character+IO].
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_char {|c| a << c.ord }
- *    a # => [1090, 1077, 1089, 1090]
+ *    a # => [12371, 12435, 12395, 12385, 12399]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -4906,10 +4908,11 @@ rb_io_each_char(VALUE io)
  *
  *  Calls the given block with each codepoint in the stream; returns +self+:
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_codepoint {|c| a << c }
- *    a # => [1090, 1077, 1089, 1090]
+ *    a # => [12371, 12435, 12395, 12385, 12399]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -5023,8 +5026,9 @@ rb_io_each_codepoint(VALUE io)
  *    f = File.open('t.txt')
  *    f.getc     # => "F"
  *    f.close
- *    f = File.open('t.rus')
- *    f.getc.ord # => 1090
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.getc.ord # => 12371
  *    f.close
  *
  *  Related:  IO#readchar (may raise EOFError).
@@ -5056,8 +5060,9 @@ rb_io_getc(VALUE io)
  *    f = File.open('t.txt')
  *    f.readchar     # => "F"
  *    f.close
- *    f = File.open('t.rus')
- *    f.readchar.ord # => 1090
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.readchar.ord # => 12371
  *    f.close
  *
  *  Related:  IO#getc (will not raise EOFError).
@@ -5086,8 +5091,9 @@ rb_io_readchar(VALUE io)
  *    f = File.open('t.txt')
  *    f.getbyte # => 70
  *    f.close
- *    f = File.open('t.rus')
- *    f.getbyte # => 209
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.getbyte # => 227
  *    f.close
  *
  *  Related: IO#readbyte (may raise EOFError).
@@ -5130,8 +5136,9 @@ rb_io_getbyte(VALUE io)
  *    f = File.open('t.txt')
  *    f.readbyte # => 70
  *    f.close
- *    f = File.open('t.rus')
- *    f.readbyte # => 209
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.readbyte # => 227
  *    f.close
  *
  *  Related: IO#getbyte (will not raise EOFError).
@@ -9492,7 +9499,8 @@ static VALUE io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt);
  *  The new \IO object does not inherit encoding
  *  (because the integer file descriptor does not have an encoding):
  *
- *    fd = IO.sysopen('t.rus', 'rb')
+ *    File.read('t.ja') # => "こんにちは"
+ *    fd = IO.sysopen('t.ja', 'rb')
  *    io = IO.new(fd)
  *    io.external_encoding # => #<Encoding:UTF-8> # Not ASCII-8BIT.
  *
@@ -15304,11 +15312,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
- *    # Text with 2-byte characters, which will not be split.
- *    File.open('t.rus') {|f| f.gets(1).size } # => 1
- *    File.open('t.rus') {|f| f.gets(2).size } # => 1
- *    File.open('t.rus') {|f| f.gets(3).size } # => 2
- *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *    # Text with 3-byte characters, which will not be split.
+ *    File.read('t.ja') # => "こんにちは"
+ *    File.open('t.ja') {|f| f.gets(1).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(2).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(3).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(4).size }      # => 2
+ *    File.open('t.ja') {|f| f.gets(5).size }      # => 2
  *
  *  ===== Line Separator and Line Limit
  *
