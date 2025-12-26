@@ -1646,6 +1646,59 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_aref]
   end
 
+  def test_array_fixnum_aset
+    assert_compiles '7', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test([1,2,3], 2)
+      test([1,2,3], 2)
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_fixnum_aset_oob
+    assert_compiles '7', %q{
+      def test(arr)
+        arr[10] = 7
+      end
+      test([1,2,3])
+      test([1,2,3])
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_negative_index
+    assert_compiles '7', %q{
+      def test(arr)
+        arr[-1] = 7
+      end
+      test([1,2,3])
+      test([1,2,3])
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_array_subclass
+    assert_compiles '7', %q{
+      class MyArray < Array; end
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test(MyArray.new, 0)
+      test(MyArray.new, 0)
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_aset_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      rescue => e
+        e.class
+      end
+      test([1,2,3], "0")
+      test([1,2,3], "0")
+    }, call_threshold: 2
+  end
+
   def test_empty_array_pop
     assert_compiles 'nil', %q{
       def test(arr) = arr.pop
