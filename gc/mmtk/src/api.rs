@@ -312,6 +312,13 @@ pub extern "C" fn mmtk_weak_references_alive_p(object: ObjectReference) -> bool 
     object.is_reachable()
 }
 
+// =============== Compaction ===============
+
+#[no_mangle]
+pub extern "C" fn mmtk_register_pinning_obj(obj: ObjectReference) {
+    crate::binding().pinning_registry.register(obj);
+}
+
 // =============== Write barriers ===============
 
 #[no_mangle]

@@ -183,6 +183,18 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     RB_GC_VM_UNLOCK(lock_lev);
 }
 
+static void
+rb_mmtk_before_updating_jit_code(void)
+{
+    rb_gc_before_updating_jit_code();
+}
+
+static void
+rb_mmtk_after_updating_jit_code(void)
+{
+    rb_gc_after_updating_jit_code();
+}
+
 static size_t
 rb_mmtk_number_of_mutators(void)
 {
@@ -247,9 +259,19 @@ rb_mmtk_scan_objspace(void)
 }
 
 static void
-rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
+rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to)
 {
-    rb_gc_mark_children(rb_gc_get_objspace(), (VALUE)object);
+    rb_gc_move_obj_during_marking((VALUE)from, (VALUE)to);
+}
+
+static void
+rb_mmtk_update_object_references(MMTk_ObjectReference mmtk_object)
+{
+    VALUE object = (VALUE)mmtk_object;
+
+    if (!RB_FL_TEST(object, RUBY_FL_WEAK_REFERENCE)) {
+        rb_gc_update_object_references(rb_gc_get_objspace(), object);
+    }
 }
 
 static void
@@ -259,9 +281,15 @@ rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 }
 
 static void
-rb_mmtk_handle_weak_references(MMTk_ObjectReference object)
+rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
 {
-    rb_gc_handle_weak_references((VALUE)object);
+    VALUE object = (VALUE)mmtk_object;
+
+    rb_gc_handle_weak_references(object);
+
+    if (moving) {
+        rb_gc_update_object_references(rb_gc_get_objspace(), object);
+    }
 }
 
 static void
@@ -332,19 +360,35 @@ rb_mmtk_update_finalizer_table(void)
 }
 
 static int
-rb_mmtk_update_table_i(VALUE val, void *data)
+rb_mmtk_global_tables_count(void)
+{
+    return RB_GC_VM_WEAK_TABLE_COUNT;
+}
+
+static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
+
+static int
+rb_mmtk_update_global_tables_i(VALUE val, void *data)
 {
     if (!mmtk_is_reachable((MMTk_ObjectReference)val)) {
         return ST_DELETE;
+    }
+
+    // TODO: check only if in moving GC
+    if (rb_mmtk_call_object_closure(val, false) != val) {
+        return ST_REPLACE;
     }
 
     return ST_CONTINUE;
 }
 
 static int
-rb_mmtk_global_tables_count(void)
+rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
 {
-    return RB_GC_VM_WEAK_TABLE_COUNT;
+    // TODO: cache the new location so we don't call rb_mmtk_call_object_closure twice
+    *ptr = rb_mmtk_call_object_closure(*ptr, false);
+
+    return ST_CONTINUE;
 }
 
 static void
@@ -352,7 +396,14 @@ rb_mmtk_update_global_tables(int table)
 {
     RUBY_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
 
-    rb_gc_vm_weak_table_foreach(rb_mmtk_update_table_i, NULL, NULL, true, (enum rb_gc_vm_weak_tables)table);
+    // TODO: set weak_only to true for non-moving GC
+    rb_gc_vm_weak_table_foreach(
+        rb_mmtk_update_global_tables_i,
+        rb_mmtk_update_global_tables_replace_i,
+        NULL,
+        false,
+        (enum rb_gc_vm_weak_tables)table
+    );
 }
 
 static bool
@@ -376,11 +427,14 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
+    rb_mmtk_before_updating_jit_code,
+    rb_mmtk_after_updating_jit_code,
     rb_mmtk_number_of_mutators,
     rb_mmtk_get_mutators,
     rb_mmtk_scan_gc_roots,
     rb_mmtk_scan_objspace,
-    rb_mmtk_scan_object_ruby_style,
+    rb_mmtk_move_obj_during_marking,
+    rb_mmtk_update_object_references,
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_handle_weak_references,
     rb_mmtk_call_obj_free,
@@ -738,15 +792,23 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 void rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff) { }
 
 // Marking
+static inline VALUE
+rb_mmtk_call_object_closure(VALUE obj, bool pin)
+{
+    return (VALUE)rb_mmtk_gc_thread_tls->object_closure.c_function(
+        rb_mmtk_gc_thread_tls->object_closure.rust_closure,
+        rb_mmtk_gc_thread_tls->gc_context,
+        (MMTk_ObjectReference)obj,
+        pin
+    );
+}
+
 void
 rb_gc_impl_mark(void *objspace_ptr, VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) return;
 
-    rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
-                                                     rb_mmtk_gc_thread_tls->gc_context,
-                                                     (MMTk_ObjectReference)obj,
-                                                     false);
+    rb_mmtk_call_object_closure(obj, false);
 }
 
 void
@@ -754,8 +816,10 @@ rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
 {
     if (RB_SPECIAL_CONST_P(*ptr)) return;
 
-    // TODO: make it movable
-    rb_gc_impl_mark(objspace_ptr, *ptr);
+    VALUE new_obj = rb_mmtk_call_object_closure(*ptr, false);
+    if (new_obj != *ptr) {
+        *ptr = new_obj;
+    }
 }
 
 void
@@ -763,8 +827,7 @@ rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) return;
 
-    // TODO: also pin
-    rb_gc_impl_mark(objspace_ptr, obj);
+    rb_mmtk_call_object_closure(obj, true);
 }
 
 void
@@ -775,11 +838,10 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     }
 }
 
-// Weak references
-
 void
 rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
+    RB_FL_SET(obj, RUBY_FL_WEAK_REFERENCE);
     mmtk_declare_weak_references((MMTk_ObjectReference)obj);
 }
 
@@ -790,16 +852,22 @@ rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 }
 
 // Compaction
+void
+rb_gc_impl_register_pinning_obj(void *objspace_ptr, VALUE obj)
+{
+    mmtk_register_pinning_obj((MMTk_ObjectReference)obj);
+}
+
 bool
 rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 {
-    rb_bug("unimplemented");
+    return rb_mmtk_call_object_closure(obj, false) != obj;
 }
 
 VALUE
-rb_gc_impl_location(void *objspace_ptr, VALUE value)
+rb_gc_impl_location(void *objspace_ptr, VALUE obj)
 {
-    rb_bug("unimplemented");
+    return rb_mmtk_call_object_closure(obj, false);
 }
 
 // Write barriers

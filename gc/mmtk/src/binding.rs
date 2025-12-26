@@ -9,6 +9,7 @@ use mmtk::MMTK;
 
 use crate::abi;
 use crate::abi::RubyBindingOptions;
+use crate::pinning_registry::PinningRegistry;
 use crate::weak_proc::WeakProcessor;
 use crate::Ruby;
 
@@ -54,6 +55,7 @@ pub struct RubyBinding {
     pub upcalls: *const abi::RubyUpcalls,
     pub plan_name: Mutex<Option<CString>>,
     pub weak_proc: WeakProcessor,
+    pub pinning_registry: PinningRegistry,
     pub gc_thread_join_handles: Mutex<Vec<JoinHandle<()>>>,
     pub wb_unprotected_objects: Mutex<HashSet<ObjectReference>>,
 }
@@ -77,6 +79,7 @@ impl RubyBinding {
             upcalls,
             plan_name: Mutex::new(None),
             weak_proc: WeakProcessor::new(),
+            pinning_registry: PinningRegistry::new(),
             gc_thread_join_handles: Default::default(),
             wb_unprotected_objects: Default::default(),
         }
