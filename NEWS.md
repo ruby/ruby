@@ -19,18 +19,18 @@ Other changes are listed in the following sections. We also listed release
 history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
 releases.
 
-The following bundled gems are promoted from default gems.
+### The following bundled gems are promoted from default gems.
 
-The following default gem is added.
+### The following default gem is added.
 
-The following default gems are updated.
+### The following default gems are updated.
 
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
 * stringio 3.2.1.dev
 * strscan 3.1.7.dev
 
-The following bundled gems are updated.
+### The following bundled gems are updated.
 
 ### RubyGems and Bundler
 
