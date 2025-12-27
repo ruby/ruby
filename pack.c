@@ -26,6 +26,118 @@
 
 #include "builtin.h"
 
+/* SIMD optimizations for pack operations on x86_64 */
+#if (defined(__x86_64__) || defined(_M_X64)) && defined(HAVE_X86INTRIN_H)
+# include <x86intrin.h>
+# if defined(__SSSE3__) || defined(__AVX__)
+#  define HAVE_PACK_SIMD 1
+# endif
+#endif
+
+#ifdef HAVE_PACK_SIMD
+/*
+ * SSSE3 hex encoding: convert 16 bytes to 32 hex characters at once.
+ * Uses pshufb for parallel nibble-to-hex lookup.
+ */
+__attribute__((target("ssse3")))
+static inline void
+pack_hex_encode_simd(const unsigned char *src, char *dst, size_t len, int high_first)
+{
+    const __m128i hex_lut = _mm_setr_epi8(
+        '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'
+    );
+    const __m128i mask_0f = _mm_set1_epi8(0x0f);
+
+    size_t i = 0;
+    for (; i + 16 <= len; i += 16) {
+        __m128i input = _mm_loadu_si128((const __m128i*)(src + i));
+
+        /* Split into nibbles */
+        __m128i lo = _mm_and_si128(input, mask_0f);
+        __m128i hi = _mm_and_si128(_mm_srli_epi16(input, 4), mask_0f);
+
+        /* Lookup hex characters using pshufb */
+        __m128i hex_lo = _mm_shuffle_epi8(hex_lut, lo);
+        __m128i hex_hi = _mm_shuffle_epi8(hex_lut, hi);
+
+        __m128i out0, out1;
+        if (high_first) {
+            /* 'H' format: high nibble first */
+            out0 = _mm_unpacklo_epi8(hex_hi, hex_lo);
+            out1 = _mm_unpackhi_epi8(hex_hi, hex_lo);
+        }
+        else {
+            /* 'h' format: low nibble first */
+            out0 = _mm_unpacklo_epi8(hex_lo, hex_hi);
+            out1 = _mm_unpackhi_epi8(hex_lo, hex_hi);
+        }
+
+        _mm_storeu_si128((__m128i*)(dst + i*2), out0);
+        _mm_storeu_si128((__m128i*)(dst + i*2 + 16), out1);
+    }
+}
+
+/*
+ * SSE4.1 hex decoding: convert 32 hex characters to 16 bytes at once.
+ * Handles both uppercase and lowercase hex digits.
+ */
+__attribute__((target("sse4.1")))
+static inline void
+pack_hex_decode_simd(const char *src, unsigned char *dst, size_t hex_len, int high_first)
+{
+    const __m128i ascii_0 = _mm_set1_epi8('0');
+    const __m128i letter_adj = _mm_set1_epi8('a' - 10);
+
+    size_t i = 0;
+    for (; i + 32 <= hex_len; i += 32) {
+        __m128i in0 = _mm_loadu_si128((const __m128i*)(src + i));
+        __m128i in1 = _mm_loadu_si128((const __m128i*)(src + i + 16));
+
+        /* Check if digit (0-9) - digits are < 'A' (0x41) */
+        __m128i is_digit0 = _mm_cmplt_epi8(in0, _mm_set1_epi8('A'));
+        __m128i is_digit1 = _mm_cmplt_epi8(in1, _mm_set1_epi8('A'));
+
+        /* For digits: subtract '0' */
+        __m128i digit_val0 = _mm_sub_epi8(in0, ascii_0);
+        __m128i digit_val1 = _mm_sub_epi8(in1, ascii_0);
+
+        /* For letters: (c | 0x20) - 'a' + 10 */
+        __m128i lower0 = _mm_or_si128(in0, _mm_set1_epi8(0x20));
+        __m128i lower1 = _mm_or_si128(in1, _mm_set1_epi8(0x20));
+        __m128i letter_val0 = _mm_sub_epi8(lower0, letter_adj);
+        __m128i letter_val1 = _mm_sub_epi8(lower1, letter_adj);
+
+        /* Select based on whether digit or letter */
+        __m128i v0 = _mm_blendv_epi8(letter_val0, digit_val0, is_digit0);
+        __m128i v1 = _mm_blendv_epi8(letter_val1, digit_val1, is_digit1);
+
+        /* Combine pairs of nibbles into bytes */
+        __m128i hi0, lo0, hi1, lo1;
+        if (high_first) {
+            /* 'H' format: first char is high nibble */
+            hi0 = _mm_slli_epi16(_mm_and_si128(v0, _mm_set1_epi16(0x00ff)), 4);
+            lo0 = _mm_srli_epi16(v0, 8);
+            hi1 = _mm_slli_epi16(_mm_and_si128(v1, _mm_set1_epi16(0x00ff)), 4);
+            lo1 = _mm_srli_epi16(v1, 8);
+        }
+        else {
+            /* 'h' format: first char is low nibble */
+            lo0 = _mm_and_si128(v0, _mm_set1_epi16(0x00ff));
+            hi0 = _mm_slli_epi16(_mm_srli_epi16(v0, 8), 4);
+            lo1 = _mm_and_si128(v1, _mm_set1_epi16(0x00ff));
+            hi1 = _mm_slli_epi16(_mm_srli_epi16(v1, 8), 4);
+        }
+
+        __m128i bytes0 = _mm_or_si128(hi0, lo0);
+        __m128i bytes1 = _mm_or_si128(hi1, lo1);
+
+        /* Pack 16-bit values to 8-bit */
+        __m128i result = _mm_packus_epi16(bytes0, bytes1);
+        _mm_storeu_si128((__m128i*)(dst + i/2), result);
+    }
+}
+#endif /* HAVE_PACK_SIMD */
+
 /*
  * It is intentional that the condition for natstr is HAVE_TRUE_LONG_LONG
  * instead of HAVE_LONG_LONG or LONG_LONG.
@@ -424,12 +536,27 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 {
                     int byte = 0;
                     long i, j = 0;
+                    long out_len;
+                    char *out;
 
                     if (len > plen) {
                         j = (len + 1) / 2 - (plen + 1) / 2;
                         len = plen;
                     }
-                    for (i=0; i++ < len; ptr++) {
+                    out_len = (len + 1) / 2;
+                    rb_str_modify_expand(res, out_len);
+                    out = RSTRING_END(res);
+                    i = 0;
+#ifdef HAVE_PACK_SIMD
+                    if (len >= 32) {
+                        long simd_len = (len / 32) * 32;
+                        pack_hex_decode_simd(ptr, (unsigned char *)out, simd_len, 0);
+                        out += simd_len / 2;
+                        ptr += simd_len;
+                        i = simd_len;
+                    }
+#endif
+                    for (; i++ < len; ptr++) {
                         if (ISALPHA(*ptr))
                             byte |= (((*ptr & 15) + 9) & 15) << 4;
                         else
@@ -437,15 +564,14 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                         if (i & 1)
                             byte >>= 4;
                         else {
-                            char c = castchar(byte);
-                            rb_str_buf_cat(res, &c, 1);
+                            *out++ = castchar(byte);
                             byte = 0;
                         }
                     }
                     if (len & 1) {
-                        char c = castchar(byte);
-                        rb_str_buf_cat(res, &c, 1);
+                        *out++ = castchar(byte);
                     }
+                    rb_str_set_len(res, RSTRING_LEN(res) + out_len);
                     len = j;
                     goto grow;
                 }
@@ -455,12 +581,27 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 {
                     int byte = 0;
                     long i, j = 0;
+                    long out_len;
+                    char *out;
 
                     if (len > plen) {
                         j = (len + 1) / 2 - (plen + 1) / 2;
                         len = plen;
                     }
-                    for (i=0; i++ < len; ptr++) {
+                    out_len = (len + 1) / 2;
+                    rb_str_modify_expand(res, out_len);
+                    out = RSTRING_END(res);
+                    i = 0;
+#ifdef HAVE_PACK_SIMD
+                    if (len >= 32) {
+                        long simd_len = (len / 32) * 32;
+                        pack_hex_decode_simd(ptr, (unsigned char *)out, simd_len, 1);
+                        out += simd_len / 2;
+                        ptr += simd_len;
+                        i = simd_len;
+                    }
+#endif
+                    for (; i++ < len; ptr++) {
                         if (ISALPHA(*ptr))
                             byte |= ((*ptr & 15) + 9) & 15;
                         else
@@ -468,15 +609,14 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                         if (i & 1)
                             byte <<= 4;
                         else {
-                            char c = castchar(byte);
-                            rb_str_buf_cat(res, &c, 1);
+                            *out++ = castchar(byte);
                             byte = 0;
                         }
                     }
                     if (len & 1) {
-                        char c = castchar(byte);
-                        rb_str_buf_cat(res, &c, 1);
+                        *out++ = castchar(byte);
                     }
+                    rb_str_set_len(res, RSTRING_LEN(res) + out_len);
                     len = j;
                     goto grow;
                 }
@@ -1158,7 +1298,17 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 bits = 0;
                 bitstr = rb_usascii_str_new(0, len);
                 t = RSTRING_PTR(bitstr);
-                for (i=0; i<len; i++) {
+                i = 0;
+#ifdef HAVE_PACK_SIMD
+                if (len >= 32) {
+                    long simd_bytes = (len / 32) * 16;
+                    pack_hex_encode_simd((const unsigned char *)s, t, simd_bytes, 0);
+                    s += simd_bytes;
+                    t += simd_bytes * 2;
+                    i = simd_bytes * 2;
+                }
+#endif
+                for (; i<len; i++) {
                     if (i & 1)
                         bits >>= 4;
                     else
@@ -1181,7 +1331,17 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 bits = 0;
                 bitstr = rb_usascii_str_new(0, len);
                 t = RSTRING_PTR(bitstr);
-                for (i=0; i<len; i++) {
+                i = 0;
+#ifdef HAVE_PACK_SIMD
+                if (len >= 32) {
+                    long simd_bytes = (len / 32) * 16;
+                    pack_hex_encode_simd((const unsigned char *)s, t, simd_bytes, 1);
+                    s += simd_bytes;
+                    t += simd_bytes * 2;
+                    i = simd_bytes * 2;
+                }
+#endif
+                for (; i<len; i++) {
                     if (i & 1)
                         bits <<= 4;
                     else
