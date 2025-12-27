@@ -1084,6 +1084,7 @@ set_i_intersection(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    include?(item) -> true or false
+ *    self === item -> true or false
  *
  *  Returns true if the set contains the given object:
  *
