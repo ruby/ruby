@@ -31,7 +31,6 @@ contained in the selector itself:
   'abracadabra'.delete('abc') # => "rdr"
   '0123456789'.delete('258')  # => "0134679"
   '!@#$%&*()_+'.delete('+&#') # => "!@$%*()_"
-  'тест'.delete('т')          # => "ес"
   'こんにちは'.delete('に')     # => "こんちは"
 
 Note that order and repetitions do not matter:
