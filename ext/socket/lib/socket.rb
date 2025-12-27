@@ -672,7 +672,7 @@ class Socket < BasicSocket
       raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
     end
 
-    sock = if fast_fallback && !(host && ip_address?(host))
+    sock = if fast_fallback && !(host && ip_address?(host)) && !(local_port && local_port.to_i != 0)
       tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
       tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
