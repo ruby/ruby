@@ -953,7 +953,9 @@ fiber_verify(const rb_fiber_t *fiber)
 
     switch (fiber->status) {
       case FIBER_RESUMED:
-        VM_ASSERT(fiber->cont.saved_ec.vm_stack != NULL);
+        if (fiber->cont.saved_ec.thread_ptr->self == 0) {
+            VM_ASSERT(fiber->cont.saved_ec.vm_stack != NULL);
+        }
         break;
       case FIBER_SUSPENDED:
         VM_ASSERT(fiber->cont.saved_ec.vm_stack != NULL);
@@ -1141,12 +1143,7 @@ rb_fiber_update_self(rb_fiber_t *fiber)
 void
 rb_fiber_mark_self(const rb_fiber_t *fiber)
 {
-    if (fiber->cont.self) {
-        rb_gc_mark_movable(fiber->cont.self);
-    }
-    else {
-        rb_execution_context_mark(&fiber->cont.saved_ec);
-    }
+    rb_gc_mark_movable(fiber->cont.self);
 }
 
 static void
@@ -2067,32 +2064,10 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     return fiber;
 }
 
-static rb_fiber_t *
-root_fiber_alloc(rb_thread_t *th)
-{
-    VALUE fiber_value = fiber_alloc(rb_cFiber);
-    rb_fiber_t *fiber = th->ec->fiber_ptr;
-
-    VM_ASSERT(DATA_PTR(fiber_value) == NULL);
-    VM_ASSERT(fiber->cont.type == FIBER_CONTEXT);
-    VM_ASSERT(FIBER_RESUMED_P(fiber));
-
-    th->root_fiber = fiber;
-    DATA_PTR(fiber_value) = fiber;
-    fiber->cont.self = fiber_value;
-
-    coroutine_initialize_main(&fiber->context);
-
-    return fiber;
-}
-
 static inline rb_fiber_t*
 fiber_current(void)
 {
     rb_execution_context_t *ec = GET_EC();
-    if (ec->fiber_ptr->cont.self == 0) {
-        root_fiber_alloc(rb_ec_thread_ptr(ec));
-    }
     return ec->fiber_ptr;
 }
 
@@ -2598,6 +2573,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     if (!fiber) {
         rb_bug("%s", strerror(errno)); /* ... is it possible to call rb_bug here? */
     }
+
     fiber->cont.type = FIBER_CONTEXT;
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
@@ -2605,8 +2581,21 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
+
+    coroutine_initialize_main(&fiber->context);
+
     th->ec = &fiber->cont.saved_ec;
+
     cont_init_jit_cont(&fiber->cont);
+}
+
+void
+rb_root_fiber_obj_setup(rb_thread_t *th)
+{
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
+    VALUE fiber_value = fiber_alloc(rb_cFiber);
+    DATA_PTR(fiber_value) = fiber;
+    fiber->cont.self = fiber_value;
 }
 
 void
@@ -2679,15 +2668,7 @@ rb_fiber_current(void)
 static inline void
 fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 {
-    rb_fiber_t *fiber;
-
-    if (th->ec->fiber_ptr != NULL) {
-        fiber = th->ec->fiber_ptr;
-    }
-    else {
-        /* create root fiber */
-        fiber = root_fiber_alloc(th);
-    }
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
 
     if (FIBER_CREATED_P(next_fiber)) {
         fiber_prepare_stack(next_fiber);
@@ -2723,7 +2704,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
     rb_thread_t *th = GET_THREAD();
 
     /* make sure the root_fiber object is available */
-    if (th->root_fiber == NULL) root_fiber_alloc(th);
+    if (th->root_fiber == NULL) {
+        th->root_fiber = th->ec->fiber_ptr;
+    }
 
     if (th->ec->fiber_ptr == fiber) {
         /* ignore fiber context switch
@@ -3557,6 +3540,10 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "current_scheduler", rb_fiber_current_scheduler, 0);
 
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
+
+    rb_thread_t *current_thread = rb_current_thread();
+    RUBY_ASSERT(CLASS_OF(current_thread->ec->fiber_ptr->cont.self) == 0);
+    *(VALUE *)&((struct RBasic *)current_thread->ec->fiber_ptr->cont.self)->klass = rb_cFiber;
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     /*
