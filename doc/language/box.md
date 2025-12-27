@@ -100,7 +100,7 @@ The changed definitions are visible only in the box. In other boxes, builtin cla
 class String
   BLANK_PATTERN = /\A\s*\z/
   def blank?
-    self =~ BLANK_PATTERN
+    self.match?(BLANK_PATTERN)
   end
 end
 
