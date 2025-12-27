@@ -1308,6 +1308,7 @@ set_i_xor(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    set | enum -> new_set
+ *    self + enum -> new_set
  *
  *  Returns a new set built by merging the set and the elements of the
  *  given enumerable object.
