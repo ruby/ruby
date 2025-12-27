@@ -696,6 +696,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
 /*
  *  call-seq:
  *    add(obj) -> self
+ *    self << obj -> self
  *
  *  Adds the given object to the set and returns self. Use Set#merge to
  *  add many elements at once.
