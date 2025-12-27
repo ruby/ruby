@@ -1654,6 +1654,7 @@ set_i_proper_subset(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    subset?(set) -> true or false
+ *    self <= set -> true or false
  *
  *  Returns true if the set is a subset of the given set.
  */
