@@ -6,9 +6,6 @@
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
 #
-
-require 'monitor.so'
-
 #
 # In concurrent programming, a monitor is an object or module intended to be
 # used safely by more than one thread. The defining characteristic of a
@@ -245,16 +242,6 @@ module MonitorMixin
   end
 end
 
-# Use the Monitor class when you want to have a lock object for blocks with
-# mutual exclusion.
-#
-#   require 'monitor'
-#
-#   lock = Monitor.new
-#   lock.synchronize do
-#     # exclusive access
-#   end
-#
 class Monitor
   #
   # Creates a new MonitorMixin::ConditionVariable associated with the

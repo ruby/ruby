@@ -192,4 +192,66 @@ class Thread
       Primitive.rb_condvar_wait(mutex, timeout)
     end
   end
+
+  # Use the Monitor class when you want to have a lock object for blocks with
+  # mutual exclusion.
+  #
+  #   lock = Monitor.new
+  #   lock.synchronize do
+  #     # exclusive access
+  #   end
+  #
+  class Monitor
+    # call-seq:
+    #   synchronize { } -> result of the block
+    #
+    # Enters exclusive section and executes the block.  Leaves the exclusive
+    # section automatically when the block exits.  See example under
+    # +MonitorMixin+.
+    def synchronize(&)
+      Primitive.rb_monitor_synchronize
+    end
+
+    # call-seq:
+    #   try_enter -> true or false
+    #
+    # Attempts to enter exclusive section.  Returns +false+ if lock fails.
+    def try_enter
+      Primitive.rb_monitor_try_enter
+    end
+
+    # call-seq:
+    #   enter -> nil
+    #
+    # Enters exclusive section.
+    def enter
+      Primitive.rb_monitor_enter
+    end
+
+    # call-seq:
+    #   exit -> nil
+    #
+    # Leaves exclusive section.
+    def exit
+      Primitive.rb_monitor_exit
+    end
+
+    # internal methods for MonitorMixin
+    def mon_check_owner # :nodoc:
+      Primitive.rb_monitor_check_owner
+    end
+
+    def mon_locked? # :nodoc:
+      Primitive.rb_monitor_locked_p
+    end
+
+    def mon_owned? # :nodoc:
+      Primitive.rb_monitor_owned_p
+    end
+
+    # internal methods for MonitorMixin::ConditionVariable
+    def wait_for_cond(cond, timeout) # :nodoc:
+      Primitive.rb_monitor_wait_for_cond(cond, timeout)
+    end
+  end
 end
