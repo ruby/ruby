@@ -4461,7 +4461,9 @@ rb_reg_init_copy(VALUE copy, VALUE re)
 {
     if (!OBJ_INIT_COPY(copy, re)) return copy;
     rb_reg_check(re);
-    return reg_copy(copy, re);
+    reg_copy(copy, re);
+    rb_obj_freeze(copy);
+    return copy;
 }
 
 VALUE

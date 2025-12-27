@@ -978,7 +978,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_return_objects_are_frozen
-      source = ["foo", {}, /foo/, 1..2]
+      source = ["foo", {}, 1..2]
       objects = decode(encode(source))
       assert_equal source, objects
       assert_predicate objects, :frozen?
@@ -988,7 +988,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_proc_returned_object_are_not_frozen
-      source = ["foo", {}, /foo/, 1..2]
+      source = ["foo", {}, 1..2]
       objects = Marshal.load(encode(source), ->(o) { o.dup }, freeze: true)
       assert_equal source, objects
       refute_predicate objects, :frozen?

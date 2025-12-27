@@ -975,7 +975,6 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_dup
     assert_equal(//, //.dup)
-    assert_raise(TypeError) { //.dup.instance_eval { initialize_copy(nil) } }
   end
 
   def test_regsub
@@ -2296,5 +2295,7 @@ class TestRegexp < Test::Unit::TestCase
     message = "Regexp object must be frozen."
     # checking rb_reg_initialize_m path in re.c
     assert(Regexp.new("test").frozen?, message)
+    # checking rb_reg_init_copy path in re.c (dup)
+    assert(/test/.dup.frozen?, message)
   end
 end
