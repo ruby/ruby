@@ -10,10 +10,6 @@ removes all instances of that character:
   s.delete('x') # => "abracadabra"
   s.delete('')  # => "abracadabra"
 
-  s = 'тест'
-  s.delete('т') # => "ес"
-  s.delete('е') # => "тст"
-
   s = 'よろしくお願いします'
   s.delete('よ') # => "ろしくお願いします"
   s.delete('し') # => "よろくお願います"
