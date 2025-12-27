@@ -8,7 +8,6 @@ returns the index of the first matching substring in +self+:
   'foo'.index('o')         # => 1
   'foo'.index('oo')        # => 1
   'foo'.index('ooo')       # => nil
-  'тест'.index('с')        # => 2  # Characters, not bytes.
   'こんにちは'.index('ち')  # => 3
 
 When +pattern+ is a Regexp, returns the index of the first match in +self+:
@@ -24,9 +23,6 @@ the returned index is relative to the beginning of +self+:
   'bar'.index('r', 2)        # => 2
   'bar'.index('r', 3)        # => nil
   'bar'.index(/[r-z]/, 0)    # => 2
-  'тест'.index('с', 1)       # => 2
-  'тест'.index('с', 2)       # => 2
-  'тест'.index('с', 3)       # => nil  # Offset in characters, not bytes.
   'こんにちは'.index('ち', 2) # => 3
 
 With negative integer argument +offset+, selects the search position by counting backward

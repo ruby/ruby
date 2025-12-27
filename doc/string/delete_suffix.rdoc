@@ -5,7 +5,6 @@ Returns a copy of +self+ with trailing substring <tt>suffix</tt> removed:
   'foo'.delete_suffix('foo')         # => ""
   'foo'.delete_suffix('f')           # => "foo"
   'foo'.delete_suffix('x')           # => "foo"
-  'тест'.delete_suffix('ст')         # => "те"
   'こんにちは'.delete_suffix('ちは')  # => "こんに"
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

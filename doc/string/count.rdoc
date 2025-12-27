@@ -9,10 +9,6 @@ returns the count of instances of that character:
   s.count('x') # => 0
   s.count('')  # => 0
 
-  s = 'тест'
-  s.count('т')  # => 2
-  s.count('е')  # => 1
-
   s = 'よろしくお願いします'
   s.count('よ')  # => 1
   s.count('し')  # => 2

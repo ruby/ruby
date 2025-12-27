@@ -7,7 +7,6 @@ When +pattern+ is a string, returns the index of the last matching substring in 
   'foo'.rindex('o')       # => 2
   'foo'.rindex('oo'       # => 1
   'foo'.rindex('ooo')     # => nil
-  'тест'.rindex('т')      # => 3
   'こんにちは'.rindex('ち') # => 3
 
 When +pattern+ is a Regexp, returns the index of the last match in self:
