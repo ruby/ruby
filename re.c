@@ -4040,6 +4040,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
 
     set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
+    rb_obj_freeze(self);
 
     return self;
 }

@@ -132,8 +132,7 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
     if (rb_block_given_p()) {
         fn = grep_iter_i;
     }
-    else if (RB_TYPE_P(pat, T_REGEXP) &&
-      LIKELY(rb_method_basic_definition_p(CLASS_OF(pat), idEqq))) {
+    else if (RB_TYPE_P(pat, T_REGEXP)) {
         fn = grep_regexp_i;
     }
     else {

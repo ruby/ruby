@@ -206,7 +206,6 @@ module MarshalTestLib
     marshal_equal(MyRange.new(4,5,8, false))
   end
 
-  class MyRegexp < Regexp; def initialize(v, *args) super(*args); @v = v; end end
   def test_regexp
     marshal_equal(/a/)
     marshal_equal(/A/i)
@@ -217,10 +216,6 @@ module MarshalTestLib
                  Marshal.load("\004\b/\b\343\201\202\000"))
     assert_equal(/au3042/, Marshal.load("\004\b/\fa\\u3042\000"))
     #assert_equal(/au3042/u, Marshal.load("\004\b/\fa\\u3042@")) # spec
-  end
-
-  def test_regexp_subclass
-    marshal_equal(MyRegexp.new(10, "a"))
   end
 
   class MyString < String; def initialize(v, *args) super(*args); @v = v; end end

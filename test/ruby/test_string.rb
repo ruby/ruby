@@ -2757,13 +2757,6 @@ CODE
   def test_match_method
     assert_equal("bar", S("foobarbaz").match(/bar/).to_s)
 
-    o = Regexp.new('foo')
-    def o.match(x, y, z); x + y + z; end
-    assert_equal("foobarbaz", S("foo").match(o, "bar", "baz"))
-    x = nil
-    S("foo").match(o, "bar", "baz") {|y| x = y }
-    assert_equal("foobarbaz", x)
-
     assert_raise(ArgumentError) { S("foo").match }
   end
 

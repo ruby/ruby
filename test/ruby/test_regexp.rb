@@ -2291,4 +2291,10 @@ class TestRegexp < Test::Unit::TestCase
       assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
     end
   end
+
+  def test_regexp_object_is_frozen
+    message = "Regexp object must be frozen."
+    # checking rb_reg_initialize_m path in re.c
+    assert(Regexp.new("test").frozen?, message)
+  end
 end
