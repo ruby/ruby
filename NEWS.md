@@ -32,6 +32,15 @@ releases.
 
 ### The following bundled gems are updated.
 
+* minitest 6.0.1
+* test-unit 3.7.6
+* rss 0.3.2
+* net-imap 0.6.2
+* typeprof 0.31.1
+* debug 1.11.1
+* mutex_m 0.3.0
+* rdoc 7.0.3
+
 ### RubyGems and Bundler
 
 Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for details.
