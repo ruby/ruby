@@ -146,7 +146,9 @@ class PPInspectTest < Test::Unit::TestCase
 
   def test_iv_hiding_via_ruby
     a = Object.new
-    def a.instance_variables_to_inspect() [:@b] end
+    a.singleton_class.class_eval do
+      private def instance_variables_to_inspect() [:@b] end
+    end
     a.instance_eval { @a = "aaa"; @b = "bbb" }
     assert_match(/\A#<Object:0x[\da-f]+ @b="bbb">\n\z/, PP.pp(a, ''.dup))
   end

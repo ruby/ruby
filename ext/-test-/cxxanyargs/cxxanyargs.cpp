@@ -97,31 +97,6 @@ struct test_rb_define_hooked_variable {
 };
 VALUE test_rb_define_hooked_variable::v = Qundef;
 
-namespace test_rb_iterate {
-    VALUE
-    iter(VALUE self)
-    {
-        return rb_funcall(self, rb_intern("yield"), 0);
-    }
-
-    VALUE
-    block(RB_BLOCK_CALL_FUNC_ARGLIST(arg, param))
-    {
-        return rb_funcall(arg, rb_intern("=="), 1, param);
-    }
-
-    VALUE
-    test(VALUE self)
-    {
-#ifdef HAVE_NULLPTR
-        rb_iterate(iter, self, nullptr, self);
-#endif
-
-        rb_iterate(iter, self, RUBY_METHOD_FUNC(block), self); // old
-        return rb_iterate(iter, self, block, self); // new
-    }
-}
-
 namespace test_rb_block_call {
     VALUE
     block(RB_BLOCK_CALL_FUNC_ARGLIST(arg, param))
@@ -936,7 +911,6 @@ Init_cxxanyargs(void)
 
     test(rb_define_virtual_variable);
     test(rb_define_hooked_variable);
-    test(rb_iterate);
     test(rb_block_call);
     test(rb_rescue);
     test(rb_rescue2);

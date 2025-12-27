@@ -342,6 +342,8 @@ vm_cc_new(VALUE klass,
 {
     cc_check_class(klass);
     struct rb_callcache *cc = SHAREABLE_IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    rb_gc_declare_weak_references((VALUE)cc);
+
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
 

@@ -31,18 +31,6 @@
 # include "ruby/backward.h"
 #endif
 
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
- * Declaration of rb_struct_ptr() is at include/ruby/backward.h.
- */
-#define RSTRUCT_PTR(st) rb_struct_ptr(st)
 /** @cond INTERNAL_MACRO */
 #define RSTRUCT_LEN RSTRUCT_LEN
 #define RSTRUCT_SET RSTRUCT_SET

@@ -54,6 +54,16 @@ module Net # :nodoc:
         s.connect
       end
     end
+
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
   end
 
 

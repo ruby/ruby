@@ -2908,12 +2908,11 @@ rb_thread_fd_close(int fd)
 
 /*
  *  call-seq:
- *     thr.raise
- *     thr.raise(string)
- *     thr.raise(exception [, string [, array]])
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception from the given thread. The caller does not have to be
- *  +thr+. See Kernel#raise for more information.
+ *  +thr+. See Kernel#raise for more information on arguments.
  *
  *     Thread.abort_on_exception = true
  *     a = Thread.new { sleep(200) }

@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require 'test/unit'
+require 'rbconfig'
 
 class TestBox < Test::Unit::TestCase
-  EXPERIMENTAL_WARNINGS = [
-    "warning: Ruby::Box is experimental, and the behavior may change in the future!",
-    "See doc/language/box.md for known issues, etc."
-  ].join("\n")
+  EXPERIMENTAL_WARNING_LINE_PATTERNS = [
+    /#{RbConfig::CONFIG["ruby_install_name"] || "ruby"}(\.exe)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
+    %r{See https://docs.ruby-lang.org/en/(master|\d\.\d)/Ruby/Box.html for known issues, etc.}
+  ]
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
 
   def setup
@@ -426,7 +427,7 @@ class TestBox < Test::Unit::TestCase
     EnvUtil.verbose_warning do
       @box.require_relative('box/consts')
     end
-    return
+
     assert_equal 999, String::STR_CONST0
     assert_raise(NameError) { String::STR_CONST1 }
     assert_raise(NameError) { String::STR_CONST2 }
@@ -650,8 +651,9 @@ class TestBox < Test::Unit::TestCase
       end;
 
       # No additional warnings except for experimental warnings
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
       assert_equal 2, error.size
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
       assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
@@ -672,8 +674,9 @@ class TestBox < Test::Unit::TestCase
         puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
       end;
 
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
       assert_equal 2, error.size
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
@@ -780,7 +783,7 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
-  def test_loading_extension_libs_in_main_box
+  def test_loading_extension_libs_in_main_box_1
     pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -797,6 +800,15 @@ class TestBox < Test::Unit::TestCase
       require "json"
       require "psych"
       require "yaml"
+      expected = 1
+      assert_equal expected, 1
+    end;
+  end
+
+  def test_loading_extension_libs_in_main_box_2
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
       require "zlib"
       require "open3"
       require "ipaddr"

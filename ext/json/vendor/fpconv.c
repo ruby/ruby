@@ -449,7 +449,7 @@ static int filter_special(double fp, char* dest)
  * }
  *
  */
-static int fpconv_dtoa(double d, char dest[28])
+static int fpconv_dtoa(double d, char dest[32])
 {
     char digits[18];
 

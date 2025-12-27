@@ -2724,8 +2724,8 @@ EOT
   def test_pos_with_buffer_end_cr
     bug6401 = '[ruby-core:44874]'
     with_tmpdir {
-      # Read buffer size is 8191. This generates '\r' at 8191.
-      lines = ["X" * 8187, "X"]
+      # Read buffer size is 8192. This generates '\r' at 8192.
+      lines = ["X" * 8188, "X"]
       generate_file("tmp", lines.join("\r\n") + "\r\n")
 
       open("tmp", "r") do |f|

@@ -4294,23 +4294,29 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    self <=> other_string -> -1, 0, 1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares +self+ and +other_string+, returning:
+ *  Compares +self+ and +other+,
+ *  evaluating their _contents_, not their _lengths_.
  *
- *  - -1 if +other_string+ is larger.
- *  - 0 if the two are equal.
- *  - 1 if +other_string+ is smaller.
- *  - +nil+ if the two are incomparable.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ is smaller.
+ *  - +0+, if the two are equal.
+ *  - +1+, if +self+ is larger.
+ *  - +nil+, if the two are incomparable.
  *
  *  Examples:
  *
- *    'foo' <=> 'foo'  # => 0
- *    'foo' <=> 'food' # => -1
- *    'food' <=> 'foo' # => 1
- *    'FOO' <=> 'foo'  # => -1
- *    'foo' <=> 'FOO'  # => 1
- *    'foo' <=> 1      # => nil
+ *    'a'  <=> 'b'  # => -1
+ *    'a'  <=> 'ab' # => -1
+ *    'a'  <=> 'a'  # => 0
+ *    'b'  <=> 'a'  # => 1
+ *    'ab' <=> 'a'  # => 1
+ *    'a'  <=> :a   # => nil
+ *
+ *  \Class \String includes module Comparable,
+ *  each of whose methods uses String#<=> for comparison.
  *
  *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
@@ -12371,18 +12377,24 @@ sym_succ(VALUE sym)
 
 /*
  *  call-seq:
- *   symbol <=> object -> -1, 0, +1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  If +object+ is a symbol,
- *  returns the equivalent of <tt>symbol.to_s <=> object.to_s</tt>:
+ *  Compares +self+ and +other+, using String#<=>.
  *
- *    :bar <=> :foo # => -1
- *    :foo <=> :foo # => 0
- *    :foo <=> :bar # => 1
+ *  Returns:
  *
- *  Otherwise, returns +nil+:
+ *  - <tt>self.to_s <=> other.to_s</tt>, if +other+ is a symbol.
+ *  - +nil+, otherwise.
  *
- *   :foo <=> 'bar' # => nil
+ *  Examples:
+ *
+ *    :bar <=> :foo  # => -1
+ *    :foo <=> :foo  # => 0
+ *    :foo <=> :bar  # => 1
+ *    :foo <=> 'bar' # => nil
+ *
+ *  \Class \Symbol includes module Comparable,
+ *  each of whose methods uses Symbol#<=> for comparison.
  *
  *  Related: String#<=>.
  */

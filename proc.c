@@ -1068,13 +1068,12 @@ f_lambda(VALUE _)
  *  Document-method: Proc#yield
  *
  *  call-seq:
- *     prc.call(params,...)   -> obj
- *     prc[params,...]        -> obj
- *     prc.(params,...)       -> obj
- *     prc.yield(params,...)  -> obj
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     yield(...) -> obj
  *
- *  Invokes the block, setting the block's parameters to the values in
- *  <i>params</i> using something close to method calling semantics.
+ *  Invokes the block, setting the block's parameters to the arguments
+ *  using something close to method calling semantics.
  *  Returns the value of the last expression evaluated in the block.
  *
  *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
@@ -2643,13 +2642,20 @@ method_dup(VALUE self)
     return clone;
 }
 
-/*  Document-method: Method#===
- *
+/*
  *  call-seq:
- *     method === obj   -> result_of_method
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     self === obj -> result_of_method
  *
- *  Invokes the method with +obj+ as the parameter like #call.
- *  This allows a method object to be the target of a +when+ clause
+ *  Invokes +self+ with the specified arguments, returning the
+ *  method's return value.
+ *
+ *     m = 12.method("+")
+ *     m.call(3)    #=> 15
+ *     m.call(20)   #=> 32
+ *
+ *  Using Method#=== allows a method object to be the target of a +when+ clause
  *  in a case statement.
  *
  *      require 'prime'
@@ -2658,32 +2664,6 @@ method_dup(VALUE self)
  *      when Prime.method(:prime?)
  *        # ...
  *      end
- */
-
-
-/*  Document-method: Method#[]
- *
- *  call-seq:
- *     meth[args, ...]         -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value, like #call.
- *
- *     m = 12.method("+")
- *     m[3]         #=> 15
- *     m[20]        #=> 32
- */
-
-/*
- *  call-seq:
- *     meth.call(args, ...)    -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value.
- *
- *     m = 12.method("+")
- *     m.call(3)    #=> 15
- *     m.call(20)   #=> 32
  */
 
 static VALUE
@@ -4048,19 +4028,18 @@ rb_proc_compose_to_right(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth << g -> a_proc
+ *     self << g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  Returns a proc that is the composition of the given +g+ and this method.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +g+
+ *  with the arguments, then calls +self+ with the return value of +g+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f << g).call(2) #=> 16
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f << g).call([]) # => ["in proc", "in f"]
  */
 static VALUE
 rb_method_compose_to_left(VALUE self, VALUE g)
@@ -4072,19 +4051,18 @@ rb_method_compose_to_left(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth >> g -> a_proc
+ *     self >> g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls this method
- *  with them then calls <i>g</i> with the result.
+ *  Returns a proc that is the composition of this method and the given +g+.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +self+
+ *  with the arguments, then calls +g+ with the return value of +self+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f >> g).call(2) #=> 8
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f >> g).call([]) # => ["in f", "in proc"]
  */
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)

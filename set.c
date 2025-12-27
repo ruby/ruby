@@ -116,7 +116,7 @@ static ID id_class_methods;
 #define RSET_SIZE(set) set_table_size(RSET_TABLE(set))
 #define RSET_EMPTY(set) (RSET_SIZE(set) == 0)
 #define RSET_SIZE_NUM(set) SIZET2NUM(RSET_SIZE(set))
-#define RSET_IS_MEMBER(sobj, item) set_table_lookup(RSET_TABLE(set), (st_data_t)(item))
+#define RSET_IS_MEMBER(set, item) set_table_lookup(RSET_TABLE(set), (st_data_t)(item))
 #define RSET_COMPARE_BY_IDENTITY(set) (RSET_TABLE(set)->type == &identhash)
 
 struct set_object {
@@ -697,7 +697,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
  *  call-seq:
  *    add(obj) -> self
  *
- *  Adds the given object to the set and returns self.  Use `merge` to
+ *  Adds the given object to the set and returns self. Use Set#merge to
  *  add many elements at once.
  *
  *    Set[1, 2].add(3)                    #=> Set[1, 2, 3]

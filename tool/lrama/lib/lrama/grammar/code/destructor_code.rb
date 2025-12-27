@@ -1,9 +1,18 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Grammar
     class Code
       class DestructorCode < Code
+        # TODO: rbs-inline 0.11.0 doesn't support instance variables.
+        #       Move these type declarations above instance variable definitions, once it's supported.
+        #       see: https://github.com/soutaro/rbs-inline/pull/149
+        #
+        # @rbs!
+        #   @tag: Lexer::Token::Tag
+
+        # @rbs (type: ::Symbol, token_code: Lexer::Token::UserCode, tag: Lexer::Token::Tag) -> void
         def initialize(type:, token_code:, tag:)
           super(type: type, token_code: token_code)
           @tag = tag
@@ -17,6 +26,8 @@ module Lrama
         # * ($1) error
         # * (@1) error
         # * ($:1) error
+        #
+        # @rbs (Reference ref) -> (String | bot)
         def reference_to_c(ref)
           case
           when ref.type == :dollar && ref.name == "$" # $$

@@ -11,9 +11,6 @@
 
 **********************************************************************/
 
-#define rb_data_object_alloc rb_data_object_alloc
-#define rb_data_typed_object_alloc rb_data_typed_object_alloc
-
 #include "ruby/internal/config.h"
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -402,7 +399,7 @@ void rb_vm_update_references(void *ptr);
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
-    if (rb_gc_impl_object_moved_p((_objspace), (VALUE)(_thing))) {    \
+    if (gc_object_moved_p_internal((_objspace), (VALUE)(_thing))) {    \
         *(_type *)&(_thing) = (_type)gc_location_internal(_objspace, (VALUE)_thing); \
     } \
 } while (0)
@@ -637,8 +634,9 @@ typedef struct gc_function_map {
     void (*mark_and_move)(void *objspace_ptr, VALUE *ptr);
     void (*mark_and_pin)(void *objspace_ptr, VALUE obj);
     void (*mark_maybe)(void *objspace_ptr, VALUE obj);
-    void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
-    void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
+    // Weak references
+    void (*declare_weak_references)(void *objspace_ptr, VALUE obj);
+    bool (*handle_weak_references_alive_p)(void *objspace_ptr, VALUE obj);
     // Compaction
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
@@ -811,8 +809,9 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(mark_and_move);
     load_modular_gc_func(mark_and_pin);
     load_modular_gc_func(mark_maybe);
-    load_modular_gc_func(mark_weak);
-    load_modular_gc_func(remove_weak);
+    // Weak references
+    load_modular_gc_func(declare_weak_references);
+    load_modular_gc_func(handle_weak_references_alive_p);
     // Compaction
     load_modular_gc_func(object_moved_p);
     load_modular_gc_func(location);
@@ -891,8 +890,9 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_mark_and_move rb_gc_functions.mark_and_move
 # define rb_gc_impl_mark_and_pin rb_gc_functions.mark_and_pin
 # define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
-# define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
-# define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
+// Weak references
+# define rb_gc_impl_declare_weak_references rb_gc_functions.declare_weak_references
+# define rb_gc_impl_handle_weak_references_alive_p rb_gc_functions.handle_weak_references_alive_p
 // Compaction
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
 # define rb_gc_impl_location rb_gc_functions.location
@@ -1001,7 +1001,10 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
-            memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
+            size_t slot_size = rb_gc_obj_slot_size(obj);
+            if (slot_size > RVALUE_SIZE) {
+                memset((char *)obj + RVALUE_SIZE, 0, slot_size - RVALUE_SIZE);
+            }
 
             /* We must disable GC here because the callback could call xmalloc
              * which could potentially trigger a GC, and a lot of code is unsafe
@@ -1159,6 +1162,75 @@ rb_objspace_data_type_name(VALUE obj)
     }
     else {
         return 0;
+    }
+}
+
+void
+rb_gc_declare_weak_references(VALUE obj)
+{
+    rb_gc_impl_declare_weak_references(rb_gc_get_objspace(), obj);
+}
+
+bool
+rb_gc_handle_weak_references_alive_p(VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) return true;
+
+    return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
+}
+
+extern const rb_data_type_t rb_weakmap_type;
+void rb_wmap_handle_weak_references(VALUE obj);
+extern const rb_data_type_t rb_weakkeymap_type;
+void rb_wkmap_handle_weak_references(VALUE obj);
+
+extern const rb_data_type_t rb_fiber_data_type;
+void rb_fiber_handle_weak_references(VALUE obj);
+
+extern const rb_data_type_t rb_cont_data_type;
+void rb_cont_handle_weak_references(VALUE obj);
+
+void
+rb_gc_handle_weak_references(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        if (RTYPEDDATA_P(obj)) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+            if (type == &rb_fiber_data_type) {
+                rb_fiber_handle_weak_references(obj);
+            }
+            else if (type == &rb_cont_data_type) {
+                rb_cont_handle_weak_references(obj);
+            }
+            else if (type == &rb_weakmap_type) {
+                rb_wmap_handle_weak_references(obj);
+            }
+            else if (type == &rb_weakkeymap_type) {
+                rb_wkmap_handle_weak_references(obj);
+            }
+            else {
+                rb_bug("rb_gc_handle_weak_references: unknown TypedData %s", RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+            }
+        }
+        else {
+           rb_bug("rb_gc_handle_weak_references: unknown T_DATA");
+        }
+        break;
+
+      case T_IMEMO: {
+        GC_ASSERT(imemo_type(obj) == imemo_callcache);
+
+        struct rb_callcache *cc = (struct rb_callcache *)obj;
+        if (!rb_gc_handle_weak_references_alive_p(cc->klass)) {
+            vm_cc_invalidate(cc);
+        }
+
+        break;
+      }
+      default:
+        rb_bug("rb_gc_handle_weak_references: type not supported\n");
     }
 }
 
@@ -2646,29 +2718,6 @@ rb_gc_mark_maybe(VALUE obj)
     gc_mark_maybe_internal(obj);
 }
 
-void
-rb_gc_mark_weak(VALUE *ptr)
-{
-    if (RB_SPECIAL_CONST_P(*ptr)) return;
-
-    rb_vm_t *vm = GET_VM();
-    void *objspace = vm->gc.objspace;
-    if (LIKELY(vm->gc.mark_func_data == NULL)) {
-        GC_ASSERT(rb_gc_impl_during_gc_p(objspace));
-
-        rb_gc_impl_mark_weak(objspace, ptr);
-    }
-    else {
-        GC_ASSERT(!rb_gc_impl_during_gc_p(objspace));
-    }
-}
-
-void
-rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
-{
-    rb_gc_impl_remove_weak(rb_gc_get_objspace(), parent_obj, ptr);
-}
-
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(register const VALUE *x, register long n, void (*cb)(VALUE, void *), void *data));
 static void
 each_location(register const VALUE *x, register long n, void (*cb)(VALUE, void *), void *data)
@@ -2863,6 +2912,16 @@ gc_mark_machine_stack_location_maybe(VALUE obj, void *data)
         each_location_ptr(fake_frame_start, fake_frame_end, gc_mark_maybe_each_location, NULL);
     }
 #endif
+}
+
+static bool
+gc_object_moved_p_internal(void *objspace, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return false;
+    }
+
+    return rb_gc_impl_object_moved_p(objspace, obj);
 }
 
 static VALUE
@@ -3643,7 +3702,7 @@ check_id_table_move(VALUE value, void *data)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)value)) {
         return ID_TABLE_REPLACE;
     }
 
@@ -3687,7 +3746,7 @@ update_id_table(VALUE *value, void *data, int existing)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)*value)) {
         *value = gc_location_internal(objspace, (VALUE)*value);
     }
 
@@ -3730,11 +3789,11 @@ update_const_tbl_i(VALUE value, void *objspace)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->value)) {
+    if (gc_object_moved_p_internal(objspace, ce->value)) {
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->file)) {
+    if (gc_object_moved_p_internal(objspace, ce->file)) {
         ce->file = gc_location_internal(objspace, ce->file);
     }
 

@@ -184,6 +184,7 @@ module Spec
         "spec/bundler/resolver/candidate_spec.rb",
         "spec/bundler/digest_spec.rb",
         "spec/bundler/fetcher/gem_remote_fetcher_spec.rb",
+        "spec/bundler/uri_normalizer_spec.rb",
       ],
     }.freeze
   end

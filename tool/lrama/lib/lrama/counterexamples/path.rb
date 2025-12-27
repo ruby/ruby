@@ -1,29 +1,27 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Counterexamples
     class Path
-      def initialize(from_state_item, to_state_item)
-        @from_state_item = from_state_item
-        @to_state_item = to_state_item
+      # @rbs!
+      #   @state_item: StateItem
+      #   @parent: Path?
+
+      attr_reader :state_item #: StateItem
+      attr_reader :parent #: Path?
+
+      # @rbs (StateItem state_item, Path? parent) -> void
+      def initialize(state_item, parent)
+        @state_item = state_item
+        @parent = parent
       end
 
-      def from
-        @from_state_item
-      end
-
-      def to
-        @to_state_item
-      end
-
+      # @rbs () -> ::String
       def to_s
-        "#<Path(#{type})>"
+        "#<Path>"
       end
       alias :inspect :to_s
-
-      def type
-        raise NotImplementedError
-      end
     end
   end
 end

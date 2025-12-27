@@ -17,6 +17,7 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/encoding.h"
+#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
@@ -3970,7 +3971,6 @@ struct reg_init_args {
 
 static VALUE reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
 static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
-void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...);
 
 /*
  *  call-seq:

@@ -48,7 +48,8 @@ static const int DEBUG = 0;
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
 
-static const rb_data_type_t cont_data_type, fiber_data_type;
+const rb_data_type_t rb_cont_data_type;
+const rb_data_type_t rb_fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
@@ -982,7 +983,7 @@ cont_ptr(VALUE obj)
 {
     rb_context_t *cont;
 
-    TypedData_Get_Struct(obj, rb_context_t, &cont_data_type, cont);
+    TypedData_Get_Struct(obj, rb_context_t, &rb_cont_data_type, cont);
 
     return cont;
 }
@@ -992,7 +993,7 @@ fiber_ptr(VALUE obj)
 {
     rb_fiber_t *fiber;
 
-    TypedData_Get_Struct(obj, rb_fiber_t, &fiber_data_type, fiber);
+    TypedData_Get_Struct(obj, rb_fiber_t, &rb_fiber_data_type, fiber);
     if (!fiber) rb_raise(rb_eFiberError, "uninitialized fiber");
 
     return fiber;
@@ -1211,7 +1212,7 @@ fiber_memsize(const void *ptr)
 VALUE
 rb_obj_is_fiber(VALUE obj)
 {
-    return RBOOL(rb_typeddata_is_kind_of(obj, &fiber_data_type));
+    return RBOOL(rb_typeddata_is_kind_of(obj, &rb_fiber_data_type));
 }
 
 static void
@@ -1241,12 +1242,26 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     asan_unpoison_memory_region(cont->machine.stack_src, size, false);
     MEMCPY(cont->machine.stack, cont->machine.stack_src, VALUE, size);
 }
-
-static const rb_data_type_t cont_data_type = {
+const rb_data_type_t rb_cont_data_type = {
     "continuation",
     {cont_mark, cont_free, cont_memsize, cont_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+
+void
+rb_cont_handle_weak_references(VALUE obj)
+{
+    rb_context_t *cont;
+    TypedData_Get_Struct(obj, rb_context_t, &rb_cont_data_type, cont);
+
+    if (!cont) return;
+
+    if (!rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.fields_obj)) {
+        cont->saved_ec.gen_fields_cache.obj = Qundef;
+        cont->saved_ec.gen_fields_cache.fields_obj = Qundef;
+    }
+}
 
 static inline void
 cont_save_thread(rb_context_t *cont, rb_thread_t *th)
@@ -1404,7 +1419,8 @@ cont_new(VALUE klass)
     rb_thread_t *th = GET_THREAD();
 
     THREAD_MUST_BE_RUNNING(th);
-    contval = TypedData_Make_Struct(klass, rb_context_t, &cont_data_type, cont);
+    contval = TypedData_Make_Struct(klass, rb_context_t, &rb_cont_data_type, cont);
+    rb_gc_declare_weak_references(contval);
     cont->self = contval;
     cont_init(cont, th);
     return cont;
@@ -1983,16 +1999,33 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *
  */
 
-static const rb_data_type_t fiber_data_type = {
+const rb_data_type_t rb_fiber_data_type = {
     "fiber",
     {fiber_mark, fiber_free, fiber_memsize, fiber_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+void
+rb_fiber_handle_weak_references(VALUE obj)
+{
+    rb_fiber_t *fiber;
+    TypedData_Get_Struct(obj, rb_fiber_t, &rb_fiber_data_type, fiber);
+
+    if (!fiber) return;
+
+    if (!rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
+        fiber->cont.saved_ec.gen_fields_cache.obj = Qundef;
+        fiber->cont.saved_ec.gen_fields_cache.fields_obj = Qundef;
+    }
+}
+
 static VALUE
 fiber_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
+    VALUE obj = TypedData_Wrap_Struct(klass, &rb_fiber_data_type, 0);
+    rb_gc_declare_weak_references(obj);
+    return obj;
 }
 
 static rb_serial_t
@@ -3246,28 +3279,37 @@ rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     fiber.raise                                 -> obj
- *     fiber.raise(string)                         -> obj
- *     fiber.raise(exception [, string [, array]]) -> obj
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception in the fiber at the point at which the last
- *  +Fiber.yield+ was called. If the fiber has not been started or has
+ *  +Fiber.yield+ was called.
+ *
+ *     f = Fiber.new {
+ *       puts "Before the yield"
+ *       Fiber.yield 1 # -- exception will be raised here
+ *       puts "After the yield"
+ *     }
+ *
+ *     p f.resume
+ *     f.raise "Gotcha"
+ *
+ *  Output
+ *
+ *     Before the first yield
+ *     1
+ *     t.rb:8:in 'Fiber.yield': Gotcha (RuntimeError)
+ *       from t.rb:8:in 'block in <main>'
+ *
+ *  If the fiber has not been started or has
  *  already run to completion, raises +FiberError+. If the fiber is
  *  yielding, it is resumed. If it is transferring, it is transferred into.
  *  But if it is resuming, raises +FiberError+.
  *
- *  With no arguments, raises a +RuntimeError+. With a single +String+
- *  argument, raises a +RuntimeError+ with the string as a message.  Otherwise,
- *  the first parameter should be the name of an +Exception+ class (or an
- *  object that returns an +Exception+ object when sent an +exception+
- *  message). The optional second parameter sets the message associated with
- *  the exception, and the third parameter is an array of callback information.
- *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
- *  blocks.
- *
  *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  *
- *  See Kernel#raise for more information.
+ *  See Kernel#raise for more information on arguments.
+ *
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)

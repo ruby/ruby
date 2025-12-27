@@ -1077,20 +1077,30 @@ rb_rational_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rational <=> numeric  ->  -1, 0, +1, or nil
+ *   self <=> other -> -1, 0, 1, or nil
  *
- * Returns -1, 0, or +1 depending on whether +rational+ is
- * less than, equal to, or greater than +numeric+.
+ * Compares +self+ and +other+.
  *
- * +nil+ is returned if the two values are incomparable.
+ * Returns:
  *
- *    Rational(2, 3) <=> Rational(2, 3)  #=> 0
- *    Rational(5)    <=> 5               #=> 0
- *    Rational(2, 3) <=> Rational(1, 3)  #=> 1
- *    Rational(1, 3) <=> 1               #=> -1
- *    Rational(1, 3) <=> 0.3             #=> 1
+ * - +-1+, if +self+ is less than +other+.
+ * - +0+, if the two values are the same.
+ * - +1+, if +self+ is greater than +other+.
+ * - +nil+, if the two values are incomparable.
  *
- *    Rational(1, 3) <=> "0.3"           #=> nil
+ * Examples:
+ *
+ *   Rational(2, 3) <=> Rational(4, 3) # => -1
+ *   Rational(2, 1) <=> Rational(2, 1) # => 0
+ *   Rational(2, 1) <=> 2              # => 0
+ *   Rational(2, 1) <=> 2.0            # => 0
+ *   Rational(2, 1) <=> Complex(2, 0)  # => 0
+ *   Rational(4, 3) <=> Rational(2, 3) # => 1
+ *   Rational(4, 3) <=> :foo           # => nil
+ *
+ * \Class \Rational includes module Comparable,
+ * each of whose methods uses Rational#<=> for comparison.
+ *
  */
 VALUE
 rb_rational_cmp(VALUE self, VALUE other)

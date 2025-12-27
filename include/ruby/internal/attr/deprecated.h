@@ -48,7 +48,7 @@
 #elif RBIMPL_HAS_ATTRIBUTE(deprecated) /* but not with message. */
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__))
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_DEPRECATED(msg) __declspec(deprecated msg)
 
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(deprecated)

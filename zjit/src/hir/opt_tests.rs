@@ -9638,26 +9638,24 @@ mod hir_opt_tests {
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
          CheckInterrupts
-         v27:BasicObject = GetLocal :a, l0, EP@6
-         SetLocal :formatted, l0, EP@3, v27
-         v39:BasicObject = GetLocal :formatted, l0, EP@3
+         SetLocal :formatted, l0, EP@3, v15
          PatchPoint SingleRactorMode
-         v56:HeapBasicObject = GuardType v14, HeapBasicObject
-         v57:HeapBasicObject = GuardShape v56, 0x1000
-         StoreField v57, :@formatted@0x1001, v39
-         WriteBarrier v57, v39
-         v60:CShape[0x1002] = Const CShape(0x1002)
-         StoreField v57, :_shape_id@0x1003, v60
-         v45:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v54:HeapBasicObject = GuardType v14, HeapBasicObject
+         v55:HeapBasicObject = GuardShape v54, 0x1000
+         StoreField v55, :@formatted@0x1001, v15
+         WriteBarrier v55, v15
+         v58:CShape[0x1002] = Const CShape(0x1002)
+         StoreField v55, :_shape_id@0x1003, v58
+         v43:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
          PatchPoint NoSingletonClass(Class@0x1010)
-         v65:BasicObject = CCallWithFrame v45, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v48:BasicObject = GetLocal :a, l0, EP@6
-         v49:BasicObject = GetLocal :_b, l0, EP@5
-         v50:BasicObject = GetLocal :_c, l0, EP@4
-         v51:BasicObject = GetLocal :formatted, l0, EP@3
+         v63:BasicObject = CCallWithFrame v43, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v46:BasicObject = GetLocal :a, l0, EP@6
+         v47:BasicObject = GetLocal :_b, l0, EP@5
+         v48:BasicObject = GetLocal :_c, l0, EP@4
+         v49:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v65
+         Return v63
        ");
     }
 

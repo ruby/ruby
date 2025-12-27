@@ -6737,20 +6737,6 @@ constat_handle(HANDLE h)
     return p;
 }
 
-/* License: Ruby's */
-static void
-constat_reset(HANDLE h)
-{
-    st_data_t data;
-    struct constat *p;
-    thread_exclusive(conlist) {
-        if (!conlist || conlist == conlist_disabled) continue;
-        if (!st_lookup(conlist, (st_data_t)h, &data)) continue;
-        p = (struct constat *)data;
-        p->vt100.state = constat_init;
-    }
-}
-
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
 

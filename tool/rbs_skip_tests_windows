@@ -105,3 +105,9 @@ test_new(TempfileSingletonTest)
 
 # Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-f8z9pn/test.gz
 test_open(ZlibGzipReaderSingletonTest)
+
+test_reachable_objects_from_root(ObjectSpaceTest) To avoid NoMemoryError with test-unit 3.7.5
+
+# Errno::EACCES: Permission denied @ rb_file_s_rename
+# D:/a/ruby/ruby/src/lib/rubygems/util/atomic_file_writer.rb:42:in 'File.rename'
+test_write_binary(GemSingletonTest)

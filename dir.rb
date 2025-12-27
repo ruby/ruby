@@ -178,7 +178,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.open('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.open('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.open('.', encoding: Encoding::US_ASCII).read.encoding # => #<Encoding:US-ASCII>
   #
   def self.open(name, encoding: nil, &block)
     dir = Primitive.dir_s_open(name, encoding)
@@ -206,7 +206,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.new('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.new('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.new('.', encoding: Encoding::US_ASCI).read.encoding # => #<Encoding:US-ASCII>
   #
   def initialize(name, encoding: nil)
     Primitive.dir_initialize(name, encoding)

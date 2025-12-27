@@ -722,7 +722,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
     if vc_windows? && nmake_found?
-      refute_includes(gem_make_out, "-j2")
+      refute_includes(gem_make_out, " -j2")
     else
       assert_includes(gem_make_out, "make -j2")
     end

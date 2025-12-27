@@ -29,7 +29,7 @@
  * `__forceinline` are mutually exclusive.  We have to mimic that behaviour for
  * non-MSVC compilers.
  */
-#if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_FORCEINLINE() __forceinline
 #elif RBIMPL_HAS_ATTRIBUTE(always_inline)
 # define RBIMPL_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline

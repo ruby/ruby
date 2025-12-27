@@ -401,9 +401,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     }
     out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 
-    if (NIL_P(str)) {
-        str = rb_str_new(0, out_len);
-    } else {
+    if (NIL_P(str))
+        str = rb_str_buf_new(out_len);
+    else {
         StringValue(str);
         if ((long)rb_str_capacity(str) >= out_len)
             rb_str_modify(str);
@@ -411,9 +411,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
             rb_str_modify_expand(str, out_len - RSTRING_LEN(str));
     }
 
-    if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
-        ossl_raise(eCipherError, NULL);
-    assert(out_len <= RSTRING_LEN(str));
+    if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str),
+                                 &out_len, in, in_len))
+        ossl_raise(eCipherError, "EVP_CipherUpdate");
     rb_str_set_len(str, out_len);
 
     return str;
@@ -456,7 +456,6 @@ ossl_cipher_final(VALUE self)
             ossl_raise(eCipherError, "cipher final failed");
         }
     }
-    assert(out_len <= RSTRING_LEN(str));
     rb_str_set_len(str, out_len);
 
     return str;

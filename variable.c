@@ -279,7 +279,7 @@ set_sub_temporary_name(VALUE mod, VALUE name)
  *    m.name #=> nil
  *
  *    c = Class.new
- *    c.set_temporary_name("MyClass(with description)")
+ *    c.set_temporary_name("MyClass(with description)") # => MyClass(with description)
  *
  *    c.new # => #<MyClass(with description):0x0....>
  *

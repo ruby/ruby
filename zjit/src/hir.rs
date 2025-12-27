@@ -5299,6 +5299,20 @@ impl ProfileOracle {
     }
 }
 
+fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
+    match opcode {
+        // Control-flow is non-leaf in the interpreter because it can execute arbitrary code on
+        // interrupt. But in the JIT, we side-exit if there is a pending interrupt.
+        YARVINSN_jump
+        | YARVINSN_branchunless
+        | YARVINSN_branchif
+        | YARVINSN_branchnil
+        | YARVINSN_leave => false,
+        // TODO(max): Read the invokebuiltin target from operands and determine if it's leaf
+        _ => unsafe { !rb_zjit_insn_leaf(opcode as i32, operands) }
+    }
+}
+
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
@@ -5434,7 +5448,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
-            if unsafe { !rb_zjit_insn_leaf(opcode as i32, pc.offset(1)) } {
+            if invalidates_locals(opcode, unsafe { pc.offset(1) }) {
                 local_inval = true;
             }
 

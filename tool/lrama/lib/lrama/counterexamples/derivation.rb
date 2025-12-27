@@ -1,34 +1,44 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Counterexamples
     class Derivation
-      attr_reader :item, :left, :right
-      attr_writer :right
+      # @rbs!
+      #   @item: State::Item
+      #   @left: Derivation?
 
-      def initialize(item, left, right = nil)
+      attr_reader :item  #: State::Item
+      attr_reader :left  #: Derivation?
+      attr_accessor :right #: Derivation?
+
+      # @rbs (State::Item item, Derivation? left) -> void
+      def initialize(item, left)
         @item = item
         @left = left
-        @right = right
       end
 
+      # @rbs () -> ::String
       def to_s
         "#<Derivation(#{item.display_name})>"
       end
       alias :inspect :to_s
 
+      # @rbs () -> Array[String]
       def render_strings_for_report
         result = [] #: Array[String]
         _render_for_report(self, 0, result, 0)
         result.map(&:rstrip)
       end
 
+      # @rbs () -> String
       def render_for_report
         render_strings_for_report.join("\n")
       end
 
       private
 
+      # @rbs (Derivation derivation, Integer offset, Array[String] strings, Integer index) -> Integer
       def _render_for_report(derivation, offset, strings, index)
         item = derivation.item
         if strings[index]

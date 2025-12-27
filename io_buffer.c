@@ -571,7 +571,7 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
  *    buffer.get_string(0, 1)
  *    # => "t"
  *    string
- *    # => "best"
+ *    # => "test"
  *
  *    buffer.resize(100)
  *    # in `resize': Cannot resize external buffer! (IO::Buffer::AccessError)
@@ -3784,9 +3784,9 @@ io_buffer_not_inplace(VALUE self)
  *
  *    File.write('test.txt', 'test data')
  *    # => 9
- *    buffer = IO::Buffer.map(File.open('test.txt'))
+ *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::READONLY)
  *    # =>
- *    # #<IO::Buffer 0x00007f3f0768c000+9 MAPPED IMMUTABLE>
+ *    # #<IO::Buffer 0x00007f3f0768c000+9 EXTERNAL MAPPED FILE SHARED READONLY>
  *    # ...
  *    buffer.get_string(5, 2) # read 2 bytes, starting from offset 5
  *    # => "da"

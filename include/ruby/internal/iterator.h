@@ -265,48 +265,6 @@ int rb_block_given_p(void);
  */
 void rb_need_block(void);
 
-#ifndef __cplusplus
-RBIMPL_ATTR_DEPRECATED(("by: rb_block_call since 1.9"))
-#endif
-/**
- * Old way to iterate a block.
- *
- * @deprecated     This is an old API.  Use rb_block_call() instead.
- * @warning        The passed  function must at  least once call a  ruby method
- *                 (to handle interrupts etc.)
- * @param[in]      func1  A function that could yield a value.
- * @param[in,out]  data1  Passed to `func1`
- * @param[in]      proc   A function acts as a block.
- * @param[in,out]  data2  Passed to `proc` as the data2 parameter.
- * @return         What `func1` returns.
- */
-VALUE rb_iterate(VALUE (*func1)(VALUE), VALUE data1, rb_block_call_func_t proc, VALUE data2);
-
-#ifdef __cplusplus
-namespace ruby {
-namespace backward {
-/**
- * Old way to iterate a block.
- *
- * @deprecated     This is an old API.  Use rb_block_call() instead.
- * @warning        The passed  function must at  least once call a  ruby method
- *                 (to handle interrupts etc.)
- * @param[in]      iter   A function that could yield a value.
- * @param[in,out]  data1  Passed to `func1`
- * @param[in]      bl     A function acts as a block.
- * @param[in,out]  data2  Passed to `proc` as the data2 parameter.
- * @return         What `func1` returns.
- */
-static inline VALUE
-rb_iterate_deprecated(VALUE (*iter)(VALUE), VALUE data1, rb_block_call_func_t bl, VALUE data2)
-{
-    return ::rb_iterate(iter, data1, bl, data2);
-}}}
-
-RBIMPL_ATTR_DEPRECATED(("by: rb_block_call since 1.9"))
-VALUE rb_iterate(VALUE (*func1)(VALUE), VALUE data1, rb_block_call_func_t proc, VALUE data2);
-#endif
-
 /**
  * Identical to  rb_funcallv(), except it  additionally passes a function  as a
  * block.  When the  method yields, `proc` is called with  the yielded value as

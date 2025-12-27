@@ -134,13 +134,14 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_update_with_buffer
     cipher = OpenSSL::Cipher.new("aes-128-ecb").encrypt
     cipher.random_key
-    expected = cipher.update("data") << cipher.final
-    assert_equal 16, expected.bytesize
+    expected = cipher.update("data" * 10) << cipher.final
+    assert_equal 48, expected.bytesize
 
     # Buffer is supplied
     cipher.reset
     buf = String.new
-    assert_same buf, cipher.update("data", buf)
+    assert_same buf, cipher.update("data" * 10, buf)
+    assert_equal 32, buf.bytesize
     assert_equal expected, buf + cipher.final
 
     # Buffer is frozen
@@ -149,9 +150,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
     # Buffer is a shared string [ruby-core:120141] [Bug #20937]
     cipher.reset
-    buf = "x" * 1024
-    shared = buf[-("data".bytesize + 32)..-1]
-    assert_same shared, cipher.update("data", shared)
+    buf = "x".b * 1024
+    shared = buf[-("data".bytesize * 10 + 32)..-1]
+    assert_same shared, cipher.update("data" * 10, shared)
     assert_equal expected, shared + cipher.final
   end
 

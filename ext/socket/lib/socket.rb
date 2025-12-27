@@ -660,12 +660,11 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
-
     if open_timeout && (connect_timeout || resolv_timeout)
       raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
     end
 
-    sock = if fast_fallback && !(host && ip_address?(host))
+    sock = if fast_fallback && !(host && ip_address?(host)) && !(local_port && local_port.to_i != 0)
       tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
       tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
@@ -736,7 +735,7 @@ class Socket < BasicSocket
           if local_addrinfos.any?
             local_addrinfo = local_addrinfos.find { |lai| lai.afamily == addrinfo.afamily }
 
-            if local_addrinfo.nil? # Connecting addrinfoと同じアドレスファミリのLocal addrinfoがない
+            if local_addrinfo.nil?
               if resolution_store.any_addrinfos?
                 # Try other Addrinfo in next "while"
                 next

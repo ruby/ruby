@@ -13378,6 +13378,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/box.h
 re.$(OBJEXT): $(top_srcdir)/internal/class.h
 re.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 re.$(OBJEXT): $(top_srcdir)/internal/encoding.h
+re.$(OBJEXT): $(top_srcdir)/internal/error.h
 re.$(OBJEXT): $(top_srcdir)/internal/gc.h
 re.$(OBJEXT): $(top_srcdir)/internal/hash.h
 re.$(OBJEXT): $(top_srcdir)/internal/imemo.h

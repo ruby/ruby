@@ -1,3 +1,4 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
@@ -12,6 +13,8 @@ module Lrama
         # * ($1) error
         # * (@1) error
         # * ($:1) error
+        #
+        # @rbs (Reference ref) -> bot
         def reference_to_c(ref)
           case
           when ref.type == :dollar # $$, $n

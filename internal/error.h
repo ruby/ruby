@@ -79,7 +79,7 @@ PRINTF_ARGS(void rb_warn_reserved_name(const char *removal, const char *fmt, ...
 # define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major * 10000) + (minor) * 100)
 # if defined(RBIMPL_WARNING_PRAGMA0)
 #   define RBIMPL_TODO0(x) RBIMPL_WARNING_PRAGMA0(message(x))
-# elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+# elif RBIMPL_COMPILER_IS(MSVC)
 #   define RBIMPL_TODO0(x) __pragma(message(x))
 # endif
 

@@ -198,7 +198,7 @@ jobs:
           path: ruby-bench
 
       - name: Run ruby-bench
-        run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
+        run: rm -rf benchmarks/lobsters && ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
 
       - uses: ./.github/actions/slack

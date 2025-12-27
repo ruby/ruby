@@ -173,6 +173,18 @@ require 'json/common'
 # When enabled:
 #   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
 #
+# ---
+#
+# Option +allow_control_characters+ (boolean) specifies whether to allow
+# unescaped ASCII control characters, such as newlines, in strings;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse(%{"Hello\nWorld"}, allow_control_characters: true) # => "Hello\nWorld"
+#
 # ====== Output Options
 #
 # Option +freeze+ (boolean) specifies whether the returned objects will be frozen;

@@ -11,7 +11,6 @@ require_relative "basic_specification"
 require_relative "stub_specification"
 require_relative "platform"
 require_relative "specification_record"
-require_relative "util/list"
 
 require "rbconfig"
 

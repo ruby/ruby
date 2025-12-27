@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.6"
+#define STRSCAN_VERSION "3.1.7.dev"
 
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT

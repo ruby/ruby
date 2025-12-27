@@ -20,6 +20,11 @@ typedef void *MMTk_Address;
 typedef void *MMTk_ObjectReference;
 typedef void *MMTk_NullableObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
+
+typedef struct MMTk_BumpPointer {
+    uintptr_t cursor;
+    uintptr_t limit;
+} MMTk_BumpPointer;
 """
 
 [export]

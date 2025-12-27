@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "report/duration"
+require_relative "tracer/duration"
 
 module Lrama
   # This is passed to a template
   class Context
-    include Report::Duration
+    include Tracer::Duration
 
     ErrorActionNumber = -Float::INFINITY
     BaseMin = -Float::INFINITY
@@ -231,8 +231,8 @@ module Lrama
         end
 
         # Shift is selected when S/R conflict exists.
-        state.selected_term_transitions.each do |shift, next_state|
-          actions[shift.next_sym.number] = next_state.id
+        state.selected_term_transitions.each do |shift|
+          actions[shift.next_sym.number] = shift.to_state.id
         end
 
         state.resolved_conflicts.select do |conflict|
@@ -292,18 +292,18 @@ module Lrama
       # of a default nterm transition destination.
       @yydefgoto = Array.new(@states.nterms.count, 0)
       # Mapping from nterm to next_states
-      nterm_to_next_states = {}
+      nterm_to_to_states = {}
 
       @states.states.each do |state|
-        state.nterm_transitions.each do |shift, next_state|
-          key = shift.next_sym
-          nterm_to_next_states[key] ||= []
-          nterm_to_next_states[key] << [state, next_state] # [from_state, to_state]
+        state.nterm_transitions.each do |goto|
+          key = goto.next_sym
+          nterm_to_to_states[key] ||= []
+          nterm_to_to_states[key] << [state, goto.to_state] # [from_state, to_state]
         end
       end
 
       @states.nterms.each do |nterm|
-        if (states = nterm_to_next_states[nterm])
+        if (states = nterm_to_to_states[nterm])
           default_state = states.map(&:last).group_by {|s| s }.max_by {|_, v| v.count }.first
           default_goto = default_state.id
           not_default_gotos = []
@@ -417,27 +417,25 @@ module Lrama
 
         res = lowzero - froms_and_tos.first[0]
 
+        # Find the smallest `res` such that `@table[res + from]` is empty for all `from` in `froms_and_tos`
         while true do
-          ok = true
+          advanced = false
+
+          while used_res[res]
+            res += 1
+            advanced = true
+          end
 
           froms_and_tos.each do |from, to|
-            loc = res + from
-
-            if @table[loc]
-              # If the cell of table is set, can not use the cell.
-              ok = false
-              break
+            while @table[res + from]
+              res += 1
+              advanced = true
             end
           end
 
-          if ok && used_res[res]
-            ok = false
-          end
-
-          if ok
+          unless advanced
+            # no advance means that the current `res` satisfies the condition
             break
-          else
-            res += 1
           end
         end
 

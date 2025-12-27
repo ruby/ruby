@@ -10,76 +10,76 @@ To use the module:
 require 'English'
 ```
 
-## Summary
+## In Brief
 
 ### Exceptions
 
-| Variable |      English      | Contains                                           |
-|:--------:|:-----------------:|----------------------------------------------------|
-|   `$!`   |   `$ERROR_INFO`   | Exception object; set by Kernel#raise.             |
-|   `$@`   | `$ERROR_POSITION` | Array of backtrace positions; set by Kernel#raise. |
+| Variable |     \English      | Contains                               | Initially | Read-Only | Reset By     |
+|:--------:|:-----------------:|----------------------------------------|:---------:|:---------:|--------------|
+|   `$!`   |   `$ERROR_INFO`   | \Exception object or `nil`             |   `nil`   |    Yes    | Kernel#raise |
+|   `$@`   | `$ERROR_POSITION` | \Array of backtrace positions or `nil` |   `nil`   |    Yes    | Kernel#raise |
 
-### Pattern Matching
+### Matched \Data
 
-|   Variable    |       English       | Contains                                         |
-|:-------------:|:-------------------:|--------------------------------------------------|
-|     `$~`      | `$LAST_MATCH_INFO`  | MatchData object; set by matcher method.         |
-|     `$&`      |      `$MATCH`       | Matched substring; set by matcher method.        |
-|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match; set by matcher method.  |
-|     `$'`      |    `$POST_MATCH`    | Substring right of match; set by matcher method. |
-|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched; set by matcher method.       |
-|     `$1`      |                     | First group matched; set by matcher method.      |
-|     `$2`      |                     | Second group matched; set by matcher method.     |
-| <tt>$_n_</tt> |                     | <i>n</i>th group matched; set by matcher method. |
+|   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
+|:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
+|     `$~`      | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
+|     `$&`      |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
+|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
+|     `$'`      |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
+|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
+|     `$1`      |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
+|     `$2`      |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
+| <tt>$_n_</tt> |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
 
 ### Separators
 
-|  Variable   |          English           | Contains                                   |
-|:-----------:|:--------------------------:|--------------------------------------------|
-| `$/`, `$-0` | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
-|    `$\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
+|  Variable   |          \English           | Contains                | Initially | Read-Only | Reset By |
+|:-----------:|:---------------------------:|-------------------------|:---------:|:---------:|----------|
+| `$/`, `$-0` | `$INPUT_RECORD_SEPARATOR`   | Input record separator  |  Newline  |    No     |          |
+|  `$\`       | `$OUTPUT_RECORD_SEPARATOR`  | Output record separator |   `nil`   |   No      |          |
 
 ### Streams
 
-| Variable  |           English           | Contains                                      |
-|:---------:|:---------------------------:|-----------------------------------------------|
-| `$stdin`  |                             | Standard input stream; initially `STDIN`.     |
-| `$stdout` |                             | Standard input stream; initially `STDIOUT`.   |
-| `$stderr` |                             | Standard input stream; initially `STDERR`.    |
-|   `$<`    |      `$DEFAULT_INPUT`       | Default standard input; `ARGF` or `$stdin`.   |
-|   `$>`    |      `$DEFAULT_OUTPUT`      | Default standard output; initially `$stdout`. |
-|   `$.`    | `$INPUT_LINE_NUMBER`, `$NR` | Input position of most recently read stream.  |
-|   `$_`    |      `$LAST_READ_LINE`      | String from most recently read stream.        |
+| Variable  |           \English           | Contains                                    | Initially | Read-Only | Reset By             |
+|:---------:|:----------------------------:|---------------------------------------------|:---------:|:---------:|----------------------|
+| `$stdin`  |                              | Standard input stream                       |  `STDIN`  |    No     |                      |
+| `$stdout` |                              | Standard output stream                      | `STDOUT`  |    No     |                      |
+| `$stderr` |                              | Standard error stream                       | `STDERR`  |    No     |                      |
+|   `$<`    |       `$DEFAULT_INPUT`       | Default standard input                      |  `ARGF`   |    Yes    |                      |
+|   `$>`    |      `$DEFAULT_OUTPUT`       | Default standard output                     | `STDOUT`  |    No     |                      |
+|   `$.`    | `$INPUT_LINE_NUMBER`, `$NR`  | Input position of most recently read stream |     0     |    No     | Certain read methods |
+|   `$_`    |      `$LAST_READ_LINE`       | String from most recently read stream       |   `nil`   |    No     | Certain read methods |
 
 ### Processes
 
-|         Variable          |        English        | Contains                                               |
-|:-------------------------:|:---------------------:|--------------------------------------------------------|
-|           `$0`            |                       | Initially, the name of the executing program.          |
-|           `$*`            |        `$ARGV`        | Points to the `ARGV` array.                            |
-|           `$$`            | `$PROCESS_ID`, `$PID` | Process ID of the current process.                     |
-|           `$?`            |    `$CHILD_STATUS`    | Process::Status of most recently exited child process. |
-| `$LOAD_PATH`, `$:`, `$-I` |                       | Array of paths to be searched.                         |
-| `$LOADED_FEATURES`, `$"`  |                       | Array of paths to loaded files.                        |
+|         Variable          |        \English        | Contains                        |   Initially   | Read-Only | Reset By |
+|:-------------------------:|:----------------------:|---------------------------------|:-------------:|:---------:|----------|
+|   `$0`, `$PROGRAM_NAME`   |                        | Program name                    | Program name  |   No      |          |
+|           `$*`            |        `$ARGV`         | \ARGV array                     |    `ARGV`     |   Yes     |          |
+|           `$$`            | `$PROCESS_ID`, `$PID`  | Process id                      | Process PID   |   Yes     |          |
+|           `$?`            |    `$CHILD_STATUS`     | Status of recently exited child |     `nil`     |   Yes     |          |
+| `$LOAD_PATH`, `$:`, `$-I` |                        | \Array of search paths          | Ruby defaults |   Yes     |          |
+| `$LOADED_FEATURES`, `$"`  |                        | \Array of load paths            | Ruby defaults |   Yes     |          |
 
 ### Debugging
 
-|  Variable   | English | Contains                                               |
-|:-----------:|:-------:|--------------------------------------------------------|
-| `$FILENAME` |         | The value returned by method ARGF.filename.            |
-|  `$DEBUG`   |         | Initially, whether option `-d` or `--debug` was given. |
-| `$VERBOSE`  |         | Initially, whether option `-V` or `-W` was given.      |
+|  Variable   | \English | Contains                                   |          Initially           | Read-Only | Reset By |
+|:-----------:|:--------:|--------------------------------------------|:----------------------------:|:---------:|----------|
+| `$FILENAME` |          | Value returned by method `ARGF.filename`   | Command-line argument or '-' |    Yes    |          |
+|  `$DEBUG`   |          | Whether option `-d` or `--debug` was given |     Command-line option      |    No     |          |
+| `$VERBOSE`  |          | Whether option `-V` or `-W` was given      |     Command-line option      |    No     |          |
 
 ### Other Variables
 
-|  Variable   | English | Contains                                       |
-|:-----------:|:-------:|------------------------------------------------|
-| `$-F`, `$;` |         | Separator given with command-line option `-F`. |
-|    `$-a`    |         | Whether option `-a` was given.                 |
-|    `$-i`    |         | Extension given with command-line option `-i`. |
-|    `$-l`    |         | Whether option `-l` was given.                 |
-|    `$-p`    |         | Whether option `-p` was given.                 |
-|    `$F`     |         | Array of `$_` split by `$-F`.                  |
+|  Variable   | \English | Contains                                      | Initially | Read-Only | Reset By |
+|:-----------:|:--------:|-----------------------------------------------|:---------:|:---------:|----------|
+| `$-F`, `$;` |          | Separator given with command-line option `-F` |           |           |          |
+|    `$-a`    |          | Whether option `-a` was given                 |           |   Yes     |          |
+|    `$-i`    |          | Extension given with command-line option `-i` |           |    No     |          |
+|    `$-l`    |          | Whether option `-l` was given                 |           |   Yes     |          |
+|    `$-p`    |          | Whether option `-p` was given                 |           |   Yes     |          |
+|    `$F`     |          | \Array of `$_` split by `$-F`                 |           |           |          |
 
 ## Exceptions
 
@@ -127,7 +127,7 @@ Output:
 
 English - `$ERROR_POSITION`.
 
-## Pattern Matching
+## Matched \Data
 
 These global variables store information about the most recent
 successful match in the current scope.
@@ -407,27 +407,27 @@ obtained by splitting `$_` by `$-F` is assigned at the start of each
 
 ### Environment
 
-|       Constant        | Contains                                                                      |
-|:---------------------:|-------------------------------------------------------------------------------|
-|         `ENV`         | Hash of current environment variable names and values.                        |
-|        `ARGF`         | String concatenation of files given on the command line, or `$stdin` if none. |
-|        `ARGV`         | Array of the given command-line arguments.                                    |
-|  `TOPLEVEL_BINDING`   | Binding of the top level scope.                                               |
-|    `RUBY_VERSION`     | String Ruby version.                                                          |
-|  `RUBY_RELEASE_DATE`  | String Ruby release date.                                                     |
-|    `RUBY_PLATFORM`    | String Ruby platform.                                                         |
-|  `RUBY_PATCH_LEVEL`   | String Ruby patch level.                                                      |
-|    `RUBY_REVISION`    | String Ruby revision.                                                         |
-|   `RUBY_COPYRIGHT`    | String Ruby copyright.                                                        |
-|     `RUBY_ENGINE`     | String Ruby engine.                                                           |
+| Constant              | Contains                                                                      |
+|-----------------------|-------------------------------------------------------------------------------|
+| `ENV`                 | Hash of current environment variable names and values.                        |
+| `ARGF`                | String concatenation of files given on the command line, or `$stdin` if none. |
+| `ARGV`                | Array of the given command-line arguments.                                    |
+| `TOPLEVEL_BINDING`    | Binding of the top level scope.                                               |
+| `RUBY_VERSION`        | String Ruby version.                                                          |
+| `RUBY_RELEASE_DATE`   | String Ruby release date.                                                     |
+| `RUBY_PLATFORM`       | String Ruby platform.                                                         |
+| `RUBY_PATCH_LEVEL`    | String Ruby patch level.                                                      |
+| `RUBY_REVISION`       | String Ruby revision.                                                         |
+| `RUBY_COPYRIGHT`      | String Ruby copyright.                                                        |
+| `RUBY_ENGINE`         | String Ruby engine.                                                           |
 | `RUBY_ENGINE_VERSION` | String Ruby engine version.                                                   |
-|  `RUBY_DESCRIPTION`   | String Ruby description.                                                      |
+| `RUBY_DESCRIPTION`    | String Ruby description.                                                      |
 
-### Embedded Data
+### Embedded \Data
 
-| Constant | Contains                                                           |
-|:--------:|--------------------------------------------------------------------|
-|  `DATA`  | File containing embedded data (lines following `__END__`, if any). |
+|      Constant         | Contains                                                                      |
+|:---------------------:|-------------------------------------------------------------------------------|
+|        `DATA`         | File containing embedded data (lines following `__END__`, if any).            |
 
 ## Streams
 
@@ -607,3 +607,4 @@ Output:
 [command-line option `-p`]: rdoc-ref:language/options.md@p-3A+-n-2C+with+Printing
 [command-line option `-v`]: rdoc-ref:language/options.md@v-3A+Print+Version-3B+Set+-24VERBOSE
 [command-line option `-w`]: rdoc-ref:language/options.md@w-3A+Synonym+for+-W1
+

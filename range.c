@@ -1018,6 +1018,20 @@ range_to_a(VALUE range)
     return rb_call_super(0, 0);
 }
 
+/*
+ *  call-seq:
+ *    to_set -> set
+ *
+ *  Returns a set containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
+ *
+ *    (1..4).to_set   # => Set[1, 2, 3, 4]
+ *    (1...4).to_set   # => Set[1, 2, 3]
+ *
+ *    (1..).to_set
+ *    # in 'Range#to_set': cannot convert endless range to a set (RangeError)
+ *
+ */
 static VALUE
 range_to_set(int argc, VALUE *argv, VALUE range)
 {

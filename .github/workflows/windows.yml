@@ -112,7 +112,7 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           ::- Set up VC ${{ matrix.vc }}
-          set | uutils sort > old.env
+          set | sort > old.env
           call ..\src\win32\vssetup.cmd ^
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
@@ -122,8 +122,8 @@ jobs:
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
-          set | uutils sort > new.env
-          uutils comm -13 old.env new.env >> %GITHUB_ENV%
+          set | sort > new.env
+          comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
 
       - name: baseruby version
