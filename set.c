@@ -1640,6 +1640,7 @@ set_le(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    proper_subset?(set) -> true or false
+ *    self < set -> true or false
  *
  *  Returns true if the set is a proper subset of the given set.
  */
