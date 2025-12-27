@@ -44,10 +44,10 @@ describe "MatchData#deconstruct_keys" do
     }.should raise_error(TypeError, "wrong argument type String (expected Symbol)")
   end
 
-  it "process keys till the first non-existing one" do
+  it "returns all present keys" do
     m = /(?<f>foo)(?<b>bar)(?<c>baz)/.match("foobarbaz")
 
-    m.deconstruct_keys([:f, :a, :b]).should == { f: "foo" }
+    m.deconstruct_keys([:f, :a, :b]).should == { f: "foo", b: "bar" }
   end
 
   it "returns {} when there are no named captured groups at all" do
@@ -56,8 +56,8 @@ describe "MatchData#deconstruct_keys" do
     m.deconstruct_keys(nil).should == {}
   end
 
-  it "returns {} when passed more keys than named captured groups" do
+  it "returns all present keys even when passed more keys than named captured groups" do
     m = /(?<f>foo)(?<b>bar)/.match("foobar")
-    m.deconstruct_keys([:f, :b, :c]).should == {}
+    m.deconstruct_keys([:f, :b, :c]).should == { f: "foo", b: "bar" }
   end
 end

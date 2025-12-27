@@ -57,26 +57,26 @@ describe "Data#deconstruct_keys" do
     d.deconstruct_keys([0, :x]).should == {0 => 1, :x => 1}
   end
 
-  it "returns an empty hash when there are more keys than attributes" do
+  it "returns all present keys even when there are more keys than attributes" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
 
-    d.deconstruct_keys([:x, :y, :x]).should == {}
+    d.deconstruct_keys([:x, :y, :x]).should == {x: 1, y: 2}
   end
 
-  it "returns at first not existing attribute name" do
+  it "returns all present keys" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
 
-    d.deconstruct_keys([:a, :x]).should == {}
+    d.deconstruct_keys([:a, :x]).should == {x: 1}
     d.deconstruct_keys([:x, :a]).should == {x: 1}
   end
 
-  it "returns at first not existing argument position number" do
+  it "returns all present argument position numbers" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
 
-    d.deconstruct_keys([3, 0]).should == {}
+    d.deconstruct_keys([3, 0]).should == {0 => 1}
     d.deconstruct_keys([0, 3]).should == {0 => 1}
   end
 
