@@ -1685,6 +1685,7 @@ set_i_proper_superset(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    superset?(set) -> true or false
+ *    self >= set -> true or false
  *
  *  Returns true if the set is a superset of the given set.
  */
