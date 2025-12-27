@@ -247,8 +247,9 @@ jobs:
       - name: Checkout ruby-bench
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          repository: ruby/ruby-bench
+          repository: nobu/ruby-bench
           path: ruby-bench
+          ref: fork-deps
 
       - name: Run ruby-bench
         run: rm -rf benchmarks/lobsters && ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
