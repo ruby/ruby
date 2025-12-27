@@ -671,7 +671,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
-    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
+    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)rb_imemo_memo_new(memo, 0, 0));
 }
 
 /*
@@ -1613,7 +1613,7 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
     VALUE memos = rb_attr_get(yielder, id_memo);
     struct MEMO *result;
 
-    result = MEMO_NEW(m, rb_enum_values_pack(argc, argv),
+    result = rb_imemo_memo_new(m, rb_enum_values_pack(argc, argv),
                       argc > 1 ? LAZY_MEMO_PACKED : 0);
     return lazy_yielder_result(result, yielder, procs_array, memos, 0);
 }

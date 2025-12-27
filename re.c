@@ -2469,7 +2469,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     }
 
     hash = rb_hash_new();
-    memo = MEMO_NEW(hash, match, symbolize_names);
+    memo = rb_imemo_memo_new(hash, match, symbolize_names);
 
     onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
 
@@ -2508,7 +2508,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
 
         struct MEMO *memo;
-        memo = MEMO_NEW(h, match, 1);
+        memo = rb_imemo_memo_new(h, match, 1);
 
         onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, (void*)memo);
 

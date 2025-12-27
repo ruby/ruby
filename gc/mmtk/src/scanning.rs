@@ -54,7 +54,11 @@ impl Scanning<Ruby> for VMScanning {
         gc_tls
             .object_closure
             .set_temporarily_and_run_code(visit_object, || {
-                (upcalls().scan_object_ruby_style)(object);
+                (upcalls().call_gc_mark_children)(object);
+
+                if crate::mmtk().get_plan().current_gc_may_move_object() {
+                    (upcalls().update_object_references)(object);
+                }
             });
     }
 
@@ -131,6 +135,7 @@ impl Scanning<Ruby> for VMScanning {
         crate::binding()
             .weak_proc
             .process_weak_stuff(worker, tracer_context);
+        crate::binding().pinning_registry.cleanup(worker);
         false
     }
 
@@ -248,7 +253,11 @@ impl<F: RootsWorkFactory<RubySlot>> GCWork<Ruby> for ScanWbUnprotectedRoots<F> {
             for object in self.objects.iter().copied() {
                 if object.is_reachable() {
                     debug!("[wb_unprot_roots] Visiting WB-unprotected object (parent): {object}");
-                    (upcalls().scan_object_ruby_style)(object);
+                    (upcalls().call_gc_mark_children)(object);
+
+                    if crate::mmtk().get_plan().current_gc_may_move_object() {
+                        (upcalls().update_object_references)(object);
+                    }
                 } else {
                     debug!(
                         "[wb_unprot_roots] Skipping young WB-unprotected object (parent): {object}"

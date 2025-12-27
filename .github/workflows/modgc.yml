@@ -27,7 +27,7 @@ jobs:
         gc:
           - name: default
           - name: mmtk
-            mmtk_build: release
+            mmtk_build: debug
         os: [macos-latest, ubuntu-latest]
         include:
           - test_task: check

@@ -134,6 +134,7 @@ typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
 VALUE rb_imemo_tmpbuf_new(void);
+struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
 static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
@@ -151,17 +152,6 @@ void rb_imemo_free(VALUE obj);
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
-
-static inline struct MEMO *
-MEMO_NEW(VALUE a, VALUE b, VALUE c)
-{
-    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
-    *((VALUE *)&memo->v1) = a;
-    *((VALUE *)&memo->v2) = b;
-    *((VALUE *)&memo->u3.value) = c;
-
-    return memo;
-}
 
 static inline enum imemo_type
 imemo_type(VALUE imemo)

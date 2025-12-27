@@ -27,6 +27,7 @@ pub mod binding;
 pub mod collection;
 pub mod heap;
 pub mod object_model;
+pub mod pinning_registry;
 pub mod reference_glue;
 pub mod scanning;
 pub mod utils;

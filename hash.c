@@ -4673,6 +4673,8 @@ rb_hash_compare_by_id(VALUE hash)
         RHASH_ST_CLEAR(tmp);
     }
 
+    rb_gc_register_pinning_obj(hash);
+
     return hash;
 }
 
