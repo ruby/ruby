@@ -1232,10 +1232,30 @@ rb_generic_fields_tbl_get(void)
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    VALUE data;
     // Bypass ASSERT_vm_locking() check because marking may happen concurrently with mmtk
-    if (st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data)) {
-        rb_gc_mark_movable(data);
+    switch (BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        if (UNLIKELY(!RTYPEDDATA_P(obj))) {
+            goto generic_fields;
+        }
+        break;
+
+      case T_STRUCT:
+        if (UNLIKELY(FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
+            goto generic_fields;
+        }
+        break;
+
+      default:
+      generic_fields: {
+        VALUE data;
+        if (st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data)) {
+            rb_gc_mark_movable(data);
+        }
+        else {
+            rb_bug("rb_mark_generic_ivar: expected object %s to be in the generic fields table", rb_obj_info(obj));
+        }
+      }
     }
 }
 
