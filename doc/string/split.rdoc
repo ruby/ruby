@@ -23,7 +23,6 @@ splits at every character:
 
   'abracadabra'.split('') # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
   ''.split('')            # => []
-  'тест'.split('')        # => ["т", "е", "с", "т"]
   'こんにちは'.split('')   # => ["こ", "ん", "に", "ち", "は"]
 
 When +field_sep+ is a non-empty string and different from <tt>' '</tt> (a single space),
@@ -32,7 +31,6 @@ uses that string as the separator:
   'abracadabra'.split('a')  # => ["", "br", "c", "d", "br"]
   'abracadabra'.split('ab') # => ["", "racad", "ra"]
   ''.split('a')             # => []
-  'тест'.split('т')         # => ["", "ес"]
   'こんにちは'.split('に')    # => ["こん", "ちは"]
 
 When +field_sep+ is a Regexp,

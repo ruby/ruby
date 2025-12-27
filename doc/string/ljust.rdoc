@@ -3,7 +3,6 @@ Returns a copy of +self+, left-justified and, if necessary, right-padded with th
   'hello'.ljust(10)       # => "hello     "
   '  hello'.ljust(10)     # => "  hello   "
   'hello'.ljust(10, 'ab') # => "helloababa"
-  'тест'.ljust(10)        # => "тест      "
   'こんにちは'.ljust(10)   # => "こんにちは     "
 
 If <tt>width <= self.length</tt>, returns a copy of +self+:

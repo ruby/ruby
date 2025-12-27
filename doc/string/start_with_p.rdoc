@@ -11,7 +11,6 @@ Returns +true+ if any pattern matches the beginning, +false+ otherwise:
   'hello'.start_with?(/H/i)                 # => true
   'hello'.start_with?('heaven', 'hell')     # => true
   'hello'.start_with?('heaven', 'paradise') # => false
-  'тест'.start_with?('т')                   # => true
   'こんにちは'.start_with?('こ')              # => true
 
 Related: see {Querying}[rdoc-ref:String@Querying].

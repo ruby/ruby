@@ -1,7 +1,6 @@
 Returns an array of the characters in +self+:
 
   'hello'.chars     # => ["h", "e", "l", "l", "o"]
-  'Привет'.chars    # => ["П", "р", "и", "в", "е", "т"]
   'こんにちは'.chars # => ["こ", "ん", "に", "ち", "は"]
   ''.chars          # => []
 

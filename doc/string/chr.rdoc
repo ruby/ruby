@@ -1,7 +1,6 @@
 Returns a string containing the first character of +self+:
 
   'hello'.chr     # => "h"
-  'тест'.chr      # => "т"
   'こんにちは'.chr # => "こ"
   ''.chr          # => ""
 

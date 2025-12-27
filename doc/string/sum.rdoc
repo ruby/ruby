@@ -5,7 +5,6 @@ modulo <tt>2**n - 1</tt>:
   'hello'.sum     # => 532
   'hello'.sum(4)  # => 4
   'hello'.sum(64) # => 532
-  'тест'.sum      # => 1405
   'こんにちは'.sum  # => 2582
 
 This is not a particularly strong checksum.

@@ -7,7 +7,6 @@ Examples:
 
   'Hello'.swapcase        # => "hELLO"
   'Straße'.swapcase       # => "sTRASSE"
-  'Привет'.swapcase       # => "пРИВЕТ"
   'RubyGems.org'.swapcase # => "rUBYgEMS.ORG"
 
 The sizes of +self+ and the upcased result may differ:

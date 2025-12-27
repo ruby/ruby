@@ -7,7 +7,6 @@ or, if no alphanumerics, the rightmost character:
   'THX1138'.succ   # => "THX1139"
   '<<koala>>'.succ # => "<<koalb>>"
   '***'.succ       # => '**+'
-  'тест'.succ      # => "тесу"
   'こんにちは'.succ  # => "こんにちば"
 
 The successor to a digit is another digit, "carrying" to the next-left

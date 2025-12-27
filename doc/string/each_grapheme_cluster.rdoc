@@ -9,12 +9,6 @@ returns +self+:
   a  # => ["h", "e", "l", "l", "o"]
 
   a = []
-  'тест'.each_grapheme_cluster do |grapheme_cluster|
-    a.push(grapheme_cluster)
-  end
-  a # => ["т", "е", "с", "т"]
-
-  a = []
   'こんにちは'.each_grapheme_cluster do |grapheme_cluster|
     a.push(grapheme_cluster)
   end

@@ -10,8 +10,6 @@ Examples:
   'HELLO'.capitalize  # => "Hello"
   'straße'.capitalize # => "Straße"  # Lowercase 'ß' not changed.
   'STRAẞE'.capitalize # => "Straße"  # Uppercase 'ẞ' downcased to 'ß'.
-  'привет'.capitalize # => "Привет"
-  'ПРИВЕТ'.capitalize # => "Привет"
 
 Some characters (and some character sets) do not have upcase and downcase versions;
 see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:

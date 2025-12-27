@@ -16,7 +16,6 @@ With no block given, returns an array of the results:
   'cruel world'.scan(/.../)      # => ["cru", "el ", "wor"]
   'cruel world'.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
   'cruel world'.scan(/(..)(..)/) # => [["cr", "ue"], ["l ", "wo"]]
-  'тест'.scan(/../)              # => ["те", "ст"]
   'こんにちは'.scan(/../)         # => ["こん", "にち"]
   'abracadabra'.scan('ab')       # => ["ab", "ab"]
   'abracadabra'.scan('nosuch')   # => []

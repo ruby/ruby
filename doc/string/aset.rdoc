@@ -170,10 +170,6 @@ With string argument +substring+ given:
   s['ll'] = 'foo'  # => "foo"
   s  # => "hefooo"
 
-  s = 'Привет'
-  s['ив'] = 'foo'  # => "foo"
-  s  # => "Прfooет"
-
   s = 'こんにちは'
   s['んにち'] = 'foo'  # => "foo"
   s  # => "こfooは"
