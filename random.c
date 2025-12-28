@@ -405,7 +405,7 @@ rand_init(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE seed)
 static VALUE
 random_init(int argc, VALUE *argv, VALUE obj)
 {
-    const rb_random_interface_t *rng;
+    const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
 
     if (!rng) {
@@ -1296,7 +1296,7 @@ rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
-    const rb_random_interface_t *rng;
+    const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
     return rand_bytes(rng, rnd, NUM2LONG(rb_to_int(len)));
 }
@@ -1570,7 +1570,7 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, const rb_random_inter
 static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
-    const rb_random_interface_t *rng;
+    const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
     VALUE v = rand_random(argc, argv, obj, rng, rnd);
     check_random_number(v, argv);
@@ -1621,7 +1621,7 @@ rand_random(int argc, VALUE *argv, VALUE obj, const rb_random_interface_t *rng, 
 static VALUE
 rand_random_number(int argc, VALUE *argv, VALUE obj)
 {
-    const rb_random_interface_t *rng;
+    const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
     VALUE v = rand_random(argc, argv, obj, rng, rnd);
     if (NIL_P(v)) v = rand_random(0, 0, obj, rng, rnd);
