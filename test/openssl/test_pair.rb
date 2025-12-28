@@ -600,6 +600,16 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_write_ltlt_convert_to_s
+    ssl_pair {|s1, s2|
+      def (obj = Object.new).to_s() "obj" end
+      assert_equal(6, s1.write("str", obj))
+      assert_same(s1, s1 << obj)
+      s1.close
+      assert_equal("strobjobj", s2.read)
+    }
+  end
+
   def test_write_zero
     ssl_pair {|s1, s2|
       assert_equal 0, s2.write_nonblock('', exception: false)

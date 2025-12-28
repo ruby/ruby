@@ -463,10 +463,13 @@ module OpenSSL::Buffering
   # converted using +.to_s+ method.  Returns the number of bytes written.
 
   def write(*s)
-    s.inject(0) do |written, str|
+    written = 0
+    s.each do |str|
+      str = str.to_s
       do_write(str)
-      written + str.bytesize
+      written += str.bytesize
     end
+    written
   end
 
   ##
@@ -516,7 +519,7 @@ module OpenSSL::Buffering
   # +.to_s+ method.
 
   def <<(s)
-    do_write(s)
+    do_write(s.to_s)
     self
   end
 
