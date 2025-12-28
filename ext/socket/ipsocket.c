@@ -269,9 +269,8 @@ is_local_port_fixed(const char *portp)
 
     if (endp == portp) return 0;
     if (errno == ERANGE) return 0;
-    if (port <= 0) return 0;
 
-    return port != 0;
+    return port > 0;
 }
 
 struct fast_fallback_inetsock_arg
