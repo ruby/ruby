@@ -11596,17 +11596,25 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
-      case RB_LOCAL_VARIABLE_WRITE_NODE: {
-        ID id = RB_NODE_LOCAL_VARIABLE_WRITE(node)->name;
-        int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
-
-        debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
-        CHECK(COMPILE(ret, "rvalue", RB_NODE_LOCAL_VARIABLE_WRITE(node)->value));
+      case RB_LOCAL_VARIABLE_WRITE_NODE: { // LASGN and DASGN
+        int idx, lv, ls;
+        rb_local_variable_write_node_t *cast = RB_NODE_LOCAL_VARIABLE_WRITE(node);
+        ID id = cast->name;
+        CHECK(COMPILE(ret, "dvalue", cast->value));
+        debugi("dassn id", rb_id2str(id) ? id : '*');
 
         if (!popped) {
             ADD_INSN(ret, node, dup);
         }
-        ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+
+        idx = get_dyna_var_idx(iseq, id, &lv, &ls);
+
+        if (idx < 0) {
+            COMPILE_ERROR(ERROR_ARGS "RB_LOCAL_VARIABLE_WRITE_NODE: unknown id (%"PRIsVALUE")",
+                          rb_id2str(id));
+            goto ng;
+        }
+        ADD_SETLOCAL(ret, node, ls - idx, lv);
         break;
       }
       case RB_GLOBAL_VARIABLE_WRITE_NODE: {
@@ -11670,9 +11678,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
-      case RB_LOCAL_VARIABLE_READ_NODE: {
+      case RB_LOCAL_VARIABLE_READ_NODE: { // LVAR and DVAR
+        int lv, idx, ls;
+        rb_local_variable_read_node_t *cast = RB_NODE_LOCAL_VARIABLE_READ(node);
+        debugi("nd_vid", cast->name);
         if (!popped) {
-            compile_lvar(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_READ(node)->name);
+            idx = get_dyna_var_idx(iseq, cast->name, &lv, &ls);
+            if (idx < 0) {
+                COMPILE_ERROR(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
+                              rb_id2str(cast->name));
+                goto ng;
+            }
+            ADD_GETLOCAL(ret, node, ls - idx, lv);
         }
         break;
       }
@@ -12334,7 +12351,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       //                         rb_id2str(RNODE_DVAR(node)->nd_vid));
       //           goto ng;
       //       }
-      //       ADD_GETLOCAL(ret, node, ls - idx, lv);
+      //       c
       //   }
       //   break;
       // }
