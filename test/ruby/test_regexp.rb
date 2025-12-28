@@ -2304,5 +2304,7 @@ class TestRegexp < Test::Unit::TestCase
     assert(Marshal.load(dumped).frozen?, message)
     # Regexp must be frozen even with freeze: false
     assert(Marshal.load(dumped, freeze: false).frozen?, message)
+    # checking rb_reg_new_str path in re.c (literals)
+    assert(/pattern/.frozen?, message)
   end
 end
