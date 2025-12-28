@@ -9067,7 +9067,7 @@ compile_iter0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, c
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
             NEW_CHILD_ISEQ(RB_NODE_CALL(node)->block, make_name_for_block(iseq),
                            ISEQ_TYPE_BLOCK, line);
-        CHECK(compile_call(iseq, ret, node, type, popped));
+        CHECK(compile_call(iseq, ret, node, type, 0));
       }
     }
 
@@ -11678,6 +11678,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_IT_LOCAL_VARIABLE_READ_NODE: {
+        if (ISEQ_BODY(iseq)->local_table_size != 1) {
+            COMPILE_ERROR(ERROR_ARGS "local_table_size is %d",
+                          ISEQ_BODY(iseq)->local_table_size);
+            goto ng;
+        }
+
+        if (!popped) {
+            ADD_GETLOCAL(ret, node, 1, 0);
+        }
+        break;
+      }
       case RB_LOCAL_VARIABLE_READ_NODE: { // LVAR and DVAR
         int lv, idx, ls;
         rb_local_variable_read_node_t *cast = RB_NODE_LOCAL_VARIABLE_READ(node);
