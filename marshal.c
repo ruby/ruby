@@ -2080,7 +2080,6 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 rb_str_set_len(str, dst - ptr);
             }
             VALUE regexp = rb_reg_new_str(str, options);
-            r_copy_ivar(regexp, str);
 
             v = r_entry0(regexp, idx, arg);
             v = r_leave(v, arg, partial);

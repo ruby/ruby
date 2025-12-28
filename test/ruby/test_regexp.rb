@@ -2297,5 +2297,10 @@ class TestRegexp < Test::Unit::TestCase
     assert(Regexp.new("test").frozen?, message)
     # checking rb_reg_init_copy path in re.c (dup)
     assert(/test/.dup.frozen?, message)
+    # checking Marshal.load path in marshal.c (r_leave)
+    dumped = Marshal.dump(/test/)
+    assert(Marshal.load(dumped).frozen?, message)
+    # Regexp must be frozen even with freeze: false
+    assert(Marshal.load(dumped, freeze: false).frozen?, message)
   end
 end
