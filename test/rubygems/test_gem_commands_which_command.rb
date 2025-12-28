@@ -38,7 +38,13 @@ class TestGemCommandsWhichCommand < Gem::TestCase
   end
 
   def test_execute_one_missing
-    # TODO: this test fails in isolation
+    original_gem_home = ENV["GEM_HOME"]
+    original_gem_path = ENV["GEM_PATH"]
+
+    ENV["GEM_HOME"] = @gemhome
+    ENV["GEM_PATH"] = @gemhome
+    Gem.use_paths(@gemhome)
+    Gem::Specification.reset
 
     util_foo_bar
 
@@ -53,6 +59,21 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     assert_equal "#{@foo_bar.full_gem_path}/lib/foo_bar.rb\n", @ui.output
     assert_match(/Can.t find Ruby library file or shared library missinglib\n/,
                  @ui.error)
+  ensure
+    if original_gem_home
+      ENV["GEM_HOME"] = original_gem_home
+    else
+      ENV.delete("GEM_HOME")
+    end
+
+    if original_gem_path
+      ENV["GEM_PATH"] = original_gem_path
+    else
+      ENV.delete("GEM_PATH")
+    end
+
+    Gem.use_paths(@gemhome)
+    Gem::Specification.reset
   end
 
   def test_execute_missing
