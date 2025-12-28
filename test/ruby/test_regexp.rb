@@ -2306,5 +2306,7 @@ class TestRegexp < Test::Unit::TestCase
     assert(Marshal.load(dumped, freeze: false).frozen?, message)
     # checking rb_reg_new_str path in re.c (literals)
     assert(/pattern/.frozen?, message)
+    # checking rb_reg_new_ary path in re.c (union)
+    assert(Regexp.union("foo", "bar").frozen?, message)
   end
 end
