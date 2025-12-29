@@ -11,7 +11,7 @@ describe "Enumerable#to_set" do
     [1, 2, 3].to_set { |x| x * x }.should == Set[1, 4, 9]
   end
 
-  ruby_version_is "4.0" do
+  ruby_version_is "4.0"..."4.1" do
     it "instantiates an object of provided as the first argument set class" do
       set = nil
       proc{set = [1, 2, 3].to_set(EnumerableSpecs::SetSubclass)}.should complain(/Enumerable#to_set/)
