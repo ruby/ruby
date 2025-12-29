@@ -421,11 +421,12 @@ void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite waiting, int err, const 
 RBIMPL_ATTR_COLD()
 RBIMPL_ATTR_NORETURN()
 /**
+ * @private
+ *
  * Fails with the given object's type incompatibility to the type.
  *
- * It  seems this  function is  visible from  extension libraries  only because
- * RTYPEDDATA_TYPE() uses  it on RUBY_DEBUG.   So you can basically  ignore it;
- * use some other fine-grained method instead.
+ * This  is  an implementation  detail  of  Check_Type.   People don't  use  it
+ * directly.
  *
  * @param[in]  self           The object in question.
  * @param[in]  t              Expected type of the object.
