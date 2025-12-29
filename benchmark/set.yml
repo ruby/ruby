@@ -259,7 +259,3 @@ benchmark:
   to_set_10: s1.to_set
   to_set_100: s2.to_set
   to_set_1000: s3.to_set
-  to_set_arg_0: s0.to_set set_subclass
-  to_set_arg_10: s1.to_set set_subclass
-  to_set_arg_100: s2.to_set set_subclass
-  to_set_arg_1000: s3.to_set set_subclass

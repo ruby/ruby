@@ -11,6 +11,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Set
+
+    * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
+      `Enumerable#to_set` accepting arguments, was removed.  [[Feature #21390]]
+
 ## Stdlib updates
 
 We only list stdlib changes that are notable feature changes.
@@ -61,3 +66,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Feature #21390]: https://bugs.ruby-lang.org/issues/21390
