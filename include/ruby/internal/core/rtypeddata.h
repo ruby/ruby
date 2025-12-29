@@ -566,7 +566,7 @@ RTYPEDDATA_GET_DATA(VALUE obj)
 #if RUBY_DEBUG
     if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
         Check_Type(obj, RUBY_T_DATA);
-        RBIMPL_UNREACHABLE_RETURN(false);
+        RBIMPL_UNREACHABLE_RETURN(NULL);
     }
 #endif
 
