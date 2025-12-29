@@ -396,6 +396,7 @@ RBIMPL_ATTR_NONNULL((3))
  */
 VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type);
 
+RBIMPL_ATTR_NONNULL((3))
 /**
  * Identical  to rb_data_typed_object_wrap(),  except it  allocates a  new data
  * region internally instead of taking an existing one.  The allocation is done
@@ -411,6 +412,7 @@ VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *
  */
 VALUE rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type);
 
+RBIMPL_ATTR_NONNULL(())
 /**
  * Checks for the domestic relationship between the two.
  *
@@ -425,6 +427,7 @@ VALUE rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t
  */
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 
+RBIMPL_ATTR_NONNULL((2))
 /**
  * Checks if the given object is of given kind.
  *
@@ -435,6 +438,7 @@ int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *
  */
 int rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type);
 
+RBIMPL_ATTR_NONNULL((2))
 /**
  * Identical to rb_typeddata_is_kind_of(), except  it raises exceptions instead
  * of returning false.
@@ -586,7 +590,7 @@ RTYPEDDATA_P(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
-/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+RBIMPL_ATTR_RETURNS_NONNULL()
 /**
  * Queries for the type of given object.
  *
@@ -605,7 +609,9 @@ RTYPEDDATA_TYPE(VALUE obj)
 #endif
 
     VALUE type = RTYPEDDATA(obj)->type & TYPED_DATA_PTR_MASK;
-    return RBIMPL_CAST((const rb_data_type_t *)type);
+    const rb_data_type_t *ptr = RBIMPL_CAST((const rb_data_type_t *)type);
+    RBIMPL_ASSERT_OR_ASSUME(ptr);
+    return ptr;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -650,6 +656,7 @@ rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *expected_type)
 #define TypedData_Get_Struct(obj,type,data_type,sval) \
     ((sval) = RBIMPL_CAST((type *)rbimpl_check_typeddata((obj), (data_type))))
 
+RBIMPL_ATTR_NONNULL((2))
 /**
  * While  we don't  stop  you from  using  this  function, it  seems  to be  an
  * implementation  detail of  #TypedData_Make_Struct, which  is preferred  over
