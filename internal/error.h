@@ -235,10 +235,11 @@ rb_key_err_raise(VALUE mesg, VALUE recv, VALUE name)
     rb_exc_raise(exc);
 }
 
+RBIMPL_ATTR_NONNULL((2))
 static inline bool
 rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type)
 {
-    return RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
+    return rbimpl_obj_typeddata_p(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
 }
 
 typedef enum {
