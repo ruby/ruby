@@ -76,16 +76,6 @@ class TestObjSpace < Test::Unit::TestCase
     assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
 
-  def test_count_nodes
-    res = ObjectSpace.count_nodes
-    assert_not_empty(res)
-    arg = {}
-    ObjectSpace.count_nodes(arg)
-    assert_not_empty(arg)
-    bug8014 = '[ruby-core:53130] [Bug #8014]'
-    assert_empty(arg.select {|k, v| !(Symbol === k && Integer === v)}, bug8014)
-  end if false
-
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
     assert_not_empty(res)
