@@ -11099,12 +11099,12 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 }
 
 static int
-compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_call_node_t *const node, int popped)
 {
     DECL_ANCHOR(recv);
     DECL_ANCHOR(args);
     unsigned int flag = 0;
-    ID mid = RNODE_ATTRASGN(node)->nd_mid;
+    ID mid = node->name;
     VALUE argc;
     LABEL *else_label = NULL;
     VALUE branches = Qfalse;
@@ -11112,19 +11112,17 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
     // TODO: block
-    argc = setup_args(iseq, args, RNODE_ATTRASGN(node)->nd_args, NULL, &flag, NULL);
+    argc = setup_args(iseq, args, node->arguments, NULL, &flag, NULL);
     CHECK(!NIL_P(argc));
 
-    int asgnflag = COMPILE_RECV(recv, "recv", node, RNODE_ATTRASGN(node)->nd_recv);
+    int asgnflag = COMPILE_RECV(recv, "recv", node, node->receiver);
     CHECK(asgnflag != -1);
     flag |= (unsigned int)asgnflag;
 
     debugp_param("argc", argc);
     debugp_param("nd_mid", ID2SYM(mid));
 
-    if (!rb_is_attrset_id(mid)) {
-        /* safe nav attr */
-        mid = rb_id_attrset(mid);
+    if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION) {
         else_label = qcall_branch_start(iseq, recv, &branches, node, node);
     }
     if (!popped) {
@@ -11667,7 +11665,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case RB_CALL_NODE: {
-        if (compile_iter(iseq, ret, node, type, popped) == COMPILE_NG) {
+        if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
+            CHECK(compile_attrasgn(iseq, ret, RB_NODE_CALL(node), popped));
+        }
+        else if (compile_iter(iseq, ret, node, type, popped) == COMPILE_NG) {
             goto ng;
         }
         break;
