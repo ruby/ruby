@@ -3581,9 +3581,9 @@ enum_product_enum_size(VALUE obj, VALUE args, VALUE eobj)
 struct product_state {
     VALUE  obj;
     VALUE  block;
+    int    index;
     int    argc;
     VALUE *argv;
-    int    index;
 };
 
 static VALUE product_each(VALUE, struct product_state *);
@@ -3622,15 +3622,23 @@ enum_product_run(VALUE obj, VALUE block)
 {
     struct enum_product *ptr = enum_product_ptr(obj);
     int argc = RARRAY_LENINT(ptr->enums);
+    if (argc == 0) { /* no need to allocate state.argv */
+        rb_funcall(block, id_call, 1, rb_ary_new());
+        return obj;
+    }
+
+    VALUE argsbuf = 0;
     struct product_state state = {
         .obj = obj,
         .block = block,
         .index = 0,
         .argc = argc,
-        .argv = ALLOCA_N(VALUE, argc),
+        .argv = ALLOCV_N(VALUE, argsbuf, argc),
     };
 
-    return product_each(obj, &state);
+    VALUE ret = product_each(obj, &state);
+    ALLOCV_END(argsbuf);
+    return ret;
 }
 
 /*
