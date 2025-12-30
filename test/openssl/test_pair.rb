@@ -4,44 +4,6 @@ require_relative 'ut_eof'
 
 return unless defined?(OpenSSL::SSL)
 
-module OpenSSL::SSLPair
-  def ssl_pair
-    svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-    ee_exts = [
-      ["keyUsage", "keyEncipherment,digitalSignature", true],
-    ]
-    svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
-    svr_cert = issue_cert(svr_dn, svr_key, 1, ee_exts, nil, nil)
-
-    host = "127.0.0.1"
-    svr = TCPServer.new(host, 0)
-    svr.setsockopt(:TCP, :NODELAY, 1)
-    port = svr.connect_address.ip_port
-
-    tcps = nil
-    th = Thread.new {
-      tcps = svr.accept
-      sctx = OpenSSL::SSL::SSLContext.new
-      sctx.add_certificate(svr_cert, svr_key)
-      ssl = OpenSSL::SSL::SSLSocket.new(tcps, sctx)
-      ssl.accept
-      ssl
-    }
-
-    tcpc = TCPSocket.new(host, port)
-    tcpc.setsockopt(:TCP, :NODELAY, 1)
-    c = OpenSSL::SSL::SSLSocket.new(tcpc)
-    c.connect
-    s = th.value
-
-    yield c, s
-  ensure
-    tcpc&.close
-    tcps&.close
-    svr&.close
-  end
-end
-
 module OpenSSL::TestPairM
   def test_getc
     ssl_pair {|s1, s2|
@@ -483,15 +445,12 @@ module OpenSSL::TestPairM
 
   def test_read_nonblock
     ssl_pair {|s1, s2|
-      err = nil
-      assert_raise(OpenSSL::SSL::SSLErrorWaitReadable) {
-        begin
-          s2.read_nonblock(10)
-        ensure
-          err = $!
-        end
+      err = assert_raise(IO::WaitReadable) {
+        s2.read_nonblock(10)
       }
-      assert_kind_of(IO::WaitReadable, err)
+      if s2.is_a?(OpenSSL::SSL::SSLSocket)
+        assert_instance_of(OpenSSL::SSL::SSLErrorWaitReadable, err)
+      end
       s1.write "abc\ndef\n"
       IO.select([s2])
       assert_equal("ab", s2.read_nonblock(2))
@@ -612,14 +571,12 @@ module OpenSSL::TestPairM
   def test_write_nonblock_retry
     ssl_pair {|s1, s2|
       # fill up a socket so we hit EAGAIN
-      written = String.new
       n = 0
       buf = 'a' * 4099
       case ret = s1.write_nonblock(buf, exception: false)
       when :wait_readable then break
       when :wait_writable then break
       when Integer
-        written << buf
         n += ret
         exp = buf.bytesize
         if ret != exp
@@ -630,7 +587,7 @@ module OpenSSL::TestPairM
 
       # make more space for subsequent write:
       readed = s2.read(n)
-      assert_equal written, readed
+      assert_equal "a"*n, readed
 
       # this fails if SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER is missing:
       buf2 = Marshal.load(Marshal.dump(buf))
@@ -694,7 +651,67 @@ module OpenSSL::TestPairM
 end
 
 class OpenSSL::TestSSLPair < OpenSSL::TestCase
-  include OpenSSL::SSLPair
   include OpenSSL::TestPairM
   include OpenSSL::TestEOF
+
+  def ssl_pair
+    svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
+    ee_exts = [
+      ["keyUsage", "keyEncipherment,digitalSignature", true],
+    ]
+    svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
+    svr_cert = issue_cert(svr_dn, svr_key, 1, ee_exts, nil, nil)
+
+    host = "127.0.0.1"
+    svr = TCPServer.new(host, 0)
+    svr.setsockopt(:TCP, :NODELAY, 1)
+    port = svr.connect_address.ip_port
+
+    tcps = nil
+    th = Thread.new {
+      tcps = svr.accept
+      sctx = OpenSSL::SSL::SSLContext.new
+      sctx.add_certificate(svr_cert, svr_key)
+      ssl = OpenSSL::SSL::SSLSocket.new(tcps, sctx)
+      ssl.accept
+      ssl
+    }
+
+    tcpc = TCPSocket.new(host, port)
+    tcpc.setsockopt(:TCP, :NODELAY, 1)
+    c = OpenSSL::SSL::SSLSocket.new(tcpc)
+    c.connect
+    s = th.value
+
+    yield c, s
+  ensure
+    tcpc&.close
+    tcps&.close
+    svr&.close
+  end
 end
+
+class OpenSSL::TestSocketPair < OpenSSL::TestCase
+  include OpenSSL::TestPairM
+  include OpenSSL::TestEOF
+
+  def ssl_pair
+    host = "127.0.0.1"
+    svr = TCPServer.new(host, 0)
+    svr.setsockopt(:TCP, :NODELAY, 1)
+    port = svr.connect_address.ip_port
+
+    tcps = nil
+    th = Thread.new { tcps = svr.accept }
+
+    tcpc = TCPSocket.new(host, port)
+    tcpc.setsockopt(:TCP, :NODELAY, 1)
+    th.join
+
+    yield tcpc, tcps
+  ensure
+    tcpc&.close
+    tcps&.close
+    svr&.close
+  end
+end if RUBY_ENGINE != "truffleruby"
