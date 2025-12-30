@@ -97,17 +97,13 @@ impl WeakProcessor {
     ) {
         worker.add_work(
             WorkBucketStage::VMRefClosure,
-            ProcessObjFreeCandidates {
-                process_type: ProcessObjFreeCandidatesType::NonParallel,
-            },
+            ProcessNonParallelObjFreeCanadidates {},
         );
 
-        for i in 0..self.parallel_obj_free_candidates.len() {
+        for index in 0..self.parallel_obj_free_candidates.len() {
             worker.add_work(
                 WorkBucketStage::VMRefClosure,
-                ProcessObjFreeCandidates {
-                    process_type: ProcessObjFreeCandidatesType::Parallel(i),
-                },
+                ProcessParallelObjFreeCandidates { index },
             );
         }
 
@@ -127,49 +123,50 @@ impl WeakProcessor {
     }
 }
 
-enum ProcessObjFreeCandidatesType {
-    NonParallel,
-    Parallel(usize),
-}
+fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
+    // Process obj_free
+    let mut new_candidates = Vec::new();
 
-struct ProcessObjFreeCandidates {
-    process_type: ProcessObjFreeCandidatesType,
-}
-
-impl GCWork<Ruby> for ProcessObjFreeCandidates {
-    fn do_work(&mut self, _worker: &mut GCWorker<Ruby>, _mmtk: &'static mmtk::MMTK<Ruby>) {
-        let mut obj_free_candidates = match self.process_type {
-            ProcessObjFreeCandidatesType::NonParallel => crate::binding()
-                .weak_proc
-                .non_parallel_obj_free_candidates
-                .try_lock()
-                .expect("Lock for non_parallel_obj_free_candidates should not be held"),
-            ProcessObjFreeCandidatesType::Parallel(idx) => {
-                crate::binding().weak_proc.parallel_obj_free_candidates[idx]
-                    .try_lock()
-                    .expect("Lock for parallel_obj_free_candidates should not be held")
-            }
-        };
-
-        let n_cands = obj_free_candidates.len();
-
-        debug!("Total: {n_cands} candidates");
-
-        // Process obj_free
-        let mut new_candidates = Vec::new();
-
-        for object in obj_free_candidates.iter().copied() {
-            if object.is_reachable() {
-                // Forward and add back to the candidate list.
-                let new_object = object.forward();
-                trace!("Forwarding obj_free candidate: {object} -> {new_object}");
-                new_candidates.push(new_object);
-            } else {
-                (upcalls().call_obj_free)(object);
-            }
+    for object in obj_free_candidates.iter().copied() {
+        if object.is_reachable() {
+            // Forward and add back to the candidate list.
+            let new_object = object.forward();
+            trace!("Forwarding obj_free candidate: {object} -> {new_object}");
+            new_candidates.push(new_object);
+        } else {
+            (upcalls().call_obj_free)(object);
         }
+    }
 
-        *obj_free_candidates = new_candidates;
+    *obj_free_candidates = new_candidates;
+}
+
+struct ProcessParallelObjFreeCandidates {
+    index: usize,
+}
+
+impl GCWork<Ruby> for ProcessParallelObjFreeCandidates {
+    fn do_work(&mut self, _worker: &mut GCWorker<Ruby>, _mmtk: &'static mmtk::MMTK<Ruby>) {
+        let mut obj_free_candidates = crate::binding().weak_proc.parallel_obj_free_candidates
+            [self.index]
+            .try_lock()
+            .expect("Lock for parallel_obj_free_candidates should not be held");
+
+        process_obj_free_candidates(&mut obj_free_candidates);
+    }
+}
+
+struct ProcessNonParallelObjFreeCanadidates;
+
+impl GCWork<Ruby> for ProcessNonParallelObjFreeCanadidates {
+    fn do_work(&mut self, _worker: &mut GCWorker<Ruby>, _mmtk: &'static mmtk::MMTK<Ruby>) {
+        let mut obj_free_candidates = crate::binding()
+            .weak_proc
+            .non_parallel_obj_free_candidates
+            .try_lock()
+            .expect("Lock for non_parallel_obj_free_candidates should not be held");
+
+        process_obj_free_candidates(&mut obj_free_candidates);
     }
 }
 
