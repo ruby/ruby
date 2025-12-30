@@ -820,7 +820,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
-    bool boxable = BOX_ROOT_P(rb_current_box());
+    bool boxable = rb_box_available() && BOX_ROOT_P(rb_current_box());
     return class_alloc0(type, klass, boxable);
 }
 
