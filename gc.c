@@ -1204,17 +1204,6 @@ rb_gc_handle_weak_references_alive_p(VALUE obj)
     return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
 }
 
-extern const rb_data_type_t rb_weakmap_type;
-void rb_wmap_handle_weak_references(VALUE obj);
-extern const rb_data_type_t rb_weakkeymap_type;
-void rb_wkmap_handle_weak_references(VALUE obj);
-
-extern const rb_data_type_t rb_fiber_data_type;
-void rb_fiber_handle_weak_references(VALUE obj);
-
-extern const rb_data_type_t rb_cont_data_type;
-void rb_cont_handle_weak_references(VALUE obj);
-
 void
 rb_gc_handle_weak_references(VALUE obj)
 {
@@ -1223,20 +1212,14 @@ rb_gc_handle_weak_references(VALUE obj)
         if (RTYPEDDATA_P(obj)) {
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
-            if (type == &rb_fiber_data_type) {
-                rb_fiber_handle_weak_references(obj);
-            }
-            else if (type == &rb_cont_data_type) {
-                rb_cont_handle_weak_references(obj);
-            }
-            else if (type == &rb_weakmap_type) {
-                rb_wmap_handle_weak_references(obj);
-            }
-            else if (type == &rb_weakkeymap_type) {
-                rb_wkmap_handle_weak_references(obj);
+            if (type->function.handle_weak_references) {
+                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj));
             }
             else {
-                rb_bug("rb_gc_handle_weak_references: unknown TypedData %s", RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+                rb_bug(
+                    "rb_gc_handle_weak_references: TypedData %s does not implement handle_weak_references",
+                    RTYPEDDATA_TYPE(obj)->wrap_struct_name
+                );
             }
         }
         else {

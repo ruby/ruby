@@ -48,8 +48,8 @@ static const int DEBUG = 0;
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
 
-const rb_data_type_t rb_cont_data_type;
-const rb_data_type_t rb_fiber_data_type;
+static const rb_data_type_t rb_cont_data_type;
+static const rb_data_type_t rb_fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
@@ -1239,17 +1239,11 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     asan_unpoison_memory_region(cont->machine.stack_src, size, false);
     MEMCPY(cont->machine.stack, cont->machine.stack_src, VALUE, size);
 }
-const rb_data_type_t rb_cont_data_type = {
-    "continuation",
-    {cont_mark, cont_free, cont_memsize, cont_compact},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
 
-void
-rb_cont_handle_weak_references(VALUE obj)
+static void
+cont_handle_weak_references(void *ptr)
 {
-    rb_context_t *cont;
-    TypedData_Get_Struct(obj, rb_context_t, &rb_cont_data_type, cont);
+    rb_context_t *cont = ptr;
 
     if (!cont) return;
 
@@ -1259,6 +1253,12 @@ rb_cont_handle_weak_references(VALUE obj)
         cont->saved_ec.gen_fields_cache.fields_obj = Qundef;
     }
 }
+
+static const rb_data_type_t rb_cont_data_type = {
+    "continuation",
+    {cont_mark, cont_free, cont_memsize, cont_compact, cont_handle_weak_references},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 static inline void
 cont_save_thread(rb_context_t *cont, rb_thread_t *th)
@@ -1996,17 +1996,10 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *
  */
 
-const rb_data_type_t rb_fiber_data_type = {
-    "fiber",
-    {fiber_mark, fiber_free, fiber_memsize, fiber_compact,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-void
-rb_fiber_handle_weak_references(VALUE obj)
+static void
+fiber_handle_weak_references(void *ptr)
 {
-    rb_fiber_t *fiber;
-    TypedData_Get_Struct(obj, rb_fiber_t, &rb_fiber_data_type, fiber);
+    rb_fiber_t *fiber = ptr;
 
     if (!fiber) return;
 
@@ -2016,6 +2009,12 @@ rb_fiber_handle_weak_references(VALUE obj)
         fiber->cont.saved_ec.gen_fields_cache.fields_obj = Qundef;
     }
 }
+
+static const rb_data_type_t rb_fiber_data_type = {
+    "fiber",
+    {fiber_mark, fiber_free, fiber_memsize, fiber_compact, fiber_handle_weak_references},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 static VALUE
 fiber_alloc(VALUE klass)

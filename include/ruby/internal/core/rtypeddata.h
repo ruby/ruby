@@ -262,11 +262,9 @@ struct rb_data_type_struct {
         RUBY_DATA_FUNC dcompact;
 
         /**
-         * This field  is reserved for future  extension.  For now, it  must be
-         * filled with zeros.
+         * @internal
          */
-        void *reserved[1]; /* For future extension.
-                              This array *must* be filled with ZERO. */
+        void (*handle_weak_references)(void *);
     } function;
 
     /**
