@@ -265,4 +265,27 @@ class TestWeakMap < Test::Unit::TestCase
       10_000.times { weakmap[Object.new] = Object.new }
     RUBY
   end
+
+  def test_generational_gc
+    EnvUtil.without_gc do
+      wmap = ObjectSpace::WeakMap.new
+
+      (GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE] - 1).times { GC.start }
+
+      retain = []
+      50.times do
+        k = Object.new
+        wmap[k] = true
+        retain << k
+      end
+
+      GC.start # WeakMap promoted, other objects still young
+
+      retain.clear
+
+      GC.start(full_mark: false)
+
+      wmap.keys.each(&:itself) # call method on keys to cause crash
+    end
+  end
 end
