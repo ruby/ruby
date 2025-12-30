@@ -45,3 +45,6 @@ test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
+test_source_location(MethodInstanceTest)
+test_source_location(ProcInstanceTest)
+test_source_location(UnboundMethodInstanceTest)
