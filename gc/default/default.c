@@ -5329,7 +5329,13 @@ rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    return RVALUE_MARKED(objspace, obj);
+    bool marked = RVALUE_MARKED(objspace, obj);
+
+    if (marked) {
+        rgengc_check_relation(objspace, obj);
+    }
+
+    return marked;
 }
 
 static void
@@ -5337,7 +5343,9 @@ gc_update_weak_references(rb_objspace_t *objspace)
 {
     VALUE *obj_ptr;
     rb_darray_foreach(objspace->weak_references, i, obj_ptr) {
+        gc_mark_set_parent(objspace, *obj_ptr);
         rb_gc_handle_weak_references(*obj_ptr);
+        gc_mark_set_parent_invalid(objspace);
     }
 
     size_t capa = rb_darray_capa(objspace->weak_references);
