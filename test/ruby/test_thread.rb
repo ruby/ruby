@@ -1480,7 +1480,7 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    pend "hang-up" if RUBY_PLATFORM.include?("mingw")
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
 
     opts = { timeout: 5, timeout_error: nil }
 
