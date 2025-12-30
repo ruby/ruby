@@ -696,6 +696,27 @@ rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *rac
     }
 }
 
+static bool
+obj_can_parallel_free_p(VALUE obj)
+{
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_ARRAY:
+      case T_BIGNUM:
+      case T_COMPLEX:
+      case T_FLOAT:
+      case T_HASH:
+      case T_OBJECT:
+      case T_RATIONAL:
+      case T_REGEXP:
+      case T_STRING:
+      case T_STRUCT:
+      case T_SYMBOL:
+        return true;
+      default:
+        return false;
+    }
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -732,7 +753,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
     // TODO: only add when object needs obj_free to be called
-    mmtk_add_obj_free_candidate(alloc_obj);
+    mmtk_add_obj_free_candidate(alloc_obj, obj_can_parallel_free_p((VALUE)alloc_obj));
 
     objspace->total_allocated_objects++;
 
