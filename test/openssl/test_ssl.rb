@@ -108,6 +108,96 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_connect_accept_nonblock_no_exception
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.cert = @svr_cert
+    ctx2.key = @svr_key
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    accepted = s2.accept_nonblock(exception: false)
+    assert_equal :wait_readable, accepted
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    th = Thread.new do
+      rets = []
+      begin
+        rv = s1.connect_nonblock(exception: false)
+        rets << rv
+        case rv
+        when :wait_writable
+          IO.select(nil, [s1], nil, 5)
+        when :wait_readable
+          IO.select([s1], nil, nil, 5)
+        end
+      end until rv == s1
+      rets
+    end
+
+    until th.join(0.01)
+      accepted = s2.accept_nonblock(exception: false)
+      assert_include([s2, :wait_readable, :wait_writable ], accepted)
+    end
+
+    rets = th.value
+    assert_instance_of Array, rets
+    rets.each do |rv|
+      assert_include([s1, :wait_readable, :wait_writable ], rv)
+    end
+  ensure
+    th.join if th
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_connect_accept_nonblock
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.cert = @svr_cert
+    ctx.key = @svr_key
+
+    sock1, sock2 = socketpair
+
+    th = Thread.new {
+      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
+      5.times {
+        begin
+          break s2.accept_nonblock
+        rescue IO::WaitReadable
+          IO.select([s2], nil, nil, 1)
+        rescue IO::WaitWritable
+          IO.select(nil, [s2], nil, 1)
+        end
+        sleep 0.2
+      }
+    }
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1)
+    5.times {
+      begin
+        break s1.connect_nonblock
+      rescue IO::WaitReadable
+        IO.select([s1], nil, nil, 1)
+      rescue IO::WaitWritable
+        IO.select(nil, [s1], nil, 1)
+      end
+      sleep 0.2
+    }
+
+    s2 = th.value
+
+    s1.print "a\ndef"
+    assert_equal("a\n", s2.gets)
+  ensure
+    sock1&.close
+    sock2&.close
+    th&.join
+  end
+
   def test_socket_open
     start_server { |port|
       begin
@@ -156,30 +246,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl&.close
       end
     }
-  end
-
-  def test_socket_close_write
-    server_proc = proc do |ctx, ssl|
-      message = ssl.read
-      ssl.write(message)
-      ssl.close_write
-    ensure
-      ssl.close
-    end
-
-    start_server(server_proc: server_proc) do |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
-      ssl.sync_close = true
-      ssl.connect
-
-      message = "abc"*1024
-      ssl.write message
-      ssl.close_write
-      assert_equal message, ssl.read
-    ensure
-      ssl&.close
-    end
   end
 
   def test_add_certificate
@@ -270,27 +336,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_sysread_and_syswrite
-    start_server { |port|
-      server_connect(port) { |ssl|
-        str = +("x" * 100 + "\n")
-        ssl.syswrite(str)
-        newstr = ssl.sysread(str.bytesize)
-        assert_equal(str, newstr)
-
-        buf = String.new
-        ssl.syswrite(str)
-        assert_same buf, ssl.sysread(str.size, buf)
-        assert_equal(str, buf)
-
-        obj = Object.new
-        obj.define_singleton_method(:to_str) { str }
-        ssl.syswrite(obj)
-        assert_equal(str, ssl.sysread(str.bytesize))
-      }
-    }
-  end
-
   def test_read_with_timeout
     omit "does not support timeout" unless IO.method_defined?(:timeout)
 
@@ -314,30 +359,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_getbyte
-    start_server { |port|
-      server_connect(port) { |ssl|
-        str = +("x" * 100 + "\n")
-        ssl.syswrite(str)
-        newstr = str.bytesize.times.map { |i|
-          ssl.getbyte
-        }.pack("C*")
-        assert_equal(str, newstr)
-      }
-    }
-  end
+  def test_partial_tls_record_read_nonblock
+    written = Thread::Queue.new
+    read = Thread::Queue.new
+    server_proc = -> (ctx, ssl) {
+      str = ssl.gets
+      ssl.puts(str)
 
-  def test_readbyte
-    start_server { |port|
-      server_connect(port) { |ssl|
-        str = +("x" * 100 + "\n")
-        ssl.syswrite(str)
-        newstr = str.bytesize.times.map { |i|
-          ssl.readbyte
-        }.pack("C*")
-        assert_equal(str, newstr)
-      }
+      # the beginning of a TLS record
+      ssl.io.write("\x17")
+      written << :written
+      read.pop
     }
+    start_server(server_proc: server_proc) do |port|
+      server_connect(port) do |ssl|
+        ssl.puts("abc")
+        assert_equal("abc\n", ssl.gets)
+        written.pop
+        # should raise a IO::WaitReadable since a full TLS record is not available
+        # for reading
+        assert_raise(IO::WaitReadable) { ssl.send(:sysread_nonblock, 1) }
+        read << :done
+      end
+    end
   end
 
   def test_sync_close
@@ -379,20 +423,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_predicate sock, :closed?
       ensure
         sock&.close
-      end
-    end
-  end
-
-  def test_copy_stream
-    start_server do |port|
-      server_connect(port) do |ssl|
-        IO.pipe do |r, w|
-          str = "hello world\n"
-          w.write(str)
-          IO.copy_stream(r, ssl, str.bytesize)
-          IO.copy_stream(ssl, w, str.bytesize)
-          assert_equal str, r.read(str.bytesize)
-        end
       end
     end
   end
