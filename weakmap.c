@@ -112,6 +112,26 @@ wmap_compact(void *ptr)
     }
 }
 
+static int
+rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key) &&
+            rb_gc_handle_weak_references_alive_p(val)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wmap_handle_weak_references(void *ptr)
+{
+    struct weakmap *w = ptr;
+
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
+}
+
 const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
@@ -119,6 +139,7 @@ const rb_data_type_t rb_weakmap_type = {
         wmap_free,
         wmap_memsize,
         wmap_compact,
+        wmap_handle_weak_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -139,27 +160,6 @@ static const struct st_hash_type wmap_hash_type = {
     wmap_cmp,
     wmap_hash,
 };
-
-static int
-rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    if (rb_gc_handle_weak_references_alive_p(key) &&
-            rb_gc_handle_weak_references_alive_p(val)) {
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-void
-rb_wmap_handle_weak_references(VALUE self)
-{
-    struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
-
-    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
-}
 
 static VALUE
 wmap_allocate(VALUE klass)
@@ -588,13 +588,33 @@ wkmap_compact(void *ptr)
     }
 }
 
-const rb_data_type_t rb_weakkeymap_type = {
+static int
+rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wkmap_handle_weak_references(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
+}
+
+static const rb_data_type_t rb_weakkeymap_type = {
     "weakkeymap",
     {
         wkmap_mark,
         wkmap_free,
         wkmap_memsize,
         wkmap_compact,
+        wkmap_handle_weak_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -620,26 +640,6 @@ static const struct st_hash_type wkmap_hash_type = {
     wkmap_cmp,
     wkmap_hash,
 };
-
-static int
-rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    if (rb_gc_handle_weak_references_alive_p(key)) {
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-void
-rb_wkmap_handle_weak_references(VALUE self)
-{
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
-
-    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
-}
 
 static VALUE
 wkmap_allocate(VALUE klass)
