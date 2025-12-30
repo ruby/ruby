@@ -855,4 +855,20 @@ class TestBox < Test::Unit::TestCase
       assert_empty(Dir.children(tmpdir))
     end
   end
+
+  def test_root_box_iclasses_should_be_boxable
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Ruby::Box.root.eval("class IMath; include Math; end") # (*)
+      module Math
+        def foo = :foo
+      end
+      # This test crashes here if iclasses (created at the line (*) is not boxable)
+      class IMath2; include Math; end
+      assert_equal :foo, IMath2.new.foo
+      assert_raise NoMethodError do
+        Ruby::Box.root.eval("IMath.new.foo")
+      end
+    end;
+  end
 end
