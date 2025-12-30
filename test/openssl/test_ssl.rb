@@ -198,6 +198,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     th&.join
   end
 
+  def test_low_level_socket
+    start_server do |port|
+      sock = Socket.tcp("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.connect
+      ssl.puts("abc")
+      assert_equal("abc\n", ssl.gets)
+    ensure
+      ssl&.close
+      sock&.close
+    end
+  end
+
   def test_socket_open
     start_server { |port|
       begin
