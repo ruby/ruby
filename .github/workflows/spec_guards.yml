@@ -42,6 +42,7 @@ jobs:
           - ruby-3.2
           - ruby-3.3
           - ruby-3.4
+          - ruby-4.0
       fail-fast: false
 
     steps:
