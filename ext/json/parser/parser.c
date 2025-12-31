@@ -485,12 +485,12 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const 
 
     const unsigned char *p = (const unsigned char *)sp;
 
-    const char b0 = digit_values[p[0]];
-    const char b1 = digit_values[p[1]];
-    const char b2 = digit_values[p[2]];
-    const char b3 = digit_values[p[3]];
+    const signed char b0 = digit_values[p[0]];
+    const signed char b1 = digit_values[p[1]];
+    const signed char b2 = digit_values[p[2]];
+    const signed char b3 = digit_values[p[3]];
 
-    if (RB_UNLIKELY((b0 | b1 | b2 | b3) < 0)) {
+    if (RB_UNLIKELY((signed char)(b0 | b1 | b2 | b3) < 0)) {
         raise_parse_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
     }
 
