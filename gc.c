@@ -1096,6 +1096,7 @@ rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_
     return obj;
 }
 
+#define RTYPEDDATA_EMBEDDED_P rbimpl_typeddata_embedded_p
 #define RB_DATA_TYPE_EMBEDDABLE_P(type) ((type)->flags & RUBY_TYPED_EMBEDDABLE)
 #define RTYPEDDATA_EMBEDDABLE_P(obj) RB_DATA_TYPE_EMBEDDABLE_P(RTYPEDDATA_TYPE(obj))
 

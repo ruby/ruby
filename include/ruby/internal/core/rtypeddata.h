@@ -548,7 +548,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 #endif
 
 static inline bool
-RTYPEDDATA_EMBEDDED_P(VALUE obj)
+rbimpl_typeddata_embedded_p(VALUE obj)
 {
 #if RUBY_DEBUG
     if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
@@ -558,6 +558,13 @@ RTYPEDDATA_EMBEDDED_P(VALUE obj)
 #endif
 
     return (RTYPEDDATA(obj)->type) & TYPED_DATA_EMBEDDED;
+}
+
+RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY()
+static inline bool
+RTYPEDDATA_EMBEDDED_P(VALUE obj)
+{
+    return rbimpl_typeddata_embedded_p(obj);
 }
 
 static inline void *
@@ -571,9 +578,9 @@ RTYPEDDATA_GET_DATA(VALUE obj)
 #endif
 
     /* We reuse the data pointer in embedded TypedData. */
-    return RTYPEDDATA_EMBEDDED_P(obj) ?
-        RBIMPL_CAST((void *)&(RTYPEDDATA(obj)->data)) :
-        RTYPEDDATA(obj)->data;
+    return rbimpl_typeddata_embedded_p(obj) ?
+        RBIMPL_CAST((void *)&RTYPEDDATA_DATA(obj)) :
+        RTYPEDDATA_DATA(obj);
 }
 
 RBIMPL_ATTR_PURE()
