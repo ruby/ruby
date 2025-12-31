@@ -1,12 +1,14 @@
 use std::sync::Mutex;
 
-use mmtk::{
-    scheduler::{GCWork, GCWorker, WorkBucketStage},
-    util::ObjectReference,
-    vm::ObjectTracerContext,
-};
+use mmtk::scheduler::GCWork;
+use mmtk::scheduler::GCWorker;
+use mmtk::scheduler::WorkBucketStage;
+use mmtk::util::ObjectReference;
+use mmtk::vm::ObjectTracerContext;
 
-use crate::{abi::GCThreadTLS, upcalls, Ruby};
+use crate::abi::GCThreadTLS;
+use crate::upcalls;
+use crate::Ruby;
 
 pub struct WeakProcessor {
     /// Objects that needs `obj_free` called when dying.

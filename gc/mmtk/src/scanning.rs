@@ -1,10 +1,18 @@
 use crate::abi::GCThreadTLS;
 
+use crate::upcalls;
 use crate::utils::ChunkedVecCollector;
-use crate::{upcalls, Ruby, RubySlot};
-use mmtk::scheduler::{GCWork, GCWorker, WorkBucketStage};
-use mmtk::util::{ObjectReference, VMWorkerThread};
-use mmtk::vm::{ObjectTracer, RootsWorkFactory, Scanning, SlotVisitor};
+use crate::Ruby;
+use crate::RubySlot;
+use mmtk::scheduler::GCWork;
+use mmtk::scheduler::GCWorker;
+use mmtk::scheduler::WorkBucketStage;
+use mmtk::util::ObjectReference;
+use mmtk::util::VMWorkerThread;
+use mmtk::vm::ObjectTracer;
+use mmtk::vm::RootsWorkFactory;
+use mmtk::vm::Scanning;
+use mmtk::vm::SlotVisitor;
 use mmtk::Mutator;
 
 pub struct VMScanning {}
