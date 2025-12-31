@@ -1960,8 +1960,8 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
     RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
-    FL_SET(root, STR_SHARED_ROOT);
-    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
+    FL_SET_RAW(dup, RSTRING_NOEMBED);
+    STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
