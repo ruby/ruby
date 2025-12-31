@@ -353,7 +353,7 @@ module Prism
       <%- when Prism::Template::OptionalNodeField -%>
       yield <%= field.name %> if <%= field.name %>
       <%- when Prism::Template::NodeListField -%>
-      <%= field.name %>.each  {|node| yield node }
+      <%= field.name %>.each { |node| yield node }
       <%- end -%>
       <%- end -%>
     end
