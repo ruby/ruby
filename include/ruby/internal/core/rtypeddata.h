@@ -109,14 +109,17 @@
 /** @cond INTERNAL_MACRO */
 #define RTYPEDDATA_P                 RTYPEDDATA_P
 #define RTYPEDDATA_TYPE              RTYPEDDATA_TYPE
+#define TYPED_DATA_EMBEDDED          ((VALUE)1)
+#define TYPED_DATA_PTR_MASK          (~(TYPED_DATA_EMBEDDED))
+/** @endcond */
+
+/**
+ * Macros to see if each corresponding flag is defined.
+ */
 #define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
 #define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
 #define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
 #define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
-/** @endcond */
-
-#define TYPED_DATA_EMBEDDED ((VALUE)1)
-#define TYPED_DATA_PTR_MASK (~(TYPED_DATA_EMBEDDED))
 
 /**
  * @private
