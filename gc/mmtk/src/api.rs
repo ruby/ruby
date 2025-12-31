@@ -198,10 +198,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
-    let mut binding = RubyBinding::new(mmtk_static, &binding_options, upcalls);
-    binding
-        .weak_proc
-        .init_parallel_obj_free_candidates(memory_manager::num_of_workers(binding.mmtk));
+    let binding = RubyBinding::new(mmtk_static, &binding_options, upcalls);
 
     crate::BINDING
         .set(binding)
@@ -299,10 +296,8 @@ pub unsafe extern "C" fn mmtk_post_alloc(
 
 // TODO: Replace with buffered mmtk_add_obj_free_candidates
 #[no_mangle]
-pub extern "C" fn mmtk_add_obj_free_candidate(object: ObjectReference, can_parallel_free: bool) {
-    binding()
-        .weak_proc
-        .add_obj_free_candidate(object, can_parallel_free)
+pub extern "C" fn mmtk_add_obj_free_candidate(object: ObjectReference) {
+    binding().weak_proc.add_obj_free_candidate(object)
 }
 
 // =============== Weak references ===============
