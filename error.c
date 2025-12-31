@@ -1364,8 +1364,7 @@ rb_check_type(VALUE x, int t)
         rb_bug(UNDEF_LEAKED);
     }
 
-    xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
+    if (t == T_DATA) {
         /*
          * Typed data is not simple `T_DATA`, but in a sense an
          * extension of `struct RVALUE`, which are incompatible with
@@ -1374,6 +1373,10 @@ rb_check_type(VALUE x, int t)
          * So it is not enough to just check `T_DATA`, it must be
          * identified by its `type` using `Check_TypedStruct` instead.
          */
+        rb_unexpected_object_type(x, builtin_types[t]);
+    }
+    xt = TYPE(x);
+    if (xt != t) {
         unexpected_type(x, xt, t);
     }
 }

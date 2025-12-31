@@ -175,9 +175,11 @@ VALUE sws_typed_rb_check_typeddata_different_type(VALUE self, VALUE obj) {
   return rb_check_typeddata(obj, &sample_typed_wrapped_struct_other_data_type) == DATA_PTR(obj) ? Qtrue : Qfalse;
 }
 
+#ifndef RUBY_VERSION_IS_4_1
 VALUE sws_typed_RTYPEDDATA_P(VALUE self, VALUE obj) {
   return RTYPEDDATA_P(obj) ? Qtrue : Qfalse;
 }
+#endif
 
 void Init_typed_data_spec(void) {
   VALUE cls = rb_define_class("CApiAllocTypedSpecs", rb_cObject);
@@ -198,7 +200,9 @@ void Init_typed_data_spec(void) {
   rb_define_method(cls, "rb_check_typeddata_same_type", sws_typed_rb_check_typeddata_same_type, 1);
   rb_define_method(cls, "rb_check_typeddata_same_type_parent", sws_typed_rb_check_typeddata_same_type_parent, 1);
   rb_define_method(cls, "rb_check_typeddata_different_type", sws_typed_rb_check_typeddata_different_type, 1);
+#ifndef RUBY_VERSION_IS_4_1
   rb_define_method(cls, "RTYPEDDATA_P", sws_typed_RTYPEDDATA_P, 1);
+#endif
 }
 
 #ifdef __cplusplus
