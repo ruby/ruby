@@ -1096,6 +1096,9 @@ rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_
     return obj;
 }
 
+#define RB_DATA_TYPE_EMBEDDABLE_P(type) ((type)->flags & RUBY_TYPED_EMBEDDABLE)
+#define RTYPEDDATA_EMBEDDABLE_P(obj) RB_DATA_TYPE_EMBEDDABLE_P(RTYPEDDATA_TYPE(obj))
+
 static VALUE
 typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_t *type, size_t size)
 {
@@ -1117,7 +1120,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
 VALUE
 rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
-    if (UNLIKELY(type->flags & RUBY_TYPED_EMBEDDABLE)) {
+    if (UNLIKELY(RB_DATA_TYPE_EMBEDDABLE_P(type))) {
         rb_raise(rb_eTypeError, "Cannot wrap an embeddable TypedData");
     }
 
@@ -1127,7 +1130,7 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
-    if (type->flags & RUBY_TYPED_EMBEDDABLE) {
+    if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
         if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
@@ -1153,7 +1156,7 @@ rb_objspace_data_type_memsize(VALUE obj)
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+        if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
             size += malloc_usable_size((void *)ptr);
 #endif
@@ -1285,7 +1288,7 @@ rb_data_free(void *objspace, VALUE obj)
             }
             else if (free_immediately) {
                 (*dfree)(data);
-                if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
                     xfree(data);
                 }
 
