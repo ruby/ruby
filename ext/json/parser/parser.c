@@ -643,7 +643,7 @@ static inline VALUE json_string_fastpath(JSON_ParserState *state, JSON_ParserCon
 typedef struct _json_unescape_positions {
     long size;
     const char **positions;
-    bool has_more;
+    unsigned long additional_backslashes;
 } JSON_UnescapePositions;
 
 static inline const char *json_next_backslash(const char *pe, const char *stringEnd, JSON_UnescapePositions *positions)
@@ -657,7 +657,8 @@ static inline const char *json_next_backslash(const char *pe, const char *string
         }
     }
 
-    if (positions->has_more) {
+    if (positions->additional_backslashes) {
+        positions->additional_backslashes--;
         return memchr(pe, '\\', stringEnd - pe);
     }
 
@@ -992,7 +993,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
     JSON_UnescapePositions positions = {
         .size = 0,
         .positions = backslashes,
-        .has_more = false,
+        .additional_backslashes = 0,
     };
 
     do {
@@ -1007,7 +1008,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
                     backslashes[positions.size] = state->cursor;
                     positions.size++;
                 } else {
-                    positions.has_more = true;
+                    positions.additional_backslashes++;
                 }
                 state->cursor++;
                 break;
