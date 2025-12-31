@@ -610,26 +610,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
  *
- * This  is an  implementation detail  of  Check_Type().  People  don't use  it
- * directly.
- *
- * @param[in]  obj    Object in question
- * @retval     true
- * @pre        `obj` must be a Ruby object of ::RUBY_T_DATA.
- */
-static inline bool
-rbimpl_rtypeddata_p(VALUE obj)
-{
-    return true;
-}
-
-RBIMPL_ATTR_PURE()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- *
- * Identical to rbimpl_rtypeddata_p(), except it is allowed to call on non-data
- * objects.
+ * Checks whether the passed object is ::RTypedData.
  *
  * This is an  implementation detail of inline functions defined  in this file.
  * People don't use it directly.
@@ -641,7 +622,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_obj_typeddata_p(VALUE obj)
 {
-    return RB_TYPE_P(obj, RUBY_T_DATA) && rbimpl_rtypeddata_p(obj);
+    return RB_TYPE_P(obj, RUBY_T_DATA);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -658,7 +639,7 @@ RTYPEDDATA_P(VALUE obj)
 {
     RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(false));
 
-    return rbimpl_rtypeddata_p(obj);
+    return true;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
