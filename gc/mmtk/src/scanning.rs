@@ -4,6 +4,7 @@ use crate::upcalls;
 use crate::utils::ChunkedVecCollector;
 use crate::Ruby;
 use crate::RubySlot;
+use mmtk::memory_manager;
 use mmtk::scheduler::GCWork;
 use mmtk::scheduler::GCWorker;
 use mmtk::scheduler::WorkBucketStage;
@@ -53,6 +54,19 @@ impl Scanning<Ruby> for VMScanning {
                 mmtk::memory_manager::is_mmtk_object(target_object.to_raw_address()).is_some(),
                 "Destination is not an MMTk object. Src: {object} dst: {target_object}"
             );
+
+            debug_assert!(
+                // If we are in a moving GC, all objects should be pinned by PinningRegistry.
+                // If it is requested that target_object be pinned but it is not pinned, then
+                // it is a bug because it could be moved.
+                if crate::mmtk().get_plan().current_gc_may_move_object() && pin {
+                    memory_manager::is_pinned(target_object)
+                } else {
+                    true
+                },
+                "Object {object} is trying to pin {target_object}"
+            );
+
             let forwarded_target = object_tracer.trace_object(target_object);
             if forwarded_target != target_object {
                 trace!("  Forwarded target {target_object} -> {forwarded_target}");
