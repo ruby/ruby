@@ -1351,6 +1351,7 @@ static rb_block_node_t *rb_new_node_block_new(struct parser_params *p, rb_node_t
 
 static rb_return_node_t *rb_new_node_return_new(struct parser_params *p, rb_arguments_node_t *nd_arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 
+static rb_multi_write_node_t *rb_new_node_multi_write_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc);
 static rb_local_variable_write_node_t *rb_new_node_local_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_global_variable_write_node_t *rb_new_node_global_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_instance_variable_write_node_t *rb_new_node_instance_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
@@ -1423,6 +1424,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 
 #define NEW_RB_RETURN(s,loc,k_loc) (rb_node_t *)rb_new_node_return_new(p,s,loc,k_loc)
 
+#define NEW_RB_MULTI_WRITE(l,rest,r,loc) rb_new_node_multi_write_new(p,l,rest,r,loc)
 #define NEW_RB_LOCAL_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_local_variable_write_new(p,v,val,loc)
 #define NEW_LASGN(v,val,loc) NEW_RB_LOCAL_VARIABLE_WRITE(v,val,loc)
 #define NEW_DASGN(v,val,loc) NEW_RB_LOCAL_VARIABLE_WRITE(v,val,loc)
@@ -2167,9 +2169,9 @@ set_nd_value(struct parser_params *p, rb_node_t *node, rb_node_t *rhs)
       // case NODE_DASGN:
         RB_NODE_LOCAL_VARIABLE_WRITE(node)->value = rhs;
         break;
-      // case NODE_MASGN:
-      //   RNODE_MASGN(node)->nd_value = rhs;
-      //   break;
+      case RB_MULTI_WRITE_NODE:
+        RB_NODE_MULTI_WRITE(node)->value = rhs;
+        break;
       case RB_CLASS_VARIABLE_WRITE_NODE:
         RB_NODE_CLASS_VARIABLE_WRITE(node)->value = rhs;
         break;
@@ -3077,7 +3079,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_block> brace_block cmd_brace_block do_block
 %type <new_node> none fitem
 %type <new_node> lhs
-%type <node> mlhs_head mlhs_item mlhs_node
+%type <node_array> mlhs_head
+%type <node> mlhs_item mlhs_node
 %type <node_masgn> mlhs mlhs_basic mlhs_inner
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
@@ -3334,15 +3337,15 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
-%rule mlhs_items(item) <node>
+%rule mlhs_items(item) <node_array>
                 : item
                     {
-                        $$ = NEW_LIST($1, &@$);
+                        $$ = NEW_RB_ARRAY($1, &@$);
                     /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
                     }
                 | mlhs_items(item) ',' item
                     {
-                        $$ = list_append(p, $1, $3);
+                        $$ = node_array_append(p, $1, $3, &NULL_LOC);
                     /*% ripper: mlhs_add!($:1, $:3) %*/
                     }
                 ;
@@ -3992,52 +3995,52 @@ mlhs_inner	: mlhs_basic
 
 mlhs_basic	: mlhs_head
                     {
-                        $$ = NEW_MASGN($1, 0, &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, 0, 0, &@$);
                     /*% ripper: $:1 %*/
                     }
                 | mlhs_head mlhs_item
                     {
-                        $$ = NEW_MASGN(list_append(p, $1, $2), 0, &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, node_array_append(p, $1, $2, &NULL_LOC), 0, &@$);
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
                 | mlhs_head tSTAR mlhs_node
                     {
-                        $$ = NEW_MASGN($1, $3, &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, NEW_RB_SPLAT($3, &NULL_LOC, &@tSTAR), 0, &@$);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
                 | mlhs_head tSTAR mlhs_node ',' mlhs_items(mlhs_item)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG($3,$5,&@$), &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, NEW_RB_SPLAT($3, &NULL_LOC, &@tSTAR), $5, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
                 | mlhs_head tSTAR
                     {
-                        $$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, NEW_RB_SPLAT(0, &@tSTAR, &@tSTAR), 0, &@$);
                     /*% ripper: mlhs_add_star!($:1, Qnil) %*/
                     }
                 | mlhs_head tSTAR ',' mlhs_items(mlhs_item)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, NEW_RB_SPLAT(0, &@tSTAR, &@tSTAR), $4, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, Qnil), $:4) %*/
                     }
                 | tSTAR mlhs_node
                     {
-                        $$ = NEW_MASGN(0, $2, &@$);
+                        $$ = NEW_RB_MULTI_WRITE(0, NEW_RB_SPLAT($2, &NULL_LOC, &@tSTAR), 0, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:2) %*/
                     }
                 | tSTAR mlhs_node ',' mlhs_items(mlhs_item)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG($2,$4,&@$), &@$);
+                        $$ = NEW_RB_MULTI_WRITE(0, NEW_RB_SPLAT($2, &NULL_LOC, &@tSTAR), $4, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:2), $:4) %*/
                     }
                 | tSTAR
                     {
-                        $$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
+                        $$ = NEW_RB_MULTI_WRITE(0, NEW_RB_SPLAT(0, &@tSTAR, &@tSTAR), 0, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
                     }
                 | tSTAR ',' mlhs_items(mlhs_item)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
+                        $$ = NEW_RB_MULTI_WRITE(0, NEW_RB_SPLAT(0, &@tSTAR, &@tSTAR), $3, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $:3) %*/
                     }
                 ;
@@ -4052,12 +4055,12 @@ mlhs_item	: mlhs_node
 
 mlhs_head	: mlhs_item ','
                     {
-                        $$ = NEW_LIST($1, &@1);
+                        $$ = NEW_RB_ARRAY($1, &@1);
                     /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
                     }
                 | mlhs_head mlhs_item ','
                     {
-                        $$ = list_append(p, $1, $2);
+                        $$ = node_array_append(p, $1, $2, &NULL_LOC);
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
                 ;
@@ -12874,6 +12877,21 @@ rb_new_node_return_new(struct parser_params *p, rb_arguments_node_t *nd_argument
     return n;
 }
 
+static rb_multi_write_node_t *
+rb_new_node_multi_write_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc)
+{
+    rb_multi_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MULTI_WRITE_NODE, rb_multi_write_node_t, loc);
+    lefts ? rb_node_list_move(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
+    n->rest = rest;
+    rights ? rb_node_list_move(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
+    n->value = NULL;
+    n->lparen_loc = NULL_LOC;
+    n->rparen_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
 static rb_local_variable_write_node_t *
 rb_new_node_local_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
 {
@@ -14984,7 +15002,7 @@ node_assign(struct parser_params *p, rb_node_t *lhs, rb_node_t *rhs, struct lex_
       case RB_INSTANCE_VARIABLE_WRITE_NODE:
       case NODE_LASGN:
       // case NODE_DASGN:
-      // case NODE_MASGN:
+      case RB_MULTI_WRITE_NODE:
       case RB_CLASS_VARIABLE_WRITE_NODE:
         set_nd_value(p, lhs, rhs);
         rb_nd_set_loc(lhs, loc);
