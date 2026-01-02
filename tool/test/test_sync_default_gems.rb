@@ -324,7 +324,7 @@ module Test_SyncDefaultGems
       # We don't know which exact version fixed it, but we know git 2.52.0 works.
       stdout, status = Open3.capture2('git', '--version', err: File::NULL)
       omit 'git version check failed' unless status.success?
-      git_version = stdout.rstrip.delete_prefix('git version ')
+      git_version = stdout[/\Agit version \K\S+/]
       omit "git #{git_version} is too old" if Gem::Version.new(git_version) < Gem::Version.new('2.44.0')
 
       #   2---.   <- branch
