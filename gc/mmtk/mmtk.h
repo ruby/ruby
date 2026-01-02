@@ -79,6 +79,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_finalizer_table)(void);
     bool (*special_const_p)(MMTk_ObjectReference object);
     void (*mutator_thread_panic_handler)(void);
+    void (*gc_thread_panic_handler)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {

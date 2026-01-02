@@ -38,6 +38,11 @@ struct objspace {
     pthread_cond_t cond_world_started;
     size_t start_the_world_count;
 
+    struct {
+        bool gc_thread_crashed;
+        char crash_msg[256];
+    } crash_context;
+
     struct rb_gc_vm_context vm_context;
 
     unsigned int fork_hook_vm_lock_lev;
@@ -167,6 +172,10 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
         // Wait for GC end
         while (objspace->world_stopped) {
             pthread_cond_wait(&objspace->cond_world_started, &objspace->mutex);
+        }
+
+        if (RB_UNLIKELY(objspace->crash_context.gc_thread_crashed)) {
+            rb_bug("%s", objspace->crash_context.crash_msg);
         }
 
         if (objspace->measure_gc_time) {
@@ -424,6 +433,32 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
     return RB_SPECIAL_CONST_P(obj);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
+static void
+rb_mmtk_gc_thread_bug(const char *msg, ...)
+{
+    struct objspace *objspace = rb_gc_get_objspace();
+
+    objspace->crash_context.gc_thread_crashed = true;
+
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(objspace->crash_context.crash_msg, sizeof(objspace->crash_context.crash_msg), msg, args);
+    va_end(args);
+
+    rb_mmtk_resume_mutators();
+
+    sleep(5);
+
+    rb_bug("rb_mmtk_gc_thread_bug");
+}
+
+static void
+rb_mmtk_gc_thread_panic_handler(void)
+{
+    rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
+}
+
 static void
 rb_mmtk_mutator_thread_panic_handler(void)
 {
@@ -454,6 +489,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_finalizer_table,
     rb_mmtk_special_const_p,
     rb_mmtk_mutator_thread_panic_handler,
+    rb_mmtk_gc_thread_panic_handler,
 };
 
 // Use max 80% of the available memory by default for MMTk
