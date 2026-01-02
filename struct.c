@@ -981,6 +981,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
     char first = RSTRING_PTR(cname)[0];
 
     if (recur || first != '#') {
+        rb_str_cat2(str, " ");
         rb_str_append(str, cname);
     }
     if (recur) {
@@ -997,7 +998,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
         if (i > 0) {
             rb_str_cat2(str, ", ");
         }
-        else if (first != '#') {
+        else {
             rb_str_cat2(str, " ");
         }
         slot = RARRAY_AREF(members, i);
@@ -1031,7 +1032,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
 static VALUE
 rb_struct_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct"));
 }
 
 /*
@@ -1910,7 +1911,7 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_data_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data"));
 }
 
 /*
