@@ -647,20 +647,29 @@ class Pathname
     end
   end
 
+  # call-seq:
+  #   self + other -> new_pathname
   #
-  # Appends a pathname fragment to +self+ to produce a new Pathname object.
-  # Since +other+ is considered as a path relative to +self+, if +other+ is
-  # an absolute path, the new Pathname object is created from just +other+.
+  # Returns a new \Pathname object;
+  # argument +other+ may be a string or another pathname.
   #
-  #   p1 = Pathname.new("/usr")      # Pathname:/usr
-  #   p2 = p1 + "bin/ruby"           # Pathname:/usr/bin/ruby
-  #   p3 = p1 + "/etc/passwd"        # Pathname:/etc/passwd
+  # When +other+ specifies a relative path (see #relative?),
+  # equivalent to <tt>Pathname.new(self.to_s + other.to_s)</tt>:
   #
-  #   # / is aliased to +.
-  #   p4 = p1 / "bin/ruby"           # Pathname:/usr/bin/ruby
-  #   p5 = p1 / "/etc/passwd"        # Pathname:/etc/passwd
+  #   pn = Pathname.new("/usr")          # => #<Pathname:/usr>
+  #   pn + 'bin/ruby'                    # => #<Pathname:/usr/bin/ruby>
+  #   pn + Pathname.new('bin/ruby')      # => #<Pathname:/usr/bin/ruby>
   #
-  # This method doesn't access the file system; it is pure string manipulation.
+  # When +other+ specifies an absolute path (see #absolute?),
+  # equivalent to <tt>Pathname.new(other.to_s)</tt>:
+  #
+  #   pn + Pathname.new('/etc/password') # => #<Pathname:/etc/password>
+  #   pn + '/etc/password'               # => #<Pathname:/etc/password>
+  #
+  # Does not access the file system, so +other+ need not represent
+  # an existing (or even a valid) file or directory path:
+  #
+  #   pn + 'nosuch:ever'                 # => #<Pathname:/usr/nosuch:ever>
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
