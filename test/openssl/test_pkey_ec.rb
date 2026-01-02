@@ -471,6 +471,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
 # test Group: asn1_flag, point_conversion
 
+  def test_initialize_error_message
+    # Test that passing 2 arguments raises the helpful error
+    e = assert_raise(ArgumentError) do
+      OpenSSL::PKey::EC::Group.new(:GFp, 123)
+    end
+    
+    assert_equal("wrong number of arguments (given 2, expected 1 or 4)", e.message)
+  end
+
   private
 
   def B(ary)
