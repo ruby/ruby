@@ -303,9 +303,35 @@ module Test
 
       def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
+
         out = out ? IO.new(out, 'w') : STDOUT
+
+        # avoid method redefinitions
+        out_write = out.method(:write)
+        integer_to_s = Integer.instance_method(:to_s)
+        array_pack = Array.instance_method(:pack)
+        marshal_dump = Marshal.method(:dump)
+        assertions_ivar_set = Test::Unit::Assertions.method(:instance_variable_set)
+        assertions_ivar_get = Test::Unit::Assertions.method(:instance_variable_get)
+        Test::Unit::Assertions.module_eval do
+          @_assertions = 0
+
+          undef _assertions=
+          define_method(:_assertions=, ->(n) {assertions_ivar_set.call(:@_assertions, n)})
+
+          undef _assertions
+          define_method(:_assertions, -> {assertions_ivar_get.call(:@_assertions)})
+        end
+        # assume Method#call and UnboundMethod#bind_call need to work as the original
+
         at_exit {
-          out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
+          assertions = assertions_ivar_get.call(:@_assertions)
+          out_write.call <<~OUT
+          #{token}<error>
+          #{array_pack.bind_call([marshal_dump.call($!)], 'm')}
+          #{token}</error>
+          #{token}assertions=#{integer_to_s.bind_call(assertions)}
+          OUT
         }
         if defined?(Test::Unit::Runner)
           Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
@@ -360,7 +386,9 @@ eom
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += res[/^#{token_re}assertions=(\d+)/, 1].to_i
+        if (assertions = res[/^#{token_re}assertions=(\d+)/, 1].to_i) > 0
+          self._assertions += assertions
+        end
         begin
           res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
         rescue => marshal_error
