@@ -1043,12 +1043,8 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
             initial_capa *= 2;
         }
         ring_buffer_init(q, initial_capa);
-
-        const VALUE *initial_ptr = RARRAY_CONST_PTR(initial);
-
-        for (long index = 0; index < len; index++) {
-            ring_buffer_push(self, q, initial_ptr[index]);
-        }
+        MEMCPY(q->buffer, RARRAY_CONST_PTR(initial), VALUE, len);
+        q->len = len;
     }
     else {
         ring_buffer_init(q, QUEUE_INITIAL_CAPA);
