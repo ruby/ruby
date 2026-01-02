@@ -575,6 +575,76 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
   end
 
+  def test_download_with_global_gem_cache
+    # Use a temp directory to safely test global cache behavior
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = true
+
+      # Use the real RemoteFetcher with stubbed fetch_path
+      fetcher = Gem::RemoteFetcher.fetcher
+      def fetcher.fetch_path(uri, *rest)
+        File.binread File.join(@test_gem_dir, "a-1.gem")
+      end
+      fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+      a1_cache_gem = @a1.cache_file
+      assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
+
+      # Verify gem was also copied to global cache
+      global_cache_gem = File.join(test_cache_dir, @a1.file_name)
+      assert File.exist?(global_cache_gem), "Gem should be copied to global cache"
+    end
+  ensure
+    Gem.configuration.global_gem_cache = false
+  end
+
+  def test_download_uses_global_gem_cache
+    # Use a temp directory to safely test global cache behavior
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = true
+
+      # Pre-populate global cache
+      FileUtils.mkdir_p test_cache_dir
+      global_cache_gem = File.join(test_cache_dir, @a1.file_name)
+      FileUtils.cp @a1_gem, global_cache_gem
+
+      fetcher = Gem::RemoteFetcher.fetcher
+
+      # Should return global cache path without downloading
+      result = fetcher.download(@a1, "http://gems.example.com")
+      assert_equal global_cache_gem, result
+    end
+  ensure
+    Gem.configuration.global_gem_cache = false
+  end
+
+  def test_download_without_global_gem_cache
+    # Use a temp directory to safely test global cache behavior
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = false
+
+      # Use the real RemoteFetcher with stubbed fetch_path
+      fetcher = Gem::RemoteFetcher.fetcher
+      def fetcher.fetch_path(uri, *rest)
+        File.binread File.join(@test_gem_dir, "a-1.gem")
+      end
+      fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+      a1_cache_gem = @a1.cache_file
+      assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
+
+      # Verify gem was NOT copied to global cache
+      global_cache_gem = File.join(test_cache_dir, @a1.file_name)
+      refute File.exist?(global_cache_gem), "Gem should not be copied to global cache when disabled"
+    end
+  end
+
   private
 
   def assert_error(exception_class = Exception)

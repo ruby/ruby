@@ -504,7 +504,7 @@ module Bundler
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug)
+        Pathname.new(Gem.global_gem_cache_path).join(cache_slug)
       end
 
       def extension_cache_slug(spec)

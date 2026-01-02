@@ -83,6 +83,33 @@ class TestGemConfigFile < Gem::TestCase
     util_config_file %W[--config-file #{@temp_conf}]
 
     assert_equal true, @cfg.ipv4_fallback_enabled
+  ensure
+    ENV.delete("IPV4_FALLBACK_ENABLED")
+  end
+
+  def test_initialize_global_gem_cache_default
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal false, @cfg.global_gem_cache
+  end
+
+  def test_initialize_global_gem_cache_env
+    ENV["RUBYGEMS_GLOBAL_GEM_CACHE"] = "true"
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.global_gem_cache
+  ensure
+    ENV.delete("RUBYGEMS_GLOBAL_GEM_CACHE")
+  end
+
+  def test_initialize_global_gem_cache_gemrc
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "global_gem_cache: true"
+    end
+
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.global_gem_cache
   end
 
   def test_initialize_handle_arguments_config_file

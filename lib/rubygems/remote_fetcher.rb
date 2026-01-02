@@ -111,6 +111,17 @@ class Gem::RemoteFetcher
   # always replaced.
 
   def download(spec, source_uri, install_dir = Gem.dir)
+    gem_file_name = File.basename spec.cache_file
+
+    # Check global cache first if enabled
+    if Gem.configuration.global_gem_cache
+      global_cache_path = File.join(Gem.global_gem_cache_path, gem_file_name)
+      if File.exist?(global_cache_path)
+        verbose "Using cached gem #{global_cache_path}"
+        return global_cache_path
+      end
+    end
+
     install_cache_dir = File.join install_dir, "cache"
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
@@ -121,7 +132,6 @@ class Gem::RemoteFetcher
         File.join Gem.user_dir, "cache"
       end
 
-    gem_file_name = File.basename spec.cache_file
     local_gem_path = File.join cache_dir, gem_file_name
 
     require "fileutils"
@@ -194,6 +204,19 @@ class Gem::RemoteFetcher
       verbose "Using local gem #{local_gem_path}"
     else
       raise ArgumentError, "unsupported URI scheme #{source_uri.scheme}"
+    end
+
+    # Copy to global cache if enabled
+    if Gem.configuration.global_gem_cache && File.exist?(local_gem_path)
+      global_cache_path = File.join(Gem.global_gem_cache_path, gem_file_name)
+      unless File.exist?(global_cache_path)
+        begin
+          FileUtils.mkdir_p(Gem.global_gem_cache_path)
+          FileUtils.cp(local_gem_path, global_cache_path)
+        rescue SystemCallError
+          # Ignore errors when copying to global cache (e.g., permission denied)
+        end
+      end
     end
 
     local_gem_path
