@@ -898,6 +898,9 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     rb_execution_context_t *ec = GET_EC();
 
     struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
+
+    rb_gc_register_pinning_obj((VALUE)ifunc);
+
     ifunc->func = func;
     ifunc->data = data;
     ifunc->argc.min = min_argc;
@@ -1068,13 +1071,12 @@ f_lambda(VALUE _)
  *  Document-method: Proc#yield
  *
  *  call-seq:
- *     prc.call(params,...)   -> obj
- *     prc[params,...]        -> obj
- *     prc.(params,...)       -> obj
- *     prc.yield(params,...)  -> obj
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     yield(...) -> obj
  *
- *  Invokes the block, setting the block's parameters to the values in
- *  <i>params</i> using something close to method calling semantics.
+ *  Invokes the block, setting the block's parameters to the arguments
+ *  using something close to method calling semantics.
  *  Returns the value of the last expression evaluated in the block.
  *
  *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
@@ -1511,14 +1513,20 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[2];
+    VALUE loc[5];
+    int i = 0;
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[0] = rb_iseq_path(iseq);
-    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
+    loc[i++] = rb_iseq_path(iseq);
+    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
+    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
+    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->end_pos.column);
+    RUBY_ASSERT_ALWAYS(i == numberof(loc));
 
-    return rb_ary_new4(2, loc);
+    return rb_ary_new_from_values(i, loc);
 }
 
 VALUE
@@ -1535,9 +1543,9 @@ rb_iseq_location(const rb_iseq_t *iseq)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
  */
@@ -2643,13 +2651,20 @@ method_dup(VALUE self)
     return clone;
 }
 
-/*  Document-method: Method#===
- *
+/*
  *  call-seq:
- *     method === obj   -> result_of_method
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     self === obj -> result_of_method
  *
- *  Invokes the method with +obj+ as the parameter like #call.
- *  This allows a method object to be the target of a +when+ clause
+ *  Invokes +self+ with the specified arguments, returning the
+ *  method's return value.
+ *
+ *     m = 12.method("+")
+ *     m.call(3)    #=> 15
+ *     m.call(20)   #=> 32
+ *
+ *  Using Method#=== allows a method object to be the target of a +when+ clause
  *  in a case statement.
  *
  *      require 'prime'
@@ -2658,32 +2673,6 @@ method_dup(VALUE self)
  *      when Prime.method(:prime?)
  *        # ...
  *      end
- */
-
-
-/*  Document-method: Method#[]
- *
- *  call-seq:
- *     meth[args, ...]         -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value, like #call.
- *
- *     m = 12.method("+")
- *     m[3]         #=> 15
- *     m[20]        #=> 32
- */
-
-/*
- *  call-seq:
- *     meth.call(args, ...)    -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value.
- *
- *     m = 12.method("+")
- *     m.call(3)    #=> 15
- *     m.call(20)   #=> 32
  */
 
 static VALUE
@@ -3214,9 +3203,9 @@ rb_method_entry_location(const rb_method_entry_t *me)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
  */
@@ -4048,19 +4037,18 @@ rb_proc_compose_to_right(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth << g -> a_proc
+ *     self << g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  Returns a proc that is the composition of the given +g+ and this method.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +g+
+ *  with the arguments, then calls +self+ with the return value of +g+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f << g).call(2) #=> 16
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f << g).call([]) # => ["in proc", "in f"]
  */
 static VALUE
 rb_method_compose_to_left(VALUE self, VALUE g)
@@ -4072,19 +4060,18 @@ rb_method_compose_to_left(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth >> g -> a_proc
+ *     self >> g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls this method
- *  with them then calls <i>g</i> with the result.
+ *  Returns a proc that is the composition of this method and the given +g+.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +self+
+ *  with the arguments, then calls +g+ with the return value of +self+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f >> g).call(2) #=> 8
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f >> g).call([]) # => ["in f", "in proc"]
  */
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)

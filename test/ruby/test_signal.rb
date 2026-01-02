@@ -320,15 +320,15 @@ class TestSignal < Test::Unit::TestCase
 
     # The parent should be notified about the stop
     _, status = Process.waitpid2(child_pid, Process::WUNTRACED)
-    assert status.stopped?
+    assert_predicate status, :stopped?
 
     # It can be continued
     Process.kill(:CONT, child_pid)
 
     # And the child then runs to completion
     _, status = Process.waitpid2(child_pid)
-    assert status.exited?
-    assert status.success?
+    assert_predicate status, :exited?
+    assert_predicate status, :success?
   end
 
   def test_sigwait_fd_unused

@@ -69,7 +69,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -243,7 +243,7 @@ jobs:
           path: ruby-bench
 
       - name: Run ruby-bench
-        run: ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
+        run: rm -rf benchmarks/lobsters && ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
 
       - uses: ./.github/actions/slack

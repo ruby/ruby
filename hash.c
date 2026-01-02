@@ -1497,6 +1497,10 @@ rb_hash_new_capa(long capa)
 static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
+    if (rb_hash_compare_by_id_p(hash)) {
+        rb_gc_register_pinning_obj(ret);
+    }
+
     if (RHASH_AR_TABLE_P(hash)) {
         if (RHASH_AR_TABLE_P(ret)) {
             ar_copy(ret, hash);
@@ -4673,6 +4677,8 @@ rb_hash_compare_by_id(VALUE hash)
         RHASH_ST_CLEAR(tmp);
     }
 
+    rb_gc_register_pinning_obj(hash);
+
     return hash;
 }
 
@@ -4702,6 +4708,7 @@ rb_ident_hash_new(void)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, 0);
+    rb_gc_register_pinning_obj(hash);
     return hash;
 }
 
@@ -4710,6 +4717,7 @@ rb_ident_hash_new_with_size(st_index_t size)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, size);
+    rb_gc_register_pinning_obj(hash);
     return hash;
 }
 

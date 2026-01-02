@@ -53,6 +53,22 @@ jobs:
           exit $fail
         working-directory: include
 
+      - id: now
+        run: |
+          date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
+        env:
+          TZ: Tokyo/Asia
+
+      - id: deprecation
+        run: |
+          eval $(sed -n 's/^#define RUBY_API_VERSION_\(MAJOR\|MINOR\) /\1=/p' include/ruby/version.h)
+          if git --no-pager grep --color -o 'rb_warn_deprecated_to_remove_at('$MAJOR'\.'$MINOR',.*' -- '*.c' >&2; then
+              false
+          else
+              true
+          fi
+        continue-on-error: ${{ steps.now.outputs.mon < 12 }}
+
       - name: Check if to generate documents
         id: rdoc
         run: |

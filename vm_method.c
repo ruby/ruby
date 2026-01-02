@@ -325,9 +325,6 @@ rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
     return ST_CONTINUE;
 }
 
-// Here for backward compat.
-void rb_clear_constant_cache(void) {}
-
 void
 rb_clear_constant_cache_for_id(ID id)
 {
@@ -1122,6 +1119,10 @@ rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_
         VM_ASSERT_TYPE2(defined_class, T_CLASS, T_ICLASS);
     }
     rb_method_entry_t *me = SHAREABLE_IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
+
+    // mark_and_move_method_entry pins itself when it is in the overloaded_cme table
+    rb_gc_register_pinning_obj((VALUE)me);
+
     *((rb_method_definition_t **)&me->def) = def;
     me->called_id = called_id;
     me->owner = owner;

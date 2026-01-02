@@ -205,6 +205,7 @@ str_enc_fastpath(VALUE str)
         RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
+        rb_gc_register_pinning_obj(str); \
         FL_SET((shared_str), STR_SHARED_ROOT); \
         if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
             FL_SET_RAW((shared_str), STR_BORROWED); \
@@ -1959,8 +1960,8 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
     RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
-    FL_SET(root, STR_SHARED_ROOT);
-    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
+    FL_SET_RAW(dup, RSTRING_NOEMBED);
+    STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
@@ -4314,6 +4315,9 @@ rb_str_eql(VALUE str1, VALUE str2)
  *    'b'  <=> 'a'  # => 1
  *    'ab' <=> 'a'  # => 1
  *    'a'  <=> :a   # => nil
+ *
+ *  \Class \String includes module Comparable,
+ *  each of whose methods uses String#<=> for comparison.
  *
  *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
@@ -12374,18 +12378,24 @@ sym_succ(VALUE sym)
 
 /*
  *  call-seq:
- *   symbol <=> object -> -1, 0, +1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  If +object+ is a symbol,
- *  returns the equivalent of <tt>symbol.to_s <=> object.to_s</tt>:
+ *  Compares +self+ and +other+, using String#<=>.
  *
- *    :bar <=> :foo # => -1
- *    :foo <=> :foo # => 0
- *    :foo <=> :bar # => 1
+ *  Returns:
  *
- *  Otherwise, returns +nil+:
+ *  - <tt>self.to_s <=> other.to_s</tt>, if +other+ is a symbol.
+ *  - +nil+, otherwise.
  *
- *   :foo <=> 'bar' # => nil
+ *  Examples:
+ *
+ *    :bar <=> :foo  # => -1
+ *    :foo <=> :foo  # => 0
+ *    :foo <=> :bar  # => 1
+ *    :foo <=> 'bar' # => nil
+ *
+ *  \Class \Symbol includes module Comparable,
+ *  each of whose methods uses Symbol#<=> for comparison.
  *
  *  Related: String#<=>.
  */

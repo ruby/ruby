@@ -1468,10 +1468,17 @@ num_eql(VALUE x, VALUE y)
  *  call-seq:
  *    self <=> other -> zero or nil
  *
- *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
+ *  Compares +self+ and +other+.
+ *
+ *  Returns:
+ *
+ *  - Zero, if +self+ is the same as +other+.
+ *  - +nil+, otherwise.
+ *
+ *  \Class \Numeric includes module Comparable,
+ *  each of whose methods uses Numeric#<=> for comparison.
  *
  *  No subclass in the Ruby Core or Standard Library uses this implementation.
- *
  */
 
 static VALUE
@@ -1561,29 +1568,31 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     self <=> other ->  -1, 0, +1, or nil
+ *     self <=> other ->  -1, 0, 1, or nil
  *
- *  Returns a value that depends on the numeric relation
- *  between +self+ and +other+:
+ *  Compares +self+ and +other+.
  *
- *  - -1, if +self+ is less than +other+.
- *  - 0, if +self+ is equal to +other+.
- *  - 1, if +self+ is greater than +other+.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ is less than +other+.
+ *  - +0+, if +self+ is equal to +other+.
+ *  - +1+, if +self+ is greater than +other+.
  *  - +nil+, if the two values are incommensurate.
  *
  *  Examples:
  *
+ *    2.0 <=> 2.1            # => -1
  *    2.0 <=> 2              # => 0
  *    2.0 <=> 2.0            # => 0
  *    2.0 <=> Rational(2, 1) # => 0
  *    2.0 <=> Complex(2, 0)  # => 0
  *    2.0 <=> 1.9            # => 1
- *    2.0 <=> 2.1            # => -1
  *    2.0 <=> 'foo'          # => nil
  *
- *  This is the basis for the tests in the Comparable module.
- *
  *  <tt>Float::NAN <=> Float::NAN</tt> returns an implementation-dependent value.
+ *
+ *  \Class \Float includes module Comparable,
+ *  each of whose methods uses Float#<=> for comparison.
  *
  */
 
@@ -4888,28 +4897,29 @@ fix_cmp(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self <=> other  ->  -1, 0, +1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
+ *
+ *  Compares +self+ and +other+.
  *
  *  Returns:
  *
- *  - -1, if +self+ is less than +other+.
- *  - 0, if +self+ is equal to +other+.
- *  - 1, if +self+ is greater then +other+.
+ *  - +-1+, if +self+ is less than +other+.
+ *  - +0+, if +self+ is equal to +other+.
+ *  - +1+, if +self+ is greater then +other+.
  *  - +nil+, if +self+ and +other+ are incomparable.
  *
  *  Examples:
  *
  *    1 <=> 2              # => -1
  *    1 <=> 1              # => 0
- *    1 <=> 0              # => 1
- *    1 <=> 'foo'          # => nil
- *
  *    1 <=> 1.0            # => 0
  *    1 <=> Rational(1, 1) # => 0
  *    1 <=> Complex(1, 0)  # => 0
+ *    1 <=> 0              # => 1
+ *    1 <=> 'foo'          # => nil
  *
- *  This method is the basis for comparisons in module Comparable.
- *
+ *  \Class \Integer includes module Comparable,
+ *  each of whose methods uses Integer#<=> for comparison.
  */
 
 VALUE

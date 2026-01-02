@@ -9,7 +9,6 @@ if they are <tt>"\r"</tt>, <tt>"\n"</tt>, or <tt>"\r\n"</tt>
   "abc\n".chomp         # => "abc"
   "abc\r\n".chomp       # => "abc"
   "abc\n\r".chomp       # => "abc\n"
-  "тест\r\n".chomp      # => "тест"
   "こんにちは\r\n".chomp  # => "こんにちは"
 
 When +line_sep+ is <tt>''</tt> (an empty string),

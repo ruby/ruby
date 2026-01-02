@@ -3733,14 +3733,12 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->private_const_reference);
 
     rb_gc_mark_movable(ec->storage);
-
-    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.obj);
-    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.fields_obj);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
 void rb_fiber_update_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
+void rb_root_fiber_obj_setup(rb_thread_t *th);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
 static void
@@ -3749,10 +3747,6 @@ thread_compact(void *ptr)
     rb_thread_t *th = ptr;
 
     th->self = rb_gc_location(th->self);
-
-    if (!th->root_fiber) {
-        rb_execution_context_update(th->ec);
-    }
 }
 
 static void
@@ -3760,7 +3754,11 @@ thread_mark(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
-    rb_fiber_mark_self(th->ec->fiber_ptr);
+
+    // ec is null when setting up the thread in rb_threadptr_root_fiber_setup
+    if (th->ec) {
+        rb_fiber_mark_self(th->ec->fiber_ptr);
+    }
 
     /* mark ruby objects */
     switch (th->invoke_type) {
@@ -3815,8 +3813,6 @@ thread_free(void *ptr)
     }
 
     ruby_xfree(th->specific_storage);
-
-    rb_threadptr_root_fiber_release(th);
 
     if (th->vm && th->vm->ractor.main_thread == th) {
         RUBY_GC_INFO("MRI main thread\n");
@@ -3920,6 +3916,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->self = self;
 
+    ccan_list_head_init(&th->interrupt_exec_tasks);
+
     rb_threadptr_root_fiber_setup(th);
 
     /* All threads are blocking until a non-blocking fiber is scheduled */
@@ -3964,8 +3962,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
 
-    ccan_list_head_init(&th->interrupt_exec_tasks);
-
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
     th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
@@ -3981,6 +3977,7 @@ rb_thread_alloc(VALUE klass)
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
+    rb_root_fiber_obj_setup(target_th);
     return self;
 }
 
@@ -4528,6 +4525,8 @@ Init_VM(void)
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
 
+        rb_root_fiber_obj_setup(th);
+
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->iseq = iseq;
         th->ec->cfp->pc = ISEQ_BODY(iseq)->iseq_encoded;
@@ -4602,6 +4601,7 @@ Init_BareVM(void)
     th_init(th, 0, vm);
 
     rb_ractor_set_current_ec(th->ractor, th->ec);
+
     /* n.b. native_main_thread_stack_top is set by the INIT_STACK macro */
     ruby_thread_init_stack(th, native_main_thread_stack_top);
 

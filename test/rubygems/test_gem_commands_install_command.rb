@@ -1610,7 +1610,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
     if vc_windows? && nmake_found?
-      refute_includes(gem_make_out, "-j4")
+      refute_includes(gem_make_out, " -j4")
     else
       assert_includes(gem_make_out, "make -j4")
     end

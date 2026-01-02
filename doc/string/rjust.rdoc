@@ -7,7 +7,6 @@ right justified and padded on the left with +pad_string+:
   'hello'.rjust(10)       # => "     hello"
   'hello  '.rjust(10)     # => "   hello  "
   'hello'.rjust(10, 'ab') # => "ababahello"
-  'тест'.rjust(10)        # => "      тест"
   'こんにちは'.rjust(10)    # => "     こんにちは"
 
 If <tt>width <= self.size</tt>, returns a copy of +self+:

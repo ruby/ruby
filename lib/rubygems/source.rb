@@ -102,7 +102,7 @@ class Gem::Source
   end
 
   ##
-  # Fetches a specification for the given +name_tuple+.
+  # Fetches a specification for the given Gem::NameTuple.
 
   def fetch_spec(name_tuple)
     fetcher = Gem::RemoteFetcher.fetcher

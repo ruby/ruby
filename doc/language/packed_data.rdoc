@@ -53,8 +53,6 @@ These tables summarize the directives for packing and unpacking.
 
   U             | UTF-8 character
   w             | BER-compressed integer
-  R             | LEB128 encoded unsigned integer
-  r             | LEB128 encoded signed integer
 
 === For Floats
 
@@ -153,7 +151,7 @@ Any directive may be followed by either of these modifiers:
     [65, 66].pack('C*') # => "AB"
     'AB'.unpack('C*')   # => [65, 66]
 
-- Integer +count+ - The directive is to be applied +count+ times:
+- \Integer +count+ - The directive is to be applied +count+ times:
 
     [65, 66].pack('C2') # => "AB"
     [65, 66].pack('C3') # Raises ArgumentError.
@@ -161,7 +159,7 @@ Any directive may be followed by either of these modifiers:
     'AB'.unpack('C3')   # => [65, 66, nil]
 
   Note: Directives in <tt>%w[A a Z m]</tt> use +count+ differently;
-  see {String Directives}[rdoc-ref:language/packed_data.rdoc@String+Directives].
+  see {\String Directives}[rdoc-ref:@String+Directives].
 
 If elements don't fit the provided directive, only least significant bits are encoded:
 
@@ -459,15 +457,15 @@ for one byte in the input or output string.
     "foo ".unpack('A4')      # => ["foo"]
     "foo".unpack('A4')       # => ["foo"]
 
-    russian = "\u{442 435 441 442}" # => "тест"
-    russian.size         # => 4
-    russian.bytesize     # => 8
-    [russian].pack('A')  # => "\xD1"
-    [russian].pack('A*') # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
-    russian.unpack('A')  # => ["\xD1"]
-    russian.unpack('A2') # => ["\xD1\x82"]
-    russian.unpack('A4') # => ["\xD1\x82\xD0\xB5"]
-    russian.unpack('A*') # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
+    japanese = 'こんにちは'
+    japanese.size         # => 5
+    japanese.bytesize     # => 15
+    [japanese].pack('A')  # => "\xE3"
+    [japanese].pack('A*') # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+    japanese.unpack('A')  # => ["\xE3"]
+    japanese.unpack('A2') # => ["\xE3\x81"]
+    japanese.unpack('A4') # => ["\xE3\x81\x93\xE3"]
+    japanese.unpack('A*') # => ["\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"]
 
 - <tt>'a'</tt> - Arbitrary binary string (null padded; count is width):
 

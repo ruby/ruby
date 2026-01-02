@@ -513,7 +513,7 @@ class TestProc < Test::Unit::TestCase
 
     file, lineno = method(:source_location_test).to_proc.binding.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test[0], lineno, 'Bug #2427')
   end
 
   def test_binding_error_unless_ruby_frame
@@ -1499,15 +1499,19 @@ class TestProc < Test::Unit::TestCase
     assert_include(EnvUtil.labeled_class(name, Proc).new {}.to_s, name)
   end
 
-  @@line_of_source_location_test = __LINE__ + 1
+  @@line_of_source_location_test = [__LINE__ + 1, 2, __LINE__ + 3, 5]
   def source_location_test a=1,
     b=2
   end
 
   def test_source_location
-    file, lineno = method(:source_location_test).source_location
+    file, *loc = method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
+
+    file, *loc = self.class.instance_method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
   end
 
   @@line_of_attr_reader_source_location_test   = __LINE__ + 3
@@ -1540,13 +1544,13 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_source_location
-    exp_lineno = __LINE__ + 3
-    file, lineno = block_source_location_test(1,
+    exp_loc = [__LINE__ + 3, 49, __LINE__ + 4, 49]
+    file, *loc = block_source_location_test(1,
                                               2,
                                               3) do
                                               end
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno)
+    assert_equal(exp_loc, loc)
   end
 
   def test_splat_without_respond_to
@@ -1838,7 +1842,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_implicit_parameters_for_it_complex
     "foo".tap do
-      it = "bar"
+      it = it = "bar"
 
       assert_equal([], binding.implicit_parameters)
       assert_raise(NameError) { binding.implicit_parameter_get(:it) }
@@ -1863,7 +1867,7 @@ class TestProc < Test::Unit::TestCase
 
     "foo".tap do
       it or flunk
-      it = "bar"
+      it = it = "bar"
 
       assert_equal([:it], binding.implicit_parameters)
       assert_equal("foo", binding.implicit_parameter_get(:it))

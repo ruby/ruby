@@ -17,6 +17,7 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/encoding.h"
+#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
@@ -2468,7 +2469,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     }
 
     hash = rb_hash_new();
-    memo = MEMO_NEW(hash, match, symbolize_names);
+    memo = rb_imemo_memo_new(hash, match, symbolize_names);
 
     onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
 
@@ -2507,7 +2508,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
 
         struct MEMO *memo;
-        memo = MEMO_NEW(h, match, 1);
+        memo = rb_imemo_memo_new(h, match, 1);
 
         onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, (void*)memo);
 
@@ -3970,7 +3971,6 @@ struct reg_init_args {
 
 static VALUE reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
 static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
-void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...);
 
 /*
  *  call-seq:

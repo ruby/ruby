@@ -9,6 +9,7 @@ use mmtk::MMTK;
 
 use crate::abi;
 use crate::abi::RubyBindingOptions;
+use crate::pinning_registry::PinningRegistry;
 use crate::weak_proc::WeakProcessor;
 use crate::Ruby;
 
@@ -54,10 +55,9 @@ pub struct RubyBinding {
     pub upcalls: *const abi::RubyUpcalls,
     pub plan_name: Mutex<Option<CString>>,
     pub weak_proc: WeakProcessor,
+    pub pinning_registry: PinningRegistry,
     pub gc_thread_join_handles: Mutex<Vec<JoinHandle<()>>>,
     pub wb_unprotected_objects: Mutex<HashSet<ObjectReference>>,
-
-    pub weak_reference_dead_value: ObjectReference,
 }
 
 unsafe impl Sync for RubyBinding {}
@@ -68,7 +68,6 @@ impl RubyBinding {
         mmtk: &'static MMTK<Ruby>,
         binding_options: &RubyBindingOptions,
         upcalls: *const abi::RubyUpcalls,
-        weak_reference_dead_value: ObjectReference,
     ) -> Self {
         unsafe {
             crate::BINDING_FAST.suffix_size = binding_options.suffix_size;
@@ -80,10 +79,9 @@ impl RubyBinding {
             upcalls,
             plan_name: Mutex::new(None),
             weak_proc: WeakProcessor::new(),
+            pinning_registry: PinningRegistry::new(),
             gc_thread_join_handles: Default::default(),
             wb_unprotected_objects: Default::default(),
-
-            weak_reference_dead_value,
         }
     }
 

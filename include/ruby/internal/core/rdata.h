@@ -351,14 +351,6 @@ rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_f
     return result;
 }
 
-RBIMPL_ATTR_DEPRECATED(("by: rb_data_object_wrap"))
-/** @deprecated  This function was renamed to rb_data_object_wrap(). */
-static inline VALUE
-rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
-{
-    return rb_data_object_wrap(klass, data, dmark, dfree);
-}
-
 /** @cond INTERNAL_MACRO */
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning

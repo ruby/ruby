@@ -491,6 +491,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
         while (subclass_entry) {
             if (subclass_entry->klass && RB_TYPE_P(subclass_entry->klass, T_ICLASS)) {
                 iclass = subclass_entry->klass;
+                VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
                 if (RBASIC_CLASS(iclass) == klass) {
                     // Is the subclass an ICLASS including this module into another class
                     // If so we need to re-associate it under our box with the new ext
@@ -819,7 +820,8 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
-    return class_alloc0(type, klass, false);
+    bool boxable = rb_box_available() && BOX_ROOT_P(rb_current_box());
+    return class_alloc0(type, klass, boxable);
 }
 
 static VALUE

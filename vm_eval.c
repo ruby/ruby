@@ -1533,13 +1533,6 @@ rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
                        GET_EC());
 }
 
-VALUE
-rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-           rb_block_call_func_t bl_proc, VALUE data2)
-{
-    return rb_iterate_internal(it_proc, data1, bl_proc, data2);
-}
-
 struct iter_method_arg {
     VALUE obj;
     ID mid;

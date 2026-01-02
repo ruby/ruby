@@ -187,7 +187,7 @@ module Prism
       while (node = queue.shift)
         result << node
 
-        node.compact_child_nodes.each do |child_node|
+        node.each_child_node do |child_node|
           child_location = child_node.location
 
           start_line = child_location.start_line
@@ -258,6 +258,13 @@ module Prism
     end
 
     alias deconstruct child_nodes
+
+    # With a block given, yields each child node. Without a block, returns
+    # an enumerator that contains each child node. Excludes any `nil`s in
+    # the place of optional nodes that were not present.
+    def each_child_node
+      raise NoMethodError, "undefined method `each_child_node' for #{inspect}"
+    end
 
     # Returns an array of child nodes, excluding any `nil`s in the place of
     # optional nodes that were not present.
@@ -333,6 +340,22 @@ module Prism
         when Prism::Template::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      <%- node.fields.each do |field| -%>
+      <%- case field -%>
+      <%- when Prism::Template::NodeField -%>
+      yield <%= field.name %>
+      <%- when Prism::Template::OptionalNodeField -%>
+      yield <%= field.name %> if <%= field.name %>
+      <%- when Prism::Template::NodeListField -%>
+      <%= field.name %>.each { |node| yield node }
+      <%- end -%>
+      <%- end -%>
     end
 
     # def compact_child_nodes: () -> Array[Node]

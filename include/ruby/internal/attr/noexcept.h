@@ -78,7 +78,7 @@
 #elif defined(__INTEL_CXX11_MODE__)
 # define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 19, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif __cplusplus >= 201103L

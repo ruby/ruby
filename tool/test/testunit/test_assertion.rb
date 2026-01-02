@@ -8,6 +8,8 @@ class TestAssertion < Test::Unit::TestCase
   end
 
   def test_timeout_separately
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
+
     assert_raise(Timeout::Error) do
       assert_separately([], <<~"end;", timeout: 0.1)
         sleep

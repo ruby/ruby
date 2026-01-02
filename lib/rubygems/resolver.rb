@@ -2,7 +2,6 @@
 
 require_relative "dependency"
 require_relative "exceptions"
-require_relative "util/list"
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the

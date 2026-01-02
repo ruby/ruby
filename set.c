@@ -116,7 +116,7 @@ static ID id_class_methods;
 #define RSET_SIZE(set) set_table_size(RSET_TABLE(set))
 #define RSET_EMPTY(set) (RSET_SIZE(set) == 0)
 #define RSET_SIZE_NUM(set) SIZET2NUM(RSET_SIZE(set))
-#define RSET_IS_MEMBER(sobj, item) set_table_lookup(RSET_TABLE(set), (st_data_t)(item))
+#define RSET_IS_MEMBER(set, item) set_table_lookup(RSET_TABLE(set), (st_data_t)(item))
 #define RSET_COMPARE_BY_IDENTITY(set) (RSET_TABLE(set)->type == &identhash)
 
 struct set_object {
@@ -648,36 +648,22 @@ set_i_to_a(VALUE set)
 
 /*
  *  call-seq:
- *    to_set(klass = Set, *args, &block) -> self or new_set
+ *    to_set(&block) -> self or new_set
  *
- *  Without arguments, returns +self+ (for duck-typing in methods that
- *  accept "set, or set-convertible" arguments).
+ *  Without a block, if +self+ is an instance of +Set+, returns +self+.
+ *  Otherwise, calls <tt>Set.new(self, &block)</tt>.
  *
  *  A form with arguments is _deprecated_. It converts the set to another
  *  with <tt>klass.new(self, *args, &block)</tt>.
  */
 static VALUE
-set_i_to_set(int argc, VALUE *argv, VALUE set)
+set_i_to_set(VALUE set)
 {
-    VALUE klass;
-
-    if (argc == 0) {
-        klass = rb_cSet;
-        argv = &set;
-        argc = 1;
-    }
-    else {
-        rb_warn_deprecated("passing arguments to Set#to_set", NULL);
-        klass = argv[0];
-        argv[0] = set;
-    }
-
-    if (klass == rb_cSet && rb_obj_is_instance_of(set, rb_cSet) &&
-            argc == 1 && !rb_block_given_p()) {
+    if (rb_obj_is_instance_of(set, rb_cSet) && !rb_block_given_p()) {
         return set;
     }
 
-    return rb_funcall_passing_block(klass, id_new, argc, argv);
+    return rb_funcall_passing_block(rb_cSet, id_new, 0, NULL);
 }
 
 /*
@@ -697,7 +683,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
  *  call-seq:
  *    add(obj) -> self
  *
- *  Adds the given object to the set and returns self.  Use `merge` to
+ *  Adds the given object to the set and returns self. Use Set#merge to
  *  add many elements at once.
  *
  *    Set[1, 2].add(3)                    #=> Set[1, 2, 3]
@@ -2292,7 +2278,7 @@ Init_Set(void)
     rb_define_method(rb_cSet, "superset?", set_i_superset, 1);
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
-    rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
+    rb_define_method(rb_cSet, "to_set", set_i_to_set, 0);
 
     /* :nodoc: */
     VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);

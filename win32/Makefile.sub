@@ -1425,8 +1425,6 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
-exts: rubyspec-capiext
-
 yesterday:
 	(set TZ=UTC-9) && \
 	for /f "usebackq" %H in \
