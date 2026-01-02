@@ -851,7 +851,7 @@ rb_mmtk_call_object_closure(VALUE obj, bool pin)
         char parent_obj_info_buf[info_size];
         rb_raw_obj_info(parent_obj_info_buf, info_size, marking_parent_object);
 
-        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+        rb_mmtk_gc_thread_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
     }
 
     return (VALUE)rb_mmtk_gc_thread_tls->object_closure.c_function(
