@@ -72,6 +72,8 @@ struct MMTk_final_job {
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
+
+RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 #else
 # error We currently need language-supported TLS
 #endif
@@ -270,14 +272,18 @@ rb_mmtk_update_object_references(MMTk_ObjectReference mmtk_object)
     VALUE object = (VALUE)mmtk_object;
 
     if (!RB_FL_TEST(object, RUBY_FL_WEAK_REFERENCE)) {
+        marking_parent_object = object;
         rb_gc_update_object_references(rb_gc_get_objspace(), object);
+        marking_parent_object = 0;
     }
 }
 
 static void
 rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 {
+    marking_parent_object = (VALUE)object;
     rb_gc_mark_children(rb_gc_get_objspace(), (VALUE)object);
+    marking_parent_object = 0;
 }
 
 static void
@@ -285,11 +291,15 @@ rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
 {
     VALUE object = (VALUE)mmtk_object;
 
+    marking_parent_object = object;
+
     rb_gc_handle_weak_references(object);
 
     if (moving) {
         rb_gc_update_object_references(rb_gc_get_objspace(), object);
     }
+
+    marking_parent_object = 0;
 }
 
 static void
@@ -797,6 +807,17 @@ void rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff) { }
 static inline VALUE
 rb_mmtk_call_object_closure(VALUE obj, bool pin)
 {
+    if (RB_UNLIKELY(RB_BUILTIN_TYPE(obj) == T_NONE)) {
+        const size_t info_size = 256;
+        char obj_info_buf[info_size];
+        rb_raw_obj_info(obj_info_buf, info_size, obj);
+
+        char parent_obj_info_buf[info_size];
+        rb_raw_obj_info(parent_obj_info_buf, info_size, marking_parent_object);
+
+        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+    }
+
     return (VALUE)rb_mmtk_gc_thread_tls->object_closure.c_function(
         rb_mmtk_gc_thread_tls->object_closure.rust_closure,
         rb_mmtk_gc_thread_tls->gc_context,
