@@ -2226,7 +2226,7 @@ CODE
   def test_thread_add_trace_func
     events = []
     base_line = __LINE__
-    q = Thread::Queue.new
+    q = []
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
         events << [ev, line] if file == __FILE__
