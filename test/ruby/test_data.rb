@@ -259,7 +259,7 @@ class TestData < Test::Unit::TestCase
     assert_equal(klass.new, test)
     assert_not_equal(Data.define.new, test)
 
-    assert_equal('#<data >', test.inspect)
+    assert_equal('#<data>', test.inspect)
     assert_equal([], test.members)
     assert_equal({}, test.to_h)
   end
