@@ -946,14 +946,14 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_peephole_optimization_without_trace
-    assert_separately [], <<-END
+    assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
       eval "def foo; 1.times{|(a), &b| nil && a}; end"
     END
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END, timeout: 60
+    assert_ruby_status [], <<-END, timeout: 60
       script =  <<-EOS
         if true
         else

@@ -1594,7 +1594,8 @@ q.pop
 
   # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug21127 = '[ruby-core:120930] [Bug #21127]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       5.times do
         m = Mutex.new
@@ -1611,7 +1612,7 @@ q.pop
   end
 
   def test_unlock_locked_mutex_with_collected_fiber2
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       MUTEXES = []
       5.times do
@@ -1630,7 +1631,7 @@ q.pop
   end
 
   def test_mutexes_locked_in_fiber_dont_have_aba_issue_with_new_fibers
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       mutexes = 1000.times.map do
         Mutex.new

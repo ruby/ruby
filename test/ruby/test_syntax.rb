@@ -2296,13 +2296,13 @@ eom
   end
 
   def test_class_module_Object_ancestors
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m
       class Bug18832; end
     RUBY
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m

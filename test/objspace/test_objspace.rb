@@ -143,7 +143,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_reachable_objects_during_iteration
     omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
-    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       ObjectSpace.each_object{|o|
         o.inspect
@@ -179,7 +179,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_stop_first
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
       # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]

@@ -133,7 +133,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_monkey_patch
-    assert_separately(%w[--yjit-disable], <<~RUBY)
+    assert_ruby_status(%w[--yjit-disable], <<~RUBY)
       # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
       Kernel.prepend(Module.new)
 

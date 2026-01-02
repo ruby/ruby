@@ -364,7 +364,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_compact_objects_of_varying_sizes
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       $objects = []
       160.times do |n|
