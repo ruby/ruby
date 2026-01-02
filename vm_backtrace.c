@@ -17,6 +17,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
+#include "ruby/ractor.h"
 #include "vm_core.h"
 
 static VALUE rb_cBacktrace;
@@ -156,7 +157,7 @@ static const rb_data_type_t location_data_type = {
         NULL, // No external memory to report,
         location_ref_update,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE
 };
 
 int
@@ -566,7 +567,7 @@ static const rb_data_type_t backtrace_data_type = {
     /* Cannot set the RUBY_TYPED_EMBEDDABLE flag because the loc of frame_info
      * points elements in the backtrace array. This can cause the loc to become
      * incorrect if this backtrace object is moved by compaction. */
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE
 };
 
 int
@@ -579,8 +580,7 @@ static VALUE
 backtrace_alloc(VALUE klass)
 {
     rb_backtrace_t *bt;
-    VALUE obj = TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
-    return obj;
+    return TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
 }
 
 static VALUE
@@ -589,9 +589,9 @@ backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
     size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
     VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
     TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, *backtrace);
+    RB_OBJ_FREEZE(btobj);
     return btobj;
 }
-
 
 static long
 backtrace_size(const rb_execution_context_t *ec)
@@ -813,8 +813,23 @@ rb_backtrace_to_str_ary(VALUE self)
     rb_backtrace_t *bt;
     TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
 
-    if (!bt->strary) {
-        RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
+    if (RB_OBJ_SHAREABLE_P(self)) {
+        VALUE strary = RUBY_ATOMIC_VALUE_LOAD(bt->strary);
+        if (!strary) {
+            strary = rb_ractor_make_shareable(backtrace_to_str_ary(self));
+            if (RUBY_ATOMIC_VALUE_CAS(bt->strary, 0, strary)) {
+                strary = RUBY_ATOMIC_VALUE_LOAD(bt->strary);
+            }
+            else {
+                RB_OBJ_WRITTEN(self, 0, strary);
+            }
+        }
+        return strary;
+    }
+    else {
+        if (!bt->strary) {
+            RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
+        }
     }
     return bt->strary;
 }
@@ -849,10 +864,25 @@ rb_backtrace_to_location_ary(VALUE self)
     rb_backtrace_t *bt;
     TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
 
-    if (!bt->locary) {
-        RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
+    if (RB_OBJ_SHAREABLE_P(self)) {
+        VALUE locary = RUBY_ATOMIC_VALUE_LOAD(bt->locary);
+        if (!locary) {
+            locary = rb_ractor_make_shareable(backtrace_to_location_ary(self));
+            if (RUBY_ATOMIC_VALUE_CAS(bt->locary, 0, locary)) {
+                locary = RUBY_ATOMIC_VALUE_LOAD(bt->locary);
+            }
+            else {
+                RB_OBJ_WRITTEN(self, 0, locary);
+            }
+        }
+        return locary;
     }
-    return bt->locary;
+    else {
+        if (!bt->locary) {
+            RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
+        }
+        return bt->locary;
+    }
 }
 
 VALUE

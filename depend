@@ -19081,6 +19081,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}node.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}prism_compile.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}ractor.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}rubyparser.h
