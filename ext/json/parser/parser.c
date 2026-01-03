@@ -739,9 +739,7 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                     }
                 }
 
-                char buf[4];
-                int unescape_len = convert_UTF32_to_UTF8(buf, ch);
-                MEMCPY(buffer, buf, char, unescape_len);
+                int unescape_len = convert_UTF32_to_UTF8(buffer, ch);
                 buffer += unescape_len;
                 p = ++pe;
                 break;
