@@ -1637,14 +1637,41 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
 
 #define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
 
+static VALUE
+copy_allocator_adapter(VALUE klass)
+{
+    if (LIKELY(RCLASS_COPY_ALLOCATOR_P(klass))) {
+        rb_copy_alloc_func_t func = RCLASS_COPY_ALLOCATOR(klass);
+        return func(klass, Qundef);
+    }
+    rb_alloc_func_t func = RCLASS_ALLOCATOR(klass);
+    if (func == UNDEF_ALLOC_FUNC) {
+        rb_undefined_alloc(klass);
+    }
+    return func(klass);
+}
+
 void
-rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
+rb_define_alloc_func(VALUE klass, rb_alloc_func_t func)
 {
     Check_Type(klass, T_CLASS);
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
+    if (func == copy_allocator_adapter) {
+        rb_raise(rb_eTypeError, "not a valid allocator");
+    }
     RCLASS_SET_ALLOCATOR(klass, func);
+}
+
+void
+rb_define_copy_alloc_func(VALUE klass, rb_copy_alloc_func_t func)
+{
+    Check_Type(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "can't define a copy allocator for a singleton class");
+    }
+    RCLASS_SET_COPY_ALLOCATOR(klass, func);
 }
 
 void
@@ -1654,13 +1681,41 @@ rb_undef_alloc_func(VALUE klass)
 }
 
 rb_alloc_func_t
+rb_get_raw_alloc_func(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+    rb_alloc_func_t allocator = RCLASS_RAW_ALLOCATOR(klass);
+    if (allocator == UNDEF_ALLOC_FUNC) return 0;
+    if (allocator) return allocator;
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        klass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+        allocator = RCLASS_RAW_ALLOCATOR(klass);
+        if (allocator == UNDEF_ALLOC_FUNC) break;
+        if (allocator) return allocator;
+    }
+    return 0;
+}
+
+rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-    rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    rb_alloc_func_t allocator = RCLASS_RAW_ALLOCATOR(klass);
     if (allocator == UNDEF_ALLOC_FUNC) return 0;
-    if (allocator) return allocator;
+    if (allocator) {
+        if (RCLASS_COPY_ALLOCATOR_P(klass)) {
+            return copy_allocator_adapter;
+        }
+        return allocator;
+    }
 
     VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
     size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
@@ -1674,6 +1729,40 @@ rb_get_alloc_func(VALUE klass)
         if (allocator) return allocator;
     }
     return 0;
+}
+
+void
+rb_init_alloc_func(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+    if (RCLASS_ALLOCATOR(klass)) {
+        return;
+    }
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        VALUE superclass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(superclass, T_CLASS);
+
+        if (RCLASS_EXT_PRIME(superclass)->copy_allocator) {
+            rb_copy_alloc_func_t allocator = RCLASS_COPY_ALLOCATOR(superclass);
+            if (allocator) {
+                RCLASS_SET_COPY_ALLOCATOR(klass, allocator);
+                return;
+            }
+        }
+        else {
+            rb_alloc_func_t allocator = RCLASS_ALLOCATOR(superclass);
+            if (allocator) {
+                RCLASS_SET_ALLOCATOR(klass, allocator);
+                return;
+            }
+        }
+    }
+
 }
 
 const rb_method_entry_t *

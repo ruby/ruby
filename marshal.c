@@ -137,7 +137,7 @@ void
 rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE))
 {
     marshal_compat_t *compat;
-    rb_alloc_func_t allocator = rb_get_alloc_func(newclass);
+    rb_alloc_func_t allocator = rb_get_raw_alloc_func(newclass);
 
     if (!allocator) {
         rb_raise(rb_eTypeError, "no allocator");
@@ -946,7 +946,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
+            rb_alloc_func_t allocator = rb_get_raw_alloc_func(RBASIC(obj)->klass);
             if (st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
                           &compat_data)) {
@@ -1660,7 +1660,7 @@ r_fixup_compat(VALUE v, struct load_arg *arg)
     st_data_t key = (st_data_t)v;
     if (arg->compat_tbl && st_delete(arg->compat_tbl, &key, &data)) {
         VALUE real_obj = (VALUE)data;
-        rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
+        rb_alloc_func_t allocator = rb_get_raw_alloc_func(CLASS_OF(real_obj));
         if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
             marshal_compat_t *compat = (marshal_compat_t*)data;
             compat->loader(real_obj, v);
@@ -1815,7 +1815,7 @@ obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
     st_data_t data;
     rb_alloc_func_t allocator;
 
-    allocator = rb_get_alloc_func(klass);
+    allocator = rb_get_raw_alloc_func(klass);
     if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
         marshal_compat_t *compat = (marshal_compat_t*)data;
         VALUE real_obj = rb_obj_alloc(klass);
@@ -2197,7 +2197,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             }
             v = load_funcall(arg, klass, s_load, 1, &data);
             v = r_entry(v, arg);
-            if (st_lookup(compat_allocator_tbl, (st_data_t)rb_get_alloc_func(klass), &d)) {
+            if (st_lookup(compat_allocator_tbl, (st_data_t)rb_get_raw_alloc_func(klass), &d)) {
                 marshal_compat_t *compat = (marshal_compat_t*)d;
                 v = compat->loader(klass, v);
             }
