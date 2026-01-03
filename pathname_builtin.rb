@@ -1156,7 +1156,14 @@ class Pathname    # * Dir *
     end
   end
 
-  # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+  # call-seq:
+  #   Pathname.getwd -> new_pathname
+  #
+  # Returns a new \Pathname object containing the path to the current working directory
+  # (equivalent to <tt>Pathname.new(Dir.getwd)</tt>):
+  #
+  #   Pathname.getwd # => #<Pathname:/home>
+  #
   def Pathname.getwd() self.new(Dir.getwd) end
   class << self
     alias pwd getwd
