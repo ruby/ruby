@@ -28,15 +28,15 @@ class TestBox < Test::Unit::TestCase
     assert_separately(['RUBY_BOX'=>nil], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       assert_nil ENV['RUBY_BOX']
-      assert !Ruby::Box.enabled?
+      assert_not_predicate Ruby::Box, :enabled?
     end;
   end
 
   def test_box_availability_when_enabled
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
-      assert '1', ENV['RUBY_BOX']
-      assert Ruby::Box.enabled?
+      assert_equal '1', ENV['RUBY_BOX']
+      assert_predicate Ruby::Box, :enabled?
     end;
   end
 
@@ -44,7 +44,7 @@ class TestBox < Test::Unit::TestCase
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       assert_equal Ruby::Box.main, Ruby::Box.current
-      assert Ruby::Box.main.main?
+      assert_predicate Ruby::Box.main, :main?
     end;
   end
 
@@ -152,7 +152,7 @@ class TestBox < Test::Unit::TestCase
     setup_box
 
     assert_raise(RuntimeError, "Yay!") { @box.require(File.join(__dir__, 'box', 'raise')) }
-    assert Ruby::Box.current.inspect.include?("main")
+    assert_include Ruby::Box.current.inspect, "main"
   end
 
   def test_autoload_in_box
@@ -514,7 +514,7 @@ class TestBox < Test::Unit::TestCase
     assert_equal nil, $,
 
     # used only in box
-    assert !global_variables.include?(:$used_only_in_box)
+    assert_not_include? global_variables, :$used_only_in_box
     @box::UniqueGvar.write(123)
     assert_equal 123, @box::UniqueGvar.read
     assert_nil $used_only_in_box
@@ -535,7 +535,7 @@ class TestBox < Test::Unit::TestCase
   def test_load_path_and_loaded_features
     setup_box
 
-    assert $LOAD_PATH.respond_to?(:resolve_feature_path)
+    assert_respond_to $LOAD_PATH, :resolve_feature_path
 
     @box.require_relative('box/load_path')
 
@@ -545,13 +545,13 @@ class TestBox < Test::Unit::TestCase
 
     box_dir = File.join(__dir__, 'box')
     # TODO: $LOADED_FEATURES in method calls should refer the current box in addition to the loading box.
-    # assert @box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank1.rb'))
-    # assert !@box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank2.rb'))
-    # assert @box::LoadPathCheck.require_blank2
-    # assert @box::LoadPathCheck.current_loaded_features.include?(File.join(box_dir, 'blank2.rb'))
+    # assert_include @box::LoadPathCheck.current_loaded_features, File.join(box_dir, 'blank1.rb')
+    # assert_not_include @box::LoadPathCheck.current_loaded_features, File.join(box_dir, 'blank2.rb')
+    # assert_predicate @box::LoadPathCheck, :require_blank2
+    # assert_include(@box::LoadPathCheck.current_loaded_features, File.join(box_dir, 'blank2.rb'))
 
-    assert !$LOADED_FEATURES.include?(File.join(box_dir, 'blank1.rb'))
-    assert !$LOADED_FEATURES.include?(File.join(box_dir, 'blank2.rb'))
+    assert_not_include $LOADED_FEATURES, File.join(box_dir, 'blank1.rb')
+    assert_not_include $LOADED_FEATURES, File.join(box_dir, 'blank2.rb')
   end
 
   def test_eval_basic
@@ -690,23 +690,23 @@ class TestBox < Test::Unit::TestCase
     begin;
       pend unless Ruby::Box.respond_to?(:root) and Ruby::Box.respond_to?(:main) # for RUBY_DEBUG > 0
 
-      assert Ruby::Box.root.respond_to?(:root?)
-      assert Ruby::Box.main.respond_to?(:main?)
+      assert_respond_to Ruby::Box.root, :root?
+      assert_respond_to Ruby::Box.main, :main?
 
-      assert Ruby::Box.root.root?
-      assert Ruby::Box.main.main?
+      assert_predicate Ruby::Box.root, :root?
+      assert_predicate Ruby::Box.main, :main?
       assert_equal Ruby::Box.main, Ruby::Box.current
 
       $a = 1
       $LOADED_FEATURES.push("/tmp/foobar")
 
       assert_equal 2, Ruby::Box.root.eval('$a = 2; $a')
-      assert !Ruby::Box.root.eval('$LOADED_FEATURES.push("/tmp/barbaz"); $LOADED_FEATURES.include?("/tmp/foobar")')
-      assert "FooClass", Ruby::Box.root.eval('class FooClass; end; Object.const_get(:FooClass).to_s')
+      assert_not_include Ruby::Box.root.eval('$LOADED_FEATURES.push("/tmp/barbaz"); $LOADED_FEATURES'), "/tmp/foobar"
+      assert_equal "FooClass", Ruby::Box.root.eval('class FooClass; end; Object.const_get(:FooClass).to_s')
 
       assert_equal 1, $a
-      assert !$LOADED_FEATURES.include?("/tmp/barbaz")
-      assert !Object.const_defined?(:FooClass)
+      assert_not_include $LOADED_FEATURES, "/tmp/barbaz"
+      assert_not_operator Object, :const_defined?, :FooClass
     end;
   end
 

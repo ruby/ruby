@@ -123,6 +123,25 @@ class TestCall < Test::Unit::TestCase
    assert_equal([1, 2, {kw: 3}], f(*a, kw: 3))
   end
 
+  def test_forward_argument_init
+    o = Object.new
+    def o.simple_forward_argument_init(a=eval('b'), b=1)
+      [a, b]
+    end
+
+    def o.complex_forward_argument_init(a=eval('b'), b=eval('kw'), kw: eval('kw2'), kw2: 3)
+      [a, b, kw, kw2]
+    end
+
+    def o.keyword_forward_argument_init(a: eval('b'), b: eval('kw'), kw: eval('kw2'), kw2: 3)
+      [a, b, kw, kw2]
+    end
+
+    assert_equal [nil, 1], o.simple_forward_argument_init
+    assert_equal [nil, nil, 3, 3], o.complex_forward_argument_init
+    assert_equal [nil, nil, 3, 3], o.keyword_forward_argument_init
+  end
+
   def test_call_bmethod_proc
     pr = proc{|sym| sym}
     define_singleton_method(:a, &pr)

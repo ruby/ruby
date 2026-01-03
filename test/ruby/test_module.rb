@@ -9,18 +9,18 @@ class TestModule < Test::Unit::TestCase
     yield
   end
 
-  def assert_method_defined?(klass, mid, message="")
+  def assert_method_defined?(klass, (mid, *args), message="")
     message = build_message(message, "#{klass}\##{mid} expected to be defined.")
     _wrap_assertion do
-      klass.method_defined?(mid) or
+      klass.method_defined?(mid, *args) or
         raise Test::Unit::AssertionFailedError, message, caller(3)
     end
   end
 
-  def assert_method_not_defined?(klass, mid, message="")
+  def assert_method_not_defined?(klass, (mid, *args), message="")
     message = build_message(message, "#{klass}\##{mid} expected to not be defined.")
     _wrap_assertion do
-      klass.method_defined?(mid) and
+      klass.method_defined?(mid, *args) and
         raise Test::Unit::AssertionFailedError, message, caller(3)
     end
   end
@@ -813,40 +813,40 @@ class TestModule < Test::Unit::TestCase
   def test_method_defined?
     [User, Class.new{include User}, Class.new{prepend User}].each do |klass|
       [[], [true]].each do |args|
-        assert !klass.method_defined?(:wombat, *args)
-        assert klass.method_defined?(:mixin, *args)
-        assert klass.method_defined?(:user, *args)
-        assert klass.method_defined?(:user2, *args)
-        assert !klass.method_defined?(:user3, *args)
+        assert_method_not_defined?(klass, [:wombat, *args])
+        assert_method_defined?(klass, [:mixin, *args])
+        assert_method_defined?(klass, [:user, *args])
+        assert_method_defined?(klass, [:user2, *args])
+        assert_method_not_defined?(klass, [:user3, *args])
 
-        assert !klass.method_defined?("wombat", *args)
-        assert klass.method_defined?("mixin", *args)
-        assert klass.method_defined?("user", *args)
-        assert klass.method_defined?("user2", *args)
-        assert !klass.method_defined?("user3", *args)
+        assert_method_not_defined?(klass, ["wombat", *args])
+        assert_method_defined?(klass, ["mixin", *args])
+        assert_method_defined?(klass, ["user", *args])
+        assert_method_defined?(klass, ["user2", *args])
+        assert_method_not_defined?(klass, ["user3", *args])
       end
     end
   end
 
   def test_method_defined_without_include_super
-    assert User.method_defined?(:user, false)
-    assert !User.method_defined?(:mixin, false)
-    assert Mixin.method_defined?(:mixin, false)
+    assert_method_defined?(User, [:user, false])
+    assert_method_not_defined?(User, [:mixin, false])
+    assert_method_defined?(Mixin, [:mixin, false])
 
     User.const_set(:FOO, c = Class.new)
 
     c.prepend(User)
-    assert !c.method_defined?(:user, false)
+    assert_method_not_defined?(c, [:user, false])
     c.define_method(:user){}
-    assert c.method_defined?(:user, false)
+    assert_method_defined?(c, [:user, false])
 
-    assert !c.method_defined?(:mixin, false)
+    assert_method_not_defined?(c, [:mixin, false])
     c.define_method(:mixin){}
-    assert c.method_defined?(:mixin, false)
+    assert_method_defined?(c, [:mixin, false])
 
-    assert !c.method_defined?(:userx, false)
+    assert_method_not_defined?(c, [:userx, false])
     c.define_method(:userx){}
-    assert c.method_defined?(:userx, false)
+    assert_method_defined?(c, [:userx, false])
 
     # cleanup
     User.class_eval do

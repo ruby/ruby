@@ -245,7 +245,6 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
         i = opt_max;
     }
     else {
-        int j;
         i = args->argc;
         args->argc = 0;
 
@@ -256,11 +255,6 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
             for (; i<opt_max && args->rest_index < len; i++, args->rest_index++) {
                 locals[i] = argv[args->rest_index];
             }
-        }
-
-        /* initialize by nil */
-        for (j=i; j<opt_max; j++) {
-            locals[j] = Qnil;
         }
     }
 

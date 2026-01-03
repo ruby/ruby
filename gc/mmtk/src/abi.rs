@@ -323,6 +323,7 @@ pub struct RubyUpcalls {
     pub update_finalizer_table: extern "C" fn(),
     pub special_const_p: extern "C" fn(object: ObjectReference) -> bool,
     pub mutator_thread_panic_handler: extern "C" fn(),
+    pub gc_thread_panic_handler: extern "C" fn(),
 }
 
 unsafe impl Sync for RubyUpcalls {}
