@@ -1356,6 +1356,13 @@ static rb_local_variable_write_node_t *rb_new_node_local_variable_write_new(stru
 static rb_global_variable_write_node_t *rb_new_node_global_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_instance_variable_write_node_t *rb_new_node_instance_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_class_variable_write_node_t *rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_local_variable_target_node_t *rb_new_node_local_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
+static rb_global_variable_target_node_t *rb_new_node_global_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
+static rb_instance_variable_target_node_t *rb_new_node_instance_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
+static rb_class_variable_target_node_t *rb_new_node_class_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
+static rb_index_target_node_t *rb_new_node_index_target_new(struct parser_params *p, rb_node_t *nd_recv, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc);
+static rb_call_target_node_t *rb_new_node_call_target_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_call_node_flags_t flags, const YYLTYPE *loc);
+static rb_multi_target_node_t *rb_new_node_multi_target_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc);
 
 static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc);
 
@@ -1431,6 +1438,13 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_GLOBAL_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_global_variable_write_new(p,v,val,loc)
 #define NEW_RB_INSTANCE_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_instance_variable_write_new(p,v,val,loc)
 #define NEW_RB_CLASS_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_class_variable_write_new(p,v,val,loc)
+#define NEW_LTARGET(v,loc) (rb_node_t *)rb_new_node_local_variable_target_new(p,v,loc)
+#define NEW_RB_GLOBAL_VARIABLE_TARGET(v,loc) (rb_node_t *)rb_new_node_global_variable_target_new(p,v,loc)
+#define NEW_RB_INSTANCE_VARIABLE_TARGET(v,loc) (rb_node_t *)rb_new_node_instance_variable_target_new(p,v,loc)
+#define NEW_RB_CLASS_VARIABLE_TARGET(v,loc) (rb_node_t *)rb_new_node_class_variable_target_new(p,v,loc)
+#define NEW_RB_INDEX_TARGET(r,a,fl,loc) (rb_node_t *)rb_new_node_index_target_new(p,r,a,fl|RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE,loc)
+#define NEW_RB_CALL_TARGET(r,m,fl,loc) (rb_node_t *)rb_new_node_call_target_new(p,r,m,fl,loc)
+#define NEW_RB_MULTI_TARGET(l,rest,r,loc) rb_new_node_multi_target_new(p,l,rest,r,loc)
 
 #define NEW_RB_CALL(r,m,a,fl,loc) rb_new_node_call_new(p,r,m,a,fl,loc)
 #define NEW_RB_OPCALL(r,m,a,loc) NEW_RB_CALL(r,m,a,0,loc)
@@ -1666,6 +1680,8 @@ static NODE *splat_array(NODE*);
 static rb_arguments_node_t *array2arguments(struct parser_params *p, rb_array_node_t *nd_ary);
 static rb_keyword_hash_node_t *array2keyword_hash(struct parser_params *p, rb_array_node_t *nd_ary, const YYLTYPE *loc);
 static rb_hash_node_t *array2hash(struct parser_params *p, rb_array_node_t *nd_ary, const YYLTYPE *loc);
+static rb_multi_write_node_t *multi_target2multi_write(struct parser_params *p, rb_multi_target_node_t *t_node);
+static rb_multi_target_node_t *multi_write2multi_target(struct parser_params *p, rb_multi_write_node_t *w_node);
 
 static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 
@@ -1704,9 +1720,12 @@ static rb_node_t *arg_blk_pass2(struct parser_params *p, rb_arguments_node_t *nd
 
 static rb_node_t *gettable(struct parser_params*,ID,const YYLTYPE*);
 static rb_node_t *assignable(struct parser_params*,ID,rb_node_t*,const YYLTYPE*);
+static rb_node_t *assignable_target(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc);
 
 static rb_node_t *aryset(struct parser_params*,rb_node_t*,rb_arguments_node_t*,const YYLTYPE*);
 static rb_node_t *attrset(struct parser_params*,rb_node_t*,ID,ID,const YYLTYPE*);
+static rb_node_t *aryset_target(struct parser_params *p, rb_node_t *recv, rb_arguments_node_t *idx, const YYLTYPE *loc);
+static rb_node_t *attrset_target(struct parser_params *p, rb_node_t *recv, ID atype, ID id, const YYLTYPE *loc);
 
 static VALUE rb_backref_error(struct parser_params*,NODE*);
 static rb_node_t *node_assign(struct parser_params*,rb_node_t*,rb_node_t*,struct lex_context,const YYLTYPE*);
@@ -3980,27 +3999,30 @@ command		: fcall command_args       %prec tLOWEST
 mlhs		: mlhs_basic
                 | tLPAREN mlhs_inner rparen
                     {
-                        $$ = $2;
+                        $$ = multi_target2multi_write(p, $2);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
                 ;
 
 mlhs_inner	: mlhs_basic
+                    {
+                        $$ = multi_write2multi_target(p, $1);
+                    }
                 | tLPAREN mlhs_inner rparen
                     {
-                        $$ = NEW_MASGN(NEW_LIST((NODE *)$2, &@$), 0, &@$);
+                        $$ = NEW_RB_MULTI_TARGET(NEW_RB_ARRAY($2, &@2), 0, 0, &@$);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
                 ;
 
 mlhs_basic	: mlhs_head
                     {
-                        $$ = NEW_RB_MULTI_WRITE($1, 0, 0, &@$);
+                        $$ = NEW_RB_MULTI_WRITE($1, NEW_RB_IMPLICIT_REST(&NULL_LOC), 0, &@$);
                     /*% ripper: $:1 %*/
                     }
                 | mlhs_head mlhs_item
                     {
-                        $$ = NEW_RB_MULTI_WRITE($1, node_array_append(p, $1, $2, &NULL_LOC), 0, &@$);
+                        $$ = NEW_RB_MULTI_WRITE(node_array_append(p, $1, $2, &NULL_LOC), 0, 0, &@$);
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
                 | mlhs_head tSTAR mlhs_node
@@ -4069,22 +4091,22 @@ mlhs_head	: mlhs_item ','
 mlhs_node	: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
+                        $$ = assignable_target(p, $1, 0, &@$);
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
-                        $$ = aryset(p, $1, $3, &@$);
+                        $$ = aryset_target(p, $1, $3, &@$);
                     /*% ripper: aref_field!($:1, $:3) %*/
                     }
                 | primary_value call_op ident_or_const
                     {
                         anddot_multiple_assignment_check(p, &@2, $2);
-                        $$ = attrset(p, $1, $2, $3, &@$);
+                        $$ = attrset_target(p, $1, $2, $3, &@$);
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
                 | primary_value tCOLON2 tIDENTIFIER
                     {
-                        $$ = attrset(p, $1, idCOLON2, $3, &@$);
+                        $$ = attrset_target(p, $1, idCOLON2, $3, &@$);
                     /*% ripper: const_path_field!($:1, $:3) %*/
                     }
                 | primary_value tCOLON2 tCONSTANT
@@ -12941,6 +12963,82 @@ rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node
     return n;
 }
 
+static rb_local_variable_target_node_t *
+rb_new_node_local_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
+{
+    rb_local_variable_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_LOCAL_VARIABLE_TARGET_NODE, rb_local_variable_target_node_t, loc);
+    n->name = nd_vid;
+
+    return n;
+}
+
+static rb_global_variable_target_node_t *
+rb_new_node_global_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
+{
+    rb_global_variable_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_GLOBAL_VARIABLE_TARGET_NODE, rb_global_variable_target_node_t, loc);
+    n->name = nd_vid;
+
+    return n;
+}
+
+static rb_instance_variable_target_node_t *
+rb_new_node_instance_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
+{
+    rb_instance_variable_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INSTANCE_VARIABLE_TARGET_NODE, rb_instance_variable_target_node_t, loc);
+    n->name = nd_vid;
+
+    return n;
+}
+
+static rb_class_variable_target_node_t *
+rb_new_node_class_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
+{
+    rb_class_variable_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_VARIABLE_TARGET_NODE, rb_class_variable_target_node_t, loc);
+    n->name = nd_vid;
+
+    return n;
+}
+
+static rb_index_target_node_t *
+rb_new_node_index_target_new(struct parser_params *p, rb_node_t *nd_recv, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc)
+{
+    rb_index_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INDEX_TARGET_NODE, rb_index_target_node_t, loc);
+    rb_node_set_fl(n, flags);
+    n->receiver = nd_recv;
+    n->arguments = nd_args;
+    n->block = 0;
+    n->opening_loc = NULL_LOC;
+    n->closing_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_call_target_node_t *
+rb_new_node_call_target_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_call_node_flags_t flags, const YYLTYPE *loc)
+{
+    rb_call_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CALL_TARGET_NODE, rb_call_target_node_t, loc);
+    rb_node_set_fl(n, flags);
+    n->receiver = nd_recv;
+    n->name = nd_mid;
+    n->call_operator_loc = NULL_LOC;
+    n->message_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_multi_target_node_t *
+rb_new_node_multi_target_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc)
+{
+    rb_multi_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MULTI_TARGET_NODE, rb_multi_target_node_t, loc);
+    lefts ? rb_node_list_move(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
+    n->rest = rest;
+    rights ? rb_node_list_move(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
+    n->lparen_loc = NULL_LOC;
+    n->rparen_loc = NULL_LOC;
+
+    return n;
+}
+
 static rb_call_node_t *
 rb_new_node_call_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc)
 {
@@ -13856,6 +13954,27 @@ array2hash(struct parser_params *p, rb_array_node_t *nd_ary, const YYLTYPE *loc)
     return hash;
 }
 
+static rb_multi_write_node_t *
+multi_target2multi_write(struct parser_params *p, rb_multi_target_node_t *t_node)
+{
+    rb_multi_write_node_t *node = NEW_RB_MULTI_WRITE(NULL, t_node->rest, NULL, rb_nd_code_loc((rb_node_t *)t_node));
+    rb_node_list_move(&node->lefts, &t_node->lefts);
+    rb_node_list_move(&node->rights, &t_node->rights);
+
+    return node;
+}
+
+static rb_multi_target_node_t *
+multi_write2multi_target(struct parser_params *p, rb_multi_write_node_t *w_node)
+{
+    rb_multi_target_node_t *node = NEW_RB_MULTI_TARGET(NULL, w_node->rest, NULL, rb_nd_code_loc((rb_node_t *)w_node));
+    rb_node_list_move(&node->lefts, &w_node->lefts);
+    w_node->rest = NULL;
+    rb_node_list_move(&node->rights, &w_node->rights);
+
+    return node;
+}
+
 static NODE *
 str2dstr(struct parser_params *p, NODE *node)
 {
@@ -14706,12 +14825,32 @@ assignable(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc)
     const char *err = 0;
     int node_type = assignable0(p, id, &err);
     switch (node_type) {
-      // case NODE_DASGN: return NEW_DASGN(id, val, loc);
-      case NODE_LASGN: return NEW_LASGN(id, val, loc);
+      case NODE_LASGN: return NEW_LASGN(id, val, loc); // case NODE_DASGN:
       case RB_GLOBAL_VARIABLE_WRITE_NODE: return NEW_RB_GLOBAL_VARIABLE_WRITE(id, val, loc);
       case RB_INSTANCE_VARIABLE_WRITE_NODE: return NEW_RB_INSTANCE_VARIABLE_WRITE(id, val, loc);
       // case NODE_CDECL: return NEW_CDECL(id, val, 0, p->ctxt.shareable_constant_value, loc);
       case RB_CLASS_VARIABLE_WRITE_NODE: return NEW_RB_CLASS_VARIABLE_WRITE(id, val, loc);
+    }
+/* TODO: FIXME */
+#ifndef RIPPER
+    if (err) yyerror1(loc, err);
+#else
+    if (err) set_value(assign_error(p, err, p->s_lvalue));
+#endif
+    return NEW_ERROR(loc);
+}
+
+static rb_node_t*
+assignable_target(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc)
+{
+    const char *err = 0;
+    int node_type = assignable0(p, id, &err);
+    switch (node_type) {
+      case NODE_LASGN: return NEW_LTARGET(id, loc); // case NODE_DASGN:
+      case RB_GLOBAL_VARIABLE_WRITE_NODE: return NEW_RB_GLOBAL_VARIABLE_TARGET(id, loc);
+      case RB_INSTANCE_VARIABLE_WRITE_NODE: return NEW_RB_INSTANCE_VARIABLE_TARGET(id, loc);
+      // case NODE_CDECL: return NEW_CDECL(id, 0, p->ctxt.shareable_constant_value, loc);
+      case RB_CLASS_VARIABLE_WRITE_NODE: return NEW_RB_CLASS_VARIABLE_TARGET(id, loc);
     }
 /* TODO: FIXME */
 #ifndef RIPPER
@@ -14817,6 +14956,13 @@ aryset(struct parser_params *p, rb_node_t *recv, rb_arguments_node_t *idx, const
     return NEW_RB_ATTRASGN(recv, tASET, idx, 0, loc);
 }
 
+static rb_node_t *
+aryset_target(struct parser_params *p, rb_node_t *recv, rb_arguments_node_t *idx, const YYLTYPE *loc)
+{
+    aryset_check(p, idx);
+    return NEW_RB_INDEX_TARGET(recv, idx, 0, loc);
+}
+
 static void
 block_dup_check(struct parser_params *p, rb_call_node_t *node1, rb_node_t *node2)
 {
@@ -14830,6 +14976,12 @@ attrset(struct parser_params *p, rb_node_t *recv, ID atype, ID id, const YYLTYPE
 {
     int flags = CALL_Q_P(atype) ? RB_CALL_NODE_FLAGS_SAFE_NAVIGATION : 0;
     return NEW_RB_ATTRASGN(recv, rb_id_attrset(id), NEW_RB_ARGUMENTS0(&NULL_LOC), flags, loc);
+}
+
+static rb_node_t *
+attrset_target(struct parser_params *p, rb_node_t *recv, ID atype, ID id, const YYLTYPE *loc)
+{
+    return NEW_RB_CALL_TARGET(recv, rb_id_attrset(id), 0, loc);
 }
 
 static VALUE
