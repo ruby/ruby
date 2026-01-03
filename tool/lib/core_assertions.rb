@@ -327,10 +327,9 @@ module Test
         at_exit {
           assertions = assertions_ivar_get.call(:@_assertions)
           out_write.call <<~OUT
-          #{token}<error>
-          #{array_pack.bind_call([marshal_dump.call($!)], 'm')}
-          #{token}</error>
-          #{token}assertions=#{integer_to_s.bind_call(assertions)}
+          <error id="#{token}" assertions=#{integer_to_s.bind_call(assertions)}>
+          #{array_pack.bind_call([marshal_dump.call($!)], 'm0')}
+          </error id="#{token}">
           OUT
         }
         if defined?(Test::Unit::Runner)
@@ -385,17 +384,17 @@ eom
         end
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
+        assertions = 0
+        marshal_error = nil
         assert(!abort, FailDesc[status, nil, stderr])
-        if (assertions = res[/^#{token_re}assertions=(\d+)/, 1].to_i) > 0
-          self._assertions += assertions
-        end
-        begin
-          res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
+        res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
+          assertions += $1.to_i
+          res = Marshal.load($2.unpack1("m")) or next
         rescue => marshal_error
           ignore_stderr = nil
           res = nil
-        end
-        if res and !(SystemExit === res)
+        else
+          next if SystemExit === res
           if bt = res.backtrace
             bt.each do |l|
               l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
@@ -407,7 +406,7 @@ eom
           raise res
         end
 
-        # really is it succeed?
+        # really did it succeed?
         unless ignore_stderr
           # the body of assert_separately must not output anything to detect error
           assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])
