@@ -108,6 +108,7 @@ MODULAR_GC_FN void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 MODULAR_GC_FN void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_move_obj_during_marking(VALUE from, VALUE to);
+MODULAR_GC_FN void rb_gc_print_backtrace();
 #endif
 
 #if USE_MODULAR_GC
