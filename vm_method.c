@@ -1638,13 +1638,23 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
 #define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
 
 void
-rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
+rb_define_alloc_func(VALUE klass, rb_alloc_func_t func)
 {
     Check_Type(klass, T_CLASS);
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
+}
+
+void
+rb_define_copy_alloc_func(VALUE klass, rb_copy_alloc_func_t func)
+{
+    Check_Type(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "can't define a copy allocator for a singleton class");
+    }
+    RCLASS_SET_COPY_ALLOCATOR(klass, func);
 }
 
 void
