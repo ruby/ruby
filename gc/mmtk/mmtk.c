@@ -446,6 +446,11 @@ rb_mmtk_gc_thread_bug(const char *msg, ...)
     vsnprintf(objspace->crash_context.crash_msg, sizeof(objspace->crash_context.crash_msg), msg, args);
     va_end(args);
 
+    fprintf(stderr, "-- GC thread backtrace "
+                    "-------------------------------------------\n");
+    rb_gc_print_backtrace();
+    fprintf(stderr, "\n");
+
     rb_mmtk_resume_mutators();
 
     sleep(5);
