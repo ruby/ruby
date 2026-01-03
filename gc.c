@@ -129,6 +129,14 @@
 #include "builtin.h"
 #include "shape.h"
 
+// TODO: Don't export this function in modular GC, instead MMTk should figure out
+// how to combine GC thread backtrace with mutator thread backtrace.
+void
+rb_gc_print_backtrace(void)
+{
+    rb_print_backtrace(stderr);
+}
+
 unsigned int
 rb_gc_vm_lock(const char *file, int line)
 {
