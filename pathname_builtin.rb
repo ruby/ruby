@@ -654,22 +654,53 @@ class Pathname
   # argument +other+ may be a string or another pathname.
   #
   # When +other+ specifies a relative path (see #relative?),
-  # equivalent to <tt>Pathname.new(self.to_s + other.to_s)</tt>:
+  # it is combined with +self+ to form a new pathname:
   #
-  #   pn = Pathname.new("/usr")          # => #<Pathname:/usr>
-  #   pn + 'bin/ruby'                    # => #<Pathname:/usr/bin/ruby>
-  #   pn + Pathname.new('bin/ruby')      # => #<Pathname:/usr/bin/ruby>
+  #   Pathname.new('/a/b') + 'c' # => #<Pathname:/a/b/c>
+  #
+  # Extra component separators (<tt>'/'</tt>) are removed:
+  #
+  #   Pathname.new('/a/b/') + 'c' # => #<Pathname:/a/b/c>
+  #
+  # Extra current-directory components (<tt>'.'</tt>) are removed:
+  #
+  #   Pathname.new('a') + '.' # => #<Pathname:a>
+  #   Pathname.new('.') + 'a' # => #<Pathname:a>
+  #   Pathname.new('.') + '.' # => #<Pathname:.>
+  #
+  # Parent-directory components (<tt>'..'</tt>) are:
+  #
+  # - Resolved, when possible:
+  #
+  #     Pathname.new('a')      + '..'      # => #<Pathname:.>
+  #     Pathname.new('a/b')    + '..'      # => #<Pathname:a>
+  #     Pathname.new('/')      + '../a'    # => #<Pathname:/a>
+  #     Pathname.new('a')      + '../b'    # => #<Pathname:b>
+  #     Pathname.new('a/b')    + '../c'    # => #<Pathname:a/c>
+  #     Pathname.new('a//b/c') + '../d//e' # => #<Pathname:a//b/d//e>
+  #
+  # - Removed, when not needed:
+  #
+  #     Pathname.new('/') + '..' # => #<Pathname:/>
+  #
+  # - Retained, when needed:
+  #
+  #     Pathname.new('..') + '..'   # => #<Pathname:../..>
+  #     Pathname.new('..') + '../a' # => #<Pathname:../../a>
   #
   # When +other+ specifies an absolute path (see #absolute?),
   # equivalent to <tt>Pathname.new(other.to_s)</tt>:
   #
-  #   pn + Pathname.new('/etc/password') # => #<Pathname:/etc/password>
-  #   pn + '/etc/password'               # => #<Pathname:/etc/password>
+  #   Pathname.new('/a') + '/b/c' # => #<Pathname:/b/c>
   #
-  # Does not access the file system, so +other+ need not represent
+  # Occurrences of <tt>'/'</tt>, <tt>'.'</tt>, and <tt>'..'</tt> are preserved:
+  #
+  #   Pathname.new('/a') + '//b//c/./../d' # => #<Pathname://b//c/./../d>
+  # 
+  # This method does not access the file system, so +other+ need not represent
   # an existing (or even a valid) file or directory path:
   #
-  #   pn + 'nosuch:ever'                 # => #<Pathname:/usr/nosuch:ever>
+  #   Pathname.new('/var') + 'nosuch:ever' # => #<Pathname:/var/nosuch:ever>
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
