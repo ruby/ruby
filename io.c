@@ -1322,7 +1322,7 @@ internal_writev_func(void *ptr)
 #endif
 
 static ssize_t
-rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
+io_read_memory(rb_io_t *fptr, void *buf, size_t count, int nonblock)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
@@ -1337,7 +1337,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     struct io_internal_read_struct iis = {
         .th = th->self,
         .fptr = fptr,
-        .nonblock = 0,
+        .nonblock = nonblock,
         .fd = fptr->fd,
 
         .buf = buf,
@@ -1352,7 +1352,18 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_io_blocking_region_wait(fptr, internal_read_func, &iis, RUBY_IO_READABLE);
+    if (nonblock) {
+        return rb_io_blocking_region(fptr, internal_read_func, &iis);
+    }
+    else {
+        return rb_io_blocking_region_wait(fptr, internal_read_func, &iis, RUBY_IO_READABLE);
+    }
+}
+
+static ssize_t
+rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
+{
+    return io_read_memory(fptr, buf, count, 0);
 }
 
 static ssize_t
@@ -3539,33 +3550,30 @@ rb_io_set_nonblock(rb_io_t *fptr)
     }
 }
 
+struct io_read_memory_args {
+    rb_io_t *fptr;
+    void *buf;
+    size_t count;
+    int nonblock;
+};
+
 static VALUE
-io_read_memory_call(VALUE arg)
+io_read_memory_call(VALUE args)
 {
-    struct io_internal_read_struct *iis = (struct io_internal_read_struct *)arg;
-
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa);
-
-        if (!UNDEF_P(result)) {
-            // This is actually returned as a pseudo-VALUE and later cast to a rb_len_t:
-            return (VALUE)rb_fiber_scheduler_io_result_apply(result);
-        }
-    }
-
-    if (iis->nonblock) {
-        return rb_io_blocking_region(iis->fptr, internal_read_func, iis);
-    }
-    else {
-        return rb_io_blocking_region_wait(iis->fptr, internal_read_func, iis, RUBY_IO_READABLE);
-    }
+    struct io_read_memory_args *p = (struct io_read_memory_args *)args;
+    return (VALUE)io_read_memory(p->fptr, p->buf, p->count, p->nonblock);
 }
 
 static rb_len_t
-io_read_memory_locktmp(VALUE str, struct io_internal_read_struct *iis)
+io_read_memory_locktmp(rb_io_t *fptr, VALUE str, rb_len_t count, int nonblock)
 {
-    return (rb_len_t)rb_str_locktmp_ensure(str, io_read_memory_call, (VALUE)iis);
+    struct io_read_memory_args args = {
+        .fptr = fptr,
+        .buf = RSTRING_PTR(str),
+        .count = (size_t)count,
+        .nonblock = nonblock,
+    };
+    return (rb_len_t)rb_str_locktmp_ensure(str, io_read_memory_call, (VALUE)&args);
 }
 
 #define no_exception_p(opts) !rb_opts_exception_p((opts), TRUE)
@@ -3575,7 +3583,6 @@ io_getpartial(VALUE io, VALUE length, VALUE str, int no_exception, int nonblock)
 {
     rb_io_t *fptr;
     rb_len_t n, len;
-    struct io_internal_read_struct iis;
     int shrinkable;
 
     if ((len = NUM2LEN(length)) < 0) {
@@ -3596,25 +3603,13 @@ io_getpartial(VALUE io, VALUE length, VALUE str, int no_exception, int nonblock)
         READ_CHECK(fptr);
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
-        struct timeval timeout_storage, *timeout = NULL;
-        if (!NIL_P(fptr->timeout)) {
-            timeout_storage = rb_time_interval(fptr->timeout);
-            timeout = &timeout_storage;
-        }
       again:
         if (nonblock) {
             /* NOTE: The result is deliberately ignored */
             rb_fd_set_nonblock(fptr->fd);
         }
         io_setstrbuf(&str, len);
-        iis.th = rb_thread_current();
-        iis.fptr = fptr;
-        iis.nonblock = nonblock;
-        iis.fd = fptr->fd;
-        iis.buf = RSTRING_PTR(str);
-        iis.capa = len;
-        iis.timeout = timeout;
-        n = io_read_memory_locktmp(str, &iis);
+        n = io_read_memory_locktmp(fptr, str, len, nonblock);
         if (n < 0) {
             int e = errno;
             if (!nonblock && fptr_wait_readable(fptr))
@@ -6353,8 +6348,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     VALUE len, str;
     rb_io_t *fptr;
     rb_len_t n, ilen;
-    struct io_internal_read_struct iis;
-    struct timeval timeout_storage;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &len, &str);
@@ -6373,18 +6366,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
-    iis.th = rb_thread_current();
-    iis.fptr = fptr;
-    iis.nonblock = 0;
-    iis.fd = fptr->fd;
-    iis.buf = RSTRING_PTR(str);
-    iis.capa = ilen;
-    iis.timeout = NULL;
-    if (!NIL_P(fptr->timeout)) {
-        timeout_storage = rb_time_interval(fptr->timeout);
-        iis.timeout = &timeout_storage;
-    }
-    n = io_read_memory_locktmp(str, &iis);
+    n = io_read_memory_locktmp(fptr, str, ilen, 0);
 
     if (n < 0) {
         rb_sys_fail_path(fptr->pathv);
