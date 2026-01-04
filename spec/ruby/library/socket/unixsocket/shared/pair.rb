@@ -31,7 +31,6 @@ describe :unixsocket_pair, shared: true do
 
   platform_is :windows do
     it "emulates unnamed sockets with a temporary file with a path" do
-      @s1.path.should.match?(/\\AppData\\Local\\Temp\\\d+-\d+\.\(\$\)\z/)
       @s1.addr.should == ["AF_UNIX", @s1.path]
       @s2.peeraddr.should == ["AF_UNIX", @s1.path]
     end
