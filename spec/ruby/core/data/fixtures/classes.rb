@@ -24,5 +24,11 @@ module DataSpecs
         ScratchPad.record [:initialize, rest, kw]
       end
     end
+
+    Area = Data.define(:width, :height, :area) do
+      def initialize(width:, height:)
+        super(width: width, height: height, area: width * height)
+      end
+    end
   end
 end

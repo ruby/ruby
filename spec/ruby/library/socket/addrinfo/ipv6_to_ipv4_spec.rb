@@ -62,7 +62,7 @@ guard -> { SocketSpecs.ipv6_available? } do
       Addrinfo.ip('192.168.1.1').ipv6_to_ipv4.should be_nil
     end
 
-    with_feature :unix_socket do
+    describe 'for a unix socket' do
       it 'returns nil for a UNIX Addrinfo' do
         Addrinfo.unix('foo').ipv6_to_ipv4.should be_nil
       end

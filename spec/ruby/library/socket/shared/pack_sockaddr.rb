@@ -47,23 +47,21 @@ describe :socket_pack_sockaddr_in, shared: true do
 end
 
 describe :socket_pack_sockaddr_un, shared: true do
-  with_feature :unix_socket do
-    it 'should be idempotent' do
-      bytes = Socket.public_send(@method, '/tmp/foo').bytes
-      bytes[2..9].should == [47, 116, 109, 112, 47, 102, 111, 111]
-      bytes[10..-1].all?(&:zero?).should == true
-    end
+  it 'should be idempotent' do
+    bytes = Socket.public_send(@method, '/tmp/foo').bytes
+    bytes[2..9].should == [47, 116, 109, 112, 47, 102, 111, 111]
+    bytes[10..-1].all?(&:zero?).should == true
+  end
 
-    it "packs and unpacks" do
-      sockaddr_un = Socket.public_send(@method, '/tmp/s')
-      Socket.unpack_sockaddr_un(sockaddr_un).should == '/tmp/s'
-    end
+  it "packs and unpacks" do
+    sockaddr_un = Socket.public_send(@method, '/tmp/s')
+    Socket.unpack_sockaddr_un(sockaddr_un).should == '/tmp/s'
+  end
 
-    it "handles correctly paths with multibyte chars" do
-      sockaddr_un = Socket.public_send(@method, '/home/вася/sock')
-      path = Socket.unpack_sockaddr_un(sockaddr_un).encode('UTF-8', 'UTF-8')
-      path.should == '/home/вася/sock'
-    end
+  it "handles correctly paths with multibyte chars" do
+    sockaddr_un = Socket.public_send(@method, '/home/вася/sock')
+    path = Socket.unpack_sockaddr_un(sockaddr_un).encode('UTF-8', 'UTF-8')
+    path.should == '/home/вася/sock'
   end
 
   platform_is :linux do
@@ -84,7 +82,7 @@ describe :socket_pack_sockaddr_un, shared: true do
     end
   end
 
-  platform_is_not :windows, :aix do
+  platform_is_not :aix do
     it "raises ArgumentError for paths that are too long" do
       # AIX doesn't raise error
       long_path = 'a' * 110

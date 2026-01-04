@@ -1621,12 +1621,12 @@ describe "warning about not used block argument" do
       # ensure that warning is emitted
       -> { m_that_does_not_use_block { } }.should complain(verbose: true)
 
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = false
       begin
         -> { m_that_does_not_use_block { } }.should_not complain(verbose: true)
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
 
@@ -1635,14 +1635,14 @@ describe "warning about not used block argument" do
         42
       end
 
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = true
       begin
         -> {
           m_that_does_not_use_block { }
       }.should complain(/the block passed to 'm_that_does_not_use_block' defined at .+ may be ignored/)
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
   end

@@ -110,5 +110,15 @@ describe "Data#initialize" do
       DataSpecs::DataWithOverriddenInitialize[amount: 42, unit: "m"]
       ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
     end
+
+    # See https://github.com/ruby/psych/pull/765
+    it "can be deserialized by calling Data.instance_method(:initialize)" do
+      d1 = DataSpecs::Area.new(width: 2, height: 3)
+      d1.area.should == 6
+
+      d2 = DataSpecs::Area.allocate
+      Data.instance_method(:initialize).bind_call(d2, **d1.to_h)
+      d2.should == d1
+    end
   end
 end

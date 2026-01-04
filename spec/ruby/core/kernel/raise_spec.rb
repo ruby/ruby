@@ -51,11 +51,11 @@ describe "Kernel#raise" do
     -> { raise(cause: nil) }.should raise_error(ArgumentError, "only cause is given with no arguments")
   end
 
-  it "raises an ArgumentError when given cause is not an instance of Exception" do
+  it "raises a TypeError when given cause is not an instance of Exception" do
     -> { raise "message", cause: Object.new }.should raise_error(TypeError, "exception object expected")
   end
 
-  it "doesn't raise an ArgumentError when given cause is nil" do
+  it "doesn't raise a TypeError when given cause is nil" do
     -> { raise "message", cause: nil }.should raise_error(RuntimeError, "message")
   end
 

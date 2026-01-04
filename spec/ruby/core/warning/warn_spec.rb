@@ -99,14 +99,14 @@ describe "Warning.warn" do
 
   ruby_version_is "3.4" do
     it "warns when category is :strict_unused_block but Warning[:strict_unused_block] is false" do
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = true
       begin
         -> {
           Warning.warn("foo", category: :strict_unused_block)
         }.should complain("foo")
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
   end
@@ -137,14 +137,14 @@ describe "Warning.warn" do
 
   ruby_version_is "3.4" do
     it "doesn't print message when category is :strict_unused_block but Warning[:strict_unused_block] is false" do
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = false
       begin
         -> {
           Warning.warn("foo", category: :strict_unused_block)
         }.should_not complain
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
   end

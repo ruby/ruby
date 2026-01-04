@@ -24,4 +24,10 @@ describe "Regexp.linear_time?" do
       Regexp.linear_time?(/a/, Regexp::IGNORECASE)
     }.should complain(/warning: flags ignored/)
   end
+
+  ruby_version_is "3.3" do
+    it "returns true for positive lookarounds" do
+      Regexp.linear_time?(/(?:(?=a*)a)*/).should == true
+    end
+  end
 end
