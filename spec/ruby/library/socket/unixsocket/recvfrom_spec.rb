@@ -44,7 +44,7 @@ describe "UNIXSocket#recvfrom" do
   end
 
   context "when called on a client's socket" do
-    platform_is_not :windows, :darwin do
+    platform_is :linux do
       it "returns an array containing server's address as second element" do
         @client.send("", 0)
         sock = @server.accept
