@@ -45,19 +45,11 @@ end
 
 describe "Magic comments" do
   describe "in stdin" do
-    ruby_version_is ""..."4.0" do
-      it_behaves_like :magic_comments, :locale, -> file {
-        print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
-        ruby_exe(nil, args: "< #{fixture(__FILE__, file)}", options: "-r#{print_at_exit}")
-      }
-    end
-
-    ruby_version_is "4.0" do
-      it_behaves_like :magic_comments, :UTF8, -> file {
-        print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
-        ruby_exe(nil, args: "< #{fixture(__FILE__, file)}", options: "-r#{print_at_exit}")
-      }
-    end
+    default = (platform_is :windows and ruby_version_is "4.0") ? :UTF8 : :locale
+    it_behaves_like :magic_comments, default, -> file {
+      print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
+      ruby_exe(nil, args: "< #{fixture(__FILE__, file)}", options: "-r#{print_at_exit}")
+    }
   end
 
   platform_is_not :windows do
