@@ -173,7 +173,7 @@ describe :socket_local_remote_address, shared: true do
       end
     end
 
-    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.1" } do
+    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.2" } do
       it 'equals address of peer socket' do
         if @method == :local_address
           @addr.to_s.should == @b.remote_address.to_s
