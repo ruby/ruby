@@ -6386,15 +6386,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         hash = rb_check_hash_type(argv[1]);
         if (NIL_P(hash)) {
             StringValue(repl);
-
-            /* Optimization: equal byte-length string replacement */
-            if (OBJ_BUILTIN_TYPE(argv[0]) == T_STRING &&
-                RSTRING_LEN(argv[0]) == RSTRING_LEN(repl) &&
-                RSTRING_LEN(argv[0]) > 0 &&
-                rb_enc_get_index(str) == rb_enc_get_index(repl) &&
-                rb_enc_get_index(argv[0]) == rb_enc_get_index(repl)) {
-                return str_gsub_one_to_one(str, argv[0], repl, bang);
-            }
         }
         else if (rb_hash_default_unredefined(hash) && !FL_TEST_RAW(hash, RHASH_PROC_DEFAULT)) {
             mode = FAST_MAP;
@@ -6408,6 +6399,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat_quoted(argv[0], 1);
+
+    /* Optimization: equal byte-length string replacement */
+    if (mode == STR &&
+        OBJ_BUILTIN_TYPE(pat) == T_STRING &&
+        RSTRING_LEN(pat) == RSTRING_LEN(repl) &&
+        RSTRING_LEN(pat) > 0 &&
+        rb_enc_get_index(str) == rb_enc_get_index(repl) &&
+        rb_enc_get_index(pat) == rb_enc_get_index(repl)) {
+        return str_gsub_one_to_one(str, pat, repl, bang);
+    }
+
     beg = rb_pat_search0(pat, str, 0, need_backref_str, &match);
 
     if (beg < 0) {

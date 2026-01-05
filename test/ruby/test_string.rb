@@ -1363,6 +1363,9 @@ CODE
     repl_utf8_req = S("é")
     assert_equal(Encoding::US_ASCII, str.gsub(str, repl_ascii_compat).encoding)
     assert_equal(Encoding::UTF_8, str.gsub(str, repl_utf8_req).encoding)
+
+    broken_encoding_pat = "\xFF\xFE".force_encoding("UTF-8")
+    assert_raise(RegexpError) { S("a").gsub(broken_encoding_pat, S("bb")) }
   end
 
   def test_gsub!
