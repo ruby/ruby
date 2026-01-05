@@ -1,6 +1,6 @@
 # Ruby Box - Ruby's in-process separation of Classes and Modules
 
-Ruby Box is designed to provide separated spaces in a Ruby process, to isolate application codes, libraries and monkey patches.
+Ruby Box is designed to provide separated spaces in a Ruby process, to isolate application code, libraries and monkey patches.
 
 ## Known issues
 
