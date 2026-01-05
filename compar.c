@@ -95,10 +95,13 @@ cmpint(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj > other    -> true or false
+ *    self > other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value greater than 0.
+ *  Returns whether +self+ is "greater than" +other+;
+ *  equivalent to <tt>(self <=> other) > 0</tt>:
+ *
+ *    'foo' > 'foo'  # => false
+ *    'food' > 'foo' # => true
  */
 
 static VALUE
