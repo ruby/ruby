@@ -4239,11 +4239,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is equal to +self+.
+ *  Returns whether +other+ is equal to +self+.
  *
- *  When +object+ is a string, returns whether +object+ has the same length and content as +self+:
+ *  When +other+ is a string, returns whether +other+ has the same length and content as +self+:
  *
  *    s = 'foo'
  *    s == 'foo'  # => true
@@ -4254,11 +4254,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *
  *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
- *  When +object+ is not a string:
+ *  When +other+ is not a string:
  *
- *  - If +object+ responds to method <tt>to_str</tt>,
- *    <tt>object == self</tt> is called and its return value is returned.
- *  - If +object+ does not respond to <tt>to_str</tt>,
+ *  - If +other+ responds to method <tt>to_str</tt>,
+ *    <tt>other == self</tt> is called and its return value is returned.
+ *  - If +other+ does not respond to <tt>to_str</tt>,
  *    +false+ is returned.
  *
  *  Related: {Comparing}[rdoc-ref:String@Comparing].
@@ -12218,9 +12218,9 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    symbol == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is the same object as +self+, +false+ otherwise.
+ *  Returns whether +other+ is the same object as +self+.
  */
 
 #define sym_equal rb_obj_equal

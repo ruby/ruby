@@ -1404,7 +1404,7 @@ recursive_equal(VALUE s, VALUE s2, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if and only if the following are true; otherwise returns +false+:
+ *  Returns whether both the following are true:
  *
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name == self.name</tt>.
@@ -1918,7 +1918,7 @@ rb_data_inspect(VALUE s)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if +other+ is the same class as +self+, and all members are
+ *  Returns whether +other+ is the same class as +self+, and all members are
  *  equal.
  *
  *  Examples:

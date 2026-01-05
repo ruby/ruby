@@ -1145,9 +1145,9 @@ rb_rational_cmp(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat == object  ->  true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if +rat+ equals +object+ numerically.
+ * Returns whether +self+ and +other+ are numerically equal:
  *
  *    Rational(2, 3)  == Rational(2, 3)   #=> true
  *    Rational(5)     == 5                #=> true

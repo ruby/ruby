@@ -154,14 +154,14 @@ recursive_equal(VALUE range, VALUE obj, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if and only if:
+ *  Returns whether all of the following are true:
  *
  *  - +other+ is a range.
  *  - <tt>other.begin == self.begin</tt>.
  *  - <tt>other.end == self.end</tt>.
  *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
- *  Otherwise returns +false+.
+ *  Examples:
  *
  *    r = (1..5)
  *    r == (1..5)                # => true

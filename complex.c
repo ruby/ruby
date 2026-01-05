@@ -1226,10 +1226,10 @@ rb_complex_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex == object -> true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if <tt>self.real == object.real</tt>
- * and <tt>self.imag == object.imag</tt>:
+ * Returns whether both <tt>self.real == other.real</tt>
+ * and <tt>self.imag == other.imag</tt>:
  *
  *   Complex.rect(2, 3)  == Complex.rect(2.0, 3.0) # => true
  *
