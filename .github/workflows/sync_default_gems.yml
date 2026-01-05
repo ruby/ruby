@@ -1,4 +1,8 @@
 name: Sync default gems
+
+env:
+  DEFAULT_GEM_SYNC_ENABLED: true
+
 on:
   workflow_dispatch:
     inputs:
@@ -32,7 +36,7 @@ jobs:
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
         with:
           ruby-version: '3.4'
           bundler: none
@@ -58,7 +62,7 @@ jobs:
         run: |
           git pull --rebase origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
-        if: ${{ steps.sync.outputs.update }}
+        if: ${{ steps.sync.outputs.update && env.DEFAULT_GEM_SYNC_ENABLED == 'true' }}
         env:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git

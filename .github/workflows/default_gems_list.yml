@@ -1,6 +1,9 @@
 name: Update default gems list
 on: [push, pull_request, merge_group]
 
+env:
+  UPDATE_NEWS_ENABLED: true
+
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
@@ -65,7 +68,7 @@ jobs:
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb default
-        if: ${{ steps.gems.outcome == 'success' }}
+        if: ${{ steps.gems.outcome == 'success' && env.UPDATE_NEWS_ENABLED == 'true' }}
 
       - name: Check diffs
         id: diff

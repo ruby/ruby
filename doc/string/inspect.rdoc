@@ -6,7 +6,6 @@ Most printable characters are rendered simply as themselves:
   '012'.inspect        # => "\"012\""
   ''.inspect           # => "\"\""
   "\u000012".inspect   # => "\"\\u000012\""
-  'тест'.inspect       # => "\"тест\""
   'こんにちは'.inspect  # => "\"こんにちは\""
 
 But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'</tt>) are escaped:

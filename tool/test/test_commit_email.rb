@@ -36,9 +36,14 @@ class TestCommitEmail < Test::Unit::TestCase
   end
 
   def teardown
-    File.unlink(@sendmail)
-    Dir.rmdir(File.dirname(@sendmail))
-    FileUtils.rm_rf(@ruby)
+    # Clean up temporary files if #setup was not omitted
+    if @sendmail
+      File.unlink(@sendmail)
+      Dir.rmdir(File.dirname(@sendmail))
+    end
+    if @ruby
+      FileUtils.rm_rf(@ruby)
+    end
   end
 
   def test_sendmail_encoding

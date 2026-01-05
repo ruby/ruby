@@ -345,6 +345,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.degree, group4.degree
   end
 
+  def test_ec_group_initialize_error_message
+    # Test that passing 2 arguments raises the helpful error
+    e = assert_raise(ArgumentError) do
+      OpenSSL::PKey::EC::Group.new(:GFp, 123)
+    end
+
+    assert_equal("wrong number of arguments (given 2, expected 1 or 4)", e.message)
+  end
+
   def test_ec_point
     group = OpenSSL::PKey::EC::Group.new("prime256v1")
     key = OpenSSL::PKey::EC.generate(group)

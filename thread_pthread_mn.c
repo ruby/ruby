@@ -65,7 +65,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
     volatile bool timedout = false, need_cancel = false;
 
-    uint32_t event_serial = ++th->event_serial; // overflow is okay
+    uint32_t event_serial = ++th->sched.event_serial; // overflow is okay
 
     if (ubf_set(th, ubf_event_waiting, (void *)th)) {
         return false;
@@ -81,11 +81,11 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
             if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
-                th->event_serial++;
+                th->sched.event_serial++;
                 // timer thread has dequeued us already, but it won't try to wake us because we bumped our serial
             }
             else if (RUBY_VM_INTERRUPTED(th->ec)) {
-                th->event_serial++; // make sure timer thread doesn't try to wake us
+                th->sched.event_serial++; // make sure timer thread doesn't try to wake us
                 need_cancel = true;
             }
             else {
@@ -1078,12 +1078,12 @@ timer_thread_polling(rb_vm_t *vm)
 
     switch (r) {
       case 0: // timeout
-        rb_native_mutex_lock(&vm->ractor.sched.lock);
+        ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
             timer_thread_check_timeslice(vm);
         }
-        rb_native_mutex_unlock(&vm->ractor.sched.lock);
+        ractor_sched_unlock(vm, NULL);
         break;
 
       case -1: // error

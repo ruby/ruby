@@ -23,6 +23,7 @@ RSpec.describe Bundler::CurrentRuby do
         ruby_33: Gem::Platform::RUBY,
         ruby_34: Gem::Platform::RUBY,
         ruby_40: Gem::Platform::RUBY,
+        ruby_41: Gem::Platform::RUBY,
         mri: Gem::Platform::RUBY,
         mri_18: Gem::Platform::RUBY,
         mri_19: Gem::Platform::RUBY,
@@ -40,6 +41,7 @@ RSpec.describe Bundler::CurrentRuby do
         mri_33: Gem::Platform::RUBY,
         mri_34: Gem::Platform::RUBY,
         mri_40: Gem::Platform::RUBY,
+        mri_41: Gem::Platform::RUBY,
         rbx: Gem::Platform::RUBY,
         truffleruby: Gem::Platform::RUBY,
         jruby: Gem::Platform::JAVA,
@@ -61,7 +63,8 @@ RSpec.describe Bundler::CurrentRuby do
         windows_32: Gem::Platform::WINDOWS,
         windows_33: Gem::Platform::WINDOWS,
         windows_34: Gem::Platform::WINDOWS,
-        windows_40: Gem::Platform::WINDOWS }
+        windows_40: Gem::Platform::WINDOWS,
+        windows_41: Gem::Platform::WINDOWS }
     end
 
     let(:deprecated) do
@@ -82,6 +85,7 @@ RSpec.describe Bundler::CurrentRuby do
         mswin_33: Gem::Platform::MSWIN,
         mswin_34: Gem::Platform::MSWIN,
         mswin_40: Gem::Platform::MSWIN,
+        mswin_41: Gem::Platform::MSWIN,
         mswin64: Gem::Platform::MSWIN64,
         mswin64_19: Gem::Platform::MSWIN64,
         mswin64_20: Gem::Platform::MSWIN64,
@@ -98,6 +102,7 @@ RSpec.describe Bundler::CurrentRuby do
         mswin64_33: Gem::Platform::MSWIN64,
         mswin64_34: Gem::Platform::MSWIN64,
         mswin64_40: Gem::Platform::MSWIN64,
+        mswin64_41: Gem::Platform::MSWIN64,
         mingw: Gem::Platform::UNIVERSAL_MINGW,
         mingw_18: Gem::Platform::UNIVERSAL_MINGW,
         mingw_19: Gem::Platform::UNIVERSAL_MINGW,
@@ -115,6 +120,7 @@ RSpec.describe Bundler::CurrentRuby do
         mingw_33: Gem::Platform::UNIVERSAL_MINGW,
         mingw_34: Gem::Platform::UNIVERSAL_MINGW,
         mingw_40: Gem::Platform::UNIVERSAL_MINGW,
+        mingw_41: Gem::Platform::UNIVERSAL_MINGW,
         x64_mingw: Gem::Platform::UNIVERSAL_MINGW,
         x64_mingw_20: Gem::Platform::UNIVERSAL_MINGW,
         x64_mingw_21: Gem::Platform::UNIVERSAL_MINGW,
@@ -129,7 +135,8 @@ RSpec.describe Bundler::CurrentRuby do
         x64_mingw_32: Gem::Platform::UNIVERSAL_MINGW,
         x64_mingw_33: Gem::Platform::UNIVERSAL_MINGW,
         x64_mingw_34: Gem::Platform::UNIVERSAL_MINGW,
-        x64_mingw_40: Gem::Platform::UNIVERSAL_MINGW }
+        x64_mingw_40: Gem::Platform::UNIVERSAL_MINGW,
+        x64_mingw_41: Gem::Platform::UNIVERSAL_MINGW }
     end
     # rubocop:enable Naming/VariableNumber
 

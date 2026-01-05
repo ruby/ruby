@@ -3584,6 +3584,23 @@ class TestArray < Test::Unit::TestCase
     assert_equal((1..67).to_a.reverse, var_0)
   end
 
+  def test_find
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(2, ary.find {|x| x % 2 == 0 })
+    assert_equal(nil, ary.find {|x| false })
+    assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+  end
+
+  def test_rfind
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(4, ary.rfind {|x| x % 2 == 0 })
+    assert_equal(1, ary.rfind {|x| x < 2 })
+    assert_equal(5, ary.rfind {|x| x > 4 })
+    assert_equal(nil, ary.rfind {|x| false })
+    assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
+    assert_equal(nil, ary.rfind {|x| ary.clear; false })
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)

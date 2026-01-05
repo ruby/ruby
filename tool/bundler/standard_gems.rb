@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 gem "standard", "~> 1.0"
 
-gem "minitest"
+gem "minitest", "~> 5.1"
 gem "irb"
 gem "rake"
 gem "rake-compiler"

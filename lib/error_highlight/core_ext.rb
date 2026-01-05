@@ -24,7 +24,7 @@ module ErrorHighlight
               _, _, snippet, highlight = ErrorHighlight.formatter.message_for(spot).lines
               out += "\n    | #{ snippet }      #{ highlight }"
             else
-              out += "\n    (cannot highlight method definition; try Ruby 4.0 or later)"
+              # do nothing
             end
           end
           ret << "\n" + out if out

@@ -14,8 +14,11 @@ use std::sync::Mutex;
 use std::thread::ThreadId;
 
 use abi::RubyUpcalls;
-use binding::{RubyBinding, RubyBindingFast, RubyConfiguration};
-use mmtk::vm::slot::{SimpleSlot, UnimplementedMemorySlice};
+use binding::RubyBinding;
+use binding::RubyBindingFast;
+use binding::RubyConfiguration;
+use mmtk::vm::slot::SimpleSlot;
+use mmtk::vm::slot::UnimplementedMemorySlice;
 use mmtk::vm::VMBinding;
 use mmtk::MMTK;
 use once_cell::sync::OnceCell;
@@ -25,7 +28,9 @@ pub mod active_plan;
 pub mod api;
 pub mod binding;
 pub mod collection;
+pub mod heap;
 pub mod object_model;
+pub mod pinning_registry;
 pub mod reference_glue;
 pub mod scanning;
 pub mod utils;
@@ -54,6 +59,11 @@ impl VMBinding for Ruby {
     type VMSlot = RubySlot;
     type VMMemorySlice = RubyMemorySlice;
 }
+
+/// The callback for mutator thread panic handler (which calls rb_bug to output
+/// debugging information such as the Ruby backtrace and memory maps).
+/// This is set before BINDING is set because mmtk_init could panic.
+pub static MUTATOR_THREAD_PANIC_HANDLER: OnceCell<extern "C" fn()> = OnceCell::new();
 
 /// The singleton object for the Ruby binding itself.
 pub static BINDING: OnceCell<RubyBinding> = OnceCell::new();
@@ -116,8 +126,6 @@ fn handle_gc_thread_panic(panic_info: &PanicHookInfo) {
             eprintln!("Unknown backtrace status: {s:?}");
         }
     }
-
-    std::process::abort();
 }
 
 pub(crate) fn set_panic_hook() {
@@ -130,8 +138,13 @@ pub(crate) fn set_panic_hook() {
     std::panic::set_hook(Box::new(move |panic_info| {
         if is_gc_thread(std::thread::current().id()) {
             handle_gc_thread_panic(panic_info);
+
+            (crate::binding().upcalls().gc_thread_panic_handler)();
         } else {
             old_hook(panic_info);
+            (crate::MUTATOR_THREAD_PANIC_HANDLER
+                .get()
+                .expect("MUTATOR_THREAD_PANIC_HANDLER is not set"))();
         }
     }));
 }

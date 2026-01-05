@@ -1480,6 +1480,8 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
+
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)

@@ -226,7 +226,7 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
 
     // When a signal is received, we yield to the scheduler as soon as possible:
     if (result || RUBY_VM_INTERRUPTED(ec)) {
-        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
         if (scheduler != Qnil) {
             rb_fiber_scheduler_yield(scheduler);
         }
@@ -453,8 +453,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         th->keeping_mutexes = mutex->next_mutex;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->fiber_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, NULL);
+        VM_ASSERT(mutex->ec_serial);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
@@ -864,6 +864,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 #endif
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
+        th->ec->ractor_id = rb_ractor_id(th->ractor);
         th->ractor->threads.main = th;
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
@@ -1079,7 +1080,7 @@ thread_join_sleep(VALUE arg)
     }
 
     while (!thread_finished(target_th)) {
-        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
         if (!limit) {
             if (scheduler != Qnil) {
@@ -1428,17 +1429,18 @@ rb_thread_sleep_deadly(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
         RUBY_DEBUG_LOG("...");
         if (end) {
-            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+            sleep_hrtime_until(th, end, SLEEP_SPURIOUS_CHECK);
         }
         else {
-            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+            sleep_forever(th, SLEEP_DEADLOCKABLE);
         }
     }
 }
@@ -2910,12 +2912,11 @@ rb_thread_fd_close(int fd)
 
 /*
  *  call-seq:
- *     thr.raise
- *     thr.raise(string)
- *     thr.raise(exception [, string [, array]])
+ *    raise(exception, message = exception.to_s, backtrace = nil, cause: $!)
+ *    raise(message = nil, cause: $!)
  *
  *  Raises an exception from the given thread. The caller does not have to be
- *  +thr+. See Kernel#raise for more information.
+ *  +thr+. See Kernel#raise for more information on arguments.
  *
  *     Thread.abort_on_exception = true
  *     a = Thread.new { sleep(200) }
@@ -4605,7 +4606,7 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
  * returns a mask of events
  */
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1] = {{
         .fd = fd,
@@ -4618,8 +4619,8 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     enum ruby_tag_type state;
     volatile int lerrno;
 
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    RUBY_ASSERT(th);
+    rb_execution_context_t *ec = th->ec;
 
     if (io) {
         blocking_operation.ec = ec;
@@ -4753,7 +4754,7 @@ init_set_fd(int fd, rb_fdset_t *fds)
 }
 
 static int
-thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
+thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
@@ -4762,7 +4763,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     struct rb_io_blocking_operation blocking_operation;
     if (io) {
         args.io = io;
-        blocking_operation.ec = GET_EC();
+        blocking_operation.ec = th->ec;
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     }
@@ -4787,15 +4788,15 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 #endif /* ! USE_POLL */
 
 int
-rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+rb_thread_wait_for_single_fd(rb_thread_t *th, int fd, int events, struct timeval *timeout)
 {
-    return thread_io_wait(NULL, fd, events, timeout);
+    return thread_io_wait(th, NULL, fd, events, timeout);
 }
 
 int
-rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout)
+rb_thread_io_wait(rb_thread_t *th, struct rb_io *io, int events, struct timeval * timeout)
 {
-    return thread_io_wait(io, io->fd, events, timeout);
+    return thread_io_wait(th, io, io->fd, events, timeout);
 }
 
 /*
@@ -5288,7 +5289,7 @@ rb_thread_shield_owned(VALUE self)
 
     rb_mutex_t *m = mutex_ptr(mutex);
 
-    return m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr);
+    return m->ec_serial == rb_ec_serial(GET_EC());
 }
 
 /*
@@ -5307,7 +5308,7 @@ rb_thread_shield_wait(VALUE self)
 
     if (!mutex) return Qfalse;
     m = mutex_ptr(mutex);
-    if (m->fiber_serial == rb_fiber_serial(GET_EC()->fiber_ptr)) return Qnil;
+    if (m->ec_serial == rb_ec_serial(GET_EC())) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
     rb_thread_shield_waiting_dec(self);
@@ -5825,7 +5826,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
             rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
-                        (unsigned long long)mutex->fiber_serial, rb_mutex_num_waiting(mutex));
+                        (unsigned long long)mutex->ec_serial, rb_mutex_num_waiting(mutex));
         }
 
         {
@@ -5865,7 +5866,7 @@ rb_check_deadlock(rb_ractor_t *r)
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber_serial == rb_fiber_serial(th->ec->fiber_ptr) || (!mutex->fiber_serial && !ccan_list_empty(&mutex->waitq))) {
+            if (mutex->ec_serial == rb_ec_serial(th->ec) || (!mutex->ec_serial && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }

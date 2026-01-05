@@ -23,7 +23,7 @@ The pattern used is:
 Note that in the examples below, a returned string <tt>'hello'</tt> is a copy of +self+, not +self+.
 
 If +pattern+ is a Regexp, searches for the last matching substring
-(also setting {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
+(also setting {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
 
   'hello'.rpartition(/l/)     # => ["hel", "l", "o"]
   'hello'.rpartition(/ll/)    # => ["he", "ll", "o"]
@@ -31,19 +31,17 @@ If +pattern+ is a Regexp, searches for the last matching substring
   'hello'.rpartition(/o/)     # => ["hell", "o", ""]
   'hello'.rpartition(//)      # => ["hello", "", ""]
   'hello'.rpartition(/x/)     # => ["", "", "hello"]
-  'тест'.rpartition(/т/)      # => ["тес", "т", ""]
   'こんにちは'.rpartition(/に/) # => ["こん", "に", "ちは"]
 
 If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
 then searches for the last matching substring
-(and does _not_ set {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
+(and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
 
   'hello'.rpartition('l')     # => ["hel", "l", "o"]
   'hello'.rpartition('ll')    # => ["he", "ll", "o"]
   'hello'.rpartition('h')     # => ["", "h", "ello"]
   'hello'.rpartition('o')     # => ["hell", "o", ""]
   'hello'.rpartition('')      # => ["hello", "", ""]
-  'тест'.rpartition('т')      # => ["тес", "т", ""]
   'こんにちは'.rpartition('に') # => ["こん", "に", "ちは"]
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

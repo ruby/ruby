@@ -11,6 +11,7 @@ module Bundler
       definition = Bundler.definition
       definition.validate_runtime!
       installer = Bundler::Installer.new(Bundler.root, definition)
+      git_sources = []
 
       ProcessLock.lock do
         installed_specs = definition.specs.reject do |spec|
@@ -41,6 +42,9 @@ module Bundler
             end
             FileUtils.rm_rf spec.extension_dir
             FileUtils.rm_rf spec.full_gem_path
+
+            next if git_sources.include?(source)
+            git_sources << source
           else
             Bundler.ui.warn("Cannot pristine #{gem_name}. Gem is sourced from local path.")
             next

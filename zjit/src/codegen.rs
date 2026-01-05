@@ -364,6 +364,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
         &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
         &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
+        &Insn::Const { val: Const::CShape(val) } => {
+            assert_eq!(SHAPE_ID_NUM_BITS, 32);
+            gen_const_uint32(val.0)
+        }
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
@@ -480,6 +484,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, opnd!(hash), opnd!(key), &function.frame_state(state)) },
+        &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
@@ -836,7 +841,7 @@ fn gen_ccall_with_frame(
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     let mut cfunc_args = vec![recv];
     cfunc_args.extend(args);
@@ -846,7 +851,7 @@ fn gen_ccall_with_frame(
     asm_comment!(asm, "pop C frame");
     let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -921,7 +926,7 @@ fn gen_ccall_variadic(
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     let argv_ptr = gen_push_opnds(asm, &args);
     asm.count_call_to(&name.contents_lossy());
@@ -931,7 +936,7 @@ fn gen_ccall_variadic(
     asm_comment!(asm, "pop C frame");
     let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -1046,7 +1051,7 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
     asm_comment!(asm, "RUBY_VM_CHECK_INTS(ec)");
     // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
     // signal_exec, or rb_postponed_job_flush.
-    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
     asm.test(interrupt_flag, interrupt_flag);
     asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
 }
@@ -1059,6 +1064,11 @@ fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd
 fn gen_hash_aref(jit: &mut JITState, asm: &mut Assembler, hash: Opnd, key: Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_hash_aref, hash, key)
+}
+
+fn gen_hash_aset(jit: &mut JITState, asm: &mut Assembler, hash: Opnd, key: Opnd, val: Opnd, state: &FrameState) {
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_ccall!(asm, rb_hash_aset, hash, key, val);
 }
 
 fn gen_array_push(asm: &mut Assembler, array: Opnd, val: Opnd, state: &FrameState) {
@@ -1120,11 +1130,12 @@ fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Op
 }
 
 fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
-    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
+    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written().
+    // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
-        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+        asm_ccall!(asm, rb_zjit_writebarrier_check_immediate, recv, val);
     }
 }
 
@@ -1371,7 +1382,7 @@ fn gen_send_without_block_direct(
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     // Set up arguments
     let mut c_args = vec![recv];
@@ -1391,6 +1402,16 @@ fn gen_send_without_block_direct(
     } else {
         0
     };
+
+    // Fill non-parameter locals with nil (they may be read by eval before being written)
+    let num_params = params.size.to_usize();
+    if local_size > num_params {
+        asm_comment!(asm, "initialize non-parameter locals to nil");
+        for local_idx in num_params..local_size {
+            let offset = local_size_and_idx_to_bp_offset(local_size, local_idx);
+            asm.store(Opnd::mem(64, SP, -offset * SIZEOF_VALUE_I32), Qnil.into());
+        }
+    }
 
     // Make a method call. The target address will be rewritten once compiled.
     let iseq_call = IseqCall::new(iseq, num_optionals_passed);
@@ -1720,7 +1741,7 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
-    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     // Order here is important. Because we're about to tear down the frame,
     // we need to load the return value, which might be part of the frame.
@@ -2370,8 +2391,8 @@ c_callable! {
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
-            // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
-            // We need to set them if we side-exit from function_stub_hit.
+            // Successful JIT-to-JIT calls fill nils to non-parameter locals in generated code.
+            // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
                 unsafe {
                     // Set SP which gen_push_frame() doesn't set

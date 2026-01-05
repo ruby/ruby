@@ -2,6 +2,7 @@
 
 reconfig config.status: export MAKE:=$(MAKE)
 export BASERUBY:=$(BASERUBY)
+export GIT
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
@@ -528,11 +529,7 @@ RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(
 rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
 	@ $(NULLCMD)
 
-ifeq ($(ENABLE_SHARED),yes)
-exts: rubyspec-capiext
-endif
-
-spec/%/ spec/%_spec.rb: programs exts PHONY
+spec/%/ spec/%_spec.rb: programs exts $(RUBYSPEC_CAPIEXT_BUILD) PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))

@@ -2385,25 +2385,31 @@ class TestGemInstaller < Gem::InstallerTestCase
     installer = Gem::Installer.for_spec @spec
     installer.gem_home = @gemhome
 
-    File.singleton_class.class_eval do
-      alias_method :original_binwrite, :binwrite
-
-      def binwrite(path, data)
+    assert_raise(Errno::ENOSPC) do
+      Gem::AtomicFileWriter.open(@spec.spec_file) do
         raise Errno::ENOSPC
       end
     end
 
-    assert_raise Errno::ENOSPC do
-      installer.write_spec
-    end
-
     assert_path_not_exist @spec.spec_file
-  ensure
-    File.singleton_class.class_eval do
-      remove_method :binwrite
-      alias_method :binwrite, :original_binwrite
-      remove_method :original_binwrite
-    end
+  end
+
+  def test_write_default_spec
+    @spec = setup_base_spec
+    @spec.files = %w[a.rb b.rb c.rb]
+
+    installer = Gem::Installer.for_spec @spec
+    installer.gem_home = @gemhome
+
+    installer.write_default_spec
+
+    assert_path_exist installer.default_spec_file
+
+    loaded = Gem::Specification.load installer.default_spec_file
+
+    assert_equal @spec.files, loaded.files
+    assert_equal @spec.name, loaded.name
+    assert_equal @spec.version, loaded.version
   end
 
   def test_dir

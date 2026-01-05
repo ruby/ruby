@@ -69,15 +69,9 @@ class Set
       end
     end
 
-    def to_set(*args, &block)
-      klass = if args.empty?
-        Set
-      else
-        warn "passing arguments to Enumerable#to_set is deprecated", uplevel: 1
-        args.shift
-      end
-      return self if instance_of?(Set) && klass == Set && block.nil? && args.empty?
-      klass.new(self, *args, &block)
+    def to_set(&block)
+      return self if instance_of?(Set) && block.nil?
+      Set.new(self, &block)
     end
 
     def flatten_merge(set, seen = {}) # :nodoc:

@@ -356,38 +356,41 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_instance_variable_re_embed
-    require "objspace"
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      c = Class.new do
+        attr_reader :a, :b, :c
 
-    c = Class.new do
-      def a = @a
+        def initialize
+          @a = nil
+          @b = nil
+          @c = nil
+        end
+      end
 
-      def b = @b
+      o1 = c.new
+      o2 = c.new
 
-      def c = @c
-    end
+      o1.instance_variable_set(:@foo, 5)
+      o1.instance_variable_set(:@a, 0)
+      o1.instance_variable_set(:@b, 1)
+      o1.instance_variable_set(:@c, 2)
+      refute_includes ObjectSpace.dump(o1), '"embedded":true'
+      o1.remove_instance_variable(:@foo)
+      assert_includes ObjectSpace.dump(o1), '"embedded":true'
 
-    o1 = c.new
-    o2 = c.new
+      o2.instance_variable_set(:@a, 0)
+      o2.instance_variable_set(:@b, 1)
+      o2.instance_variable_set(:@c, 2)
+      assert_includes ObjectSpace.dump(o2), '"embedded":true'
 
-    o1.instance_variable_set(:@foo, 5)
-    o1.instance_variable_set(:@a, 0)
-    o1.instance_variable_set(:@b, 1)
-    o1.instance_variable_set(:@c, 2)
-    refute_includes ObjectSpace.dump(o1), '"embedded":true'
-    o1.remove_instance_variable(:@foo)
-    assert_includes ObjectSpace.dump(o1), '"embedded":true'
-
-    o2.instance_variable_set(:@a, 0)
-    o2.instance_variable_set(:@b, 1)
-    o2.instance_variable_set(:@c, 2)
-    assert_includes ObjectSpace.dump(o2), '"embedded":true'
-
-    assert_equal(0, o1.a)
-    assert_equal(1, o1.b)
-    assert_equal(2, o1.c)
-    assert_equal(0, o2.a)
-    assert_equal(1, o2.b)
-    assert_equal(2, o2.c)
+      assert_equal(0, o1.a)
+      assert_equal(1, o1.b)
+      assert_equal(2, o1.c)
+      assert_equal(0, o2.a)
+      assert_equal(1, o2.b)
+      assert_equal(2, o2.c)
+    end;
   end
 
   def test_convert_string

@@ -9,6 +9,7 @@
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/load.h"
 #include "internal/st.h"
 #include "internal/variable.h"
@@ -31,16 +32,8 @@ VALUE rb_cBox = 0;
 VALUE rb_cBoxEntry = 0;
 VALUE rb_mBoxLoader = 0;
 
-static rb_box_t root_box_data = {
-    /* Initialize values lazily in Init_Box() */
-    (VALUE)NULL, 0,
-    (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL,
-    (struct st_table *)NULL, (struct st_table *)NULL, (VALUE)NULL, (VALUE)NULL,
-    false, false
-};
-
-static rb_box_t * root_box = &root_box_data;
-static rb_box_t * main_box = 0;
+static rb_box_t root_box[1]; /* Initialize in initialize_root_box() */
+static rb_box_t *main_box;
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
 
@@ -284,13 +277,18 @@ box_entry_free(void *ptr)
 static size_t
 box_entry_memsize(const void *ptr)
 {
+    size_t size = sizeof(rb_box_t);
     const rb_box_t *box = (const rb_box_t *)ptr;
-    return sizeof(rb_box_t) + \
-        rb_st_memsize(box->loaded_features_index) + \
-        rb_st_memsize(box->loading_table);
+    if (box->loaded_features_index) {
+        size += rb_st_memsize(box->loaded_features_index);
+    }
+    if (box->loading_table) {
+        size += rb_st_memsize(box->loading_table);
+    }
+    return size;
 }
 
-const rb_data_type_t rb_box_data_type = {
+static const rb_data_type_t rb_box_data_type = {
     "Ruby::Box::Entry",
     {
         rb_box_entry_mark,
@@ -301,7 +299,7 @@ const rb_data_type_t rb_box_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
-const rb_data_type_t rb_root_box_data_type = {
+static const rb_data_type_t rb_root_box_data_type = {
     "Ruby::Box::Root",
     {
         rb_box_entry_mark,
@@ -356,7 +354,7 @@ rb_get_box_object(rb_box_t *box)
 
 /*
  *  call-seq:
- *    Namespace.new -> new_box
+ *    Ruby::Box.new -> new_box
  *
  *  Returns a new Ruby::Box object.
  */
@@ -397,7 +395,7 @@ box_initialize(VALUE box_value)
 
 /*
  *  call-seq:
- *    Namespace.enabled? -> true or false
+ *    Ruby::Box.enabled? -> true or false
  *
  *  Returns +true+ if Ruby::Box is enabled.
  */
@@ -409,7 +407,7 @@ rb_box_s_getenabled(VALUE recv)
 
 /*
  *  call-seq:
- *    Namespace.current -> box, nil or false
+ *    Ruby::Box.current -> box, nil or false
  *
  *  Returns the current box.
  *  Returns +nil+ if Ruby Box is not enabled.
@@ -630,8 +628,14 @@ copy_ext_file(const char *src_path, const char *dst_path)
 # else
     const int bin = 0;
 # endif
-    const int src_fd = open(src_path, O_RDONLY|bin);
+# ifdef O_CLOEXEC
+    const int cloexec = O_CLOEXEC;
+# else
+    const int cloexec = 0;
+# endif
+    const int src_fd = open(src_path, O_RDONLY|cloexec|bin);
     if (src_fd < 0) return COPY_ERROR_SRC_OPEN;
+    if (!cloexec) rb_maygvl_fd_fix_cloexec(src_fd);
 
     struct stat src_st;
     if (fstat(src_fd, &src_st)) {
@@ -639,11 +643,12 @@ copy_ext_file(const char *src_path, const char *dst_path)
         return COPY_ERROR_SRC_STAT;
     }
 
-    const int dst_fd = open(dst_path, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|bin, S_IRWXU);
+    const int dst_fd = open(dst_path, O_WRONLY|O_CREAT|O_EXCL|cloexec|bin, S_IRWXU);
     if (dst_fd < 0) {
         close(src_fd);
         return COPY_ERROR_DST_OPEN;
     }
+    if (!cloexec) rb_maygvl_fd_fix_cloexec(dst_fd);
 
     enum copy_error_type ret = COPY_ERROR_NONE;
 
@@ -754,6 +759,7 @@ rb_box_cleanup_local_extension(VALUE cleanup)
 #ifndef _WIN32
     if (p) box_ext_cleanup_free(p);
 #endif
+    (void)p;
 }
 
 static int
@@ -803,10 +809,6 @@ rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
     return new_path;
 }
 
-// TODO: delete it just after dln_load? or delay it?
-//       At least for _WIN32, deleting extension files should be delayed until the namespace's destructor.
-//       And it requires calling dlclose before deleting it.
-
 static VALUE
 rb_box_load(int argc, VALUE *argv, VALUE box)
 {
@@ -838,8 +840,6 @@ rb_box_require_relative(VALUE box, VALUE fname)
 static void
 initialize_root_box(void)
 {
-    VALUE root_box, entry;
-    ID id_box_entry;
     rb_vm_t *vm = GET_VM();
     rb_box_t *root = (rb_box_t *)rb_root_box();
 
@@ -864,6 +864,8 @@ initialize_root_box(void)
     vm->root_box = root;
 
     if (rb_box_available()) {
+        VALUE root_box, entry;
+        ID id_box_entry;
         CONST_ID(id_box_entry, "__box_entry__");
 
         root_box = rb_obj_alloc(rb_cBox);
@@ -900,6 +902,8 @@ rb_box_eval(VALUE box_value, VALUE str)
 
 static int box_experimental_warned = 0;
 
+RUBY_EXTERN const char ruby_api_version_name[];
+
 void
 rb_initialize_main_box(void)
 {
@@ -912,7 +916,8 @@ rb_initialize_main_box(void)
     if (!box_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ruby::Box is experimental, and the behavior may change in the future!\n"
-                         "See doc/language/box.md for known issues, etc.");
+                         "See https://docs.ruby-lang.org/en/%s/Ruby/Box.html for known issues, etc.",
+                         ruby_api_version_name);
         box_experimental_warned = 1;
     }
 
@@ -937,11 +942,11 @@ rb_box_inspect(VALUE obj)
     rb_box_t *box;
     VALUE r;
     if (obj == Qfalse) {
-        r = rb_str_new_cstr("#<Namespace:root>");
+        r = rb_str_new_cstr("#<Ruby::Box:root>");
         return r;
     }
     box = rb_get_box_t(obj);
-    r = rb_str_new_cstr("#<Namespace:");
+    r = rb_str_new_cstr("#<Ruby::Box:");
     rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
     if (BOX_ROOT_P(box)) {
         rb_str_cat_cstr(r, ",root");

@@ -762,6 +762,44 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_no_inline_nonparam_local_return() {
+        // Methods that return non-parameter local variables should NOT be inlined,
+        // because the local variable index will be out of bounds for args.
+        // The method must have a parameter so param_size > 0, and return a local
+        // that's not a parameter so local_idx >= param_size.
+        // Use dead code (if false) to create a local without initialization instructions,
+        // resulting in just getlocal + leave which enters the inlining code path.
+        eval("
+            def foo(a)
+              if false
+                x = nil
+              end
+              x
+            end
+            def test = foo(1)
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:8:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v11
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_optimize_send_to_aliased_cfunc() {
         eval("
             class C < Array
@@ -2550,7 +2588,7 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
           IncrCounter inline_iseq_optimized_send_count
-          v23:BasicObject = InvokeBuiltin leaf _bi285, v13
+          v23:BasicObject = InvokeBuiltin leaf <inline_expr>, v13
           CheckInterrupts
           Return v23
         ");
@@ -2582,7 +2620,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
           IncrCounter inline_iseq_optimized_send_count
-          v31:BasicObject = InvokeBuiltin leaf _bi132, v17
+          v31:BasicObject = InvokeBuiltin leaf <inline_expr>, v17
           CheckInterrupts
           Return v31
         ");
@@ -2990,6 +3028,33 @@ mod hir_opt_tests {
           v11:BasicObject = SendWithoutBlock v6, :foo # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v11
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_call_kwsplat() {
+        eval("
+            def foo(a:) = a
+            def test = foo(**{a: 1})
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          IncrCounter complex_arg_pass_caller_kw_splat
+          v14:BasicObject = SendWithoutBlock v6, :foo, v12 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v14
         ");
     }
 
@@ -3786,8 +3851,8 @@ mod hir_opt_tests {
           v20:HeapBasicObject = GuardShape v19, 0x1000
           StoreField v20, :@foo@0x1001, v10
           WriteBarrier v20, v10
-          v23:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v20, :_shape_id@0x1002, v23
+          v23:CShape[0x1002] = Const CShape(0x1002)
+          StoreField v20, :_shape_id@0x1003, v23
           CheckInterrupts
           Return v10
         ");
@@ -3818,16 +3883,16 @@ mod hir_opt_tests {
           v26:HeapBasicObject = GuardShape v25, 0x1000
           StoreField v26, :@foo@0x1001, v10
           WriteBarrier v26, v10
-          v29:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v26, :_shape_id@0x1002, v29
+          v29:CShape[0x1002] = Const CShape(0x1002)
+          StoreField v26, :_shape_id@0x1003, v29
           v16:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           v31:HeapBasicObject = GuardType v6, HeapBasicObject
-          v32:HeapBasicObject = GuardShape v31, 0x1003
+          v32:HeapBasicObject = GuardShape v31, 0x1002
           StoreField v32, :@bar@0x1004, v16
           WriteBarrier v32, v16
-          v35:CUInt32[4194312] = Const CUInt32(4194312)
-          StoreField v32, :_shape_id@0x1002, v35
+          v35:CShape[0x1005] = Const CShape(0x1005)
+          StoreField v32, :_shape_id@0x1003, v35
           CheckInterrupts
           Return v16
         ");
@@ -6068,8 +6133,8 @@ mod hir_opt_tests {
           v29:HeapObject[class_exact:C] = GuardShape v26, 0x1038
           StoreField v29, :@foo@0x1039, v16
           WriteBarrier v29, v16
-          v32:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v29, :_shape_id@0x103a, v32
+          v32:CShape[0x103a] = Const CShape(0x103a)
+          StoreField v29, :_shape_id@0x103b, v32
           CheckInterrupts
           Return v16
         ");
@@ -6103,8 +6168,8 @@ mod hir_opt_tests {
           v29:HeapObject[class_exact:C] = GuardShape v26, 0x1038
           StoreField v29, :@foo@0x1039, v16
           WriteBarrier v29, v16
-          v32:CUInt32[4194311] = Const CUInt32(4194311)
-          StoreField v29, :_shape_id@0x103a, v32
+          v32:CShape[0x103a] = Const CShape(0x103a)
+          StoreField v29, :_shape_id@0x103b, v32
           CheckInterrupts
           Return v16
         ");
@@ -6651,7 +6716,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_hash_aref_subclass() {
+    fn test_no_optimize_hash_aref_subclass() {
         eval("
             class C < Hash; end
             def test(hash, key)
@@ -6674,8 +6739,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
           v27:HashSubclass[class_exact:C] = GuardType v11, HashSubclass[class_exact:C]
-          v28:BasicObject = HashAref v27, v12
-          IncrCounter inline_cfunc_optimized_send_count
+          v28:BasicObject = CCallWithFrame v27, :Hash#[]@0x1038, v12
           CheckInterrupts
           Return v28
         ");
@@ -6708,6 +6772,101 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn test_hash_aset_literal() {
+        eval("
+            def test
+              h = {}
+              h[1] = 3
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:HashExact = NewHash
+          PatchPoint NoEPEscape(test)
+          v22:Fixnum[1] = Const Value(1)
+          v24:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          HashAset v13, v22, v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_hash_aset_profiled() {
+        eval("
+            def test(hash, key, val)
+              hash[key] = val
+            end
+            test({}, 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@6
+          v3:BasicObject = GetLocal :key, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v35:HashExact = GuardType v13, HashExact
+          HashAset v35, v14, v15
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_no_optimize_hash_aset_subclass() {
+        eval("
+            class C < Hash; end
+            def test(hash, key, val)
+              hash[key] = val
+            end
+            test(C.new, 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@6
+          v3:BasicObject = GetLocal :key, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v35:HashSubclass[class_exact:C] = GuardType v13, HashSubclass[class_exact:C]
+          v36:BasicObject = CCallWithFrame v35, :Hash#[]=@0x1038, v14, v15
+          CheckInterrupts
+          Return v15
         ");
     }
 
@@ -9479,26 +9638,24 @@ mod hir_opt_tests {
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
          CheckInterrupts
-         v27:BasicObject = GetLocal :a, l0, EP@6
-         SetLocal :formatted, l0, EP@3, v27
-         v39:BasicObject = GetLocal :formatted, l0, EP@3
+         SetLocal :formatted, l0, EP@3, v15
          PatchPoint SingleRactorMode
-         v56:HeapBasicObject = GuardType v14, HeapBasicObject
-         v57:HeapBasicObject = GuardShape v56, 0x1000
-         StoreField v57, :@formatted@0x1001, v39
-         WriteBarrier v57, v39
-         v60:CUInt32[4194311] = Const CUInt32(4194311)
-         StoreField v57, :_shape_id@0x1002, v60
-         v45:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v54:HeapBasicObject = GuardType v14, HeapBasicObject
+         v55:HeapBasicObject = GuardShape v54, 0x1000
+         StoreField v55, :@formatted@0x1001, v15
+         WriteBarrier v55, v15
+         v58:CShape[0x1002] = Const CShape(0x1002)
+         StoreField v55, :_shape_id@0x1003, v58
+         v43:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
          PatchPoint NoSingletonClass(Class@0x1010)
-         v65:BasicObject = CCallWithFrame v45, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v48:BasicObject = GetLocal :a, l0, EP@6
-         v49:BasicObject = GetLocal :_b, l0, EP@5
-         v50:BasicObject = GetLocal :_c, l0, EP@4
-         v51:BasicObject = GetLocal :formatted, l0, EP@3
+         v63:BasicObject = CCallWithFrame v43, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v46:BasicObject = GetLocal :a, l0, EP@6
+         v47:BasicObject = GetLocal :_b, l0, EP@5
+         v48:BasicObject = GetLocal :_c, l0, EP@4
+         v49:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v65
+         Return v63
        ");
     }
 

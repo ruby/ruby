@@ -5,9 +5,6 @@ Note that the byte count may be different from the character count (returned by 
   s = 'foo'
   s.bytesize # => 3
   s.size     # => 3
-  s = 'тест'
-  s.bytesize # => 8
-  s.size     # => 4
   s = 'こんにちは'
   s.bytesize # => 15
   s.size     # => 5

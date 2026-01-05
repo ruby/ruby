@@ -2075,7 +2075,10 @@ pm_arguments_node_arguments_append(pm_arguments_node_t *node, pm_node_t *argumen
         node->base.location.start = argument->location.start;
     }
 
-    node->base.location.end = argument->location.end;
+    if (node->base.location.end < argument->location.end) {
+        node->base.location.end = argument->location.end;
+    }
+
     pm_node_list_append(&node->arguments, argument);
 
     if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
@@ -8610,7 +8613,7 @@ escape_hexadecimal_digit(const uint8_t value) {
  * validated.
  */
 static inline uint32_t
-escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
+escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length, const pm_location_t *error_location) {
     uint32_t value = 0;
     for (size_t index = 0; index < length; index++) {
         if (index != 0) value <<= 4;
@@ -8620,7 +8623,11 @@ escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length) {
     // Here we're going to verify that the value is actually a valid Unicode
     // codepoint and not a surrogate pair.
     if (value >= 0xD800 && value <= 0xDFFF) {
-        pm_parser_err(parser, string, string + length, PM_ERR_ESCAPE_INVALID_UNICODE);
+        if (error_location != NULL) {
+            pm_parser_err(parser, error_location->start, error_location->end, PM_ERR_ESCAPE_INVALID_UNICODE);
+        } else {
+            pm_parser_err(parser, string, string + length, PM_ERR_ESCAPE_INVALID_UNICODE);
+        }
         return 0xFFFD;
     }
 
@@ -8920,7 +8927,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         extra_codepoints_start = unicode_start;
                     }
 
-                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length);
+                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length, NULL);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
                     parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
@@ -8961,7 +8968,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         PM_PARSER_ERR_FORMAT(parser, start, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
                     }
                 } else if (length == 4) {
-                    uint32_t value = escape_unicode(parser, parser->current.end, 4);
+                    uint32_t value = escape_unicode(parser, parser->current.end, 4, NULL);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
                         pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
@@ -12415,6 +12422,22 @@ expect1_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size_t ide
     }
 }
 
+/**
+ * A special expect1 that attaches the error to the opening token location
+ * rather than the current position. This is useful for errors about missing
+ * closing tokens, where we want to point to the line with the opening token
+ * (e.g., `def`, `class`, `if`, `{`) rather than the end of the file.
+ */
+static void
+expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t diag_id, const pm_token_t *opening) {
+    if (accept1(parser, type)) return;
+
+    pm_parser_err(parser, opening->start, opening->end, diag_id);
+
+    parser->previous.start = opening->end;
+    parser->previous.type = PM_TOKEN_MISSING;
+}
+
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, bool accepts_label, pm_diagnostic_id_t diag_id, uint16_t depth);
 
@@ -13405,6 +13428,30 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
     return contains_keyword_splat;
 }
 
+static inline bool
+argument_allowed_for_bare_hash(pm_parser_t *parser, pm_node_t *argument) {
+    if (pm_symbol_node_label_p(argument)) {
+        return true;
+    }
+
+    switch (PM_NODE_TYPE(argument)) {
+        case PM_CALL_NODE: {
+            pm_call_node_t *cast = (pm_call_node_t *) argument;
+            if (cast->opening_loc.start == NULL && cast->arguments != NULL) {
+                if (PM_NODE_FLAG_P(cast->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS | PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT)) {
+                    return false;
+                }
+                if (cast->block != NULL) {
+                    return false;
+                }
+            }
+            break;
+        }
+        default: break;
+    }
+    return accept1(parser, PM_TOKEN_EQUAL_GREATER);
+}
+
 /**
  * Append an argument to a list of arguments.
  */
@@ -13562,7 +13609,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 bool contains_keywords = false;
                 bool contains_keyword_splat = false;
 
-                if (pm_symbol_node_label_p(argument) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                if (argument_allowed_for_bare_hash(parser, argument)){
                     if (parsed_bare_hash) {
                         pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
                     }
@@ -14733,7 +14780,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             statements = UP(parse_statements(parser, PM_CONTEXT_BLOCK_BRACES, (uint16_t) (depth + 1)));
         }
 
-        expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BLOCK_TERM_BRACE);
+        expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BLOCK_TERM_BRACE, &opening);
     } else {
         if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
             if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE)) {
@@ -14748,7 +14795,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             }
         }
 
-        expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BLOCK_TERM_END);
+        expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BLOCK_TERM_END, &opening);
     }
 
     pm_constant_id_list_t locals;
@@ -15173,7 +15220,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
 
         accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
         parser_warn_indentation_mismatch(parser, opening_newline_index, &else_keyword, false, false);
-        expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM_ELSE);
+        expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM_ELSE, &keyword);
 
         pm_else_node_t *else_node = pm_else_node_create(parser, &else_keyword, else_statements, &parser->previous);
 
@@ -15190,7 +15237,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
         }
     } else {
         parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, if_after_else, false);
-        expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM);
+        expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM, &keyword);
     }
 
     // Set the appropriate end location for all of the nodes in the subtree.
@@ -16171,7 +16218,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
         if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
             inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET, (uint16_t) (depth + 1));
             accept1(parser, PM_TOKEN_NEWLINE);
-            expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET);
+            expect1_opening(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET, &opening);
         }
 
         closing = parser->previous;
@@ -16183,7 +16230,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
         if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN, (uint16_t) (depth + 1));
             accept1(parser, PM_TOKEN_NEWLINE);
-            expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
+            expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &opening);
         }
 
         closing = parser->previous;
@@ -16563,7 +16610,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             pm_node_t *inner = parse_pattern(parser, captures, PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_BRACKET, (uint16_t) (depth + 1));
 
             accept1(parser, PM_TOKEN_NEWLINE);
-            expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET);
+            expect1_opening(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_PATTERN_TERM_BRACKET, &opening);
             pm_token_t closing = parser->previous;
 
             switch (PM_NODE_TYPE(inner)) {
@@ -16641,7 +16688,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                 node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
 
                 accept1(parser, PM_TOKEN_NEWLINE);
-                expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE);
+                expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE, &opening);
                 pm_token_t closing = parser->previous;
 
                 node->base.location.start = opening.start;
@@ -16683,6 +16730,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
                 pm_parser_err_node(parser, node, diag_id);
                 pm_missing_node_t *missing_node = pm_missing_node_create(parser, node->location.start, node->location.end);
+
+                pm_node_unreference(parser, node);
                 pm_node_destroy(parser, node);
                 return UP(missing_node);
             }
@@ -16765,7 +16814,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                     parser->pattern_matching_newlines = previous_pattern_matching_newlines;
 
                     accept1(parser, PM_TOKEN_NEWLINE);
-                    expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
+                    expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &lparen);
                     return UP(pm_pinned_expression_node_create(parser, expression, &operator, &lparen, &parser->previous));
                 }
                 default: {
@@ -16863,7 +16912,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
 
                 pm_node_t *body = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN, (uint16_t) (depth + 1));
                 accept1(parser, PM_TOKEN_NEWLINE);
-                expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
+                expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &opening);
                 pm_node_t *right = UP(pm_parentheses_node_create(parser, &opening, body, &parser->previous, 0));
 
                 if (!alternation) {
@@ -17715,7 +17764,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
-            pm_hash_node_t *node = pm_hash_node_create(parser, &parser->previous);
+            pm_token_t opening = parser->previous;
+            pm_hash_node_t *node = pm_hash_node_create(parser, &opening);
 
             if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
                 if (current_hash_keys != NULL) {
@@ -17730,7 +17780,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_accepts_block_stack_pop(parser);
-            expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM);
+            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM, &opening);
             pm_hash_node_closing_loc_set(node, &parser->previous);
 
             return UP(node);
@@ -18347,7 +18397,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, false);
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CASE_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CASE_TERM, &case_keyword);
 
             if (PM_NODE_TYPE_P(node, PM_CASE_NODE)) {
                 pm_case_node_end_keyword_loc_set((pm_case_node_t *) node, &parser->previous);
@@ -18380,7 +18430,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_begin_node_t *begin_node = pm_begin_node_create(parser, &begin_keyword, begin_statements);
             parse_rescues(parser, opening_newline_index, &begin_keyword, begin_node, PM_RESCUES_BEGIN, (uint16_t) (depth + 1));
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BEGIN_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BEGIN_TERM, &begin_keyword);
 
             begin_node->base.location.end = parser->previous.end;
             pm_begin_node_end_keyword_set(begin_node, &parser->previous);
@@ -18405,7 +18455,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t opening = parser->previous;
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_PREEXE, (uint16_t) (depth + 1));
 
-            expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM);
+            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM, &opening);
             pm_context_t context = parser->current_context->context;
             if ((context != PM_CONTEXT_MAIN) && (context != PM_CONTEXT_PREEXE)) {
                 pm_parser_err_token(parser, &keyword, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
@@ -18492,6 +18542,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // yield node.
             if (arguments.block != NULL) {
                 pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+                pm_node_unreference(parser, arguments.block);
                 pm_node_destroy(parser, arguments.block);
                 arguments.block = NULL;
             }
@@ -18534,7 +18585,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
                 }
 
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
+                expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
                 pm_constant_id_list_t locals;
                 pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
@@ -18592,7 +18643,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
             }
 
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
             if (context_def_p(parser)) {
                 pm_parser_err_token(parser, &class_keyword, PM_ERR_CLASS_IN_METHOD);
@@ -18902,7 +18953,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_accepts_block_stack_pop(parser);
                 pm_do_loop_stack_pop(parser);
 
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_DEF_TERM);
+                expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_DEF_TERM, &def_keyword);
                 end_keyword = parser->previous;
             }
 
@@ -18996,7 +19047,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t opening = parser->previous;
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_POSTEXE, (uint16_t) (depth + 1));
 
-            expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM);
+            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM, &opening);
             return UP(pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous));
         }
         case PM_TOKEN_KEYWORD_FALSE:
@@ -19060,7 +19111,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false, false);
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM, &for_keyword);
 
             return UP(pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, &do_keyword, &parser->previous));
         }
@@ -19211,7 +19262,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
 
             pm_parser_scope_pop(parser);
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM, &module_keyword);
 
             if (context_def_p(parser)) {
                 pm_parser_err_token(parser, &module_keyword, PM_ERR_MODULE_IN_METHOD);
@@ -19277,7 +19328,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM, &keyword);
 
             return UP(pm_until_node_create(parser, &keyword, &do_keyword, &parser->previous, predicate, statements, 0));
         }
@@ -19311,7 +19362,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
-            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM);
+            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM, &keyword);
 
             return UP(pm_while_node_create(parser, &keyword, &do_keyword, &parser->previous, predicate, statements, 0));
         }
@@ -20057,7 +20108,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
 
                 parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
-                expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE);
+                expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE, &opening);
             } else {
                 expect1(parser, PM_TOKEN_KEYWORD_DO, PM_ERR_LAMBDA_OPEN);
                 opening = parser->previous;
@@ -20075,7 +20126,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
                 }
 
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END);
+                expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END, &operator);
             }
 
             pm_constant_id_list_t locals;
@@ -20364,7 +20415,7 @@ pm_named_capture_escape_octal(pm_buffer_t *unescaped, const uint8_t *cursor, con
 }
 
 static inline const uint8_t *
-pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
+pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end, const pm_location_t *error_location) {
     const uint8_t *start = cursor - 1;
     cursor++;
 
@@ -20375,7 +20426,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
 
     if (*cursor != '{') {
         size_t length = pm_strspn_hexadecimal_digit(cursor, MIN(end - cursor, 4));
-        uint32_t value = escape_unicode(parser, cursor, length);
+        uint32_t value = escape_unicode(parser, cursor, length, error_location);
 
         if (!pm_buffer_append_unicode_codepoint(unescaped, value)) {
             pm_buffer_append_string(unescaped, (const char *) start, (size_t) ((cursor + length) - start));
@@ -20395,7 +20446,10 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
         }
 
         size_t length = pm_strspn_hexadecimal_digit(cursor, end - cursor);
-        uint32_t value = escape_unicode(parser, cursor, length);
+        if (length == 0) {
+            break;
+        }
+        uint32_t value = escape_unicode(parser, cursor, length, error_location);
 
         (void) pm_buffer_append_unicode_codepoint(unescaped, value);
         cursor += length;
@@ -20405,7 +20459,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
 }
 
 static void
-pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor) {
+pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor, const pm_location_t *error_location) {
     const uint8_t *end = source + length;
     pm_buffer_append_string(unescaped, (const char *) source, (size_t) (cursor - source));
 
@@ -20423,7 +20477,7 @@ pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8
                 cursor = pm_named_capture_escape_octal(unescaped, cursor, end);
                 break;
             case 'u':
-                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end);
+                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end, error_location);
                 break;
             default:
                 pm_buffer_append_byte(unescaped, '\\');
@@ -20466,7 +20520,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     // unescaped, which is what we need.
     const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
     if (PRISM_UNLIKELY(cursor != NULL)) {
-        pm_named_capture_escape(parser, &unescaped, source, length, cursor);
+        pm_named_capture_escape(parser, &unescaped, source, length, cursor, callback_data->shared ? NULL : &call->receiver->location);
         source = (const uint8_t *) pm_buffer_value(&unescaped);
         length = pm_buffer_length(&unescaped);
     }

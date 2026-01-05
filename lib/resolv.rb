@@ -721,7 +721,8 @@ class Resolv
           begin
             reply, from = recv_reply(select_result[0])
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
-                 Errno::ECONNRESET # Windows
+                 Errno::ECONNRESET, # Windows
+                 EOFError
             # No name server running on the server?
             # Don't wait anymore.
             raise ResolvTimeout
@@ -930,8 +931,11 @@ class Resolv
         end
 
         def recv_reply(readable_socks)
-          len = readable_socks[0].read(2).unpack('n')[0]
+          len_data = readable_socks[0].read(2)
+          raise EOFError if len_data.nil? || len_data.bytesize != 2
+          len = len_data.unpack('n')[0]
           reply = @socks[0].read(len)
+          raise EOFError if reply.nil? || reply.bytesize != len
           return reply, nil
         end
 

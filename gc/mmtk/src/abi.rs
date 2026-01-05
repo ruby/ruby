@@ -1,8 +1,12 @@
 use crate::api::RubyMutator;
-use crate::{extra_assert, Ruby};
+use crate::extra_assert;
+use crate::Ruby;
 use libc::c_int;
 use mmtk::scheduler::GCWorker;
-use mmtk::util::{Address, ObjectReference, VMMutatorThread, VMWorkerThread};
+use mmtk::util::Address;
+use mmtk::util::ObjectReference;
+use mmtk::util::VMMutatorThread;
+use mmtk::util::VMWorkerThread;
 
 // For the C binding
 pub const OBJREF_OFFSET: usize = 8;
@@ -299,6 +303,8 @@ pub struct RubyUpcalls {
     pub stop_the_world: extern "C" fn(),
     pub resume_mutators: extern "C" fn(),
     pub block_for_gc: extern "C" fn(tls: VMMutatorThread),
+    pub before_updating_jit_code: extern "C" fn(),
+    pub after_updating_jit_code: extern "C" fn(),
     pub number_of_mutators: extern "C" fn() -> usize,
     pub get_mutators: extern "C" fn(
         visit_mutator: extern "C" fn(*mut RubyMutator, *mut libc::c_void),
@@ -306,14 +312,18 @@ pub struct RubyUpcalls {
     ),
     pub scan_gc_roots: extern "C" fn(),
     pub scan_objspace: extern "C" fn(),
-    pub scan_object_ruby_style: extern "C" fn(object: ObjectReference),
+    pub move_obj_during_marking: extern "C" fn(from: ObjectReference, to: ObjectReference),
+    pub update_object_references: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
+    pub handle_weak_references: extern "C" fn(object: ObjectReference, moving: bool),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
     pub vm_live_bytes: extern "C" fn() -> usize,
     pub update_global_tables: extern "C" fn(tbl_idx: c_int),
     pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
     pub special_const_p: extern "C" fn(object: ObjectReference) -> bool,
+    pub mutator_thread_panic_handler: extern "C" fn(),
+    pub gc_thread_panic_handler: extern "C" fn(),
 }
 
 unsafe impl Sync for RubyUpcalls {}

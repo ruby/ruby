@@ -286,11 +286,9 @@ pub const RUBY_FL_WB_PROTECTED: ruby_fl_type = 32;
 pub const RUBY_FL_PROMOTED: ruby_fl_type = 32;
 pub const RUBY_FL_USERPRIV0: ruby_fl_type = 64;
 pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
-pub const RUBY_FL_TAINT: ruby_fl_type = 0;
 pub const RUBY_FL_EXIVAR: ruby_fl_type = 0;
 pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
-pub const RUBY_FL_UNTRUSTED: ruby_fl_type = 0;
-pub const RUBY_FL_UNUSED9: ruby_fl_type = 512;
+pub const RUBY_FL_WEAK_REFERENCE: ruby_fl_type = 512;
 pub const RUBY_FL_UNUSED10: ruby_fl_type = 1024;
 pub const RUBY_FL_FREEZE: ruby_fl_type = 2048;
 pub const RUBY_FL_USER0: ruby_fl_type = 4096;
@@ -1214,17 +1212,8 @@ pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_1 {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_2 {
-    pub local_hooks: *mut rb_hook_list_struct,
+    pub local_hooks_cnt: ::std::os::raw::c_uint,
     pub global_trace_events: rb_event_flag_t,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_hook_list_struct {
-    pub hooks: *mut rb_event_hook_struct,
-    pub events: rb_event_flag_t,
-    pub running: ::std::os::raw::c_uint,
-    pub need_clean: bool,
-    pub is_local: bool,
 }
 #[repr(C)]
 pub struct rb_captured_block {
@@ -1837,6 +1826,11 @@ pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: jit_bindgen_constants = 32;
+pub const RUBY_OFFSET_EC_INTERRUPT_MASK: jit_bindgen_constants = 36;
+pub const RUBY_OFFSET_EC_THREAD_PTR: jit_bindgen_constants = 48;
+pub const RUBY_OFFSET_EC_RACTOR_ID: jit_bindgen_constants = 64;
 pub type jit_bindgen_constants = u32;
 pub const rb_invalid_shape_id: shape_id_t = 4294967295;
 pub type rb_iseq_param_keyword_struct =
@@ -1844,11 +1838,6 @@ pub type rb_iseq_param_keyword_struct =
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct succ_index_table {
-    pub _address: u8,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_event_hook_struct {
     pub _address: u8,
 }
 unsafe extern "C" {
@@ -1866,7 +1855,6 @@ unsafe extern "C" {
     pub fn rb_gc_disable() -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
-    pub static mut rb_cObject: VALUE;
     pub fn rb_funcallv(
         recv: VALUE,
         mid: ID,
@@ -1875,6 +1863,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
+    pub static mut rb_cObject: VALUE;
     pub static mut rb_cArray: VALUE;
     pub static mut rb_cClass: VALUE;
     pub static mut rb_cFalseClass: VALUE;
@@ -2092,6 +2081,7 @@ unsafe extern "C" {
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
+    pub fn rb_zjit_writebarrier_check_immediate(recv: VALUE, val: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

@@ -576,7 +576,7 @@ num_imaginary(VALUE num)
  *  call-seq:
  *    -self -> numeric
  *
- *  Unary Minus---Returns the receiver, negated.
+ *  Returns +self+, negated.
  */
 
 static VALUE
@@ -1089,7 +1089,7 @@ rb_float_plus(VALUE x, VALUE y)
  *  call-seq:
  *    self - other -> numeric
  *
- *  Returns a new \Float which is the difference of +self+ and +other+:
+ * Returns the difference of +self+ and +other+:
  *
  *    f = 3.14
  *    f - 1                 # => 2.14
@@ -1175,7 +1175,7 @@ rb_flo_div_flo(VALUE x, VALUE y)
  *  call-seq:
  *    self / other -> numeric
  *
- *  Returns a new \Float which is the result of dividing +self+ by +other+:
+ * Returns the quotient of +self+ and +other+:
  *
  *    f = 3.14
  *    f / 2              # => 1.57
@@ -1390,9 +1390,9 @@ flo_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** other -> numeric
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +other+:
+ *  Returns +self+ raised to the power +exponent+:
  *
  *    f = 3.14
  *    f ** 2              # => 9.8596
@@ -1468,10 +1468,17 @@ num_eql(VALUE x, VALUE y)
  *  call-seq:
  *    self <=> other -> zero or nil
  *
- *  Returns zero if +self+ is the same as +other+, +nil+ otherwise.
+ *  Compares +self+ and +other+.
+ *
+ *  Returns:
+ *
+ *  - Zero, if +self+ is the same as +other+.
+ *  - +nil+, otherwise.
+ *
+ *  \Class \Numeric includes module Comparable,
+ *  each of whose methods uses Numeric#<=> for comparison.
  *
  *  No subclass in the Ruby Core or Standard Library uses this implementation.
- *
  */
 
 static VALUE
@@ -1561,29 +1568,31 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     self <=> other ->  -1, 0, +1, or nil
+ *     self <=> other ->  -1, 0, 1, or nil
  *
- *  Returns a value that depends on the numeric relation
- *  between +self+ and +other+:
+ *  Compares +self+ and +other+.
  *
- *  - -1, if +self+ is less than +other+.
- *  - 0, if +self+ is equal to +other+.
- *  - 1, if +self+ is greater than +other+.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ is less than +other+.
+ *  - +0+, if +self+ is equal to +other+.
+ *  - +1+, if +self+ is greater than +other+.
  *  - +nil+, if the two values are incommensurate.
  *
  *  Examples:
  *
+ *    2.0 <=> 2.1            # => -1
  *    2.0 <=> 2              # => 0
  *    2.0 <=> 2.0            # => 0
  *    2.0 <=> Rational(2, 1) # => 0
  *    2.0 <=> Complex(2, 0)  # => 0
  *    2.0 <=> 1.9            # => 1
- *    2.0 <=> 2.1            # => -1
  *    2.0 <=> 'foo'          # => nil
  *
- *  This is the basis for the tests in the Comparable module.
- *
  *  <tt>Float::NAN <=> Float::NAN</tt> returns an implementation-dependent value.
+ *
+ *  \Class \Float includes module Comparable,
+ *  each of whose methods uses Float#<=> for comparison.
  *
  */
 
@@ -1702,7 +1711,8 @@ flo_ge(VALUE x, VALUE y)
  *  call-seq:
  *    self < other -> true or false
  *
- *  Returns +true+ if +self+ is numerically less than +other+:
+ *  Returns whether the value of +self+ is less than the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 < 3              # => true
  *    2.0 < 3.0            # => true
@@ -1710,7 +1720,6 @@ flo_ge(VALUE x, VALUE y)
  *    2.0 < 2.0            # => false
  *
  *  <tt>Float::NAN < Float::NAN</tt> returns an implementation-dependent value.
- *
  */
 
 static VALUE
@@ -1738,7 +1747,8 @@ flo_lt(VALUE x, VALUE y)
  *  call-seq:
  *    self <= other -> true or false
  *
- *  Returns +true+ if +self+ is numerically less than or equal to +other+:
+ *  Returns whether the value of +self+ is less than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 <= 3              # => true
  *    2.0 <= 3.0            # => true
@@ -2601,7 +2611,7 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
  *    floor(ndigits = 0) -> float or integer
  *
  *  Returns the largest float or integer that is less than or equal to +self+,
- *  as specified by the given `ndigits`,
+ *  as specified by the given +ndigits+,
  *  which must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
@@ -2621,7 +2631,7 @@ num_floor(int argc, VALUE *argv, VALUE num)
  *    ceil(ndigits = 0) -> float or integer
  *
  *  Returns the smallest float or integer that is greater than or equal to +self+,
- *  as specified by the given `ndigits`,
+ *  as specified by the given +ndigits+,
  *  which must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
@@ -4197,9 +4207,9 @@ fix_minus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self - numeric -> numeric_result
+ *    self - other -> numeric
  *
- *  Performs subtraction:
+ * Returns the difference of +self+ and +other+:
  *
  *    4 - 2              # => 2
  *    -4 - 2             # => -6
@@ -4386,16 +4396,18 @@ fix_div(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   self / numeric -> numeric_result
+ *   self / other -> numeric
  *
- * Performs division; for integer +numeric+, truncates the result to an integer:
+ * Returns the quotient of +self+ and +other+.
+ *
+ * For integer +other+, truncates the result to an integer:
  *
  *   4 / 3              # => 1
  *   4 / -3             # => -2
  *   -4 / 3             # => -2
  *   -4 / -3            # => 1
  *
- *  For other +numeric+, returns non-integer result:
+ * For non-integer +other+, returns a non-integer result:
  *
  *   4 / 3.0            # => 1.3333333333333333
  *   4 / Rational(3, 1) # => (4/3)
@@ -4623,9 +4635,9 @@ rb_int_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self ** numeric -> numeric_result
+ *    self ** exponent -> numeric
  *
- *  Raises +self+ to the power of +numeric+:
+ * Returns +self+ raised to the power +exponent+:
  *
  *    2 ** 3              # => 8
  *    2 ** -3             # => (1/8)
@@ -4748,8 +4760,7 @@ fix_pow(VALUE x, VALUE y)
  *  call-seq:
  *    self ** exponent -> numeric
  *
- *  Returns the value of base +self+ raised to the power +exponent+;
- *  see {Exponentiation}[https://en.wikipedia.org/wiki/Exponentiation]:
+ *  Returns +self+ raised to the power +exponent+:
  *
  *    # Result for non-negative Integer exponent is Integer.
  *    2 ** 0   # => 1
@@ -4886,28 +4897,29 @@ fix_cmp(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self <=> other  ->  -1, 0, +1, or nil
+ *    self <=> other -> -1, 0, 1, or nil
+ *
+ *  Compares +self+ and +other+.
  *
  *  Returns:
  *
- *  - -1, if +self+ is less than +other+.
- *  - 0, if +self+ is equal to +other+.
- *  - 1, if +self+ is greater then +other+.
+ *  - +-1+, if +self+ is less than +other+.
+ *  - +0+, if +self+ is equal to +other+.
+ *  - +1+, if +self+ is greater then +other+.
  *  - +nil+, if +self+ and +other+ are incomparable.
  *
  *  Examples:
  *
  *    1 <=> 2              # => -1
  *    1 <=> 1              # => 0
- *    1 <=> 0              # => 1
- *    1 <=> 'foo'          # => nil
- *
  *    1 <=> 1.0            # => 0
  *    1 <=> Rational(1, 1) # => 0
  *    1 <=> Complex(1, 0)  # => 0
+ *    1 <=> 0              # => 1
+ *    1 <=> 'foo'          # => nil
  *
- *  This method is the basis for comparisons in module Comparable.
- *
+ *  \Class \Integer includes module Comparable,
+ *  each of whose methods uses Integer#<=> for comparison.
  */
 
 VALUE
@@ -5037,15 +5049,14 @@ fix_lt(VALUE x, VALUE y)
  * call-seq:
  *    self < other -> true or false
  *
- * Returns +true+ if the value of +self+ is less than that of +other+:
+ * Returns whether the value of +self+ is less than the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 < 0              # => false
  *    1 < 1              # => false
  *    1 < 2              # => true
  *    1 < 0.5            # => false
  *    1 < Rational(1, 2) # => false
- *
- *  Raises an exception if the comparison cannot be made.
  *
  */
 
@@ -5081,10 +5092,10 @@ fix_le(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    self <= real -> true or false
+ *    self <= other -> true or false
  *
- *  Returns +true+ if the value of +self+ is less than or equal to
- *  that of +other+:
+ * Returns whether the value of +self+ is less than or equal to the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 <= 0              # => false
  *    1 <= 1              # => true

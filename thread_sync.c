@@ -2,13 +2,12 @@
 #include "ccan/list/list.h"
 #include "builtin.h"
 
-static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
-static VALUE rb_eClosedQueueError;
+static VALUE rb_cMutex, rb_eClosedQueueError;
 
 /* Mutex */
 typedef struct rb_mutex_struct {
-    rb_serial_t fiber_serial;
-    VALUE thread; // even if the fiber is collected, we might need access to the thread in mutex_free
+    rb_serial_t ec_serial;
+    rb_thread_t *th; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -81,31 +80,7 @@ static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 #endif
-static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber);
-
-/*
- *  Document-class: Thread::Mutex
- *
- *  Thread::Mutex implements a simple semaphore that can be used to
- *  coordinate access to shared data from multiple concurrent threads.
- *
- *  Example:
- *
- *    semaphore = Thread::Mutex.new
- *
- *    a = Thread.new {
- *      semaphore.synchronize {
- *        # access shared resource
- *      }
- *    }
- *
- *    b = Thread.new {
- *      semaphore.synchronize {
- *        # access shared resource
- *      }
- *    }
- *
- */
+static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial);
 
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
@@ -125,7 +100,7 @@ rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
 static bool
 mutex_locked_p(rb_mutex_t *mutex)
 {
-    return mutex->fiber_serial != 0;
+    return mutex->ec_serial != 0;
 }
 
 static void
@@ -133,7 +108,7 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, rb_thread_ptr(mutex->thread), NULL);
+        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -221,26 +196,26 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 }
 
 static void
-mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    mutex->thread = th->self;
-    mutex->fiber_serial = rb_fiber_serial(fiber);
+    mutex->th = th;
+    mutex->ec_serial = ec_serial;
 }
 
 static void
-mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    mutex_set_owner(mutex, th, fiber);
+    mutex_set_owner(mutex, th, ec_serial);
     thread_mutex_insert(th, mutex);
 }
 
 static inline bool
-mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+do_mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    if (mutex->fiber_serial == 0) {
+    if (mutex->ec_serial == 0) {
         RUBY_DEBUG_LOG("%p ok", mutex);
 
-        mutex_locked(mutex, th, fiber);
+        mutex_locked(mutex, th, ec_serial);
         return true;
     }
     else {
@@ -252,7 +227,7 @@ mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 static VALUE
 rb_mut_trylock(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(mutex_trylock(mutex_ptr(self), ec->thread_ptr, ec->fiber_ptr));
+    return RBOOL(do_mutex_trylock(mutex_ptr(self), ec->thread_ptr, rb_ec_serial(ec)));
 }
 
 VALUE
@@ -262,9 +237,9 @@ rb_mutex_trylock(VALUE self)
 }
 
 static VALUE
-mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
+mutex_owned_p(rb_serial_t ec_serial, rb_mutex_t *mutex)
 {
-    return RBOOL(mutex->fiber_serial == rb_fiber_serial(fiber));
+    return RBOOL(mutex->ec_serial == ec_serial);
 }
 
 static VALUE
@@ -305,6 +280,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
     rb_execution_context_t *ec = args->ec;
     rb_thread_t *th = ec->thread_ptr;
     rb_fiber_t *fiber = ec->fiber_ptr;
+    rb_serial_t ec_serial = rb_ec_serial(ec);
     rb_mutex_t *mutex = args->mutex;
     rb_atomic_t saved_ints = 0;
 
@@ -314,13 +290,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
-    if (!mutex_trylock(mutex, th, fiber)) {
-        if (mutex->fiber_serial == rb_fiber_serial(fiber)) {
+    if (!do_mutex_trylock(mutex, th, ec_serial)) {
+        if (mutex->ec_serial == ec_serial) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
 
-        while (mutex->fiber_serial != rb_fiber_serial(fiber)) {
-            VM_ASSERT(mutex->fiber_serial != 0);
+        while (mutex->ec_serial != ec_serial) {
+            VM_ASSERT(mutex->ec_serial != 0);
 
             VALUE scheduler = rb_fiber_scheduler_current();
             if (scheduler != Qnil) {
@@ -334,12 +310,12 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
             }
             else {
-                if (!th->vm->thread_ignore_deadlock && rb_thread_ptr(mutex->thread) == th) {
+                if (!th->vm->thread_ignore_deadlock && mutex->th == th) {
                     rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
                 }
 
@@ -375,8 +351,8 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 ccan_list_del(&sync_waiter.node);
 
                 // unlocked by another thread while sleeping
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
 
                 rb_ractor_sleeper_threads_dec(th->ractor);
@@ -389,13 +365,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
             if (interruptible_p) {
                 /* release mutex before checking for interrupts...as interrupt checking
                  * code might call rb_raise() */
-                if (mutex->fiber_serial == rb_fiber_serial(fiber)) {
-                    mutex->thread = Qfalse;
-                    mutex->fiber_serial = 0;
+                if (mutex->ec_serial == ec_serial) {
+                    mutex->th = NULL;
+                    mutex->ec_serial = 0;
                 }
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
-                if (!mutex->fiber_serial) {
-                    mutex_set_owner(mutex, th, fiber);
+                if (!mutex->ec_serial) {
+                    mutex_set_owner(mutex, th, ec_serial);
                 }
             }
             else {
@@ -414,13 +390,13 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         }
 
         if (saved_ints) th->ec->interrupt_flag = saved_ints;
-        if (mutex->fiber_serial == rb_fiber_serial(fiber)) mutex_locked(mutex, th, fiber);
+        if (mutex->ec_serial == ec_serial) mutex_locked(mutex, th, ec_serial);
     }
 
     RUBY_DEBUG_LOG("%p locked", mutex);
 
     // assertion
-    if (mutex_owned_p(fiber, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
+    if (mutex_owned_p(ec_serial, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
 
     return self;
 }
@@ -455,7 +431,7 @@ rb_mutex_lock(VALUE self)
 static VALUE
 rb_mut_owned_p(rb_execution_context_t *ec, VALUE self)
 {
-    return mutex_owned_p(ec->fiber_ptr, mutex_ptr(self));
+    return mutex_owned_p(rb_ec_serial(ec), mutex_ptr(self));
 }
 
 VALUE
@@ -465,20 +441,20 @@ rb_mutex_owned_p(VALUE self)
 }
 
 static const char *
-rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
+rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
     RUBY_DEBUG_LOG("%p", mutex);
 
-    if (mutex->fiber_serial == 0) {
+    if (mutex->ec_serial == 0) {
         return "Attempt to unlock a mutex which is not locked";
     }
-    else if (fiber && mutex->fiber_serial != rb_fiber_serial(fiber)) {
+    else if (ec_serial && mutex->ec_serial != ec_serial) {
         return "Attempt to unlock a mutex which is locked by another thread/fiber";
     }
 
     struct sync_waiter *cur = 0, *next;
 
-    mutex->fiber_serial = 0;
+    mutex->ec_serial = 0;
     thread_mutex_remove(th, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
@@ -516,7 +492,7 @@ do_mutex_unlock(struct mutex_args *args)
     rb_mutex_t *mutex = args->mutex;
     rb_thread_t *th = rb_ec_thread_ptr(args->ec);
 
-    err = rb_mutex_unlock_th(mutex, th, args->ec->fiber_ptr);
+    err = rb_mutex_unlock_th(mutex, th, rb_ec_serial(args->ec));
     if (err) rb_raise(rb_eThreadError, "%s", err);
 }
 
@@ -582,7 +558,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
     while (mutexes) {
         mutex = mutexes;
         mutexes = mutex->next_mutex;
-        mutex->fiber_serial = 0;
+        mutex->ec_serial = 0;
         mutex->next_mutex = 0;
         ccan_list_head_init(&mutex->waitq);
     }
@@ -650,7 +626,6 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     return rb_mut_sleep(GET_EC(), self, timeout);
 }
 
-
 VALUE
 rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
 {
@@ -658,6 +633,12 @@ rb_mutex_synchronize(VALUE self, VALUE (*func)(VALUE arg), VALUE arg)
     mutex_args_init(&args, self);
     do_mutex_lock(&args, 1);
     return rb_ec_ensure(args.ec, func, arg, do_mutex_unlock_safe, (VALUE)&args);
+}
+
+static VALUE
+do_ec_yield(VALUE _ec)
+{
+    return rb_ec_yield((rb_execution_context_t *)_ec, Qundef);
 }
 
 VALUE
@@ -669,7 +650,7 @@ rb_mut_synchronize(rb_execution_context_t *ec, VALUE self)
         .ec = ec,
     };
     do_mutex_lock(&args, 1);
-    return rb_ec_ensure(args.ec, rb_yield, Qundef, do_mutex_unlock_safe, (VALUE)&args);
+    return rb_ec_ensure(args.ec, do_ec_yield, (VALUE)ec, do_mutex_unlock_safe, (VALUE)&args);
 }
 
 void
@@ -685,46 +666,61 @@ rb_mutex_allow_trap(VALUE self, int val)
 
 /* Queue */
 
-#define queue_waitq(q) UNALIGNED_MEMBER_PTR(q, waitq)
-#define queue_list(q) UNALIGNED_MEMBER_PTR(q, que)
-RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
 struct rb_queue {
     struct ccan_list_head waitq;
     rb_serial_t fork_gen;
-    const VALUE que;
+    long capa;
+    long len;
+    long offset;
+    VALUE *buffer;
     int num_waiting;
-} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
+};
 
-#define szqueue_waitq(sq) UNALIGNED_MEMBER_PTR(sq, q.waitq)
-#define szqueue_list(sq) UNALIGNED_MEMBER_PTR(sq, q.que)
-#define szqueue_pushq(sq) UNALIGNED_MEMBER_PTR(sq, pushq)
-RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+#define szqueue_waitq(sq) &sq->q.waitq
+#define szqueue_pushq(sq) &sq->pushq
+
 struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
     struct ccan_list_head pushq;
     long max;
-} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
+};
 
 static void
 queue_mark_and_move(void *ptr)
 {
     struct rb_queue *q = ptr;
-
     /* no need to mark threads in waitq, they are on stack */
-    rb_gc_mark_and_move((VALUE *)UNALIGNED_MEMBER_PTR(q, que));
+    for (long index = 0; index < q->len; index++) {
+        rb_gc_mark_and_move(&q->buffer[((q->offset + index) % q->capa)]);
+    }
+}
+
+static void
+queue_free(void *ptr)
+{
+    struct rb_queue *q = ptr;
+    if (q->buffer) {
+        ruby_sized_xfree(q->buffer, q->capa * sizeof(VALUE));
+    }
 }
 
 static size_t
 queue_memsize(const void *ptr)
 {
-    return sizeof(struct rb_queue);
+    const struct rb_queue *q = ptr;
+    return sizeof(struct rb_queue) + (q->capa * sizeof(VALUE));
 }
 
 static const rb_data_type_t queue_data_type = {
-    "queue",
-    {queue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, queue_memsize, queue_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "Thread::Queue",
+    .function = {
+        .dmark = queue_mark_and_move,
+        .dfree = queue_free,
+        .dsize = queue_memsize,
+        .dcompact = queue_mark_and_move,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -734,33 +730,49 @@ queue_alloc(VALUE klass)
     struct rb_queue *q;
 
     obj = TypedData_Make_Struct(klass, struct rb_queue, &queue_data_type, q);
-    ccan_list_head_init(queue_waitq(q));
+    ccan_list_head_init(&q->waitq);
     return obj;
 }
 
-static int
+static inline bool
 queue_fork_check(struct rb_queue *q)
 {
     rb_serial_t fork_gen = GET_VM()->fork_gen;
 
-    if (q->fork_gen == fork_gen) {
-        return 0;
+    if (RB_LIKELY(q->fork_gen == fork_gen)) {
+        return false;
     }
     /* forked children can't reach into parent thread stacks */
     q->fork_gen = fork_gen;
-    ccan_list_head_init(queue_waitq(q));
+    ccan_list_head_init(&q->waitq);
     q->num_waiting = 0;
-    return 1;
+    return true;
 }
 
-static struct rb_queue *
-queue_ptr(VALUE obj)
+static inline struct rb_queue *
+raw_queue_ptr(VALUE obj)
 {
     struct rb_queue *q;
 
     TypedData_Get_Struct(obj, struct rb_queue, &queue_data_type, q);
     queue_fork_check(q);
 
+    return q;
+}
+
+static inline void
+check_queue(VALUE obj, struct rb_queue *q)
+{
+    if (RB_UNLIKELY(q->buffer == NULL)) {
+         rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
+    }
+}
+
+static inline struct rb_queue *
+queue_ptr(VALUE obj)
+{
+    struct rb_queue *q = raw_queue_ptr(obj);
+    check_queue(obj, q);
     return q;
 }
 
@@ -790,16 +802,30 @@ szqueue_mark_and_move(void *ptr)
     queue_mark_and_move(&sq->q);
 }
 
+static void
+szqueue_free(void *ptr)
+{
+    struct rb_szqueue *sq = ptr;
+    queue_free(&sq->q);
+}
+
 static size_t
 szqueue_memsize(const void *ptr)
 {
-    return sizeof(struct rb_szqueue);
+    const struct rb_szqueue *sq = ptr;
+    return sizeof(struct rb_szqueue) + (sq->q.capa * sizeof(VALUE));
 }
 
 static const rb_data_type_t szqueue_data_type = {
-    "sized_queue",
-    {szqueue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, szqueue_memsize, szqueue_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "Thread::SizedQueue",
+    .function = {
+        .dmark = szqueue_mark_and_move,
+        .dfree = szqueue_free,
+        .dsize = szqueue_memsize,
+        .dcompact = szqueue_mark_and_move,
+    },
+    .parent = &queue_data_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -813,13 +839,13 @@ szqueue_alloc(VALUE klass)
     return obj;
 }
 
-static struct rb_szqueue *
-szqueue_ptr(VALUE obj)
+static inline struct rb_szqueue *
+raw_szqueue_ptr(VALUE obj)
 {
     struct rb_szqueue *sq;
 
     TypedData_Get_Struct(obj, struct rb_szqueue, &szqueue_data_type, sq);
-    if (queue_fork_check(&sq->q)) {
+    if (RB_UNLIKELY(queue_fork_check(&sq->q))) {
         ccan_list_head_init(szqueue_pushq(sq));
         sq->num_waiting_push = 0;
     }
@@ -827,28 +853,15 @@ szqueue_ptr(VALUE obj)
     return sq;
 }
 
-static VALUE
-ary_buf_new(void)
+static inline struct rb_szqueue *
+szqueue_ptr(VALUE obj)
 {
-    return rb_ary_hidden_new(1);
+    struct rb_szqueue *sq = raw_szqueue_ptr(obj);
+    check_queue(obj, &sq->q);
+    return sq;
 }
 
-static VALUE
-check_array(VALUE obj, VALUE ary)
-{
-    if (!RB_TYPE_P(ary, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
-    }
-    return ary;
-}
-
-static long
-queue_length(VALUE self, struct rb_queue *q)
-{
-    return RARRAY_LEN(check_array(self, q->que));
-}
-
-static int
+static inline bool
 queue_closed_p(VALUE self)
 {
     return FL_TEST_RAW(self, QUEUE_CLOSED) != 0;
@@ -872,82 +885,81 @@ raise_closed_queue_error(VALUE self)
 static VALUE
 queue_closed_result(VALUE self, struct rb_queue *q)
 {
-    RUBY_ASSERT(queue_length(self, q) == 0);
+    RUBY_ASSERT(q->len == 0);
     return Qnil;
 }
 
-/*
- *  Document-class: Thread::Queue
- *
- *  The Thread::Queue class implements multi-producer, multi-consumer
- *  queues.  It is especially useful in threaded programming when
- *  information must be exchanged safely between multiple threads. The
- *  Thread::Queue class implements all the required locking semantics.
- *
- *  The class implements FIFO (first in, first out) type of queue.
- *  In a FIFO queue, the first tasks added are the first retrieved.
- *
- *  Example:
- *
- *	queue = Thread::Queue.new
- *
- *	producer = Thread.new do
- *	  5.times do |i|
- *	    sleep rand(i) # simulate expense
- *	    queue << i
- *	    puts "#{i} produced"
- *	  end
- *	end
- *
- *	consumer = Thread.new do
- *	  5.times do |i|
- *	    value = queue.pop
- *	    sleep rand(i/2) # simulate expense
- *	    puts "consumed #{value}"
- *	  end
- *	end
- *
- *	consumer.join
- *
- */
+#define QUEUE_INITIAL_CAPA 8
 
-/*
- * Document-method: Queue::new
- *
- * call-seq:
- *   Thread::Queue.new -> empty_queue
- *   Thread::Queue.new(enumerable) -> queue
- *
- * Creates a new queue instance, optionally using the contents of an +enumerable+
- * for its initial state.
- *
- * Example:
- *
- *    	q = Thread::Queue.new
- *      #=> #<Thread::Queue:0x00007ff7501110d0>
- *      q.empty?
- *      #=> true
- *
- *    	q = Thread::Queue.new([1, 2, 3])
- *    	#=> #<Thread::Queue:0x00007ff7500ec500>
- *      q.empty?
- *      #=> false
- *      q.pop
- *      #=> 1
- */
+static inline void
+ring_buffer_init(struct rb_queue *q, long initial_capa)
+{
+    q->buffer = ALLOC_N(VALUE, initial_capa);
+    q->capa = initial_capa;
+}
+
+static inline void
+ring_buffer_expand(struct rb_queue *q)
+{
+    RUBY_ASSERT(q->capa > 0);
+    VALUE *new_buffer = ALLOC_N(VALUE, q->capa * 2);
+    MEMCPY(new_buffer, q->buffer + q->offset, VALUE, q->capa - q->offset);
+    MEMCPY(new_buffer + (q->capa - q->offset), q->buffer, VALUE, q->offset);
+    VALUE *old_buffer = q->buffer;
+    q->buffer = new_buffer;
+    q->offset = 0;
+    ruby_sized_xfree(old_buffer, q->capa * sizeof(VALUE));
+    q->capa *= 2;
+}
+
+static void
+ring_buffer_push(VALUE self, struct rb_queue *q, VALUE obj)
+{
+    if (RB_UNLIKELY(q->len >= q->capa)) {
+        ring_buffer_expand(q);
+    }
+    RUBY_ASSERT(q->capa > q->len);
+    long index = (q->offset + q->len) % q->capa;
+    q->len++;
+    RB_OBJ_WRITE(self, &q->buffer[index], obj);
+}
 
 static VALUE
-rb_queue_initialize(int argc, VALUE *argv, VALUE self)
+ring_buffer_shift(struct rb_queue *q)
 {
-    VALUE initial;
-    struct rb_queue *q = queue_ptr(self);
-    if ((argc = rb_scan_args(argc, argv, "01", &initial)) == 1) {
-        initial = rb_to_array(initial);
+    if (!q->len) {
+        return Qnil;
     }
-    RB_OBJ_WRITE(self, queue_list(q), ary_buf_new());
-    ccan_list_head_init(queue_waitq(q));
-    if (argc == 1) {
-        rb_ary_concat(q->que, initial);
+
+    VALUE obj = q->buffer[q->offset];
+    q->len--;
+    if (q->len == 0) {
+        q->offset = 0;
+    }
+    else {
+        q->offset = (q->offset + 1) % q->capa;
+    }
+    return obj;
+}
+
+static VALUE
+queue_initialize(rb_execution_context_t *ec, VALUE self, VALUE initial)
+{
+    struct rb_queue *q = raw_queue_ptr(self);
+    ccan_list_head_init(&q->waitq);
+    if (NIL_P(initial)) {
+        ring_buffer_init(q, QUEUE_INITIAL_CAPA);
+    }
+    else {
+        initial = rb_to_array(initial);
+        long len = RARRAY_LEN(initial);
+        long initial_capa = QUEUE_INITIAL_CAPA;
+        while (initial_capa < len) {
+            initial_capa *= 2;
+        }
+        ring_buffer_init(q, initial_capa);
+        MEMCPY(q->buffer, RARRAY_CONST_PTR(initial), VALUE, len);
+        q->len = len;
     }
     return self;
 }
@@ -955,88 +967,13 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
 {
+    check_queue(self, q);
     if (queue_closed_p(self)) {
         raise_closed_queue_error(self);
     }
-    rb_ary_push(check_array(self, q->que), obj);
-    wakeup_one(queue_waitq(q));
+    ring_buffer_push(self, q, obj);
+    wakeup_one(&q->waitq);
     return self;
-}
-
-/*
- * Document-method: Thread::Queue#close
- * call-seq:
- *   close
- *
- * Closes the queue. A closed queue cannot be re-opened.
- *
- * After the call to close completes, the following are true:
- *
- * - +closed?+ will return true
- *
- * - +close+ will be ignored.
- *
- * - calling enq/push/<< will raise a +ClosedQueueError+.
- *
- * - when +empty?+ is false, calling deq/pop/shift will return an object
- *   from the queue as usual.
- * - when +empty?+ is true, deq(false) will not suspend the thread and will return nil.
- *   deq(true) will raise a +ThreadError+.
- *
- * ClosedQueueError is inherited from StopIteration, so that you can break loop block.
- *
- * Example:
- *
- *    	q = Thread::Queue.new
- *      Thread.new{
- *        while e = q.deq # wait for nil to break loop
- *          # ...
- *        end
- *      }
- *      q.close
- */
-
-static VALUE
-rb_queue_close(VALUE self)
-{
-    struct rb_queue *q = queue_ptr(self);
-
-    if (!queue_closed_p(self)) {
-        FL_SET(self, QUEUE_CLOSED);
-
-        wakeup_all(queue_waitq(q));
-    }
-
-    return self;
-}
-
-/*
- * Document-method: Thread::Queue#closed?
- * call-seq: closed?
- *
- * Returns +true+ if the queue is closed.
- */
-
-static VALUE
-rb_queue_closed_p(VALUE self)
-{
-    return RBOOL(queue_closed_p(self));
-}
-
-/*
- * Document-method: Thread::Queue#push
- * call-seq:
- *   push(object)
- *   enq(object)
- *   <<(object)
- *
- * Pushes the given +object+ to the queue.
- */
-
-static VALUE
-rb_queue_push(VALUE self, VALUE obj)
-{
-    return queue_do_push(self, queue_ptr(self), obj);
 }
 
 static VALUE
@@ -1077,12 +1014,11 @@ szqueue_sleep_done(VALUE p)
     return Qfalse;
 }
 
-static VALUE
-queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
+static inline VALUE
+queue_do_pop(rb_execution_context_t *ec, VALUE self, struct rb_queue *q, VALUE non_block, VALUE timeout)
 {
-    check_array(self, q->que);
-    if (RARRAY_LEN(q->que) == 0) {
-        if (!should_block) {
+    if (q->len == 0) {
+        if (RTEST(non_block)) {
             rb_raise(rb_eThreadError, "queue empty");
         }
 
@@ -1092,14 +1028,12 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
     }
 
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
-    while (RARRAY_LEN(q->que) == 0) {
+    while (q->len == 0) {
         if (queue_closed_p(self)) {
             return queue_closed_result(self, q);
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
-
-            RUBY_ASSERT(RARRAY_LEN(q->que) == 0);
+            RUBY_ASSERT(q->len == 0);
             RUBY_ASSERT(queue_closed_p(self) == 0);
 
             struct queue_waiter queue_waiter = {
@@ -1107,7 +1041,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
                 .as = {.q = q}
             };
 
-            struct ccan_list_head *waitq = queue_waitq(q);
+            struct ccan_list_head *waitq = &q->waitq;
 
             ccan_list_add_tail(waitq, &queue_waiter.w.node);
             queue_waiter.as.q->num_waiting++;
@@ -1124,116 +1058,32 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
         }
     }
 
-    return rb_ary_shift(q->que);
+    return ring_buffer_shift(q);
 }
 
 static VALUE
 rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
 {
-    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout);
+    return queue_do_pop(ec, self, queue_ptr(self), non_block, timeout);
 }
 
-/*
- * Document-method: Thread::Queue#empty?
- * call-seq: empty?
- *
- * Returns +true+ if the queue is empty.
- */
-
-static VALUE
-rb_queue_empty_p(VALUE self)
+static void
+queue_clear(struct rb_queue *q)
 {
-    return RBOOL(queue_length(self, queue_ptr(self)) == 0);
+    q->len = 0;
+    q->offset = 0;
 }
 
-/*
- * Document-method: Thread::Queue#clear
- *
- * Removes all objects from the queue.
- */
-
 static VALUE
-rb_queue_clear(VALUE self)
+szqueue_initialize(rb_execution_context_t *ec, VALUE self, VALUE vmax)
 {
-    struct rb_queue *q = queue_ptr(self);
+    long max = NUM2LONG(vmax);
+    struct rb_szqueue *sq = raw_szqueue_ptr(self);
 
-    rb_ary_clear(check_array(self, q->que));
-    return self;
-}
-
-/*
- * Document-method: Thread::Queue#length
- * call-seq:
- *   length
- *   size
- *
- * Returns the length of the queue.
- */
-
-static VALUE
-rb_queue_length(VALUE self)
-{
-    return LONG2NUM(queue_length(self, queue_ptr(self)));
-}
-
-NORETURN(static VALUE rb_queue_freeze(VALUE self));
-/*
- * call-seq:
- *   freeze
- *
- * The queue can't be frozen, so this method raises an exception:
- *   Thread::Queue.new.freeze # Raises TypeError (cannot freeze #<Thread::Queue:0x...>)
- *
- */
-static VALUE
-rb_queue_freeze(VALUE self)
-{
-    rb_raise(rb_eTypeError, "cannot freeze " "%+"PRIsVALUE, self);
-    UNREACHABLE_RETURN(self);
-}
-
-/*
- * Document-method: Thread::Queue#num_waiting
- *
- * Returns the number of threads waiting on the queue.
- */
-
-static VALUE
-rb_queue_num_waiting(VALUE self)
-{
-    struct rb_queue *q = queue_ptr(self);
-
-    return INT2NUM(q->num_waiting);
-}
-
-/*
- *  Document-class: Thread::SizedQueue
- *
- * This class represents queues of specified size capacity.  The push operation
- * may be blocked if the capacity is full.
- *
- * See Thread::Queue for an example of how a Thread::SizedQueue works.
- */
-
-/*
- * Document-method: SizedQueue::new
- * call-seq: new(max)
- *
- * Creates a fixed-length queue with a maximum size of +max+.
- */
-
-static VALUE
-rb_szqueue_initialize(VALUE self, VALUE vmax)
-{
-    long max;
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    max = NUM2LONG(vmax);
     if (max <= 0) {
         rb_raise(rb_eArgError, "queue size must be positive");
     }
-
-    RB_OBJ_WRITE(self, szqueue_list(sq), ary_buf_new());
+    ring_buffer_init(&sq->q, QUEUE_INITIAL_CAPA);
     ccan_list_head_init(szqueue_waitq(sq));
     ccan_list_head_init(szqueue_pushq(sq));
     sq->max = max;
@@ -1241,74 +1091,12 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
     return self;
 }
 
-/*
- * Document-method: Thread::SizedQueue#close
- * call-seq:
- *   close
- *
- * Similar to Thread::Queue#close.
- *
- * The difference is behavior with waiting enqueuing threads.
- *
- * If there are waiting enqueuing threads, they are interrupted by
- * raising ClosedQueueError('queue closed').
- */
-static VALUE
-rb_szqueue_close(VALUE self)
-{
-    if (!queue_closed_p(self)) {
-        struct rb_szqueue *sq = szqueue_ptr(self);
-
-        FL_SET(self, QUEUE_CLOSED);
-        wakeup_all(szqueue_waitq(sq));
-        wakeup_all(szqueue_pushq(sq));
-    }
-    return self;
-}
-
-/*
- * Document-method: Thread::SizedQueue#max
- *
- * Returns the maximum size of the queue.
- */
-
-static VALUE
-rb_szqueue_max_get(VALUE self)
-{
-    return LONG2NUM(szqueue_ptr(self)->max);
-}
-
-/*
- * Document-method: Thread::SizedQueue#max=
- * call-seq: max=(number)
- *
- * Sets the maximum size of the queue to the given +number+.
- */
-
-static VALUE
-rb_szqueue_max_set(VALUE self, VALUE vmax)
-{
-    long max = NUM2LONG(vmax);
-    long diff = 0;
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    if (max <= 0) {
-        rb_raise(rb_eArgError, "queue size must be positive");
-    }
-    if (max > sq->max) {
-        diff = max - sq->max;
-    }
-    sq->max = max;
-    sync_wakeup(szqueue_pushq(sq), diff);
-    return vmax;
-}
-
 static VALUE
 rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_block, VALUE timeout)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
 
-    if (queue_length(self, &sq->q) >= sq->max) {
+    if (sq->q.len >= sq->max) {
         if (RTEST(non_block)) {
             rb_raise(rb_eThreadError, "queue full");
         }
@@ -1319,12 +1107,11 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
     }
 
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
-    while (queue_length(self, &sq->q) >= sq->max) {
+    while (sq->q.len >= sq->max) {
         if (queue_closed_p(self)) {
             raise_closed_queue_error(self);
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
             struct queue_waiter queue_waiter = {
                 .w = {.self = self, .th = ec->thread_ptr, .fiber = nonblocking_fiber(ec->fiber_ptr)},
                 .as = {.sq = sq}
@@ -1351,173 +1138,23 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
 }
 
 static VALUE
-szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
+rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
-    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout);
+    VALUE retval = queue_do_pop(ec, self, &sq->q, non_block, timeout);
 
-    if (queue_length(self, &sq->q) < sq->max) {
+    if (sq->q.len < sq->max) {
         wakeup_one(szqueue_pushq(sq));
     }
 
     return retval;
 }
-static VALUE
-rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
-{
-    return szqueue_do_pop(self, !RTEST(non_block), timeout);
-}
-
-/*
- * Document-method: Thread::SizedQueue#clear
- *
- * Removes all objects from the queue.
- */
-
-static VALUE
-rb_szqueue_clear(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    rb_ary_clear(check_array(self, sq->q.que));
-    wakeup_all(szqueue_pushq(sq));
-    return self;
-}
-
-/*
- * Document-method: Thread::SizedQueue#length
- * call-seq:
- *   length
- *   size
- *
- * Returns the length of the queue.
- */
-
-static VALUE
-rb_szqueue_length(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    return LONG2NUM(queue_length(self, &sq->q));
-}
-
-/*
- * Document-method: Thread::SizedQueue#num_waiting
- *
- * Returns the number of threads waiting on the queue.
- */
-
-static VALUE
-rb_szqueue_num_waiting(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    return INT2NUM(sq->q.num_waiting + sq->num_waiting_push);
-}
-
-/*
- * Document-method: Thread::SizedQueue#empty?
- * call-seq: empty?
- *
- * Returns +true+ if the queue is empty.
- */
-
-static VALUE
-rb_szqueue_empty_p(VALUE self)
-{
-    struct rb_szqueue *sq = szqueue_ptr(self);
-
-    return RBOOL(queue_length(self, &sq->q) == 0);
-}
-
 
 /* ConditionalVariable */
 struct rb_condvar {
     struct ccan_list_head waitq;
     rb_serial_t fork_gen;
 };
-
-/*
- *  Document-class: Thread::ConditionVariable
- *
- *  ConditionVariable objects augment class Mutex. Using condition variables,
- *  it is possible to suspend while in the middle of a critical section until a
- *  condition is met, such as a resource becomes available.
- *
- *  Due to non-deterministic scheduling and spurious wake-ups, users of
- *  condition variables should always use a separate boolean predicate (such as
- *  reading from a boolean variable) to check if the condition is actually met
- *  before starting to wait, and should wait in a loop, re-checking the
- *  condition every time the ConditionVariable is waken up.  The idiomatic way
- *  of using condition variables is calling the +wait+ method in an +until+
- *  loop with the predicate as the loop condition.
- *
- *    condvar.wait(mutex) until condition_is_met
- *
- *  In the example below, we use the boolean variable +resource_available+
- *  (which is protected by +mutex+) to indicate the availability of the
- *  resource, and use +condvar+ to wait for that variable to become true.  Note
- *  that:
- *
- *  1.  Thread +b+ may be scheduled before thread +a1+ and +a2+, and may run so
- *      fast that it have already made the resource available before either
- *      +a1+ or +a2+ starts. Therefore, +a1+ and +a2+ should check if
- *      +resource_available+ is already true before starting to wait.
- *  2.  The +wait+ method may spuriously wake up without signalling. Therefore,
- *      thread +a1+ and +a2+ should recheck +resource_available+ after the
- *      +wait+ method returns, and go back to wait if the condition is not
- *      actually met.
- *  3.  It is possible that thread +a2+ starts right after thread +a1+ is waken
- *      up by +b+.  Thread +a2+ may have acquired the +mutex+ and consumed the
- *      resource before thread +a1+ acquires the +mutex+.  This necessitates
- *      rechecking after +wait+, too.
- *
- *  Example:
- *
- *    mutex = Thread::Mutex.new
- *
- *    resource_available = false
- *    condvar = Thread::ConditionVariable.new
- *
- *    a1 = Thread.new {
- *      # Thread 'a1' waits for the resource to become available and consumes
- *      # the resource.
- *      mutex.synchronize {
- *        condvar.wait(mutex) until resource_available
- *        # After the loop, 'resource_available' is guaranteed to be true.
- *
- *        resource_available = false
- *        puts "a1 consumed the resource"
- *      }
- *    }
- *
- *    a2 = Thread.new {
- *      # Thread 'a2' behaves like 'a1'.
- *      mutex.synchronize {
- *        condvar.wait(mutex) until resource_available
- *        resource_available = false
- *        puts "a2 consumed the resource"
- *      }
- *    }
- *
- *    b = Thread.new {
- *      # Thread 'b' periodically makes the resource available.
- *      loop {
- *        mutex.synchronize {
- *          resource_available = true
- *
- *          # Notify one waiting thread if any.  It is possible that neither
- *          # 'a1' nor 'a2 is waiting on 'condvar' at this moment.  That's OK.
- *          condvar.signal
- *        }
- *        sleep 1
- *      }
- *    }
- *
- *    # Eventually both 'a1' and 'a2' will have their resources, albeit in an
- *    # unspecified order.
- *    [a1, a2].each {|th| th.join}
- */
 
 static size_t
 condvar_memsize(const void *ptr)
@@ -1560,21 +1197,8 @@ condvar_alloc(VALUE klass)
     return obj;
 }
 
-/*
- * Document-method: ConditionVariable::new
- *
- * Creates a new condition variable instance.
- */
-
-static VALUE
-rb_condvar_initialize(VALUE self)
-{
-    struct rb_condvar *cv = condvar_ptr(self);
-    ccan_list_head_init(&cv->waitq);
-    return self;
-}
-
 struct sleep_call {
+    rb_execution_context_t *ec;
     VALUE mutex;
     VALUE timeout;
 };
@@ -1585,153 +1209,71 @@ static VALUE
 do_sleep(VALUE args)
 {
     struct sleep_call *p = (struct sleep_call *)args;
-    return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
+    if (CLASS_OF(p->mutex) == rb_cMutex) {
+        return rb_mut_sleep(p->ec, p->mutex, p->timeout);
+    }
+    else {
+        return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
+    }
 }
 
-/*
- * Document-method: Thread::ConditionVariable#wait
- * call-seq: wait(mutex, timeout=nil)
- *
- * Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
- *
- * If +timeout+ is given, this method returns after +timeout+ seconds passed,
- * even if no other thread doesn't signal.
- *
- * This method may wake up spuriously due to underlying implementation details.
- *
- * Returns the slept result on +mutex+.
- */
-
 static VALUE
-rb_condvar_wait(int argc, VALUE *argv, VALUE self)
+rb_condvar_wait(rb_execution_context_t *ec, VALUE self, VALUE mutex, VALUE timeout)
 {
-    rb_execution_context_t *ec = GET_EC();
-
     struct rb_condvar *cv = condvar_ptr(self);
-    struct sleep_call args;
-
-    rb_scan_args(argc, argv, "11", &args.mutex, &args.timeout);
+    struct sleep_call args = {
+        .ec = ec,
+        .mutex = mutex,
+        .timeout = timeout,
+    };
 
     struct sync_waiter sync_waiter = {
-        .self = args.mutex,
+        .self = mutex,
         .th = ec->thread_ptr,
         .fiber = nonblocking_fiber(ec->fiber_ptr)
     };
 
     ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
-    return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
+    return rb_ec_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 
-/*
- * Document-method: Thread::ConditionVariable#signal
- *
- * Wakes up the first thread in line waiting for this lock.
- */
-
 static VALUE
-rb_condvar_signal(VALUE self)
+rb_condvar_signal(rb_execution_context_t *ec, VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
     wakeup_one(&cv->waitq);
     return self;
 }
 
-/*
- * Document-method: Thread::ConditionVariable#broadcast
- *
- * Wakes up all threads waiting for this lock.
- */
-
 static VALUE
-rb_condvar_broadcast(VALUE self)
+rb_condvar_broadcast(rb_execution_context_t *ec, VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
     wakeup_all(&cv->waitq);
     return self;
 }
 
-NORETURN(static VALUE undumpable(VALUE obj));
-/* :nodoc: */
-static VALUE
-undumpable(VALUE obj)
-{
-    rb_raise(rb_eTypeError, "can't dump %"PRIsVALUE, rb_obj_class(obj));
-    UNREACHABLE_RETURN(Qnil);
-}
-
-static VALUE
-define_thread_class(VALUE outer, const ID name, VALUE super)
-{
-    VALUE klass = rb_define_class_id_under(outer, name, super);
-    rb_const_set(rb_cObject, name, klass);
-    return klass;
-}
-
 static void
 Init_thread_sync(void)
 {
-#undef rb_intern
-#if defined(TEACH_RDOC) && TEACH_RDOC == 42
-    rb_cMutex = rb_define_class_under(rb_cThread, "Mutex", rb_cObject);
-    rb_cConditionVariable = rb_define_class_under(rb_cThread, "ConditionVariable", rb_cObject);
-    rb_cQueue = rb_define_class_under(rb_cThread, "Queue", rb_cObject);
-    rb_cSizedQueue = rb_define_class_under(rb_cThread, "SizedQueue", rb_cObject);
-#endif
-
-#define DEFINE_CLASS(name, super) \
-    rb_c##name = define_thread_class(rb_cThread, rb_intern(#name), rb_c##super)
-
     /* Mutex */
-    DEFINE_CLASS(Mutex, Object);
+    rb_cMutex = rb_define_class_id_under(rb_cThread, rb_intern("Mutex"), rb_cObject);
     rb_define_alloc_func(rb_cMutex, mutex_alloc);
 
     /* Queue */
-    DEFINE_CLASS(Queue, Object);
+    VALUE rb_cQueue = rb_define_class_id_under_no_pin(rb_cThread, rb_intern("Queue"), rb_cObject);
     rb_define_alloc_func(rb_cQueue, queue_alloc);
 
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
 
-    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, -1);
-    rb_undef_method(rb_cQueue, "initialize_copy");
-    rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
-    rb_define_method(rb_cQueue, "close", rb_queue_close, 0);
-    rb_define_method(rb_cQueue, "closed?", rb_queue_closed_p, 0);
-    rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
-    rb_define_method(rb_cQueue, "empty?", rb_queue_empty_p, 0);
-    rb_define_method(rb_cQueue, "clear", rb_queue_clear, 0);
-    rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
-    rb_define_method(rb_cQueue, "num_waiting", rb_queue_num_waiting, 0);
-    rb_define_method(rb_cQueue, "freeze", rb_queue_freeze, 0);
-
-    rb_define_alias(rb_cQueue, "enq", "push");
-    rb_define_alias(rb_cQueue, "<<", "push");
-    rb_define_alias(rb_cQueue, "size", "length");
-
-    DEFINE_CLASS(SizedQueue, Queue);
+    VALUE rb_cSizedQueue = rb_define_class_id_under_no_pin(rb_cThread, rb_intern("SizedQueue"), rb_cQueue);
     rb_define_alloc_func(rb_cSizedQueue, szqueue_alloc);
 
-    rb_define_method(rb_cSizedQueue, "initialize", rb_szqueue_initialize, 1);
-    rb_define_method(rb_cSizedQueue, "close", rb_szqueue_close, 0);
-    rb_define_method(rb_cSizedQueue, "max", rb_szqueue_max_get, 0);
-    rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
-    rb_define_method(rb_cSizedQueue, "empty?", rb_szqueue_empty_p, 0);
-    rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
-    rb_define_method(rb_cSizedQueue, "length", rb_szqueue_length, 0);
-    rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
-    rb_define_alias(rb_cSizedQueue, "size", "length");
-
     /* CVar */
-    DEFINE_CLASS(ConditionVariable, Object);
+    VALUE rb_cConditionVariable = rb_define_class_id_under_no_pin(rb_cThread, rb_intern("ConditionVariable"), rb_cObject);
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
     id_sleep = rb_intern("sleep");
-
-    rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
-    rb_undef_method(rb_cConditionVariable, "initialize_copy");
-    rb_define_method(rb_cConditionVariable, "marshal_dump", undumpable, 0);
-    rb_define_method(rb_cConditionVariable, "wait", rb_condvar_wait, -1);
-    rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
-    rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
     rb_provide("thread.rb");
 }

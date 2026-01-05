@@ -303,6 +303,7 @@ pub enum Const {
     CUInt8(u8),
     CUInt16(u16),
     CUInt32(u32),
+    CShape(ShapeId),
     CUInt64(u64),
     CPtr(*const u8),
     CDouble(f64),
@@ -389,6 +390,7 @@ impl<'a> std::fmt::Display for ConstPrinter<'a> {
             // number than {:?} does and we don't know why.
             // We'll have to resolve that first.
             Const::CPtr(val) => write!(f, "CPtr({:?})", self.ptr_map.map_ptr(val)),
+            &Const::CShape(shape_id) => write!(f, "CShape({:p})", self.ptr_map.map_shape(shape_id)),
             _ => write!(f, "{:?}", self.inner),
         }
     }
@@ -468,7 +470,7 @@ impl PtrPrintMap {
     }
 
     /// Map shape ID into a pointer for printing
-    fn map_shape(&self, id: ShapeId) -> *const c_void {
+    pub fn map_shape(&self, id: ShapeId) -> *const c_void {
         self.map_ptr(id.0 as *const c_void)
     }
 }
@@ -731,6 +733,7 @@ pub enum Insn {
     ArrayLength { array: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
+    HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
 
     /// Allocate an instance of the `val` object without calling `#initialize` on it.
@@ -989,7 +992,8 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. }
+            | Insn::HashAset { .. } => false,
             _ => true,
         }
     }
@@ -1180,6 +1184,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
+            Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             &Insn::ObjectAllocClass { class, .. } => {
                 let class_name = get_class_name(class);
@@ -1292,9 +1297,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
+                let bf_name = unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap();
                 write!(f, "InvokeBuiltin{} {}",
                            if *leaf { " leaf" } else { "" },
-                           unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap())?;
+                           // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
+                           if bf_name.starts_with("_bi") { "<inline_expr>" } else { bf_name })?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1726,6 +1733,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
             let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
 
+            // Only inline if the local is a parameter (not a method-defined local) as we are indexing args.
+            let param_size = unsafe { rb_get_iseq_body_param_size(iseq) } as usize;
+            if local_idx >= param_size {
+                return None;
+            }
+
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx.try_into().unwrap()));
             }
@@ -2032,6 +2045,7 @@ impl Function {
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
+            &HashAset { hash, key, val, state } => HashAset { hash: find!(hash), key: find!(key), val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, recv, ref args, name, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, return_type, elidable },
@@ -2129,7 +2143,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -2140,6 +2154,7 @@ impl Function {
             Insn::Const { val: Const::CUInt8(val) } => Type::from_cint(types::CUInt8, *val as i64),
             Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
             Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
+            Insn::Const { val: Const::CShape(val) } => Type::from_cint(types::CShape, val.0 as i64),
             Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
             Insn::Const { val: Const::CPtr(val) } => Type::from_cptr(*val),
             Insn::Const { val: Const::CDouble(val) } => Type::from_double(*val),
@@ -3206,8 +3221,7 @@ impl Function {
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
-                            assert_eq!(SHAPE_ID_NUM_BITS, 32);
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CUInt32(next_shape_id.0) });
+                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
                             self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
                         }
@@ -4002,6 +4016,12 @@ impl Function {
                 worklist.push_back(key);
                 worklist.push_back(state);
             }
+            &Insn::HashAset { hash, key, val, state } => {
+                worklist.push_back(hash);
+                worklist.push_back(key);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendForward { recv, ref args, state, .. }
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
@@ -4697,7 +4717,8 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::Fixnum)
             }
             // Instructions with Hash operands
-            Insn::HashAref { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
+            Insn::HashAref { hash, .. }
+            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other
             Insn::ObjectAllocClass { class, .. } => {
@@ -4773,6 +4794,7 @@ impl Function {
                     Const::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
                     Const::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
                     Const::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
+                    Const::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
                     Const::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
                     Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
                     Const::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
@@ -5229,6 +5251,7 @@ fn unspecializable_c_call_type(flags: u32) -> bool {
 /// If a given call uses overly complex arguments, then we won't specialize.
 fn unspecializable_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
+    ((flags & VM_CALL_KW_SPLAT) != 0) ||
     ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
 }
 
@@ -5273,6 +5296,20 @@ impl ProfileOracle {
         }
         let self_type_distribution = &operand_types[0];
         entry.push((self_param, TypeDistributionSummary::new(self_type_distribution)))
+    }
+}
+
+fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
+    match opcode {
+        // Control-flow is non-leaf in the interpreter because it can execute arbitrary code on
+        // interrupt. But in the JIT, we side-exit if there is a pending interrupt.
+        YARVINSN_jump
+        | YARVINSN_branchunless
+        | YARVINSN_branchif
+        | YARVINSN_branchnil
+        | YARVINSN_leave => false,
+        // TODO(max): Read the invokebuiltin target from operands and determine if it's leaf
+        _ => unsafe { !rb_zjit_insn_leaf(opcode as i32, operands) }
     }
 }
 
@@ -5411,7 +5448,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
-            if unsafe { !rb_zjit_insn_leaf(opcode as i32, pc.offset(1)) } {
+            if invalidates_locals(opcode, unsafe { pc.offset(1) }) {
                 local_inval = true;
             }
 

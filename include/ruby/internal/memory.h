@@ -408,7 +408,8 @@ typedef uint128_t DSIZE_T;
 /**
  * @private
  *
- * This is an implementation detail of rbimpl_size_mul_overflow().
+ * This is an implementation detail of rbimpl_size_mul_overflow() and
+ * rbimpl_size_add_overflow().
  *
  * @internal
  *
@@ -416,9 +417,9 @@ typedef uint128_t DSIZE_T;
  * nothing more than std::variant<std::size_t> if  we could use recent C++, but
  * reality is we cannot.
  */
-struct rbimpl_size_mul_overflow_tag {
-    bool left;                  /**< Whether overflow happened or not. */
-    size_t right;               /**< Multiplication result. */
+struct rbimpl_size_overflow_tag {
+    bool overflowed;            /**< Whether overflow happened or not. */
+    size_t result;              /**< Calculation result. */
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -572,46 +573,46 @@ RBIMPL_ATTR_CONST()
  *
  * @param[in]  x  Arbitrary value.
  * @param[in]  y  Arbitrary value.
- * @return     `{ left, right }`,  where `left` is whether there  is an integer
- *             overflow or not,  and `right` is a  (possibly overflowed) result
- *             of `x` * `y`.
+ * @return     `{ overflowed, result }`, where  `overflowed` is whether there is
+ *             an  integer  overflow  or  not,   and  `result`  is  a  (possibly
+ *             overflowed) result of `x` * `y`.
  *
  * @internal
  *
  * This is in fact also an implementation detail of ruby_xmalloc2() etc.
  */
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 rbimpl_size_mul_overflow(size_t x, size_t y)
 {
-    struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
+    struct rbimpl_size_overflow_tag ret = { false,  0, };
 
 #if defined(ckd_mul)
-    ret.left = ckd_mul(&ret.right, x, y);
+    ret.overflowed = ckd_mul(&ret.result, x, y);
 
 #elif RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
-    ret.left = __builtin_mul_overflow(x, y, &ret.right);
+    ret.overflowed = __builtin_mul_overflow(x, y, &ret.result);
 
 #elif defined(DSIZE_T)
     RB_GNUC_EXTENSION DSIZE_T dx = x;
     RB_GNUC_EXTENSION DSIZE_T dy = y;
     RB_GNUC_EXTENSION DSIZE_T dz = dx * dy;
-    ret.left  = dz > SIZE_MAX;
-    ret.right = RBIMPL_CAST((size_t)dz);
+    ret.overflowed  = dz > SIZE_MAX;
+    ret.result = RBIMPL_CAST((size_t)dz);
 
 #elif defined(_MSC_VER) && defined(_M_AMD64)
     unsigned __int64 dp = 0;
     unsigned __int64 dz = _umul128(x, y, &dp);
-    ret.left  = RBIMPL_CAST((bool)dp);
-    ret.right = RBIMPL_CAST((size_t)dz);
+    ret.overflowed  = RBIMPL_CAST((bool)dp);
+    ret.result = RBIMPL_CAST((size_t)dz);
 
 #elif defined(_MSC_VER) && defined(_M_ARM64)
-    ret.left  = __umulh(x, y) != 0;
-    ret.right = x * y;
+    ret.overflowed  = __umulh(x, y) != 0;
+    ret.result = x * y;
 
 #else
     /* https://wiki.sei.cmu.edu/confluence/display/c/INT30-C.+Ensure+that+unsigned+integer+operations+do+not+wrap */
-    ret.left  = (y != 0) && (x > SIZE_MAX / y);
-    ret.right = x * y;
+    ret.overflowed  = (y != 0) && (x > SIZE_MAX / y);
+    ret.result = x * y;
 #endif
 
     return ret;
@@ -635,11 +636,11 @@ rbimpl_size_mul_overflow(size_t x, size_t y)
 static inline size_t
 rbimpl_size_mul_or_raise(size_t x, size_t y)
 {
-    struct rbimpl_size_mul_overflow_tag size =
+    struct rbimpl_size_overflow_tag size =
         rbimpl_size_mul_overflow(x, y);
 
-    if (RB_LIKELY(! size.left)) {
-        return size.right;
+    if (RB_LIKELY(! size.overflowed)) {
+        return size.result;
     }
     else {
         ruby_malloc_size_overflow(x, y);
@@ -662,33 +663,33 @@ RBIMPL_ATTR_CONST()
  *
  * @param[in]  x  Arbitrary value.
  * @param[in]  y  Arbitrary value.
- * @return     `{ left, right }`,  where `left` is whether there  is an integer
- *             overflow or not,  and `right` is a  (possibly overflowed) result
- *             of `x` + `y`.
+ * @return     `{ overflowed, result }`, where  `overflowed` is whether there is
+ *             an  integer  overflow  or  not,   and  `result`  is  a  (possibly
+ *             overflowed) result of `x` + `y`.
  *
  * @internal
  */
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 rbimpl_size_add_overflow(size_t x, size_t y)
 {
-    struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
+    struct rbimpl_size_overflow_tag ret = { false,  0, };
 
 #if defined(ckd_add)
-    ret.left = ckd_add(&ret.right, x, y);
+    ret.overflowed = ckd_add(&ret.result, x, y);
 
 #elif RBIMPL_HAS_BUILTIN(__builtin_add_overflow)
-    ret.left = __builtin_add_overflow(x, y, &ret.right);
+    ret.overflowed = __builtin_add_overflow(x, y, &ret.result);
 
 #elif defined(DSIZE_T)
     RB_GNUC_EXTENSION DSIZE_T dx = x;
     RB_GNUC_EXTENSION DSIZE_T dy = y;
     RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
-    ret.left = dz > SIZE_MAX;
-    ret.right = (size_t)dz;
+    ret.overflowed = dz > SIZE_MAX;
+    ret.result = (size_t)dz;
 
 #else
-    ret.right = x + y;
-    ret.left = ret.right < y;
+    ret.result = x + y;
+    ret.overflowed = ret.result < y;
 
 #endif
 
@@ -710,11 +711,11 @@ rbimpl_size_add_overflow(size_t x, size_t y)
 static inline size_t
 rbimpl_size_add_or_raise(size_t x, size_t y)
 {
-    struct rbimpl_size_mul_overflow_tag size =
+    struct rbimpl_size_overflow_tag size =
         rbimpl_size_add_overflow(x, y);
 
-    if (RB_LIKELY(!size.left)) {
-        return size.right;
+    if (RB_LIKELY(!size.overflowed)) {
+        return size.result;
     }
     else {
         ruby_malloc_add_size_overflow(x, y);

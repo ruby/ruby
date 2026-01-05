@@ -42,12 +42,13 @@ jobs:
           - ruby-3.2
           - ruby-3.3
           - ruby-3.4
+          - ruby-4.0
       fail-fast: false
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none

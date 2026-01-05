@@ -50,7 +50,7 @@ describe "Encoding.find" do
   end
 
   it "raises an ArgumentError if the given encoding does not exist" do
-    -> { Encoding.find('dh2dh278d') }.should raise_error(ArgumentError)
+    -> { Encoding.find('dh2dh278d') }.should raise_error(ArgumentError, 'unknown encoding name - dh2dh278d')
   end
 
   # Not sure how to do a better test, since locale depends on weird platform-specific stuff

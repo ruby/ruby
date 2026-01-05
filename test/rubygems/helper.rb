@@ -333,6 +333,7 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
     ENV["XDG_STATE_HOME"] = nil
+    ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
     ENV["BUNDLER_VERSION"] = nil
     ENV["BUNDLE_CONFIG"] = nil

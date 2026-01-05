@@ -1,13 +1,23 @@
 use crate::abi::GCThreadTLS;
 
 use crate::api::RubyMutator;
-use crate::{mmtk, upcalls, Ruby};
+use crate::heap::RubyHeapTrigger;
+use crate::mmtk;
+use crate::upcalls;
+use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
-use mmtk::util::{VMMutatorThread, VMThread, VMWorkerThread};
-use mmtk::vm::{Collection, GCThreadContext};
+use mmtk::util::heap::GCTriggerPolicy;
+use mmtk::util::VMMutatorThread;
+use mmtk::util::VMThread;
+use mmtk::util::VMWorkerThread;
+use mmtk::vm::Collection;
+use mmtk::vm::GCThreadContext;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread;
+
+static CURRENT_GC_MAY_MOVE: AtomicBool = AtomicBool::new(false);
 
 pub struct VMCollection {}
 
@@ -16,11 +26,21 @@ impl Collection<Ruby> for VMCollection {
         crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
     }
 
-    fn stop_all_mutators<F>(_tls: VMWorkerThread, mut mutator_visitor: F)
+    fn stop_all_mutators<F>(tls: VMWorkerThread, mut mutator_visitor: F)
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
         (upcalls().stop_the_world)();
+
+        if crate::mmtk().get_plan().current_gc_may_move_object() {
+            CURRENT_GC_MAY_MOVE.store(true, Ordering::Relaxed);
+            (upcalls().before_updating_jit_code)();
+        } else {
+            CURRENT_GC_MAY_MOVE.store(false, Ordering::Relaxed);
+        }
+
+        crate::binding().pinning_registry.pin_children(tls);
+
         (upcalls().get_mutators)(
             Self::notify_mutator_ready::<F>,
             &mut mutator_visitor as *mut F as *mut _,
@@ -28,6 +48,10 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn resume_mutators(_tls: VMWorkerThread) {
+        if CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed) {
+            (upcalls().after_updating_jit_code)();
+        }
+
         (upcalls().resume_mutators)();
     }
 
@@ -66,6 +90,10 @@ impl Collection<Ruby> for VMCollection {
 
     fn vm_live_bytes() -> usize {
         (upcalls().vm_live_bytes)()
+    }
+
+    fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {
+        Box::new(RubyHeapTrigger::default())
     }
 }
 

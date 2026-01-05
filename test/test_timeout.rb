@@ -54,6 +54,12 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_raise_for_string_argument
+    assert_raise(NoMethodError) do
+      Timeout.timeout("1") { sleep(0.01) }
+    end
+  end
+
   def test_included
     c = Class.new do
       include Timeout
@@ -427,9 +433,9 @@ class TestTimeout < Test::Unit::TestCase
 
     rd, wr = IO.pipe
 
-    signal = Signal.list["USR1"] ? :USR1 : :TERM
+    signal = :TERM
 
-    trap(signal) do
+    original_handler = trap(signal) do
       begin
         Timeout.timeout(0.1) do
           sleep 1
@@ -444,9 +450,13 @@ class TestTimeout < Test::Unit::TestCase
       end
     end
 
-    Process.kill signal, Process.pid
+    begin
+      Process.kill signal, Process.pid
 
-    assert_equal "OK", rd.read
-    rd.close
+      assert_equal "OK", rd.read
+      rd.close
+    ensure
+      trap(signal, original_handler)
+    end
   end
 end

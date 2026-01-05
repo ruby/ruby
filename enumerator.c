@@ -221,6 +221,7 @@ struct yielder {
 struct producer {
     VALUE init;
     VALUE proc;
+    VALUE size;
 };
 
 typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
@@ -670,7 +671,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
-    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
+    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)rb_imemo_memo_new(memo, 0, 0));
 }
 
 /*
@@ -1229,6 +1230,24 @@ enumerator_inspect(VALUE obj)
  *   (1..100).to_a.permutation(4).size # => 94109400
  *   loop.size # => Float::INFINITY
  *   (1..100).drop_while.size # => nil
+ *
+ * Note that enumerator size might be inaccurate, and should be rather treated as a hint.
+ * For example, there is no check that the size provided to ::new is accurate:
+ *
+ *   e = Enumerator.new(5) { |y| 2.times { y << it} }
+ *   e.size # => 5
+ *   e.to_a.size # => 2
+ *
+ * Another example is an enumerator created by ::produce without a +size+ argument.
+ * Such enumerators return +Infinity+ for size, but this is inaccurate if the passed
+ * block raises StopIteration:
+ *
+ *   e = Enumerator.produce(1) { it + 1 }
+ *   e.size # => Infinity
+ *
+ *   e = Enumerator.produce(1) { it > 3 ? raise(StopIteration) : it + 1 }
+ *   e.size # => Infinity
+ *   e.to_a.size # => 4
  */
 
 static VALUE
@@ -1594,7 +1613,7 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
     VALUE memos = rb_attr_get(yielder, id_memo);
     struct MEMO *result;
 
-    result = MEMO_NEW(m, rb_enum_values_pack(argc, argv),
+    result = rb_imemo_memo_new(m, rb_enum_values_pack(argc, argv),
                       argc > 1 ? LAZY_MEMO_PACKED : 0);
     return lazy_yielder_result(result, yielder, procs_array, memos, 0);
 }
@@ -2876,6 +2895,7 @@ producer_mark_and_move(void *p)
     struct producer *ptr = p;
     rb_gc_mark_and_move(&ptr->init);
     rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->size);
 }
 
 #define producer_free RUBY_TYPED_DEFAULT_FREE
@@ -2919,12 +2939,13 @@ producer_allocate(VALUE klass)
     obj = TypedData_Make_Struct(klass, struct producer, &producer_data_type, ptr);
     ptr->init = Qundef;
     ptr->proc = Qundef;
+    ptr->size = Qnil;
 
     return obj;
 }
 
 static VALUE
-producer_init(VALUE obj, VALUE init, VALUE proc)
+producer_init(VALUE obj, VALUE init, VALUE proc, VALUE size)
 {
     struct producer *ptr;
 
@@ -2936,6 +2957,7 @@ producer_init(VALUE obj, VALUE init, VALUE proc)
 
     RB_OBJ_WRITE(obj, &ptr->init, init);
     RB_OBJ_WRITE(obj, &ptr->proc, proc);
+    RB_OBJ_WRITE(obj, &ptr->size, size);
 
     return obj;
 }
@@ -2986,12 +3008,18 @@ producer_each(VALUE obj)
 static VALUE
 producer_size(VALUE obj, VALUE args, VALUE eobj)
 {
-    return DBL2NUM(HUGE_VAL);
+    struct producer *ptr = producer_ptr(obj);
+    VALUE size = ptr->size;
+
+    if (NIL_P(size)) return Qnil;
+    if (RB_INTEGER_TYPE_P(size) || RB_FLOAT_TYPE_P(size)) return size;
+
+    return rb_funcall(size, id_call, 0);
 }
 
 /*
  * call-seq:
- *    Enumerator.produce(initial = nil) { |prev| block } -> enumerator
+ *    Enumerator.produce(initial = nil, size: nil) { |prev| block } -> enumerator
  *
  * Creates an infinite enumerator from any block, just called over and
  * over.  The result of the previous iteration is passed to the next one.
@@ -3023,19 +3051,50 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   PATTERN = %r{\d+|[-/+*]}
  *   Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
  *   # => ["7", "+", "38", "/", "6"]
+ *
+ * The optional +size+ keyword argument specifies the size of the enumerator,
+ * which can be retrieved by Enumerator#size.  It can be an integer,
+ * +Float::INFINITY+, a callable object (such as a lambda), or +nil+ to
+ * indicate unknown size.  When not specified, the size defaults to
+ * +Float::INFINITY+.
+ *
+ *   # Infinite enumerator
+ *   enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
+ *   enum.size  # => Float::INFINITY
+ *
+ *   # Finite enumerator with known/computable size
+ *   abs_dir = File.expand_path("./baz") # => "/foo/bar/baz"
+ *   traverser = Enumerator.produce(abs_dir, size: -> { abs_dir.count("/") + 1 }) {
+ *     raise StopIteration if it == "/"
+ *     File.dirname(it)
+ *   }
+ *   traverser.size  # => 4
+ *
+ *   # Finite enumerator with unknown size
+ *   calendar = Enumerator.produce(Date.today, size: nil) {
+ *     it.monday? ? raise(StopIteration) : it + 1
+ *   }
+ *   calendar.size  # => nil
  */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE init, producer;
+    VALUE init, producer, opts, size;
+    ID keyword_ids[1];
 
     if (!rb_block_given_p()) rb_raise(rb_eArgError, "no block given");
 
-    if (rb_scan_args(argc, argv, "01", &init) == 0) {
+    keyword_ids[0] = rb_intern("size");
+    rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "01:", &init, &opts);
+    rb_get_kwargs(opts, keyword_ids, 0, 1, &size);
+
+    size = UNDEF_P(size) ? DBL2NUM(HUGE_VAL) : convert_to_feasible_size_value(size);
+
+    if (argc == 0 || (argc == 1 && !NIL_P(opts))) {
         init = Qundef;
     }
 
-    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc());
+    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc(), size);
 
     return rb_enumeratorize_with_size_kw(producer, sym_each, 0, 0, producer_size, RB_NO_KEYWORDS);
 }
@@ -3333,24 +3392,6 @@ enumerator_plus(VALUE obj, VALUE eobj)
 }
 
 /*
- * call-seq:
- *   e.to_set -> set
- *
- * Returns a set generated from this enumerator.
- *
- *   e = Enumerator.new { |y| y << 1 << 1 << 2 << 3 << 5 }
- *   e.to_set #=> #<Set: {1, 2, 3, 5}>
- */
-static VALUE enumerator_to_set(int argc, VALUE *argv, VALUE obj)
-{
-    VALUE size = rb_funcall(obj, id_size, 0);
-    if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
-        rb_raise(rb_eArgError, "cannot convert an infinite enumerator to a set");
-    }
-    return rb_call_super(argc, argv);
-}
-
-/*
  * Document-class: Enumerator::Product
  *
  * Enumerator::Product generates a Cartesian product of any number of
@@ -3540,9 +3581,9 @@ enum_product_enum_size(VALUE obj, VALUE args, VALUE eobj)
 struct product_state {
     VALUE  obj;
     VALUE  block;
+    int    index;
     int    argc;
     VALUE *argv;
-    int    index;
 };
 
 static VALUE product_each(VALUE, struct product_state *);
@@ -3581,15 +3622,23 @@ enum_product_run(VALUE obj, VALUE block)
 {
     struct enum_product *ptr = enum_product_ptr(obj);
     int argc = RARRAY_LENINT(ptr->enums);
+    if (argc == 0) { /* no need to allocate state.argv */
+        rb_funcall(block, id_call, 1, rb_ary_new());
+        return obj;
+    }
+
+    VALUE argsbuf = 0;
     struct product_state state = {
         .obj = obj,
         .block = block,
         .index = 0,
         .argc = argc,
-        .argv = ALLOCA_N(VALUE, argc),
+        .argv = ALLOCV_N(VALUE, argsbuf, argc),
     };
 
-    return product_each(obj, &state);
+    VALUE ret = product_each(obj, &state);
+    ALLOCV_END(argsbuf);
+    return ret;
 }
 
 /*
@@ -4506,7 +4555,6 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
     rb_define_method(rb_cEnumerator, "size", enumerator_size, 0);
-    rb_define_method(rb_cEnumerator, "to_set", enumerator_to_set, -1);
     rb_define_method(rb_cEnumerator, "+", enumerator_plus, 1);
     rb_define_method(rb_mEnumerable, "chain", enum_chain, -1);
 

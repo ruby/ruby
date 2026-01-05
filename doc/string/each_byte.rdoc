@@ -5,9 +5,6 @@ returns +self+:
   'hello'.each_byte {|byte| a.push(byte) }     # Five 1-byte characters.
   a # => [104, 101, 108, 108, 111]
   a = []
-  'тест'.each_byte {|byte| a.push(byte) }      # Four 2-byte characters.
-  a # => [209, 130, 208, 181, 209, 129, 209, 130]
-  a = []
   'こんにちは'.each_byte {|byte| a.push(byte) }  # Five 3-byte characters.
   a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
 

@@ -7,11 +7,11 @@ describe "Module#ancestors" do
     ModuleSpecs.ancestors.should == [ModuleSpecs]
     ModuleSpecs::Basic.ancestors.should == [ModuleSpecs::Basic]
     ModuleSpecs::Super.ancestors.should == [ModuleSpecs::Super, ModuleSpecs::Basic]
-    if defined?(Namespace) && Namespace.enabled?
+    if defined?(Ruby::Box) && Ruby::Box.enabled?
       ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
-        [ModuleSpecs::Parent, Object, Namespace::Loader, Kernel, BasicObject]
+        [ModuleSpecs::Parent, Object, Ruby::Box::Loader, Kernel, BasicObject]
       ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
-        [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Namespace::Loader, Kernel, BasicObject]
+        [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Ruby::Box::Loader, Kernel, BasicObject]
     else
       ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
         [ModuleSpecs::Parent, Object, Kernel, BasicObject]

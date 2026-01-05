@@ -922,6 +922,9 @@ rb_f_raise(int argc, VALUE *argv)
  *  With argument +exception+ not given,
  *  argument +message+ and keyword argument +cause+ may be given,
  *  but argument +backtrace+ may not be given.
+ *
+ *  +cause+ can not be given as an only argument.
+ *
  */
 
 static VALUE

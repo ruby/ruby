@@ -453,7 +453,7 @@ class VCS
                    #{url.to_str} -- version.h include/ruby/version.h])
     end
 
-    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: nil)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: true)
       from, to = [from, to].map do |rev|
         rev or next
         rev unless rev.empty?
@@ -476,6 +476,7 @@ class VCS
         arg = ["--since=25 Dec 00:00:00", to]
       end
       if base_url == true
+        env = CHANGELOG_ENV
         remote, = upstream
         if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
           remote.chomp!
@@ -494,9 +495,10 @@ class VCS
     end
 
     LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
+    CHANGELOG_ENV = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
 
     def changelog_formatter(path, arg, base_url = nil)
-      env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
+      env = CHANGELOG_ENV
       cmd = %W[#{COMMAND} log
         --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges
         --fixed-strings --invert-grep --grep=[ci\ skip] --grep=[skip\ ci]

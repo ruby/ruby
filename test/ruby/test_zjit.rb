@@ -28,7 +28,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats_quiet
-    # Test that --zjit-stats=quiet collects stats but doesn't print them
+    # Test that --zjit-stats-quiet collects stats but doesn't print them
     script = <<~RUBY
       def test = 42
       test
@@ -44,11 +44,24 @@ class TestZJIT < Test::Unit::TestCase
     assert_includes(err, stats_header)
     assert_equal("true\n", out)
 
-    # With --zjit-stats=quiet, stats should NOT be printed but still enabled
+    # With --zjit-stats-quiet, stats should NOT be printed but still enabled
     out, err, status = eval_with_jit(script, stats: :quiet)
     assert_success(out, err, status)
     refute_includes(err, stats_header)
     assert_equal("true\n", out)
+
+    # With --zjit-stats=<path>, stats should be printed to the path
+    Tempfile.create("zjit-stats-") {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+      assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
+    }
   end
 
   def test_enable_through_env
@@ -88,7 +101,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_zjit_enable_respects_existing_options
-    assert_separately(['--zjit-disable', '--zjit-stats=quiet'], <<~RUBY)
+    assert_separately(['--zjit-disable', '--zjit-stats-quiet'], <<~RUBY)
       refute_predicate RubyVM::ZJIT, :enabled?
       assert_predicate RubyVM::ZJIT, :stats_enabled?
 
@@ -338,6 +351,36 @@ class TestZJIT < Test::Unit::TestCase
       end
       test(3)
     }
+  end
+
+  def test_return_nonparam_local
+    # Use dead code (if false) to create a local without initialization instructions.
+    assert_compiles 'nil', %q{
+      def foo(a)
+        if false
+          x = nil
+        end
+        x
+      end
+      def test = foo(1)
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_nonparam_local_nil_in_jit_call
+    # Non-parameter locals must be initialized to nil in JIT-to-JIT calls.
+    # Use dead code (if false) to create locals without initialization instructions.
+    # Then eval a string that accesses the uninitialized locals.
+    assert_compiles '["x", "x", "x", "x"]', %q{
+      def f(a)
+        a ||= 1
+        if false; b = 1; end
+        eval("-> { p 'x#{b}' }")
+      end
+
+      4.times.map { f(1).call }
+    }, call_threshold: 2
   end
 
   def test_setlocal_on_eval
@@ -621,6 +664,15 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '"a b c d {kwargs: :e}"', %q{
       def test(a:, b:, c:, d:, e:) = sprintf("%s %s %s %s %s", a, b, c, d, kwargs: e)
       def entry = test(e: :e, d: :d, c: :c, a: :a, b: :b)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwsplat
+    assert_compiles '3', %q{
+      def test(a:) = a
+      def entry = test(**{a: 3})
       entry
       entry
     }, call_threshold: 2
@@ -1418,6 +1470,77 @@ class TestZJIT < Test::Unit::TestCase
       def test = {}.freeze
       test
     }, insns: [:opt_hash_freeze], call_threshold: 1
+  end
+
+  def test_opt_aset_hash
+    assert_compiles '42', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_opt_aset_hash_returns_value
+    assert_compiles '100', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      test({}, :key, 100)
+      test({}, :key, 100)
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_string_key
+    assert_compiles '"bar"', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, "foo", "bar")
+      test(h, "foo", "bar")
+      h["foo"]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_subclass
+    assert_compiles '42', %q{
+      class MyHash < Hash; end
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = MyHash.new
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_few_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h.[]= 123
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_many_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h[:a, :b] = :c
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
   end
 
   def test_opt_ary_freeze
@@ -3622,7 +3745,14 @@ class TestZJIT < Test::Unit::TestCase
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
-      args << "--zjit-stats#{"=#{stats}" unless stats == true}" if stats
+      case stats
+      when true
+        args << "--zjit-stats"
+      when :quiet
+        args << "--zjit-stats-quiet"
+      else
+        args << "--zjit-stats=#{stats}" if stats
+      end
       args << "--zjit-debug" if debug
       if allowed_iseqs
         jitlist = Tempfile.new("jitlist")

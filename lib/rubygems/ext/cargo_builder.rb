@@ -15,7 +15,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   end
 
   def build(extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd,
-    target_rbconfig = Gem.target_rbconfig)
+    target_rbconfig = Gem.target_rbconfig, n_jobs: nil)
     require "tempfile"
     require "fileutils"
 

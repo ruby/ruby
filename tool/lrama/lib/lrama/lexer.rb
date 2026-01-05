@@ -1,3 +1,4 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 require "strscan"
@@ -8,10 +9,26 @@ require_relative "lexer/token"
 
 module Lrama
   class Lexer
-    attr_reader :head_line, :head_column, :line
-    attr_accessor :status, :end_symbol
+    # @rbs!
+    #
+    #   type token = lexer_token | c_token
+    #
+    #   type lexer_token = [String, Token::Token]  |
+    #                      [::Symbol, Token::Tag]  |
+    #                      [::Symbol, Token::Char] |
+    #                      [::Symbol, Token::Str]  |
+    #                      [::Symbol, Token::Int]  |
+    #                      [::Symbol, Token::Ident]
+    #
+    #   type c_token = [:C_DECLARATION, Token::UserCode]
 
-    SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';'].freeze
+    attr_reader :head_line #: Integer
+    attr_reader :head_column #: Integer
+    attr_reader :line #: Integer
+    attr_accessor :status #: :initial | :c_declaration
+    attr_accessor :end_symbol #: String?
+
+    SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';'].freeze #: Array[String]
     PERCENT_TOKENS = %w(
       %union
       %token
@@ -42,8 +59,11 @@ module Lrama
       %no-stdlib
       %inline
       %locations
-    ).freeze
+      %categories
+      %start
+    ).freeze #: Array[String]
 
+    # @rbs (GrammarFile grammar_file) -> void
     def initialize(grammar_file)
       @grammar_file = grammar_file
       @scanner = StringScanner.new(grammar_file.text)
@@ -53,6 +73,7 @@ module Lrama
       @end_symbol = nil
     end
 
+    # @rbs () -> token?
     def next_token
       case @status
       when :initial
@@ -62,10 +83,12 @@ module Lrama
       end
     end
 
+    # @rbs () -> Integer
     def column
       @scanner.pos - @head
     end
 
+    # @rbs () -> Location
     def location
       Location.new(
         grammar_file: @grammar_file,
@@ -74,13 +97,14 @@ module Lrama
       )
     end
 
+    # @rbs () -> lexer_token?
     def lex_token
       until @scanner.eos? do
         case
         when @scanner.scan(/\n/)
           newline
         when @scanner.scan(/\s+/)
-          # noop
+          @scanner.matched.count("\n").times { newline }
         when @scanner.scan(/\/\*/)
           lex_comment
         when @scanner.scan(/\/\/.*(?<newline>\n)?/)
@@ -96,11 +120,11 @@ module Lrama
       when @scanner.eos?
         return
       when @scanner.scan(/#{SYMBOLS.join('|')}/)
-        return [@scanner.matched, @scanner.matched]
+        return [@scanner.matched, Lrama::Lexer::Token::Token.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/#{PERCENT_TOKENS.join('|')}/)
-        return [@scanner.matched, @scanner.matched]
+        return [@scanner.matched, Lrama::Lexer::Token::Token.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/[\?\+\*]/)
-        return [@scanner.matched, @scanner.matched]
+        return [@scanner.matched, Lrama::Lexer::Token::Token.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/<\w+>/)
         return [:TAG, Lrama::Lexer::Token::Tag.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/'.'/)
@@ -108,9 +132,9 @@ module Lrama
       when @scanner.scan(/'\\\\'|'\\b'|'\\t'|'\\f'|'\\r'|'\\n'|'\\v'|'\\13'/)
         return [:CHARACTER, Lrama::Lexer::Token::Char.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/".*?"/)
-        return [:STRING, %Q(#{@scanner.matched})]
+        return [:STRING, Lrama::Lexer::Token::Str.new(s_value: %Q(#{@scanner.matched}), location: location)]
       when @scanner.scan(/\d+/)
-        return [:INTEGER, Integer(@scanner.matched)]
+        return [:INTEGER, Lrama::Lexer::Token::Int.new(s_value: Integer(@scanner.matched), location: location)]
       when @scanner.scan(/([a-zA-Z_.][-a-zA-Z0-9_.]*)/)
         token = Lrama::Lexer::Token::Ident.new(s_value: @scanner.matched, location: location)
         type =
@@ -121,51 +145,53 @@ module Lrama
           end
         return [type, token]
       else
-        raise ParseError, "Unexpected token: #{@scanner.peek(10).chomp}."
+        raise ParseError, location.generate_error_message("Unexpected token") # steep:ignore UnknownConstant
       end
     end
 
+    # @rbs () -> c_token
     def lex_c_code
       nested = 0
-      code = ''
+      code = +''
       reset_first_position
 
       until @scanner.eos? do
         case
         when @scanner.scan(/{/)
-          code += @scanner.matched
+          code << @scanner.matched
           nested += 1
         when @scanner.scan(/}/)
           if nested == 0 && @end_symbol == '}'
             @scanner.unscan
             return [:C_DECLARATION, Lrama::Lexer::Token::UserCode.new(s_value: code, location: location)]
           else
-            code += @scanner.matched
+            code << @scanner.matched
             nested -= 1
           end
         when @scanner.check(/#{@end_symbol}/)
           return [:C_DECLARATION, Lrama::Lexer::Token::UserCode.new(s_value: code, location: location)]
         when @scanner.scan(/\n/)
-          code += @scanner.matched
+          code << @scanner.matched
           newline
         when @scanner.scan(/".*?"/)
-          code += %Q(#{@scanner.matched})
+          code << %Q(#{@scanner.matched})
           @line += @scanner.matched.count("\n")
         when @scanner.scan(/'.*?'/)
-          code += %Q(#{@scanner.matched})
+          code << %Q(#{@scanner.matched})
         when @scanner.scan(/[^\"'\{\}\n]+/)
-          code += @scanner.matched
-        when @scanner.scan(/#{Regexp.escape(@end_symbol)}/)
-          code += @scanner.matched
+          code << @scanner.matched
+        when @scanner.scan(/#{Regexp.escape(@end_symbol)}/) # steep:ignore
+          code << @scanner.matched
         else
-          code += @scanner.getch
+          code << @scanner.getch
         end
       end
-      raise ParseError, "Unexpected code: #{code}."
+      raise ParseError, location.generate_error_message("Unexpected code: #{code}") # steep:ignore UnknownConstant
     end
 
     private
 
+    # @rbs () -> void
     def lex_comment
       until @scanner.eos? do
         case
@@ -178,11 +204,13 @@ module Lrama
       end
     end
 
+    # @rbs () -> void
     def reset_first_position
       @head_line = line
       @head_column = column
     end
 
+    # @rbs () -> void
     def newline
       @line += 1
       @head = @scanner.pos

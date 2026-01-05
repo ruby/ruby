@@ -674,6 +674,7 @@ st_free_table(st_table *tab)
 size_t
 st_memsize(const st_table *tab)
 {
+    RUBY_ASSERT(tab != NULL);
     return(sizeof(st_table)
            + (tab->bins == NULL ? 0 : bins_size(tab))
            + get_allocated_entries(tab) * sizeof(st_table_entry));

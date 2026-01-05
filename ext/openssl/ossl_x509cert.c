@@ -671,6 +671,12 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
  *
  * Compares the two certificates. Note that this takes into account all fields,
  * not just the issuer name and the serial number.
+ *
+ * This method uses X509_cmp() from OpenSSL, which compares certificates based
+ * on their cached DER encodings. The comparison can be unreliable if a
+ * certificate is incomplete.
+ *
+ * See also the man page X509_cmp(3).
  */
 static VALUE
 ossl_x509_eq(VALUE self, VALUE other)

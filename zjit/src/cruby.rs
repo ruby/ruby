@@ -681,6 +681,14 @@ impl VALUE {
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
     }
+
+    /// Call the write barrier after separately writing val to self.
+    pub fn write_barrier(self, val: VALUE) {
+        // rb_gc_writebarrier() asserts it is not called with a special constant
+        if !val.special_const_p() {
+            unsafe { rb_gc_writebarrier(self, val) };
+        }
+    }
 }
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
@@ -1064,12 +1072,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
     pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
     pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
-
-    // Constants from rb_execution_context_t vm_core.h
-    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
 
     // Constants from rb_thread_t in vm_core.h
     pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;

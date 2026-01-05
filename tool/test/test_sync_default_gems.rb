@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'stringio'
 require 'tmpdir'
+require 'rubygems/version'
 require_relative '../sync_default_gems'
 
 module Test_SyncDefaultGems
@@ -319,9 +320,13 @@ module Test_SyncDefaultGems
     end
 
     def test_squash_merge
-      if RUBY_PLATFORM =~ /s390x/
-        omit("git 2.43.0 bug on s390x ubuntu 24.04: BUG: log-tree.c:1058: did a remerge diff without remerge_objdir?!?")
-      end
+      # This test is known to fail with git 2.43.0, which is used by Ubuntu 24.04.
+      # We don't know which exact version fixed it, but we know git 2.52.0 works.
+      stdout, status = Open3.capture2('git', '--version', err: File::NULL)
+      omit 'git version check failed' unless status.success?
+      git_version = stdout[/\Agit version \K\S+/]
+      omit "git #{git_version} is too old" if Gem::Version.new(git_version) < Gem::Version.new('2.44.0')
+
       #   2---.   <- branch
       #  /     \
       # 1---3---3'<- merge commit with conflict resolution

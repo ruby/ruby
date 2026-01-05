@@ -523,6 +523,13 @@ variable is not defined, Ruby refers to
 If set, Ruby tries to free all dynamically allocated memories.
 Introduced in Ruby 3.3, default: unset.
 .Pp
+.It Ev RUBY_BOX
+If set to
+.Li 1 ,
+Ruby Box is enabled and users will be able to execute
+.Li Ruby::Box.new .
+Ruby Box is an experimental feature introduced in Ruby 4.0.
+.Pp
 .It Ev RUBY_IO_BUFFER_DEFAULT_SIZE
 The custom default buffer size of
 .Li IO::Buffer .

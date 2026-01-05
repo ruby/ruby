@@ -1,39 +1,38 @@
-# Ractor - Ruby's Actor-like concurrent abstraction
+# Ractor - Ruby's Actor-like concurrency abstraction
 
-Ractor is designed to provide a parallel execution feature of Ruby without thread-safety concerns.
+Ractors are designed to provide parallel execution of Ruby code without thread-safety concerns.
 
 ## Summary
 
-### Multiple Ractors in an interpreter process
+### Multiple Ractors in a ruby process
 
-You can make multiple Ractors and they run in parallel.
+You can create multiple Ractors which can run ruby code in parallel with each other.
 
-* `Ractor.new{ expr }` creates a new Ractor and `expr` is run in parallel on a parallel computer.
-* Interpreter invokes with the first Ractor (called *main Ractor*).
-* If the main Ractor terminates, all other Ractors receive termination requests, similar to how threads behave. (if main thread (first invoked Thread), Ruby interpreter sends all running threads to terminate execution).
-* Each Ractor contains one or more Threads.
-  * Threads within the same Ractor share a Ractor-wide global lock like GIL (GVL in MRI terminology), so they can't run in parallel (without releasing GVL explicitly in C-level). Threads in different ractors run in parallel.
-  * The overhead of creating a Ractor is similar to overhead of one Thread creation.
+* `Ractor.new{ expr }` creates a new Ractor and `expr` can run in parallel with other ractors on a multi-core computer.
+* Ruby processes start with one ractor (called the *main ractor*).
+* If the main ractor terminates, all other ractors receive termination requests, similar to how threads behave.
+* Each Ractor contains one or more `Thread`s.
+  * Threads within the same ractor share a ractor-wide global lock (GVL in MRI terminology), so they can't run in parallel wich each other (without releasing the GVL explicitly in C extensions). Threads in different ractors can run in parallel.
+  * The overhead of creating a ractor is slightly above the overhead of creating a thread.
 
-### Limited sharing between multiple ractors
+### Limited sharing between Ractors
 
-Ractors don't share everything, unlike threads.
+Ractors don't share all objects, unlike threads which can access any object other than objects stored in another thread's thread-locals.
 
-* Most objects are *Unshareable objects*, so you don't need to care about thread-safety problems which are caused by sharing.
-* Some objects are *Shareable objects*.
-  * Immutable objects: frozen objects which don't refer to unshareable-objects.
-    * `i = 123`: `i` is an immutable object.
-    * `s = "str".freeze`: `s` is an immutable object.
-    * `a = [1, [2], 3].freeze`: `a` is not an immutable object because `a` refers unshareable-object `[2]` (which is not frozen).
-    * `h = {c: Object}.freeze`: `h` is an immutable object because `h` refers Symbol `:c` and shareable `Object` class object which is not frozen.
-  * Class/Module objects
+* Most objects are *unshareable objects*. Unshareable objects can only be used by the ractor that instantiated them, so you don't need to worry about thread-safety issues resulting from using the object concurrently across ractors.
+* Some objects are *shareable objects*. Here is an incomplete list to give you an idea:
+  * `i = 123`: All `Integer`s are shareable.
+  * `s = "str".freeze`: Frozen strings are shareable if they have no instance variables that refer to unshareable objects.
+  * `a = [1, [2], 3].freeze`: `a` is not a shareable object because `a` refers to the unshareable object `[2]` (this Array is not frozen).
+  * `h = {c: Object}.freeze`: `h` is shareable because `Symbol`s and `Class`es are shareable, and the Hash is frozen.
+  * Class/Module objects are always shareable, even if they refer to unshareable objects.
   * Special shareable objects
-    * Ractor object itself.
+    * Ractor objects themselves are shareable.
     * And more...
 
 ### Communication between Ractors with `Ractor::Port`
 
-Ractors communicate with each other and synchronize the execution by message exchanging between Ractors. `Ractor::Port` is provided for this communication.
+Ractors communicate with each other and synchronize their execution by exchanging messages. The `Ractor::Port` class provides this communication mechanism.
 
 ```ruby
 port = Ractor::Port.new
@@ -43,72 +42,64 @@ Ractor.new port do |port|
   port << 42
 end
 
-port.receive # get a message to the port. Only the creator Ractor can receive from the port
+port.receive # get a message from the port. Only the ractor that created the Port can receive from it.
 #=> 42
 ```
 
-Ractors have its own default port and `Ractor#send`, `Ractor.receive` will use it.
+All Ractors have a default port, which `Ractor#send`, `Ractor.receive` (etc) will use.
 
-### Copy & Move semantics to send messages
+### Copy & Move semantics when sending objects
 
-To send unshareable objects as messages, objects are copied or moved.
+To send unshareable objects to another ractor, objects are either copied or moved.
 
-* Copy: use deep-copy.
-* Move: move membership.
-  * Sender can not access the moved object after moving the object.
-  * Guarantee that at least only 1 Ractor can access the object.
+* Copy: deep-copies the object to the other ractor. All unshareable objects will be `Kernel#clone`ed.
+* Move: moves membership to another ractor.
+  * The sending ractor can not access the moved object after it moves.
+  * There is a guarantee that only one ractor can access an unshareable object at once.
 
 ### Thread-safety
 
-Ractor helps to write a thread-safe concurrent program, but we can make thread-unsafe programs with Ractors.
+Ractors help to write thread-safe, concurrent programs. They allow sharing of data only through explicit message passing for
+unshareable objects. Shareable objects are guaranteed to work correctly across ractors, even if the ractors are running in parallel.
+This guarantee, however, only applies across ractors. You still need to use `Mutex`es and other thread-safety tools within a ractor if
+you're using multiple ruby `Thread`s.
 
-* GOOD: Sharing limitation
-  * Most objects are unshareable, so we can't make data-racy and race-conditional programs.
-  * Shareable objects are protected by an interpreter or locking mechanism.
-* BAD: Class/Module can violate this assumption
-  * To make it compatible with old behavior, classes and modules can introduce data-race and so on.
-  * Ruby programmers should take care if they modify class/module objects on multi Ractor programs.
-* BAD: Ractor can't solve all thread-safety problems
-  * There are several blocking operations (waiting send) so you can make a program which has dead-lock and live-lock issues.
-  * Some kind of shareable objects can introduce transactions (STM, for example). However, misusing transactions will generate inconsistent state.
-
-Without Ractor, we need to trace all state-mutations to debug thread-safety issues.
-With Ractor, you can concentrate on suspicious code which are shared with Ractors.
+  * Most objects are unshareable. You can't create data-races across ractors due to the inability to use these objects across ractors.
+  * Shareable objects are protected by locks (or otherwise don't need to be) so they can be used by more than one ractor at once.
 
 ## Creation and termination
 
 ### `Ractor.new`
 
-* `Ractor.new{ expr }` generates another Ractor.
+* `Ractor.new { expr }` creates a Ractor.
 
 ```ruby
-# Ractor.new with a block creates new Ractor
+# Ractor.new with a block creates a new Ractor
 r = Ractor.new do
-  # This block will be run in parallel with other ractors
+  # This block can run in parallel with other ractors
 end
 
-# You can name a Ractor with `name:` argument.
-r = Ractor.new name: 'test-name' do
+# You can name a Ractor with a `name:` argument.
+r = Ractor.new name: 'my-first-ractor' do
 end
 
-# and Ractor#name returns its name.
-r.name #=> 'test-name'
+r.name #=> 'my-first-ractor'
 ```
 
-### Given block isolation
+### Block isolation
 
-The Ractor executes given `expr` in a given block.
-Given block will be isolated from outer scope by the `Proc#isolate` method (not exposed yet for Ruby users). To prevent sharing unshareable objects between ractors, block outer-variables, `self` and other information are isolated.
+The Ractor executes `expr` in the given block.
+The given block will be isolated from its outer scope. To prevent sharing objects between ractors, outer variables, `self` and other information is isolated from the block.
 
-`Proc#isolate` is called at Ractor creation time (when `Ractor.new` is called). If given Proc object is not able to isolate because of outer variables and so on, an error will be raised.
+This isolation occurs at Ractor creation time (when `Ractor.new` is called). If the given block is not able to be isolated because of outer variables or `self`, an error will be raised.
 
 ```ruby
 begin
   a = true
   r = Ractor.new do
-    a #=> ArgumentError because this block accesses `a`.
+    a #=> ArgumentError because this block accesses outer variable `a`.
   end
-  r.join # see later
+  r.join # wait for ractor to finish
 rescue ArgumentError
 end
 ```
@@ -123,7 +114,7 @@ end
 r.value == self.object_id #=> false
 ```
 
-Passed arguments to `Ractor.new()` becomes block parameters for the given block. However, an interpreter does not pass the parameter object references, but send them as messages (see below for details).
+Arguments passed to `Ractor.new()` become block parameters for the given block. However, Ruby does not pass the objects themselves, but sends them as messages (see below for details).
 
 ```ruby
 r = Ractor.new 'ok' do |msg|
@@ -133,7 +124,7 @@ r.value #=> 'ok'
 ```
 
 ```ruby
-# almost similar to the last example
+# similar to the last example
 r = Ractor.new do
   msg = Ractor.receive
   msg
@@ -142,9 +133,9 @@ r.send 'ok'
 r.value #=> 'ok'
 ```
 
-### An execution result of given block
+### The execution result of the given block
 
-Return value of the given block becomes an outgoing message (see below for details).
+The return value of the given block becomes an outgoing message (see below for details).
 
 ```ruby
 r = Ractor.new do
@@ -153,11 +144,11 @@ end
 r.value #=> `ok`
 ```
 
-Error in the given block will be propagated to the receiver of an outgoing message.
+An error in the given block will be propagated to the consumer of the outgoing message.
 
 ```ruby
 r = Ractor.new do
-  raise 'ok' # exception will be transferred to the receiver
+  raise 'ok' # exception will be transferred to the consumer
 end
 
 begin
@@ -171,37 +162,41 @@ end
 
 ## Communication between Ractors
 
-Communication between Ractors is achieved by sending and receiving messages. There are two ways to communicate with each other.
+Communication between ractors is achieved by sending and receiving messages. There are two ways to communicate:
 
-* (1) Message sending/receiving via `Ractor::Port`
-* (2) Using shareable container objects
-  * Ractor::TVar gem ([ko1/ractor-tvar](https://github.com/ko1/ractor-tvar))
-  * more?
+* (1) Sending and receiving messages via `Ractor::Port`
+* (2) Using shareable container objects. For example, the Ractor::TVar gem ([ko1/ractor-tvar](https://github.com/ko1/ractor-tvar))
 
-Users can control program execution timing with (1), but should not control with (2) (only manage as critical section).
+Users can control program execution timing with (1), but should not control with (2) (only perform critical sections).
 
-For message sending and receiving, there are two types of APIs: push type and pull type.
+For sending and receiving messages, these are the fundamental APIs:
 
-* (1) send/receive via `Ractor::Port`.
-  * `Ractor::Port#send(obj)` (`Ractor::Port#<<(obj)` is an alias) send a message to the port. Ports are connected to the infinite size incoming queue so `Ractor::Port#send` will never block.
-  * `Ractor::Port#receive` dequeue a message from its own incoming queue. If the incoming queue is empty, `Ractor::Port#receive` calling will block the execution of a thread.
-* `Ractor.select()` can wait for the success of `Ractor::Port#receive`.
-* You can close `Ractor::Port` by `Ractor::Port#close` only by the creator Ractor of the port.
-  * If the port is closed, you can't `send` to the port. If `Ractor::Port#receive` is blocked for the closed port, then it will raise an exception.
-  * When a Ractor is terminated, the Ractor's ports are closed.
-* There are 3 ways to send an object as a message
-  * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
-  * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects (objects whose class is defined in a C extension, such as `StringIO`) are not supported.
-  * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object. `T_DATA` objects are not supported.
-  * You can choose "Copy" and "Move" by the `move:` keyword, `Ractor#send(obj, move: true/false)` and `Ractor.yield(obj, move: true/false)` (default is `false` (COPY)).
+* send/receive via `Ractor::Port`.
+    * `Ractor::Port#send(obj)` (`Ractor::Port#<<(obj)` is an alias) sends a message to the port. Ports are connected to an infinite size incoming queue so sending will never block the caller.
+    * `Ractor::Port#receive` dequeues a message from its own incoming queue. If the incoming queue is empty, `Ractor::Port#receive` will block the execution of the current Thread until a message is sent.
+    * `Ractor#send` and `Ractor.receive` use ports (their default port) internally, so are conceptually similar to the above.
+* You can close a `Ractor::Port` by `Ractor::Port#close`. A port can only be closed by the ractor that created it.
+    * If a port is closed, you can't `send` to it. Doing so raises an exception.
+    * When a ractor is terminated, the ractor's ports are automatically closed.
+* You can wait for a ractor's termination and receive its return value with `Ractor#value`. This is similar to `Thread#value`.
+
+There are 3 ways to send an object as a message:
+
+1) Send a reference: sending a shareable object sends only a reference to the object (fast).
+
+2) Copy an object: sending an unshareable object through copying it deeply (can be slow). Note that you can not send an object this way which does not support deep copy. Some `T_DATA` objects (objects whose class is defined in a C extension, such as `StringIO`) are not supported.
+
+3) Move an object: sending an unshareable object across ractors with a membership change. The sending Ractor can not access the moved object after moving it, otherwise an exception will be raised. Implementation note: `T_DATA` objects are not supported.
+
+You can choose between "Copy" and "Move" by the `move:` keyword, `Ractor#send(obj, move: true/false)`. The default is `false` ("Copy"). However, if the object is shareable it will automatically use `move`.
 
 ### Wait for multiple Ractors with `Ractor.select`
 
-You can wait multiple Ractor port's receiving.
-The return value of `Ractor.select()` is `[port, msg]` where `port` is a ready port and `msg` is received message.
+You can wait for messages on multiple ports at once.
+The return value of `Ractor.select()` is `[port, msg]` where `port` is a ready port and `msg` is the received message.
 
-To make convenient, `Ractor.select` can also accept Ractors to wait the termination of Ractors.
-The return value of `Ractor.select()` is `[r, msg]` where `r` is a terminated Ractor and `msg` is the value of Ractor's block.
+To make it convenient, `Ractor.select` can also accept ractors. In this case, it waits for their termination.
+The return value of `Ractor.select()` is `[r, msg]` where `r` is a terminated Ractor and `msg` is the value of the ractor's block.
 
 Wait for a single ractor (same as `Ractor#value`):
 
@@ -212,38 +207,33 @@ r, obj = Ractor.select(r1)
 r == r1 and obj == 'r1' #=> true
 ```
 
-Waiting for two ractors:
+Wait for two ractors:
 
 ```ruby
 r1 = Ractor.new{'r1'}
 r2 = Ractor.new{'r2'}
 rs = [r1, r2]
-as = []
+values = []
 
-# Wait for r1 or r2's Ractor.yield
-r, obj = Ractor.select(*rs)
-rs.delete(r)
-as << obj
+while rs.any?
+  r, obj = Ractor.select(*rs)
+  rs.delete(r)
+  values << obj
+end
 
-# Second try (rs only contain not-closed ractors)
-r, obj = Ractor.select(*rs)
-rs.delete(r)
-as << obj
-as.sort == ['r1', 'r2'] #=> true
+values.sort == ['r1', 'r2'] #=> true
 ```
 
-TODO: Current `Ractor.select()` has the same issue of `select(2)`, so this interface should be refined.
+NOTE: Using `Ractor.select()` on a very large number of ractors has the same issue as `select(2)` currently.
 
-TODO: `select` syntax of go-language uses round-robin technique to make fair scheduling. Now `Ractor.select()` doesn't use it.
+### Closing ports
 
-### Closing Ractor's ports
-
-* `Ractor::Port#close` close the ports (similar to `Queue#close`).
-  * `port.send(obj)` where `port` is closed, will raise an exception.
+* `Ractor::Port#close` closes the port (similar to `Queue#close`).
+  * `port.send(obj)` will raise an exception when the port is closed.
   * When the queue connected to the port is empty and port is closed, `Ractor::Port#receive` raises an exception. If the queue is not empty, it dequeues an object without exceptions.
 * When a Ractor terminates, the ports are closed automatically.
 
-Example (try to get a result from closed Ractor):
+Example (try to get a result from closed ractor):
 
 ```ruby
 r = Ractor.new do
@@ -252,32 +242,30 @@ end
 r.join # success (wait for the termination)
 r.value # success (will return 'finish')
 
-# the first Ractor which success the `Ractor#value` can get the result
+# The ractor's termination value has already been given to another ractor
 Ractor.new r do |r|
   r.value #=> Ractor::Error
-end
+end.join
 ```
 
-Example (try to send to closed (terminated) Ractor):
+Example (try to send to closed port):
 
 ```ruby
 r = Ractor.new do
 end
 
-r.join # wait terminate
+r.join # wait for termination, closes default port
 
 begin
   r.send(1)
 rescue Ractor::ClosedError
   'ok'
-else
-  'ng'
 end
 ```
 
 ### Send a message by copying
 
-`Ractor::Port#send(obj)` copy `obj` deeply if `obj` is an unshareable object.
+`Ractor::Port#send(obj)` copies `obj` deeply if `obj` is an unshareable object.
 
 ```ruby
 obj = 'str'.dup
@@ -289,7 +277,7 @@ end
 obj.object_id == r.value #=> false
 ```
 
-Some objects are not supported to copy the value, and raise an exception.
+Some objects do not support copying, and raise an exception.
 
 ```ruby
 obj = Thread.new{}
@@ -299,40 +287,35 @@ begin
   end
 rescue TypeError => e
   e.message #=> #<TypeError: allocator undefined for Thread>
-else
-  'ng' # unreachable here
 end
 ```
 
 ### Send a message by moving
 
 `Ractor::Port#send(obj, move: true)` moves `obj` to the destination Ractor.
-If the source Ractor touches the moved object (for example, call the method like `obj.foo()`), it will be an error.
+If the source ractor uses the moved object (for example, calls a method like `obj.foo()`), it will raise an error.
 
 ```ruby
-# move with Ractor#send
 r = Ractor.new do
   obj = Ractor.receive
   obj << ' world'
 end
 
-str = 'hello'
+str = 'hello'.dup
 r.send str, move: true
+# str is now moved, and accessing str from this ractor is prohibited
 modified = r.value #=> 'hello world'
 
-# str is moved, and accessing str from this Ractor is prohibited
 
 begin
-  # Error because it touches moved str.
+  # Error because it uses moved str.
   str << ' exception' # raise Ractor::MovedError
 rescue Ractor::MovedError
   modified #=> 'hello world'
-else
-  raise 'unreachable'
 end
 ```
 
-Some objects are not supported to move, and an exception will be raised.
+Some objects do not support moving, and an exception will be raised.
 
 ```ruby
 r = Ractor.new do
@@ -342,34 +325,29 @@ end
 r.send(Thread.new{}, move: true) #=> allocator undefined for Thread (TypeError)
 ```
 
-To achieve the access prohibition for moved objects, _class replacement_ technique is used to implement it.
+Once an object has been moved, the source object's class is changed to `Ractor::MovedObject`.
 
 ### Shareable objects
 
-The following objects are shareable.
+The following is an inexhaustive list of shareable objects:
 
-* Immutable objects
-  * Small integers, some symbols, `true`, `false`, `nil` (a.k.a. `SPECIAL_CONST_P()` objects in internal)
-  * Frozen native objects
-    * Numeric objects: `Float`, `Complex`, `Rational`, big integers (`T_BIGNUM` in internal)
-    * All Symbols.
-  * Frozen `String` and `Regexp` objects (their instance variables should refer only shareable objects)
-* Class, Module objects (`T_CLASS`, `T_MODULE` and `T_ICLASS` in internal)
-* `Ractor` and other special objects which care about synchronization.
+* `Integer`, `Float`, `Complex`, `Rational`
+* `Symbol`, frozen `String` objects that don't refer to unshareables, `true`, `false`, `nil`
+* `Regexp` objects, if they have no instance variables or their instance variables refer only to shareables
+* `Class` and `Module` objects
+* `Ractor` and other special objects which deal with synchronization
 
-Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
+To make objects shareable, `Ractor.make_shareable(obj)` is provided. It tries to make the object shareable by freezing `obj` and recursively traversing its references to freeze them all. This method accepts the `copy:` keyword (default value is false). `Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable. `Ractor.make_shareable(copy: false)` has no effect on an already shareable object. If the object cannot be made shareable, a `Ractor::Error` exception will be raised.
 
-To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make shareable by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
+## Language changes to limit sharing between Ractors
 
-## Language changes to isolate unshareable objects between Ractors
+To isolate unshareable objects across ractors, we introduced additional language semantics for multi-ractor Ruby programs.
 
-To isolate unshareable objects between Ractors, we introduced additional language semantics on multi-Ractor Ruby programs.
-
-Note that without using Ractors, these additional semantics is not needed (100% compatible with Ruby 2).
+Note that when not using ractors, these additional semantics are not needed (100% compatible with Ruby 2).
 
 ### Global variables
 
-Only the main Ractor (a Ractor created at starting of interpreter) can access global variables.
+Only the main Ractor can access global variables.
 
 ```ruby
 $gv = 1
@@ -384,11 +362,11 @@ rescue Ractor::RemoteError => e
 end
 ```
 
-Note that some special global variables, such as `$stdin`, `$stdout` and `$stderr` are Ractor-local. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
+Note that some special global variables, such as `$stdin`, `$stdout` and `$stderr` are local to each ractor. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
 
 ### Instance variables of shareable objects
 
-Instance variables of classes/modules can be get from non-main Ractors if the referring values are shareable objects.
+Instance variables of classes/modules can be accessed from non-main ractors only if their values are shareable objects.
 
 ```ruby
 class C
@@ -428,8 +406,6 @@ Ractor.new do
 end.join
 ```
 
-
-
 ```ruby
 shared = Ractor.new{}
 shared.instance_variable_set(:@iv, 'str')
@@ -444,8 +420,6 @@ rescue Ractor::RemoteError => e
   e.cause.message #=> can not access instance variables of shareable objects from non-main Ractors (Ractor::IsolationError)
 end
 ```
-
-Note that instance variables for class/module objects are also prohibited on Ractors.
 
 ### Class variables
 
@@ -472,11 +446,11 @@ end
 
 ### Constants
 
-Only the main Ractor can read constants which refer to the unshareable object.
+Only the main Ractor can read constants which refer to an unshareable object.
 
 ```ruby
 class C
-  CONST = 'str'
+  CONST = 'str'.dup
 end
 r = Ractor.new do
   C::CONST
@@ -488,13 +462,13 @@ rescue => e
 end
 ```
 
-Only the main Ractor can define constants which refer to the unshareable object.
+Only the main Ractor can define constants which refer to an unshareable object.
 
 ```ruby
 class C
 end
 r = Ractor.new do
-  C::CONST = 'str'
+  C::CONST = 'str'.dup
 end
 begin
   r.join
@@ -503,19 +477,19 @@ rescue => e
 end
 ```
 
-To make multi-ractor supported library, the constants should only refer shareable objects.
+When creating/updating a library to support ractors, constants should only refer to shareable objects if they are to be used by non-main ractors.
 
 ```ruby
 TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 ```
 
-In this case, `TABLE` references an unshareable Hash object. So that other ractors can not refer `TABLE` constant. To make it shareable, we can use `Ractor.make_shareable()` like that.
+In this case, `TABLE` refers to an unshareable Hash object. In order for other ractors to use `TABLE`, we need to make it shareable. We can use `Ractor.make_shareable()` like so:
 
 ```ruby
 TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 ```
 
-To make it easy, Ruby 3.0 introduced new `shareable_constant_value` Directive.
+To make it easy, Ruby 3.0 introduced a new `shareable_constant_value` file directive.
 
 ```ruby
 # shareable_constant_value: literal
@@ -524,7 +498,7 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 #=> Same as: TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 ```
 
-`shareable_constant_value` directive accepts the following modes (descriptions use the example: `CONST = expr`):
+The `shareable_constant_value` directive accepts the following modes (descriptions use the example: `CONST = expr`):
 
 * none: Do nothing. Same as: `CONST = expr`
 * literal:
@@ -533,15 +507,66 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 * experimental_everything: replaced to `CONST = Ractor.make_shareable(expr)`.
 * experimental_copy: replaced to `CONST = Ractor.make_shareable(expr, copy: true)`.
 
-Except the `none` mode (default), it is guaranteed that the assigned constants refer to only shareable objects.
+Except for the `none` mode (default), it is guaranteed that these constants refer only to shareable objects.
 
-See [doc/syntax/comments.rdoc](syntax/comments.rdoc) for more details.
+See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
-## Implementation note
+### Shareable procs
 
-* Each Ractor has its own thread, it means each Ractor has at least 1 native thread.
-* Each Ractor has its own ID (`rb_ractor_t::pub::id`).
-  * On debug mode, all unshareable objects are labeled with current Ractor's id, and it is checked to detect unshareable object leak (access an object from different Ractor) in VM.
+Procs and lambdas are unshareable objects, even when they are frozen. To create an unshareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it cannot access variables from the outside scope. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
+
+```ruby
+p = Ractor.shareable_proc { p self }
+p.call #=> nil
+```
+
+```ruby
+begin
+  a = 1
+  pr = Ractor.shareable_proc { p a }
+  pr.call # never gets here
+rescue Ractor::IsolationError
+end
+```
+
+In order to dynamically define a method with `Module#define_method` that can be used from different ractors, you must define it with a shareable proc. Alternatively, you can use `Module#class_eval` or `Module#module_eval` with a String. Even though the shareable proc's `self` is initially bound to `nil`, `define_method` will bind `self` to the correct value in the method.
+
+```ruby
+class A
+  define_method :testing, &Ractor.shareable_proc do
+    p self
+  end
+end
+Ractor.new do
+  a = A.new
+  a.testing #=> #<A:0x0000000101acfe10>
+end.join
+```
+
+This isolation must be done to prevent the method from accessing and assigning captured outer variables across ractors.
+
+### Ractor-local storage
+
+You can store any object (even unshareables) in ractor-local storage.
+
+```ruby
+r = Ractor.new do
+  values = []
+  Ractor[:threads] = []
+  3.times do |i|
+    Ractor[:threads] << Thread.new do
+      values << [Ractor.receive, i+1] # Ractor.receive blocks the current thread in the current ractor until it receives a message
+    end
+  end
+  Ractor[:threads].each(&:join)
+  values
+end
+
+r << 1
+r << 2
+r << 3
+r.value #=> [[1,1],[2,2],[3,3]] (the order can change with each run)
+```
 
 ## Examples
 

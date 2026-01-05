@@ -1,4 +1,9 @@
 # Make recipes that deal with the rust code of YJIT and ZJIT.
+#
+# $(gnumake_recursive) adds the '+' prefix to pass down GNU make's
+# jobserver resources to cargo/rustc as rust-lang.org recommends.
+# Without it, certain make version trigger a warning. It does not
+# add the prefix when `make --dry-run` so dry runs are indeed dry.
 
 ifneq ($(JIT_CARGO_SUPPORT),no)
 
@@ -25,7 +30,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 	elif [ '$(YJIT_SUPPORT)' != no ]; then \
 	    echo 'building YJIT ($(JIT_CARGO_SUPPORT) mode)'; \
 	fi
-	+$(Q)CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
+	$(gnumake_recursive)$(Q)CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	    CARGO_TERM_PROGRESS_WHEN='never' \
 	    MACOSX_DEPLOYMENT_TARGET=11.0 \
 	    $(CARGO) $(CARGO_VERBOSE) build --manifest-path '$(top_srcdir)/Cargo.toml' $(CARGO_BUILD_ARGS)
@@ -34,7 +39,7 @@ else ifneq ($(strip $(RLIB_DIR)),) # combo build
 
 $(RUST_LIB): $(srcdir)/ruby.rs
 	$(ECHO) 'building $(@F)'
-	$(Q) $(RUSTC) --edition=2024 \
+	$(gnumake_recursive)$(Q) $(RUSTC) --edition=2024 \
 	    '-L$(@D)' \
 	    --extern=yjit \
 	    --extern=zjit \
@@ -50,7 +55,7 @@ $(YJIT_RLIB): $(JIT_RLIB)
 $(ZJIT_RLIB): $(JIT_RLIB)
 $(JIT_RLIB):
 	$(ECHO) 'building $(@F)'
-	$(Q) $(RUSTC) --crate-name=jit \
+	$(gnumake_recursive)$(Q) $(RUSTC) --crate-name=jit \
 	    --edition=2024 \
 	    $(JIT_RUST_FLAGS) \
 	    '--out-dir=$(@D)' \

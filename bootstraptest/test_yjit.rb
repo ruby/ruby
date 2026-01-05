@@ -4889,6 +4889,16 @@ assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for splat with &proc{} when the target has rest (Bug #21266)
+assert_equal '[]', %q{
+  def foo(args) = bar(*args, &proc { _1 })
+  def bar(_, _, _, _, *rest) = yield rest
+
+  GC.stress = true
+  foo([1,2,3,4])
+  foo([1,2,3,4])
+}
+
 # regression test for invalidating an empty block
 assert_equal '0', %q{
   def foo = (* = 1).pred
@@ -5415,4 +5425,38 @@ assert_equal 'foo', %{
   end
 
   10.times.map { foo.dup }.last
+}
+
+# regression test for [Bug #21772]
+# local variable type tracking desync
+assert_normal_exit %q{
+  def some_method = 0
+
+  def test_body(key)
+    some_method
+    key = key.to_s # setting of local relevant
+
+    key == "symbol"
+  end
+
+  def jit_caller = test_body("session_id")
+
+  jit_caller # first iteration, non-escaped environment
+  alias some_method binding # induce environment escape
+  test_body(:symbol)
+}
+
+# regression test for missing check in identity method inlining
+assert_normal_exit %q{
+  # Use dead code (if false) to create a local
+  # without initialization instructions.
+  def foo(a)
+    if false
+      x = nil
+    end
+    x
+  end
+  def test = foo(1)
+  test
+  test
 }

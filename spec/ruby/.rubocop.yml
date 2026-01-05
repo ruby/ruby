@@ -197,6 +197,7 @@ Style/Lambda:
     - 'language/lambda_spec.rb'
     - 'language/proc_spec.rb'
     - 'language/numbered_parameters_spec.rb'
+    - 'language/it_parameter_spec.rb'
     - 'core/kernel/lambda_spec.rb'
 
 Style/EmptyLambdaParameter:

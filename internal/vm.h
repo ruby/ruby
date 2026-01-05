@@ -69,6 +69,7 @@ const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);
+VALUE rb_ec_yield(struct rb_execution_context_struct *ec, VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
@@ -99,8 +100,6 @@ const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo
 
 /* vm_method.c */
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
-
-void rb_clear_constant_cache(void);
 
 /* vm_dump.c */
 void rb_print_backtrace(FILE *);

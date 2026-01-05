@@ -1,4 +1,4 @@
-class NS_A
+class BOX_A
   FOO = "foo_a1"
 
   def yay
@@ -6,7 +6,7 @@ class NS_A
   end
 end
 
-module NS_B
+module BOX_B
   BAR = "bar_b1"
 
   def self.yay

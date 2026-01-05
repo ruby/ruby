@@ -20,6 +20,11 @@ typedef void *MMTk_ObjectReference;
 typedef void *MMTk_NullableObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
 
+typedef struct MMTk_BumpPointer {
+    uintptr_t cursor;
+    uintptr_t limit;
+} MMTk_BumpPointer;
+
 
 #define MMTk_OBJREF_OFFSET 8
 
@@ -57,18 +62,24 @@ typedef struct MMTk_RubyUpcalls {
     void (*stop_the_world)(void);
     void (*resume_mutators)(void);
     void (*block_for_gc)(MMTk_VMMutatorThread tls);
+    void (*before_updating_jit_code)(void);
+    void (*after_updating_jit_code)(void);
     size_t (*number_of_mutators)(void);
     void (*get_mutators)(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
     void (*scan_gc_roots)(void);
     void (*scan_objspace)(void);
-    void (*scan_object_ruby_style)(MMTk_ObjectReference object);
+    void (*move_obj_during_marking)(MMTk_ObjectReference from, MMTk_ObjectReference to);
+    void (*update_object_references)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
+    void (*handle_weak_references)(MMTk_ObjectReference object, bool moving);
     void (*call_obj_free)(MMTk_ObjectReference object);
     size_t (*vm_live_bytes)(void);
     void (*update_global_tables)(int tbl_idx);
     int (*global_tables_count)(void);
     void (*update_finalizer_table)(void);
     bool (*special_const_p)(MMTk_ObjectReference object);
+    void (*mutator_thread_panic_handler)(void);
+    void (*gc_thread_panic_handler)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
@@ -85,12 +96,13 @@ MMTk_Builder *mmtk_builder_default(void);
 
 void mmtk_init_binding(MMTk_Builder *builder,
                        const struct MMTk_RubyBindingOptions *_binding_options,
-                       const struct MMTk_RubyUpcalls *upcalls,
-                       MMTk_ObjectReference weak_reference_dead_value);
+                       const struct MMTk_RubyUpcalls *upcalls);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
+
+MMTk_BumpPointer *mmtk_get_bump_pointer_allocator(MMTk_Mutator *m);
 
 void mmtk_destroy_mutator(MMTk_Mutator *mutator);
 
@@ -111,11 +123,13 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
                      size_t bytes,
                      MMTk_AllocationSemantics semantics);
 
-void mmtk_add_obj_free_candidate(MMTk_ObjectReference object);
+void mmtk_add_obj_free_candidate(MMTk_ObjectReference object, bool can_parallel_free);
 
-void mmtk_mark_weak(MMTk_ObjectReference *ptr);
+void mmtk_declare_weak_references(MMTk_ObjectReference object);
 
-void mmtk_remove_weak(const MMTk_ObjectReference *ptr);
+bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
+
+void mmtk_register_pinning_obj(MMTk_ObjectReference obj);
 
 void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);
 

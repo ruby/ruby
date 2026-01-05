@@ -350,6 +350,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\\uD800"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800\\u0041"') }
+    assert_raise(JSON::ParserError) { parse('"\\uD800\\u004') }
   end
 
   def test_parse_big_integers

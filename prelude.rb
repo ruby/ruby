@@ -30,14 +30,7 @@ end
 
 module Enumerable
   # Makes a set from the enumerable object with given arguments.
-  # Passing arguments to this method is deprecated.
-  def to_set(*args, &block)
-    klass = if args.empty?
-      Set
-    else
-      warn "passing arguments to Enumerable#to_set is deprecated", uplevel: 1
-      args.shift
-    end
-    klass.new(self, *args, &block)
+  def to_set(&block)
+    Set.new(self, &block)
   end
 end

@@ -1145,7 +1145,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             if (UNLIKELY(!rb_ractor_main_p())) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -3224,8 +3224,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) &&
-                    !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
                     VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
@@ -4121,7 +4120,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4144,7 +4143,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor_id != rb_ractor_id(rb_ec_ractor_ptr(ec))) {
+        cme->def->body.bmethod.defined_ractor_id != rb_ec_ractor_id(ec)) {
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
@@ -4809,7 +4808,7 @@ NOINLINE(static VALUE vm_call_optimized(rb_execution_context_t *ec, rb_control_f
                                         const struct rb_callinfo *ci, const struct rb_callcache *cc));
 
 #define VM_CALL_METHOD_ATTR(var, func, nohook) \
-    if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
+    if (UNLIKELY(ruby_vm_c_events_enabled > 0)) { \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
                         vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
         var = func; \
@@ -7193,12 +7192,14 @@ NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *re
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
               rb_event_flag_t pc_events, rb_event_flag_t target_event,
-              rb_hook_list_t *global_hooks, rb_hook_list_t *const *local_hooks_ptr, VALUE val)
+              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
 {
     rb_event_flag_t event = pc_events & target_event;
     VALUE self = GET_SELF();
 
     VM_ASSERT(rb_popcount64((uint64_t)event) == 1);
+
+    if (local_hooks) local_hooks->running++; // make sure they don't get deleted while global hooks run
 
     if (event & global_hooks->events) {
         /* increment PC because source line is calculated with PC-1 */
@@ -7208,8 +7209,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         reg_cfp->pc--;
     }
 
-    // Load here since global hook above can add and free local hooks
-    rb_hook_list_t *local_hooks = *local_hooks_ptr;
+    if (local_hooks) local_hooks->running--;
     if (local_hooks != NULL) {
         if (event & local_hooks->events) {
             /* increment PC because source line is calculated with PC-1 */
@@ -7222,7 +7222,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
 
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
-        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks_ptr, (val)); \
+        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
     } \
 } while (0)
 
@@ -7238,22 +7238,28 @@ static void
 vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
     const VALUE *pc = reg_cfp->pc;
-    rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
-    rb_event_flag_t global_events = enabled_flags;
+    rb_ractor_t *r = rb_ec_ractor_ptr(ec);
+    rb_event_flag_t enabled_flags = r->pub.hooks.events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t ractor_events = enabled_flags;
 
-    if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
+    if (enabled_flags == 0 && rb_ractor_targeted_hooks_cnt(r) == 0) {
         return;
     }
     else {
         const rb_iseq_t *iseq = reg_cfp->iseq;
-        VALUE iseq_val = (VALUE)iseq;
         size_t pos = pc - ISEQ_BODY(iseq)->iseq_encoded;
         rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
-        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
-        rb_hook_list_t *const *local_hooks_ptr = &iseq->aux.exec.local_hooks;
+        unsigned int local_hooks_cnt = iseq->aux.exec.local_hooks_cnt;
+        rb_hook_list_t *local_hooks = NULL;
+        if (RB_UNLIKELY(local_hooks_cnt > 0)) {
+            st_data_t val;
+            if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)iseq, &val)) {
+                local_hooks = (rb_hook_list_t*)val;
+            }
+        }
         rb_event_flag_t iseq_local_events = local_hooks != NULL ? local_hooks->events : 0;
+
         rb_hook_list_t *bmethod_local_hooks = NULL;
-        rb_hook_list_t **bmethod_local_hooks_ptr = NULL;
         rb_event_flag_t bmethod_local_events = 0;
         const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
@@ -7263,13 +7269,17 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-            bmethod_local_hooks = me->def->body.bmethod.hooks;
-            bmethod_local_hooks_ptr = &me->def->body.bmethod.hooks;
-            if (bmethod_local_hooks) {
-                bmethod_local_events = bmethod_local_hooks->events;
+            unsigned int bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+            if (RB_UNLIKELY(bmethod_hooks_cnt > 0)) {
+                st_data_t val;
+                if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)me->def, &val)) {
+                    bmethod_local_hooks = (rb_hook_list_t*)val;
+                }
+                if (bmethod_local_hooks) {
+                    bmethod_local_events = bmethod_local_hooks->events;
+                }
             }
         }
-
 
         if ((pc_events & enabled_flags) == 0 && !bmethod_frame) {
 #if 0
@@ -7291,7 +7301,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
             /* Note, not considering iseq local events here since the same
              * iseq could be used in multiple bmethods. */
-            rb_event_flag_t bmethod_events = global_events | bmethod_local_events;
+            rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
                 ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
@@ -7307,7 +7317,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             /* check traces */
             if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
                 /* b_call instruction running as a method. Fire call event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks_ptr, Qundef);
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_RESCUE,                                        rescue_errinfo(ec, reg_cfp));
@@ -7317,15 +7327,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks_ptr, TOPN(0));
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
             }
-
-            // Pin the iseq since `local_hooks_ptr` points inside the iseq's slot on the GC heap.
-            // We need the pointer to stay valid in case compaction happens in a trace hook.
-            //
-            // Similar treatment is unnecessary for `bmethod_local_hooks_ptr` since
-            // storage for `rb_method_definition_t` is not on the GC heap.
-            RB_GC_GUARD(iseq_val);
         }
     }
 }
@@ -7572,4 +7575,3 @@ rb_vm_lvar_exposed(rb_execution_context_t *ec, int index)
     const rb_control_frame_t *cfp = ec->cfp;
     return cfp->ep[index];
 }
-
