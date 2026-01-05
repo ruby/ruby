@@ -1055,7 +1055,6 @@ impl Insn {
     }
 
     fn get_effects(&self) -> Effect {
-        assert!(self.has_output());
         match &self {
             Insn::Const { .. } => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
             Insn::Param => Effect::from_bits(effect_sets::Any, effect_sets::Allocator),
@@ -1134,7 +1133,6 @@ impl Insn {
     /// collapses to `effects::Allocator.includes(insn_effects.write)`.
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
-    // TODO(Jacob): Ensure that `is_elidable` === `!has_effects` for all inputs
     fn is_elidable(&self) -> bool {
         let writes_allocator = Effect::from_bits(effect_sets::Any, effect_sets::Allocator);
         writes_allocator.includes(self.get_effects())
