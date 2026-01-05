@@ -84,7 +84,7 @@ AC_ARG_WITH(baseruby,
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+    RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose || HAVE_BASERUBY=no
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
