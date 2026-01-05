@@ -963,6 +963,18 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 
     if (SPECIAL_CONST_P(b)) return;
 
+#ifdef MMTK_DEBUG
+    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)a)) {
+        char buff[256];
+        rb_bug("a: %s is not an object", rb_raw_obj_info(buff, 256, a));
+    }
+
+    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)b)) {
+        char buff[256];
+        rb_bug("b: %s is not an object", rb_raw_obj_info(buff, 256, b));
+    }
+#endif
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
