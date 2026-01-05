@@ -2054,10 +2054,9 @@ VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
 
 /*
  *  call-seq:
- *     self === object ->  true or false
+ *     self === other ->  true or false
  *
- *  Returns +true+ if +object+ is between <tt>self.begin</tt> and <tt>self.end</tt>.
- *  +false+ otherwise:
+ *  Returns whether +other+ is between <tt>self.begin</tt> and <tt>self.end</tt>:
  *
  *    (1..4) === 2       # => true
  *    (1..4) === 5       # => false
