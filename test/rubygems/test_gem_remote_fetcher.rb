@@ -589,12 +589,10 @@ class TestGemRemoteFetcher < Gem::TestCase
       end
       fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
 
-      a1_cache_gem = @a1.cache_file
-      assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
-
-      # Verify gem was also copied to global cache
+      # With global cache enabled, gem goes directly to global cache
       global_cache_gem = File.join(test_cache_dir, @a1.file_name)
-      assert File.exist?(global_cache_gem), "Gem should be copied to global cache"
+      assert_equal global_cache_gem, fetcher.download(@a1, "http://gems.example.com")
+      assert File.exist?(global_cache_gem), "Gem should be in global cache"
     end
   ensure
     Gem.configuration.global_gem_cache = false
