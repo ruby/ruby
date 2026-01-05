@@ -45,6 +45,9 @@ benchmark:
   single_char_with_string: |
     STR.gsub("<", "2")
 
+  single_char_with_compatible_encoding: |
+    STR.b.gsub!("<", "2")
+
   single_char_with_string_bang: |
     STR.dup.gsub!("<", "2")
 

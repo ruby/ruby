@@ -6361,6 +6361,15 @@ str_gsub_one_to_one(VALUE str, VALUE pat, VALUE repl, int bang)
     }
     else {
         rb_backref_set_string(frozen_str, last_match_pos, pat_len);
+
+        int repl_enc = rb_enc_get_index(repl);
+        if (repl_enc != rb_enc_get_index(result)) {
+            int repl_cr = rb_enc_str_coderange(repl);
+            if (repl_cr != ENC_CODERANGE_7BIT) {
+                RB_ENCODING_CODERANGE_SET(result, repl_enc, repl_cr);
+            }
+        }
+
         return result;
     }
 }
@@ -6405,8 +6414,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         OBJ_BUILTIN_TYPE(pat) == T_STRING &&
         RSTRING_LEN(pat) == RSTRING_LEN(repl) &&
         RSTRING_LEN(pat) > 0 &&
-        rb_enc_get_index(str) == rb_enc_get_index(repl) &&
-        rb_enc_get_index(pat) == rb_enc_get_index(repl)) {
+        rb_enc_compatible(str, repl) &&
+        rb_enc_compatible(pat, repl)) {
         return str_gsub_one_to_one(str, pat, repl, bang);
     }
 
