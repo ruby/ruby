@@ -47,7 +47,7 @@ prefix = $(prefix:\=/)
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
 !if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
-	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
+	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat" --verbose
 !endif
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
