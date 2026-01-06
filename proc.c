@@ -1424,7 +1424,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 
 /* call-seq:
  *   self == other -> true or false
- *   self.eql?(other) -> true or false
+ *   eql?(other) -> true or false
  *
  * Returns whether +self+ and +other+ were created from the same code block:
  *
