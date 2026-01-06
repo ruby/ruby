@@ -1137,63 +1137,6 @@ impl Insn {
         let writes_allocator = Effect::from_bits(effect_sets::Any, effect_sets::Allocator);
         writes_allocator.includes(self.get_effects())
     }
-
-    /// Return true if the instruction needs to be kept around. For example, if the instruction
-    /// might have a side effect, or if the instruction may raise an exception.
-    fn has_effects(&self) -> bool {
-        match self {
-            Insn::Const { .. } => false,
-            Insn::Param => false,
-            Insn::StringCopy { .. } => false,
-            Insn::NewArray { .. } => false,
-            // NewHash's operands may be hashed and compared for equality, which could have
-            // side-effects.
-            Insn::NewHash { elements, .. } => !elements.is_empty(),
-            Insn::ArrayLength { .. } => false,
-            Insn::ArrayDup { .. } => false,
-            Insn::HashDup { .. } => false,
-            Insn::Test { .. } => false,
-            Insn::Snapshot { .. } => false,
-            Insn::FixnumAdd  { .. } => false,
-            Insn::FixnumSub  { .. } => false,
-            Insn::FixnumMult { .. } => false,
-            // TODO(max): Consider adding a Guard that the rhs is non-zero before Div and Mod
-            // Div *is* critical unless we can prove the right hand side != 0
-            // Mod *is* critical unless we can prove the right hand side != 0
-            Insn::FixnumEq   { .. } => false,
-            Insn::FixnumNeq  { .. } => false,
-            Insn::FixnumLt   { .. } => false,
-            Insn::FixnumLe   { .. } => false,
-            Insn::FixnumGt   { .. } => false,
-            Insn::FixnumGe   { .. } => false,
-            Insn::FixnumAnd  { .. } => false,
-            Insn::FixnumOr   { .. } => false,
-            Insn::FixnumXor  { .. } => false,
-            Insn::FixnumLShift { .. } => false,
-            Insn::FixnumRShift { .. } => false,
-            Insn::FixnumAref { .. } => false,
-            Insn::GetLocal   { .. } => false,
-            Insn::IsNil      { .. } => false,
-            Insn::LoadPC => false,
-            Insn::LoadEC => false,
-            Insn::LoadSelf => false,
-            Insn::LoadField { .. } => false,
-            Insn::CCall { elidable, .. } => !elidable,
-            Insn::CCallWithFrame { elidable, .. } => !elidable,
-            Insn::ObjectAllocClass { .. } => false,
-            // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
-            // but we don't have type information here in `impl Insn`. See rb_range_new().
-            Insn::NewRange { .. } => true,
-            Insn::NewRangeFixnum { .. } => false,
-            Insn::StringGetbyte { .. } => false,
-            Insn::IsBlockGiven => false,
-            Insn::BoxFixnum { .. } => false,
-            Insn::BoxBool { .. } => false,
-            Insn::IsBitEqual { .. } => false,
-            Insn::IsA { .. } => false,
-            _ => true,
-        }
-    }
 }
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
@@ -4475,8 +4418,6 @@ impl Function {
             for insn_id in &self.blocks[block_id.0].insns {
                 let insn = &self.insns[insn_id.0];
                 if !insn.is_elidable() {
-                // TODO(Jacob): Remove this comment
-                // if insn.has_effects() {
                     worklist.push_back(*insn_id);
                 }
             }
