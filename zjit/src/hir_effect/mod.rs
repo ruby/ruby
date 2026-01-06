@@ -31,6 +31,7 @@ pub struct EffectSet {
 // TODO(Jacob): Add tests for Effect
 // TODO(Jacob): Modify ruby generation of effects to include nice labels for Effects instead of just EffectSets
 // TODO(Jacob): Modify these labels to be callected effect_sets in the inc.rs, and create others called effects
+#[derive(Clone, Copy, Debug)]
 pub struct Effect {
     /// Unlike ZJIT's type system, effects do not have a notion of subclasses.
     /// Instead of specializations, the Effect struct contains two EffectSet bitsets.
@@ -50,7 +51,7 @@ pub struct Effect {
 include!("hir_effect.inc.rs");
 
 
-/// Print adaptor for [`Effect`]. See [`PtrPrintMap`].
+/// Print adaptor for [`EffectSet`]. See [`PtrPrintMap`].
 pub struct EffectSetPrinter<'a> {
     inner: EffectSet,
     ptr_map: &'a PtrPrintMap,
@@ -82,6 +83,27 @@ impl<'a> std::fmt::Display for EffectSetPrinter<'a> {
 }
 
 impl std::fmt::Display for EffectSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.print(&PtrPrintMap::identity()).fmt(f)
+    }
+}
+
+/// Print adaptor for [`Effect`]. See [`PtrPrintMap`].
+pub struct EffectPrinter<'a> {
+    inner: Effect,
+    ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> std::fmt::Display for EffectPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let read = format!("{}", self.inner.read);
+        let write = format!("{}", self.inner.write);
+        write!(f, "{read}, {write}")?;
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for Effect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.print(&PtrPrintMap::identity()).fmt(f)
     }
@@ -127,6 +149,7 @@ impl EffectSet {
     }
 }
 
+// TODO(Jacob): Add interferes function
 impl Effect {
     pub fn from_sets(read: EffectSet, write: EffectSet) -> Effect {
         Effect { read, write }
@@ -183,6 +206,10 @@ impl Effect {
             self.intersect(other)
         )
     }
+
+    pub fn print(self, ptr_map: &PtrPrintMap) -> EffectPrinter<'_> {
+        EffectPrinter { inner: self, ptr_map }
+    }
 }
 
 #[cfg(test)]
@@ -195,35 +222,45 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_subeffect(left: EffectSet, right: EffectSet) {
+    fn assert_subeffect_set(left: EffectSet, right: EffectSet) {
+        assert!(right.includes(left), "{left} is not a subeffect set of {right}");
+    }
+
+    #[track_caller]
+    fn assert_not_subeffect_set(left: EffectSet, right: EffectSet) {
+        assert!(!right.includes(left), "{left} is a subeffect set of {right}");
+    }
+
+    #[track_caller]
+    fn assert_subeffect(left: Effect, right: Effect) {
         assert!(right.includes(left), "{left} is not a subeffect of {right}");
     }
 
     #[track_caller]
-    fn assert_not_subeffect(left: EffectSet, right: EffectSet) {
+    fn assert_not_subeffect(left: Effect, right: Effect) {
         assert!(!right.includes(left), "{left} is a subeffect of {right}");
     }
 
     #[test]
     fn none_is_subeffect_of_everything() {
-        assert_subeffect(effect_sets::Empty, effect_sets::Empty);
-        assert_subeffect(effect_sets::Empty, effect_sets::Any);
-        assert_subeffect(effect_sets::Empty, effect_sets::Control);
-        assert_subeffect(effect_sets::Empty, effect_sets::Frame);
-        assert_subeffect(effect_sets::Empty, effect_sets::Stack);
-        assert_subeffect(effect_sets::Empty, effect_sets::Locals);
-        assert_subeffect(effect_sets::Empty, effect_sets::Allocator);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Empty);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Control);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Frame);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Stack);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Locals);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Allocator);
     }
 
     #[test]
     fn everything_is_subeffect_of_any() {
-        assert_subeffect(effect_sets::Empty, effect_sets::Any);
-        assert_subeffect(effect_sets::Any, effect_sets::Any);
-        assert_subeffect(effect_sets::Control, effect_sets::Any);
-        assert_subeffect(effect_sets::Frame, effect_sets::Any);
-        assert_subeffect(effect_sets::Memory, effect_sets::Any);
-        assert_subeffect(effect_sets::Locals, effect_sets::Any);
-        assert_subeffect(effect_sets::PC, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Empty, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Any, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Control, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Frame, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Memory, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Locals, effect_sets::Any);
+        assert_subeffect_set(effect_sets::PC, effect_sets::Any);
     }
 
     #[test]
@@ -232,9 +269,9 @@ mod tests {
         for i in [0, 1, 4, 6, 10, 15] {
             let e = EffectSet::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effect_sets::Empty, effect_sets::Empty.union(e));
-            assert_subeffect(effect_sets::Any, effect_sets::Any.union(e));
-            assert_subeffect(effect_sets::Frame, effect_sets::Frame.union(e));
+            assert_subeffect_set(effect_sets::Empty, effect_sets::Empty.union(e));
+            assert_subeffect_set(effect_sets::Any, effect_sets::Any.union(e));
+            assert_subeffect_set(effect_sets::Frame, effect_sets::Frame.union(e));
         }
     }
 
@@ -244,9 +281,9 @@ mod tests {
         for i in [0, 3, 6, 8, 15] {
             let e = EffectSet::from_bits(i);
             // Testing on bottom, top, and some arbitrary element in the middle
-            assert_subeffect(effect_sets::Empty.intersect(e), effect_sets::Empty);
-            assert_subeffect(effect_sets::Any.intersect(e), effect_sets::Any);
-            assert_subeffect(effect_sets::Frame.intersect(e), effect_sets::Frame);
+            assert_subeffect_set(effect_sets::Empty.intersect(e), effect_sets::Empty);
+            assert_subeffect_set(effect_sets::Any.intersect(e), effect_sets::Any);
+            assert_subeffect_set(effect_sets::Frame.intersect(e), effect_sets::Frame);
         }
     }
 
@@ -259,9 +296,9 @@ mod tests {
 
     #[test]
     fn frame_includes_stack_locals_and_pc() {
-        assert_subeffect(effect_sets::Stack, effect_sets::Frame);
-        assert_subeffect(effect_sets::Locals, effect_sets::Frame);
-        assert_subeffect(effect_sets::PC, effect_sets::Frame);
+        assert_subeffect_set(effect_sets::Stack, effect_sets::Frame);
+        assert_subeffect_set(effect_sets::Locals, effect_sets::Frame);
+        assert_subeffect_set(effect_sets::PC, effect_sets::Frame);
     }
 
     #[test]
@@ -272,10 +309,24 @@ mod tests {
 
     #[test]
     fn any_includes_some_subeffects() {
-        assert_subeffect(effect_sets::Allocator, effect_sets::Any);
-        assert_subeffect(effect_sets::Frame, effect_sets::Any);
-        assert_subeffect(effect_sets::Memory, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Allocator, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Frame, effect_sets::Any);
+        assert_subeffect_set(effect_sets::Memory, effect_sets::Any);
     }
+
+    // TODO(Jacob): Fill In
+    #[test]
+    fn any_includes_everything() {
+    }
+
+    // TODO(Jacob): Test the following
+    // union
+    // intersect
+    // includes
+    // exclude
+    // bit_equal
+    // overlaps
+    // print
 
     #[test]
     fn display_exact_bits_match() {
