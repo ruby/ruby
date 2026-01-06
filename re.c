@@ -3663,12 +3663,11 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 
 /*
  *  call-seq:
- *    regexp =~ string -> integer or nil
+ *    self =~ other -> integer or nil
  *
  *  Returns the integer index (in characters) of the first match
- *  for +self+ and +string+, or +nil+ if none;
- *  also sets the
- *  {rdoc-ref:Regexp global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *  for +self+ and +other+, or +nil+ if none;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables].
  *
  *    /at/ =~ 'input data' # => 7
  *    $~                   # => #<MatchData "at">
