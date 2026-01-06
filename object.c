@@ -201,8 +201,8 @@ rb_eql(VALUE obj1, VALUE obj2)
 /**
  *  call-seq:
  *     self == other -> true or false
- *     self.equal?(other) -> true or false
- *     self.eql?(other) -> true or false
+ *     equal?(other) -> true or false
+ *     eql?(other) -> true or false
  *
  *  Returns whether +self+ and +other+ are the same object:
  *
