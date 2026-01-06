@@ -3984,7 +3984,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *
  *  Returns whether all of the following are true:
  *
- *  - +other+ is a +Hash+ other (or can be converted to one).
+ *  - +other+ is a +Hash+ object (or can be converted to one).
  *  - +self+ and +other+ have the same keys (regardless of order).
  *  - For each key +key+, <tt>self[key] == other[key]</tt>.
  *
