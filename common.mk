@@ -1620,6 +1620,11 @@ test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
 
+RAKER = $(XRUBY) -I$(srcdir)/gems/lib$(PATH_SEPARATOR)$(srcdir)/.bundle/lib \
+	-rrubygems $(srcdir)/.bundle/bin/rake
+rake:
+	$(RAKER) $(RAKE_OPTS) $(RAKE)
+
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
 yes-test-bundler-precheck: main $(arch)-fake.rb
