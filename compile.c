@@ -41,6 +41,7 @@
 #include "ruby/ractor.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
+#include "symbol.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_debug.h"
@@ -855,6 +856,58 @@ get_node_colon_nd_mid(const NODE *node)
         return RNODE_COLON2(node)->nd_mid;
       case NODE_COLON3:
         return RNODE_COLON3(node)->nd_mid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static NODE *
+get_node_multi_value(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_MULTI_WRITE_NODE:
+        return RB_NODE_MULTI_WRITE(node)->value;
+      case RB_MULTI_TARGET_NODE:
+        return NULL;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static rb_node_list2_t *
+get_node_multi_lefts(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_MULTI_WRITE_NODE:
+        return &RB_NODE_MULTI_WRITE(node)->lefts;
+      case RB_MULTI_TARGET_NODE:
+        return &RB_NODE_MULTI_TARGET(node)->lefts;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static NODE *
+get_node_multi_rest(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_MULTI_WRITE_NODE:
+        return RB_NODE_MULTI_WRITE(node)->rest;
+      case RB_MULTI_TARGET_NODE:
+        return RB_NODE_MULTI_TARGET(node)->rest;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static rb_node_list2_t *
+get_node_multi_rights(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_MULTI_WRITE_NODE:
+        return &RB_NODE_MULTI_WRITE(node)->rights;
+      case RB_MULTI_TARGET_NODE:
+        return &RB_NODE_MULTI_TARGET(node)->rights;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -2273,6 +2326,24 @@ iseq_set_use_block(rb_iseq_t *iseq)
 #define NODE_ARG_FORWARDING_P(args) ((args)->keyword_rest && nd_type_p((args)->keyword_rest, RB_FORWARDING_PARAMETER_NODE))
 
 static int
+local_internal_id_idx(rb_iseq_t *iseq, int n)
+{
+    ID *ids = ISEQ_BODY(iseq)->local_table;
+
+    for (int i = 0; i < ISEQ_BODY(iseq)->local_table_size; i++) {
+        if (is_internal_id(ids[i])) {
+            if (n <= 0) {
+                return ISEQ_BODY(iseq)->local_table_size - i;
+            }
+            else {
+                n--;
+            }
+        }
+    }
+    rb_bug("unknown index: %d", n);
+}
+
+static int
 iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *const node_args)
 {
     debugs("iseq_set_arguments: %s\n", node_args ? "" : "0");
@@ -2284,6 +2355,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         int last_comma = 0;
         rb_block_parameter_node_t *block = 0;
         int arg_size;
+        VALUE internal_ids;
+        ID *local_ids;
+        int internal_id_idx = 0;
 
         switch (nd_type(node_args)) {
           case RB_IT_PARAMETERS_NODE:
@@ -2413,13 +2487,23 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             iseq_calc_param_size(iseq);
             body->param.size = arg_size;
 
-            // TODO: def m4((a, b), c, (d, e), f = false, (g, h)); end
-            // if (args->pre_init) { /* m_init */
-            //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
-            // }
-            // if (args->post_init) { /* p_init */
-            //     NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
-            // }
+            // Generate byte codes for multiple assignment like below.
+            //
+            // `def m4((a, b), c, (d, e), f = false, (g, h)); end`
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(&args->requireds); i++) {
+                const NODE *n = args->requireds.nodes[i];
+                if (!nd_type_p(n, RB_MULTI_TARGET_NODE)) continue;
+                ADD_GETLOCAL(optargs, n, local_internal_id_idx(iseq, internal_id_idx), 0);
+                NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", n));
+                internal_id_idx++;
+            }
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(&args->posts); i++) {
+                const NODE *n = args->posts.nodes[i];
+                if (!nd_type_p(n, RB_MULTI_TARGET_NODE)) continue;
+                ADD_GETLOCAL(optargs, n, local_internal_id_idx(iseq, internal_id_idx), 0);
+                NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", n));
+                internal_id_idx++;
+            }
 
             if (body->type == ISEQ_TYPE_BLOCK) {
                 if (body->param.flags.has_opt    == FALSE &&
@@ -6418,10 +6502,10 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 static int
 compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs, LINK_ANCHOR *const lhs, LINK_ANCHOR *const post, const NODE *const node, struct masgn_state *state, int popped)
 {
-    const NODE *rhsn = RB_NODE_MULTI_WRITE(node)->value;
-    const rb_node_list2_t *prel = &RB_NODE_MULTI_WRITE(node)->lefts;
-    const NODE *restn = RB_NODE_MULTI_WRITE(node)->rest;
-    const rb_node_list2_t *postl = &RB_NODE_MULTI_WRITE(node)->rights;
+    const NODE *rhsn = get_node_multi_value(node);
+    const rb_node_list2_t *prel = get_node_multi_lefts(node);
+    const NODE *restn = get_node_multi_rest(node);
+    const rb_node_list2_t *postl = get_node_multi_rights(node);
     int lhs_splat = (restn && NODE_NAMED_REST_P2(restn)) ? 1 : 0;
 
     int llen = (int)RB_NODE_LIST_LEN(prel);
@@ -6457,7 +6541,7 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
         }
     }
 
-    if (!state->nested) {
+    if (!state->nested && nd_type_p(node, RB_MULTI_WRITE_NODE)) {
         NO_CHECK(COMPILE(rhs, "normal masgn rhs", rhsn));
     }
 
@@ -6469,9 +6553,13 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
 }
 
 static int
-compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_multi_write_node_t *const node, int popped)
+compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    if (!popped || node->rest || !compile_massign_opt(iseq, ret, node->value, &node->lefts)) {
+    const NODE *rest_node = get_node_multi_rest(node);
+    const NODE *value_node = get_node_multi_value(node);
+    rb_node_list2_t *lefts = get_node_multi_lefts(node);
+
+    if (!popped || rest_node || !compile_massign_opt(iseq, ret, value_node, lefts)) {
         struct masgn_state state;
         state.lhs_level = popped ? 0 : 1;
         state.nested = 0;
@@ -11616,24 +11704,33 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
-      case RB_MULTI_WRITE_NODE: {
+      case RB_MULTI_WRITE_NODE:
+      case RB_MULTI_TARGET_NODE: {
         bool prev_in_masgn = ISEQ_COMPILE_DATA(iseq)->in_masgn;
         ISEQ_COMPILE_DATA(iseq)->in_masgn = true;
-        compile_massign(iseq, ret, RB_NODE_MULTI_WRITE(node), popped);
+        compile_massign(iseq, ret, node, popped);
         ISEQ_COMPILE_DATA(iseq)->in_masgn = prev_in_masgn;
         break;
       }
       case RB_LOCAL_VARIABLE_WRITE_NODE: // LASGN and DASGN
-      case RB_LOCAL_VARIABLE_TARGET_NODE: {
+      case RB_LOCAL_VARIABLE_TARGET_NODE:
+      case RB_REQUIRED_PARAMETER_NODE: {
         int idx, lv, ls;
         ID id;
         const NODE *valn = NULL;
-        if (nd_type_p(node, RB_LOCAL_VARIABLE_WRITE_NODE)) {
+        switch (nd_type(node)) {
+          case RB_LOCAL_VARIABLE_WRITE_NODE:
             id = RB_NODE_LOCAL_VARIABLE_WRITE(node)->name;
             valn = RB_NODE_LOCAL_VARIABLE_WRITE(node)->value;
-        }
-        else {
+            break;
+          case RB_LOCAL_VARIABLE_TARGET_NODE:
             id = RB_NODE_LOCAL_VARIABLE_TARGET(node)->name;
+            break;
+          case RB_REQUIRED_PARAMETER_NODE:
+            id = RB_NODE_REQUIRED_PARAMETER(node)->name;
+            break;
+          default:
+            break;
         }
         CHECK(COMPILE(ret, "dvalue", valn));
         debugi("dassn id", rb_id2str(id) ? id : '*');
