@@ -8,7 +8,7 @@ RSpec.describe "global gem caching" do
     let(:source2) { "http://gemserver.example.org" }
 
     def cache_base
-      home(".bundle", "cache", "gems")
+      home(".cache", "gem", "gems")
     end
 
     def source_global_cache(*segments)
