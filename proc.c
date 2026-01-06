@@ -1423,10 +1423,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 /* call-seq:
- *   prc == other -> true or false
- *   prc.eql?(other) -> true or false
+ *   self == other -> true or false
+ *   eql?(other) -> true or false
  *
- * Two procs are the same if, and only if, they were created from the same code block.
+ * Returns whether +self+ and +other+ were created from the same code block:
  *
  *   def return_block(&block)
  *     block
@@ -1980,10 +1980,9 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *   meth.eql?(other_meth)  -> true or false
- *   meth == other_meth  -> true or false
+ *   self == other -> true or false
  *
- * Two method objects are equal if they are bound to the same
+ * Returns whether +self+ and +other+ are bound to the same
  * object and refer to the same method definition and the classes
  * defining the methods are the same class or module.
  */

@@ -2159,9 +2159,9 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is the same class as +self+
+ *  Returns whether +other+ is the same class as +self+
  *  and its #message and #backtrace are equal to those of +self+.
  *
  */

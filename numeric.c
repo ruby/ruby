@@ -1501,7 +1501,7 @@ num_equal(VALUE x, VALUE y)
  *  call-seq:
  *     self == other -> true or false
  *
- *  Returns +true+ if +other+ has the same value as +self+, +false+ otherwise:
+ *  Returns whether +other+ is numerically equal to +self+:
  *
  *     2.0 == 2              # => true
  *     2.0 == 2.0            # => true
@@ -4852,7 +4852,7 @@ fix_equal(VALUE x, VALUE y)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if +self+ is numerically equal to +other+; +false+ otherwise.
+ *  Returns whether +self+ is numerically equal to +other+:
  *
  *    1 == 2     #=> false
  *    1 == 1.0   #=> true

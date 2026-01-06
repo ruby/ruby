@@ -200,14 +200,18 @@ rb_eql(VALUE obj1, VALUE obj2)
 
 /**
  *  call-seq:
- *     obj == other        -> true or false
- *     obj.equal?(other)   -> true or false
- *     obj.eql?(other)     -> true or false
+ *     self == other -> true or false
+ *     equal?(other) -> true or false
+ *     eql?(other) -> true or false
  *
- *  Equality --- At the Object level, #== returns <code>true</code>
- *  only if +obj+ and +other+ are the same object.  Typically, this
- *  method is overridden in descendant classes to provide
- *  class-specific meaning.
+ *  Returns whether +self+ and +other+ are the same object:
+ *
+ *    object = Object.new
+ *    object == object     # => true
+ *    object == Object.new # => false
+ *
+ *  Here in class \Object, #==, #equal?, and #eql? are the same method.
+ *  A subclass may override #== to provide class-specific meaning.
  *
  *  Unlike #==, the #equal? method should never be overridden by
  *  subclasses as it is used to determine object identity (that is,

@@ -3544,10 +3544,10 @@ reg_hash(VALUE re)
 
 /*
  *  call-seq:
- *    regexp == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is another \Regexp whose pattern,
- *  flags, and encoding are the same as +self+, +false+ otherwise:
+ *  Returns whether +other+ is another \Regexp whose pattern,
+ *  flags, and encoding are the same as +self+:
  *
  *    /foo/ == Regexp.new('foo')                          # => true
  *    /foo/ == /foo/i                                     # => false
@@ -3599,11 +3599,11 @@ match_hash(VALUE match)
 
 /*
  *  call-seq:
- *    matchdata == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is another \MatchData object
+ *  Returns whether +other+ is another \MatchData object
  *  whose target string, regexp, match, and captures
- *  are the same as +self+, +false+ otherwise.
+ *  are the same as +self+.
  */
 
 static VALUE
