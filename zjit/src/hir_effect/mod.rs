@@ -23,8 +23,6 @@ type EffectBits = u8;
 /// This enables more complex analyses compared to prior ZJIT implementations such as "has_effect",
 /// a function that returns a boolean value. Such functions impose an implicit single bit effect
 /// system. This explicit design with a lattice allows us many bits for effects.
-// TODO(Jacob): Fix orphan rule and implement partialord
-// #[derive(PartialEq, PartialOrd)]
 #[derive(Clone, Copy, Debug)]
 pub struct EffectSet {
     bits: EffectBits
@@ -35,13 +33,14 @@ pub struct EffectSet {
 // TODO(Jacob): Modify these labels to be callected effect_sets in the inc.rs, and create others called effects
 pub struct Effect {
     /// Unlike ZJIT's type system, effects do not have a notion of subclasses.
-    /// Instead of specializations, the EffectPair struct contains two Effect bitsets.
+    /// Instead of specializations, the Effect struct contains two EffectSet bitsets.
     /// We distinguish between read effects and write effects.
     /// Both use the same effects lattice, but splitting into two bitsets allows
     /// for finer grained optimization.
     ///
-    /// For example, an HIR instruction that writes nothing could be elided, regardless
-    /// of its read effects.
+    /// For instance:
+    /// We can elide HIR instructions with no write effects, but the read effects are necessary for instruction
+    /// reordering optimizations.
     ///
     /// These fields should not be directly read or written except by internal `Effect` APIs.
     read: EffectSet,
@@ -88,8 +87,6 @@ impl std::fmt::Display for EffectSet {
     }
 }
 
-// TODO(Jacob): Modify union and effect to work on an arbitrary number of args
-// TODO(Jacob): These `from_bits` functions used to be `const fn` not `pub fn`. Have I done something bad by making them public?
 impl EffectSet {
     const fn from_bits(bits: EffectBits) -> Self {
         Self { bits }
@@ -108,16 +105,21 @@ impl EffectSet {
     }
 
     /// Check bit equality of two `Effect`s. Do not use! You are probably looking for [`Effect::includes`].
-    pub fn bit_equal(&self, other: Self) -> bool {
+    /// This function is intentionally made private.
+    fn bit_equal(&self, other: Self) -> bool {
         self.bits == other.bits
     }
 
     pub fn includes(&self, other: Self) -> bool {
-        self.bit_equal(Self::union(self, other))
+        self.bit_equal(
+            self.union(other)
+        )
     }
 
     pub fn overlaps(&self, other: Self) -> bool {
-        !self.intersect(other).bit_equal(effect_sets::Empty)
+        !effect_sets::Empty.includes(
+            self.intersect(other)
+        )
     }
 
     pub fn print(self, ptr_map: &PtrPrintMap) -> EffectSetPrinter<'_> {
@@ -125,54 +127,50 @@ impl EffectSet {
     }
 }
 
-// impl PartialEq for EffectSet {
-//     fn eq(&self, other: Self) -> bool {
-//         self.bit_equal(other)
-//     }
-// }
-
-// TODO(Jacob): Clean up this logic. It can be simplified with one `mut`
-// impl PartialOrd for EffectSet {
-//     fn partial_cmp(&self, other: Self) -> Option<std::cmp::Ordering> {
-//         if self.bit_equal(other) {
-//             return Some(std::cmp::Ordering::Equal)
-//         }
-//         else if self.includes(other) {
-//             return Some(std::cmp::Ordering::Greater)
-//         }
-//         else if other.includes(*self) {
-//             return Some(std::cmp::Ordering::Less)
-//         }
-//         // If one EffectSet is not included in another, they cannot be compared
-//         // This case corresponds to different branches in the lattice
-//         else {
-//             return None
-//         }
-//     }
-// }
-
 impl Effect {
-    pub fn from_bits(read: EffectSet, write: EffectSet) -> Effect {
+    pub fn from_sets(read: EffectSet, write: EffectSet) -> Effect {
         Effect { read, write }
     }
 
+    // This function addresses the special case where the read and write sets are the same
+    pub fn from_set(set: EffectSet) -> Effect {
+        Effect {read: set, write: set }
+    }
+
+    // This function accepts write and sets read to Any
+    pub fn from_write(write: EffectSet) -> Effect {
+        Effect { read: effect_sets::Any, write }
+    }
+
+    // This function accepts read and sets read to Any
+    pub fn from_read(read: EffectSet) -> Effect {
+        Effect { read, write: effect_sets::Any }
+    }
+
     pub fn union(&self, other: Effect) -> Effect {
-        Effect::from_bits(self.read.union(other.read), self.write.union(other.write))
+        Effect::from_sets(
+            self.read.union(other.read),
+            self.write.union(other.write)
+        )
     }
 
     pub fn intersect(&self, other: Effect) -> Effect {
-        Effect::from_bits(self.read.intersect(other.read), self.write.intersect(other.write))
+        Effect::from_sets(
+            self.read.intersect(other.read),
+            self.write.intersect(other.write)
+        )
     }
 
     pub fn exclude(&self, other: Effect) -> Effect {
-        Effect::from_bits(
+        Effect::from_sets(
             self.read.exclude(other.read),
             self.write.exclude(other.write)
         )
     }
 
     /// Check bit equality of two `Effect`s. Do not use! You are probably looking for [`Effect::includes`].
-    pub fn bit_equal(&self, other: Effect) -> bool {
+    /// This function is intentionally made private.
+    fn bit_equal(&self, other: Effect) -> bool {
         self.read.bit_equal(other.read) & self.write.bit_equal(other.write)
     }
 
@@ -181,8 +179,9 @@ impl Effect {
     }
 
     pub fn overlaps(&self, other: Effect) -> bool {
-        let empty = Effect::from_bits(effect_sets::Empty, effect_sets::Empty);
-        !self.intersect(other).bit_equal(empty)
+        Effect::from_set(effect_sets::Empty).includes(
+            self.intersect(other)
+        )
     }
 }
 
