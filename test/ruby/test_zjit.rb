@@ -1226,6 +1226,76 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  # Test that including a module after compilation correctly changes the super target.
+  # The included module's method should be called, not the original super target.
+  def test_invokesuper_with_include
+    assert_compiles '["B", "M"]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      def test
+        B.new.foo
+      end
+
+      test  # profile invokesuper (super -> A#foo)
+      test  # compile with super -> A#foo
+
+      # Now include a module in B that defines foo - super should go to M#foo instead
+      module M
+        def foo
+          "M"
+        end
+      end
+      B.include(M)
+
+      test  # should call M#foo, not A#foo
+    }, call_threshold: 2
+  end
+
+  # Test that prepending a module after compilation correctly changes the super target.
+  # The prepended module's method should be called, not the original super target.
+  def test_invokesuper_with_prepend
+    assert_compiles '["B", "M"]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      def test
+        B.new.f
+      end
+
+      test  # profile invokesuper (super -> A#foo)
+      test  # compile with super -> A#foo
+
+      # Now prepend a module that defines foo - super should go to M#foo instead
+      module M
+        def foo
+          "M"
+        end
+      end
+      A.prepend(M)
+
+      test  # should call M#foo, not A#foo
+    }, call_threshold: 2
+  end
+
   def test_invokebuiltin
     # Not using assert_compiles due to register spill
     assert_runs '["."]', %q{
