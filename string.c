@@ -5713,8 +5713,8 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    self[index] -> new_string or nil
- *    self[start, length] -> new_string or nil
+ *    self[offset] -> new_string or nil
+ *    self[offset, size] -> new_string or nil
  *    self[range] -> new_string or nil
  *    self[regexp, capture = 0] -> new_string or nil
  *    self[substring] -> new_string or nil
@@ -12493,11 +12493,11 @@ sym_match_m_p(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    symbol[index] -> string or nil
- *    symbol[start, length] -> string or nil
- *    symbol[range] -> string or nil
- *    symbol[regexp, capture = 0] -> string or nil
- *    symbol[substring] -> string or nil
+ *    self[offset] -> string or nil
+ *    self[offset, size] -> string or nil
+ *    self[range] -> string or nil
+ *    self[regexp, capture = 0] -> string or nil
+ *    self[substring] -> string or nil
  *
  *  Equivalent to <tt>symbol.to_s[]</tt>; see String#[].
  *
