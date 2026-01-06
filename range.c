@@ -200,11 +200,10 @@ range_eq(VALUE range, VALUE obj)
 static int
 r_less(VALUE a, VALUE b)
 {
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r))
-        return INT_MAX;
-    return rb_cmpint(r, a, b);
+    VALUE r;
+#define rb_cmpint(cmp, a, b) (NIL_P(r = (cmp)) ? INT_MAX : rb_cmpint(r, (a), (b)))
+    return OPTIMIZED_CMP(a, b);
+#undef rb_cmpint
 }
 
 static VALUE
