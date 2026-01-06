@@ -1682,6 +1682,7 @@ static rb_keyword_hash_node_t *array2keyword_hash(struct parser_params *p, rb_ar
 static rb_hash_node_t *array2hash(struct parser_params *p, rb_array_node_t *nd_ary, const YYLTYPE *loc);
 static rb_multi_write_node_t *multi_target2multi_write(struct parser_params *p, rb_multi_target_node_t *t_node);
 static rb_multi_target_node_t *multi_write2multi_target(struct parser_params *p, rb_multi_write_node_t *w_node);
+static rb_required_parameter_node_t *local_variable_target2required_parameter(struct parser_params *p, rb_local_variable_target_node_t *t_node);
 
 static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 
@@ -1720,7 +1721,7 @@ static rb_node_t *arg_blk_pass2(struct parser_params *p, rb_arguments_node_t *nd
 
 static rb_node_t *gettable(struct parser_params*,ID,const YYLTYPE*);
 static rb_node_t *assignable(struct parser_params*,ID,rb_node_t*,const YYLTYPE*);
-static rb_node_t *assignable_target(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc);
+static rb_node_t *assignable_target(struct parser_params *p, ID id, const YYLTYPE *loc);
 
 static rb_node_t *aryset(struct parser_params*,rb_node_t*,rb_arguments_node_t*,const YYLTYPE*);
 static rb_node_t *attrset(struct parser_params*,rb_node_t*,ID,ID,const YYLTYPE*);
@@ -2974,6 +2975,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
     rb_arguments_node_t *node_args;
     rb_block_argument_node_t *node_block_arg;
     rb_block_node_t *node_block;
+    rb_multi_target_node_t *node_multi_target;
 
     struct rb_locations_lambda_body_t *locations_lambda_body;
     ID id;
@@ -3084,7 +3086,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_array> f_arg
 %type <node_req_param> f_arg_item
 %type <node> f_marg f_rest_marg
-%type <node_masgn> f_margs
+%type <node_multi_target> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_params> block_param opt_block_param
 %type <node_block_params> opt_block_param_def block_param_def
@@ -4091,7 +4093,7 @@ mlhs_head	: mlhs_item ','
 mlhs_node	: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
-                        $$ = assignable_target(p, $1, 0, &@$);
+                        $$ = assignable_target(p, $1, &@$);
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
@@ -5286,8 +5288,11 @@ for_var		: lhs
 
 f_marg		: f_norm_arg
                     {
-                        $$ = assignable(p, $1, 0, &@$);
+                        $$ = assignable_target(p, $1, &@$);
                         mark_lvar_used(p, $$);
+                        if (!RB_NODE_TYPE_P($$, RB_LOCAL_VARIABLE_TARGET_NODE))
+                            rb_bug("unexpected node: %s", ruby_node_name(nd_type($$)));;
+                        $$ = local_variable_target2required_parameter(p, $$);
                     }
                 | tLPAREN f_margs rparen
                     {
@@ -5296,30 +5301,29 @@ f_marg		: f_norm_arg
                     }
                 ;
 
-
 f_margs		: mlhs_items(f_marg)
                     {
-                        $$ = NEW_MASGN($1, 0, &@$);
+                        $$ = NEW_RB_MULTI_TARGET($1, 0, 0, &@$);
                     /*% ripper: $:1 %*/
                     }
                 | mlhs_items(f_marg) ',' f_rest_marg
                     {
-                        $$ = NEW_MASGN($1, $3, &@$);
+                        $$ = NEW_RB_MULTI_TARGET($1, $3, 0, &@$);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
                 | mlhs_items(f_marg) ',' f_rest_marg ',' mlhs_items(f_marg)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG($3, $5, &@$), &@$);
+                        $$ = NEW_RB_MULTI_TARGET($1, $3, $5, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
                 | f_rest_marg
                     {
-                        $$ = NEW_MASGN(0, $1, &@$);
+                        $$ = NEW_RB_MULTI_TARGET(0, $1, 0, &@$);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:1) %*/
                     }
                 | f_rest_marg ',' mlhs_items(f_marg)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG($1, $3, &@$), &@$);
+                        $$ = NEW_RB_MULTI_TARGET(0, $1, $3, &@$);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:1), $:3) %*/
                     }
                 ;
@@ -5327,12 +5331,16 @@ f_margs		: mlhs_items(f_marg)
 f_rest_marg	: tSTAR f_norm_arg
                     {
                     /*% ripper: $:2 %*/
-                        $$ = assignable(p, $2, 0, &@$);
+                        $$ = assignable_target(p, $2, &@$);
                         mark_lvar_used(p, $$);
+                        if (!RB_NODE_TYPE_P($$, RB_LOCAL_VARIABLE_TARGET_NODE))
+                            rb_bug("unexpected node: %s", ruby_node_name(nd_type($$)));;
+                        $$ = local_variable_target2required_parameter(p, $$);
+                        $$ = NEW_RB_SPLAT($$, &NULL_LOC, &@tSTAR);
                     }
                 | tSTAR
                     {
-                        $$ = NODE_SPECIAL_NO_NAME_REST;
+                        $$ = NEW_RB_SPLAT(0, &@tSTAR, &@tSTAR);
                     /*% ripper: Qnil %*/
                     }
                 ;
@@ -6808,7 +6816,6 @@ f_arg_asgn	: f_norm_arg
 
 f_arg_item	: f_arg_asgn
                     {
-                        // $$ = NEW_ARGS_AUX($1, 1, &NULL_LOC);
                         $$ = NEW_RB_REQUIRED_PARAMETER($1, &NULL_LOC);
                     /*% ripper: $:1 %*/
                     }
@@ -6819,13 +6826,14 @@ f_arg_item	: f_arg_asgn
                         loc.beg_pos = @2.beg_pos;
                         loc.end_pos = @2.beg_pos;
                         arg_var(p, tid);
-                        if (dyna_in_block(p)) {
-                            $2->nd_value = NEW_DVAR(tid, &loc);
-                        }
-                        else {
-                            $2->nd_value = NEW_LVAR(tid, &loc);
-                        }
-                        $$ = NEW_ARGS_AUX(tid, 1, &NULL_LOC);
+                        // if (dyna_in_block(p)) {
+                        //     $2->nd_value = NEW_DVAR(tid, &loc);
+                        // }
+                        // else {
+                        //     $2->nd_value = NEW_LVAR(tid, &loc);
+                        // }
+                        // $$ = NEW_ARGS_AUX(tid, 1, &NULL_LOC);
+                        $$ = $2;
                         // TODO
                         // $$->nd_next = (NODE *)$2;
                     /*% ripper: mlhs_paren!($:2) %*/
@@ -13975,6 +13983,12 @@ multi_write2multi_target(struct parser_params *p, rb_multi_write_node_t *w_node)
     return node;
 }
 
+static rb_required_parameter_node_t *
+local_variable_target2required_parameter(struct parser_params *p, rb_local_variable_target_node_t *t_node)
+{
+    return NEW_RB_REQUIRED_PARAMETER(t_node->name, rb_nd_code_loc((rb_node_t *)t_node));
+}
+
 static NODE *
 str2dstr(struct parser_params *p, NODE *node)
 {
@@ -14841,7 +14855,7 @@ assignable(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc)
 }
 
 static rb_node_t*
-assignable_target(struct parser_params *p, ID id, rb_node_t *val, const YYLTYPE *loc)
+assignable_target(struct parser_params *p, ID id, const YYLTYPE *loc)
 {
     const char *err = 0;
     int node_type = assignable0(p, id, &err);
