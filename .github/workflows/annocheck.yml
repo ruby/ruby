@@ -72,7 +72,7 @@ jobs:
           builddir: build
           makeup: true
 
-      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
           ruby-version: '3.1'
           bundler: none
