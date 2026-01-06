@@ -335,12 +335,21 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 
 fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[index, val] = args {
-        if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(val, types::BasicObject, state) {
-          let index = fun.coerce_to(block, index, types::Fixnum, state);
-          let val = fun.coerce_to(block, val, types::BasicObject, state);
+        if fun.likely_a(recv, types::ArrayExact, state)
+            && fun.likely_a(index, types::Fixnum, state)
+            && fun.likely_a(val, types::BasicObject, state)
+        {
+            let recv = fun.coerce_to(block, recv, types::ArrayExact, state);
+            let index = fun.coerce_to(block, index, types::Fixnum, state);
+            let val = fun.coerce_to(block, val, types::BasicObject, state);
+            let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
+            let recv = fun.push_insn(block, hir::Insn::GuardArrayNotShared { recv, state });
 
-          let _ = fun.push_insn(block, hir::Insn::ArrayAsetFixnum { array: recv, index, val, state });
-          return Some(val);
+            let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+            let index = fun.push_insn(block, hir::Insn::GuardInBounds { index, length, state });
+
+            let _ = fun.push_insn(block, hir::Insn::ArrayAsetFixnum { array: recv, index, val });
+            return Some(val);
         }
     }
     None

@@ -6954,7 +6954,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v31:ArrayExact = GuardType v9, ArrayExact
-          ArrayAsetFixnum v31, v16, v18
+          v32:ArrayExact = GuardNotFrozen v31
+          v33:ArrayExact = GuardArrayNotShared v32
+          v34:CInt64 = ArrayLength v33
+          v35:CInt64 = GuardInBounds v16, v34
+          ArrayAsetFixnum v33, v35, v18
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18
@@ -6986,7 +6990,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           v35:ArrayExact = GuardType v13, ArrayExact
           v36:Fixnum = GuardType v14, Fixnum
-          ArrayAsetFixnum v35, v36, v15
+          v37:ArrayExact = GuardNotFrozen v35
+          v38:ArrayExact = GuardArrayNotShared v37
+          v39:CInt64 = ArrayLength v38
+          v40:CInt64 = GuardInBounds v36, v39
+          ArrayAsetFixnum v38, v40, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v15
@@ -7019,9 +7027,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(MyArray@0x1000, []=@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(MyArray@0x1000)
           v35:ArraySubclass[class_exact:MyArray] = GuardType v13, ArraySubclass[class_exact:MyArray]
-          v36:Fixnum = GuardType v14, Fixnum
-          ArrayAsetFixnum v35, v36, v15
-          IncrCounter inline_cfunc_optimized_send_count
+          v36:BasicObject = CCallVariadic v35, :Array#[]=@0x1038, v14, v15
           CheckInterrupts
           Return v15
         ");

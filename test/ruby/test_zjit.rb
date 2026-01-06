@@ -1695,6 +1695,33 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_array_fixnum_aset_shared
+    assert_compiles '[10, 999, -1, -2]', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      end
+      arr = (0..50).to_a
+      test(arr, 0, -1)
+      test(arr, 1, -2)
+      shared = arr[10, 20]
+      test(shared, 0, 999)
+      [arr[10], shared[0], arr[0], arr[1]]
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_frozen
+    assert_compiles 'FrozenError', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      rescue => e
+        e.class
+      end
+      frozen = [1,2,3].freeze
+      test(frozen, 1, 9)
+      test(frozen, 1, 9)
+    }, call_threshold: 2
+  end
+
   def test_array_fixnum_aset_array_subclass
     assert_compiles '7', %q{
       class MyArray < Array; end
