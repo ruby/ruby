@@ -1713,12 +1713,16 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles 'FrozenError', %q{
       def test(arr, idx, val)
         arr[idx] = val
+      end
+      arr = [1,2,3]
+      test(arr, 1, 9)
+      test(arr, 1, 9)
+      arr.freeze
+      begin
+        test(arr, 1, 9)
       rescue => e
         e.class
       end
-      frozen = [1,2,3].freeze
-      test(frozen, 1, 9)
-      test(frozen, 1, 9)
     }, call_threshold: 2
   end
 
@@ -1740,11 +1744,14 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles 'TypeError', %q{
       def test(arr, idx)
         arr[idx] = 7
+      end
+      test([1,2,3], 0)
+      test([1,2,3], 0)
+      begin
+        test([1,2,3], "0")
       rescue => e
         e.class
       end
-      test([1,2,3], "0")
-      test([1,2,3], "0")
     }, call_threshold: 2
   end
 

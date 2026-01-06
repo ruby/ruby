@@ -493,7 +493,7 @@ pub enum SideExitReason {
     GuardShape(ShapeId),
     GuardBitEquals(Const),
     GuardNotFrozen,
-    GuardArrayNotShared,
+    GuardNotShared,
     GuardLess,
     GuardGreaterEq,
     PatchPoint(Invariant),
@@ -581,7 +581,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
-            SideExitReason::GuardArrayNotShared => write!(f, "GuardArrayNotShared"),
+            SideExitReason::GuardNotShared => write!(f, "GuardNotShared"),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
         }
@@ -730,7 +730,7 @@ pub enum Insn {
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayArefFixnum { array: InsnId, index: InsnId },
-    ArrayAsetFixnum { array: InsnId, index: InsnId, val: InsnId },
+    ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
@@ -963,12 +963,9 @@ pub enum Insn {
     /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
     /// a heap object.
     GuardNotFrozen { recv: InsnId, state: InsnId },
-    /// Side-exit if val is a shared array. Does *not* check if the val is an immediate; assumes
+    /// Side-exit if val is shared. Does *not* check if the val is an immediate; assumes
     /// that it is a heap object.
-    GuardArrayNotShared { recv: InsnId, state: InsnId },
-    /// Side-exit if index is out of bounds (index < 0 || index >= length).
-    /// Assumes index is a Fixnum and returns the unboxed index as a C integer.
-    GuardInBounds { index: InsnId, length: InsnId, state: InsnId },
+    GuardNotShared { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -1003,7 +1000,7 @@ impl Insn {
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
-            | Insn::ArrayAsetFixnum { .. }=> false,
+            | Insn::ArrayAset { .. }=> false,
             _ => true,
         }
     }
@@ -1131,8 +1128,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayArefFixnum { array, index, .. } => {
                 write!(f, "ArrayArefFixnum {array}, {index}")
             }
-            Insn::ArrayAsetFixnum { array, index, val, ..} => {
-                write!(f, "ArrayAsetFixnum {array}, {index}, {val}")
+            Insn::ArrayAset { array, index, val, ..} => {
+                write!(f, "ArrayAset {array}, {index}, {val}")
             }
             Insn::ArrayPop { array, .. } => {
                 write!(f, "ArrayPop {array}")
@@ -1345,10 +1342,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
-            Insn::GuardArrayNotShared { recv, .. } => write!(f, "GuardArrayNotShared {recv}"),
+            Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
-            Insn::GuardInBounds { index, length, .. } => write!(f, "GuardInBounds {index}, {length}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -1983,10 +1979,9 @@ impl Function {
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
             &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
-            &GuardArrayNotShared { recv, state } => GuardArrayNotShared { recv: find!(recv), state },
+            &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
-            &GuardInBounds { index, length, state } => GuardInBounds { index: find!(index), length: find!(length), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2088,7 +2083,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
-            &ArrayAsetFixnum { array, index, val } => ArrayAsetFixnum { array: find!(array), index: find!(index), val: find!(val) },
+            &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -2161,7 +2156,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAsetFixnum { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -2215,8 +2210,7 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardArrayNotShared { recv, .. } => self.type_of(*recv),
-            Insn::GuardInBounds { .. } => types::CInt64,
+            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -3959,7 +3953,7 @@ impl Function {
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
             | &Insn::GuardNotFrozen { recv: val, state }
-            | &Insn::GuardArrayNotShared { recv: val, state }
+            | &Insn::GuardNotShared { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -3970,11 +3964,6 @@ impl Function {
             &Insn::GuardGreaterEq { left, right, state } => {
                 worklist.push_back(left);
                 worklist.push_back(right);
-                worklist.push_back(state);
-            }
-            &Insn::GuardInBounds { index, length, state } => {
-                worklist.push_back(index);
-                worklist.push_back(length);
                 worklist.push_back(state);
             }
             &Insn::GuardLess { left, right, state } => {
@@ -4029,7 +4018,7 @@ impl Function {
                 worklist.push_back(array);
                 worklist.push_back(index);
             }
-            &Insn::ArrayAsetFixnum { array, index, val } => {
+            &Insn::ArrayAset { array, index, val } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
                 worklist.push_back(val);
@@ -4658,12 +4647,8 @@ impl Function {
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardArrayNotShared { recv, .. } => {
+            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => {
                 self.assert_subtype(insn_id, recv, types::HeapBasicObject)
-            }
-            Insn::GuardInBounds { index, length, .. } => {
-                self.assert_subtype(insn_id, index, types::Fixnum)?;
-                self.assert_subtype(insn_id, length, types::CInt64)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
@@ -4750,7 +4735,7 @@ impl Function {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
             }
-            Insn::ArrayAsetFixnum { array, index, .. } => {
+            Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
             }

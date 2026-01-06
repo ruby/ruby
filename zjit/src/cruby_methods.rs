@@ -343,12 +343,17 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let val = fun.coerce_to(block, val, types::BasicObject, state);
             let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
-            let recv = fun.push_insn(block, hir::Insn::GuardArrayNotShared { recv, state });
+            let recv = fun.push_insn(block, hir::Insn::GuardNotShared { recv, state });
 
+            // Bounds check: unbox Fixnum index and guard 0 <= idx < length.
+            let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardInBounds { index, length, state });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });
 
-            let _ = fun.push_insn(block, hir::Insn::ArrayAsetFixnum { array: recv, index, val });
+            let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
+            fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
             return Some(val);
         }
     }
