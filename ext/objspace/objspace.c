@@ -365,32 +365,22 @@ cto_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_tdata_objects([result_hash]) -> hash
+ *     ObjectSpace.count_tdata_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_DATA+ type.
+ *  Returns a hash containing the number of objects for each +T_DATA+ type.
+ *  The keys are Class objects when the +T_DATA+ object has an associated class,
+ *  or Symbol objects of the name defined in the +rb_data_type_struct+ for internal
+ *  +T_DATA+ objects.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_tdata_objects
+ *    # => {RBS::Location => 39255, marshal_compat_table: 1, Encoding => 103, mutex: 1, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *	{RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
- *  	 :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
- *  	 ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
- *  	 Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
- *  	# T_DATA objects existing at startup on r32276.
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are Class object or Symbol object.
- *
- *  If object is kind of normal (accessible) object, the key is Class object.
- *  If object is not a kind of normal (internal) object, the key is symbol
- *  name, registered by rb_data_type_struct.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
