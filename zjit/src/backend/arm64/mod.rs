@@ -1113,7 +1113,9 @@ impl Assembler {
 
         // For each instruction
         let mut insn_idx: usize = 0;
+        println!("Going to generate some machine code! lets linearize");
         let insns = self.linearize_instructions();
+        println!("Linearzed: {:?}", insns);
 
         while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
