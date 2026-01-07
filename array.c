@@ -1800,7 +1800,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *    a = [:foo, 'bar', 2]
  *
- *    # Single argument +offset+: returns one element.
+ *    # Single argument offset: returns one element.
  *    a[0]     # => :foo          # Zero-based index.
  *    a[-1]    # => 2             # Negative index counts backwards from end.
  *
