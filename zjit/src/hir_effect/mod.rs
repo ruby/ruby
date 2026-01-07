@@ -28,9 +28,6 @@ pub struct EffectSet {
     bits: EffectBits
 }
 
-// TODO(Jacob): Add tests for Effect
-// TODO(Jacob): Modify ruby generation of effects to include nice labels for Effects instead of just EffectSets
-// TODO(Jacob): Modify these labels to be callected effect_sets in the inc.rs, and create others called effects
 #[derive(Clone, Copy, Debug)]
 pub struct Effect {
     /// Unlike ZJIT's type system, effects do not have a notion of subclasses.
@@ -146,25 +143,34 @@ impl EffectSet {
     }
 }
 
-// TODO(Jacob): Add interferes function
 impl Effect {
-    pub fn from_sets(read: EffectSet, write: EffectSet) -> Effect {
+    pub const fn from_sets(read: EffectSet, write: EffectSet) -> Effect {
         Effect { read, write }
     }
 
     // This function addresses the special case where the read and write sets are the same
-    pub fn from_set(set: EffectSet) -> Effect {
+    pub const fn from_set(set: EffectSet) -> Effect {
         Effect {read: set, write: set }
     }
 
     // This function accepts write and sets read to Any
-    pub fn from_write(write: EffectSet) -> Effect {
+    pub const fn from_write(write: EffectSet) -> Effect {
         Effect { read: effect_sets::Any, write }
     }
 
     // This function accepts read and sets read to Any
-    pub fn from_read(read: EffectSet) -> Effect {
+    pub const fn from_read(read: EffectSet) -> Effect {
         Effect { read, write: effect_sets::Any }
+    }
+
+    // Method to access the private read field
+    pub fn read(&self) -> EffectSet {
+        self.read
+    }
+
+    // Method to access the private write field
+    pub fn write(&self) -> EffectSet {
+        self.write
     }
 
     pub fn union(&self, other: Effect) -> Effect {
@@ -214,8 +220,8 @@ mod tests {
     use super::*;
 
     #[track_caller]
-    fn assert_bit_equal(left: EffectSet, right: EffectSet) {
-        assert_eq!(left.bits, right.bits, "{left} bits are not equal to {right} bits");
+    fn assert_set_bit_equal(left: EffectSet, right: EffectSet) {
+        assert!(left.bit_equal(right), "{left} bits are not equal to {right} bits");
     }
 
     #[track_caller]
@@ -229,6 +235,12 @@ mod tests {
     }
 
     #[track_caller]
+    fn assert_bit_equal(left: Effect, right: Effect) {
+        assert!(left.bit_equal(right), "{left} bits are not equal to {right} bits");
+    }
+
+
+    #[track_caller]
     fn assert_subeffect(left: Effect, right: Effect) {
         assert!(right.includes(left), "{left} is not a subeffect of {right}");
     }
@@ -239,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn none_is_subeffect_of_everything() {
+    fn effect_set_none_is_subeffect_of_everything() {
         assert_subeffect_set(effect_sets::Empty, effect_sets::Empty);
         assert_subeffect_set(effect_sets::Empty, effect_sets::Any);
         assert_subeffect_set(effect_sets::Empty, effect_sets::Control);
@@ -250,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn everything_is_subeffect_of_any() {
+    fn effect_set_everything_is_subeffect_of_any() {
         assert_subeffect_set(effect_sets::Empty, effect_sets::Any);
         assert_subeffect_set(effect_sets::Any, effect_sets::Any);
         assert_subeffect_set(effect_sets::Control, effect_sets::Any);
@@ -261,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn union_never_shrinks() {
+    fn effect_set_union_never_shrinks() {
         // iterate over all effect entries from bottom to top
         for i in [0, 1, 4, 6, 10, 15] {
             let e = EffectSet::from_bits(i);
@@ -273,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn intersect_never_grows() {
+    fn effect_set_intersect_never_grows() {
         // Randomly selected values from bottom to top
         for i in [0, 3, 6, 8, 15] {
             let e = EffectSet::from_bits(i);
@@ -285,48 +297,34 @@ mod tests {
     }
 
     #[test]
-    fn self_is_included() {
+    fn effect_set_self_is_included() {
         assert!(effect_sets::Stack.includes(effect_sets::Stack));
         assert!(effect_sets::Any.includes(effect_sets::Any));
         assert!(effect_sets::Empty.includes(effect_sets::Empty));
     }
 
     #[test]
-    fn frame_includes_stack_locals_and_pc() {
+    fn effect_set_frame_includes_stack_locals_and_pc() {
         assert_subeffect_set(effect_sets::Stack, effect_sets::Frame);
         assert_subeffect_set(effect_sets::Locals, effect_sets::Frame);
         assert_subeffect_set(effect_sets::PC, effect_sets::Frame);
     }
 
     #[test]
-    fn frame_is_stack_locals_and_pc() {
+    fn effect_set_frame_is_stack_locals_and_pc() {
         let union = effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC));
-        assert_bit_equal(effect_sets::Frame, union);
+        assert_set_bit_equal(effect_sets::Frame, union);
     }
 
     #[test]
-    fn any_includes_some_subeffects() {
+    fn effect_set_any_includes_some_subeffects() {
         assert_subeffect_set(effect_sets::Allocator, effect_sets::Any);
         assert_subeffect_set(effect_sets::Frame, effect_sets::Any);
         assert_subeffect_set(effect_sets::Memory, effect_sets::Any);
     }
 
-    // TODO(Jacob): Fill In
     #[test]
-    fn any_includes_everything() {
-    }
-
-    // TODO(Jacob): Test the following
-    // union
-    // intersect
-    // includes
-    // exclude
-    // bit_equal
-    // overlaps
-    // print
-
-    #[test]
-    fn display_exact_bits_match() {
+    fn effect_set_display_exact_bits_match() {
         assert_eq!(format!("{}", effect_sets::Empty), "Empty");
         assert_eq!(format!("{}", effect_sets::PC), "PC");
         assert_eq!(format!("{}", effect_sets::Any), "Any");
@@ -335,12 +333,76 @@ mod tests {
     }
 
     #[test]
-    fn display_multiple_bits() {
-        let union = effect_sets::Stack.union(effect_sets::Locals);
+    fn effect_set_display_multiple_bits() {
         assert_eq!(format!("{}", effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC))), "Frame");
-        println!("{}", union);
-        println!("{}", effect_sets::Stack.union(effect_sets::Locals.union(effect_sets::PC)));
         assert_eq!(format!("{}", effect_sets::Stack.union(effect_sets::Locals)), "Stack|Locals");
         assert_eq!(format!("{}", effect_sets::PC.union(effect_sets::Allocator)), "PC|Allocator");
     }
+
+    #[test]
+    fn effect_any_includes_everything() {
+        assert_subeffect(effects::Allocator, effects::Any);
+        assert_subeffect(effects::Frame, effects::Any);
+        assert_subeffect(effects::Memory, effects::Any);
+        // Let's do a less standard effect too
+        assert_subeffect(
+            Effect::from_sets(effect_sets::Control, effect_sets::Any),
+            effects::Any
+        );
+    }
+
+    #[test]
+    fn effect_union_works() {
+        assert_bit_equal(
+            Effect::from_read(effect_sets::Any)
+                .union(Effect::from_write(effect_sets::Any)),
+            effects::Any
+        );
+        assert_bit_equal(
+            effects::Empty.union(effects::Empty),
+            effects::Empty
+        );
+        assert_subeffect(
+            effects::Control.union(effects::Frame),
+            effects::Any
+        );
+        assert_not_subeffect(
+            effects::Frame.union(effects::Locals),
+            effects::PC
+        );
+    }
+
+    #[test]
+    fn effect_intersect_works() {
+        assert_subeffect(effects::Memory.intersect(effects::Control), effects::Empty);
+        assert_subeffect(effects::Frame.intersect(effects::PC), effects::PC);
+        assert_subeffect(
+            Effect::from_sets(effect_sets::Allocator, effect_sets::Other)
+                .intersect(Effect::from_sets(effect_sets::Stack, effect_sets::PC)),
+            effects::Empty
+        )
+    }
+
+    #[test]
+    fn effect_display_exact_bits_match() {
+        assert_eq!(format!("{}", effects::Empty), "Empty, Empty");
+        assert_eq!(format!("{}", effects::PC), "PC, PC");
+        assert_eq!(format!("{}", effects::Any), "Any, Any");
+        assert_eq!(format!("{}", effects::Frame), "Frame, Frame");
+        assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame, Frame");
+        assert_eq!(format!("{}", Effect::from_write(effect_sets::Control)), "Any, Control");
+        assert_eq!(format!("{}", Effect::from_sets(effect_sets::Allocator, effect_sets::Memory)), "Allocator, Memory");
+    }
+
+    #[test]
+    fn effect_display_multiple_bits() {
+        assert_eq!(format!("{}", effects::Stack.union(effects::Locals.union(effects::PC))), "Frame, Frame");
+        assert_eq!(format!("{}", effects::Stack.union(effects::Locals)), "Stack|Locals, Stack|Locals");
+        assert_eq!(format!("{}", effects::PC.union(effects::Allocator)), "PC|Allocator, PC|Allocator");
+        assert_eq!(format!("{}", Effect::from_sets(effect_sets::Other, effect_sets::PC)
+            .union(Effect::from_sets(effect_sets::Memory, effect_sets::Stack))),
+            "Memory, Stack|PC"
+        );
+    }
+
 }

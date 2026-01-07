@@ -145,6 +145,13 @@ $bits.keys.sort.map {|effect_name|
 puts "}"
 
 
+puts "pub mod effects {
+  use super::*;"
+$bits.keys.sort.map {|effect_name|
+    puts "  pub const #{effect_name}: Effect = Effect::from_set(effect_sets::#{effect_name});"
+}
+puts "}"
+
 # puts "pub mod effects {
 #   use super::*;"
 # $bits.keys.sort.map {|effect_name|

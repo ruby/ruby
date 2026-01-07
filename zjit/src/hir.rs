@@ -1134,9 +1134,7 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
-        Effect::from_write(effect_sets::Allocator).includes(
-            self.get_effects()
-        )
+        effect_sets::Allocator.includes(self.get_effects().write())
     }
 }
 

@@ -37,3 +37,16 @@ pub mod effect_sets {
   pub const PC: EffectSet = EffectSet::from_bits(bits::PC);
   pub const Stack: EffectSet = EffectSet::from_bits(bits::Stack);
 }
+pub mod effects {
+  use super::*;
+  pub const Allocator: Effect = Effect::from_set(effect_sets::Allocator);
+  pub const Any: Effect = Effect::from_set(effect_sets::Any);
+  pub const Control: Effect = Effect::from_set(effect_sets::Control);
+  pub const Empty: Effect = Effect::from_set(effect_sets::Empty);
+  pub const Frame: Effect = Effect::from_set(effect_sets::Frame);
+  pub const Locals: Effect = Effect::from_set(effect_sets::Locals);
+  pub const Memory: Effect = Effect::from_set(effect_sets::Memory);
+  pub const Other: Effect = Effect::from_set(effect_sets::Other);
+  pub const PC: Effect = Effect::from_set(effect_sets::PC);
+  pub const Stack: Effect = Effect::from_set(effect_sets::Stack);
+}
