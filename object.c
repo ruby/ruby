@@ -2006,7 +2006,7 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * call-seq:
  *   self > other-> true, false, or nil
  *
- * Returns whether +self+ is a superclass of +other+ or is of the same class as +other+,
+ * Returns whether +self+ is a superclass of +other+,
  * or +nil+ if there is no relationship between the two:
  *
  *   Numeric > Float # => true
