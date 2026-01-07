@@ -1061,7 +1061,8 @@ impl Insn {
             Insn::StringCopy { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::NewArray { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::NewHash { elements, .. } => {
-                // Empty is elidable
+                // NewHash's operands may be hashed and compared for equality, which could have
+                // side-effects. Empty hashes are definitely elidable.
                 if elements.is_empty() {
                     Effect::from_write(effect_sets::Allocator)
                 }
