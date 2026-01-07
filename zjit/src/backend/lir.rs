@@ -1682,6 +1682,10 @@ impl Assembler
         // First, create the pool of registers.
         let mut pool = RegisterPool::new(regs.clone(), self.stack_base_idx);
 
+        // Mapping between VReg and register or stack slot for each VReg index.
+        // None if no register or stack slot has been allocated for the VReg.
+        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
+
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
 
@@ -1691,24 +1695,13 @@ impl Assembler
         // live_ranges is indexed by original `index` given by the iterator.
         let mut asm_local = Assembler::new_with_asm(&self);
 
-        // Mapping between VReg and register or stack slot for each VReg index.
-        // None if no register or stack slot has been allocated for the VReg.
-        // TODO: AARON make sure live ranges gets copied when initializing the new assembler
-        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; asm_local.live_ranges.len()];
-
         let iterator = &mut self.instruction_iterator();
 
         let asm = &mut asm_local;
 
-        let current_block_id = asm.current_block().id;
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
 
         while let Some((index, mut insn)) = iterator.next(asm) {
-            if current_block_id != asm.current_block().id {
-                vreg_opnd.clear();
-                vreg_opnd.reserve(asm.live_ranges.len());
-            }
-
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
             if let Insn::FrameSetup { .. } = insn {
                 assert!(asm.current_block().entry);
