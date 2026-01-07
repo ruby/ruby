@@ -295,28 +295,27 @@ size_t rb_sym_immortal_count(void);
 
 /*
  *  call-seq:
- *     ObjectSpace.count_symbols([result_hash]) -> hash
+ *     ObjectSpace.count_symbols(result_hash = nil) -> hash
  *
- *  Counts symbols for each Symbol type.
+ *  Returns a hash containing the number of objects for each Symbol type.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *  The types of Symbols are the following:
  *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
+ *  - +mortal_dynamic_symbol+: Symbols that are garbage collectable.
+ *  - +immortal_dynamic_symbol+: Symbols that are objects allocated from the
+ *    garbage collector, but are not garbage collectable.
+ *  - +immortal_static_symbol+: Symbols that are not allocated from the
+ *    garbage collector, and are thus not garbage collectable.
+ *  - +immortal_symbol+: the sum of +immortal_dynamic_symbol+ and +immortal_static_symbol+.
  *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
+ *
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
- *
- *  On this version of MRI, they have 3 types of Symbols (and 1 total counts).
- *
- *   * mortal_dynamic_symbol: GC target symbols (collected by GC)
- *   * immortal_dynamic_symbol: Immortal symbols promoted from dynamic symbols (do not collected by GC)
- *   * immortal_static_symbol: Immortal symbols (do not collected by GC)
- *   * immortal_symbol: total immortal symbols (immortal_dynamic_symbol+immortal_static_symbol)
  */
 
 static VALUE
