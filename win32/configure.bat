@@ -208,7 +208,7 @@ goto :loop ;
   shift
 goto :loop ;
 :baseruby
-  echo>> %config_make% HAVE_BASERUBY =
+  echo>> %config_make% HAVE_BASERUBY = yes
   echo>> %config_make% BASERUBY = %~2
   echo>>%confargs%  %1=%2 \
   shift

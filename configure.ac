@@ -83,9 +83,17 @@ AC_ARG_WITH(baseruby,
 	],
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
+		HAVE_BASERUBY=
 	])
-AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose || HAVE_BASERUBY=no
+AS_IF([test "$HAVE_BASERUBY" = no], [
+    # --without-baseruby
+], [error=`RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose 2>&1`], [
+    HAVE_BASERUBY=yes
+], [test "$HAVE_BASERUBY" = ""], [ # no --with-baseruby option
+    AC_MSG_WARN($error)            # just warn and continue
+    HAVE_BASERUBY=no
+], [                               # the ruby given by --with-baseruby is too old
+    AC_MSG_ERROR($error)           # bail out
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [

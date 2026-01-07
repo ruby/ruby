@@ -24,6 +24,9 @@ MAKEFILE = Makefile
 CPU = PROCESSOR_LEVEL
 CC = $(CC) -nologo -source-charset:utf-8
 CPP = $(CC) -EP
+!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" == ""
+BASERUBY = ruby
+!endif
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -46,8 +49,8 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
-!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
-	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat" --verbose
+!if "$(HAVE_BASERUBY)" != "no"
+	@$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat" --verbose $(HAVE_BASERUBY:yes=|| exit )|| exit 0
 !endif
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
