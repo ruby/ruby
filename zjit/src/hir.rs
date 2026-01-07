@@ -4417,8 +4417,7 @@ impl Function {
         // otherwise necessary to keep around
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
-                let insn = &self.insns[insn_id.0];
-                if !insn.is_elidable() {
+                if !&self.insns[insn_id.0].is_elidable() {
                     worklist.push_back(*insn_id);
                 }
             }

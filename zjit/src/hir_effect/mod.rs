@@ -96,10 +96,7 @@ pub struct EffectPrinter<'a> {
 
 impl<'a> std::fmt::Display for EffectPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let read = format!("{}", self.inner.read);
-        let write = format!("{}", self.inner.write);
-        write!(f, "{read}, {write}")?;
-        Ok(())
+        write!(f, "{}, {}", self.inner.read, self.inner.write)
     }
 }
 

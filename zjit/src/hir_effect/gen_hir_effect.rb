@@ -1,136 +1,137 @@
 # Generate hir_effect.inc.rs. To do this, we build up a DAG that
-# represents a slice of the ZJIT effect hierarchy.
+# represents the ZJIT effect hierarchy.
+# TODO(Jacob): Make sure this function works after all the types and effects replacements
 
 require 'set'
 
-# Type represents not just a Ruby class but a named union of other types.
-class Type
-  attr_accessor :name, :subtypes
+# Effect represents not just a Ruby class but a named union of other effects.
+class Effect
+  attr_accessor :name, :subeffects
 
-  def initialize name, subtypes=nil
+  def initialize name, subeffects=nil
     @name = name
-    @subtypes = subtypes || []
+    @subeffects = subeffects || []
   end
 
-  def all_subtypes
-    subtypes.flat_map { |subtype| subtype.all_subtypes } + subtypes
+  def all_subeffects
+    subeffects.flat_map { |subeffect| subeffect.all_subeffects } + subeffects
   end
 
-  def subtype name
-    result = Type.new name
-    @subtypes << result
+  def subeffect name
+    result = Effect.new name
+    @subeffects << result
     result
   end
 end
 
 # Helper to generate graphviz.
-def to_graphviz_rec type
-  type.subtypes.each {|subtype|
-    puts type.name + "->" + subtype.name + ";"
+def to_graphviz_rec effect
+  effect.subeffects.each {|subeffect|
+    puts effect.name + "->" + subeffect.name + ";"
   }
-  type.subtypes.each {|subtype|
-    to_graphviz_rec subtype
+  effect.subeffect.each {|subeffect|
+    to_graphviz_rec subeffect
   }
 end
 
 # Generate graphviz.
-def to_graphviz type
+def to_graphviz effect
   puts "digraph G {"
-  to_graphviz_rec type
+  to_graphviz_rec effect
   puts "}"
 end
 
-# ===== Start generating the type DAG =====
+# ===== Start generating the effect DAG =====
 
-# Start at Any. All types are subtypes of Any.
-any = Type.new "Any"
+# Start at Any. All effects are subeffects of Any.
+any = Effect.new 'Any'
 # Build the effect universe.
-allocator = any.subtype "Allocator"
-control = any.subtype "Control"
-memory = any.subtype "Memory"
-other = memory.subtype "Other"
-frame = memory.subtype "Frame"
-pc = frame.subtype "PC"
-locals = frame.subtype "Locals"
-stack = frame.subtype "Stack"
+allocator = any.subeffect 'Allocator'
+control = any.subeffect 'Control'
+memory = any.subeffect 'Memory'
+other = memory.subeffect 'Other'
+frame = memory.subeffect 'Frame'
+pc = frame.subeffect 'PC'
+locals = frame.subeffect 'Locals'
+stack = frame.subeffect 'Stack'
 
 # Use the smallest unsigned value needed to describe all effect bits
 # If it becomes an issue, this can be generated but for now we do it manually
-$int_label = "u8"
+$int_label = 'u8'
 
-# Define a new type that can be subclassed (most of them).
-# If c_name is given, mark the rb_cXYZ object as equivalent to this exact type.
-def base_type name, c_name: nil
-  type = $object.subtype name
-  exact = type.subtype(name+"Exact")
-  subclass = type.subtype(name+"Subclass")
+# Define a new effect that can be subclassed (most of them).
+# If c_name is given, mark the rb_cXYZ object as equivalent to this exact effect.
+def base_effect name, c_name: nil
+  effect = $object.subeffect name
+  exact = effect.subeffect(name+'Exact')
+  subclass = effect.subeffect(name+'Subclass')
   if c_name
     $exact_c_names[exact.name] = c_name
     $inexact_c_names[subclass.name] = c_name
   end
   $builtin_exact << exact.name
   $subclass << subclass.name
-  [type, exact]
+  [effect, exact]
 end
 
-# Define a new type that cannot be subclassed.
-# If c_name is given, mark the rb_cXYZ object as equivalent to this type.
-def final_type name, base: $object, c_name: nil
+# Define a new effect that cannot be subclassed.
+# If c_name is given, mark the rb_cXYZ object as equivalent to this effect.
+def final_effect name, base: $object, c_name: nil
   if c_name
     $exact_c_names[name] = c_name
   end
-  type = base.subtype name
-  $builtin_exact << type.name
-  type
+  effect = base.subeffect name
+  $builtin_exact << effect.name
+  effect
 end
 
-# Assign individual bits to type leaves and union bit patterns to nodes with subtypes
+# Assign individual bits to effect leaves and union bit patterns to nodes with subeffects
 num_bits = 0
 $bits = {"Empty" => ["0#{$int_label}"]}
 $numeric_bits = {"Empty" => 0}
-Set[any, *any.all_subtypes].sort_by(&:name).each {|type|
-  subtypes = type.subtypes
-  if subtypes.empty?
+Set[any, *any.all_subeffects].sort_by(&:name).each {|effect|
+  subeffects = effect.subeffects
+  if subeffects.empty?
     # Assign bits for leaves
-    $bits[type.name] = ["1#{$int_label} << #{num_bits}"]
-    $numeric_bits[type.name] = 1 << num_bits
+    $bits[effect.name] = ["1#{$int_label} << #{num_bits}"]
+    $numeric_bits[effect.name] = 1 << num_bits
     num_bits += 1
   else
     # Assign bits for unions
-    $bits[type.name] = subtypes.map(&:name).sort
+    $bits[effect.name] = subeffects.map(&:name).sort
   end
 }
-[*any.all_subtypes, any].each {|type|
-  subtypes = type.subtypes
-  unless subtypes.empty?
-    $numeric_bits[type.name] = subtypes.map {|ty| $numeric_bits[ty.name]}.reduce(&:|)
+[*any.all_subeffects, any].each {|effect|
+  subeffects = effect.subeffects
+  unless subeffects.empty?
+    $numeric_bits[effect.name] = subeffects.map {|ty| $numeric_bits[ty.name]}.reduce(&:|)
   end
 }
 
-# Unions are for names of groups of type bit patterns that don't fit neatly
+# Unions are for names of groups of effect bit patterns that don't fit neatly
 # into the Ruby class hierarchy. For example, we might want to refer to a union
 # of TrueClassExact|FalseClassExact by the name BoolExact even though a "bool"
 # doesn't exist as a class in Ruby.
-def add_union name, type_names
-  type_names = type_names.sort
-  $bits[name] = type_names
-  $numeric_bits[name] = type_names.map {|type_name| $numeric_bits[type_name]}.reduce(&:|)
+def add_union name, effect_names
+  effect_names = effect_names.sort
+  $bits[name] = effect_names
+  $numeric_bits[name] = effect_names.map {|effect_name| $numeric_bits[effect_name]}.reduce(&:|)
 end
 
 # ===== Finished generating the DAG; write Rust code =====
 
 puts "// This file is @generated by src/hir/gen_hir_effect.rb."
 puts "mod bits {"
-$bits.keys.sort.map {|type_name|
-  subtypes = $bits[type_name].join(" | ")
-  puts "  pub const #{type_name}: #{$int_label} = #{subtypes};"
+$bits.keys.sort.map {|effect_name|
+  subeffects = $bits[effect_name].join(" | ")
+  puts "  pub const #{effect_name}: #{$int_label} = #{subeffects};"
 }
 puts "  pub const AllBitPatterns: [(&str, #{$int_label}); #{$bits.size}] = ["
 # Sort the bit patterns by decreasing value so that we can print the densest
-# possible to-string representation of a Type. For example, CSigned instead of
+# possible to-string representation of an Effect. For example, CSigned instead of
 # CInt8|CInt16|...
-$numeric_bits.sort_by {|key, val| -val}.each {|type_name, _|
-  puts "    (\"#{type_name}\", #{type_name}),"
+$numeric_bits.sort_by {|key, val| -val}.each {|effect_name, _|
+  puts "    (\"#{effect_name}\", #{effect_name}),"
 }
 puts "  ];"
 puts "  pub const NumEffectBits: #{$int_label} = #{num_bits};
@@ -138,15 +139,15 @@ puts "  pub const NumEffectBits: #{$int_label} = #{num_bits};
 
 puts "pub mod effect_sets {
   use super::*;"
-$bits.keys.sort.map {|type_name|
-    puts "  pub const #{type_name}: EffectSet = EffectSet::from_bits(bits::#{type_name});"
+$bits.keys.sort.map {|effect_name|
+    puts "  pub const #{effect_name}: EffectSet = EffectSet::from_bits(bits::#{effect_name});"
 }
 puts "}"
 
 
 # puts "pub mod effects {
 #   use super::*;"
-# $bits.keys.sort.map {|type_name|
-#     puts "  pub const #{type_name}: EffectSet = EffectSet::from_bits(bits::#{type_name});"
+# $bits.keys.sort.map {|effect_name|
+#     puts "  pub const #{effect_name}: EffectSet = EffectSet::from_bits(bits::#{effect_name});"
 # }
 # puts "}"
