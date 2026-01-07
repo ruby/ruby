@@ -699,7 +699,7 @@ fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: 
 fn gen_guard_not_shared(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
     let recv = asm.load(recv);
     // It's a heap object, so check the shared flag
-    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
     asm.test(flags, (RUBY_ELTS_SHARED as u64).into());
     asm.jnz(side_exit(jit, state, SideExitReason::GuardNotShared));
     recv

@@ -512,7 +512,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardBitEquals(_)             => exit_guard_bit_equals_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
         GuardNotFrozen                => exit_guard_not_frozen_failure,
-        GuardNotShared           => exit_guard_not_shared_failure,
+        GuardNotShared                => exit_guard_not_shared_failure,
         GuardLess                     => exit_guard_less_failure,
         GuardGreaterEq                => exit_guard_greater_eq_failure,
         CalleeSideExit                => exit_callee_side_exit,

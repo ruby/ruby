@@ -337,11 +337,9 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     if let &[index, val] = args {
         if fun.likely_a(recv, types::ArrayExact, state)
             && fun.likely_a(index, types::Fixnum, state)
-            && fun.likely_a(val, types::BasicObject, state)
         {
             let recv = fun.coerce_to(block, recv, types::ArrayExact, state);
             let index = fun.coerce_to(block, index, types::Fixnum, state);
-            let val = fun.coerce_to(block, val, types::BasicObject, state);
             let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
             let recv = fun.push_insn(block, hir::Insn::GuardNotShared { recv, state });
 
