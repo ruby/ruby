@@ -375,6 +375,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ArrayArefFixnum { array, index, .. } => gen_aref_fixnum(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayAset { array, index, val } => {
+            no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
+        }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
@@ -449,6 +452,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
+        Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
@@ -689,6 +693,15 @@ fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: 
     asm.test(flags, (RUBY_FL_FREEZE as u64).into());
     // Side-exit if frozen
     asm.jnz(side_exit(jit, state, GuardNotFrozen));
+    recv
+}
+
+fn gen_guard_not_shared(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
+    let recv = asm.load(recv);
+    // It's a heap object, so check the shared flag
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_ELTS_SHARED as u64).into());
+    asm.jnz(side_exit(jit, state, SideExitReason::GuardNotShared));
     recv
 }
 
@@ -1529,6 +1542,20 @@ fn gen_aref_fixnum(
     asm_ccall!(asm, rb_ary_entry, array, unboxed_idx)
 }
 
+fn gen_array_aset(
+    asm: &mut Assembler,
+    array: Opnd,
+    index: Opnd,
+    val: Opnd,
+) {
+    let unboxed_idx = asm.load(index);
+    let array = asm.load(array);
+    let array_ptr = gen_array_ptr(asm, array);
+    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+    let elem_ptr = asm.add(array_ptr, elem_offset);
+    asm.store(Opnd::mem(VALUE_BITS, elem_ptr, 0), val);
+}
+
 fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_ary_pop, array)
@@ -1543,6 +1570,14 @@ fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
     asm.test(flags, (RARRAY_EMBED_FLAG as u64).into());
     let heap_len = Opnd::mem(c_long::BITS as u8, array, RUBY_OFFSET_RARRAY_AS_HEAP_LEN);
     asm.csel_nz(embedded_len, heap_len)
+}
+
+fn gen_array_ptr(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
+    let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_ptr = Opnd::mem(usize::BITS as u8, array, RUBY_OFFSET_RARRAY_AS_HEAP_PTR);
+    let embedded_ptr = asm.lea(Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RARRAY_AS_ARY));
+    asm.csel_nz(embedded_ptr, heap_ptr)
 }
 
 /// Compile opt_newarray_hash - create a hash from array elements

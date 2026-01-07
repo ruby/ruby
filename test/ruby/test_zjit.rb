@@ -1646,6 +1646,115 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_aref]
   end
 
+  def test_array_fixnum_aset
+    assert_compiles '[1, 2, 7]', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      arr = [1,2,3]
+      test(arr, 2)
+      arr = [1,2,3]
+      test(arr, 2)
+      arr
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_fixnum_aset_returns_value
+    assert_compiles '7', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test([1,2,3], 2)
+      test([1,2,3], 2)
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_fixnum_aset_out_of_bounds
+    assert_compiles '[1, 2, 3, nil, nil, 7]', %q{
+      def test(arr)
+        arr[5] = 7
+      end
+      arr = [1,2,3]
+      test(arr)
+      arr = [1,2,3]
+      test(arr)
+      arr
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_negative_index
+    assert_compiles '[1, 2, 7]', %q{
+      def test(arr)
+        arr[-1] = 7
+      end
+      arr = [1,2,3]
+      test(arr)
+      arr = [1,2,3]
+      test(arr)
+      arr
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_shared
+    assert_compiles '[10, 999, -1, -2]', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      end
+      arr = (0..50).to_a
+      test(arr, 0, -1)
+      test(arr, 1, -2)
+      shared = arr[10, 20]
+      test(shared, 0, 999)
+      [arr[10], shared[0], arr[0], arr[1]]
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_frozen
+    assert_compiles 'FrozenError', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      end
+      arr = [1,2,3]
+      test(arr, 1, 9)
+      test(arr, 1, 9)
+      arr.freeze
+      begin
+        test(arr, 1, 9)
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_array_subclass
+    assert_compiles '7', %q{
+      class MyArray < Array; end
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      arr = MyArray.new
+      test(arr, 0)
+      arr = MyArray.new
+      test(arr, 0)
+      arr[0]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_aset_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test([1,2,3], 0)
+      test([1,2,3], 0)
+      begin
+        test([1,2,3], "0")
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
+  end
+
   def test_empty_array_pop
     assert_compiles 'nil', %q{
       def test(arr) = arr.pop

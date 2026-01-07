@@ -4773,6 +4773,36 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dont_optimize_array_aset_if_redefined() {
+        eval(r##"
+            class Array
+              def []=(*args); :redefined; end
+            end
+
+            def test(arr)
+              arr[1] = 10
+            end
+        "##);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :arr, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v16:Fixnum[1] = Const Value(1)
+          v18:Fixnum[10] = Const Value(10)
+          v22:BasicObject = SendWithoutBlock v9, :[]=, v16, v18 # SendFallbackReason: Uncategorized(opt_aset)
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
     fn test_dont_optimize_array_max_if_redefined() {
         eval(r##"
             class Array
@@ -6901,7 +6931,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_array_aset() {
+    fn test_optimize_array_aset_literal() {
         eval("
             def test(arr)
               arr[1] = 10
@@ -6924,9 +6954,90 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v31:ArrayExact = GuardType v9, ArrayExact
-          v32:BasicObject = CCallVariadic v31, :Array#[]=@0x1038, v16, v18
+          v32:ArrayExact = GuardNotFrozen v31
+          v33:ArrayExact = GuardNotShared v32
+          v34:CInt64 = UnboxFixnum v16
+          v35:CInt64 = ArrayLength v33
+          v36:CInt64 = GuardLess v34, v35
+          v37:CInt64[0] = Const CInt64(0)
+          v38:CInt64 = GuardGreaterEq v36, v37
+          ArrayAset v33, v38, v18
+          WriteBarrier v33, v18
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_aset_profiled() {
+        eval("
+            def test(arr, index, val)
+              arr[index] = val
+            end
+            test([], 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :arr, l0, SP@6
+          v3:BasicObject = GetLocal :index, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v35:ArrayExact = GuardType v13, ArrayExact
+          v36:Fixnum = GuardType v14, Fixnum
+          v37:ArrayExact = GuardNotFrozen v35
+          v38:ArrayExact = GuardNotShared v37
+          v39:CInt64 = UnboxFixnum v36
+          v40:CInt64 = ArrayLength v38
+          v41:CInt64 = GuardLess v39, v40
+          v42:CInt64[0] = Const CInt64(0)
+          v43:CInt64 = GuardGreaterEq v41, v42
+          ArrayAset v38, v43, v15
+          WriteBarrier v38, v15
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_aset_array_subclass() {
+        eval("
+            class MyArray < Array; end
+            def test(arr, index, val)
+              arr[index] = val
+            end
+            a = MyArray.new
+            test(a, 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :arr, l0, SP@6
+          v3:BasicObject = GetLocal :index, l0, SP@5
+          v4:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          PatchPoint MethodRedefined(MyArray@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(MyArray@0x1000)
+          v35:ArraySubclass[class_exact:MyArray] = GuardType v13, ArraySubclass[class_exact:MyArray]
+          v36:BasicObject = CCallVariadic v35, :Array#[]=@0x1038, v14, v15
+          CheckInterrupts
+          Return v15
         ");
     }
 
