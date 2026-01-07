@@ -53,10 +53,6 @@ pub struct BasicBlock {
 
     // Input parameters for this block
     pub parameters: Vec<Opnd>,
-
-    /// Live range for each VReg indexed by its `idx``
-    pub(super) live_ranges: Vec<LiveRange>
-
 }
 
 pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
@@ -69,7 +65,6 @@ impl BasicBlock {
             entry,
             insns: vec![],
             parameters: vec![],
-            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
         }
     }
 
@@ -78,44 +73,9 @@ impl BasicBlock {
     }
 
     pub fn push_insn(&mut self, insn: Insn) {
-        // Index of this instruction
-        let insn_idx = self.insns.len();
-
-        // Initialize the live range of the output VReg to insn_idx..=insn_idx
-        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(*idx < self.live_ranges.len());
-            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
-            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
-        }
-
-        // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let opnd_iter = insn.opnd_iter();
-        for opnd in opnd_iter {
-            match *opnd {
-                Opnd::VReg { idx, .. } |
-                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx < self.live_ranges.len(),
-                        "VReg index out of bounds: idx={}, live_ranges.len()={} insn={:?}",
-                        opnd, self.live_ranges.len(), insn);
-                    assert_ne!(self.live_ranges[idx].end, None);
-                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
-                }
-                _ => {}
-            }
-        }
-
         self.insns.push(insn);
     }
 
-    pub(super) fn new_vreg(&mut self, name: usize, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { name: name, idx: self.live_ranges.len(), num_bits };
-        self.live_ranges.push(LiveRange { start: None, end: None });
-        vreg
-    }
-
-    pub fn resize_live_ranges(&mut self, size: usize) {
-        self.live_ranges.resize(size, LiveRange { start: None, end: None });
-    }
 
     pub fn edges(&self) -> EdgePair {
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
@@ -220,7 +180,7 @@ pub enum Opnd
     Value(VALUE),
 
     /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
-    VReg{ name: usize, idx: usize, num_bits: u8 },
+    VReg{ idx: usize, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -236,8 +196,8 @@ impl fmt::Display for Opnd {
             None => write!(f, "None"),
             Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
             Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { name, idx: _, num_bits } if *num_bits == 64 => write!(f, "v{name}"),
-            VReg { name, idx: _, num_bits } => write!(f, "VReg{num_bits}(v{name})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "v{idx}"),
+            VReg { idx, num_bits } => write!(f, "VReg{num_bits}(v{idx})"),
             Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
             Imm(value) => write!(f, "Imm(0x{value:x})"),
             UImm(value) if *value < 10 => write!(f, "{value:x}"),
@@ -254,8 +214,8 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { name, idx: _, num_bits } if *num_bits == 64 => write!(fmt, "VReg({name})"),
-            VReg { name, idx: _, num_bits } => write!(fmt, "VReg{num_bits}({name})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({idx})"),
+            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -279,7 +239,7 @@ impl Opnd
                 })
             },
 
-            Opnd::VReg{name: _, idx, num_bits: out_num_bits } => {
+            Opnd::VReg{idx, num_bits: out_num_bits } => {
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
@@ -330,7 +290,7 @@ impl Opnd
         match *self {
             Opnd::Reg(reg) => Opnd::Reg(reg.with_num_bits(num_bits)),
             Opnd::Mem(Mem { base, disp, .. }) => Opnd::Mem(Mem { base, disp, num_bits }),
-            Opnd::VReg { name, idx, .. } => Opnd::VReg { name, idx, num_bits },
+            Opnd::VReg { idx, .. } => Opnd::VReg { idx, num_bits },
             _ => unreachable!("with_num_bits should not be used for: {self:?}"),
         }
     }
@@ -344,8 +304,8 @@ impl Opnd
     /// instructions.
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
-            Opnd::VReg { name, idx, num_bits } => {
-                Opnd::VReg { name, idx: indices[idx], num_bits }
+            Opnd::VReg { idx, num_bits } => {
+                Opnd::VReg { idx: indices[idx], num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
                 Opnd::Mem(Mem { base: MemBase::VReg(indices[idx]), disp, num_bits })
@@ -1446,6 +1406,9 @@ pub struct Assembler {
     pub basic_blocks: Vec<BasicBlock>,
     current_block_id: BlockId,
 
+    /// Live range for each VReg indexed by its `idx``
+    pub(super) live_ranges: Vec<LiveRange>,
+
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
@@ -1461,9 +1424,11 @@ pub struct Assembler {
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>,
 
-    /// The name of the next vreg. Right now this will be used for displaying
-    /// a name of the vreg (not for live range calculation)
-    next_vreg_id: usize,
+    /// Current instruction index, incremented for each instruction pushed
+    idx: usize,
+
+    /// Index in label_names where block labels start
+    block_label_offset: usize,
 }
 
 impl Assembler
@@ -1474,10 +1439,12 @@ impl Assembler
             label_names: Vec::default(),
             accept_scratch_reg: false,
             stack_base_idx: 0,
-            next_vreg_id: 0,
             leaf_ccall_stack_size: None,
             basic_blocks: Vec::default(),
             current_block_id: BlockId(0),
+            live_ranges: Vec::default(),
+            idx: 0,
+            block_label_offset: 0,
         }
     }
 
@@ -1505,11 +1472,12 @@ impl Assembler
         // Initialize basic blocks from the old assembler, preserving hir_block_id and entry flag
         // but with empty instruction lists
         for old_block in &old_asm.basic_blocks {
-            //let block =
             asm.new_block_from_old_block(&old_block);
-            // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
-            // FIXME: probably do this block.resize_live_ranges(block.live_ranges.len());
         }
+
+        // Initialize live_ranges to match the old assembler's size
+        // This allows reusing VRegs from the old assembler
+        asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
 
         asm
     }
@@ -1530,8 +1498,7 @@ impl Assembler
     // one assembler to a new one.
     pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let mut lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry);
-        lir_bb.live_ranges.resize(old_block.live_ranges.len(), LiveRange { start: None, end: None });
+        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry);
         self.basic_blocks.push(lir_bb);
         bb_id
     }
@@ -1562,16 +1529,32 @@ impl Assembler
         }
     }
 
-    pub fn live_ranges(&mut self) -> &Vec<LiveRange> {
-        &self.current_block().live_ranges
+    // Create labels for all basic blocks. Must be called before linearize_instructions or block_label.
+    pub fn init_block_labels(&mut self) {
+        if self.block_label_offset == 0 && !self.basic_blocks.is_empty() {
+            self.block_label_offset = self.label_names.len();
+            for block in &self.basic_blocks {
+                let label_name = format!("bb{}", block.id.0);
+                self.label_names.push(label_name);
+            }
+        }
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
+        // Emit instructions with labels
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
         for block in &self.basic_blocks {
+            // Insert a label at the start of each block
+            let label = self.block_label(block.id);
+            insns.push(Insn::Label(Target::Label(label)));
             insns.extend_from_slice(&block.insns);
         }
         insns
+    }
+
+    // Get the label for a given block.
+    pub(super) fn block_label(&self, block_id: BlockId) -> Label {
+        Label(self.block_label_offset + block_id.0)
     }
 
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
@@ -1598,9 +1581,8 @@ impl Assembler
 
     /// Build an Opnd::VReg and initialize its LiveRange
     pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let name = self.next_vreg_id;
-        let vreg = self.current_block().new_vreg(name, num_bits);
-        self.next_vreg_id += 1;
+        let vreg = Opnd::VReg { idx: self.live_ranges.len(), num_bits };
+        self.live_ranges.push(LiveRange { start: None, end: None });
         vreg
     }
 
@@ -1608,6 +1590,8 @@ impl Assembler
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
+        let insn_idx = self.idx;
+
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
             let opnd_iter = insn.opnd_iter();
@@ -1615,6 +1599,17 @@ impl Assembler
                 assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
             }
         }
+
+        // Initialize the live range of the output VReg to insn_idx..=insn_idx
+        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
+            assert!(*idx < self.live_ranges.len());
+            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
+            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
+        }
+
+        // TODO: Add idx field to Insn to store instruction index
+        // insn.idx = insn_idx;
+        self.idx += 1;
 
         self.current_block().push_insn(insn);
     }
@@ -1693,20 +1688,19 @@ impl Assembler
         // Mapping between VReg and register or stack slot for each VReg index.
         // None if no register or stack slot has been allocated for the VReg.
         // TODO: AARON make sure live ranges gets copied when initializing the new assembler
-        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; asm_local.current_block().live_ranges.len()];
+        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; asm_local.live_ranges.len()];
 
         let iterator = &mut self.instruction_iterator();
 
         let asm = &mut asm_local;
 
         let current_block_id = asm.current_block().id;
+        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
 
         while let Some((index, mut insn)) = iterator.next(asm) {
-            let live_ranges = self.live_ranges();
-
             if current_block_id != asm.current_block().id {
                 vreg_opnd.clear();
-                vreg_opnd.reserve(asm.current_block().live_ranges.len());
+                vreg_opnd.reserve(asm.live_ranges.len());
             }
 
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
@@ -1829,7 +1823,7 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
-                    Opnd::VReg { name: _, idx, num_bits } => {
+                    Opnd::VReg { idx, num_bits } => {
                         *opnd = vreg_opnd[idx].unwrap().with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
@@ -2122,7 +2116,7 @@ impl fmt::Display for Assembler {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                             Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
-                            Target::Block(_) => todo!(),
+                            Target::Block(edge) => write!(f, " bb{}", edge.target.0)?,
                         }
                     }
 

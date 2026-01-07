@@ -1,3 +1,5 @@
+use std::mem::take;
+
 use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
@@ -388,12 +390,11 @@ impl Assembler {
         }
 
         let mut asm_local = Assembler::new_with_asm(&self);
+        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
         let asm = &mut asm_local;
 
         while let Some((index, mut insn)) = iterator.next(asm) {
-            let live_ranges = self.live_ranges();
-
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -939,7 +940,7 @@ impl Assembler {
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
             fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
                 let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                     // If the jump offset fits into the conditional jump as
@@ -990,31 +991,25 @@ impl Assembler {
                 (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
             }
 
-            match target {
+            let label = match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
                     generate_branch::<CONDITION>(cb, src_addr, dst_addr);
+                    return;
                 },
-                Target::Label(label_idx) => {
-                    // Try to use a single B.cond instruction
-                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        // +1 since src_addr is after the instruction while A64
-                        // counts the offset relative to the start.
-                        let offset = (dst_addr - src_addr) / 4 + 1;
-                        if bcond_offset_fits_bits(offset) {
-                            bcond(cb, CONDITION, InstructionOffset::from_insns(offset as i32));
-                            Ok(())
-                        } else {
-                            Err(())
-                        }
-                    });
-                },
+                Target::Label(l) => l,
+                Target::Block(edge) => asm.block_label(edge.target),
                 Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
-                Target::Block(_) => todo!(),
             };
+            // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
+            // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
+            cb.label_ref(label, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
+                generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
+                Ok(())
+            });
         }
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
@@ -1463,53 +1458,53 @@ impl Assembler {
                     br(cb, opnd.into());
                 },
                 Insn::Jmp(target) => {
-                    match *target {
+                    match target {
                         Target::CodePtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, dst_ptr, true);
+                            emit_jmp_ptr(cb, *dst_ptr, true);
                         },
                         Target::Label(label_idx) => {
-                            // Reserve space for a single B instruction
-                            cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                                // +1 since src_addr is after the instruction while A64
-                                // counts the offset relative to the start.
-                                let offset = (dst_addr - src_addr) / 4 + 1;
-                                if b_offset_fits_bits(offset) {
-                                    b(cb, InstructionOffset::from_insns(offset as i32));
-                                    Ok(())
-                                } else {
-                                    Err(())
-                                }
+                            cb.label_ref(*label_idx, 4, |cb, src_addr, dst_addr| {
+                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
+                                b(cb, InstructionOffset::from_bytes(bytes));
+                                Ok(())
+                            });
+                        },
+                        Target::Block(edge) => {
+                            let label = self.block_label(edge.target);
+                            cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
+                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
+                                b(cb, InstructionOffset::from_bytes(bytes));
+                                Ok(())
                             });
                         },
                         Target::SideExit { .. } => {
                             unreachable!("Target::SideExit should have been compiled by compile_exits")
                         },
-                        Target::Block(_) => todo!(),
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::EQ}>(self, cb, target.clone());
                 },
                 Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::NE}>(self, cb, target.clone());
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LT}>(self, cb, target.clone());
                 },
                 Insn::Jg(target) => {
-                    emit_conditional_jump::<{Condition::GT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GT}>(self, cb, target.clone());
                 },
                 Insn::Jge(target) => {
-                    emit_conditional_jump::<{Condition::GE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GE}>(self, cb, target.clone());
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LS}>(self, cb, target.clone());
                 },
                 Insn::Jb(target) => {
-                    emit_conditional_jump::<{Condition::CC}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::CC}>(self, cb, target.clone());
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::VS}>(self, cb, target.clone());
                 },
                 Insn::Joz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), true, target.clone());
@@ -1594,9 +1589,12 @@ impl Assembler {
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+    pub fn compile_with_regs(mut self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_reg = !self.accept_scratch_reg;
+
+        // Initialize block labels before any processing
+        self.init_block_labels();
         asm_dump!(self, init);
 
         let asm = self.arm64_split();
