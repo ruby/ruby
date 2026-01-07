@@ -1521,12 +1521,21 @@ impl Assembler
     }
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
-        let insns = take(&mut self.basic_blocks[0].insns);
-        InsnIter {
-            old_insns_iter: insns.into_iter(),
+        let blocks = take(&mut self.basic_blocks);
+        let mut iter = InsnIter {
+            blocks,
+            current_block_idx: 0,
+            current_insn_iter: vec![].into_iter(), // Will be replaced immediately
             peeked: None,
             index: 0,
+        };
+
+        // Set up first block's iterator
+        if !iter.blocks.is_empty() {
+            iter.current_insn_iter = take(&mut iter.blocks[0].insns).into_iter();
         }
+
+        iter
     }
 
     // Create labels for all basic blocks. Must be called before linearize_instructions or block_label.
@@ -2157,7 +2166,9 @@ impl fmt::Debug for Assembler {
 }
 
 pub struct InsnIter {
-    old_insns_iter: std::vec::IntoIter<Insn>,
+    blocks: Vec<BasicBlock>,
+    current_block_idx: usize,
+    current_insn_iter: std::vec::IntoIter<Insn>,
     peeked: Option<(usize, Insn)>,
     index: usize,
 }
@@ -2168,7 +2179,7 @@ impl InsnIter {
     pub fn peek(&mut self) -> Option<&(usize, Insn)> {
         // If we don't have a peeked value, get one
         if self.peeked.is_none() {
-            let insn = self.old_insns_iter.next()?;
+            let insn = self.current_insn_iter.next()?;
             let idx = self.index;
             self.index += 1;
             self.peeked = Some((idx, insn));
@@ -2177,17 +2188,34 @@ impl InsnIter {
         self.peeked.as_ref()
     }
 
-    // Get the next instruction.  Right now we're passing the "new" assembler
-    // (the assembler we're copying in to) as a parameter.  Once we've
-    // introduced basic blocks to LIR, we'll use the to set the correct BB
-    // on the new assembler, but for now it is unused.
-    pub fn next(&mut self, _new_asm: &mut Assembler) -> Option<(usize, Insn)> {
+    // Get the next instruction, advancing to the next block when current block is exhausted.
+    // Sets the current block on new_asm when moving to a new block.
+    pub fn next(&mut self, new_asm: &mut Assembler) -> Option<(usize, Insn)> {
         // If we have a peeked value, return it
         if let Some(item) = self.peeked.take() {
             return Some(item);
         }
-        // Otherwise get the next from underlying iterator
-        let insn = self.old_insns_iter.next()?;
+
+        // Try to get the next instruction from current block
+        if let Some(insn) = self.current_insn_iter.next() {
+            let idx = self.index;
+            self.index += 1;
+            return Some((idx, insn));
+        }
+
+        // Current block is exhausted, move to next block
+        self.current_block_idx += 1;
+        if self.current_block_idx >= self.blocks.len() {
+            return None;
+        }
+
+        // Set up the next block
+        let next_block = &mut self.blocks[self.current_block_idx];
+        new_asm.set_current_block(next_block.id);
+        self.current_insn_iter = take(&mut next_block.insns).into_iter();
+
+        // Get first instruction from the new block
+        let insn = self.current_insn_iter.next()?;
         let idx = self.index;
         self.index += 1;
         Some((idx, insn))
