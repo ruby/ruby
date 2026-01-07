@@ -24,6 +24,9 @@ mod bits {
   ];
   pub const NumEffectBits: u8 = 6;
 }
+pub mod effect_types {
+  pub type EffectBits = u8;
+}
 pub mod effect_sets {
   use super::*;
   pub const Allocator: EffectSet = EffectSet::from_bits(bits::Allocator);

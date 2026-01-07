@@ -2,10 +2,7 @@
 
 #![allow(non_upper_case_globals)]
 use crate::hir::{PtrPrintMap};
-
-// We use a type alias for the width of our Effect bitset.
-// This width should reflect hir_effect.inc.rs.
-type EffectBits = u8;
+include!("hir_effect.inc.rs");
 
 // NOTE: Effect very intentionally does not support Eq or PartialEq; we almost never want to check
 // bit equality of types in the compiler but instead check subtyping, intersection, union, etc.
@@ -25,7 +22,7 @@ type EffectBits = u8;
 /// system. This explicit design with a lattice allows us many bits for effects.
 #[derive(Clone, Copy, Debug)]
 pub struct EffectSet {
-    bits: EffectBits
+    bits: effect_types::EffectBits
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -44,9 +41,6 @@ pub struct Effect {
     read: EffectSet,
     write: EffectSet
 }
-
-include!("hir_effect.inc.rs");
-
 
 /// Print adaptor for [`EffectSet`]. See [`PtrPrintMap`].
 pub struct EffectSetPrinter<'a> {
@@ -104,7 +98,7 @@ impl std::fmt::Display for Effect {
 }
 
 impl EffectSet {
-    const fn from_bits(bits: EffectBits) -> Self {
+    const fn from_bits(bits: effect_types::EffectBits) -> Self {
         Self { bits }
     }
 

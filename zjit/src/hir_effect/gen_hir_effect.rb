@@ -137,6 +137,10 @@ puts "  ];"
 puts "  pub const NumEffectBits: #{$int_label} = #{num_bits};
 }"
 
+puts "pub mod effect_types {"
+puts "  pub type EffectBits = #{$int_label};"
+puts "}"
+
 puts "pub mod effect_sets {
   use super::*;"
 $bits.keys.sort.map {|effect_name|
