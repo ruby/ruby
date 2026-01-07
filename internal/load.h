@@ -15,6 +15,7 @@ VALUE rb_get_expanded_load_path(void);
 VALUE rb_load_entrypoint(VALUE args);
 VALUE rb_require_relative_entrypoint(VALUE fname);
 int rb_require_internal(VALUE fname);
+bool rb_require_feature_locked_p(VALUE feature);
 NORETURN(void rb_load_fail(VALUE, const char*));
 
 #endif /* INTERNAL_LOAD_H */
