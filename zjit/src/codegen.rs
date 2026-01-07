@@ -76,7 +76,7 @@ impl JITState {
     }
 
     /// Find or create a label for a given BlockId
-    fn get_label(&mut self, asm: &mut Assembler, block_id: BlockId) -> Target {
+    fn get_label(&mut self, asm: &mut Assembler, block_id: lir::BlockId) -> Target {
         match &self.labels[block_id.0] {
             Some(label) => label.clone(),
             None => {
@@ -285,7 +285,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         asm.set_current_block(lir_block_id);
 
         // Write a label to jump to the basic block
-        let label = jit.get_label(&mut asm, block_id);
+        let label = jit.get_label(&mut asm, lir_block_id);
         asm.write_label(label);
 
         let block = function.block(block_id);
@@ -328,7 +328,33 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                     gen_if_false(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
                     asm.set_current_block(fall_through_target);
+
+                    let label = jit.get_label(&mut asm, fall_through_target);
+                    asm.write_label(label);
                 },
+                Insn::IfTrue { val, target } => {
+                    let val_opnd = jit.get_opnd(val);
+
+                    let lir_target = hir_to_lir[&target.target];
+
+                    let fall_through_target = asm.new_block(block_id, false, false);
+
+                    let branch_edge = lir::BranchEdge {
+                        target: lir_target,
+                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                    };
+
+                    let fall_through_edge = lir::BranchEdge {
+                        target: fall_through_target,
+                        args: vec![]
+                    };
+
+                    gen_if_true(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
+                    asm.set_current_block(fall_through_target);
+
+                    let label = jit.get_label(&mut asm, fall_through_target);
+                    asm.write_label(label);
+                }
                 Insn::Jump(target) => {
                     let lir_target = hir_to_lir[&target.target];
                     gen_jump(&mut jit, &mut asm, lir_target);
@@ -349,6 +375,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // Make sure the last patch point has enough space to insert a jump
         asm.pad_patch_point();
     }
+
+    println!("asm: {:?}", asm.basic_blocks);
 
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
@@ -440,7 +468,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
-        Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
@@ -554,7 +581,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { state, .. }
         | &Insn::Throw { state, .. }
         => return Err(state),
-        &Insn::IfFalse { .. }
+        &Insn::IfFalse { .. } | Insn::IfTrue { .. }
         | &Insn::Jump { .. } => unreachable!(),
     };
 
@@ -1289,19 +1316,11 @@ fn gen_jump(_jit: &mut JITState, asm: &mut Assembler, branch: lir::BlockId) {
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) {
+fn gen_if_true(_jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
     // If val is zero, move on to the next instruction.
-    let if_false = asm.new_label("if_false");
     asm.test(val, val);
-    asm.jz(if_false.clone());
-
-    // If val is not zero, set basic block arguments and jump to the branch target.
-    // TODO: Consider generating the loads out-of-line
-    let if_true = jit.get_label(asm, branch.target);
-    gen_branch_params(jit, asm, branch);
-    asm.jmp(if_true);
-
-    asm.write_label(if_false);
+    asm.jz(Target::Block(fall_through));
+    asm.jmp(Target::Block(branch));
 }
 
 /// Compile a conditional branch to a basic block

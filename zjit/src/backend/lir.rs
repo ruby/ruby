@@ -1544,9 +1544,6 @@ impl Assembler
         // Emit instructions with labels
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
         for block in &self.basic_blocks {
-            // Insert a label at the start of each block
-            let label = self.block_label(block.id);
-            insns.push(Insn::Label(Target::Label(label)));
             insns.extend_from_slice(&block.insns);
         }
         insns
