@@ -5011,12 +5011,15 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    self =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  When +object+ is a Regexp, returns the index of the first substring in +self+
- *  matched by +object+,
- *  or +nil+ if no match is found;
- *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *  When +other+ is a Regexp:
+ *
+ *  - Returns the integer index (in characters) of the first match
+ *    for +self+ and +other+, or +nil+ if none;
+ *  - Updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables].
+ *
+ *  Examples:
  *
  *    'foo' =~ /f/ # => 0
  *    $~           # => #<MatchData "f">
@@ -5034,8 +5037,8 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    /(?<number>\d+)/ =~ 'no. 9' # => 4
  *    number                      # => "9" # Assigned.
  *
- *  If +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *  When +other+ is not a Regexp, returns the value
+ *  returned by <tt>other =~ self</tt>.
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
@@ -12445,9 +12448,9 @@ sym_casecmp_p(VALUE sym, VALUE other)
 
 /*
  *  call-seq:
- *    symbol =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  Equivalent to <tt>symbol.to_s =~ object</tt>,
+ *  Equivalent to <tt>self.to_s =~ other</tt>,
  *  including possible updates to global variables;
  *  see String#=~.
  *
