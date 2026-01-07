@@ -419,28 +419,22 @@ count_imemo_objects_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_imemo_objects([result_hash]) -> hash
+ *     ObjectSpace.count_imemo_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_IMEMO+ type.
+ *  Returns a hash containing the number of objects for each +T_IMEMO+ type.
+ *  The keys are Symbol objects of the +T_IMEMO+ type name.
+ *  +T_IMEMO+ objects are Ruby internal objects that are not visible to Ruby
+ *  programs.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_imemo_objects
+ *    # => {imemo_callcache: 5482, imemo_constcache: 1258, imemo_ment: 13906, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *       {:imemo_ifunc=>8,
- *        :imemo_svar=>7,
- *        :imemo_cref=>509,
- *        :imemo_memo=>1,
- *        :imemo_throw_data=>1}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are symbol objects.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
