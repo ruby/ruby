@@ -6607,19 +6607,24 @@ collect_const_segments(rb_iseq_t *iseq, const NODE *node)
     VALUE arr = rb_ary_new();
     for (;;) {
         switch (nd_type(node)) {
-          case NODE_CONST:
-            rb_ary_unshift(arr, ID2SYM(RNODE_CONST(node)->nd_vid));
+          case RB_CONSTANT_READ_NODE:
+            rb_ary_unshift(arr, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
             RB_OBJ_SET_SHAREABLE(arr);
             return arr;
-          case NODE_COLON3:
-            rb_ary_unshift(arr, ID2SYM(RNODE_COLON3(node)->nd_mid));
-            rb_ary_unshift(arr, ID2SYM(idNULL));
-            RB_OBJ_SET_SHAREABLE(arr);
-            return arr;
-          case NODE_COLON2:
-            rb_ary_unshift(arr, ID2SYM(RNODE_COLON2(node)->nd_mid));
-            node = RNODE_COLON2(node)->nd_head;
-            break;
+          case RB_CONSTANT_PATH_NODE:
+            if (RB_NODE_CONSTANT_PATH(node)->parent) {
+                // colon2
+                rb_ary_unshift(arr, ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
+                node = RB_NODE_CONSTANT_PATH(node)->parent;
+                break;
+            }
+            else {
+                // colon3
+                rb_ary_unshift(arr, ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
+                rb_ary_unshift(arr, ID2SYM(idNULL));
+                RB_OBJ_SET_SHAREABLE(arr);
+                return arr;
+            }
           default:
             return Qfalse;
         }
@@ -6631,24 +6636,29 @@ compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
                      LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
 {
     switch (nd_type(node)) {
-      case NODE_CONST:
-        debugi("compile_const_prefix - colon", RNODE_CONST(node)->nd_vid);
+      case RB_CONSTANT_READ_NODE:
+        debugi("compile_const_prefix - colon", RB_NODE_CONSTANT_READ(node)->name);
         ADD_INSN1(body, node, putobject, Qtrue);
-        ADD_INSN1(body, node, getconstant, ID2SYM(RNODE_CONST(node)->nd_vid));
+        ADD_INSN1(body, node, getconstant, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
         break;
-      case NODE_COLON3:
-        debugi("compile_const_prefix - colon3", RNODE_COLON3(node)->nd_mid);
-        ADD_INSN(body, node, pop);
-        ADD_INSN1(body, node, putobject, rb_cObject);
-        ADD_INSN1(body, node, putobject, Qtrue);
-        ADD_INSN1(body, node, getconstant, ID2SYM(RNODE_COLON3(node)->nd_mid));
-        break;
-      case NODE_COLON2:
-        CHECK(compile_const_prefix(iseq, RNODE_COLON2(node)->nd_head, pref, body));
-        debugi("compile_const_prefix - colon2", RNODE_COLON2(node)->nd_mid);
-        ADD_INSN1(body, node, putobject, Qfalse);
-        ADD_INSN1(body, node, getconstant, ID2SYM(RNODE_COLON2(node)->nd_mid));
-        break;
+      case RB_CONSTANT_PATH_NODE:
+        if (RB_NODE_CONSTANT_PATH(node)->parent) {
+            // colon2
+            CHECK(compile_const_prefix(iseq, RB_NODE_CONSTANT_PATH(node)->parent, pref, body));
+            debugi("compile_const_prefix - colon2", RB_NODE_CONSTANT_PATH(node)->name);
+            ADD_INSN1(body, node, putobject, Qfalse);
+            ADD_INSN1(body, node, getconstant, ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
+            break;
+        }
+        else {
+            // colon3
+            debugi("compile_const_prefix - colon3", RB_NODE_CONSTANT_PATH(node)->name);
+            ADD_INSN(body, node, pop);
+            ADD_INSN1(body, node, putobject, rb_cObject);
+            ADD_INSN1(body, node, putobject, Qtrue);
+            ADD_INSN1(body, node, getconstant, ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
+            break;
+        }
       default:
         CHECK(COMPILE(pref, "const colon2 prefix", node));
         break;
@@ -6660,12 +6670,11 @@ static int
 cpath_const_p(const NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_CONST:
-      case NODE_COLON3:
+      case RB_CONSTANT_READ_NODE:
         return TRUE;
-      case NODE_COLON2:
-        if (RNODE_COLON2(node)->nd_head) {
-            return cpath_const_p(RNODE_COLON2(node)->nd_head);
+      case RB_CONSTANT_PATH_NODE:
+        if (RRB_CONSTANT_PATH_NODE(node)->nd_head) {
+            return cpath_const_p(RRB_CONSTANT_PATH_NODE(node)->nd_head);
         }
         return TRUE;
       default:
@@ -6676,16 +6685,16 @@ cpath_const_p(const NODE *node)
 static int
 compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 {
-    if (nd_type_p(cpath, NODE_COLON3)) {
+    if (nd_type_p(cpath, RB_CONSTANT_PATH_NODE) && !RB_NODE_CONSTANT_PATH(cpath)->parent) {
         /* toplevel class ::Foo */
         ADD_INSN1(ret, cpath, putobject, rb_cObject);
         return VM_DEFINECLASS_FLAG_SCOPED;
     }
-    else if (nd_type_p(cpath, NODE_COLON2) && RNODE_COLON2(cpath)->nd_head) {
+    else if (nd_type_p(cpath, RB_CONSTANT_PATH_NODE) && RRB_CONSTANT_PATH_NODE(cpath)->nd_head) {
         /* Bar::Foo or expr::Foo */
-        NO_CHECK(COMPILE(ret, "nd_else->nd_head", RNODE_COLON2(cpath)->nd_head));
+        NO_CHECK(COMPILE(ret, "nd_else->nd_head", RRB_CONSTANT_PATH_NODE(cpath)->nd_head));
         int flags = VM_DEFINECLASS_FLAG_SCOPED;
-        if (!cpath_const_p(RNODE_COLON2(cpath)->nd_head)) {
+        if (!cpath_const_p(RRB_CONSTANT_PATH_NODE(cpath)->nd_head)) {
             flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
         }
         return flags;
@@ -11033,7 +11042,7 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 static int
 compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    if (rb_is_const_id(RNODE_COLON2(node)->nd_mid)) {
+    if (rb_is_const_id(RB_NODE_CONSTANT_PATH(node)->name)) {
         /* constant */
         VALUE segments;
         if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache &&
@@ -11063,8 +11072,8 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     else {
         /* function call */
         ADD_CALL_RECEIVER(ret, node);
-        CHECK(COMPILE(ret, "colon2#nd_head", RNODE_COLON2(node)->nd_head));
-        ADD_CALL(ret, node, RNODE_COLON2(node)->nd_mid, INT2FIX(1));
+        CHECK(COMPILE(ret, "colon2#nd_head", RB_NODE_CONSTANT_PATH(node)->parent));
+        ADD_CALL(ret, node, RB_NODE_CONSTANT_PATH(node)->name, INT2FIX(1));
     }
     if (popped) {
         ADD_INSN(ret, node, pop);
@@ -11075,12 +11084,12 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 static int
 compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    debugi("colon3#nd_mid", RNODE_COLON3(node)->nd_mid);
+    debugi("colon3#nd_mid", RB_NODE_CONSTANT_PATH(node)->name);
 
     /* add cache insn */
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
         ISEQ_BODY(iseq)->ic_size++;
-        VALUE segments = rb_ary_new_from_args(2, ID2SYM(idNULL), ID2SYM(RNODE_COLON3(node)->nd_mid));
+        VALUE segments = rb_ary_new_from_args(2, ID2SYM(idNULL), ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
         RB_OBJ_SET_FROZEN_SHAREABLE(segments);
         ADD_INSN1(ret, node, opt_getconstant_path, segments);
         RB_OBJ_WRITTEN(iseq, Qundef, segments);
@@ -11088,7 +11097,7 @@ compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     else {
         ADD_INSN1(ret, node, putobject, rb_cObject);
         ADD_INSN1(ret, node, putobject, Qtrue);
-        ADD_INSN1(ret, node, getconstant, ID2SYM(RNODE_COLON3(node)->nd_mid));
+        ADD_INSN1(ret, node, getconstant, ID2SYM(RB_NODE_CONSTANT_PATH(node)->name));
     }
 
     if (popped) {
@@ -11678,20 +11687,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case RB_IF_NODE:
-        // if foo then bar end
-        // ^^^^^^^^^^^^^^^^^^^
-        //
-        // bar if foo
-        // ^^^^^^^^^^
-        //
-        // foo ? bar : baz
-        // ^^^^^^^^^^^^^^^
       case RB_UNLESS_NODE: {
-        // unless foo; bar end
-        // ^^^^^^^^^^^^^^^^^^^
-        //
-        // bar unless foo
-        // ^^^^^^^^^^^^^^
         CHECK(compile_if(iseq, ret, node, popped, type));
         break;
       }
@@ -11788,6 +11784,30 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         ADD_INSN2(ret, node, setinstancevariable,
                   ID2SYM(id),
                   get_ivar_ic_value(iseq, id));
+        break;
+      }
+      case RB_CONSTANT_WRITE_NODE: {
+        CHECK(compile_shareable_constant_value(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_WRITE(node)->value));
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+
+        ADD_INSN1(ret, node, putspecialobject,
+                  INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        ADD_INSN1(ret, node, setconstant, ID2SYM(RB_NODE_CONSTANT_WRITE(node)->name));
+        break;
+      }
+      case RB_CONSTANT_PATH_WRITE_NODE: {
+        compile_cpath(ret, iseq, RB_NODE_CONSTANT_PATH_WRITE(node)->target);
+        CHECK(compile_shareable_constant_value(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_PATH_WRITE(node)->value));
+        ADD_INSN(ret, node, swap);
+
+        if (!popped) {
+            ADD_INSN1(ret, node, topn, INT2FIX(1));
+            ADD_INSN(ret, node, swap);
+        }
+
+        ADD_INSN1(ret, node, setconstant, ID2SYM(RB_NODE_CONSTANT_PATH_WRITE(node)->target->name));
         break;
       }
       case RB_CLASS_VARIABLE_WRITE_NODE:
@@ -11927,16 +11947,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case RB_SOURCE_LINE_NODE: {
-        // __LINE__
-        // ^^^^^^^^
         if (!popped) {
             ADD_INSN1(ret, node, putobject, rb_node_line_lineno_val2(node));
         }
         break;
       }
       case RB_SOURCE_ENCODING_NODE: {
-        // __ENCODING__
-        // ^^^^^^^^
         if (!popped) {
             ADD_INSN1(ret, node, putobject, rb_node_encoding_val2(node));
         }
@@ -11993,17 +12009,23 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_CONSTANT_PATH_NODE: {
+        if (RB_NODE_CONSTANT_PATH(node)->parent) {
+            CHECK(compile_colon2(iseq, ret, node, popped));
+        }
+        else {
+            CHECK(compile_colon3(iseq, ret, node, popped));
+        }
+        break;
+      }
+
       case RB_SELF_NODE: {
-        // self
-        // ^^^^
         if (!popped) {
             ADD_INSN(ret, node, putself);
         }
         break;
       }
       case RB_NIL_NODE: {
-        // nil
-        // ^^^
         if (!popped) {
             ADD_INSN(ret, node, putnil);
         }
