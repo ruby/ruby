@@ -5011,9 +5011,9 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    self =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  When +object+ is a Regexp:
+ *  When +other+ is a Regexp:
  *
  *  - Returns the integer index (in characters) of the first match
  *    for +self+ and +other+, or +nil+ if none;
@@ -5037,8 +5037,8 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    /(?<number>\d+)/ =~ 'no. 9' # => 4
  *    number                      # => "9" # Assigned.
  *
- *  When +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *  When +other+ is not a Regexp, returns the value
+ *  returned by <tt>other =~ self</tt>.
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
