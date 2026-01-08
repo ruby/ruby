@@ -53,14 +53,23 @@ describe :tcpsocket_new, shared: true do
     end
 
     it "connects to a server when passed local_host and local_port arguments" do
-      server = TCPServer.new(SocketSpecs.hostname, 0)
+      retries = 0
+      max_retries = 3
+
       begin
-        available_port = server.addr[1]
-      ensure
-        server.close
+        retries += 1
+        server = TCPServer.new(SocketSpecs.hostname, 0)
+        begin
+          available_port = server.addr[1]
+        ensure
+          server.close
+        end
+        @socket = TCPSocket.send(@method, @hostname, @server.port,
+                                 @hostname, available_port)
+      rescue Errno::EADDRINUSE
+        raise if retries >= max_retries
+        retry
       end
-      @socket = TCPSocket.send(@method, @hostname, @server.port,
-                               @hostname, available_port)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
