@@ -63,6 +63,18 @@ module Prism
       define_method(fixture.test_name) { assert_ripper(fixture.read) }
     end
 
+    # Check that the hardcoded values don't change without us noticing.
+    def test_internals
+      actual = LexCompat::State::ALL
+      expected = Ripper.constants.select { |name| name.start_with?("EXPR_") }
+      expected -= %i[EXPR_VALUE EXPR_BEG_ANY EXPR_ARG_ANY EXPR_END_ANY]
+
+      assert_equal(expected.size, actual.size)
+      expected.each do |const_name|
+        assert_equal(const_name.to_s.delete_prefix("EXPR_").to_sym, actual[Ripper.const_get(const_name)])
+      end
+    end
+
     private
 
     def assert_ripper(source)
