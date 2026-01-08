@@ -1700,7 +1700,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true);
+        asm.new_block(hir::BlockId(usize::MAX), true, true);
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1709,7 +1709,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true);
+        asm.new_block(hir::BlockId(usize::MAX), true, true);
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -2144,7 +2144,7 @@ mod tests {
     #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-        asm.new_block(hir::BlockId(usize::MAX), true);
+        asm.new_block(hir::BlockId(usize::MAX), true, true);
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
@@ -2597,7 +2597,7 @@ mod tests {
         let memory_required = (IMMEDIATE_MAX_VALUE + 8) * 4 + page_size;
 
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true);
+        asm.new_block(hir::BlockId(usize::MAX), true, true);
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
