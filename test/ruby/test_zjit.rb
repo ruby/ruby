@@ -383,6 +383,43 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_kwargs_with_exit_and_local_invalidation
+    assert_compiles ':ok', %q{
+      def a(b:, c:)
+        if c == :b
+          return -> {}
+        end
+        Class # invalidate locals
+
+        raise "c is :b!" if c == :b
+      end
+
+      def test
+        # note opposite order of kwargs
+        a(c: :c, b: :b)
+      end
+
+      4.times { test }
+      :ok
+    }, call_threshold: 2
+  end
+
+  def test_kwargs_with_max_direct_send_arg_count
+    # Ensure that we only reorder the args when we _can_ use direct send (< 6 args).
+    assert_compiles '[[1, 2, 3, 4, 5, 6, 7, 8]]', %q{
+      def kwargs(five, six, a:, b:, c:, d:, e:, f:)
+        [a, b, c, d, five, six, e, f]
+      end
+
+      5.times.flat_map do
+        [
+          kwargs(5, 6, d: 4, c: 3, a: 1, b: 2, e: 7, f: 8),
+          kwargs(5, 6, d: 4, c: 3, b: 2, a: 1, e: 7, f: 8)
+        ]
+      end.uniq
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval
     assert_compiles '1', %q{
       @b = binding
