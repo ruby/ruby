@@ -1558,9 +1558,8 @@ rb_hash_dup(VALUE hash)
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
 
-    if (rb_obj_gen_fields_p(hash)) {
-        rb_copy_generic_ivar(ret, hash);
-    }
+    rb_copy_generic_ivar(ret, hash);
+
     return ret;
 }
 
