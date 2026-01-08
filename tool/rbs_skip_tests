@@ -48,3 +48,7 @@ test_new(RegexpSingletonTest)
 test_source_location(MethodInstanceTest)
 test_source_location(ProcInstanceTest)
 test_source_location(UnboundMethodInstanceTest)
+
+# Errno::ENOENT: No such file or directory - bundle
+test_collection_install__pathname_set(RBS::CliTest)
+test_collection_install__set_pathname__manifest(RBS::CliTest)
