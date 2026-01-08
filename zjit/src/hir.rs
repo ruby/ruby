@@ -6,6 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
+    backend::lir::C_ARG_OPNDS,
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
@@ -2699,19 +2700,30 @@ impl Function {
                             }
 
                             let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let processed_args = if !kwarg.is_null() {
+                            let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => reordered,
+                                    Ok(reordered) => {
+                                        // Only use reordered state if args fit in C registers.
+                                        // Fallback to interpreter needs original order for kwarg handling.
+                                        // NOTE: This needs to match with the condition in codegen.rs.
+                                        if reordered.len() + 1 <= C_ARG_OPNDS.len() {
+                                            let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                            let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                            (snapshot, reordered)
+                                        } else {
+                                            (state, reordered)
+                                        }
+                                    }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
                                 }
                             } else {
-                                args.clone()
+                                (state, args.clone())
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -2748,19 +2760,30 @@ impl Function {
                             }
 
                             let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let processed_args = if !kwarg.is_null() {
+                            let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => reordered,
+                                    Ok(reordered) => {
+                                        // Only use reordered state if args fit in C registers.
+                                        // Fallback to interpreter needs original order for kwarg handling.
+                                        // NOTE: This needs to match with the condition in codegen.rs.
+                                        if reordered.len() + 1 <= C_ARG_OPNDS.len() {
+                                            let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                            let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                            (snapshot, reordered)
+                                        } else {
+                                            (state, reordered)
+                                        }
+                                    }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
                                 }
                             } else {
-                                args.clone()
+                                (state, args.clone())
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -5043,6 +5066,15 @@ impl FrameState {
     pub fn without_stack(&self) -> Self {
         let mut state = self.clone();
         state.stack.clear();
+        state
+    }
+
+    /// Return itself with send args reordered. Used when kwargs are reordered for callee.
+    fn with_reordered_args(&self, reordered_args: &[InsnId]) -> Self {
+        let mut state = self.clone();
+        let args_start = state.stack.len() - reordered_args.len();
+        state.stack.truncate(args_start);
+        state.stack.extend_from_slice(reordered_args);
         state
     }
 }
