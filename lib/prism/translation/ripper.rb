@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 # :markup: markdown
 
-require "ripper"
-
 module Prism
   module Translation
     # This class provides a compatibility layer between prism and Ripper. It
