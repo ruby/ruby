@@ -3069,6 +3069,15 @@ impl Function {
         self.infer_types();
     }
 
+    fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        self.push_insn(block, Insn::LoadField {
+            recv,
+            id: ID!(_shape_id),
+            offset: unsafe { rb_shape_id_offset() } as i32,
+            return_type: types::CShape
+        })
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -3094,7 +3103,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.push_insn(block, Insn::GuardBitEquals { val: shape, expected: Const::CShape(recv_type.shape()), state });
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // If there is no IVAR index, then the ivar was undefined when we
@@ -3148,7 +3158,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let _ = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.push_insn(block, Insn::GuardBitEquals { val: shape, expected: Const::CShape(recv_type.shape()), state });
                         let mut ivar_index: u16 = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
@@ -3219,7 +3230,8 @@ impl Function {
                             // Fall through to emitting the ivar write
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.push_insn(block, Insn::GuardBitEquals { val: shape, expected: Const::CShape(recv_type.shape()), state });
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
