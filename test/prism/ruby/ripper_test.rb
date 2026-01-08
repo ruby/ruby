@@ -3,6 +3,7 @@
 return if RUBY_VERSION < "3.3" || RUBY_ENGINE != "ruby"
 
 require_relative "../test_helper"
+require "ripper"
 
 module Prism
   class RipperTest < TestCase

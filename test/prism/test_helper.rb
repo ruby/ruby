@@ -2,7 +2,6 @@
 
 require "prism"
 require "pp"
-require "ripper"
 require "stringio"
 require "test/unit"
 require "tempfile"
