@@ -1549,13 +1549,62 @@ impl Assembler
         }
     }
 
+    /// Return an operand for a basic block argument at a given index.
+    /// To simplify the implementation, we allocate a fixed register or a stack slot
+    /// for each basic block argument.
+    pub fn param_opnd(idx: usize) -> Opnd {
+        use crate::backend::current::ALLOC_REGS;
+        use crate::cruby::SIZEOF_VALUE_I32;
+
+        if idx < ALLOC_REGS.len() {
+            Opnd::Reg(ALLOC_REGS[idx])
+        } else {
+            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
+            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
+            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
+        }
+    }
+
     pub fn linearize_instructions(&self) -> Vec<Insn> {
-        // Emit instructions with labels
+        // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
         for block in &self.basic_blocks {
-            insns.extend_from_slice(&block.insns);
+            // Process each instruction, expanding branch params if needed
+            for insn in &block.insns {
+                self.expand_branch_insn(insn, &mut insns);
+            }
         }
         insns
+    }
+
+    // Expand a single instruction, inserting parameter moves before jumps when needed
+    fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
+        // If this is a jump with Target::Block that has arguments, insert parameter moves first
+        match insn {
+            Insn::Jmp(Target::Block(edge))
+            | Insn::Jz(Target::Block(edge))
+            | Insn::Jnz(Target::Block(edge))
+            | Insn::Je(Target::Block(edge))
+            | Insn::Jne(Target::Block(edge))
+            | Insn::Jl(Target::Block(edge))
+            | Insn::Jg(Target::Block(edge))
+            | Insn::Jge(Target::Block(edge))
+            | Insn::Jbe(Target::Block(edge))
+            | Insn::Jb(Target::Block(edge))
+            | Insn::Jo(Target::Block(edge))
+            | Insn::JoMul(Target::Block(edge)) if !edge.args.is_empty() => {
+                // Insert parallel move for branch parameters
+                insns.push(Insn::ParallelMov {
+                    moves: edge.args.iter().enumerate()
+                        .map(|(idx, &arg)| (Assembler::param_opnd(idx), arg))
+                        .collect()
+                });
+            }
+            _ => {}
+        }
+
+        // Push the instruction itself
+        insns.push(insn.clone());
     }
 
     // Get the label for a given block.

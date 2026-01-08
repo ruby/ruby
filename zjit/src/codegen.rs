@@ -19,8 +19,8 @@ use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
-use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
+use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
+use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -1260,18 +1260,6 @@ fn gen_entry_prologue(asm: &mut Assembler) {
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 }
 
-/// Set branch params to basic block arguments
-fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
-    if branch.args.is_empty() {
-        return;
-    }
-
-    asm_comment!(asm, "set branch params: {}", branch.args.len());
-    asm.parallel_mov(branch.args.iter().enumerate().map(|(idx, &arg)|
-        (param_opnd(idx), jit.get_opnd(arg))
-    ).collect());
-}
-
 /// Compile a constant
 fn gen_const_value(val: VALUE) -> lir::Opnd {
     // Just propagate the constant value and generate nothing
@@ -1298,7 +1286,7 @@ fn gen_const_uint32(val: u32) -> lir::Opnd {
 /// Compile a basic block argument
 fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
     // Allocate a register or a stack slot
-    match param_opnd(idx) {
+    match Assembler::param_opnd(idx) {
         // If it's a register, insert LiveReg instruction to reserve the register
         // in the register pool for register allocation.
         param @ Opnd::Reg(_) => asm.live_reg_opnd(param),
@@ -2458,19 +2446,6 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, state: &Fra
     asm.jbe(side_exit(jit, state, StackOverflow));
 }
 
-/// Return an operand we use for the basic block argument at a given index
-fn param_opnd(idx: usize) -> Opnd {
-    // To simplify the implementation, allocate a fixed register or a stack slot for each basic block argument for now.
-    // Note that this is implemented here as opposed to automatically inside LIR machineries.
-    // TODO: Allow allocating arbitrary registers for basic block arguments
-    if idx < ALLOC_REGS.len() {
-        Opnd::Reg(ALLOC_REGS[idx])
-    } else {
-        // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
-        // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
-        Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
-    }
-}
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
 pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
