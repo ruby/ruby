@@ -1018,12 +1018,14 @@ impl Insn {
 
     pub fn has_effects(&self) -> bool {
         match self {
+            Insn::Const { .. } => false,
             Insn::PatchPoint { .. } => false,
             Insn::FixnumAdd  { .. } => false,
             Insn::GuardType  { .. } => false,
             Insn::GuardShape { .. } => false,
             Insn::Snapshot { .. } => false,
             Insn::LoadField { .. } => false,
+            Insn::WriteBarrier { .. } => false,
             _ => true,
         }
     }
@@ -4419,12 +4421,13 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut type_guards: Vec<(InsnId, Type, InsnId)> = vec![];
             let mut shape_guards: Vec<(InsnId, ShapeId, InsnId)> = vec![];
+            let mut memory: HashMap<(InsnId, i32), InsnId> = HashMap::new();
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GuardType { val, guard_type, .. } => {
                         if let Some(&prev) = type_guards
                                     .iter()
-                                    .find(|&(id, ty, _)| self.union_find.borrow().find_const(*id) == val && ty.is_subtype(guard_type))
+                                    .find(|&(id, ty, _)| self.chase_insn(*id) == val && ty.is_subtype(guard_type))
                                     .map(|(_, _, prev)| prev) {
                             self.make_equal_to(insn_id, prev);
                             continue;
@@ -4432,17 +4435,37 @@ impl Function {
                         type_guards.push((val, guard_type, insn_id));
                     }
                     Insn::GuardShape { val, shape, .. } => {
+                        let val = self.chase_insn(val);
                         if let Some(&prev) = shape_guards
                                     .iter()
-                                    .find(|&(id, sh, _)| self.union_find.borrow().find_const(*id) == val && *sh == shape)
+                                    .find(|&(id, sh, _)| self.chase_insn(*id) == val && *sh == shape)
                                     .map(|(_, _, prev)| prev) {
                             self.make_equal_to(insn_id, prev);
                             continue;
                         }
                         shape_guards.push((val, shape, insn_id));
                     }
+                    Insn::LoadField { recv, offset, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        eprintln!("trying to read ({}, {})", key.0, key.1);
+                        if let Some(&prev) = memory.get(&key) {
+                            eprintln!("cached read at offset {}", offset);
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        memory.insert(key, insn_id);
+                    }
+                    Insn::StoreField { recv, offset, val, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        eprintln!("clearing offset {}", offset);
+                        memory.retain(|&(_, o), _| o != offset);
+                        eprintln!("writing ({}, {}) = {}", key.0, key.1, val);
+                        memory.insert(key, val);
+                    }
                     insn if insn.has_effects() => {
+                        eprintln!("clearing memory due to {}", format!("{}", insn));
                         shape_guards.clear();
+                        memory.clear();
                     }
                     _ => {}
                 }

@@ -3889,8 +3889,7 @@ mod hir_opt_tests {
           StoreField v25, :_shape_id@0x1000, v30
           v16:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          v33:CShape = LoadField v25, :_shape_id@0x1000
-          v34:CShape[0x1003] = GuardBitEquals v33, CShape(0x1003)
+          v34:CShape[0x1003] = GuardBitEquals v30, CShape(0x1003)
           StoreField v25, :@bar@0x1004, v16
           WriteBarrier v25, v16
           v37:CShape[0x1005] = Const CShape(0x1005)
@@ -5624,70 +5623,50 @@ mod hir_opt_tests {
     fn test_lvn() {
         eval("
             class C
-              attr_reader :foo
               def initialize
-                @foo = 42
+                @a = 1
+                a = @a
+                b = @a
+                [a, b]
               end
             end
-
-            O = C.new
-            def test(o)
-              sum = 0
-              sum += o.foo
-              sum += o.foo
-              sum += o.foo
-              sum
-            end
-            test O
-            test O
+            C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:11:
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@5
+          v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject):
+        bb1(v6:BasicObject):
           EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
           v8:NilClass = Const Value(nil)
           Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v16:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          PatchPoint NoSingletonClass(C@0x1000)
-          v59:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v70:CShape = LoadField v59, :_shape_id@0x1038
-          v71:CShape[0x1039] = GuardBitEquals v70, CShape(0x1039)
-          v72:BasicObject = LoadField v59, :@foo@0x103a
-          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
-          v83:Fixnum = GuardType v72, Fixnum
-          v84:Fixnum = FixnumAdd v16, v83
-          IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint NoEPEscape(test)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          PatchPoint NoSingletonClass(C@0x1000)
-          v74:CShape = LoadField v59, :_shape_id@0x1038
-          v75:CShape[0x1039] = GuardBitEquals v74, CShape(0x1039)
-          v76:BasicObject = LoadField v59, :@foo@0x103a
-          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
-          v88:Fixnum = GuardType v76, Fixnum
-          v89:Fixnum = FixnumAdd v84, v88
-          IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint NoEPEscape(test)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          PatchPoint NoSingletonClass(C@0x1000)
-          v78:CShape = LoadField v59, :_shape_id@0x1038
-          v79:CShape[0x1039] = GuardBitEquals v78, CShape(0x1039)
-          v80:BasicObject = LoadField v59, :@foo@0x103a
-          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
-          v93:Fixnum = GuardType v80, Fixnum
-          v94:Fixnum = FixnumAdd v89, v93
-          IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint NoEPEscape(test)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v43:HeapBasicObject = GuardType v10, HeapBasicObject
+          v44:CShape = LoadField v43, :_shape_id@0x1000
+          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001)
+          StoreField v43, :@a@0x1002, v16
+          WriteBarrier v43, v16
+          v48:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v43, :_shape_id@0x1000, v48
+          PatchPoint SingleRactorMode
+          v52:CShape[0x1003] = GuardBitEquals v48, CShape(0x1003)
+          v53:BasicObject = LoadField v43, :@a@0x1002
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          v55:CShape = LoadField v43, :_shape_id@0x1000
+          v56:CShape[0x1003] = GuardBitEquals v55, CShape(0x1003)
+          v57:BasicObject = LoadField v43, :@a@0x1002
+          PatchPoint NoEPEscape(initialize)
+          v38:ArrayExact = NewArray v53, v57
           CheckInterrupts
-          Return v94
+          Return v38
         ");
     }
 
