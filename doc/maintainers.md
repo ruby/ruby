@@ -269,12 +269,6 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/tmpdir
 * https://rubygems.org/gems/tmpdir
 
-#### lib/tsort.rb
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/tsort
-* https://rubygems.org/gems/tsort
-
 #### lib/un.rb
 
 * WATANABE Hirofumi ([eban])
@@ -627,6 +621,12 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * Tomoya Ishida ([tompng])
 * https://github.com/ruby/repl_type_completor
 * https://rubygems.org/gems/repl_type_completor
+
+#### tsort
+
+* Tanaka Akira ([akr])
+* https://github.com/ruby/tsort
+* https://rubygems.org/gems/tsort
 
 ## Platform Maintainers
 
