@@ -3,15 +3,24 @@
 set PROMPT=$E[94m+$E[m$S
 set witharg=
 
-for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
+if "%~dp0" == "%CD%\" (
     echo don't run in win32 directory.
     exit /b 999
+) else if "%0" == "%~nx0" (
+    set "WIN32DIR=%~$PATH:0"
+) else if "%0" == "%~n0" (
+    set "WIN32DIR=%~$PATH:0"
+) else (
+    set "WIN32DIR=%0"
 )
+
+set "WIN32DIR=%WIN32DIR:\=/%:/:"
+call set "WIN32DIR=%%WIN32DIR:%~x0:/:=:/:%%"
+call set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
+set "WIN32DIR=%WIN32DIR:~0,-3%"
 
 set XINCFLAGS=
 set XLDFLAGS=
-
-set conf=%0
 set pathlist=
 set config_make=confargs~%RANDOM%.mak
 set confargs=%config_make:.mak=.c%
@@ -305,19 +314,8 @@ goto :exit
 ) >> %config_make%
 del %confargs% > nul
 
-set setup_make=%config_make:confargs=setup%
-(
-  echo #### -*- makefile -*-
-  echo conf = %conf%
-  echo $^(conf^): nul
-  echo 	@del %setup_make%
-  echo 	@$^(MAKE^) -l$^(MAKEFLAGS^) -f $^(@D^)/setup.mak \
-  echo 	WIN32DIR=$^(@D:\=/^) config_make=%config_make%
-  echo 	-@move /y Makefile Makefile.old ^> nul 2^> nul
-  echo 	@ren Makefile.new Makefile
-) > %setup_make%
-nmake -alf %setup_make% MAKEFILE=Makefile.new
-
-exit /b %ERRORLEVEL%
+nmake -al -f %WIN32DIR%/setup.mak "WIN32DIR=%WIN32DIR%" ^
+    config_make=%config_make% ^
+    MAKEFILE=Makefile.new MAKEFILE_BACK=Makefile.old MAKEFILE_NEW=Makefile
 :exit
 @endlocal

@@ -40,7 +40,7 @@ x64-mswin64: -prologue- -x64- -epilogue-
 -generic-: -osname-
 
 -basic-vars-: nul
-	@type << > $(MAKEFILE)
+	@rem <<$(MAKEFILE)
 ### Makefile for ruby $(TARGET_OS) ###
 MAKE = nmake
 srcdir = $(srcdir:\=/)
@@ -146,8 +146,8 @@ main(void)
 <<
 	@( \
 	  $(CC) -O2 $@.c && .\$@ || \
-	  set bug=%ERRORLEVEL% \
-	  echo This compiler has an optimization bug \
+	  (set bug=%ERRORLEVEL% & \
+	  echo This compiler has an optimization bug) \
 	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
@@ -272,4 +272,6 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
+	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
+	@ren $(MAKEFILE) $(MAKEFILE_NEW)
 	@echo type 'nmake' to make ruby.
