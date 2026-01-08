@@ -1969,7 +1969,7 @@ ossl_ssl_write(VALUE self, VALUE str)
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
-    StringValue(str);
+    str = rb_obj_as_string(str);
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
     int num = RSTRING_LENINT(str);
     if (num == 0)

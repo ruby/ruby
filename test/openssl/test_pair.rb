@@ -437,7 +437,7 @@ module OpenSSL::TestPairM
       assert_equal(str, buf)
 
       obj = Object.new
-      obj.define_singleton_method(:to_str) { str }
+      obj.define_singleton_method(:to_s) { str }
       s1.syswrite(obj)
       assert_equal(str, s2.sysread(str.bytesize))
     }
