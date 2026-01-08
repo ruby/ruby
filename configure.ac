@@ -547,7 +547,10 @@ AS_CASE(["$target_os"],
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
     AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
-    ],
+],
+[darwin*], [
+    : ${enable_shared=yes}
+],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
 AC_PROG_LN_S
@@ -3775,7 +3778,7 @@ AS_IF([test "$EXEEXT" = .exe], [
 
 AS_CASE("$cross_compiling:${LIBPATHENV}", [yes:* | no:], [], [
     AC_MSG_CHECKING(whether wrapper for $LIBPATHENV is needed)
-    AS_IF([env ${LIBPATHENV}=/lib /bin/sh -c ': ${'${LIBPATHENV}'?}' 2>/dev/null],
+    AS_CASE(["$enable_shared:$target_os"], [no:*|*:mingw*|*:cygwin],
 	[AC_MSG_RESULT(no)],
 	[AC_SUBST(XRUBY_LIBPATHENV_WRAPPER, 'exe/$(PROGRAM)')
 	AC_MSG_RESULT(yes)]
