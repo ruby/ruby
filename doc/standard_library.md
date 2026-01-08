@@ -58,7 +58,6 @@ of each.
 - Time ([GitHub][time]): Extends the Time class with methods for parsing and conversion
 - Timeout ([GitHub][timeout]): Auto-terminate potentially long-running operations in Ruby
 - TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
-- TSort ([GitHub][tsort]): Topological sorting using Tarjan's algorithm
 - UN ([GitHub][un]): Utilities to replace common UNIX commands
 - URI ([GitHub][uri]): A Ruby module providing support for Uniform Resource Identifiers
 - YAML ([GitHub][yaml]): The Ruby client library for the Psych YAML implementation
@@ -126,6 +125,7 @@ of each.
 - [reline][reline-doc] ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
+- [tsort]: Topological sorting using Tarjan's algorithm
 
 ## Tools
 
