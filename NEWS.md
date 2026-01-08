@@ -27,13 +27,18 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+### The following bundled gems are added.
+
+
 We only list stdlib changes that are notable feature changes.
 
 Other changes are listed in the following sections. We also listed release
 history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
 releases.
 
-### The following bundled gems are promoted from default gems.
+### The following bundled gem is promoted from default gems.
+
+* tsort 0.2.0
 
 ### The following default gem is added.
 
@@ -50,6 +55,7 @@ releases.
 * test-unit 3.7.7
 * rss 0.3.2
 * net-imap 0.6.2
+* rbs 3.10.2
 * typeprof 0.31.1
 * debug 1.11.1
 * mutex_m 0.3.0
