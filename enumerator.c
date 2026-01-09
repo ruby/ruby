@@ -444,28 +444,31 @@ convert_to_feasible_size_value(VALUE obj)
 
 /*
  * call-seq:
- *   Enumerator.new(size = nil) { |yielder| ... }
+ *   Enumerator.new(size = nil) {|yielder| ... }
  *
- * Creates a new Enumerator object, which can be used as an
- * Enumerable.
+ * Returns a new \Enumerator object that can be used for iteration.
  *
- * Iteration is defined by the given block, in
- * which a "yielder" object, given as block parameter, can be used to
- * yield a value by calling the +yield+ method (aliased as <code><<</code>):
+ * The given block defines the iteration;
+ * it is called with a "yielder" object that can yield an object
+ * via a call to method <tt>yielder.yield</tt>:
  *
- *   fib = Enumerator.new do |y|
- *     a = b = 1
- *     loop do
- *       y << a
- *       a, b = b, a + b
+ *   fib = Enumerator.new do |yielder|
+ *     n = next_n = 1
+ *     while true do
+ *       yielder.yield(n)
+ *       n, next_n = next_n, n + next_n
  *     end
  *   end
  *
  *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
- * The optional parameter can be used to specify how to calculate the size
- * in a lazy fashion (see Enumerator#size). It can either be a value or
- * a callable object.
+ * Parameter +size+ specifies how the size is to be calculated (see #size);
+ * it can either be a value or a callable object:
+ *
+ *   Enumerator.new{}.size          # => nil
+ *   Enumerator.new(42){}.size      # => 42
+ *   Enumerator.new(-> {42}){}.size # => 42
+ *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
