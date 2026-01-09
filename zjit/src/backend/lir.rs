@@ -1727,6 +1727,18 @@ impl Assembler
             }
         }
 
+        // Extend the live ranges of input VRegs to include this instruction
+        // (opnd_iter includes branch parameters from Target::Block)
+        for opnd in insn.opnd_iter() {
+            if let Opnd::VReg { idx, .. } = opnd {
+                if *idx < self.live_ranges.len() {
+                    if let Some(ref mut end) = self.live_ranges[*idx].end {
+                        *end = insn_idx;
+                    }
+                }
+            }
+        }
+
         // Initialize the live range of the output VReg to insn_idx..=insn_idx
         if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
             assert!(*idx < self.live_ranges.len());
