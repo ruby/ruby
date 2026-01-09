@@ -657,6 +657,26 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_struct_aset_guards_recv_is_not_frozen
+    assert_compiles(<<~RUBY), result: :ok
+      def foo(obj)
+        obj.foo = 123
+      end
+
+      Foo = Struct.new(:foo)
+      obj = Foo.new(123)
+      100.times do
+        foo(obj)
+      end
+      obj.freeze
+      begin
+        foo(obj)
+      rescue FrozenError
+        :ok
+      end
+    RUBY
+  end
+
   def test_getblockparam
     assert_compiles(<<~'RUBY', insns: [:getblockparam])
       def foo &blk
