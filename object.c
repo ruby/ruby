@@ -1915,11 +1915,24 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * call-seq:
  *   mod <= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i> or
- * is the same as <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float <= Numeric    # => true
+ *   Array <= Enumerable # => true
+ *   Float <= Float      # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric <= Float    # => false
+ *   Enumerable <= Array # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float <= Hash        # => nil
+ *   Enumerable <= String # => nil
  */
 
 VALUE
