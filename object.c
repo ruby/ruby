@@ -2011,20 +2011,23 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * call-seq:
  *   self > other -> true, false, or nil
  *
- * If +self+ is a class, returns +true+ if +self+ is a superclass of +other+,
- * returns +false+ if +self+ is the same as +other+ or if +self+ is a subclass
- * of +other+, and returns +nil+ if there are no relationship between the two:
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
  *
- *   Numeric > Float # => true
- *   Float > Numeric # => false
- *   Float > Float   # => false
- *   Float > Hash    # => nil
- *
- * If +self+ is a module, returns +true+ if +other+ includes +self+,
- * returns +false+ if +self+ is the same as +other+ or if +self+ includes
- * +other+, and returns +nil+ if there are no relationship between the two:
- *
+ *   Numeric > Float    # => true
  *   Enumerable > Array # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float > Numeric    # => false
+ *   Array > Enumerable # => false
+ *   Float > Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float > Hash        # => nil
  *   Enumerable > String # => nil
  *
  */
