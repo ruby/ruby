@@ -8947,6 +8947,12 @@ fn gen_struct_aset(
         return None;
     }
 
+    // If the comptime receiver is frozen, writing a struct member will raise an exception
+    // and we don't want to JIT code to deal with that situation.
+    if comptime_recv.is_frozen() {
+        return None;
+    }
+
     if c_method_tracing_currently_enabled(jit) {
         // Struct accesses need fire c_call and c_return events, which we can't support
         // See :attr-tracing:
