@@ -6391,29 +6391,28 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
         ADD_SEQ(lhs, nest_lhs);
         break;
       }
-      case NODE_CDECL:
-        if (!RNODE_CDECL(node)->nd_vid) {
-            /* Special handling only needed for expr::C, not for C */
-            INSN *iobj;
+      case RB_CONSTANT_PATH_TARGET_NODE: {
+        // if (!RNODE_CDECL(node)->nd_vid)
+        /* Special handling only needed for expr::C, not for C */
+        INSN *iobj;
 
-            CHECK(COMPILE_POPPED(pre, "masgn lhs (NODE_CDECL)", node));
+        CHECK(COMPILE_POPPED(pre, "masgn lhs (RB_CONSTANT_PATH_TARGET_NODE)", node));
 
-            LINK_ELEMENT *insn_element = LAST_ELEMENT(pre);
-            iobj = (INSN *)insn_element; /* setconstant insn */
-            ELEM_REMOVE((LINK_ELEMENT *)get_prev_insn((INSN *)get_prev_insn(iobj)));
-            ELEM_REMOVE((LINK_ELEMENT *)get_prev_insn(iobj));
-            ELEM_REMOVE(insn_element);
-            pre->last = iobj->link.prev;
-            ADD_ELEM(lhs, (LINK_ELEMENT *)iobj);
+        LINK_ELEMENT *insn_element = LAST_ELEMENT(pre);
+        iobj = (INSN *)insn_element; /* setconstant insn */
+        ELEM_REMOVE((LINK_ELEMENT *)get_prev_insn((INSN *)get_prev_insn(iobj)));
+        ELEM_REMOVE((LINK_ELEMENT *)get_prev_insn(iobj));
+        ELEM_REMOVE(insn_element);
+        pre->last = iobj->link.prev;
+        ADD_ELEM(lhs, (LINK_ELEMENT *)iobj);
 
-            if (!add_masgn_lhs_node(state, lhs_pos, node, 1, (INSN *)LAST_ELEMENT(lhs))) {
-                return COMPILE_NG;
-            }
-
-            ADD_INSN(post, node, pop);
-            break;
+        if (!add_masgn_lhs_node(state, lhs_pos, node, 1, (INSN *)LAST_ELEMENT(lhs))) {
+            return COMPILE_NG;
         }
-        /* Fallthrough */
+
+        ADD_INSN(post, node, pop);
+        break;
+      }
       default: {
         DECL_ANCHOR(anchor);
         INIT_ANCHOR(anchor);
@@ -6698,6 +6697,16 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
             flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
         }
         return flags;
+    }
+    else if (nd_type_p(cpath, RB_CONSTANT_PATH_TARGET_NODE) && !RB_NODE_CONSTANT_PATH_TARGET(cpath)->parent) {
+        /* toplevel class ::Foo */
+        ADD_INSN1(ret, cpath, putobject, rb_cObject);
+        return VM_DEFINECLASS_FLAG_SCOPED;
+    }
+    else if (nd_type_p(cpath, RB_CONSTANT_PATH_TARGET_NODE)) {
+        /* Bar::Foo */
+        NO_CHECK(COMPILE(ret, "nd_else->nd_head", RB_NODE_CONSTANT_PATH_TARGET(cpath)->parent));
+        return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else {
         /* class at cbase Foo */
@@ -11116,24 +11125,58 @@ const_node_shareability(const rb_shareable_constant_node_t *node)
 }
 
 static int
-compile_constant_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const rb_constant_write_node_t *const node, int popped)
+compile_constant_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, int popped)
 {
-    CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, node->value));
+    NODE *nd_value;
+    ID name;
+
+    switch (nd_type(node)) {
+      case RB_CONSTANT_WRITE_NODE:
+        nd_value = RB_NODE_CONSTANT_WRITE(node)->value;
+        name = RB_NODE_CONSTANT_WRITE(node)->name;
+        break;
+      case RB_CONSTANT_TARGET_NODE:
+        nd_value = NULL;
+        name = RB_NODE_CONSTANT_TARGET(node)->name;
+        break;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+
+    CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, nd_value));
     if (!popped) {
         ADD_INSN(ret, node, dup);
     }
 
     ADD_INSN1(ret, node, putspecialobject,
               INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-    ADD_INSN1(ret, node, setconstant, ID2SYM(node->name));
+    ADD_INSN1(ret, node, setconstant, ID2SYM(name));
     return COMPILE_OK;
 }
 
 static int
-compile_constant_path_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const rb_constant_path_write_node_t *const node, int popped)
+compile_constant_path_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, int popped)
 {
-    compile_cpath(ret, iseq, node->target);
-    CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, node->value));
+    NODE *target, *nd_value;
+    ID name;
+
+    switch (nd_type(node)) {
+      case RB_CONSTANT_PATH_WRITE_NODE:
+        target = (NODE *)RB_NODE_CONSTANT_PATH_WRITE(node)->target;
+        nd_value = RB_NODE_CONSTANT_PATH_WRITE(node)->value;
+        name = RB_NODE_CONSTANT_PATH_WRITE(node)->target->name;
+        break;
+      case RB_CONSTANT_PATH_TARGET_NODE:
+        target = (NODE *)node;
+        nd_value = NULL;
+        name = RB_NODE_CONSTANT_PATH_TARGET(node)->name;
+        break;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+
+    compile_cpath(ret, iseq, target);
+    CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, nd_value));
     ADD_INSN(ret, node, swap);
 
     if (!popped) {
@@ -11141,7 +11184,7 @@ compile_constant_path_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_par
         ADD_INSN(ret, node, swap);
     }
 
-    ADD_INSN1(ret, node, setconstant, ID2SYM(node->target->name));
+    ADD_INSN1(ret, node, setconstant, ID2SYM(name));
     return COMPILE_OK;
 }
 
@@ -11843,12 +11886,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                   get_ivar_ic_value(iseq, id));
         break;
       }
-      case RB_CONSTANT_WRITE_NODE: {
-        CHECK(compile_constant_write(iseq, ret, rb_parser_shareable_none, RB_NODE_CONSTANT_WRITE(node), popped));
+      case RB_CONSTANT_WRITE_NODE:
+      case RB_CONSTANT_TARGET_NODE: {
+        CHECK(compile_constant_write(iseq, ret, rb_parser_shareable_none, node, popped));
         break;
       }
-      case RB_CONSTANT_PATH_WRITE_NODE: {
-        CHECK(compile_constant_path_write(iseq, ret, rb_parser_shareable_none, RB_NODE_CONSTANT_PATH_WRITE(node), popped));
+      case RB_CONSTANT_PATH_WRITE_NODE:
+      case RB_CONSTANT_PATH_TARGET_NODE: {
+        CHECK(compile_constant_path_write(iseq, ret, rb_parser_shareable_none, node, popped));
         break;
       }
       case RB_SHAREABLE_CONSTANT_NODE: {
@@ -11857,10 +11902,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
         switch (nd_type(n)) {
           case RB_CONSTANT_WRITE_NODE:
-            CHECK(compile_constant_write(iseq, ret, shareable, RB_NODE_CONSTANT_WRITE(n), popped));
+            CHECK(compile_constant_write(iseq, ret, shareable, n, popped));
             break;
           case RB_CONSTANT_PATH_WRITE_NODE:
-            CHECK(compile_constant_path_write(iseq, ret, shareable, RB_NODE_CONSTANT_PATH_WRITE(n), popped));
+            CHECK(compile_constant_path_write(iseq, ret, shareable, n, popped));
             break;
           default:
             rb_bug("unexpected node: %s", ruby_node_name(nd_type(n)));
