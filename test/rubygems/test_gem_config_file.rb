@@ -43,6 +43,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal [@gem_repo], Gem.sources
     assert_equal 365, @cfg.cert_expiration_length_days
     assert_equal false, @cfg.ipv4_fallback_enabled
+    assert_equal false, @cfg.install_extension_in_lib
 
     File.open @temp_conf, "w" do |fp|
       fp.puts ":backtrace: true"
