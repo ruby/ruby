@@ -357,7 +357,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 }
                 Insn::Jump(target) => {
                     let lir_target = hir_to_lir[&target.target];
-                    gen_jump(&mut jit, &mut asm, lir_target);
+                    let branch_edge = lir::BranchEdge {
+                        target: lir_target,
+                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                    };
+                    gen_jump(&mut jit, &mut asm, branch_edge);
                 },
                 _ => {
                     if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
@@ -1295,9 +1299,9 @@ fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
 }
 
 /// Compile a jump to a basic block
-fn gen_jump(_jit: &mut JITState, asm: &mut Assembler, branch: lir::BlockId) {
+fn gen_jump(_jit: &mut JITState, asm: &mut Assembler, branch: lir::BranchEdge) {
     // Jump to the basic block
-    asm.jmp(Target::Block(lir::BranchEdge { target: branch, args: vec![] }));
+    asm.jmp(Target::Block(branch));
 }
 
 /// Compile a conditional branch to a basic block
