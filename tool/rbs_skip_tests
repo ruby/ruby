@@ -37,6 +37,9 @@ TestInstanceNetHTTPResponse depending on external resources
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
+# Failing because ObjectSpace.count_nodes has been removed
+test_count_nodes(ObjectSpaceTest)
+
 ## Unknown failures
 
 # NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
