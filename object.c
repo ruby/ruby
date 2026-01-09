@@ -2013,11 +2013,24 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * call-seq:
  *   mod >= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>, or the
- * two modules are the same. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric >= Float    # => true
+ *   Enumerable >= Array # => true
+ *   Float >= Float      # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
+ *
+ *   Float >= Numeric    # => false
+ *   Array >= Enumerable # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float >= Hash        # => nil
+ *   Enumerable >= String # => nil
  *
  */
 
