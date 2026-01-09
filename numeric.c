@@ -1638,7 +1638,8 @@ rb_float_cmp(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- *  Returns +true+ if +self+ is numerically greater than +other+:
+ *  Returns whether the value of +self+ is greater than the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 > 1              # => true
  *    2.0 > 1.0            # => true
@@ -4958,7 +4959,8 @@ fix_gt(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- * Returns +true+ if the value of +self+ is greater than that of +other+:
+ * Returns whether the value of +self+ is greater than the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 > 0              # => true
  *    1 > 1              # => false

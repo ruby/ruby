@@ -4971,10 +4971,9 @@ rb_hash_ge(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    self > other_hash -> true or false
+ *    self > other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a proper superset of the entries of +other+:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h > {foo: 0, bar: 1}         # => true   # Proper superset.

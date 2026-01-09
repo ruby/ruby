@@ -2009,14 +2009,23 @@ rb_mod_ge(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod > other   ->  true, false, or nil
+ *   self > other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is a descendant of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * If +self+ is a class, returns +true+ if +self+ is a superclass of +other+,
+ * returns +false+ if +self+ is the same as +other+ or if +self+ is a subclass
+ * of +other+, and returns +nil+ if there are no relationship between the two:
+ *
+ *   Numeric > Float # => true
+ *   Float > Numeric # => false
+ *   Float > Float   # => false
+ *   Float > Hash    # => nil
+ *
+ * If +self+ is a module, returns +true+ if +other+ includes +self+,
+ * returns +false+ if +self+ is the same as +other+ or if +self+ includes
+ * +other+, and returns +nil+ if there are no relationship between the two:
+ *
+ *   Enumerable > Array # => true
+ *   Enumerable > String # => nil
  *
  */
 
