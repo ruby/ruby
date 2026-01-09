@@ -459,7 +459,6 @@ convert_to_feasible_size_value(VALUE obj)
  *       n, next_n = next_n, n + next_n
  *     end
  *   end
- *
  *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
  * Parameter +size+ specifies how the size is to be calculated (see #size);
