@@ -658,7 +658,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_struct_aset_guards_recv_is_not_frozen
-    assert_compiles(<<~RUBY), result: :ok
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_send_without_block: 1 })
       def foo(obj)
         obj.foo = 123
       end
