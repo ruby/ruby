@@ -32,28 +32,28 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     salt = "\x01" * 8
     num = 2048
     pt = "data to be encrypted"
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    cipher.pkcs5_keyivgen(pass, salt, num, "MD5")
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    cipher.pkcs5_keyivgen(pass, salt, num, "SHA256")
     s1 = cipher.update(pt) << cipher.final
 
-    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
-    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest.digest('MD5', out) }
-    key = (d1 + d2)[0, 24]
-    iv = (d1 + d2)[24, 8]
-    cipher = new_encryptor("DES-EDE3-CBC", key: key, iv: iv)
+    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest.digest('SHA256', out) }
+    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest.digest('SHA256', out) }
+    key = (d1 + d2)[0, 32]
+    iv = (d1 + d2)[32, 16]
+    cipher = new_encryptor("AES-256-CBC", key: key, iv: iv)
     s2 = cipher.update(pt) << cipher.final
 
     assert_equal s1, s2
 
-    cipher2 = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "MD5") }
+    cipher2 = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "SHA256") }
   end
 
   def test_info
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_equal "DES-EDE3-CBC", cipher.name
-    assert_equal 24, cipher.key_len
-    assert_equal 8, cipher.iv_len
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_equal "AES-256-CBC", cipher.name
+    assert_equal 32, cipher.key_len
+    assert_equal 16, cipher.iv_len
   end
 
   def test_dup
@@ -80,13 +80,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_key_iv_set
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_raise(ArgumentError) { cipher.key = "\x01" * 23 }
-    assert_nothing_raised { cipher.key = "\x01" * 24 }
-    assert_raise(ArgumentError) { cipher.key = "\x01" * 25 }
-    assert_raise(ArgumentError) { cipher.iv = "\x01" * 7 }
-    assert_nothing_raised { cipher.iv = "\x01" * 8 }
-    assert_raise(ArgumentError) { cipher.iv = "\x01" * 9 }
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_raise(ArgumentError) { cipher.key = "\x01" * 31 }
+    assert_nothing_raised { cipher.key = "\x01" * 32 }
+    assert_raise(ArgumentError) { cipher.key = "\x01" * 33 }
+    assert_raise(ArgumentError) { cipher.iv = "\x01" * 15 }
+    assert_nothing_raised { cipher.iv = "\x01" * 16 }
+    assert_raise(ArgumentError) { cipher.iv = "\x01" * 17 }
   end
 
   def test_random_key_iv
@@ -109,8 +109,8 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_initialize
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC")
-    assert_raise(RuntimeError) { cipher.__send__(:initialize, "DES-EDE3-CBC") }
+    cipher = OpenSSL::Cipher.new("AES-256-CBC")
+    assert_raise(RuntimeError) { cipher.__send__(:initialize, "AES-256-CBC") }
     assert_raise(RuntimeError) { OpenSSL::Cipher.allocate.final }
     assert_raise(OpenSSL::Cipher::CipherError) {
       OpenSSL::Cipher.new("no such algorithm")
@@ -169,12 +169,12 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     %w(ecb cbc cfb ofb).each{|mode|
       c1 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c1.encrypt
-      c1.pkcs5_keyivgen("passwd")
+      c1.pkcs5_keyivgen("passwd", "12345678", 10000, "SHA256")
       ct = c1.update(pt) + c1.final
 
       c2 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c2.decrypt
-      c2.pkcs5_keyivgen("passwd")
+      c2.pkcs5_keyivgen("passwd", "12345678", 10000, "SHA256")
       assert_equal(pt, c2.update(ct) + c2.final)
     }
   end
@@ -313,6 +313,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_aes_ocb_tag_len
+    # AES-128-OCB is not FIPS-approved.
+    omit_on_fips
+
     # RFC 7253 Appendix A; the second sample
     key = ["000102030405060708090A0B0C0D0E0F"].pack("H*")
     iv  = ["BBAA99887766554433221101"].pack("H*")
@@ -347,6 +350,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end if has_cipher?("aes-128-ocb")
 
   def test_aes_gcm_siv
+    # AES-128-GCM-SIV is not FIPS-approved.
+    omit_on_fips
+
     # RFC 8452 Appendix C.1., 8th example
     key = ["01000000000000000000000000000000"].pack("H*")
     iv  = ["030000000000000000000000"].pack("H*")
