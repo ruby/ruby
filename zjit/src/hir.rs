@@ -1056,6 +1056,8 @@ impl Insn {
             Insn::WriteBarrier { .. } => false,
             Insn::IncrCounter(_) => false,
             Insn::GuardBitEquals { .. } => false,
+            Insn::ObjectAllocClass { .. } => false,
+            Insn::CheckInterrupts { .. } => false,
             _ => true,
         }
     }
@@ -4454,6 +4456,7 @@ impl Function {
             let mut memory: HashMap<(InsnId, i32), InsnId> = HashMap::new();
             let mut patchpoints: HashMap<Invariant, InsnId> = HashMap::new();
             let mut eq_guards: HashMap<(InsnId, Const), InsnId> = HashMap::new();
+            let mut consts: HashMap<Const, InsnId> = HashMap::new();
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GuardType { val, guard_type, .. } => {
@@ -4504,6 +4507,13 @@ impl Function {
                             continue;
                         }
                         patchpoints.insert(invariant, insn_id);
+                    }
+                    Insn::Const { val } => {
+                        if let Some(&prev) = consts.get(&val) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        consts.insert(val, insn_id);
                     }
                     insn if insn.has_effects() => {
                         shape_guards.clear();
