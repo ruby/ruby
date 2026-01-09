@@ -907,22 +907,33 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -932,22 +943,34 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
@@ -1074,22 +1097,33 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &mut edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -1099,22 +1133,34 @@ impl<'a> InsnOpndMutIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &mut edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
