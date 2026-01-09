@@ -377,17 +377,11 @@ pub enum Insn {
     /// Pop a register from the C stack
     CPop { out: Opnd },
 
-    /// Pop all of the caller-save registers and the flags from the C stack
-    CPopAll,
-
     /// Pop a register from the C stack and store it into another register
     CPopInto(Opnd),
 
     /// Push a register onto the C stack
     CPush(Opnd),
-
-    /// Push all of the caller-save registers and the flags to the C stack
-    CPushAll,
 
     // C function call with N arguments (variadic)
     CCall {
@@ -614,10 +608,8 @@ impl Insn {
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
-            Insn::CPopAll => "CPopAll",
             Insn::CPopInto(_) => "CPopInto",
             Insn::CPush(_) => "CPush",
-            Insn::CPushAll => "CPushAll",
             Insn::CCall { .. } => "CCall",
             Insn::CRet(_) => "CRet",
             Insn::CSelE { .. } => "CSelE",
@@ -851,8 +843,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Breakpoint |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::CPopAll |
-            Insn::CPushAll |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
@@ -1020,8 +1010,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Breakpoint |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::CPopAll |
-            Insn::CPushAll |
             Insn::FrameSetup { .. } |
             Insn::FrameTeardown { .. } |
             Insn::PadPatchPoint |
@@ -1867,10 +1855,7 @@ impl Assembler
                     }
 
                     if should_record_exit {
-                        // Preserve caller-saved registers that may be used in the shared exit.
-                        self.cpush_all();
                         asm_ccall!(self, rb_zjit_record_exit_stack, pc);
-                        self.cpop_all();
                     }
 
                     // If the side exit has already been compiled, jump to it.
@@ -2135,10 +2120,6 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
-        self.push_insn(Insn::CPopAll);
-    }
-
     pub fn cpop_into(&mut self, opnd: Opnd) {
         assert!(matches!(opnd, Opnd::Reg(_)), "Destination of cpop_into must be a register, got: {opnd:?}");
         self.push_insn(Insn::CPopInto(opnd));
@@ -2146,10 +2127,6 @@ impl Assembler {
 
     pub fn cpush(&mut self, opnd: Opnd) {
         self.push_insn(Insn::CPush(opnd));
-    }
-
-    pub fn cpush_all(&mut self) {
-        self.push_insn(Insn::CPushAll);
     }
 
     pub fn cret(&mut self, opnd: Opnd) {

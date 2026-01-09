@@ -1426,28 +1426,6 @@ impl Assembler {
                 Insn::CPopInto(opnd) => {
                     emit_pop(cb, opnd.into());
                 },
-                Insn::CPushAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    for reg in regs {
-                        emit_push(cb, A64Opnd::Reg(reg));
-                    }
-
-                    // Push the flags/state register
-                    mrs(cb, Self::EMIT_OPND, SystemRegister::NZCV);
-                    emit_push(cb, Self::EMIT_OPND);
-                },
-                Insn::CPopAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::EMIT_OPND);
-                    emit_pop(cb, Self::EMIT_OPND);
-
-                    for reg in regs.into_iter().rev() {
-                        emit_pop(cb, A64Opnd::Reg(reg));
-                    }
-                },
                 Insn::CCall { fptr, .. } => {
                     match fptr {
                         Opnd::UImm(fptr) => {
@@ -1879,50 +1857,6 @@ mod tests {
         0xc: .byte 0x21, 0x00, 0x00, 0x00
         ");
         assert_snapshot!(cb.hexdump(), @"48656c6c6f2c20776f726c6421000000");
-    }
-
-    #[test]
-    fn test_emit_cpush_all() {
-        let (mut asm, mut cb) = setup_asm();
-
-        asm.cpush_all();
-        asm.compile_with_num_regs(&mut cb, 0);
-
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: str x1, [sp, #-0x10]!
-        0x4: str x9, [sp, #-0x10]!
-        0x8: str x10, [sp, #-0x10]!
-        0xc: str x11, [sp, #-0x10]!
-        0x10: str x12, [sp, #-0x10]!
-        0x14: str x13, [sp, #-0x10]!
-        0x18: str x14, [sp, #-0x10]!
-        0x1c: str x15, [sp, #-0x10]!
-        0x20: mrs x16, nzcv
-        0x24: str x16, [sp, #-0x10]!
-        ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
-    }
-
-    #[test]
-    fn test_emit_cpop_all() {
-        let (mut asm, mut cb) = setup_asm();
-
-        asm.cpop_all();
-        asm.compile_with_num_regs(&mut cb, 0);
-
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: msr nzcv, x16
-        0x4: ldr x16, [sp], #0x10
-        0x8: ldr x15, [sp], #0x10
-        0xc: ldr x14, [sp], #0x10
-        0x10: ldr x13, [sp], #0x10
-        0x14: ldr x12, [sp], #0x10
-        0x18: ldr x11, [sp], #0x10
-        0x1c: ldr x10, [sp], #0x10
-        0x20: ldr x9, [sp], #0x10
-        0x24: ldr x1, [sp], #0x10
-        ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
     }
 
     #[test]

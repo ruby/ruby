@@ -858,25 +858,6 @@ impl Assembler {
                     pop(cb, opnd.into());
                 },
 
-                // Push and pop to the C stack all caller-save registers and the
-                // flags
-                Insn::CPushAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    for reg in regs {
-                        push(cb, X86Opnd::Reg(reg));
-                    }
-                    pushfq(cb);
-                },
-                Insn::CPopAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    popfq(cb);
-                    for reg in regs.into_iter().rev() {
-                        pop(cb, X86Opnd::Reg(reg));
-                    }
-                },
-
                 // C function call
                 Insn::CCall { fptr, .. } => {
                     match fptr {
