@@ -326,7 +326,8 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     if let &[index] = args {
         if fun.likely_a(index, types::Fixnum, state) {
             let index = fun.coerce_to(block, index, types::Fixnum, state);
-            let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
+            let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+            let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
             return Some(result);
         }
     }

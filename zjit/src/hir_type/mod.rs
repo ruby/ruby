@@ -395,6 +395,17 @@ impl Type {
         }
     }
 
+    pub fn cint64_value(&self) -> Option<i64> {
+        if self.is_subtype(types::CInt64) {
+            match self.spec {
+                Specialization::Int(val) => Some(val as i64),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
     /// Return true if the Type has object specialization and false otherwise.
     pub fn ruby_object_known(&self) -> bool {
         matches!(self.spec, Specialization::Object(_))

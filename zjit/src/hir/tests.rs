@@ -3566,9 +3566,11 @@ pub mod hir_build_tests {
           v22:CInt64 = ArrayLength v21
           v23:CInt64[2] = GuardBitEquals v22, CInt64(2)
           v24:Fixnum[1] = Const Value(1)
-          v25:BasicObject = ArrayArefFixnum v21, v24
-          v26:Fixnum[0] = Const Value(0)
-          v27:BasicObject = ArrayArefFixnum v21, v26
+          v25:CInt64 = UnboxFixnum v24
+          v26:BasicObject = ArrayAref v21, v25
+          v27:Fixnum[0] = Const Value(0)
+          v28:CInt64 = UnboxFixnum v27
+          v29:BasicObject = ArrayAref v21, v28
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13
