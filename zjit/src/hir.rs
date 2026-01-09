@@ -4544,8 +4544,8 @@ impl Function {
         run_pass!(optimize_getivar);
         run_pass!(optimize_c_calls);
         run_pass!(fold_constants);
-        run_pass!(lvn);
         run_pass!(clean_cfg);
+        run_pass!(lvn); // after clean_cfg, blocks get bigger
         run_pass!(eliminate_dead_code);
 
         if should_dump {
