@@ -4487,9 +4487,7 @@ impl Function {
                     }
                     Insn::LoadField { recv, offset, .. } => {
                         let key = (self.chase_insn(recv), offset);
-                        eprintln!("trying to read ({}, {})", key.0, key.1);
                         if let Some(&prev) = memory.get(&key) {
-                            eprintln!("cached read at offset {}", offset);
                             self.make_equal_to(insn_id, prev);
                             continue;
                         }
@@ -4497,9 +4495,7 @@ impl Function {
                     }
                     Insn::StoreField { recv, offset, val, .. } => {
                         let key = (self.chase_insn(recv), offset);
-                        eprintln!("clearing offset {}", offset);
                         memory.retain(|&(_, o), _| o != offset);
-                        eprintln!("writing ({}, {}) = {}", key.0, key.1, val);
                         memory.insert(key, val);
                     }
                     Insn::PatchPoint { invariant, .. } => {
@@ -4510,7 +4506,6 @@ impl Function {
                         patchpoints.insert(invariant, insn_id);
                     }
                     insn if insn.has_effects() => {
-                        eprintln!("clearing memory due to {}", format!("{}", insn));
                         shape_guards.clear();
                         memory.clear();
                         patchpoints.clear();
