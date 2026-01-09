@@ -8973,6 +8973,17 @@ fn gen_struct_aset(
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
+    // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
+    // that the recv is not frozen.
+    // We know all structs are heap objects, so we can check the flag directly.
+    let recv = asm.stack_opnd(1);
+    let recv = asm.load(recv);
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    asm.jnz(Target::side_exit(Counter::opt_aset_frozen));
+
+    // Not frozen, so we can proceed.
+
     asm_comment!(asm, "struct aset");
 
     let val = asm.stack_pop(1);
