@@ -13,7 +13,7 @@ use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
-use crate::hir_effect::{Effect, effect_sets};
+use crate::hir_effect::{Effect, effect_sets, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
@@ -1054,7 +1054,7 @@ impl Insn {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
-    fn get_effects(&self) -> Effect {
+    fn effects_of(&self) -> Effect {
         match &self {
             Insn::Const { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::Param => Effect::from_write(effect_sets::Allocator),
@@ -1074,21 +1074,21 @@ impl Insn {
             Insn::HashDup { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::Test { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::Snapshot { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumAdd  { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumSub  { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumMult { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumEq   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumNeq  { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumLt   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumLe   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumGt   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumGe   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumAnd  { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumOr   { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumXor  { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumLShift { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::FixnumRShift { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::GetLocal   { .. } => Effect::from_write(effect_sets::Allocator),
+            Insn::FixnumAdd  { .. } => effects::Empty,
+            Insn::FixnumSub  { .. } => effects::Empty,
+            Insn::FixnumMult { .. } => effects::Empty,
+            Insn::FixnumEq   { .. } => effects::Empty,
+            Insn::FixnumNeq  { .. } => effects::Empty,
+            Insn::FixnumLt   { .. } => effects::Empty,
+            Insn::FixnumLe   { .. } => effects::Empty,
+            Insn::FixnumGt   { .. } => effects::Empty,
+            Insn::FixnumGe   { .. } => effects::Empty,
+            Insn::FixnumAnd  { .. } => effects::Empty,
+            Insn::FixnumOr   { .. } => effects::Empty,
+            Insn::FixnumXor  { .. } => effects::Empty,
+            Insn::FixnumLShift { .. } => effects::Empty,
+            Insn::FixnumRShift { .. } => effects::Empty,
+            Insn::GetLocal   { .. } => Effect::from_sets(effect_sets::Locals, effect_sets::Empty),
             Insn::IsNil      { .. } => Effect::from_write(effect_sets::Allocator),
             Insn::LoadPC => Effect::from_write(effect_sets::Allocator),
             Insn::LoadEC => Effect::from_write(effect_sets::Allocator),
@@ -1135,7 +1135,7 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
-        effect_sets::Allocator.includes(self.get_effects().write())
+        effect_sets::Allocator.includes(self.effects_of().write())
     }
 }
 
