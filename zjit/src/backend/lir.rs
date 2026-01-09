@@ -2248,7 +2248,20 @@ impl fmt::Display for Assembler {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                             Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
-                            Target::Block(edge) => write!(f, " bb{}", edge.target.0)?,
+                            Target::Block(edge) => {
+                                if edge.args.is_empty() {
+                                    write!(f, " bb{}", edge.target.0)?;
+                                } else {
+                                    write!(f, " bb{}(", edge.target.0)?;
+                                    for (i, arg) in edge.args.iter().enumerate() {
+                                        if i > 0 {
+                                            write!(f, ", ")?;
+                                        }
+                                        write!(f, "{}", arg)?;
+                                    }
+                                    write!(f, ")")?;
+                                }
+                            }
                         }
                     }
 
@@ -2256,6 +2269,17 @@ impl fmt::Display for Assembler {
                     if let Some(Target::SideExit { .. }) = insn.target() {
                         // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
                         // Here, only handle instructions that have both Opnd and Target.
+                        match insn {
+                            Insn::Joz(opnd, _) |
+                            Insn::Jonz(opnd, _) |
+                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                write!(f, ", {opnd}")?;
+                            }
+                            _ => {}
+                        }
+                    } else if let Some(Target::Block(_)) = insn.target() {
+                        // If the instruction has a Block target, avoid using opnd_iter() for branch args
+                        // since they're already printed inline with the target. Only print non-target operands.
                         match insn {
                             Insn::Joz(opnd, _) |
                             Insn::Jonz(opnd, _) |
