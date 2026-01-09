@@ -83,6 +83,12 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 # error We currently need language-supported TLS
 #endif
 
+#ifdef MMTK_DEBUG
+# define MMTK_ASSERT(expr, ...) RUBY_ASSERT_ALWAYS(expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
+#else
+# define MMTK_ASSERT(expr, ...) ((void)0)
+#endif
+
 #include <pthread.h>
 
 static void
