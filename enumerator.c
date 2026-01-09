@@ -18,6 +18,7 @@
 #include <float.h>
 #endif
 
+#include <limits.h>
 #include "id.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -4008,7 +4009,7 @@ arith_seq_take(VALUE self, VALUE num)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i < end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit < i) break;
+                if (i > LONG_MAX - unit) break;
                 i += unit;
                 --n;
             }
@@ -4021,7 +4022,7 @@ arith_seq_take(VALUE self, VALUE num)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i > end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit > i) break;
+                if (i < LONG_MIN - unit) break;
                 i += unit;
                 --n;
             }
