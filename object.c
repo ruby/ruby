@@ -1967,13 +1967,24 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * call-seq:
  *   self < other -> true, false, or nil
  *
- * Returns whether +self+ is a subclass of +other+,
- * or +nil+ if there is no relationship between the two:
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
  *
- *   Float < Numeric # => true
- *   Numeric < Float # => false
- *   Float < Float   # => false
- *   Float < Hash    # => nil
+ *   Float < Numeric    # => true
+ *   Array < Enumerable # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric < Float    # => false
+ *   Enumerable < Array # => false
+ *   Float < Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float < Hash        # => nil
+ *   Enumerable < String # => nil
  *
  */
 
