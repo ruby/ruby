@@ -981,6 +981,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     }
 #endif
 
+    MMTK_ASSERT(BUILTIN_TYPE(a) != T_NONE);
+    MMTK_ASSERT(BUILTIN_TYPE(b) != T_NONE);
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
