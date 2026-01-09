@@ -392,7 +392,7 @@ pub struct SideExit {
 
 /// Branch target (something that we can jump to)
 /// for branch instructions
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Target
 {
     /// Pointer to a piece of ZJIT-generated code
@@ -408,6 +408,32 @@ pub enum Target
         /// We use this to increment exit counters
         reason: SideExitReason,
     },
+}
+
+impl fmt::Debug for Target {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Target::CodePtr(ptr) => write!(f, "CodePtr({:?})", ptr),
+            Target::Label(label) => write!(f, "Label({:?})", label),
+            Target::Block(edge) => {
+                if edge.args.is_empty() {
+                    write!(f, "Block({:?})", edge.target)
+                } else {
+                    write!(f, "Block({:?}(", edge.target)?;
+                    for (i, arg) in edge.args.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{:?}", arg)?;
+                    }
+                    write!(f, "))")
+                }
+            }
+            Target::SideExit { exit, reason } => {
+                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", exit, reason)
+            }
+        }
+    }
 }
 
 impl Target
