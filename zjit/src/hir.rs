@@ -116,7 +116,7 @@ impl std::fmt::Display for BranchEdge {
 }
 
 /// Invalidation reasons
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Invariant {
     /// Basic operation is redefined
     BOPRedefined {
@@ -308,6 +308,34 @@ pub enum Const {
     CPtr(*const u8),
     CDouble(f64),
 }
+
+impl std::hash::Hash for Const {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Const::Value(v) => v.hash(state),
+            Const::CBool(b) => b.hash(state),
+            Const::CInt8(i) => i.hash(state),
+            Const::CInt16(i) => i.hash(state),
+            Const::CInt32(i) => i.hash(state),
+            Const::CInt64(i) => i.hash(state),
+            Const::CUInt8(u) => u.hash(state),
+            Const::CUInt16(u) => u.hash(state),
+            Const::CUInt32(u) => u.hash(state),
+            Const::CUInt64(u) => u.hash(state),
+            Const::CShape(sid) => sid.hash(state),
+            Const::CPtr(p) => {
+                let addr = *p as usize;
+                addr.hash(state);
+            }
+            Const::CDouble(d) => {
+                let bits = d.to_bits();
+                bits.hash(state);
+            }
+        }
+    }
+}
+
+impl std::cmp::Eq for Const {}
 
 impl std::fmt::Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -1026,6 +1054,8 @@ impl Insn {
             Insn::Snapshot { .. } => false,
             Insn::LoadField { .. } => false,
             Insn::WriteBarrier { .. } => false,
+            Insn::IncrCounter(_) => false,
+            Insn::GuardBitEquals { .. } => false,
             _ => true,
         }
     }
@@ -4422,6 +4452,8 @@ impl Function {
             let mut type_guards: Vec<(InsnId, Type, InsnId)> = vec![];
             let mut shape_guards: Vec<(InsnId, ShapeId, InsnId)> = vec![];
             let mut memory: HashMap<(InsnId, i32), InsnId> = HashMap::new();
+            let mut patchpoints: HashMap<Invariant, InsnId> = HashMap::new();
+            let mut eq_guards: HashMap<(InsnId, Const), InsnId> = HashMap::new();
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GuardType { val, guard_type, .. } => {
@@ -4445,6 +4477,14 @@ impl Function {
                         }
                         shape_guards.push((val, shape, insn_id));
                     }
+                    Insn::GuardBitEquals { val, expected, .. } => {
+                        let key = (self.chase_insn(val), expected);
+                        if let Some(&prev) = eq_guards.get(&key) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        eq_guards.insert(key, insn_id);
+                    }
                     Insn::LoadField { recv, offset, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         eprintln!("trying to read ({}, {})", key.0, key.1);
@@ -4462,10 +4502,18 @@ impl Function {
                         eprintln!("writing ({}, {}) = {}", key.0, key.1, val);
                         memory.insert(key, val);
                     }
+                    Insn::PatchPoint { invariant, .. } => {
+                        if let Some(&prev) = patchpoints.get(&invariant) {
+                            // self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        patchpoints.insert(invariant, insn_id);
+                    }
                     insn if insn.has_effects() => {
                         eprintln!("clearing memory due to {}", format!("{}", insn));
                         shape_guards.clear();
                         memory.clear();
+                        patchpoints.clear();
                     }
                     _ => {}
                 }
