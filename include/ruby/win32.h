@@ -728,6 +728,8 @@ int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
+ssize_t rb_w32_binread(int, void *, size_t);
+ssize_t rb_w32_binwrite(int, const void *, size_t);
 ssize_t rb_w32_pread(int, void *, size_t, rb_off_t offset);
 ssize_t rb_w32_pwrite(int, const void *, size_t, rb_off_t offset);
 rb_off_t  rb_w32_lseek(int, rb_off_t, int);
