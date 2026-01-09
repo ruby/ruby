@@ -759,7 +759,7 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
-    ArrayArefFixnum { array: InsnId, index: InsnId },
+    ArrayAref { array: InsnId, index: InsnId },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
@@ -1163,8 +1163,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::ArrayArefFixnum { array, index, .. } => {
-                write!(f, "ArrayArefFixnum {array}, {index}")
+            Insn::ArrayAref { array, index, .. } => {
+                write!(f, "ArrayAref {array}, {index}")
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
@@ -2150,7 +2150,7 @@ impl Function {
             &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
-            &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayAref { array, index } => ArrayAref { array: find!(array), index: find!(index) },
             &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
@@ -2263,7 +2263,7 @@ impl Function {
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
-            Insn::ArrayArefFixnum { .. } => types::BasicObject,
+            Insn::ArrayAref { .. } => types::BasicObject,
             Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
@@ -4073,11 +4073,11 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::ArrayArefFixnum { array, index } if self.type_of(array).ruby_object_known()
+                    Insn::ArrayAref { array, index } if self.type_of(array).ruby_object_known()
                                                            && self.type_of(index).ruby_object_known() => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
                         if array_obj.is_frozen() {
-                            let index = self.type_of(index).fixnum_value().unwrap();
+                            let index = self.type_of(index).cint64_value().unwrap();
                             let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
                             self.new_insn(Insn::Const { val: Const::Value(val) })
                         } else {
@@ -4271,7 +4271,7 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::ArrayArefFixnum { array, index } => {
+            &Insn::ArrayAref { array, index } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
             }
@@ -4995,9 +4995,9 @@ impl Function {
             | Insn::ArrayLength { array, .. } => {
                 self.assert_subtype(insn_id, array, types::Array)
             }
-            Insn::ArrayArefFixnum { array, index } => {
+            Insn::ArrayAref { array, index } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
-                self.assert_subtype(insn_id, index, types::Fixnum)
+                self.assert_subtype(insn_id, index, types::CInt64)
             }
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
@@ -6544,7 +6544,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // TODO(max): Add a short-cut path for long indices into an array where the
                         // index is known to be in-bounds
                         let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
-                        let element = fun.push_insn(block, Insn::ArrayArefFixnum { array, index });
+                        let index = fun.push_insn(block, Insn::UnboxFixnum { val: index });
+                        let element = fun.push_insn(block, Insn::ArrayAref { array, index });
                         state.stack_push(element);
                     }
                 }
