@@ -2215,7 +2215,13 @@ impl Function {
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
-            Insn::UnboxFixnum { .. } => types::CInt64,
+            Insn::UnboxFixnum { val } => {
+                if let Some(fixnum) = self.type_of(*val).fixnum_value() {
+                    Type::from_cint(types::CInt64, fixnum)
+                } else {
+                    types::CInt64
+                }
+            },
             Insn::FixnumAref { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
@@ -3922,15 +3928,16 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::ArrayAref { array, index } if self.type_of(array).ruby_object_known()
-                                                           && self.type_of(index).ruby_object_known() => {
+                    Insn::ArrayAref { array, index }
+                        if self.type_of(array).ruby_object_known()
+                            && self.type_of(index).is_subtype(types::CInt64) => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
-                        if array_obj.is_frozen() {
-                            let index = self.type_of(index).cint64_value().unwrap();
-                            let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                            self.new_insn(Insn::Const { val: Const::Value(val) })
-                        } else {
-                            insn_id
+                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
+                            (true, Some(index)) => {
+                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
                         }
                     }
                     Insn::Test { val } if self.type_of(val).is_known_falsy() => {
