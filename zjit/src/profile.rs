@@ -157,16 +157,17 @@ fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
 
 fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let cme = unsafe { rb_vm_frame_method_entry(profiler.cfp) };
+    let cme_value = VALUE(cme as usize);  // CME is a T_IMEMO, which is a VALUE
 
     match profile.super_cme.get(&profiler.insn_idx) {
         None => {
             // If `None`, then this is our first time looking at `super` for this instruction.
-            profile.super_cme.insert(profiler.insn_idx, Some(cme));
+            profile.super_cme.insert(profiler.insn_idx, Some(cme_value));
         },
         Some(Some(existing_cme)) => {
             // Check if the stored method entry is the same as the current one. If it isn't, then
             // mark the call site as polymorphic.
-            if *existing_cme != cme {
+            if *existing_cme != cme_value {
                 profile.super_cme.insert(profiler.insn_idx, None);
             }
         }
@@ -176,8 +177,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
         }
     }
 
-    unsafe { rb_gc_writebarrier(profiler.iseq.into(), (*cme).defined_class) };
-    unsafe { rb_gc_writebarrier(profiler.iseq.into(), (*cme).owner) };
+    unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
 
     let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -358,8 +358,8 @@ pub struct IseqProfile {
     /// Number of profiled executions for each YARV instruction, indexed by the instruction index
     num_profiles: Vec<NumProfiles>,
 
-    /// Method entries for `super` calls
-    super_cme: HashMap<usize, Option<*const rb_callable_method_entry_t>>
+    /// Method entries for `super` calls (stored as VALUE to be GC-safe)
+    super_cme: HashMap<usize, Option<VALUE>>
 }
 
 impl IseqProfile {
@@ -377,7 +377,8 @@ impl IseqProfile {
     }
 
     pub fn get_super_method_entry(&self, insn_idx: usize) -> Option<*const rb_callable_method_entry_t> {
-        self.super_cme.get(&insn_idx).copied().flatten()
+        self.super_cme.get(&insn_idx)
+            .and_then(|opt| opt.map(|v| v.0 as *const rb_callable_method_entry_t))
     }
 
     /// Run a given callback with every object in IseqProfile
@@ -391,12 +392,9 @@ impl IseqProfile {
             }
         }
 
-        for method_entry in self.super_cme.values() {
-            if let Some(cme) = method_entry {
-                unsafe {
-                    callback((**cme).defined_class);
-                    callback((**cme).owner);
-                }
+        for cme_value in self.super_cme.values() {
+            if let Some(cme) = cme_value {
+                callback(*cme);
             }
         }
     }
@@ -409,6 +407,13 @@ impl IseqProfile {
                     // If the type is a GC object, call the callback
                     callback(&mut profiled_type.class);
                 }
+            }
+        }
+
+        // Update CME references if they move during compaction
+        for cme_value in self.super_cme.values_mut() {
+            if let Some(cme) = cme_value {
+                callback(cme);
             }
         }
     }
