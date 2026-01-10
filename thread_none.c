@@ -26,11 +26,11 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
 }
 
-#define thread_sched_to_dead thread_sched_to_waiting
+#define thread_sched_to_dead(a,b) thread_sched_to_waiting(a,b,true)
 
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)

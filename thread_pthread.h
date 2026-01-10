@@ -56,6 +56,9 @@ struct rb_thread_sched_item {
         // connected to ractor->threads.sched.reqdyq
         // locked by ractor->threads.sched.lock
         struct ccan_list_node readyq;
+        // Indicates whether thread is on the readyq.
+        // There is no clear relationship between this and th->status.
+        bool is_ready;
 
         // connected to vm->ractor.sched.timeslice_threads
         // locked by vm->ractor.sched.lock
@@ -127,6 +130,10 @@ struct rb_thread_sched {
     struct rb_thread_struct *lock_owner;
 #endif
     struct rb_thread_struct *running; // running thread or NULL
+    // Most recently running thread or NULL. If this thread wakes up before the newly running
+    // thread completes the transfer of control, it can interrupt and resume running.
+    // The new thread clears this field when it takes control.
+    struct rb_thread_struct *runnable_hot_th;
     bool is_running;
     bool is_running_timeslice;
     bool enable_mn_threads;
