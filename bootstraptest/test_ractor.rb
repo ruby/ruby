@@ -1345,6 +1345,32 @@ assert_equal '[C, M]', %q{
   Ractor.make_shareable(ary = [C, M])
 }
 
+# Frozen procs with shareable selfs are shareable
+assert_equal 'shareable', <<~'RUBY'
+  class C
+    PROC = -> { 'shareable' }.freeze
+  end
+
+  Ractor.new {
+    C::PROC.call
+  }.value
+RUBY
+
+# Not frozen procs with shareable selfs are not shareable
+assert_equal 'rescued', <<~'RUBY'
+  class C
+    PROC = -> { 'not frozen' }
+  end
+
+  Ractor.new {
+    begin
+      C::PROC.call
+    rescue Ractor::IsolationError
+      'rescued'
+    end
+  }.value
+RUBY
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
