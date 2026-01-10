@@ -330,6 +330,11 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     }
 
     rb_gc_obj_free(objspace, obj);
+
+    // TODO: uncomment this when done debugging
+// #ifdef MMTK_DEBUG
+    memset((void *)obj, 0, rb_gc_impl_obj_slot_size(obj));
+// #endif
 }
 
 static size_t
