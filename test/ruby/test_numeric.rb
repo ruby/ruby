@@ -489,6 +489,10 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(0,  0.pow(3, 1))
     assert_equal(0,  2.pow(3, 1))
     assert_equal(0, -2.pow(3, 1))
+
+    min, max = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_equal(0, 0.pow(2, min))
+    assert_equal(0, Integer.sqrt(max+1).pow(2, min))
   end
 
 end

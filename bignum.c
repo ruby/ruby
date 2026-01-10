@@ -7070,7 +7070,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
     zn = mn;
     z = bignew(zn, 1);
     bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
-    if (nega_flg & BIGNUM_POSITIVE_P(z)) {
+    if (nega_flg && BIGNUM_POSITIVE_P(z) && !BIGZEROP(z)) {
         z = rb_big_minus(z, m);
     }
     RB_GC_GUARD(x);
@@ -7098,7 +7098,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
         x = rb_int_modulo(x, m);
     }
 
-    if (nega_flg && rb_int_positive_p(tmp)) {
+    if (nega_flg && rb_int_positive_p(tmp) && !rb_int_zero_p(tmp)) {
         tmp = rb_int_minus(tmp, m);
     }
     return tmp;
@@ -7208,6 +7208,11 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         }
         if (!RB_INTEGER_TYPE_P(m)) {
             rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless all arguments are integers");
+        }
+
+        if (rb_int_zero_p(a) && !rb_int_zero_p(b)) {
+            /* shortcut; 0**x => 0 except for x == 0 */
+            return INT2FIX(0);
         }
 
         if (rb_int_negative_p(m)) {

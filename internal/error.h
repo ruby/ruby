@@ -75,11 +75,11 @@ PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *f
 PRINTF_ARGS(void rb_warn_reserved_name(const char *removal, const char *fmt, ...), 2, 3);
 #if RUBY_DEBUG
 # include "ruby/version.h"
-# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major * 10000) + (minor) * 100)
-# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major * 10000) + (minor) * 100)
+# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major) * 10000 + (minor) * 100)
+# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major) * 10000 + (minor) * 100)
 # if defined(RBIMPL_WARNING_PRAGMA0)
 #   define RBIMPL_TODO0(x) RBIMPL_WARNING_PRAGMA0(message(x))
-# elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+# elif RBIMPL_COMPILER_IS(MSVC)
 #   define RBIMPL_TODO0(x) __pragma(message(x))
 # endif
 
@@ -235,10 +235,11 @@ rb_key_err_raise(VALUE mesg, VALUE recv, VALUE name)
     rb_exc_raise(exc);
 }
 
+RBIMPL_ATTR_NONNULL((2))
 static inline bool
 rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type)
 {
-    return RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
+    return rbimpl_obj_typeddata_p(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
 }
 
 typedef enum {

@@ -1789,14 +1789,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 
 /*
  *  call-seq:
- *    self[index] -> object or nil
- *    self[start, length] -> object or nil
+ *    self[offset] -> object or nil
+ *    self[offset, size] -> object or nil
  *    self[range] -> object or nil
  *    self[aseq] -> object or nil
- *    slice(index) -> object or nil
- *    slice(start, length) -> object or nil
- *    slice(range) -> object or nil
- *    slice(aseq) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
@@ -1804,27 +1800,27 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *    a = [:foo, 'bar', 2]
  *
- *    # Single argument index: returns one element.
+ *    # Single argument offset: returns one element.
  *    a[0]     # => :foo          # Zero-based index.
  *    a[-1]    # => 2             # Negative index counts backwards from end.
  *
- *    # Arguments start and length: returns an array.
+ *    # Arguments offset and size: returns an array.
  *    a[1, 2]  # => ["bar", 2]
- *    a[-2, 2] # => ["bar", 2]    # Negative start counts backwards from end.
+ *    a[-2, 2] # => ["bar", 2]    # Negative offset counts backwards from end.
  *
  *    # Single argument range: returns an array.
  *    a[0..1]  # => [:foo, "bar"]
  *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
  *    a[-2..2] # => ["bar", 2]    # Negative range-end counts backwards from end.
  *
- *  When a single integer argument +index+ is given, returns the element at offset +index+:
+ *  When a single integer argument +offset+ is given, returns the element at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
  *    a[2] # => 2
  *    a # => [:foo, "bar", 2]
  *
- *  If +index+ is negative, counts backwards from the end of +self+:
+ *  If +offset+ is negative, counts backwards from the end of +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[-1] # => 2
@@ -1832,29 +1828,29 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +index+ is out of range, returns +nil+.
  *
- *  When two Integer arguments +start+ and +length+ are given,
- *  returns a new array of size +length+ containing successive elements beginning at offset +start+:
+ *  When two Integer arguments +offset+ and +size+ are given,
+ *  returns a new array of size +size+ containing successive elements beginning at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
  *    a[1, 2] # => ["bar", 2]
  *
- *  If <tt>start + length</tt> is greater than <tt>self.length</tt>,
- *  returns all elements from offset +start+ to the end:
+ *  If <tt>offset + size</tt> is greater than <tt>self.size</tt>,
+ *  returns all elements from offset +offset+ to the end:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 4] # => [:foo, "bar", 2]
  *    a[1, 3] # => ["bar", 2]
  *    a[2, 2] # => [2]
  *
- *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
+ *  If <tt>offset == self.size</tt> and <tt>size >= 0</tt>,
  *  returns a new empty array.
  *
- *  If +length+ is negative, returns +nil+.
+ *  If +size+ is negative, returns +nil+.
  *
  *  When a single Range argument +range+ is given,
- *  treats <tt>range.min</tt> as +start+ above
- *  and <tt>range.size</tt> as +length+ above:
+ *  treats <tt>range.min</tt> as +offset+ above
+ *  and <tt>range.size</tt> as +size+ above:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0..1] # => [:foo, "bar"]

@@ -69,7 +69,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -242,6 +242,8 @@ jobs:
           repository: ruby/ruby-bench
           path: ruby-bench
 
+      # If you want to skip failing benchmark, consider using `--excludes`.
+      # e.g. `bench_opts: '--warmup=1 --bench=1 --excludes=railsbench,lobsters'`
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
         working-directory: ruby-bench

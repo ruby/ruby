@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../fiber/fixtures/scheduler'
 
 describe "Kernel#sleep" do
   it "is a private method" do
@@ -82,6 +83,40 @@ describe "Kernel#sleep" do
 
       t.wakeup
       t.value.should == 5
+    end
+  end
+
+  context "Kernel.sleep with Fiber scheduler" do
+    before :each do
+      Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+    end
+
+    after :each do
+      Fiber.set_scheduler(nil)
+    end
+
+    it "calls the scheduler without arguments when no duration is given" do
+      sleeper = Fiber.new(blocking: false) do
+        sleep
+      end
+      sleeper.resume
+      Fiber.scheduler.events.should == [{ event: :kernel_sleep, fiber: sleeper, args: [] }]
+    end
+
+    it "calls the scheduler with the given duration" do
+      sleeper = Fiber.new(blocking: false) do
+        sleep(0.01)
+      end
+      sleeper.resume
+      Fiber.scheduler.events.should == [{ event: :kernel_sleep, fiber: sleeper, args: [0.01] }]
+    end
+
+    it "does not call the scheduler if the fiber is blocking" do
+      sleeper = Fiber.new(blocking: true) do
+        sleep(0.01)
+      end
+      sleeper.resume
+      Fiber.scheduler.events.should == []
     end
   end
 end

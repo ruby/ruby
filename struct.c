@@ -981,6 +981,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
     char first = RSTRING_PTR(cname)[0];
 
     if (recur || first != '#') {
+        rb_str_cat2(str, " ");
         rb_str_append(str, cname);
     }
     if (recur) {
@@ -997,7 +998,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
         if (i > 0) {
             rb_str_cat2(str, ", ");
         }
-        else if (first != '#') {
+        else {
             rb_str_cat2(str, " ");
         }
         slot = RARRAY_AREF(members, i);
@@ -1031,7 +1032,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
 static VALUE
 rb_struct_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct"));
 }
 
 /*
@@ -1403,7 +1404,7 @@ recursive_equal(VALUE s, VALUE s2, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if and only if the following are true; otherwise returns +false+:
+ *  Returns whether both the following are true:
  *
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name == self.name</tt>.
@@ -1809,6 +1810,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         if (num_members > 0) {
             rb_exc_raise(rb_keyword_error_new("missing", members));
         }
+        OBJ_FREEZE(self);
         return Qnil;
     }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
@@ -1909,14 +1911,14 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_data_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data"));
 }
 
 /*
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if +other+ is the same class as +self+, and all members are
+ *  Returns whether +other+ is the same class as +self+, and all members are
  *  equal.
  *
  *  Examples:

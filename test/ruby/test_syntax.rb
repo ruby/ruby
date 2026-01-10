@@ -1260,8 +1260,6 @@ eom
   end
 
   def test_fluent_and
-    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
-
     assert_valid_syntax("a\n" "&& foo")
     assert_valid_syntax("a\n" "and foo")
 
@@ -1285,8 +1283,6 @@ eom
   end
 
   def test_fluent_or
-    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
-
     assert_valid_syntax("a\n" "|| foo")
     assert_valid_syntax("a\n" "or foo")
 
@@ -2300,13 +2296,13 @@ eom
   end
 
   def test_class_module_Object_ancestors
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m
       class Bug18832; end
     RUBY
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m

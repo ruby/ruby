@@ -81,7 +81,7 @@ describe "UnboundMethod#==" do
     (@child1 == @parent).should == true
   end
 
-  it "returns false if same method but extracted from two different subclasses" do
+  it "returns true if same method but extracted from two different subclasses" do
     (@child2 == @child1).should == true
     (@child1 == @child2).should == true
   end

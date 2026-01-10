@@ -336,35 +336,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-/*
- *  call-seq:
- *     ObjectSpace.count_nodes([result_hash]) -> hash
- *
- *  Counts nodes for each node type.
- *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
- *
- *  It returns a hash as:
- *
- *	{:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
- *
- *  This method is only expected to work with C Ruby.
- */
-
-static VALUE
-count_nodes(int argc, VALUE *argv, VALUE os)
-{
-    return setup_hash(argc, argv);
-}
-
 static void
 cto_i(VALUE v, void *data)
 {
@@ -834,7 +805,6 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_symbols", count_symbols, -1);
-    rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
     rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);
 

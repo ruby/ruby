@@ -37,6 +37,9 @@ TestInstanceNetHTTPResponse depending on external resources
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
+# Failing because ObjectSpace.count_nodes has been removed
+test_count_nodes(ObjectSpaceTest)
+
 ## Unknown failures
 
 # NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
@@ -45,3 +48,10 @@ test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
+test_source_location(MethodInstanceTest)
+test_source_location(ProcInstanceTest)
+test_source_location(UnboundMethodInstanceTest)
+
+# Errno::ENOENT: No such file or directory - bundle
+test_collection_install__pathname_set(RBS::CliTest)
+test_collection_install__set_pathname__manifest(RBS::CliTest)

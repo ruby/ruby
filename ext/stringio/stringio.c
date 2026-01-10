@@ -13,7 +13,7 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.2.0";
+STRINGIO_VERSION = "3.2.1.dev";
 
 #include <stdbool.h>
 
@@ -1615,9 +1615,10 @@ strio_write(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *   strio.putc(obj)    -> obj
+ *   putc(object) -> object
  *
- * See IO#putc.
+ * :include: stringio/putc.rdoc
+ *
  */
 static VALUE
 strio_putc(VALUE self, VALUE ch)
@@ -1649,9 +1650,10 @@ strio_putc(VALUE self, VALUE ch)
 
 /*
  * call-seq:
- *   strio.read([length [, outbuf]])    -> string, outbuf, or nil
+ *   read(maxlen = nil, out_string = nil) → new_string, out_string, or nil
  *
- * See IO#read.
+ * :include: stringio/read.rdoc
+ *
  */
 static VALUE
 strio_read(int argc, VALUE *argv, VALUE self)
@@ -1723,10 +1725,10 @@ strio_read(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    pread(maxlen, offset)             -> string
- *    pread(maxlen, offset, out_string) -> string
+ *    pread(maxlen, offset, out_string = nil) -> new_string or out_string
  *
- *  See IO#pread.
+ *  :include: stringio/pread.rdoc
+ *
  */
 static VALUE
 strio_pread(int argc, VALUE *argv, VALUE self)

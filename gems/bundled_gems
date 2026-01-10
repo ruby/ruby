@@ -6,19 +6,19 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest            6.0.0  https://github.com/minitest/minitest
+minitest            6.0.1  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
 rake                13.3.1  https://github.com/ruby/rake
-test-unit           3.7.5   https://github.com/test-unit/test-unit
+test-unit           3.7.7   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.2   https://github.com/ruby/rss
 net-ftp             0.3.9   https://github.com/ruby/net-ftp
-net-imap            0.6.2   https://github.com/ruby/net-imap
+net-imap            0.6.2   https://github.com/ruby/net-imap            d9ae35ef913a45f83387b8444cdce4fb1cbf01af
 net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.10.0  https://github.com/ruby/rbs
+rbs                 3.10.2  https://github.com/ruby/rbs
 typeprof            0.31.1  https://github.com/ruby/typeprof
 debug               1.11.1  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
@@ -45,3 +45,4 @@ irb                 1.16.0  https://github.com/ruby/irb
 reline              0.6.3   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle
+tsort               0.2.0   https://github.com/ruby/tsort

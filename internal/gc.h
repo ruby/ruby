@@ -204,6 +204,7 @@ static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 void rb_gc_obj_id_moved(VALUE obj);
+void rb_gc_register_pinning_obj(VALUE obj);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -214,8 +215,8 @@ size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
-void rb_gc_mark_weak(VALUE *ptr);
-void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 

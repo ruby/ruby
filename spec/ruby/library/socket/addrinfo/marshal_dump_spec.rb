@@ -42,40 +42,38 @@ describe 'Addrinfo#marshal_dump' do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using a UNIX Addrinfo' do
+  describe 'using a UNIX Addrinfo' do
+    before do
+      @addr = Addrinfo.unix('foo')
+    end
+
+    it 'returns an Array' do
+      @addr.marshal_dump.should be_an_instance_of(Array)
+    end
+
+    describe 'the returned Array' do
       before do
-        @addr = Addrinfo.unix('foo')
+        @array = @addr.marshal_dump
       end
 
-      it 'returns an Array' do
-        @addr.marshal_dump.should be_an_instance_of(Array)
+      it 'includes the address family as the 1st value' do
+        @array[0].should == 'AF_UNIX'
       end
 
-      describe 'the returned Array' do
-        before do
-          @array = @addr.marshal_dump
-        end
+      it 'includes the UNIX path as the 2nd value' do
+        @array[1].should == @addr.unix_path
+      end
 
-        it 'includes the address family as the 1st value' do
-          @array[0].should == 'AF_UNIX'
-        end
+      it 'includes the protocol family as the 3rd value' do
+        @array[2].should == 'PF_UNIX'
+      end
 
-        it 'includes the UNIX path as the 2nd value' do
-          @array[1].should == @addr.unix_path
-        end
+      it 'includes the socket type as the 4th value' do
+        @array[3].should == 'SOCK_STREAM'
+      end
 
-        it 'includes the protocol family as the 3rd value' do
-          @array[2].should == 'PF_UNIX'
-        end
-
-        it 'includes the socket type as the 4th value' do
-          @array[3].should == 'SOCK_STREAM'
-        end
-
-        it 'includes the protocol as the 5th value' do
-          @array[4].should == 0
-        end
+      it 'includes the protocol as the 5th value' do
+        @array[4].should == 0
       end
     end
   end

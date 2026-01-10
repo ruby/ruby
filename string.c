@@ -205,6 +205,7 @@ str_enc_fastpath(VALUE str)
         RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
+        rb_gc_register_pinning_obj(str); \
         FL_SET((shared_str), STR_SHARED_ROOT); \
         if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
             FL_SET_RAW((shared_str), STR_BORROWED); \
@@ -1959,8 +1960,8 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
     RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
-    FL_SET(root, STR_SHARED_ROOT);
-    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
+    FL_SET_RAW(dup, RSTRING_NOEMBED);
+    STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
@@ -4238,11 +4239,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is equal to +self+.
+ *  Returns whether +other+ is equal to +self+.
  *
- *  When +object+ is a string, returns whether +object+ has the same length and content as +self+:
+ *  When +other+ is a string, returns whether +other+ has the same length and content as +self+:
  *
  *    s = 'foo'
  *    s == 'foo'  # => true
@@ -4253,11 +4254,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *
  *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
- *  When +object+ is not a string:
+ *  When +other+ is not a string:
  *
- *  - If +object+ responds to method <tt>to_str</tt>,
- *    <tt>object == self</tt> is called and its return value is returned.
- *  - If +object+ does not respond to <tt>to_str</tt>,
+ *  - If +other+ responds to method <tt>to_str</tt>,
+ *    <tt>other == self</tt> is called and its return value is returned.
+ *  - If +other+ does not respond to <tt>to_str</tt>,
  *    +false+ is returned.
  *
  *  Related: {Comparing}[rdoc-ref:String@Comparing].
@@ -5010,12 +5011,15 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    self =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  When +object+ is a Regexp, returns the index of the first substring in +self+
- *  matched by +object+,
- *  or +nil+ if no match is found;
- *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *  When +other+ is a Regexp:
+ *
+ *  - Returns the integer index (in characters) of the first match
+ *    for +self+ and +other+, or +nil+ if none;
+ *  - Updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables].
+ *
+ *  Examples:
  *
  *    'foo' =~ /f/ # => 0
  *    $~           # => #<MatchData "f">
@@ -5033,8 +5037,8 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    /(?<number>\d+)/ =~ 'no. 9' # => 4
  *    number                      # => "9" # Assigned.
  *
- *  If +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *  When +other+ is not a Regexp, returns the value
+ *  returned by <tt>other =~ self</tt>.
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
@@ -5712,8 +5716,8 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    self[index] -> new_string or nil
- *    self[start, length] -> new_string or nil
+ *    self[offset] -> new_string or nil
+ *    self[offset, size] -> new_string or nil
  *    self[range] -> new_string or nil
  *    self[regexp, capture = 0] -> new_string or nil
  *    self[substring] -> new_string or nil
@@ -12217,9 +12221,9 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    symbol == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is the same object as +self+, +false+ otherwise.
+ *  Returns whether +other+ is the same object as +self+.
  */
 
 #define sym_equal rb_obj_equal
@@ -12444,9 +12448,9 @@ sym_casecmp_p(VALUE sym, VALUE other)
 
 /*
  *  call-seq:
- *    symbol =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  Equivalent to <tt>symbol.to_s =~ object</tt>,
+ *  Equivalent to <tt>self.to_s =~ other</tt>,
  *  including possible updates to global variables;
  *  see String#=~.
  *
@@ -12492,11 +12496,11 @@ sym_match_m_p(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    symbol[index] -> string or nil
- *    symbol[start, length] -> string or nil
- *    symbol[range] -> string or nil
- *    symbol[regexp, capture = 0] -> string or nil
- *    symbol[substring] -> string or nil
+ *    self[offset] -> string or nil
+ *    self[offset, size] -> string or nil
+ *    self[range] -> string or nil
+ *    self[regexp, capture = 0] -> string or nil
+ *    self[substring] -> string or nil
  *
  *  Equivalent to <tt>symbol.to_s[]</tt>; see String#[].
  *

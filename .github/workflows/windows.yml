@@ -59,7 +59,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
@@ -112,7 +112,7 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           ::- Set up VC ${{ matrix.vc }}
-          set | uutils sort > old.env
+          set | sort > old.env
           call ..\src\win32\vssetup.cmd ^
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
@@ -122,8 +122,8 @@ jobs:
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
-          set | uutils sort > new.env
-          uutils comm -13 old.env new.env >> %GITHUB_ENV%
+          set | sort > new.env
+          comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
 
       - name: baseruby version

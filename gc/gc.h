@@ -99,6 +99,7 @@ MODULAR_GC_FN void rb_gc_before_updating_jit_code(void);
 MODULAR_GC_FN void rb_gc_after_updating_jit_code(void);
 MODULAR_GC_FN bool rb_gc_obj_shareable_p(VALUE);
 MODULAR_GC_FN void rb_gc_rp(VALUE);
+MODULAR_GC_FN void rb_gc_handle_weak_references(VALUE obj);
 
 #if USE_MODULAR_GC
 MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);
@@ -106,6 +107,8 @@ MODULAR_GC_FN void *rb_gc_get_ractor_newobj_cache(void);
 MODULAR_GC_FN void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
+MODULAR_GC_FN void rb_gc_move_obj_during_marking(VALUE from, VALUE to);
+MODULAR_GC_FN void rb_gc_print_backtrace();
 #endif
 
 #if USE_MODULAR_GC

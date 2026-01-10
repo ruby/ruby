@@ -30,7 +30,7 @@ class TestGCCompact < Test::Unit::TestCase
     def test_enable_autocompact
       before = GC.auto_compact
       GC.auto_compact = true
-      assert GC.auto_compact
+      assert_predicate GC, :auto_compact
     ensure
       GC.auto_compact = before
     end
@@ -151,12 +151,12 @@ class TestGCCompact < Test::Unit::TestCase
       def walk_ast ast
         children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
         children.each do |child|
-          assert child.type
+          assert_predicate child, :type
           walk_ast child
         end
       end
       ast = RubyVM::AbstractSyntaxTree.parse_file #{__FILE__.dump}
-      assert GC.compact
+      assert_predicate GC, :compact
       walk_ast ast
     end;
   end
@@ -364,7 +364,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_compact_objects_of_varying_sizes
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       $objects = []
       160.times do |n|

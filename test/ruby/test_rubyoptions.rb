@@ -47,10 +47,15 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "", [], [])
   end
 
+  # This constant enforces the traditional 80x25 terminal size standard
+  TRADITIONAL_TERM_COLS = 80 # DO NOT MODIFY!
+  TRADITIONAL_TERM_ROWS = 25 # DO NOT MODIFY!
+
   def test_usage
+    # This test checks if the output of `ruby -h` fits in 80x25
     assert_in_out_err(%w(-h)) do |r, e|
-      assert_operator(r.size, :<=, 25)
-      longer = r[1..-1].select {|x| x.size >= 80}
+      assert_operator(r.size, :<=, TRADITIONAL_TERM_ROWS)
+      longer = r[1..-1].select {|x| x.size >= TRADITIONAL_TERM_COLS}
       assert_equal([], longer)
       assert_equal([], e)
     end

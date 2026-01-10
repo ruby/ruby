@@ -1313,6 +1313,20 @@ rb_builtin_class_name(VALUE x)
 COLDFUNC NORETURN(static void unexpected_type(VALUE, int, int));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
+void
+rb_unexpected_typeddata(const rb_data_type_t *actual, const rb_data_type_t *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+             actual->wrap_struct_name, expected->wrap_struct_name);
+}
+
+void
+rb_unexpected_object_type(VALUE obj, const char *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             displaying_class_of(obj), expected);
+}
+
 static void
 unexpected_type(VALUE x, int xt, int t)
 {
@@ -1320,9 +1334,7 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-                          displaying_class_of(x), tname);
-        exc = rb_eTypeError;
+        rb_unexpected_object_type(x, tname);
     }
     else if (xt > T_MASK && xt <= 0x3f) {
         mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
@@ -1367,24 +1379,18 @@ rb_unexpected_type(VALUE x, int t)
     unexpected_type(x, TYPE(x), t);
 }
 
+#undef rb_typeddata_inherited_p
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    while (child) {
-        if (child == parent) return 1;
-        child = child->parent;
-    }
-    return 0;
+    return rb_typeddata_inherited_p_inline(child, parent);
 }
 
+#undef rb_typeddata_is_kind_of
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-        !RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        return 0;
-    }
-    return 1;
+    return rb_typeddata_is_kind_of_inline(obj, data_type);
 }
 
 #undef rb_typeddata_is_instance_of
@@ -1397,26 +1403,7 @@ rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
-    VALUE actual;
-
-    if (!RB_TYPE_P(obj, T_DATA)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!RTYPEDDATA_P(obj)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        const char *name = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-        actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
-    }
-    else {
-        return RTYPEDDATA_GET_DATA(obj);
-    }
-
-    const char *expected = data_type->wrap_struct_name;
-    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-             actual, expected);
-    UNREACHABLE_RETURN(NULL);
+    return rbimpl_check_typeddata(obj, data_type);
 }
 
 /* exception classes */
@@ -2172,9 +2159,9 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is the same class as +self+
+ *  Returns whether +other+ is the same class as +self+
  *  and its #message and #backtrace are equal to those of +self+.
  *
  */

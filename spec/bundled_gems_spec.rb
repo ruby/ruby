@@ -113,7 +113,7 @@ RSpec.describe "bundled_gems.rb" do
       require "active_support/all"
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
@@ -159,7 +159,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:8/)
   end
 
@@ -177,7 +177,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ./script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:9/)
   end
 
@@ -186,7 +186,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby -r./stub -ropenssl -e ''"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
   end
 
   it "Show warning when warn is not the standard one in the current scope" do
@@ -209,7 +209,7 @@ RSpec.describe "bundled_gems.rb" do
       My.my
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/-e:19/)
   end
 
@@ -251,7 +251,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::ARCHDIR + 'openssl'
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap.rb:14: warning: ...
   end
@@ -320,7 +320,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 4.0.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:13/)
   end
 

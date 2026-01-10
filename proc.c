@@ -898,6 +898,9 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     rb_execution_context_t *ec = GET_EC();
 
     struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
+
+    rb_gc_register_pinning_obj((VALUE)ifunc);
+
     ifunc->func = func;
     ifunc->data = data;
     ifunc->argc.min = min_argc;
@@ -1420,10 +1423,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 /* call-seq:
- *   prc == other -> true or false
- *   prc.eql?(other) -> true or false
+ *   self == other -> true or false
+ *   eql?(other) -> true or false
  *
- * Two procs are the same if, and only if, they were created from the same code block.
+ * Returns whether +self+ and +other+ were created from the same code block:
  *
  *   def return_block(&block)
  *     block
@@ -1510,14 +1513,20 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[2];
+    VALUE loc[5];
+    int i = 0;
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[0] = rb_iseq_path(iseq);
-    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
+    loc[i++] = rb_iseq_path(iseq);
+    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
+    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
+    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->end_pos.column);
+    RUBY_ASSERT_ALWAYS(i == numberof(loc));
 
-    return rb_ary_new4(2, loc);
+    return rb_ary_new_from_values(i, loc);
 }
 
 VALUE
@@ -1534,9 +1543,9 @@ rb_iseq_location(const rb_iseq_t *iseq)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
  */
@@ -1971,10 +1980,9 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *   meth.eql?(other_meth)  -> true or false
- *   meth == other_meth  -> true or false
+ *   self == other -> true or false
  *
- * Two method objects are equal if they are bound to the same
+ * Returns whether +self+ and +other+ are bound to the same
  * object and refer to the same method definition and the classes
  * defining the methods are the same class or module.
  */
@@ -2644,11 +2652,11 @@ method_dup(VALUE self)
 
 /*
  *  call-seq:
- *     meth.call(args, ...) -> obj
- *     meth[args, ...] -> obj
- *     method === obj -> result_of_method
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     self === obj -> result_of_method
  *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
+ *  Invokes +self+ with the specified arguments, returning the
  *  method's return value.
  *
  *     m = 12.method("+")
@@ -3194,9 +3202,9 @@ rb_method_entry_location(const rb_method_entry_t *me)
  * The returned Array contains:
  *   (1) the Ruby source filename
  *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
  *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
  *
  * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
  */

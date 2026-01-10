@@ -125,8 +125,9 @@ static const rb_data_type_t encoding_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
-#define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
-#define is_obj_encoding(obj) (RB_TYPE_P((obj), T_DATA) && is_data_encoding(obj))
+#define is_encoding_type(obj) (RTYPEDDATA_TYPE(obj) == &encoding_data_type)
+#define is_data_encoding(obj) (rbimpl_rtypeddata_p(obj) && is_encoding_type(obj))
+#define is_obj_encoding(obj) (rbimpl_obj_typeddata_p(obj) && is_encoding_type(obj))
 
 int
 rb_data_is_encoding(VALUE obj)
@@ -1345,7 +1346,7 @@ enc_inspect(VALUE self)
 {
     rb_encoding *enc;
 
-    if (!is_data_encoding(self)) {
+    if (!is_obj_encoding(self)) { /* do not resolve autoload */
         not_encoding(self);
     }
     if (!(enc = RTYPEDDATA_GET_DATA(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {

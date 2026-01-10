@@ -258,6 +258,21 @@ is_specified_ip_address(const char *hostname)
             inet_pton(AF_INET, hostname, &ipv4addr) == 1);
 }
 
+static int
+is_local_port_fixed(const char *portp)
+{
+    if (!portp) return 0;
+
+    char *endp;
+    errno = 0;
+    long port = strtol(portp, &endp, 10);
+
+    if (endp == portp) return 0;
+    if (errno == ERANGE) return 0;
+
+    return port > 0;
+}
+
 struct fast_fallback_inetsock_arg
 {
     VALUE self;
@@ -1314,13 +1329,15 @@ rsock_init_inetsock(
 
     if (type == INET_CLIENT && FAST_FALLBACK_INIT_INETSOCK_IMPL == 1 && RTEST(fast_fallback)) {
         struct rb_addrinfo *local_res = NULL;
-        char *hostp, *portp;
-        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+        char *hostp, *portp, *local_portp;
+        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV], local_pbuf[NI_MAXSERV];
         int additional_flags = 0;
+        int local_flags = 0;
         hostp = raddrinfo_host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
         portp = raddrinfo_port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
+        local_portp = raddrinfo_port_str(local_serv, local_pbuf, sizeof(local_pbuf), &local_flags);
 
-        if (!is_specified_ip_address(hostp)) {
+        if (!is_specified_ip_address(hostp) && !is_local_port_fixed(local_portp)) {
             int target_families[2] = { 0, 0 };
             int resolving_family_size = 0;
 

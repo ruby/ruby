@@ -491,8 +491,9 @@ pub enum SideExitReason {
     GuardType(Type),
     GuardTypeNot(Type),
     GuardShape(ShapeId),
-    GuardBitEquals(Const),
+    ExpandArray,
     GuardNotFrozen,
+    GuardNotShared,
     GuardLess,
     GuardGreaterEq,
     PatchPoint(Invariant),
@@ -579,7 +580,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnhandledDuparraySend(method_id) => write!(f, "UnhandledDuparraySend({method_id})"),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
-            SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
+            SideExitReason::GuardNotShared => write!(f, "GuardNotShared"),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
         }
@@ -728,6 +729,7 @@ pub enum Insn {
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayArefFixnum { array: InsnId, index: InsnId },
+    ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
@@ -951,7 +953,7 @@ pub enum Insn {
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
     GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected Const.
-    GuardBitEquals { val: InsnId, expected: Const, state: InsnId },
+    GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
     GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
     /// Side-exit if the block param has been modified or the block handler for the frame
@@ -960,6 +962,9 @@ pub enum Insn {
     /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
     /// a heap object.
     GuardNotFrozen { recv: InsnId, state: InsnId },
+    /// Side-exit if val is shared. Does *not* check if the val is an immediate; assumes
+    /// that it is a heap object.
+    GuardNotShared { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -992,8 +997,9 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::StoreField { .. } | Insn::WriteBarrier { .. }
-            | Insn::HashAset { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. }
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
+            | Insn::ArrayAset { .. } => false,
             _ => true,
         }
     }
@@ -1120,6 +1126,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayArefFixnum { array, index, .. } => {
                 write!(f, "ArrayArefFixnum {array}, {index}")
+            }
+            Insn::ArrayAset { array, index, val, ..} => {
+                write!(f, "ArrayAset {array}, {index}, {val}")
             }
             Insn::ArrayPop { array, .. } => {
                 write!(f, "ArrayPop {array}")
@@ -1332,6 +1341,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
+            Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
@@ -1964,10 +1974,11 @@ impl Function {
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
-            &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
+            &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
             &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
+            &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
@@ -2071,6 +2082,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -2143,7 +2155,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -2197,7 +2209,7 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { recv, .. } => self.type_of(*recv),
+            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -3056,6 +3068,24 @@ impl Function {
         self.infer_types();
     }
 
+    fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        self.push_insn(block, Insn::LoadField {
+            recv,
+            id: ID!(_shape_id),
+            offset: unsafe { rb_shape_id_offset() } as i32,
+            return_type: types::CShape
+        })
+    }
+
+    fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId) -> InsnId {
+        self.push_insn(block, Insn::GuardBitEquals {
+            val,
+            expected: Const::CShape(expected),
+            reason: SideExitReason::GuardShape(expected),
+            state
+        })
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -3081,7 +3111,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.guard_shape(block, shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // If there is no IVAR index, then the ivar was undefined when we
@@ -3135,7 +3166,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let _ = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.guard_shape(block, shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
@@ -3206,7 +3238,8 @@ impl Function {
                             // Fall through to emitting the ivar write
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let shape = self.load_shape(block, self_val);
+                        self.guard_shape(block, shape, recv_type.shape(), state);
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
@@ -3940,6 +3973,7 @@ impl Function {
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
             | &Insn::GuardNotFrozen { recv: val, state }
+            | &Insn::GuardNotShared { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -4003,6 +4037,11 @@ impl Function {
             &Insn::ArrayArefFixnum { array, index } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
+            }
+            &Insn::ArrayAset { array, index, val } => {
+                worklist.push_back(array);
+                worklist.push_back(index);
+                worklist.push_back(val);
             }
             &Insn::ArrayPop { array, state } => {
                 worklist.push_back(array);
@@ -4628,7 +4667,7 @@ impl Function {
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
-            Insn::GuardNotFrozen { recv, .. } => {
+            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => {
                 self.assert_subtype(insn_id, recv, types::HeapBasicObject)
             }
             // Instructions with 2 Ruby object operands
@@ -4715,6 +4754,10 @@ impl Function {
             Insn::ArrayArefFixnum { array, index } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
+            }
+            Insn::ArrayAset { array, index, .. } => {
+                self.assert_subtype(insn_id, array, types::ArrayExact)?;
+                self.assert_subtype(insn_id, index, types::CInt64)
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
@@ -6238,7 +6281,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
-                    fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), state: exit_id });
+                    fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), reason: SideExitReason::ExpandArray, state: exit_id });
                     for i in (0..num).rev() {
                         // TODO(max): Add a short-cut path for long indices into an array where the
                         // index is known to be in-bounds

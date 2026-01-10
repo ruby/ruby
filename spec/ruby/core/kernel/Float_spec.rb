@@ -261,6 +261,10 @@ describe :kernel_float, shared: true do
       @object.send(:Float, "0x_10", exception: false).should be_nil
     end
 
+    it "parses negative hexadecimal string as negative float" do
+      @object.send(:Float, "-0x7b").should == -123.0
+    end
+
     ruby_version_is "3.4" do
       it "accepts a fractional part" do
         @object.send(:Float, "0x0.8").should == 0.5

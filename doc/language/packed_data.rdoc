@@ -457,15 +457,15 @@ for one byte in the input or output string.
     "foo ".unpack('A4')      # => ["foo"]
     "foo".unpack('A4')       # => ["foo"]
 
-    russian = "\u{442 435 441 442}" # => "тест"
-    russian.size         # => 4
-    russian.bytesize     # => 8
-    [russian].pack('A')  # => "\xD1"
-    [russian].pack('A*') # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
-    russian.unpack('A')  # => ["\xD1"]
-    russian.unpack('A2') # => ["\xD1\x82"]
-    russian.unpack('A4') # => ["\xD1\x82\xD0\xB5"]
-    russian.unpack('A*') # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
+    japanese = 'こんにちは'
+    japanese.size         # => 5
+    japanese.bytesize     # => 15
+    [japanese].pack('A')  # => "\xE3"
+    [japanese].pack('A*') # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+    japanese.unpack('A')  # => ["\xE3"]
+    japanese.unpack('A2') # => ["\xE3\x81"]
+    japanese.unpack('A4') # => ["\xE3\x81\x93\xE3"]
+    japanese.unpack('A*') # => ["\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"]
 
 - <tt>'a'</tt> - Arbitrary binary string (null padded; count is width):
 

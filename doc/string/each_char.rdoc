@@ -7,11 +7,6 @@ returns +self+:
   end
   a # => ["h", "e", "l", "l", "o"]
   a = []
-  'тест'.each_char do |char|
-    a.push(char)
-  end
-  a # => ["т", "е", "с", "т"]
-  a = []
   'こんにちは'.each_char do |char|
     a.push(char)
   end

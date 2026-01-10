@@ -1109,10 +1109,9 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     {
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
             bool can_direct_transfer = !th_has_dedicated_nt(th);
-            th->status = THREAD_STOPPED_FOREVER;
+            // NOTE: th->status is set before and after this sleep outside of this function in `sleep_forever`
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
             thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-            th->status = THREAD_RUNNABLE;
         }
         else {
             RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));

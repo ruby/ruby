@@ -1588,7 +1588,7 @@ x = __ENCODING__
     assert_ractor_shareable(a)
     assert_not_ractor_shareable(obj)
     assert_equal obj, a
-    assert !obj.equal?(a)
+    assert_not_same obj, a
 
     bug_20339 = '[ruby-core:117186] [Bug #20339]'
     bug_20341 = '[ruby-core:117197] [Bug #20341]'

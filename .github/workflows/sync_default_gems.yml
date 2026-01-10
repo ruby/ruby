@@ -1,7 +1,7 @@
 name: Sync default gems
 
 env:
-  DEFAULT_GEM_SYNC_ENABLED: false
+  DEFAULT_GEM_SYNC_ENABLED: true
 
 on:
   workflow_dispatch:
@@ -36,7 +36,7 @@ jobs:
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ruby/setup-ruby@ab177d40ee5483edb974554986f56b33477e21d0 # v1.265.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
           ruby-version: '3.4'
           bundler: none

@@ -77,6 +77,7 @@ Gem::Specification.new do |spec|
     "lib/prism/ffi.rb",
     "lib/prism/inspect_visitor.rb",
     "lib/prism/lex_compat.rb",
+    "lib/prism/lex_ripper.rb",
     "lib/prism/mutation_compiler.rb",
     "lib/prism/node_ext.rb",
     "lib/prism/node.rb",

@@ -24,6 +24,14 @@ describe "StringIO#readpartial" do
     @string.readpartial(3).should == ", l"
   end
 
+  it "reads after ungetc with multibyte characters in the buffer" do
+    @string = StringIO.new(+"∂φ/∂x = gaîté")
+    c = @string.getc
+    @string.ungetc(c)
+    @string.readpartial(3).should == "\xE2\x88\x82".b
+    @string.readpartial(3).should == "\xCF\x86/".b
+  end
+
   it "reads after ungetc without data in the buffer" do
     @string = StringIO.new
     @string.write("f").should == 1

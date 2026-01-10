@@ -24,6 +24,9 @@ MAKEFILE = Makefile
 CPU = PROCESSOR_LEVEL
 CC = $(CC) -nologo -source-charset:utf-8
 CPP = $(CC) -EP
+!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" == ""
+BASERUBY = ruby
+!endif
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -37,7 +40,7 @@ x64-mswin64: -prologue- -x64- -epilogue-
 -generic-: -osname-
 
 -basic-vars-: nul
-	@type << > $(MAKEFILE)
+	@rem <<$(MAKEFILE)
 ### Makefile for ruby $(TARGET_OS) ###
 MAKE = nmake
 srcdir = $(srcdir:\=/)
@@ -46,8 +49,8 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
-!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
-	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
+!if "$(HAVE_BASERUBY)" != "no"
+	@$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat" --verbose $(HAVE_BASERUBY:yes=|| exit )|| exit 0
 !endif
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
@@ -143,8 +146,8 @@ main(void)
 <<
 	@( \
 	  $(CC) -O2 $@.c && .\$@ || \
-	  set bug=%ERRORLEVEL% \
-	  echo This compiler has an optimization bug \
+	  (set bug=%ERRORLEVEL% & \
+	  echo This compiler has an optimization bug) \
 	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
@@ -188,12 +191,16 @@ echo TEENY = RUBY_VERSION_TEENY
 echo ABI_VERSION = RUBY_ABI_VERSION
 #endif
 set /a MSC_VER = _MSC_VER
-#if _MSC_VER >= 1920
+#ifndef _MSC_VER
+# error _MSC_VER not defined
+#elif _MSC_VER >= 1920
 set /a MSC_VER_LOWER = MSC_VER/20*20+0
 set /a MSC_VER_UPPER = MSC_VER/20*20+19
 #elif _MSC_VER >= 1900
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
+#elif _MSC_VER < 1400
+# error Unsupported VC++ compiler
 #endif
 set MSC_VER
 del %0 & exit
@@ -265,4 +272,6 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
+	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
+	@ren $(MAKEFILE) $(MAKEFILE_NEW)
 	@echo type 'nmake' to make ruby.

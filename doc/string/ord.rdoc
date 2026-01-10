@@ -2,7 +2,6 @@ Returns the integer ordinal of the first character of +self+:
 
   'h'.ord         # => 104
   'hello'.ord     # => 104
-  'тест'.ord      # => 1090
   'こんにちは'.ord  # => 12371
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

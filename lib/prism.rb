@@ -20,7 +20,7 @@ module Prism
   autoload :DSL, "prism/dsl"
   autoload :InspectVisitor, "prism/inspect_visitor"
   autoload :LexCompat, "prism/lex_compat"
-  autoload :LexRipper, "prism/lex_compat"
+  autoload :LexRipper, "prism/lex_ripper"
   autoload :MutationCompiler, "prism/mutation_compiler"
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"

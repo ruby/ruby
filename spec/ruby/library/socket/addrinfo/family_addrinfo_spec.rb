@@ -50,38 +50,36 @@ describe 'Addrinfo#family_addrinfo' do
       end
     end
 
-    with_feature :unix_socket do
-      describe 'with a UNIX Addrinfo' do
+    describe 'with a UNIX Addrinfo' do
+      before do
+        @source = Addrinfo.unix('cats')
+      end
+
+      it 'raises ArgumentError if more than 1 argument is given' do
+        -> { @source.family_addrinfo('foo', 'bar') }.should raise_error(ArgumentError)
+      end
+
+      it 'returns an Addrinfo when a UNIX socket path is given' do
+        addr = @source.family_addrinfo('dogs')
+
+        addr.should be_an_instance_of(Addrinfo)
+      end
+
+      describe 'the returned Addrinfo' do
         before do
-          @source = Addrinfo.unix('cats')
+          @addr = @source.family_addrinfo('dogs')
         end
 
-        it 'raises ArgumentError if more than 1 argument is given' do
-          -> { @source.family_addrinfo('foo', 'bar') }.should raise_error(ArgumentError)
+        it 'uses AF_UNIX as the address family' do
+          @addr.afamily.should == Socket::AF_UNIX
         end
 
-        it 'returns an Addrinfo when a UNIX socket path is given' do
-          addr = @source.family_addrinfo('dogs')
-
-          addr.should be_an_instance_of(Addrinfo)
+        it 'uses PF_UNIX as the protocol family' do
+          @addr.pfamily.should == Socket::PF_UNIX
         end
 
-        describe 'the returned Addrinfo' do
-          before do
-            @addr = @source.family_addrinfo('dogs')
-          end
-
-          it 'uses AF_UNIX as the address family' do
-            @addr.afamily.should == Socket::AF_UNIX
-          end
-
-          it 'uses PF_UNIX as the protocol family' do
-            @addr.pfamily.should == Socket::PF_UNIX
-          end
-
-          it 'uses the given socket path' do
-            @addr.unix_path.should == 'dogs'
-          end
+        it 'uses the given socket path' do
+          @addr.unix_path.should == 'dogs'
         end
       end
     end

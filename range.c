@@ -154,14 +154,14 @@ recursive_equal(VALUE range, VALUE obj, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if and only if:
+ *  Returns whether all of the following are true:
  *
  *  - +other+ is a range.
  *  - <tt>other.begin == self.begin</tt>.
  *  - <tt>other.end == self.end</tt>.
  *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
- *  Otherwise returns +false+.
+ *  Examples:
  *
  *    r = (1..5)
  *    r == (1..5)                # => true
@@ -1033,12 +1033,12 @@ range_to_a(VALUE range)
  *
  */
 static VALUE
-range_to_set(int argc, VALUE *argv, VALUE range)
+range_to_set(VALUE range)
 {
     if (NIL_P(RANGE_END(range))) {
         rb_raise(rb_eRangeError, "cannot convert endless range to a set");
     }
-    return rb_call_super(argc, argv);
+    return rb_call_super(0, NULL);
 }
 
 static VALUE
@@ -2054,10 +2054,9 @@ VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
 
 /*
  *  call-seq:
- *     self === object ->  true or false
+ *     self === other ->  true or false
  *
- *  Returns +true+ if +object+ is between <tt>self.begin</tt> and <tt>self.end</tt>.
- *  +false+ otherwise:
+ *  Returns whether +other+ is between <tt>self.begin</tt> and <tt>self.end</tt>:
  *
  *    (1..4) === 2       # => true
  *    (1..4) === 5       # => false
@@ -2868,7 +2867,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
-    rb_define_method(rb_cRange, "to_set", range_to_set, -1);
+    rb_define_method(rb_cRange, "to_set", range_to_set, 0);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

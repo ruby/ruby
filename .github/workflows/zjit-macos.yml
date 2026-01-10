@@ -197,6 +197,8 @@ jobs:
           repository: ruby/ruby-bench
           path: ruby-bench
 
+      # If you want to skip failing benchmark, consider using `--excludes`.
+      # e.g. `bench_opts: '--warmup=1 --bench=1 --excludes=railsbench,lobsters'`
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench

@@ -1226,10 +1226,10 @@ rb_complex_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex == object -> true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if <tt>self.real == object.real</tt>
- * and <tt>self.imag == object.imag</tt>:
+ * Returns whether both <tt>self.real == other.real</tt>
+ * and <tt>self.imag == other.imag</tt>:
  *
  *   Complex.rect(2, 3)  == Complex.rect(2.0, 3.0) # => true
  *
@@ -1776,12 +1776,6 @@ VALUE
 rb_complex_new_polar(VALUE x, VALUE y)
 {
     return f_complex_polar(rb_cComplex, x, y);
-}
-
-VALUE
-rb_complex_polar(VALUE x, VALUE y)
-{
-    return rb_complex_new_polar(x, y);
 }
 
 VALUE

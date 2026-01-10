@@ -1,4 +1,5 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::heap::SpaceStats;

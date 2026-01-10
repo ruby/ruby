@@ -207,7 +207,7 @@ jobs:
 
       - name: test
         timeout-minutes: 30
-        run: make test
+        run: make test test-tool
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'

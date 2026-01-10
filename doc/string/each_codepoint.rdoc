@@ -8,11 +8,6 @@ returns +self+:
   end
   a # => [104, 101, 108, 108, 111]
   a = []
-  'тест'.each_codepoint do |codepoint|
-    a.push(codepoint)
-  end
-  a # => [1090, 1077, 1089, 1090]
-  a = []
   'こんにちは'.each_codepoint do |codepoint|
     a.push(codepoint)
   end

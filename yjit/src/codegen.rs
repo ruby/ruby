@@ -8947,6 +8947,12 @@ fn gen_struct_aset(
         return None;
     }
 
+    // If the comptime receiver is frozen, writing a struct member will raise an exception
+    // and we don't want to JIT code to deal with that situation.
+    if comptime_recv.is_frozen() {
+        return None;
+    }
+
     if c_method_tracing_currently_enabled(jit) {
         // Struct accesses need fire c_call and c_return events, which we can't support
         // See :attr-tracing:
@@ -8966,6 +8972,17 @@ fn gen_struct_aset(
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+
+    // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
+    // that the recv is not frozen.
+    // We know all structs are heap objects, so we can check the flag directly.
+    let recv = asm.stack_opnd(1);
+    let recv = asm.load(recv);
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    asm.jnz(Target::side_exit(Counter::opt_aset_frozen));
+
+    // Not frozen, so we can proceed.
 
     asm_comment!(asm, "struct aset");
 

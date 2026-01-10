@@ -16,9 +16,6 @@ Returns +nil+ if +index+ is out of range:
 
 More examples:
 
-  s = 'тест'
-  s.bytes      # => [209, 130, 208, 181, 209, 129, 209, 130]
-  s.getbyte(2) # => 208
   s = 'こんにちは'
   s.bytes      # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
   s.getbyte(2) # => 147

@@ -724,7 +724,7 @@ module Gem::Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.7.0"
+    VERSION = "0.9.1"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -1179,6 +1179,7 @@ module Gem::Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1321,6 +1322,9 @@ module Gem::Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets whether the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
@@ -1527,7 +1531,7 @@ module Gem::Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ] # :nodoc:
+    ].freeze # :nodoc:
 
     SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
@@ -1632,6 +1636,21 @@ module Gem::Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1654,14 +1673,15 @@ module Gem::Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
+      begin
+        s = timeouted_connect(conn_addr, conn_port)
+      rescue => e
+        if (defined?(IO::TimeoutError) && e.is_a?(IO::TimeoutError)) || e.is_a?(Errno::ETIMEDOUT)  # for compatibility with previous versions
+          e = Gem::Net::OpenTimeout.new(e)
         end
-      }
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1754,23 +1774,30 @@ module Gem::Net   #:nodoc:
     end
     private :connect
 
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+
+    def timeouted_connect(conn_addr, conn_port)
+      if TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+      else
+        Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        }
+      end
+    end
+    private :timeouted_connect
+
     def on_connect
     end
     private :on_connect
-
-    # Finishes the \HTTP session:
-    #
-    #   http = Gem::Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
 
     def do_finish
       @started = false
@@ -1820,6 +1847,8 @@ module Gem::Net   #:nodoc:
         @proxy_use_ssl = p_use_ssl
       }
     end
+
+    # :startdoc:
 
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
@@ -1915,6 +1944,7 @@ module Gem::Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
       require 'cgi/escape'
@@ -1943,6 +1973,7 @@ module Gem::Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2397,7 +2428,9 @@ module Gem::Net   #:nodoc:
       res
     end
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    # :stopdoc:
+
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -2554,7 +2587,7 @@ module Gem::Net   #:nodoc:
     alias_method :D, :debug
   end
 
-  # for backward compatibility until Ruby 3.5
+  # for backward compatibility until Ruby 4.0
   # https://bugs.ruby-lang.org/issues/20900
   # https://github.com/bblimke/webmock/pull/1081
   HTTPSession = HTTP
