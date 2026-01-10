@@ -170,7 +170,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
   RB_VM_SAVE_MACHINE_CONTEXT(th); \
-  thread_sched_to_waiting((sched), (th));
+  thread_sched_to_waiting((sched), (th), true);
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running((sched), (th)); \
@@ -194,7 +194,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
         /* Important that this is inlined into the macro, and not part of \
          * blocking_region_begin - see bug #20493 */ \
         RB_VM_SAVE_MACHINE_CONTEXT(th); \
-        thread_sched_to_waiting(TH_SCHED(th), th); \
+        thread_sched_to_waiting(TH_SCHED(th), th, false); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -2092,7 +2092,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
     RB_VM_SAVE_MACHINE_CONTEXT(th);
-    thread_sched_to_waiting(TH_SCHED(th), th);
+    thread_sched_to_waiting(TH_SCHED(th), th, true);
     return r;
 }
 
