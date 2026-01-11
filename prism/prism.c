@@ -3962,9 +3962,13 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
     pm_integer_parse(&node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
 
+    size_t fract_length = 0;
+    for (const uint8_t *fract = point; fract < end; ++fract) {
+        if (*fract != '_') ++fract_length;
+    }
     digits[0] = '1';
-    if (end - point > 1) memset(digits + 1, '0', (size_t) (end - point - 1));
-    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + (end - point));
+    if (fract_length > 1) memset(digits + 1, '0', fract_length - 1);
+    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
     xfree(digits);
 
     pm_integers_reduce(&node->numerator, &node->denominator);
