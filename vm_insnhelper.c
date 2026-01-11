@@ -4764,7 +4764,7 @@ vm_call_opt_struct_aref0(rb_execution_context_t *ec, struct rb_calling_info *cal
     VM_ASSERT(vm_cc_cme(calling->cc)->def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_AREF);
 
     const unsigned int off = vm_cc_cme(calling->cc)->def->body.optimized.index;
-    return internal_RSTRUCT_GET(recv, off);
+    return RSTRUCT_GET_RAW(recv, off);
 }
 
 static VALUE
@@ -4789,7 +4789,7 @@ vm_call_opt_struct_aset0(rb_execution_context_t *ec, struct rb_calling_info *cal
     rb_check_frozen(recv);
 
     const unsigned int off = vm_cc_cme(calling->cc)->def->body.optimized.index;
-    internal_RSTRUCT_SET(recv, off, val);
+    RSTRUCT_SET_RAW(recv, off, val);
 
     return val;
 }
