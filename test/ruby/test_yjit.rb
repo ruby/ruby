@@ -644,6 +644,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  STRUCT_MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
+  def test_spilled_struct_aref
+    omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    assert_compiles(<<~RUBY)
+      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+
+      def foo(obj)
+        foo = obj.foo
+        raise "Expected 1, got: \#{foo}" unless foo == 1
+        bar = obj.bar
+        raise "Expected 2, got: \#{bar}" unless bar == 2
+      end
+
+      embedded_struct = LargeStruct.new(1, 2)
+      # Bump RCLASS_MAX_IV_COUNT for LargeStruct
+      embedded_struct.instance_variable_set(:@test, 1)
+
+      # Next allocation reserves space for the imemo/fields reference.
+      heap_struct = LargeStruct.new(1, 2)
+
+      RubyVM::YJIT.reset_stats!
+
+      foo(embedded_struct)
+      foo(embedded_struct)
+      foo(heap_struct)
+      foo(heap_struct)
+    RUBY
+  end
+
   def test_struct_aset
     assert_compiles(<<~RUBY)
       def foo(obj)
