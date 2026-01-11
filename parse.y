@@ -1205,9 +1205,9 @@ static rb_node_block_pass_t *rb_node_block_pass_new(struct parser_params *p, NOD
 static rb_node_alias_t *rb_node_alias_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_valias_t *rb_node_valias_new(struct parser_params *p, ID nd_alias, ID nd_orig, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_undef_t *rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc);
-static rb_node_class_t *rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc);
-static rb_node_module_t *rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc);
-static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc);
+// static rb_node_class_t *rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc);
+// static rb_node_module_t *rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc);
+// static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_colon2_t *rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc);
 // static rb_node_colon3_t *rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc);
 static rb_node_dot2_t *rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc, const YYLTYPE *operator_loc);
@@ -1313,9 +1313,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ALIAS(n,o,loc,k_loc) (NODE *)rb_node_alias_new(p,n,o,loc,k_loc)
 #define NEW_VALIAS(n,o,loc,k_loc) (NODE *)rb_node_valias_new(p,n,o,loc,k_loc)
 #define NEW_UNDEF(i,loc) (NODE *)rb_node_undef_new(p,i,loc)
-#define NEW_CLASS(n,b,s,loc,ck_loc,io_loc,ek_loc) (NODE *)rb_node_class_new(p,n,b,s,loc,ck_loc,io_loc,ek_loc)
-#define NEW_MODULE(n,b,loc,mk_loc,ek_loc) (NODE *)rb_node_module_new(p,n,b,loc,mk_loc,ek_loc)
-#define NEW_SCLASS(r,b,loc,ck_loc,op_loc,ek_loc) (NODE *)rb_node_sclass_new(p,r,b,loc,ck_loc,op_loc,ek_loc)
+// #define NEW_CLASS(n,b,s,loc,ck_loc,io_loc,ek_loc) (NODE *)rb_node_class_new(p,n,b,s,loc,ck_loc,io_loc,ek_loc)
+// #define NEW_MODULE(n,b,loc,mk_loc,ek_loc) (NODE *)rb_node_module_new(p,n,b,loc,mk_loc,ek_loc)
+// #define NEW_SCLASS(r,b,loc,ck_loc,op_loc,ek_loc) (NODE *)rb_node_sclass_new(p,r,b,loc,ck_loc,op_loc,ek_loc)
 // #define NEW_COLON2(c,i,loc,d_loc,n_loc) (NODE *)rb_node_colon2_new(p,c,i,loc,d_loc,n_loc)
 // #define NEW_COLON3(i,loc,d_loc,n_loc) (NODE *)rb_node_colon3_new(p,i,loc,d_loc,n_loc)
 #define NEW_DOT2(b,e,loc,op_loc) (NODE *)rb_node_dot2_new(p,b,e,loc,op_loc)
@@ -1407,6 +1407,9 @@ static rb_arguments_node_t *rb_new_node_arguments_new(struct parser_params *p, r
 static rb_block_argument_node_t *rb_new_node_block_argument_new(struct parser_params *p, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 
 static rb_def_node_t *rb_new_node_def_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, const YYLTYPE *loc);
+static rb_class_node_t *rb_new_node_class_new(struct parser_params *p, rb_node_t *nd_cpath, rb_node_t *nd_body, rb_node_t *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc);
+static rb_module_node_t *rb_new_node_module_new(struct parser_params *p, rb_node_t *nd_cpath, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc);
+static rb_singleton_class_node_t *rb_new_node_singleton_class_new(struct parser_params *p, rb_node_t *nd_recv, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc);
 static rb_constant_path_node_t *rb_new_node_constant_path(struct parser_params *p, rb_node_t *nd_head, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc);
 
 static rb_self_node_t *rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1501,6 +1504,9 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_BLOCK_ARGUMENT(a,loc,op_loc) rb_new_node_block_argument_new(p,a,loc,op_loc)
 
 #define NEW_RB_DEF(i,r,loc) rb_new_node_def_new(p,i,r,loc)
+#define NEW_RB_CLASS(n,b,s,loc,ck_loc,io_loc,ek_loc) (rb_node_t *)rb_new_node_class_new(p,n,b,s,loc,ck_loc,io_loc,ek_loc)
+#define NEW_RB_MODULE(n,b,loc,mk_loc,ek_loc) (rb_node_t *)rb_new_node_module_new(p,n,b,loc,mk_loc,ek_loc)
+#define NEW_RB_SINGLETON_CLASS(r,b,loc,ck_loc,op_loc,ek_loc) (rb_node_t *)rb_new_node_singleton_class_new(p,r,b,loc,ck_loc,op_loc,ek_loc)
 
 #define NEW_CONSTANT_PATH(c,i,loc,d_loc,n_loc) rb_new_node_constant_path(p,c,i,loc,d_loc,n_loc)
 #define NEW_COLON2(c,i,loc,d_loc,n_loc) NEW_CONSTANT_PATH(c,i,loc,d_loc,n_loc)
@@ -2240,6 +2246,20 @@ get_nd_vid(struct parser_params *p, NODE *node)
         return RNODE_CVASGN(node)->nd_vid;
       default:
         compile_error(p, "get_nd_vid: unexpected node: %s", parser_node_name(nd_type(node)));
+        return 0;
+    }
+}
+
+static ID
+get_const_name(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_CONSTANT_READ_NODE:
+        return RB_NODE_CONSTANT_READ(node)->name;
+      case RB_CONSTANT_PATH_NODE:
+        return RB_NODE_CONSTANT_PATH(node)->name;
+      default:
+        compile_error(p, "get_const_name: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
     }
 }
@@ -4206,7 +4226,7 @@ cpath		: tCOLON3 cname
                     }
                 | cname
                     {
-                        $$ = NEW_COLON2(0, $1, &@$, &NULL_LOC, &@1);
+                        $$ = NEW_RB_CONSTANT_READ($1, &@$);
                     /*% ripper: const_ref!($:1) %*/
                     }
                 | primary_value tCOLON2 cname
@@ -4975,8 +4995,8 @@ primary		: inline_primary
                         inheritance_operator_loc = @superclass;
                         inheritance_operator_loc.end_pos.column = inheritance_operator_loc.beg_pos.column + 1;
                     }
-                    $$ = NEW_CLASS($cpath, $bodystmt, $superclass, &@$, &@k_class, &inheritance_operator_loc, &@k_end);
-                    nd_set_line(RNODE_CLASS($$)->nd_body, @k_end.end_pos.lineno);
+                    $$ = NEW_RB_CLASS($cpath, $bodystmt, $superclass, &@$, &@k_class, &inheritance_operator_loc, &@k_end);
+                    nd_set_line(RB_NODE_CLASS($$)->body, @k_end.end_pos.lineno);
                     set_line_body($bodystmt, @superclass.end_pos.lineno);
                     nd_set_line($$, @superclass.end_pos.lineno);
                 /*% ripper: class!($:cpath, $:superclass, $:bodystmt) %*/
@@ -4993,8 +5013,8 @@ primary		: inline_primary
               bodystmt
               k_end
                 {
-                    $$ = NEW_SCLASS($expr_value, $bodystmt, &@$, &@k_class, &@tLSHFT, &@k_end);
-                    nd_set_line(RNODE_SCLASS($$)->nd_body, @k_end.end_pos.lineno);
+                    $$ = NEW_RB_SINGLETON_CLASS($expr_value, $bodystmt, &@$, &@k_class, &@tLSHFT, &@k_end);
+                    nd_set_line(RB_NODE_SINGLETON_CLASS($$)->body, @k_end.end_pos.lineno);
                     set_line_body($bodystmt, nd_line($expr_value));
                     fixpos($$, $expr_value);
                 /*% ripper: sclass!($:expr_value, $:bodystmt) %*/
@@ -5011,8 +5031,8 @@ primary		: inline_primary
               bodystmt
               k_end
                 {
-                    $$ = NEW_MODULE($cpath, $bodystmt, &@$, &@k_module, &@k_end);
-                    nd_set_line(RNODE_MODULE($$)->nd_body, @k_end.end_pos.lineno);
+                    $$ = NEW_RB_MODULE($cpath, $bodystmt, &@$, &@k_module, &@k_end);
+                    nd_set_line(RB_NODE_MODULE($$)->body, @k_end.end_pos.lineno);
                     set_line_body($bodystmt, @cpath.end_pos.lineno);
                     nd_set_line($$, @cpath.end_pos.lineno);
                 /*% ripper: module!($:cpath, $:bodystmt) %*/
@@ -11851,53 +11871,53 @@ rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, co
 //     return n;
 // }
 
-static rb_node_class_t *
-rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc)
-{
-    /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
-    rb_node_class_t *n = NODE_NEWNODE(NODE_CLASS, rb_node_class_t, loc);
-    RNODE_SCOPE(scope)->nd_parent = &n->node;
-    n->nd_cpath = nd_cpath;
-    n->nd_body = scope;
-    n->nd_super = nd_super;
-    n->class_keyword_loc = *class_keyword_loc;
-    n->inheritance_operator_loc = *inheritance_operator_loc;
-    n->end_keyword_loc = *end_keyword_loc;
+// static rb_node_class_t *
+// rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc)
+// {
+//     /* Keep the order of node creation */
+//     NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
+//     rb_node_class_t *n = NODE_NEWNODE(NODE_CLASS, rb_node_class_t, loc);
+//     RNODE_SCOPE(scope)->nd_parent = &n->node;
+//     n->nd_cpath = nd_cpath;
+//     n->nd_body = scope;
+//     n->nd_super = nd_super;
+//     n->class_keyword_loc = *class_keyword_loc;
+//     n->inheritance_operator_loc = *inheritance_operator_loc;
+//     n->end_keyword_loc = *end_keyword_loc;
 
-    return n;
-}
+//     return n;
+// }
 
-static rb_node_sclass_t *
-rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc)
-{
-    /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
-    rb_node_sclass_t *n = NODE_NEWNODE(NODE_SCLASS, rb_node_sclass_t, loc);
-    RNODE_SCOPE(scope)->nd_parent = &n->node;
-    n->nd_recv = nd_recv;
-    n->nd_body = scope;
-    n->class_keyword_loc = *class_keyword_loc;
-    n->operator_loc = *operator_loc;
-    n->end_keyword_loc = *end_keyword_loc;
+// static rb_node_sclass_t *
+// rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc)
+// {
+//     /* Keep the order of node creation */
+//     NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
+//     rb_node_sclass_t *n = NODE_NEWNODE(NODE_SCLASS, rb_node_sclass_t, loc);
+//     RNODE_SCOPE(scope)->nd_parent = &n->node;
+//     n->nd_recv = nd_recv;
+//     n->nd_body = scope;
+//     n->class_keyword_loc = *class_keyword_loc;
+//     n->operator_loc = *operator_loc;
+//     n->end_keyword_loc = *end_keyword_loc;
 
-    return n;
-}
+//     return n;
+// }
 
-static rb_node_module_t *
-rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc)
-{
-    /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
-    rb_node_module_t *n = NODE_NEWNODE(NODE_MODULE, rb_node_module_t, loc);
-    RNODE_SCOPE(scope)->nd_parent = &n->node;
-    n->nd_cpath = nd_cpath;
-    n->nd_body = scope;
-    n->module_keyword_loc = *module_keyword_loc;
-    n->end_keyword_loc = *end_keyword_loc;
+// static rb_node_module_t *
+// rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc)
+// {
+//     /* Keep the order of node creation */
+//     NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
+//     rb_node_module_t *n = NODE_NEWNODE(NODE_MODULE, rb_node_module_t, loc);
+//     RNODE_SCOPE(scope)->nd_parent = &n->node;
+//     n->nd_cpath = nd_cpath;
+//     n->nd_body = scope;
+//     n->module_keyword_loc = *module_keyword_loc;
+//     n->end_keyword_loc = *end_keyword_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 // static rb_node_iter_t *
 // rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
@@ -12895,8 +12915,6 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 
 #define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
 
-// static pm_program_node_t *
-// pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_statements_node_t *statements)
 static rb_program_node_t *
 rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc)
 {
@@ -12907,8 +12925,6 @@ rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statement
     return n;
 }
 
-// static pm_statements_node_t *
-// pm_statements_node_create(pm_parser_t *parser)
 static rb_statements_node_t *
 rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc)
 {
@@ -13233,8 +13249,6 @@ rb_new_node_it_local_variable_read_new(struct parser_params *p, const YYLTYPE *l
     return n;
 }
 
-// static pm_if_node_t *
-// pm_if_node_create(pm_parser_t *parser, const pm_token_t *if_keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements, pm_node_t *subsequent, const pm_token_t *end_keyword)
 static rb_if_node_t *
 rb_new_node_if_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_node_t *nd_body, rb_node_t *nd_else, const YYLTYPE *loc, const YYLTYPE *if_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
@@ -13249,8 +13263,6 @@ rb_new_node_if_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_no
     return n;
 }
 
-// static pm_unless_node_t *
-// pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements)
 static rb_unless_node_t *
 rb_new_node_unless_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_node_t *nd_body, rb_else_node_t *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
@@ -13265,8 +13277,6 @@ rb_new_node_unless_new(struct parser_params *p, rb_node_t *nd_cond, rb_statement
     return n;
 }
 
-// static pm_else_node_t *
-// pm_else_node_create(pm_parser_t *parser, const pm_token_t *else_keyword, pm_statements_node_t *statements, const pm_token_t *end_keyword)
 static rb_else_node_t *
 rb_new_node_else_new(struct parser_params *p, rb_statements_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *else_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
@@ -13576,6 +13586,50 @@ rb_new_node_def_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, cons
     n->rparen_loc = NULL_LOC;
     n->equal_loc = NULL_LOC;
     n->end_keyword_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_class_node_t *
+rb_new_node_class_new(struct parser_params *p, rb_node_t *nd_cpath, rb_node_t *nd_body, rb_node_t *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc)
+{
+    rb_class_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_NODE, rb_class_node_t, loc);
+    n->constant_path = nd_cpath;
+    n->superclass = nd_super;
+    n->body = nd_body;
+    n->locals = local_tbl(p);
+    n->name = get_const_name(p, nd_cpath);
+    n->class_keyword_loc = *class_keyword_loc;
+    n->inheritance_operator_loc = *inheritance_operator_loc;
+    n->end_keyword_loc = *end_keyword_loc;
+
+    return n;
+}
+
+static rb_module_node_t *
+rb_new_node_module_new(struct parser_params *p, rb_node_t *nd_cpath, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc)
+{
+    rb_module_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MODULE_NODE, rb_module_node_t, loc);
+    n->constant_path = nd_cpath;
+    n->body = nd_body;
+    n->locals = local_tbl(p);
+    n->name = get_const_name(p, nd_cpath);
+    n->module_keyword_loc = *module_keyword_loc;
+    n->end_keyword_loc = *end_keyword_loc;
+
+    return n;
+}
+
+static rb_singleton_class_node_t *
+rb_new_node_singleton_class_new(struct parser_params *p, rb_node_t *nd_recv, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc)
+{
+    rb_singleton_class_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_SINGLETON_CLASS_NODE, rb_singleton_class_node_t, loc);
+    n->expression = nd_recv;
+    n->body = nd_body;
+    n->locals = local_tbl(p);
+    n->class_keyword_loc = *class_keyword_loc;
+    n->operator_loc = *operator_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }

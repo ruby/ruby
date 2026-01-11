@@ -997,6 +997,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     }
     /* assume node is T_NODE */
     else if (nd_type_p(node, RB_PROGRAM_NODE) ||
+             nd_type_p(node, RB_CLASS_NODE) ||
+             nd_type_p(node, RB_SINGLETON_CLASS_NODE) ||
+             nd_type_p(node, RB_MODULE_NODE) ||
              nd_type_p(node, RB_BLOCK_NODE) ||
              nd_type_p(node, RB_DEF_NODE)) {
         const rb_ast_id_table_t *locals = NULL;
@@ -1007,9 +1010,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         switch (nd_type(node)) {
           case RB_PROGRAM_NODE:
             {
-                const rb_program_node_t *cast = (const rb_program_node_t *) node;
+                const rb_program_node_t *cast = (const rb_program_node_t *)node;
                 locals = cast->locals;
-                body = (NODE *) cast->statements;
+                body = (NODE *)cast->statements;
                 break;
             }
           // case RB_STATEMENTS_NODE:
@@ -1018,22 +1021,31 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
           //   }
           case RB_CLASS_NODE:
             {
+                const rb_class_node_t *cast = (const rb_class_node_t *)node;
+                locals = cast->locals;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_SINGLETON_CLASS_NODE:
             {
+                const rb_singleton_class_node_t *cast = (const rb_singleton_class_node_t *)node;
+                locals = cast->locals;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_MODULE_NODE:
             {
+                const rb_module_node_t *cast = (const rb_module_node_t *)node;
+                locals = cast->locals;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_DEF_NODE:
             {
-                const rb_def_node_t *cast = (const rb_def_node_t *) node;
+                const rb_def_node_t *cast = (const rb_def_node_t *)node;
                 locals = cast->locals;
                 args = cast->parameters;
-                body = (NODE *) cast->body;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_RESCUE_NODE:
@@ -1050,10 +1062,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             }
           case RB_BLOCK_NODE:
             {
-                const rb_block_node_t *cast = (const rb_block_node_t *) node;
+                const rb_block_node_t *cast = (const rb_block_node_t *)node;
                 locals = cast->locals;
                 args = cast->parameters;
-                body = (NODE *) cast->body;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_LAMBDA_NODE:
@@ -12108,6 +12120,58 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             ADD_INSN1(ret, node, putobject, ID2SYM(mid));
         }
 
+        break;
+      }
+
+      case RB_CLASS_NODE: {
+        const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(node,
+                                                     rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(RB_NODE_CLASS(node)->name))),
+                                                     ISEQ_TYPE_CLASS, line);
+        const int flags = VM_DEFINECLASS_TYPE_CLASS |
+            (RB_NODE_CLASS(node)->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
+            compile_cpath(ret, iseq, RB_NODE_CLASS(node)->constant_path);
+
+        CHECK(COMPILE(ret, "super", RB_NODE_CLASS(node)->superclass));
+        ADD_INSN3(ret, node, defineclass, ID2SYM(RB_NODE_CLASS(node)->name), class_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+      case RB_MODULE_NODE: {
+        const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(node,
+                                                      rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(RB_NODE_MODULE(node)->name))),
+                                                      ISEQ_TYPE_CLASS, line);
+        const int flags = VM_DEFINECLASS_TYPE_MODULE |
+            compile_cpath(ret, iseq, RB_NODE_MODULE(node)->constant_path);
+
+        ADD_INSN (ret, node, putnil); /* dummy */
+        ADD_INSN3(ret, node, defineclass, ID2SYM(RB_NODE_MODULE(node)->name), module_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+      case RB_SINGLETON_CLASS_NODE: {
+        ID singletonclass;
+        const rb_iseq_t *singleton_class = NEW_ISEQ(node, rb_fstring_lit("singleton class"),
+                                                    ISEQ_TYPE_CLASS, line);
+
+        CHECK(COMPILE(ret, "sclass#expression", RB_NODE_SINGLETON_CLASS(node)->expression));
+        ADD_INSN (ret, node, putnil);
+        CONST_ID(singletonclass, "singletonclass");
+        ADD_INSN3(ret, node, defineclass,
+                  ID2SYM(singletonclass), singleton_class,
+                  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
         break;
       }
 
