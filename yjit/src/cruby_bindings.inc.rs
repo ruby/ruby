@@ -1164,7 +1164,7 @@ extern "C" {
     pub fn rb_iseq_set_yjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_optimized_call(
-        recv: *mut VALUE,
+        recv: VALUE,
         ec: *mut rb_execution_context_t,
         argc: ::std::os::raw::c_int,
         argv: *mut VALUE,
