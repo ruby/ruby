@@ -2461,9 +2461,8 @@ rb_obj_memsize_of(VALUE obj)
         break;
 
       case T_STRUCT:
-        if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-            RSTRUCT(obj)->as.heap.ptr) {
-            size += sizeof(VALUE) * RSTRUCT_LEN(obj);
+        if (RSTRUCT_EMBED_LEN(obj) == 0) {
+            size += sizeof(VALUE) * RSTRUCT_LEN_RAW(obj);
         }
         break;
 
