@@ -5396,7 +5396,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
     if (recur) return Qtrue; /* Subtle! */
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-        if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
+        if (!rb_eql(RARRAY_AREF(ary1, i), RARRAY_AREF(ary2, i)))
             return Qfalse;
     }
     return Qtrue;
