@@ -448,9 +448,11 @@ class VCS
     end
 
     def branch_beginning(url)
-      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
+      files = %w[version.h include/ruby/version.h]
+      year = cmd_read(%W[ #{COMMAND} log -n1 --format=%cd --date=format:%Y #{url} --] + files).to_i
+      cmd_read(%W[ #{COMMAND} log --format=format:%H --reverse --since=#{year-1}-12-25
                    --author=matz --committer=matz --grep=started\\.$
-                   #{url.to_str} -- version.h include/ruby/version.h])
+                   #{url} --] + files)[/.*/]
     end
 
     def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: true)
