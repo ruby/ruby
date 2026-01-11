@@ -5264,18 +5264,24 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
 
   if (e->ignore_case > 0) {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
+      int orig_len = e->len;
       e->len = set_bm_skip(reg->exact, reg->exact_end, reg,
                            reg->map, 1);
-      reg->exact_end = reg->exact + e->len;
       if (e->len >= 3) {
+        reg->exact_end = reg->exact + e->len;
         reg->optimize = (allow_reverse != 0
                          ? ONIG_OPTIMIZE_EXACT_BM_IC : ONIG_OPTIMIZE_EXACT_BM_NOT_REV_IC);
       }
-      else if (e->len > 0) {
+      else {
+        /* Even if BM skip table can't be built (e.g., pattern starts with
+           's' or 'k' which have multi-byte case fold variants), we should
+           still use EXACT_IC optimization with the original pattern.
+           Without this fallback, patterns like /slackware/i have no
+           optimization at all, causing severe performance regression
+           especially with non-ASCII strings. See [Bug #21824] */
+        e->len = orig_len;  /* Restore original length for EXACT_IC */
         reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
       }
-      else
-        return 0;
     }
     else {
       reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
