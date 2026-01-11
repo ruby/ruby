@@ -298,7 +298,7 @@ class Array
         while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
           return value if yield(value)
         end
-        if_none_proc ? if_none_proc.call : nil
+        if_none_proc&.call
       end
     end
   end
