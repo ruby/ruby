@@ -1027,6 +1027,7 @@ impl Insn {
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
             Insn::NewHash { elements, .. } => !elements.is_empty(),
+            Insn::ArrayLength { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,

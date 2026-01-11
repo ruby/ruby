@@ -2291,7 +2291,7 @@ mod hir_opt_tests {
     fn eliminate_array_length() {
         eval("
             def test
-              x = [].length
+              [].length
               5
             end
         ");
@@ -2300,21 +2300,18 @@ mod hir_opt_tests {
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
           EntryPoint JIT(0)
-          v6:NilClass = Const Value(nil)
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:NilClass):
-          v13:ArrayExact = NewArray
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           IncrCounter inline_cfunc_optimized_send_count
-          v29:Fixnum = CCall v13, :Array#length@0x1038
-          v20:Fixnum[5] = Const Value(5)
+          v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v20
+          Return v17
         ");
     }
 
@@ -2435,7 +2432,7 @@ mod hir_opt_tests {
     fn eliminate_array_size() {
         eval("
             def test
-              x = [].size
+              [].size
               5
             end
         ");
@@ -2444,21 +2441,18 @@ mod hir_opt_tests {
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
           EntryPoint JIT(0)
-          v6:NilClass = Const Value(nil)
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:NilClass):
-          v13:ArrayExact = NewArray
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           IncrCounter inline_cfunc_optimized_send_count
-          v29:Fixnum = CCall v13, :Array#size@0x1038
-          v20:Fixnum[5] = Const Value(5)
+          v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v20
+          Return v17
         ");
     }
 
@@ -3554,8 +3548,9 @@ mod hir_opt_tests {
           v18:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v29:CInt64 = ArrayLength v18
+          v30:Fixnum = BoxFixnum v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:Fixnum = CCall v18, :Array#length@0x1038
           CheckInterrupts
           Return v30
         ");
@@ -3581,8 +3576,9 @@ mod hir_opt_tests {
           v18:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v29:CInt64 = ArrayLength v18
+          v30:Fixnum = BoxFixnum v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:Fixnum = CCall v18, :Array#size@0x1038
           CheckInterrupts
           Return v30
         ");
@@ -7170,8 +7166,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall v23, :Array#length@0x1038
           CheckInterrupts
           Return v25
         ");
@@ -7198,8 +7195,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall v23, :Array#size@0x1038
           CheckInterrupts
           Return v25
         ");
