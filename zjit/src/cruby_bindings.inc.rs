@@ -2153,7 +2153,6 @@ unsafe extern "C" {
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
-    pub fn rb_RSTRUCT_LEN(st: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
