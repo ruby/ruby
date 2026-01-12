@@ -439,6 +439,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_fixnum_rshift(asm, opnd!(left), shift_amount)
         }
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::FixnumAref { recv, index } => gen_fixnum_aref(asm, opnd!(recv), opnd!(index)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state: _ } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
@@ -1909,6 +1910,10 @@ fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(side_exit(jit, state, FixnumModByZero));
     asm_ccall!(asm, rb_fix_mod_fix, left, right)
+}
+
+fn gen_fixnum_aref(asm: &mut Assembler, recv: lir::Opnd, index: lir::Opnd) -> lir::Opnd {
+    asm_ccall!(asm, rb_fix_aref, recv, index)
 }
 
 // Compile val == nil

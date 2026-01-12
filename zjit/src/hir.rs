@@ -765,6 +765,7 @@ pub enum Insn {
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
+    FixnumAref { recv: InsnId, index: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -1050,6 +1051,7 @@ impl Insn {
             Insn::FixnumXor  { .. } => false,
             Insn::FixnumLShift { .. } => false,
             Insn::FixnumRShift { .. } => false,
+            Insn::FixnumAref { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
@@ -1254,6 +1256,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
+            Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1971,6 +1974,7 @@ impl Function {
             &BoxBool { val } => BoxBool { val: find!(val) },
             &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
             &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
+            &FixnumAref { recv, index } => FixnumAref { recv: find!(recv), index: find!(index) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -2184,6 +2188,7 @@ impl Function {
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { .. } => types::CInt64,
+            Insn::FixnumAref { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -4150,6 +4155,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::FixnumAref { recv, index } => {
+                worklist.push_back(recv);
+                worklist.push_back(index);
+            }
             &Insn::IsA { val, class } => {
                 worklist.push_back(val);
                 worklist.push_back(class);
@@ -4816,6 +4825,10 @@ impl Function {
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
             Insn::UnboxFixnum { val } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
+            }
+            Insn::FixnumAref { recv, index } => {
+                self.assert_subtype(insn_id, recv, types::Fixnum)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
             }
             Insn::FixnumAdd { left, right, .. }
             | Insn::FixnumSub { left, right, .. }
