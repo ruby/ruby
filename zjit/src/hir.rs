@@ -1054,12 +1054,16 @@ impl Insn {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
+    // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
+    // TODO(Jacob): Add sideeffect failure bit
     fn effects_of(&self) -> Effect {
+        const allocates: Effect = Effect::from_sets(effect_sets::PC.union(effect_sets::Allocator), effect_sets::Allocator);
         match &self {
-            Insn::Const { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::Param => Effect::from_write(effect_sets::Allocator),
-            Insn::StringCopy { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::NewArray { .. } => Effect::from_write(effect_sets::Allocator),
+            Insn::Const { .. } => effects::Empty,
+            // TODO(Jacob): I'm not sure about this one
+            Insn::Param => effects::Empty,
+            Insn::StringCopy { .. } => allocates,
+            Insn::NewArray { .. } => allocates,
             Insn::NewHash { elements, .. } => {
                 // NewHash's operands may be hashed and compared for equality, which could have
                 // side-effects. Empty hashes are definitely elidable.
@@ -1067,13 +1071,13 @@ impl Insn {
                     Effect::from_write(effect_sets::Allocator)
                 }
                 else {
-                    Effect::from_write(effect_sets::Any)
+                    effects::Any
                 }
             },
-            Insn::ArrayDup { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::HashDup { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::Test { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::Snapshot { .. } => Effect::from_write(effect_sets::Allocator),
+            Insn::ArrayDup { .. } => allocates,
+            Insn::HashDup { .. } => allocates,
+            Insn::Test { .. } => effects::Empty,
+            Insn::Snapshot { .. } => effects::Empty,
             Insn::FixnumAdd  { .. } => effects::Empty,
             Insn::FixnumSub  { .. } => effects::Empty,
             Insn::FixnumMult { .. } => effects::Empty,
@@ -1089,17 +1093,17 @@ impl Insn {
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::GetLocal   { .. } => Effect::from_sets(effect_sets::Locals, effect_sets::Empty),
-            Insn::IsNil      { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::LoadPC => Effect::from_write(effect_sets::Allocator),
-            Insn::LoadEC => Effect::from_write(effect_sets::Allocator),
-            Insn::LoadSelf => Effect::from_write(effect_sets::Allocator),
-            Insn::LoadField { .. } => Effect::from_write(effect_sets::Allocator),
+            Insn::IsNil      { .. } => effects::Empty,
+            Insn::LoadPC => Effect::from_sets(effect_sets::PC, effect_sets::Empty),
+            Insn::LoadEC => effects::Empty,
+            Insn::LoadSelf => effects::Empty,
+            Insn::LoadField { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::from_write(effect_sets::Allocator)
                 }
                 else {
-                    Effect::from_write(effect_sets::Any)
+                    effects::Any
                 }
             },
              Insn::CCallWithFrame { elidable, .. } => {
@@ -1107,17 +1111,21 @@ impl Insn {
                     Effect::from_write(effect_sets::Allocator)
                 }
                 else {
-                    Effect::from_write(effect_sets::Any)
+                    effects::Any
                 }
             },
-            Insn::ObjectAllocClass { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::NewRangeFixnum { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::StringGetbyte { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::IsBlockGiven => Effect::from_write(effect_sets::Allocator),
-            Insn::BoxFixnum { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::BoxBool { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::IsBitEqual { .. } => Effect::from_write(effect_sets::Allocator),
-            Insn::IsA { .. } => Effect::from_write(effect_sets::Allocator),
+            Insn::ObjectAllocClass { .. } => allocates,
+            Insn::NewRangeFixnum { .. } => allocates,
+            // TODO(Jacob): Double check this one
+            Insn::StringGetbyte { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            // TODO(Jacob): This reads EP (LEP?) and read effects can likely be bounded better
+            Insn::IsBlockGiven => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            // TODO(Jacob): See if we can ratchet down the read of this
+            Insn::BoxFixnum { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            Insn::BoxBool { .. } => effects::Empty,
+            Insn::IsBitEqual { .. } => effects::Empty,
+            // TODO(Jacob): This is a CCall but feels like we can restrict a lot more. Perhaps even effects::Empty?
+            Insn::IsA { .. } => allocates,
             _ => Effect::from_sets(effect_sets::Any, effect_sets::Any),
         }
     }

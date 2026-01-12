@@ -102,37 +102,37 @@ impl EffectSet {
         Self { bits }
     }
 
-    pub fn union(&self, other: Self) -> Self {
+    pub const fn union(&self, other: Self) -> Self {
         Self::from_bits(self.bits | other.bits)
     }
 
-    pub fn intersect(&self, other: Self) -> Self {
+    pub const fn intersect(&self, other: Self) -> Self {
         Self::from_bits(self.bits & other.bits)
     }
 
-    pub fn exclude(&self, other: Self) -> Self {
+    pub const fn exclude(&self, other: Self) -> Self {
         Self::from_bits(self.bits - (self.bits & other.bits))
     }
 
     /// Check bit equality of two `Effect`s. Do not use! You are probably looking for [`Effect::includes`].
     /// This function is intentionally made private.
-    fn bit_equal(&self, other: Self) -> bool {
+    const fn bit_equal(&self, other: Self) -> bool {
         self.bits == other.bits
     }
 
-    pub fn includes(&self, other: Self) -> bool {
+    pub const fn includes(&self, other: Self) -> bool {
         self.bit_equal(
             self.union(other)
         )
     }
 
-    pub fn overlaps(&self, other: Self) -> bool {
+    pub const fn overlaps(&self, other: Self) -> bool {
         !effect_sets::Empty.includes(
             self.intersect(other)
         )
     }
 
-    pub fn print(self, ptr_map: &PtrPrintMap) -> EffectSetPrinter<'_> {
+    pub const fn print(self, ptr_map: &PtrPrintMap) -> EffectSetPrinter<'_> {
         EffectSetPrinter { inner: self, ptr_map }
     }
 }
@@ -158,30 +158,30 @@ impl Effect {
     }
 
     // Method to access the private read field
-    pub fn read(&self) -> EffectSet {
+    pub const fn read(&self) -> EffectSet {
         self.read
     }
 
     // Method to access the private write field
-    pub fn write(&self) -> EffectSet {
+    pub const fn write(&self) -> EffectSet {
         self.write
     }
 
-    pub fn union(&self, other: Effect) -> Effect {
+    pub const fn union(&self, other: Effect) -> Effect {
         Effect::from_sets(
             self.read.union(other.read),
             self.write.union(other.write)
         )
     }
 
-    pub fn intersect(&self, other: Effect) -> Effect {
+    pub const fn intersect(&self, other: Effect) -> Effect {
         Effect::from_sets(
             self.read.intersect(other.read),
             self.write.intersect(other.write)
         )
     }
 
-    pub fn exclude(&self, other: Effect) -> Effect {
+    pub const fn exclude(&self, other: Effect) -> Effect {
         Effect::from_sets(
             self.read.exclude(other.read),
             self.write.exclude(other.write)
@@ -190,21 +190,21 @@ impl Effect {
 
     /// Check bit equality of two `Effect`s. Do not use! You are probably looking for [`Effect::includes`].
     /// This function is intentionally made private.
-    fn bit_equal(&self, other: Effect) -> bool {
+    const fn bit_equal(&self, other: Effect) -> bool {
         self.read.bit_equal(other.read) & self.write.bit_equal(other.write)
     }
 
-    pub fn includes(&self, other: Effect) -> bool {
+    pub const fn includes(&self, other: Effect) -> bool {
         self.bit_equal(Effect::union(self, other))
     }
 
-    pub fn overlaps(&self, other: Effect) -> bool {
+    pub const fn overlaps(&self, other: Effect) -> bool {
         Effect::from_set(effect_sets::Empty).includes(
             self.intersect(other)
         )
     }
 
-    pub fn print(self, ptr_map: &PtrPrintMap) -> EffectPrinter<'_> {
+    pub const fn print(self, ptr_map: &PtrPrintMap) -> EffectPrinter<'_> {
         EffectPrinter { inner: self, ptr_map }
     }
 }
