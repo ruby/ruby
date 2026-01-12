@@ -651,11 +651,7 @@ extern int
 onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
   if (code > 0xff) {
-#ifdef RUBY
-    rb_raise(rb_eRangeError, "%u out of char range", code);
-#else
     return ONIGERR_INVALID_CODE_POINT_VALUE;
-#endif
   }
   *buf = (UChar )(code & 0xff);
   return 1;
