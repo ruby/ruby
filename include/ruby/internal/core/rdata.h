@@ -116,11 +116,24 @@ typedef void (*RUBY_DATA_FUNC)(void*);
  * @shyouhei tried to add RBIMPL_ATTR_DEPRECATED for this type but that yielded
  * too many warnings  in the core.  Maybe  we want to retry  later...  Just add
  * deprecated document for now.
+ *
+ * RData is now implemented internally as an embedded RTypedData. The struct
+ * layout reflects this: basic and two reserved fields from RTypedData, followed
+ * by data/dmark/dfree which are stored in the embedded payload.
  */
 struct RData {
 
     /** Basic part, including flags and class. */
     struct RBasic basic;
+
+    /** @internal Reserved for RTypedData compatibility. */
+    VALUE _reserved1;
+
+    /** @internal Reserved for RTypedData compatibility. */
+    VALUE _reserved2;
+
+    /** Pointer to the actual C level struct that you want to wrap. */
+    void *data;
 
     /**
      * This function is called when the object is experiencing GC marks.  If it
@@ -141,12 +154,6 @@ struct RData {
      *           impossible at that moment (that is why GC runs).
      */
     RUBY_DATA_FUNC dfree;
-
-    /** Pointer to the actual C level struct that you want to wrap.
-      * This is after dmark and dfree to allow DATA_PTR to continue to work for
-      * both RData and non-embedded RTypedData.
-      */
-    void *data;
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

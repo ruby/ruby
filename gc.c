@@ -1079,19 +1079,70 @@ rb_data_object_check(VALUE klass)
     }
 }
 
+static VALUE typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_t *type, size_t size);
+
+/*
+ * Legacy RData support: RData is implemented as an embedded RTypedData
+ * with the mark/free/data stored in the payload. RDATA(obj)->data still
+ * works because the payload starts at the same offset as RData.data.
+ */
+struct rb_legacy_rdata {
+    void *data;           /* must be first for RDATA(obj)->data compatibility */
+    RUBY_DATA_FUNC dmark;
+    RUBY_DATA_FUNC dfree;
+};
+
+/* Verify struct RData fields line up with embedded rb_legacy_rdata in RTypedData */
+STATIC_ASSERT(rdata_data, offsetof(struct RData, data) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, data));
+STATIC_ASSERT(rdata_dmark, offsetof(struct RData, dmark) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, dmark));
+STATIC_ASSERT(rdata_dfree, offsetof(struct RData, dfree) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, dfree));
+
+static void
+rdata_legacy_mark(void *ptr)
+{
+    struct rb_legacy_rdata *rdata = ptr;
+    if (rdata->dmark) {
+        rdata->dmark(rdata->data);
+    }
+}
+
+static void
+rdata_legacy_free(void *ptr)
+{
+    struct rb_legacy_rdata *rdata = ptr;
+    if (rdata->dfree == RUBY_DEFAULT_FREE) {
+        xfree(rdata->data);
+    }
+    else if (rdata->dfree) {
+        rdata->dfree(rdata->data);
+    }
+}
+
+static const rb_data_type_t rb_legacy_rdata_type = {
+    .wrap_struct_name = "legacy RData",
+    .function = {
+        .dmark = rdata_legacy_mark,
+        .dfree = rdata_legacy_free,
+    },
+    .flags = RUBY_TYPED_EMBEDDABLE,
+};
+
 VALUE
 rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
-    if (klass) rb_data_object_check(klass);
-    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RTypedData));
+
+    static const size_t embed_size = offsetof(struct RTypedData, data) + sizeof(struct rb_legacy_rdata);
+    RUBY_ASSERT_ALWAYS(rb_gc_size_allocatable_p(embed_size));
+
+    VALUE obj = typed_data_alloc(klass, TYPED_DATA_EMBEDDED, 0, &rb_legacy_rdata_type, embed_size);
 
     rb_gc_register_pinning_obj(obj);
 
-    struct RData *data = (struct RData *)obj;
-    data->dmark = dmark;
-    data->dfree = dfree;
-    data->data = datap;
+    struct rb_legacy_rdata *rdata = (struct rb_legacy_rdata *)RTYPEDDATA_GET_DATA(obj);
+    rdata->data = datap;
+    rdata->dmark = dmark;
+    rdata->dfree = dfree;
 
     return obj;
 }
