@@ -5,8 +5,6 @@ require_relative "../test_helper"
 begin
   verbose, $VERBOSE = $VERBOSE, nil
   require "parser/ruby33"
-  require "prism/translation/parser33"
-  require "prism/translation/parser34"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
