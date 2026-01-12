@@ -198,58 +198,6 @@ module Prism
       "__END__": :on___end__
     }.freeze
 
-    # Pretty much a 1:1 copy of Ripper::Lexer::State. We list all the available states
-    # to reimplement to_s without using Ripper.
-    class State
-      # Ripper-internal bitflags.
-      ALL = %i[
-        BEG END ENDARG ENDFN ARG CMDARG MID FNAME DOT CLASS LABEL LABELED FITEM
-      ].map.with_index.to_h { |name, i| [2 ** i, name] }
-      ALL[0] = :NONE
-      ALL.freeze
-      ALL.each { |value, name| const_set(name, value) }
-
-      # :stopdoc:
-
-      attr_reader :to_int, :to_s
-
-      def initialize(i)
-        @to_int = i
-        @to_s = state_name(i)
-        freeze
-      end
-
-      def [](index)
-        case index
-        when 0, :to_int
-          @to_int
-        when 1, :to_s
-          @to_s
-        else
-          nil
-        end
-      end
-
-      alias to_i to_int
-      alias inspect to_s
-      def pretty_print(q) q.text(to_s) end
-      def ==(i) super or to_int == i end
-      def &(i) self.class.new(to_int & i) end
-      def |(i) self.class.new(to_int | i) end
-      def allbits?(i) to_int.allbits?(i) end
-      def anybits?(i) to_int.anybits?(i) end
-      def nobits?(i) to_int.nobits?(i) end
-
-      # :startdoc:
-
-      private
-
-      # Convert the state flags into the format exposed by ripper.
-      def state_name(bits)
-        ALL.filter_map { |flag, name| name if bits & flag != 0  }.join("|")
-      end
-    end
-
     # When we produce tokens, we produce the same arrays that Ripper does.
     # However, we add a couple of convenience methods onto them to make them a
     # little easier to work with. We delegate all other methods to the array.
@@ -300,8 +248,8 @@ module Prism
     class IdentToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == State::LABEL | State::END) ||
-          (other[3] & (State::ARG | State::CMDARG) != 0)
+          (other[3] == Translation::Ripper::EXPR_LABEL | Translation::Ripper::EXPR_END) ||
+          (other[3] & (Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_CMDARG) != 0)
         )
       end
     end
@@ -312,8 +260,8 @@ module Prism
       def ==(other) # :nodoc:
         return false unless self[0...-1] == other[0...-1]
 
-        if self[3] == State::ARG | State::LABELED
-          other[3] & State::ARG | State::LABELED != 0
+        if self[3] == Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED
+          other[3] & Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED != 0
         else
           self[3] == other[3]
         end
@@ -331,8 +279,8 @@ module Prism
     class ParamToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == State::END) ||
-          (other[3] == State::END | State::LABEL)
+          (other[3] == Translation::Ripper::EXPR_END) ||
+          (other[3] == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL)
         )
       end
     end
@@ -727,7 +675,7 @@ module Prism
 
         event = RIPPER.fetch(token.type)
         value = token.value
-        lex_state = State.new(lex_state)
+        lex_state = Translation::Ripper::Lexer::State.new(lex_state)
 
         token =
           case event
@@ -741,7 +689,7 @@ module Prism
             last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ident
-            if lex_state == State::END
+            if lex_state == Translation::Ripper::EXPR_END
               # If we have an identifier that follows a method name like:
               #
               #     def foo bar
@@ -751,7 +699,7 @@ module Prism
               # yet. We do this more accurately, so we need to allow comparing
               # against both END and END|LABEL.
               ParamToken.new([[lineno, column], event, value, lex_state])
-            elsif lex_state == State::END | State::LABEL
+            elsif lex_state == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL
               # In the event that we're comparing identifiers, we're going to
               # allow a little divergence. Ripper doesn't account for local
               # variables introduced through named captures in regexes, and we
@@ -791,7 +739,7 @@ module Prism
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                State.new(result_value[current_index][1])
+                Translation::Ripper::Lexer::State.new(result_value[current_index][1])
               else
                 previous_state
               end

@@ -65,13 +65,12 @@ module Prism
 
     # Check that the hardcoded values don't change without us noticing.
     def test_internals
-      actual = LexCompat::State::ALL
-      expected = Ripper.constants.select { |name| name.start_with?("EXPR_") }
-      expected -= %i[EXPR_VALUE EXPR_BEG_ANY EXPR_ARG_ANY EXPR_END_ANY]
+      actual = Translation::Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
+      expected = Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
 
-      assert_equal(expected.size, actual.size)
-      expected.each do |const_name|
-        assert_equal(const_name.to_s.delete_prefix("EXPR_").to_sym, actual[Ripper.const_get(const_name)])
+      assert_equal(expected, actual)
+      expected.zip(actual).each do |ripper, prism|
+        assert_equal(Ripper.const_get(ripper), Translation::Ripper.const_get(prism))
       end
     end
 
