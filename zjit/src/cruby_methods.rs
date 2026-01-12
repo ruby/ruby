@@ -220,7 +220,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "empty?", inline_array_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
@@ -542,6 +542,19 @@ fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
         let recv = fun.coerce_to(block, recv, types::Array, state);
         let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
         let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::Array, state) {
+        let recv = fun.coerce_to(block, recv, types::Array, state);
+        let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+        let result_c = fun.push_insn(block, hir::Insn::IsBitEqual { left: length_cint, right: zero });
+        let result = fun.push_insn(block, hir::Insn::BoxBool { val: result_c });
         return Some(result);
     }
     None
