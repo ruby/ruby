@@ -256,6 +256,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cInteger, "<<", inline_integer_lshift);
     annotate!(rb_cInteger, ">>", inline_integer_rshift);
+    annotate!(rb_cInteger, "[]", inline_integer_aref);
     annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
@@ -654,6 +655,17 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     // TODO(max): If other_value > 63, rewrite to constant zero.
     if other_value < 0 || other_value > 63 { return None; }
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
+}
+
+fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[index] = args else { return None; };
+    if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+        let index = fun.coerce_to(block, index, types::Fixnum, state);
+        let result = fun.push_insn(block, hir::Insn::FixnumAref { recv, index });
+        return Some(result);
+    }
+    None
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

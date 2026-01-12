@@ -1202,6 +1202,112 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn integer_aref_with_fixnum_emits_fixnum_aref() {
+        eval("
+            def test(a, b) = a[b]
+            test(3, 4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@5
+          v3:BasicObject = GetLocal :b, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
+          v26:Fixnum = GuardType v11, Fixnum
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:Fixnum = FixnumAref v26, v27
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn elide_fixnum_aref() {
+        eval("
+            def test
+              1[2]
+              5
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
+          IncrCounter inline_cfunc_optimized_send_count
+          v19:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn do_not_optimize_integer_aref_with_too_many_args() {
+        eval("
+            def test = 1[2, 3]
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v14:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
+          v23:BasicObject = CCallVariadic v10, :Integer#[]@0x1038, v12, v14
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn do_not_optimize_integer_aref_with_non_fixnum() {
+        eval(r#"
+            def test = 1["x"]
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v13:StringExact = StringCopy v12
+          PatchPoint MethodRedefined(Integer@0x1008, []@0x1010, cme:0x1018)
+          v23:BasicObject = CCallVariadic v10, :Integer#[]@0x1040, v13
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_optimize_send_into_fixnum_lt_both_profiled() {
         eval("
             def test(a, b) = a < b
