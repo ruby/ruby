@@ -152,14 +152,11 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          PatchPoint NoSingletonClass(Object@0x1010)
-          v34:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
-          v35:BasicObject = SendWithoutBlockDirect v34, :foo (0x1048), v11, v13, v19, v21, v17, v15, v23, v25
-          v28:Any = Snapshot FrameState { pc: 0x1050, stack: [v35], locals: [] }
+          v27:BasicObject = SendWithoutBlock v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
+          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
-          Return v35
+          Return v27
         ");
     }
 }
