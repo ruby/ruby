@@ -1659,6 +1659,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
+    // asm.ccall() doesn't support 6+ args
+    if args.len() + 1 > C_ARG_OPNDS.len() { // +1 for self
+        function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
+        return false;
+    }
+
     // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
     let lead_num = params.lead_num;
     let opt_num = params.opt_num;
@@ -2703,16 +2709,9 @@ impl Function {
                             let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
                                     Ok(reordered) => {
-                                        // Only use reordered state if args fit in C registers.
-                                        // Fallback to interpreter needs original order for kwarg handling.
-                                        // NOTE: This needs to match with the condition in codegen.rs.
-                                        if reordered.len() + 1 <= C_ARG_OPNDS.len() {
-                                            let new_state = self.frame_state(state).with_reordered_args(&reordered);
-                                            let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
-                                            (snapshot, reordered)
-                                        } else {
-                                            (state, reordered)
-                                        }
+                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                        (snapshot, reordered)
                                     }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
@@ -2763,16 +2762,9 @@ impl Function {
                             let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
                                     Ok(reordered) => {
-                                        // Only use reordered state if args fit in C registers.
-                                        // Fallback to interpreter needs original order for kwarg handling.
-                                        // NOTE: This needs to match with the condition in codegen.rs.
-                                        if reordered.len() + 1 <= C_ARG_OPNDS.len() {
-                                            let new_state = self.frame_state(state).with_reordered_args(&reordered);
-                                            let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
-                                            (snapshot, reordered)
-                                        } else {
-                                            (state, reordered)
-                                        }
+                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                        (snapshot, reordered)
                                     }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
