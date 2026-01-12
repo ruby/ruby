@@ -1048,18 +1048,21 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
                 body = (NODE *)cast->body;
                 break;
             }
-          case RB_RESCUE_NODE:
-            {
-                break;
-            }
-          case RB_RESCUE_MODIFIER_NODE:
-            {
-                break;
-            }
-          case RB_ENSURE_NODE:
-            {
-                break;
-            }
+          // case RB_RESCUE_NODE:
+          //   {
+          //       // TODO ??
+          //       break;
+          //   }
+          // case RB_RESCUE_MODIFIER_NODE:
+          //   {
+          //       // TODO ??
+          //       break;
+          //   }
+          // case RB_ENSURE_NODE:
+          //   {
+          //       // TODO ??
+          //       break;
+          //   }
           case RB_BLOCK_NODE:
             {
                 const rb_block_node_t *cast = (const rb_block_node_t *)node;
@@ -9521,14 +9524,45 @@ compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 }
 
 static int
-compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_lasgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id)
+{
+    int idx, lv, ls;
+    idx = get_dyna_var_idx(iseq, id, &lv, &ls);
+
+    if (idx < 0) {
+        COMPILE_ERROR(ERROR_ARGS "RB_LOCAL_VARIABLE_WRITE_NODE: unknown id (%"PRIsVALUE")",
+                      rb_id2str(id));
+        return COMPILE_NG;
+    }
+    ADD_SETLOCAL(ret, node, ls - idx, lv);
+    return COMPILE_OK;
+}
+
+static int
+compile_begin_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
     LABEL *lstart = NEW_LABEL(line);
     LABEL *lend = NEW_LABEL(line);
     LABEL *lcont = NEW_LABEL(line);
-    const rb_iseq_t *rescue = NEW_CHILD_ISEQ(RNODE_RESCUE(node)->nd_resq,
+    NODE *nd_stmts, *nd_rescue, *nd_else;
+
+    switch (nd_type(node)) {
+      case RB_BEGIN_NODE:
+        nd_stmts = RB_NODE_BEGIN(node)->statements;
+        nd_rescue = RB_NODE_BEGIN(node)->rescue_clause;
+        nd_else = RB_NODE_BEGIN(node)->else_clause;
+        break;
+      case RB_RESCUE_MODIFIER_NODE:
+        nd_stmts = RB_NODE_RESCUE_MODIFIER(node)->expression;
+        nd_rescue = RB_NODE_RESCUE_MODIFIER(node)->rescue_expression;
+        nd_else = NULL;
+        break;
+      default:
+    }
+
+    const rb_iseq_t *rescue = NEW_CHILD_ISEQ(nd_rescue,
                                              rb_str_concat(rb_str_new2("rescue in "),
                                                            ISEQ_BODY(iseq)->location.label),
                                              ISEQ_TYPE_RESCUE, line);
@@ -9540,14 +9574,14 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
     {
-        CHECK(COMPILE(ret, "rescue head", RNODE_RESCUE(node)->nd_head));
+        CHECK(COMPILE(ret, "rescue head", nd_stmts));
     }
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
 
     ADD_LABEL(ret, lend);
-    if (RNODE_RESCUE(node)->nd_else) {
+    if (nd_else) {
         ADD_INSN(ret, line_node, pop);
-        CHECK(COMPILE(ret, "rescue else", RNODE_RESCUE(node)->nd_else));
+        CHECK(COMPILE(ret, "rescue else", nd_else));
     }
     ADD_INSN(ret, line_node, nop);
     ADD_LABEL(ret, lcont);
@@ -9563,40 +9597,35 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 }
 
 static int
-compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
     const NODE *resq = node;
-    const NODE *narg;
+    const rb_node_list2_t *exlist;
     LABEL *label_miss, *label_hit;
 
     while (resq) {
         label_miss = NEW_LABEL(line);
         label_hit = NEW_LABEL(line);
 
-        narg = RNODE_RESBODY(resq)->nd_args;
-        if (narg) {
-            switch (nd_type(narg)) {
-              case NODE_LIST:
-                while (narg) {
+        exlist = &RB_NODE_RESCUE(resq)->exceptions;
+
+        if (RB_NODE_LIST_LEN(exlist)) {
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(exlist); i++) {
+                const NODE *nex = exlist->nodes[i];
+                if (nd_type_p(nex, RB_SPLAT_NODE)) {
                     ADD_GETLOCAL(ret, line_node, LVAR_ERRINFO, 0);
-                    CHECK(COMPILE(ret, "rescue arg", RNODE_LIST(narg)->nd_head));
+                    CHECK(COMPILE(ret, "rescue/cond splat", nex));
+                    ADD_INSN1(ret, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
+                    ADD_INSNL(ret, line_node, branchif, label_hit);
+                }
+                else {
+                    ADD_GETLOCAL(ret, line_node, LVAR_ERRINFO, 0);
+                    CHECK(COMPILE(ret, "rescue arg", nex));
                     ADD_INSN1(ret, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
                     ADD_INSNL(ret, line_node, branchif, label_hit);
-                    narg = RNODE_LIST(narg)->nd_next;
                 }
-                break;
-              case NODE_SPLAT:
-              case NODE_ARGSCAT:
-              case NODE_ARGSPUSH:
-                ADD_GETLOCAL(ret, line_node, LVAR_ERRINFO, 0);
-                CHECK(COMPILE(ret, "rescue/cond splat", narg));
-                ADD_INSN1(ret, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
-                ADD_INSNL(ret, line_node, branchif, label_hit);
-                break;
-              default:
-                UNKNOWN_NODE("NODE_RESBODY", narg, COMPILE_NG);
             }
         }
         else {
@@ -9609,16 +9638,17 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         ADD_LABEL(ret, label_hit);
         ADD_TRACE(ret, RUBY_EVENT_RESCUE);
 
-        if (RNODE_RESBODY(resq)->nd_exc_var) {
-            CHECK(COMPILE_POPPED(ret, "resbody exc_var", RNODE_RESBODY(resq)->nd_exc_var));
+        if (RB_NODE_RESCUE(resq)->reference) {
+            ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
+            CHECK(compile_lasgn_lhs(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_TARGET(RB_NODE_RESCUE(resq)->reference)->name));
         }
 
-        if (nd_type(RNODE_RESBODY(resq)->nd_body) == NODE_BEGIN && RNODE_BEGIN(RNODE_RESBODY(resq)->nd_body)->nd_body == NULL && !RNODE_RESBODY(resq)->nd_exc_var) {
+        if (RB_NODE_LIST_EMPTY_P(&RB_NODE_RESCUE(resq)->statements->body) && !RB_NODE_RESCUE(resq)->reference) {
             // empty body
-            ADD_SYNTHETIC_INSN(ret, nd_line(RNODE_RESBODY(resq)->nd_body), -1, putnil);
+            ADD_SYNTHETIC_INSN(ret, nd_line(RB_NODE_RESCUE(resq)->statements), -1, putnil);
         }
         else {
-            CHECK(COMPILE(ret, "resbody body", RNODE_RESBODY(resq)->nd_body));
+            CHECK(COMPILE(ret, "resbody body", RB_NODE_RESCUE(resq)->statements));
         }
 
         if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
@@ -9626,18 +9656,18 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         }
         ADD_INSN(ret, line_node, leave);
         ADD_LABEL(ret, label_miss);
-        resq = RNODE_RESBODY(resq)->nd_next;
+        resq = RB_NODE_RESCUE(resq)->subsequent;
     }
     return COMPILE_OK;
 }
 
 static int
-compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_begin_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_begin_node_t *const node, int popped)
 {
-    const int line = nd_line(RNODE_ENSURE(node)->nd_ensr);
+    const int line = nd_line(node->ensure_clause);
     const NODE *line_node = node;
     DECL_ANCHOR(ensr);
-    const rb_iseq_t *ensure = NEW_CHILD_ISEQ(RNODE_ENSURE(node)->nd_ensr,
+    const rb_iseq_t *ensure = NEW_CHILD_ISEQ(node->ensure_clause,
                                              rb_str_concat(rb_str_new2 ("ensure in "), ISEQ_BODY(iseq)->location.label),
                                              ISEQ_TYPE_ENSURE, line);
     LABEL *lstart = NEW_LABEL(line);
@@ -9650,17 +9680,22 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     struct ensure_range *erange;
 
     INIT_ANCHOR(ensr);
-    CHECK(COMPILE_POPPED(ensr, "ensure ensr", RNODE_ENSURE(node)->nd_ensr));
+    CHECK(COMPILE_POPPED(ensr, "ensure ensr", RNODE(node->ensure_clause)));
     last = ensr->last;
     last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
 
     er.begin = lstart;
     er.end = lend;
     er.next = 0;
-    push_ensure_entry(iseq, &enl, &er, RNODE_ENSURE(node)->nd_ensr);
+    push_ensure_entry(iseq, &enl, &er, RNODE(node->ensure_clause));
 
     ADD_LABEL(ret, lstart);
-    CHECK(COMPILE_(ret, "ensure head", RNODE_ENSURE(node)->nd_head, (popped | last_leave)));
+    if (node->rescue_clause) {
+        compile_begin_rescue(iseq, ret, node, popped);
+    }
+    else {
+        CHECK(COMPILE_(ret, "ensure head", node->statements, (popped | last_leave)));
+    }
     ADD_LABEL(ret, lend);
     ADD_SEQ(ret, ensr);
     if (!popped && last_leave) ADD_INSN(ret, line_node, putnil);
@@ -9677,6 +9712,28 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
 
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+    return COMPILE_OK;
+}
+
+static int
+compile_begin(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    const NODE *line_node = node;
+    LABEL *lstart = NEW_LABEL(line);
+    LABEL *lend = NEW_LABEL(line);
+    LABEL *lcont = NEW_LABEL(line);
+
+    if (RB_NODE_BEGIN(node)->ensure_clause){
+        compile_begin_ensure(iseq, ret, RB_NODE_BEGIN(node), popped);
+    }
+    else if (RB_NODE_BEGIN(node)->rescue_clause) {
+        compile_begin_rescue(iseq, ret, RB_NODE_BEGIN(node), popped);
+    }
+    else {
+        CHECK(COMPILE_(ret, "begin body", RB_NODE_BEGIN(node)->statements, popped));
+    }
+
     return COMPILE_OK;
 }
 
@@ -11812,6 +11869,23 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_BEGIN_NODE: {
+        CHECK(compile_begin(iseq, ret, node, popped));
+        break;
+      }
+      case RB_RESCUE_NODE: {
+        CHECK(compile_rescue(iseq, ret, node, popped));
+        break;
+      }
+      case RB_ENSURE_NODE: {
+        CHECK(COMPILE_(ret, "ensure", RNODE(RB_NODE_ENSURE(node)->statements), popped));
+        break;
+      }
+      case RB_RESCUE_MODIFIER_NODE: {
+        CHECK(compile_begin_rescue(iseq, ret, node, popped));
+        break;
+      }
+
       case RB_MULTI_WRITE_NODE:
       case RB_MULTI_TARGET_NODE: {
         bool prev_in_masgn = ISEQ_COMPILE_DATA(iseq)->in_masgn;
@@ -11823,7 +11897,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case RB_LOCAL_VARIABLE_WRITE_NODE: // LASGN and DASGN
       case RB_LOCAL_VARIABLE_TARGET_NODE:
       case RB_REQUIRED_PARAMETER_NODE: {
-        int idx, lv, ls;
         ID id;
         const NODE *valn = NULL;
         switch (nd_type(node)) {
@@ -11847,14 +11920,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             ADD_INSN(ret, node, dup);
         }
 
-        idx = get_dyna_var_idx(iseq, id, &lv, &ls);
-
-        if (idx < 0) {
-            COMPILE_ERROR(ERROR_ARGS "RB_LOCAL_VARIABLE_WRITE_NODE: unknown id (%"PRIsVALUE")",
-                          rb_id2str(id));
+        if (compile_lasgn_lhs(iseq, ret, node, id) == COMPILE_NG) {
             goto ng;
         }
-        ADD_SETLOCAL(ret, node, ls - idx, lv);
         break;
       }
       case RB_GLOBAL_VARIABLE_WRITE_NODE:
