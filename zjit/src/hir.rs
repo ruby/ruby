@@ -945,6 +945,10 @@ pub enum Insn {
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
 
+    /// Flonum ops
+    FlonumAdd  { left: InsnId, right: InsnId, state: InsnId },
+    FlonumMult { left: InsnId, right: InsnId, state: InsnId },
+
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
@@ -1048,6 +1052,8 @@ impl Insn {
             Insn::FixnumXor  { .. } => false,
             Insn::FixnumLShift { .. } => false,
             Insn::FixnumRShift { .. } => false,
+            Insn::FlonumAdd  { .. } => false,
+            Insn::FlonumMult { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
@@ -1335,6 +1341,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
+            Insn::FlonumAdd  { left, right, .. } => { write!(f, "FlonumAdd {left}, {right}") },
+            Insn::FlonumMult { left, right, .. } => { write!(f, "FlonumMult {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
@@ -1997,6 +2005,8 @@ impl Function {
             &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
             &FixnumLShift { left, right, state } => FixnumLShift { left: find!(left), right: find!(right), state },
             &FixnumRShift { left, right } => FixnumRShift { left: find!(left), right: find!(right) },
+            &FlonumAdd { left, right, state } => FlonumAdd { left: find!(left), right: find!(right), state: find!(state) },
+            &FlonumMult { left, right, state } => FlonumMult { left: find!(left), right: find!(right), state: find!(state) },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
                 cd,
@@ -2228,6 +2238,9 @@ impl Function {
             Insn::FixnumXor  { .. } => types::Fixnum,
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
+            // TODO(max): Can we guarantee anything about flonum OP flonum results being flonums?
+            Insn::FlonumAdd { .. } => types::Float,
+            Insn::FlonumMult { .. } => types::Float,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
@@ -4002,6 +4015,8 @@ impl Function {
             | &Insn::FixnumMod { left, right, state }
             | &Insn::ArrayExtend { left, right, state }
             | &Insn::FixnumLShift { left, right, state }
+            | &Insn::FlonumAdd { left, right, state }
+            | &Insn::FlonumMult { left, right, state }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -4826,6 +4841,11 @@ impl Function {
                     return Err(ValidationError::MismatchedOperandType(insn_id, right, "<less than 64>".into(), format!("{obj}")));
                 }
                 Ok(())
+            }
+            Insn::FlonumAdd { left, right, .. }
+            | Insn::FlonumMult { left, right, .. } => {
+                self.assert_subtype(insn_id, left, types::Flonum)?;
+                self.assert_subtype(insn_id, right, types::Flonum)
             }
             Insn::GuardBitEquals { val, expected, .. } => {
                 match expected {

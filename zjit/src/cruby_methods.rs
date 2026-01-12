@@ -258,6 +258,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, ">>", inline_integer_rshift);
     annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
+    annotate!(rb_cFloat, "+", inline_float_plus);
+    annotate!(rb_cFloat, "*", inline_float_mult);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
@@ -654,6 +656,28 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     // TODO(max): If other_value > 63, rewrite to constant zero.
     if other_value < 0 || other_value > 63 { return None; }
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
+}
+
+fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if fun.likely_a(recv, types::Flonum, state) && fun.likely_a(other, types::Flonum, state) {
+        let left = fun.coerce_to(block, recv, types::Flonum, state);
+        let right = fun.coerce_to(block, other, types::Flonum, state);
+        let result = fun.push_insn(block, hir::Insn::FlonumAdd { left, right, state });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_float_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if fun.likely_a(recv, types::Flonum, state) && fun.likely_a(other, types::Flonum, state) {
+        let left = fun.coerce_to(block, recv, types::Flonum, state);
+        let right = fun.coerce_to(block, other, types::Flonum, state);
+        let result = fun.push_insn(block, hir::Insn::FlonumMult { left, right, state });
+        return Some(result);
+    }
+    None
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
