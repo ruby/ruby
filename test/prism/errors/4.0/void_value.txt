@@ -1,0 +1,30 @@
+x = begin
+  return
+rescue
+  return
+else
+  return
+  ^~~~~~ unexpected void value expression
+end
+
+x = begin
+  ignored_because_else_branch
+rescue
+  return
+else
+  return
+  ^~~~~~ unexpected void value expression
+end
+
+x = case
+  when 1 then return
+              ^~~~~~ unexpected void value expression
+  else        return
+end
+
+x = case 1
+  in 2 then return
+            ^~~~~~ unexpected void value expression
+  else      return
+end
+

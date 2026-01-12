@@ -25,6 +25,9 @@ module Prism
       # Ripper doesn't emit `args_add_block` when endless method is prefixed by modifier.
       "4.0/endless_methods_command_call.txt",
 
+      # https://bugs.ruby-lang.org/issues/21669
+      "4.0/void_value.txt",
+
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
     ]
