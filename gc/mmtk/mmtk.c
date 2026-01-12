@@ -91,6 +91,8 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 
 #include <pthread.h>
 
+static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
+
 static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
@@ -361,7 +363,7 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 }
 
 static int
-rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
+rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
 {
     RUBY_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
     RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
@@ -369,7 +371,14 @@ rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
 
     struct objspace *objspace = (struct objspace *)data;
 
-    if (!mmtk_is_reachable((MMTk_ObjectReference)key)) {
+    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+        VALUE new_key_location = rb_mmtk_call_object_closure((VALUE)key, false);
+
+        if (new_key_location != key) {
+            return ST_REPLACE;
+        }
+    }
+    else {
         make_final_job(objspace, (VALUE)key, (VALUE)value);
 
         rb_postponed_job_trigger(objspace->finalizer_postponed_job);
@@ -380,13 +389,25 @@ rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+rb_mmtk_update_finalizer_table_replace_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    *key = rb_mmtk_call_object_closure((VALUE)*key, false);
+
+    return ST_CONTINUE;
+}
+
 static void
 rb_mmtk_update_finalizer_table(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // TODO: replace with st_foreach_with_replace when GC is moving
-    st_foreach(objspace->finalizer_table, rb_mmtk_update_finalizer_table_i, (st_data_t)objspace);
+    st_foreach_with_replace(
+        objspace->finalizer_table,
+        rb_mmtk_update_finalizer_table_i,
+        rb_mmtk_update_finalizer_table_replace_i,
+        (st_data_t)objspace
+    );
 }
 
 static int
