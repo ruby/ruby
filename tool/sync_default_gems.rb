@@ -66,6 +66,19 @@ module SyncDefaultGems
     "lib/unicode_normalize",    # not to match with "lib/un"
   ]
   REPOSITORIES = {
+    Onigmo: repo("k-takata/Onigmo", [
+      ["regcomp.c", "regcomp.c"],
+      ["regenc.c", "regenc.c"],
+      ["regenc.h", "regenc.h"],
+      ["regerror.c", "regerror.c"],
+      ["regexec.c", "regexec.c"],
+      ["regint.h", "regint.h"],
+      ["regparse.c", "regparse.c"],
+      ["regparse.h", "regparse.h"],
+      ["regsyntax.c", "regsyntax.c"],
+      ["onigmo.h", "include/ruby/onigmo.h"],
+      ["enc", "enc"],
+    ]),
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
       ["test/io/console", "test/io/console"],
