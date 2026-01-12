@@ -5411,7 +5411,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_specialize_array_empty_p_to_ccall() {
+    fn test_specialize_array_empty_p() {
         eval("
             def test(a) = a.empty?
 
@@ -5431,10 +5431,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:CInt64[0] = Const CInt64(0)
+          v26:CBool = IsBitEqual v24, v25
+          v27:BoolExact = BoxBool v26
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BoolExact = CCall v23, :Array#empty?@0x1038
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 
