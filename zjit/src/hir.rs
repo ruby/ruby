@@ -1064,6 +1064,8 @@ impl Insn {
             Insn::Param => effects::Empty,
             Insn::StringCopy { .. } => allocates,
             Insn::NewArray { .. } => allocates,
+            // TODO(Jacob): Can we further constrain the read effects from Any?
+            Insn::ArrayLength { .. } => Effect::from_write(effect_sets::Empty),
             Insn::NewHash { elements, .. } => {
                 // NewHash's operands may be hashed and compared for equality, which could have
                 // side-effects. Empty hashes are definitely elidable.
@@ -1124,6 +1126,8 @@ impl Insn {
             Insn::BoxFixnum { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
             Insn::BoxBool { .. } => effects::Empty,
             Insn::IsBitEqual { .. } => effects::Empty,
+            // TODO(Jacob): Maybe this gets a stronger read effect?
+            Insn::FixnumAref { .. } => effects::Empty,
             // TODO(Jacob): This is a CCall but feels like we can restrict a lot more. Perhaps even effects::Empty?
             Insn::IsA { .. } => allocates,
             _ => Effect::from_sets(effect_sets::Any, effect_sets::Any),
