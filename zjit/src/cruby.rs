@@ -257,7 +257,7 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ShapeId(pub u32);
 
 pub const INVALID_SHAPE_ID: ShapeId = ShapeId(rb_invalid_shape_id);

@@ -116,7 +116,7 @@ impl std::fmt::Display for BranchEdge {
 }
 
 /// Invalidation reasons
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Invariant {
     /// Basic operation is redefined
     BOPRedefined {
@@ -308,6 +308,34 @@ pub enum Const {
     CPtr(*const u8),
     CDouble(f64),
 }
+
+impl std::hash::Hash for Const {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Const::Value(v) => v.hash(state),
+            Const::CBool(b) => b.hash(state),
+            Const::CInt8(i) => i.hash(state),
+            Const::CInt16(i) => i.hash(state),
+            Const::CInt32(i) => i.hash(state),
+            Const::CInt64(i) => i.hash(state),
+            Const::CUInt8(u) => u.hash(state),
+            Const::CUInt16(u) => u.hash(state),
+            Const::CUInt32(u) => u.hash(state),
+            Const::CUInt64(u) => u.hash(state),
+            Const::CShape(sid) => sid.hash(state),
+            Const::CPtr(p) => {
+                let addr = *p as usize;
+                addr.hash(state);
+            }
+            Const::CDouble(d) => {
+                let bits = d.to_bits();
+                bits.hash(state);
+            }
+        }
+    }
+}
+
+impl std::cmp::Eq for Const {}
 
 impl std::fmt::Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -1016,9 +1044,27 @@ impl Insn {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
+    pub fn has_effects(&self) -> bool {
+        match self {
+            Insn::Const { .. } => false,
+            Insn::PatchPoint { .. } => false,
+            Insn::FixnumAdd  { .. } => false,
+            Insn::GuardType  { .. } => false,
+            Insn::GuardShape { .. } => false,
+            Insn::Snapshot { .. } => false,
+            Insn::LoadField { .. } => false,
+            Insn::WriteBarrier { .. } => false,
+            Insn::IncrCounter(_) => false,
+            Insn::GuardBitEquals { .. } => false,
+            Insn::ObjectAllocClass { .. } => false,
+            Insn::CheckInterrupts { .. } => false,
+            _ => true,
+        }
+    }
+
     /// Return true if the instruction needs to be kept around. For example, if the instruction
     /// might have a side effect, or if the instruction may raise an exception.
-    fn has_effects(&self) -> bool {
+    fn is_not_elidable(&self) -> bool {
         match self {
             Insn::Const { .. } => false,
             Insn::Param => false,
@@ -4143,7 +4189,7 @@ impl Function {
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
                 let insn = &self.insns[insn_id.0];
-                if insn.has_effects() {
+                if insn.is_not_elidable() {
                     worklist.push_back(*insn_id);
                 }
             }
@@ -4402,6 +4448,85 @@ impl Function {
         Self::make_iongraph_function(pass_name, hir_blocks)
     }
 
+    fn lvn(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut type_guards: Vec<(InsnId, Type, InsnId)> = vec![];
+            let mut shape_guards: Vec<(InsnId, ShapeId, InsnId)> = vec![];
+            let mut memory: HashMap<(InsnId, i32), InsnId> = HashMap::new();
+            let mut patchpoints: HashMap<Invariant, InsnId> = HashMap::new();
+            let mut eq_guards: HashMap<(InsnId, Const), InsnId> = HashMap::new();
+            let mut consts: HashMap<Const, InsnId> = HashMap::new();
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } => {
+                        if let Some(&prev) = type_guards
+                                    .iter()
+                                    .find(|&(id, ty, _)| self.chase_insn(*id) == val && ty.is_subtype(guard_type))
+                                    .map(|(_, _, prev)| prev) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        type_guards.push((val, guard_type, insn_id));
+                    }
+                    Insn::GuardShape { val, shape, .. } => {
+                        let val = self.chase_insn(val);
+                        if let Some(&prev) = shape_guards
+                                    .iter()
+                                    .find(|&(id, sh, _)| self.chase_insn(*id) == val && *sh == shape)
+                                    .map(|(_, _, prev)| prev) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        shape_guards.push((val, shape, insn_id));
+                    }
+                    Insn::GuardBitEquals { val, expected, .. } => {
+                        let key = (self.chase_insn(val), expected);
+                        if let Some(&prev) = eq_guards.get(&key) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        eq_guards.insert(key, insn_id);
+                    }
+                    Insn::LoadField { recv, offset, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        if let Some(&prev) = memory.get(&key) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        memory.insert(key, insn_id);
+                    }
+                    Insn::StoreField { recv, offset, val, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        memory.retain(|&(_, o), _| o != offset);
+                        memory.insert(key, val);
+                    }
+                    Insn::PatchPoint { invariant, .. } => {
+                        if let Some(&prev) = patchpoints.get(&invariant) {
+                            // self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        patchpoints.insert(invariant, insn_id);
+                    }
+                    Insn::Const { val } => {
+                        if let Some(&prev) = consts.get(&val) {
+                            self.make_equal_to(insn_id, prev);
+                            continue;
+                        }
+                        consts.insert(val, insn_id);
+                    }
+                    insn if insn.has_effects() => {
+                        shape_guards.clear();
+                        memory.clear();
+                        patchpoints.clear();
+                    }
+                    _ => {}
+                }
+                self.push_insn_id(block, insn_id);
+            }
+        }
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
@@ -4430,6 +4555,7 @@ impl Function {
         run_pass!(optimize_c_calls);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
+        run_pass!(lvn); // after clean_cfg, blocks get bigger
         run_pass!(eliminate_dead_code);
 
         if should_dump {
@@ -7110,8 +7236,6 @@ mod graphviz_tests {
           bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v25">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
@@ -7165,7 +7289,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v16">IfFalse v15, bb3(v8, v9)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v19">v19:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v23">Return v19&nbsp;</TD></TR>
         </TABLE>>];
@@ -7174,7 +7297,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v24:BasicObject, v25:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v28">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v29">v29:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v32">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v33">Return v29&nbsp;</TD></TR>
         </TABLE>>];

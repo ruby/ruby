@@ -110,10 +110,7 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v33:Fixnum[3] = Const Value(3)
           IncrCounter inline_cfunc_optimized_send_count
-          v17:Fixnum[3] = Const Value(3)
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
           v34:Fixnum[6] = Const Value(6)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -141,14 +138,11 @@ mod hir_opt_tests {
           v10:Fixnum[5] = Const Value(5)
           v12:Fixnum[3] = Const Value(3)
           PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
-          v33:Fixnum[2] = Const Value(2)
           IncrCounter inline_cfunc_optimized_send_count
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
-          v34:Fixnum[1] = Const Value(1)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v34
+          Return v17
         ");
     }
 
@@ -228,18 +222,12 @@ mod hir_opt_tests {
           v13:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
           v33:Fixnum = GuardType v9, Fixnum
-          v45:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
-          v20:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
-          v38:Fixnum = GuardType v9, Fixnum
-          v46:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
           PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
-          v47:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v47
+          Return v13
         ");
     }
 
@@ -303,10 +291,6 @@ mod hir_opt_tests {
           v55:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v21:Fixnum[2] = Const Value(2)
-          v23:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
-          v57:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[3] = Const Value(3)
@@ -375,10 +359,6 @@ mod hir_opt_tests {
           v55:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v21:Fixnum[2] = Const Value(2)
-          v23:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
-          v57:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[3] = Const Value(3)
@@ -442,7 +422,6 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
-          v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
           v40:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
@@ -509,7 +488,6 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
-          v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
           v41:FalseClass = Const Value(false)
@@ -970,8 +948,7 @@ mod hir_opt_tests {
           v24:BasicObject = SendWithoutBlockDirect v23, :foo (0x1038)
           PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Object@0x1000)
-          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v28:BasicObject = SendWithoutBlockDirect v27, :bar (0x1038)
+          v28:BasicObject = SendWithoutBlockDirect v23, :bar (0x1038)
           CheckInterrupts
           Return v28
         ");
@@ -2362,13 +2339,10 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, String)
           v29:Class[String@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, Class)
           v32:Class[Class@0x1018] = Const Value(VALUE(0x1018))
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1020, Module)
           v35:Class[Module@0x1028] = Const Value(VALUE(0x1028))
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1030, BasicObject)
           v38:Class[BasicObject@0x1038] = Const Value(VALUE(0x1038))
           v22:ArrayExact = NewArray v29, v32, v35, v38
@@ -2396,7 +2370,6 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Enumerable)
           v23:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, Kernel)
           v26:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           v16:ArrayExact = NewArray v23, v26
@@ -2940,14 +2913,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           v37:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           v38:BasicObject = SendWithoutBlockDirect v37, :foo (0x1038), v11, v13, v15
-          v20:Fixnum[1] = Const Value(1)
           v22:Fixnum[2] = Const Value(2)
-          v24:Fixnum[4] = Const Value(4)
-          v26:Fixnum[3] = Const Value(3)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
-          v41:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v42:BasicObject = SendWithoutBlockDirect v41, :foo (0x1038), v20, v22, v26, v24
+          v42:BasicObject = SendWithoutBlockDirect v37, :foo (0x1038), v11, v22, v13, v15
           v30:ArrayExact = NewArray v38, v42
           CheckInterrupts
           Return v30
@@ -3269,7 +3238,6 @@ mod hir_opt_tests {
           v46:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(C@0x1008)
-          v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           CheckInterrupts
@@ -3338,7 +3306,6 @@ mod hir_opt_tests {
           v46:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(Object@0x1008)
-          v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           CheckInterrupts
@@ -3370,7 +3337,6 @@ mod hir_opt_tests {
           v46:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
           PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1038, cme:0x1040)
           PatchPoint NoSingletonClass(BasicObject@0x1008)
-          v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           CheckInterrupts
@@ -3891,14 +3857,11 @@ mod hir_opt_tests {
           v30:CShape[0x1003] = Const CShape(0x1003)
           StoreField v25, :_shape_id@0x1000, v30
           v16:Fixnum[2] = Const Value(2)
-          PatchPoint SingleRactorMode
-          v32:HeapBasicObject = GuardType v6, HeapBasicObject
-          v33:CShape = LoadField v32, :_shape_id@0x1000
-          v34:CShape[0x1003] = GuardBitEquals v33, CShape(0x1003)
-          StoreField v32, :@bar@0x1004, v16
-          WriteBarrier v32, v16
+          v34:CShape[0x1003] = GuardBitEquals v30, CShape(0x1003)
+          StoreField v25, :@bar@0x1004, v16
+          WriteBarrier v25, v16
           v37:CShape[0x1005] = Const CShape(0x1005)
-          StoreField v32, :_shape_id@0x1000, v37
+          StoreField v25, :_shape_id@0x1000, v37
           CheckInterrupts
           Return v16
         ");
@@ -4096,7 +4059,6 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
           Return v11
         ");
@@ -4189,7 +4151,6 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
           Return v11
         ");
@@ -4282,7 +4243,6 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
           Return v11
         ");
@@ -4910,10 +4870,7 @@ mod hir_opt_tests {
           v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
           v30:StaticSymbol[:b] = Const Value(VALUE(0x1038))
-          PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(Object@0x1000)
-          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v30
@@ -5626,6 +5583,48 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_lvn() {
+        eval("
+            class C
+              def initialize
+                @a = 1
+                a = @a
+                b = @a
+                [a, b]
+              end
+            end
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v2)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v7)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v43:HeapBasicObject = GuardType v10, HeapBasicObject
+          v44:CShape = LoadField v43, :_shape_id@0x1000
+          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001)
+          StoreField v43, :@a@0x1002, v16
+          WriteBarrier v43, v16
+          v48:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v43, :_shape_id@0x1000, v48
+          v52:CShape[0x1003] = GuardBitEquals v48, CShape(0x1003)
+          PatchPoint NoEPEscape(initialize)
+          v38:ArrayExact = NewArray v16, v16
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
     fn test_optimize_getivar_extended() {
         eval(r#"
             class C
@@ -5948,7 +5947,6 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
           v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, B)
           v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
@@ -7906,9 +7904,7 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
           v12:Fixnum[3] = Const Value(3)
-          v14:Fixnum[3] = Const Value(3)
-          v16:Fixnum[3] = Const Value(3)
-          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v14, v16 # SendFallbackReason: Argument count does not match parameter count
+          v18:BasicObject = SendWithoutBlock v10, :foo, v12, v12, v12 # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v18
         ");
@@ -8223,7 +8219,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
           v28:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8256,7 +8251,6 @@ mod hir_opt_tests {
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
-          PatchPoint NoSingletonClass(C@0x1008)
           v30:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8290,7 +8284,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
           v28:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8325,11 +8318,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
-          v30:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v16
         ");
     }
 
@@ -8360,7 +8351,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
           v30:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8395,11 +8385,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
-          v30:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v16
         ");
     }
 
@@ -8429,7 +8417,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
           v30:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8463,7 +8450,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
           v30:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8496,7 +8482,6 @@ mod hir_opt_tests {
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
-          PatchPoint NoSingletonClass(C@0x1008)
           v30:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -9606,8 +9591,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Class@0x1040, respond_to?@0x1048, cme:0x1050)
           PatchPoint NoSingletonClass(Class@0x1040)
           PatchPoint MethodRedefined(Class@0x1040, _lex_actions@0x1078, cme:0x1080)
-          PatchPoint NoSingletonClass(Class@0x1040)
-          v52:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v24:StaticSymbol[:CORRECT] = Const Value(VALUE(0x10a8))
@@ -10184,13 +10167,8 @@ mod hir_opt_tests {
           v39:CShape = LoadField v28, :_shape_id@0x1048
           v40:CShape[0x1049] = GuardBitEquals v39, CShape(0x1049)
           v52:Fixnum[100] = Const Value(100)
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
-          v34:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
-          PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
-          v43:CShape = LoadField v34, :_shape_id@0x1048
-          v44:CShape[0x1049] = GuardBitEquals v43, CShape(0x1049)
           v53:Fixnum[200] = Const Value(200)
           PatchPoint MethodRedefined(Integer@0x1088, +@0x1090, cme:0x1098)
           v54:Fixnum[300] = Const Value(300)
