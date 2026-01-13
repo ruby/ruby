@@ -30,3 +30,4 @@ mod bitset;
 mod gc;
 mod payload;
 mod json;
+mod ttycolors;

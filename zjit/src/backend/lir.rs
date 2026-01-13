@@ -1901,18 +1901,19 @@ impl Assembler
     }
 }
 
-const BOLD_BEGIN: &str = "\x1b[1m";
-const BOLD_END: &str = "\x1b[22m";
-
 /// Return a result of fmt::Display for Assembler without escape sequence
 pub fn lir_string(asm: &Assembler) -> String {
-    format!("{asm}").replace(BOLD_BEGIN, "").replace(BOLD_END, "")
+    use crate::ttycolors::TTY_TERMINAL_COLOR;
+    format!("{asm}").replace(TTY_TERMINAL_COLOR.bold_begin, "").replace(TTY_TERMINAL_COLOR.bold_end, "")
 }
 
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
         let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        let colors = crate::ttycolors::get_colors();
+        let bold_begin = colors.bold_begin;
+        let bold_end = colors.bold_end;
         for label_name in self.label_names.iter() {
             let counter = label_counts.entry(label_name).or_insert(0);
             *counter += 1;
@@ -1932,7 +1933,7 @@ impl fmt::Display for Assembler {
         for insn in self.insns.iter() {
             match insn {
                 Insn::Comment(comment) => {
-                    writeln!(f, "    {BOLD_BEGIN}# {comment}{BOLD_END}")?;
+                    writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
                 }
                 Insn::Label(target) => {
                     let &Target::Label(Label(label_idx)) = target else {
@@ -2506,6 +2507,9 @@ impl AssemblerPanicHook {
 
     /// Dump Assembler, highlighting the insn_idx line
     fn dump_asm(asm: &Assembler, insn_idx: usize) {
+        let colors = crate::ttycolors::get_colors();
+        let bold_begin = colors.bold_begin;
+        let bold_end = colors.bold_end;
         let lir_string = lir_string(asm);
         let lines: Vec<&str> = lir_string.split('\n').collect();
 
@@ -2520,7 +2524,7 @@ impl AssemblerPanicHook {
         eprintln!("Failed to compile LIR at insn_idx={insn_idx}:");
         for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
             if idx == insn_idx && line.starts_with("  ") {
-                eprintln!("{BOLD_BEGIN}=>{}{BOLD_END}", &line["  ".len()..]);
+                eprintln!("{bold_begin}=>{}{bold_end}", &line["  ".len()..]);
             } else {
                 eprintln!("{line}");
             }
