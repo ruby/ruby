@@ -5,6 +5,7 @@ use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::hir;
 use crate::options::asm_dump;
 use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
@@ -690,11 +691,52 @@ impl Assembler {
         asm_local
     }
 
+    /// Resolve ParallelMov instructions without using scratch registers.
+    /// This is used for trampolines that don't allow scratch registers.
+    /// Linearizes all blocks into a single giant block.
+    fn resolve_parallel_mov_pass(self) -> Assembler {
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = self.accept_scratch_reg;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+
+        // Create one giant block to linearize everything into
+        asm_local.new_block(hir::BlockId(usize::MAX), true, true);
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for insn in linearized_insns {
+            match insn {
+                Insn::ParallelMov { moves } => {
+                    // Resolve parallel moves without scratch register
+                    if let Some(resolved_moves) = Assembler::resolve_parallel_moves(&moves, None) {
+                        for (dst, src) in resolved_moves {
+                            asm_local.mov(dst, src);
+                        }
+                    } else {
+                        unreachable!("ParallelMov requires scratch register but scratch_reg is not allowed");
+                    }
+                }
+                _ => {
+                    // Strip branch args from jumps since everything is now in one block
+                    let insn = Self::strip_branch_args(&self, insn);
+                    asm_local.push_insn(insn);
+                }
+            }
+        }
+
+        asm_local
+    }
+
     /// Split instructions using scratch registers. To maximize the use of the register pool for
     /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so this
     /// splits them and uses scratch registers for it.
-    fn arm64_scratch_split(mut self) -> Assembler {
+    /// Linearizes all blocks into a single giant block.
+    fn arm64_scratch_split(self) -> Assembler {
         /// If opnd is Opnd::Mem with a too large disp, make the disp smaller using lea.
         fn split_large_disp(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
             match opnd {
@@ -750,12 +792,23 @@ impl Assembler {
         // Prepare StackState to lower MemBase::Stack
         let stack_state = StackState::new(self.stack_base_idx);
 
-        let mut asm_local = Assembler::new_with_asm(&self);
-        let asm = &mut asm_local;
-        asm.accept_scratch_reg = true;
-        let iterator = &mut self.instruction_iterator();
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = true;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
-        while let Some((_, mut insn)) = iterator.next(asm) {
+        // Create one giant block to linearize everything into
+        asm_local.new_block(hir::BlockId(usize::MAX), true, true);
+
+        let asm = &mut asm_local;
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for (idx, insn) in linearized_insns.iter().enumerate() {
+            let mut insn = insn.clone();
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
@@ -795,7 +848,7 @@ impl Assembler {
                     };
 
                     // If the next instruction is JoMul
-                    if matches!(iterator.peek(), Some((_, Insn::JoMul(_)))) {
+                    if idx + 1 < linearized_insns.len() && matches!(linearized_insns[idx + 1], Insn::JoMul(_)) {
                         // Produce a register that is all zeros or all ones
                         // Based on the sign bit of the 64-bit mul result
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
@@ -907,12 +960,36 @@ impl Assembler {
                     split_patch_point(asm, target, invariant, version);
                 }
                 _ => {
+                    // Strip branch args from jumps since everything is now in one block
+                    let insn = Self::strip_branch_args(&self, insn);
                     asm.push_insn(insn);
                 }
             }
         }
 
         asm_local
+    }
+
+    /// Strip branch arguments from a jump instruction, converting Target::Block(edge) with args
+    /// into Target::Label. This is needed after linearization since all blocks are merged into one.
+    fn strip_branch_args(asm: &Assembler, insn: Insn) -> Insn {
+        match insn {
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(asm.block_label(edge.target))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(asm.block_label(edge.target))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(asm.block_label(edge.target))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(asm.block_label(edge.target))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(asm.block_label(edge.target))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(asm.block_label(edge.target))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(asm.block_label(edge.target))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(asm.block_label(edge.target))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(asm.block_label(edge.target))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(asm.block_label(edge.target))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(asm.block_label(edge.target))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(asm.block_label(edge.target))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(opnd, Target::Label(asm.block_label(edge.target))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(opnd, Target::Label(asm.block_label(edge.target))),
+            _ => insn,
+        }
     }
 
     /// Emit platform-specific machine code
@@ -1112,8 +1189,11 @@ impl Assembler {
         let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
 
         // For each instruction
+        // NOTE: At this point, the assembler should have been linearized into a single giant block
+        // by either resolve_parallel_mov_pass() or arm64_scratch_split().
         let mut insn_idx: usize = 0;
-        let insns = self.linearize_instructions();
+        assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
+        let insns = &self.basic_blocks[0].insns;
 
         while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
@@ -1591,7 +1671,7 @@ impl Assembler {
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(mut self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
-        let use_scratch_reg = !self.accept_scratch_reg;
+        let scratch_reg_allowed = !self.accept_scratch_reg;
 
         // Initialize block labels before any processing
         self.init_block_labels();
@@ -1600,6 +1680,7 @@ impl Assembler {
         let asm = self.arm64_split();
         asm_dump!(asm, split);
 
+        // Linearize before here?
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
 
@@ -1607,9 +1688,15 @@ impl Assembler {
         asm.compile_exits();
         asm_dump!(asm, compile_exits);
 
-        if use_scratch_reg {
+        // linearize
+        //
+        if scratch_reg_allowed {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
+        } else {
+            // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
+            asm = asm.resolve_parallel_mov_pass();
+            asm_dump!(asm, resolve_parallel_mov);
         }
 
         // Create label instances in the code block

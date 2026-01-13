@@ -1985,17 +1985,6 @@ impl Assembler
             // Push instruction(s)
             let is_ccall = matches!(insn, Insn::CCall { .. });
             match insn {
-                Insn::ParallelMov { moves } => {
-                    // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
-                    if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
-                        for (dst, src) in moves {
-                            asm.mov(dst, src);
-                        }
-                    } else {
-                        // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
-                        asm.push_insn(Insn::ParallelMov { moves });
-                    }
-                }
                 Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
                     // Split start_marker and end_marker here to avoid inserting push/pop between them.
                     if let Some(start_marker) = start_marker {
