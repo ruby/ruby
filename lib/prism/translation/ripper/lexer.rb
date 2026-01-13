@@ -6,7 +6,7 @@ require_relative "../ripper"
 module Prism
   module Translation
     class Ripper
-      class Lexer # :nodoc:
+      class Lexer < Ripper # :nodoc:
         # :stopdoc:
         class State
 
@@ -39,6 +39,92 @@ module Prism
           def anybits?(i) to_int.anybits?(i) end
           def nobits?(i) to_int.nobits?(i) end
         end
+
+        class Elem
+          attr_accessor :pos, :event, :tok, :state, :message
+
+          def initialize(pos, event, tok, state, message = nil)
+            @pos = pos
+            @event = event
+            @tok = tok
+            @state = State.new(state)
+            @message = message
+          end
+
+          def [](index)
+            case index
+            when 0, :pos
+              @pos
+            when 1, :event
+              @event
+            when 2, :tok
+              @tok
+            when 3, :state
+              @state
+            when 4, :message
+              @message
+            else
+              nil
+            end
+          end
+
+          def inspect
+            "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}#{": " if message}#{message}>"
+          end
+
+          alias to_s inspect
+
+          def pretty_print(q)
+            q.group(2, "#<#{self.class}:", ">") {
+              q.breakable
+              q.text("#{event}@#{pos[0]}:#{pos[1]}")
+              q.breakable
+              state.pretty_print(q)
+              q.breakable
+              q.text("token: ")
+              tok.pretty_print(q)
+              if message
+                q.breakable
+                q.text("message: ")
+                q.text(message)
+              end
+            }
+          end
+
+          def to_a
+            if @message
+              [@pos, @event, @tok, @state, @message]
+            else
+              [@pos, @event, @tok, @state]
+            end
+          end
+        end
+
+        def initialize(...)
+          super
+          @lex_compat = Prism.lex_compat(@source, filepath: filename, line: lineno)
+        end
+
+        # Returns the lex_compat result wrapped in `Elem`. Errors are omitted.
+        # Since ripper is a streaming parser, tokens are expected to be emitted in the order
+        # that the parser encounters them. This is not implemented.
+        def parse(raise_errors: false)
+          if @lex_compat.failure? && raise_errors
+            raise SyntaxError, @lex_compat.errors.first.message
+          else
+            @lex_compat.value.map do |position, event, token, state|
+              Elem.new(position, event, token, state.to_int)
+            end
+          end
+        end
+
+        # Similar to parse but ripper sorts the elements by position in the source. Also
+        # includes errors. Since prism does error recovery, in cases of syntax errors
+        # the result may differ greatly compared to ripper.
+        def scan(...)
+          parse(...)
+        end
+
         # :startdoc:
       end
     end
