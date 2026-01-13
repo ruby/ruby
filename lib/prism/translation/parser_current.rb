@@ -16,7 +16,7 @@ module Prism
       ParserCurrent = Parser41
     else
       # Keep this in sync with released Ruby.
-      parser = Parser34
+      parser = Parser40
       major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
       warn "warning: `Prism::Translation::Current` is loading #{parser.name}, " \
            "but you are running #{major}.#{minor}."

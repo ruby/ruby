@@ -1,4 +1,4 @@
-foo {
+END {
      ^ unexpected end-of-input, assuming it is closing the parent top level context
-    ^ expected a block beginning with `{` to end with `}`
+    ^ expected a `}` to close the `END` statement
 

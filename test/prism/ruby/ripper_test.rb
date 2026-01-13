@@ -3,6 +3,7 @@
 return if RUBY_VERSION < "3.3" || RUBY_ENGINE != "ruby"
 
 require_relative "../test_helper"
+require "ripper"
 
 module Prism
   class RipperTest < TestCase
@@ -60,6 +61,17 @@ module Prism
 
     Fixture.each_for_current_ruby(except: incorrect | omitted) do |fixture|
       define_method(fixture.test_name) { assert_ripper(fixture.read) }
+    end
+
+    # Check that the hardcoded values don't change without us noticing.
+    def test_internals
+      actual = Translation::Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
+      expected = Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
+
+      assert_equal(expected, actual)
+      expected.zip(actual).each do |ripper, prism|
+        assert_equal(Ripper.const_get(ripper), Translation::Ripper.const_get(prism))
+      end
     end
 
     private

@@ -2,7 +2,6 @@
 # :markup: markdown
 
 require "delegate"
-require "ripper"
 
 module Prism
   # This class is responsible for lexing the source using prism and then
@@ -249,8 +248,8 @@ module Prism
     class IdentToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == Ripper::EXPR_LABEL | Ripper::EXPR_END) ||
-          (other[3] & Ripper::EXPR_ARG_ANY != 0)
+          (other[3] == Translation::Ripper::EXPR_LABEL | Translation::Ripper::EXPR_END) ||
+          (other[3] & (Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_CMDARG) != 0)
         )
       end
     end
@@ -261,8 +260,8 @@ module Prism
       def ==(other) # :nodoc:
         return false unless self[0...-1] == other[0...-1]
 
-        if self[3] == Ripper::EXPR_ARG | Ripper::EXPR_LABELED
-          other[3] & Ripper::EXPR_ARG | Ripper::EXPR_LABELED != 0
+        if self[3] == Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED
+          other[3] & Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED != 0
         else
           self[3] == other[3]
         end
@@ -280,8 +279,8 @@ module Prism
     class ParamToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == Ripper::EXPR_END) ||
-          (other[3] == Ripper::EXPR_END | Ripper::EXPR_LABEL)
+          (other[3] == Translation::Ripper::EXPR_END) ||
+          (other[3] == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL)
         )
       end
     end
@@ -615,6 +614,11 @@ module Prism
 
     private_constant :Heredoc
 
+    # In previous versions of Ruby, Ripper wouldn't flush the bom before the
+    # first token, so we had to have a hack in place to account for that.
+    BOM_FLUSHED = RUBY_VERSION >= "3.3.0"
+    private_constant :BOM_FLUSHED
+
     attr_reader :source, :options
 
     def initialize(source, **options)
@@ -630,13 +634,9 @@ module Prism
 
       result = Prism.lex(source, **options)
       result_value = result.value
-      previous_state = nil #: Ripper::Lexer::State?
+      previous_state = nil #: State?
       last_heredoc_end = nil #: Integer?
 
-      # In previous versions of Ruby, Ripper wouldn't flush the bom before the
-      # first token, so we had to have a hack in place to account for that. This
-      # checks for that behavior.
-      bom_flushed = Ripper.lex("\xEF\xBB\xBF# test")[0][0][1] == 0
       bom = source.byteslice(0..2) == "\xEF\xBB\xBF"
 
       result_value.each_with_index do |(token, lex_state), index|
@@ -651,7 +651,7 @@ module Prism
         if bom && lineno == 1
           column -= 3
 
-          if index == 0 && column == 0 && !bom_flushed
+          if index == 0 && column == 0 && !BOM_FLUSHED
             flushed =
               case token.type
               when :BACK_REFERENCE, :INSTANCE_VARIABLE, :CLASS_VARIABLE,
@@ -675,7 +675,7 @@ module Prism
 
         event = RIPPER.fetch(token.type)
         value = token.value
-        lex_state = Ripper::Lexer::State.new(lex_state)
+        lex_state = Translation::Ripper::Lexer::State.new(lex_state)
 
         token =
           case event
@@ -689,7 +689,7 @@ module Prism
             last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ident
-            if lex_state == Ripper::EXPR_END
+            if lex_state == Translation::Ripper::EXPR_END
               # If we have an identifier that follows a method name like:
               #
               #     def foo bar
@@ -699,7 +699,7 @@ module Prism
               # yet. We do this more accurately, so we need to allow comparing
               # against both END and END|LABEL.
               ParamToken.new([[lineno, column], event, value, lex_state])
-            elsif lex_state == Ripper::EXPR_END | Ripper::EXPR_LABEL
+            elsif lex_state == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL
               # In the event that we're comparing identifiers, we're going to
               # allow a little divergence. Ripper doesn't account for local
               # variables introduced through named captures in regexes, and we
@@ -739,7 +739,7 @@ module Prism
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                Ripper::Lexer::State.new(result_value[current_index][1])
+                Translation::Ripper::Lexer::State.new(result_value[current_index][1])
               else
                 previous_state
               end
@@ -867,62 +867,4 @@ module Prism
   end
 
   private_constant :LexCompat
-
-  # This is a class that wraps the Ripper lexer to produce almost exactly the
-  # same tokens.
-  class LexRipper # :nodoc:
-    attr_reader :source
-
-    def initialize(source)
-      @source = source
-    end
-
-    def result
-      previous = [] #: [[Integer, Integer], Symbol, String, untyped] | []
-      results = [] #: Array[[[Integer, Integer], Symbol, String, untyped]]
-
-      lex(source).each do |token|
-        case token[1]
-        when :on_sp
-          # skip
-        when :on_tstring_content
-          if previous[1] == :on_tstring_content && (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
-            previous[2] << token[2]
-          else
-            results << token
-            previous = token
-          end
-        when :on_words_sep
-          if previous[1] == :on_words_sep
-            previous[2] << token[2]
-          else
-            results << token
-            previous = token
-          end
-        else
-          results << token
-          previous = token
-        end
-      end
-
-      results
-    end
-
-    private
-
-    if Ripper.method(:lex).parameters.assoc(:keyrest)
-      def lex(source)
-        Ripper.lex(source, raise_errors: true)
-      end
-    else
-      def lex(source)
-        ripper = Ripper::Lexer.new(source)
-        ripper.lex.tap do |result|
-          raise SyntaxError, ripper.errors.map(&:message).join(' ;') if ripper.errors.any?
-        end
-      end
-    end
-  end
-
-  private_constant :LexRipper
 end
