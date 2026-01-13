@@ -3804,9 +3804,9 @@ impl Function {
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
+                                let recv_ptr = recv_obj.as_ptr() as *const u32;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val.0 as u32)) })
+                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
                             }
                             _ => insn_id,
                         }
