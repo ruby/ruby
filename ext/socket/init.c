@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef _WIN32
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
@@ -167,6 +168,8 @@ rsock_is_dgram(rb_io_t *fptr)
     return socktype == SOCK_DGRAM;
 }
 
+#define INSPECT(str, obj) { printf(str); VALUE s = rb_funcall(obj, rb_intern("inspect"), 0); printf(": %s\n", StringValueCStr(s)); }
+
 VALUE
 rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 {
@@ -201,6 +204,29 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
     while (true) {
         rb_io_check_closed(fptr);
+
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            char *ptr = RSTRING_PTR(str);
+            long len = buflen;
+            int recvfrom = (from == RECV_IP) || (from == RECV_SOCKET);
+            VALUE ret = rb_fiber_scheduler_socket_recv_memory(scheduler, socket, ptr, len, 0, arg.flags, recvfrom);
+            if (!UNDEF_P(ret)) {
+                if (TYPE(ret) == T_ARRAY) {
+                    VALUE recv_bytes = rb_ary_entry(ret, 0);
+                    rb_str_set_len(str, NUM2LONG(recv_bytes));
+                    rb_ary_store(ret, 0, str);
+                    return ret;
+                }
+                else {
+                    if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+                        rb_sys_fail("recvfrom(2)");
+                    
+                    rb_str_set_len(str, NUM2LONG(ret));
+                    return str;
+                }
+            }
+        }
 
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
         rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
