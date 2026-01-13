@@ -578,7 +578,7 @@ VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
  * @retval      RUBY_Qundef     `scheduler` doesn't have `#socket_accept`.
  * @return      otherwise       What `scheduler.socket_accept` returns `[-errno, fd]`.
  */
-VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, socklen_t *len);
+VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, void *len);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
