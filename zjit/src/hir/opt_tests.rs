@@ -10599,7 +10599,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_invokesuper_with_positional_args_remains_invokesuper() {
+    fn test_invokesuper_with_positional_args_optimizes_to_direct() {
         eval("
             class A
               def foo(x)
@@ -10617,8 +10617,8 @@ mod hir_opt_tests {
         ");
 
         let hir = hir_string_proc("B.new.method(:foo)");
-        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("SendWithoutBlockDirect"), "Should not optimize to SendWithoutBlockDirect for explicit blockarg:\n{hir}");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to SendWithoutBlockDirect but got:\n{hir}");
+        assert!(hir.contains("SendWithoutBlockDirect"), "Should optimize to SendWithoutBlockDirect for call without args or block:\n{hir}");
 
         assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
@@ -10631,14 +10631,18 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = InvokeSuper v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuper)
+          PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
+          GuardSuperMethodEntry 0x1038
+          v27:RubyValue = GetBlockHandler
+          v28:FalseClass = GuardBitEquals v27, Value(false)
+          v29:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v9
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v27:Fixnum = GuardType v15, Fixnum
-          v28:Fixnum = FixnumAdd v27, v17
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v32:Fixnum = GuardType v29, Fixnum
+          v33:Fixnum = FixnumAdd v32, v17
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v33
         ");
     }
 

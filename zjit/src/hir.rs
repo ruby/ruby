@@ -3079,11 +3079,17 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
 
-                        // Only handle bare `super` calls (i.e., with no arguments) so we can
-                        // forward the caller arguments without needing to modify them.
                         let ci = unsafe { get_call_data_ci(cd) };
                         let flags = unsafe { rb_vm_ci_flag(ci) };
-                        if (flags & VM_CALL_ZSUPER) == 0 || (flags & VM_CALL_ARGS_SIMPLE) == 0 {
+
+                        // Reject calls with complex argument handling.
+                        let complex_arg_types = VM_CALL_ARGS_SPLAT
+                            | VM_CALL_KW_SPLAT
+                            | VM_CALL_KWARG
+                            | VM_CALL_ARGS_BLOCKARG
+                            | VM_CALL_FORWARDING;
+
+                        if (flags & complex_arg_types) != 0 {
                             self.push_insn_id(block, insn_id); continue;
                         }
 
