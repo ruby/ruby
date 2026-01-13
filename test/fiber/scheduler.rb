@@ -521,6 +521,10 @@ class IOErrorScheduler < Scheduler
   def socket_recv(sock, buffer, length, flags, recvfrom)
     return -Errno::ENOTSOCK::Errno
   end
+
+  def socket_connect(sock, addr)
+    return -Errno::EBADF::Errno
+  end
 end
 
 class SocketIOScheduler < Scheduler
@@ -561,6 +565,17 @@ class SocketIOScheduler < Scheduler
         buffer.set_string(str)
         str.bytesize
       end
+    end
+  end
+
+  def socket_connect(sock, addr)
+    descriptor = sock.fileno
+
+    self.operations << [:socket_connect, descriptor, addr]
+    addr2 = Addrinfo.new(addr)
+
+    Fiber.blocking do
+      sock.connect(addr2.ip_address, addr2.ip_port)
     end
   end
 end

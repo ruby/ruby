@@ -39,8 +39,10 @@ static ID id_io_write, id_io_pwrite;
 static ID id_io_wait;
 static ID id_io_select;
 static ID id_io_close;
+
 static ID id_socket_recv;
 static ID id_socket_send;
+static ID id_socket_connect;
 
 static ID id_address_resolve;
 
@@ -351,6 +353,7 @@ Init_Fiber_Scheduler(void)
 
     id_socket_recv = rb_intern_const("socket_recv");
     id_socket_send = rb_intern_const("socket_send");
+    id_socket_connect = rb_intern_const("socket_connect");
 
     // Define an anonymous BlockingOperation class for internal use only
     // This is completely hidden from Ruby code and cannot be instantiated directly
@@ -381,6 +384,9 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "yield", rb_fiber_scheduler_yield, 0);
     rb_define_method(rb_cFiberScheduler, "fiber_interrupt", rb_fiber_scheduler_fiber_interrupt, 2);
     rb_define_method(rb_cFiberScheduler, "io_close", rb_fiber_scheduler_io_close, 1);
+    rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 5);
+    rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 5);
+    rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
 #endif
 }
 
@@ -1042,8 +1048,8 @@ rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, size_t
 }
 
 /*
- *  Document-method: Fiber::Scheduler#socket_send call-seq: socket_send(sock,
- *  dest, buffer, length, flags) -> written length or -errno
+ *  Document-method: Fiber::Scheduler#socket_send
+ *  call-seq: socket_send(sock, dest, buffer, length, flags) -> written length or -errno
  *
  *  Invoked by Socket#send to send +length+ bytes to +sock+ from from a
  *  specified +buffer+ (see IO::Buffer) with the given +flags+.
@@ -1098,6 +1104,49 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE bu
         return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_send, (VALUE)&arguments);
     } else {
         return fiber_scheduler_socket_send((VALUE)&arguments);
+    }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_connect
+ *  call-seq: socket_send(sock, addr) -> 0 or -errno
+ *
+ *  Invoked by Socket#connect to connect the given +sock+ to the given address.
+ *
+ *  The +addr+ argument is a packed sockaddr string.
+ *
+ *  Suggested implementation should try to connect in a non-blocking manner and
+ *  call #io_wait if the +sock+ is not ready (which will yield control to other
+ *  fibers).
+ *
+ *  Expected to return zero if connection is successful, or, in case of an
+ *  error, <tt>-errno</tt> (negated number corresponding to system's error
+ *  code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_connect(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_connect, 2, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
+{
+    if (!rb_respond_to(scheduler, id_socket_connect)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, sock, addr
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_connect, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_connect((VALUE)&arguments);
     }
 }
 

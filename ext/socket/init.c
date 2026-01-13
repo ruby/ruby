@@ -617,6 +617,19 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
     rb_io_t *fptr;
     RB_IO_POINTER(self, fptr);
 
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE addr = rb_str_new((char*)sockaddr, len);
+        VALUE ret = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, addr);
+        RB_GC_GUARD(addr);
+        if (!UNDEF_P(ret)) {
+            if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+                rb_sys_fail("connect(2)");
+
+            return 0;
+        }
+    }
+
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
