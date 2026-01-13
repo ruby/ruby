@@ -233,7 +233,6 @@ mod tests {
         assert!(left.bit_equal(right), "{left} bits are not equal to {right} bits");
     }
 
-
     #[track_caller]
     fn assert_subeffect(left: Effect, right: Effect) {
         assert!(right.includes(left), "{left} is not a subeffect of {right}");
