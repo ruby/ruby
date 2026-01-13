@@ -64,7 +64,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
   def test_install_extension
     pend if Gem.java_platform?
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend "terminates on Windows" if win_platform? && ruby_repo?
     name, _, repository, = git_gem "a", 1 do |s|
       s.extensions << "ext/extconf.rb"
     end

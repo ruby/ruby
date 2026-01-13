@@ -1542,7 +1542,7 @@ end
 
   def test_install_extension_and_script
     pend "Makefile creation crashes on jruby" if Gem.java_platform?
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend "terminates on Windows" if win_platform? && ruby_repo?
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"

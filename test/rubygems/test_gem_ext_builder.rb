@@ -105,7 +105,7 @@ install:
   end
 
   def test_build_extensions
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend "terminates on Windows" if win_platform? && ruby_repo?
     @spec.extensions << "ext/extconf.rb"
 
     ext_dir = File.join @spec.gem_dir, "ext"
@@ -141,7 +141,7 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend "terminates on Windows" if win_platform? && ruby_repo?
     new_gemhome = File.join @tempdir, "gem home"
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -162,7 +162,7 @@ install:
         false
       end
     end
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend "terminates on Windows" if win_platform? && ruby_repo?
 
     @spec.extensions << "ext/extconf.rb"
 
