@@ -1833,6 +1833,10 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //   foo(*a, b, c: :d)
                     //   foo(*a, b, **c)
                     //
+                    // If the next node is a forwarding argument:
+                    //
+                    //   foo(*a, b, ...)
+                    //
                     // If the next node is NULL (we have hit the end):
                     //
                     //   foo(*a, b)
@@ -1853,6 +1857,10 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                           case PM_SPLAT_NODE: {
                             PUSH_INSN1(ret, location, newarray, INT2FIX(post_splat_counter));
                             PUSH_INSN(ret, location, concatarray);
+                            break;
+                          }
+                          case PM_FORWARDING_ARGUMENTS_NODE: {
+                            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(post_splat_counter));
                             break;
                           }
                           default:
