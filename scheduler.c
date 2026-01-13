@@ -1184,13 +1184,13 @@ fiber_scheduler_socket_accept(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, socklen_t *len)
+rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, void *len)
 {
     if (!rb_respond_to(scheduler, id_socket_accept)) {
         return RUBY_Qundef;
     }
 
-    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *len, 0);
+    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *(int *)len, 0);
 
     VALUE arguments[] = {
         scheduler, sock, client_sockaddr
@@ -1202,7 +1202,7 @@ rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, so
     } else {
         peer_fd = fiber_scheduler_socket_accept((VALUE)&arguments);
     }
-    *len = NUM2INT(rb_funcall(client_sockaddr, id_size, 0));
+    *(int *)len = NUM2INT(rb_funcall(client_sockaddr, id_size, 0));
     rb_io_buffer_free(client_sockaddr);
     return peer_fd;
 }
