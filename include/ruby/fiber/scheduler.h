@@ -500,6 +500,35 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
  */
 VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
 
+/**
+ * Non-blocking send to the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to send to.
+ * @param[in]   dest         Optional send destination.
+ * @param[in]   buffer       The buffer to send from.
+ * @param[in]   length       The minimum number of bytes to send.
+ * @param[in]   flags        The flags to use for sending.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
+ * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE buffer, size_t length, int flags);
+
+/**
+ * Non-blocking send to the passed Socket using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to send to.
+ * @param[in]   dest         Optional send destination.
+ * @param[in]   base         The memory to write from.
+ * @param[in]   size         Size of the memory.
+ * @param[in]   length       The minimum number of bytes to write.
+ * @param[in]   flags        The flags to use for sending.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
+ * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE dest, const void *base, size_t size, size_t length, int flags);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_FIBER_SCHEDULER_H */

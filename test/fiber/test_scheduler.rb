@@ -383,4 +383,62 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.kill rescue nil
     FileUtils.rm_f(path)
   end
+
+  def test_socket_send
+    s1, s2 = UNIXSocket.socketpair
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0)
+        s1.send('bar', 0)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_send, s1.fileno, nil, 'foo', 0, 0],
+      [:socket_send, s1.fileno, nil, 'bar', 0, 0]
+    ], operations
+
+    assert_equal 'foobar', s2.recv(6)
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_send_with_dest
+    s1, s2 = UNIXSocket.socketpair
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0, "(dest1)")
+        s1.send('bar', 0, "(dest2)")
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_send, s1.fileno, "(dest1)", 'foo', 0, 0],
+      [:socket_send, s1.fileno, "(dest2)", 'bar', 0, 0]
+    ], operations
+
+    assert_equal 'foobar', s2.recv(6)
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
 end

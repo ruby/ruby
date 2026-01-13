@@ -515,6 +515,35 @@ class IOErrorScheduler < Scheduler
   end
 end
 
+class SocketIOScheduler < Scheduler
+  def operations
+    @operations ||= []
+  end
+
+  def socket_send(sock, dest, buffer, length, flags)
+    descriptor = sock.fileno
+    string = buffer.get_string
+
+    self.operations << [:socket_send, descriptor, dest, string, length, flags]
+
+    Fiber.blocking do
+      sock.send(string, flags)
+    end
+  end
+
+  def socket_recv(sock, buffer, length, flags)
+    descriptor = sock.fileno
+    length = buffer.size if length == 0
+
+    self.operations << [:socket_recv, descriptor, length, flags]
+
+    Fiber.blocking do
+      str = sock.recv(length, flags)
+      buffer.set_string(str)
+    end
+  end
+end
+
 # This scheduler has a broken implementation of `unblock`` in the sense that it
 # raises an exception. This is used to test the behavior of the scheduler when
 # unblock raises an exception.
