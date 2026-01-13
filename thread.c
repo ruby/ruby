@@ -1492,10 +1492,10 @@ rb_thread_sleep(int sec)
 }
 
 static void
-rb_thread_schedule_limits(uint32_t limits_us)
+rb_thread_schedule_limits(rb_thread_t *th, uint32_t limits_us)
 {
+    // TODO: this doesn't yield to other ractors right now
     if (!rb_thread_alone()) {
-        rb_thread_t *th = GET_THREAD();
         RUBY_DEBUG_LOG("us:%u", (unsigned int)limits_us);
 
         if (th->running_time_us >= limits_us) {
@@ -1513,8 +1513,9 @@ rb_thread_schedule_limits(uint32_t limits_us)
 void
 rb_thread_schedule(void)
 {
-    rb_thread_schedule_limits(0);
-    RUBY_VM_CHECK_INTS(GET_EC());
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_schedule_limits(rb_ec_thread_ptr(ec), 0);
+    RUBY_VM_CHECK_INTS(ec);
 }
 
 /* blocking region */
@@ -2701,22 +2702,24 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             rb_threadptr_to_kill(th);
         }
 
-        if (timer_interrupt) {
+        if (timer_interrupt && th->status == THREAD_RUNNABLE) {
             uint32_t limits_us = thread_default_quantum_ms * 1000;
+
+#if defined(USE_VM_CLOCK)
+            th->running_time_us += 10 * 1000; // 10ms
+#endif
 
             if (th->priority > 0)
                 limits_us <<= th->priority;
             else
                 limits_us >>= -th->priority;
 
-            if (th->status == THREAD_RUNNABLE)
-                th->running_time_us += 10 * 1000; // 10ms = 10_000us // TODO: use macro
-
             VM_ASSERT(th->ec->cfp);
+            // TODO: should this event fire even when the thread is "alone" and doesn't yield?
             EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
                             0, 0, 0, Qundef);
 
-            rb_thread_schedule_limits(limits_us);
+            rb_thread_schedule_limits(th, limits_us);
         }
     }
     return ret;

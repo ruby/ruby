@@ -611,11 +611,10 @@ kqueue_translate_filter_to_flags(int16_t filter)
 }
 
 static int
-kqueue_wait(rb_vm_t *vm)
+kqueue_wait(rb_vm_t *vm, int timeout_ms)
 {
     struct timespec calculated_timeout;
     struct timespec *timeout = NULL;
-    int timeout_ms = timer_thread_set_timeout(vm);
 
     if (timeout_ms >= 0) {
         calculated_timeout.tv_sec = timeout_ms / 1000;
@@ -897,12 +896,12 @@ timer_thread_setup_mn(void)
 }
 
 static int
-event_wait(rb_vm_t *vm)
+event_wait(rb_vm_t *vm, int timeout_ms)
 {
 #if HAVE_SYS_EVENT_H
-    int r = kqueue_wait(vm);
+    int r = kqueue_wait(vm, timeout_ms);
 #else
-    int r = epoll_wait(timer_th.event_fd, timer_th.finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm));
+    int r = epoll_wait(timer_th.event_fd, timer_th.finished_events, EPOLL_EVENTS_MAX, timeout_ms);
 #endif
     return r;
 }
@@ -924,7 +923,8 @@ event_wait(rb_vm_t *vm)
 static void
 timer_thread_polling(rb_vm_t *vm)
 {
-    int r = event_wait(vm);
+    int timeout_ms = timer_thread_set_timeout(vm);
+    int r = event_wait(vm, timeout_ms);
 
     RUBY_DEBUG_LOG("r:%d errno:%d", r, errno);
 
@@ -935,7 +935,7 @@ timer_thread_polling(rb_vm_t *vm)
         ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
-            timer_thread_check_timeslice(vm);
+            timer_thread_check_timeslice(vm, timeout_ms);
 
             // (1-4) lazy grq deq
             if (vm->ractor.sched.grq_cnt > 0) {
@@ -1067,21 +1067,21 @@ timer_thread_setup_mn(void)
 static void
 timer_thread_polling(rb_vm_t *vm)
 {
-    int timeout = timer_thread_set_timeout(vm);
+    int timeout_ms = timer_thread_set_timeout(vm);
 
     struct pollfd pfd = {
         .fd = timer_th.comm_fds[0],
         .events = POLLIN,
     };
 
-    int r = poll(&pfd, 1, timeout);
+    int r = poll(&pfd, 1, timeout_ms);
 
     switch (r) {
       case 0: // timeout
         ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
-            timer_thread_check_timeslice(vm);
+            timer_thread_check_timeslice(vm, timeout_ms);
         }
         ractor_sched_unlock(vm, NULL);
         break;
