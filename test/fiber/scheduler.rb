@@ -527,7 +527,11 @@ class SocketIOScheduler < Scheduler
     self.operations << [:socket_send, descriptor, dest, string, length, flags]
 
     Fiber.blocking do
-      sock.send(string, flags)
+      if dest
+        sock.send(string, flags, dest)
+      else
+        sock.send(string, flags)
+      end
     end
   end
 

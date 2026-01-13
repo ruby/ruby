@@ -441,4 +441,38 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1.close rescue nil
     s2.close rescue nil
   end
+
+  def test_socket_send_udp
+    s1 = UDPSocket.new
+    s2 = UDPSocket.new
+    port = SecureRandom.rand(60001..65535)
+    s2.bind('127.0.0.1', port)
+    dest = Addrinfo.new(s2.addr)
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0, dest)
+        s1.send('bar', 0, '127.0.0.1', port)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_send, s1.fileno, dest.to_s, 'foo', 0, 0],
+      [:socket_send, s1.fileno, dest.to_s, 'bar', 0, 0]
+    ], operations
+
+    assert_equal 'foo', s2.recv(6)
+    assert_equal 'bar', s2.recv(6)
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
 end
