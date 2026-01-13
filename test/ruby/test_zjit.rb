@@ -470,6 +470,74 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:getblockparamproxy]
   end
 
+  def test_optimized_method_call_proc_call
+    assert_compiles '2', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.call(1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_aref
+    assert_compiles '4', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p[2]
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_optimized_method_call_proc_yield
+    assert_compiles '6', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.yield(3)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_kw_splat
+    assert_compiles '3', %q{
+      p = proc { |**kw| kw[:a] + kw[:b] }
+      def test(p, h)
+        p.call(**h)
+      end
+      h = { a: 1, b: 2 }
+      test(p, h)
+      test(p, h)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_call_splat
+    assert_compiles '43', %q{
+      p = proc { |x| x + 1 }
+      def test(p)
+        ary = [42]
+        p.call(*ary)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
+  def test_optimized_method_call_proc_call_kwarg
+    assert_compiles '1', %q{
+      p = proc { |a:| a }
+      def test(p)
+        p.call(a: 1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
   def test_call_a_forwardable_method
     assert_runs '[]', %q{
       def test_root = forwardable
