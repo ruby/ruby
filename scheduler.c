@@ -1017,7 +1017,7 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
  *
  *  The +recvfrom+ argument specifies whether the method should return a tuple
  *  containing the number of bytes received and the source address.
- * 
+ *
  *  Suggested implementation should try to receive from +sock+ in a non-blocking
  *  manner and call #io_wait if the +sock+ is not ready (which will yield
  *  control to other fibers).
@@ -1165,7 +1165,7 @@ rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
  *  listening for connections.
  *
  *  The +client_sockaddr+ argument is an IO::Buffer to receive the client's
- *  +sockaddr+. 
+ *  +sockaddr+.
  *
  *  Suggested implementation should try to accept in a non-blocking manner and
  *  call #io_wait if the +sock+ is not ready (which will yield control to other

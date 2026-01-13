@@ -219,7 +219,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
                 else {
                     if (rb_fiber_scheduler_io_result_apply(ret) < 0)
                         rb_sys_fail("recvfrom(2)");
-                    
+
                     rb_str_set_len(str, NUM2LONG(ret));
                     return str;
                 }
@@ -756,7 +756,7 @@ VALUE rsock_s_accept_fiber_scheduler(VALUE klass, VALUE io, struct sockaddr *soc
         rb_sys_fail("accept(2)");
 
     rb_update_max_fd(NUM2UINT(peer));
-    
+
     if (!klass) return peer;
     return rsock_init_sock(rb_obj_alloc(klass), NUM2UINT(peer));
 }

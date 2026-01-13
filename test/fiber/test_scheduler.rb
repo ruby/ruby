@@ -476,7 +476,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1.send('foobar', 0)
     s1.shutdown(:WR)
     received = []
-    
+
     thread = Thread.new do
       scheduler = SocketIOScheduler.new
       Fiber.set_scheduler scheduler
@@ -504,11 +504,11 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1 = UDPSocket.new
     port_src = SecureRandom.rand(60001..65534)
     s1.bind('127.0.0.1', port_src)
-    
+
     s2 = UDPSocket.new
     port_dest = port_src + 1
     s2.bind('127.0.0.1', port_dest)
-    
+
     src = Addrinfo.new(s1.addr)
     dest = Addrinfo.new(s2.addr)
 
@@ -516,7 +516,7 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     s1.send('foobar', 0, dest)
     received = []
-    
+
     thread = Thread.new do
       scheduler = SocketIOScheduler.new
       Fiber.set_scheduler scheduler
@@ -547,7 +547,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1.send('foobar', 0)
     s1.shutdown(:WR)
     received = []
-    
+
     thread = Thread.new do
       scheduler = IOErrorScheduler.new
       Fiber.set_scheduler scheduler
@@ -570,7 +570,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1 = UDPSocket.new
     port = SecureRandom.rand(60001..65534)
     addr = Addrinfo.udp('127.0.0.1', port)
-    
+
     operations = nil
     result = nil
 
@@ -598,7 +598,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_socket_connect_error
     s1 = UDPSocket.new
     port = SecureRandom.rand(60001..65534)
-    
+
     error = nil
 
     thread = Thread.new do
