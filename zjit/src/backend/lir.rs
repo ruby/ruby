@@ -1717,7 +1717,29 @@ impl Assembler
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
+        // Index of this instruction
         let insn_idx = self.idx;
+
+        // Initialize the live range of the output VReg to insn_idx..=insn_idx
+        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
+            assert!(*idx < self.live_ranges.len());
+            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
+            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
+        }
+
+        // If we find any VReg from previous instructions, extend the live range to insn_idx
+        let opnd_iter = insn.opnd_iter();
+        for opnd in opnd_iter {
+            match *opnd {
+                Opnd::VReg { idx, .. } |
+                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
+                    assert!(idx < self.live_ranges.len());
+                    assert_ne!(self.live_ranges[idx].end, None);
+                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
+                }
+                _ => {}
+            }
+        }
 
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
@@ -1725,25 +1747,6 @@ impl Assembler
             for opnd in opnd_iter {
                 assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
             }
-        }
-
-        // Extend the live ranges of input VRegs to include this instruction
-        // (opnd_iter includes branch parameters from Target::Block)
-        for opnd in insn.opnd_iter() {
-            if let Opnd::VReg { idx, .. } = opnd {
-                if *idx < self.live_ranges.len() {
-                    if let Some(ref mut end) = self.live_ranges[*idx].end {
-                        *end = insn_idx;
-                    }
-                }
-            }
-        }
-
-        // Initialize the live range of the output VReg to insn_idx..=insn_idx
-        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(*idx < self.live_ranges.len());
-            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
-            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
         }
 
         // TODO: Add idx field to Insn to store instruction index
