@@ -413,35 +413,6 @@ class TestFiberScheduler < Test::Unit::TestCase
     s2.close rescue nil
   end
 
-  def test_socket_send_with_dest
-    s1, s2 = UNIXSocket.socketpair
-    operations = nil
-
-    thread = Thread.new do
-      scheduler = SocketIOScheduler.new
-      Fiber.set_scheduler scheduler
-
-      Fiber.schedule do
-        s1.send('foo', 0, "(dest1)")
-        s1.send('bar', 0, "(dest2)")
-      end
-
-      operations = scheduler.operations
-    end
-
-    thread.join
-    assert_equal [
-      [:socket_send, s1.fileno, "(dest1)", 'foo', 0, 0],
-      [:socket_send, s1.fileno, "(dest2)", 'bar', 0, 0]
-    ], operations
-
-    assert_equal 'foobar', s2.recv(6)
-  ensure
-    thread.kill rescue nil
-    s1.close rescue nil
-    s2.close rescue nil
-  end
-
   def test_socket_send_udp
     s1 = UDPSocket.new
     s2 = UDPSocket.new
@@ -475,4 +446,124 @@ class TestFiberScheduler < Test::Unit::TestCase
     s1.close rescue nil
     s2.close rescue nil
   end
+
+  def test_socket_send_error
+    s1, s2 = UNIXSocket.socketpair
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTCONN, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv
+    s1, s2 = UNIXSocket.socketpair
+    operations = nil
+
+    s1.send('foobar', 0)
+    s1.shutdown(:WR)
+    received = []
+    
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recv(9)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_recv, s2.fileno, 9, 0, false],
+    ], operations
+
+    assert_equal ['foobar'], received
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv_udp
+    s1 = UDPSocket.new
+    port_src = SecureRandom.rand(60001..65534)
+    s1.bind('127.0.0.1', port_src)
+    
+    s2 = UDPSocket.new
+    port_dest = port_src + 1
+    s2.bind('127.0.0.1', port_dest)
+    
+    src = Addrinfo.new(s1.addr)
+    dest = Addrinfo.new(s2.addr)
+
+    operations = nil
+
+    s1.send('foobar', 0, dest)
+    received = []
+    
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recvfrom(9)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_recv, s2.fileno, 9, 0, true],
+    ], operations
+
+    assert_equal [['foobar', ["AF_INET", port_src, "127.0.0.1", "127.0.0.1"]]], received
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv_error
+    s1, s2 = UNIXSocket.socketpair
+    error = nil
+
+    s1.send('foobar', 0)
+    s1.shutdown(:WR)
+    received = []
+    
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recv(9)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTSOCK, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
 end

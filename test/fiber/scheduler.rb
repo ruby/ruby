@@ -513,6 +513,14 @@ class IOErrorScheduler < Scheduler
   def io_write(io, buffer, length, offset)
     return -Errno::EINVAL::Errno
   end
+
+  def socket_send(sock, dest, buffer, length, flags)
+    return -Errno::ENOTCONN::Errno
+  end
+
+  def socket_recv(sock, buffer, length, flags, recvfrom)
+    return -Errno::ENOTSOCK::Errno
+  end
 end
 
 class SocketIOScheduler < Scheduler
@@ -535,15 +543,24 @@ class SocketIOScheduler < Scheduler
     end
   end
 
-  def socket_recv(sock, buffer, length, flags)
+  def socket_recv(sock, buffer, length, flags, recvfrom)
     descriptor = sock.fileno
     length = buffer.size if length == 0
 
-    self.operations << [:socket_recv, descriptor, length, flags]
+    self.operations << [:socket_recv, descriptor, length, flags, recvfrom]
 
     Fiber.blocking do
-      str = sock.recv(length, flags)
-      buffer.set_string(str)
+      str = nil
+      if recvfrom
+        str, addr = sock.recvfrom(length, flags)
+        buffer.set_string(str)
+        str.bytesize
+        [str.bytesize, addr]
+      else
+        str = sock.recv(length, flags)
+        buffer.set_string(str)
+        str.bytesize
+      end
     end
   end
 end
