@@ -39,6 +39,7 @@ static ID id_io_write, id_io_pwrite;
 static ID id_io_wait;
 static ID id_io_select;
 static ID id_io_close;
+static ID id_socket_send;
 
 static ID id_address_resolve;
 
@@ -346,6 +347,8 @@ Init_Fiber_Scheduler(void)
     id_fiber_interrupt = rb_intern_const("fiber_interrupt");
 
     id_fiber_schedule = rb_intern_const("fiber");
+
+    id_socket_send = rb_intern_const("socket_send");
 
     // Define an anonymous BlockingOperation class for internal use only
     // This is completely hidden from Ruby code and cannot be instantiated directly
@@ -978,6 +981,63 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
     }
 }
 
+/*
+ *  Document-method: Fiber::Scheduler#socket_send call-seq: socket_send(sock,
+ *  dest, buffer, length, flags) -> written length or -errno
+ *
+ *  Invoked by Socket#send to send +length+ bytes to +sock+ from from a
+ *  specified +buffer+ (see IO::Buffer) with the given +flags+.
+ *
+ *  The +dest+ argument is either nil, a packed sockaddr string or a Addrinfo
+ *  instance denoting the destination address for connection-less sockets. If
+ *  +dest+ is not nil, the method implementation should use the +sendto+ system
+ *  call or equivalent to specify the destination address to the OS.
+ *
+ *  The +length+ argument is the "minimum length to be sent". If the IO buffer
+ *  size is 8KiB, but the +length+ specified is 1024 (1KiB), at most 8KiB will
+ *  be sent, but at least 1KiB will be. Generally, the only case where less data
+ *  than +length+ will be sent is if there is an error sending the data.
+ *
+ *  Specifying a +length+ of 0 is valid and means try sending at least once, as
+ *  much data as possible.
+ *
+ *  Suggested implementation should try to send to +sock+ in a non-blocking
+ *  manner and call #io_wait if the +sock+ is not ready (which will yield
+ *  control to other fibers).
+ *
+ *  See IO::Buffer for an interface available to get data from buffer
+ *  efficiently.
+ *
+ *  Expected to return number of bytes sent, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_send(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_send, 5, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE buffer, size_t length, int flags)
+{
+    if (!rb_respond_to(scheduler, id_socket_send)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, sock, dest, buffer, SIZET2NUM(length), INT2NUM(flags)
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_send, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_send((VALUE)&arguments);
+    }
+}
+
 VALUE
 rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
 {
@@ -1020,6 +1080,18 @@ rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, co
     VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
 
     VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, buffer, length, 0);
+
+    rb_io_buffer_free_locked(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE dest, const void *base, size_t size, size_t length, int flags)
+{
+    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+
+    VALUE result = rb_fiber_scheduler_socket_send(scheduler, sock, dest, buffer, length, flags);
 
     rb_io_buffer_free_locked(buffer);
 
