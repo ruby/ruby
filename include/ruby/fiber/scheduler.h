@@ -529,6 +529,36 @@ VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VA
  */
 VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE dest, const void *base, size_t size, size_t length, int flags);
 
+/**
+ * Non-blocking recv from the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to recv from.
+ * @param[in]   buffer       The buffer to recv into.
+ * @param[in]   length       The minimum number of bytes to recv.
+ * @param[in]   flags        The flags to use for receiving.
+ * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
+ * @return      otherwise    What `scheduler.socket_recv` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, size_t length, int flags, int recvfrom);
+
+/**
+ * Non-blocking read from the passed Socket using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         An socket object to read from.
+ * @param[in]   base         The memory to read to.
+ * @param[in]   size         Size of the memory.
+ * @param[in]   length       The minimum number of bytes to read.
+ * @param[in]   flags        The flags to use for receiving.
+ * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
+ * @return      otherwise    What `scheduler.io_read` returns.
+ */
+VALUE rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE sock, void *base, size_t size, size_t length, int flags, int recvfrom);
+
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_FIBER_SCHEDULER_H */
