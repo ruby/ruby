@@ -1184,7 +1184,7 @@ fiber_scheduler_socket_accept(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, struct sockaddr *sockaddr, socklen_t *len)
+rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, socklen_t *len)
 {
     if (!rb_respond_to(scheduler, id_socket_accept)) {
         return RUBY_Qundef;
