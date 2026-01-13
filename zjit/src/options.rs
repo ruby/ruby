@@ -180,6 +180,8 @@ pub enum DumpLIR {
     alloc_regs,
     /// Dump LIR after compile_exits
     compile_exits,
+    /// Dump LIR after resolve_parallel_mov
+    resolve_parallel_mov,
     /// Dump LIR after {arch}_scratch_split
     scratch_split,
 }
@@ -190,6 +192,7 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::split,
     DumpLIR::alloc_regs,
     DumpLIR::compile_exits,
+    DumpLIR::resolve_parallel_mov,
     DumpLIR::scratch_split,
 ];
 
