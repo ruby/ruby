@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'securerandom'
 require 'fileutils'
+require 'socket'
 require_relative 'scheduler'
 
 class TestFiberScheduler < Test::Unit::TestCase
@@ -619,10 +620,12 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_socket_accept
+    server_port = SecureRandom.rand(60001..65534)
     server = Socket.new(:INET, :STREAM, 0)
+    server.bind(Addrinfo.tcp('127.0.0.1', server_port))
     server.listen(5)
 
-    client_port = SecureRandom.rand(60001..65535)
+    client_port = server_port + 1
     client = Socket.new(:INET, :STREAM, 0)
     client_addr = Addrinfo.tcp('127.0.0.1', client_port)
     client.bind(client_addr)
