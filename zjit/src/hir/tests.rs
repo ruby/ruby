@@ -14,6 +14,16 @@ mod snapshot_tests {
         format!("{}", FunctionPrinter::with_snapshot(&function))
     }
 
+    #[track_caller]
+    fn optimized_hir_string(method: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_proc_iseq(&format!("{}.method(:{})", "self", method)));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        format!("{}", FunctionPrinter::with_snapshot(&function))
+    }
+
     #[test]
     fn test_new_array_with_elements() {
         eval("def test(a, b) = [a, b]");
@@ -39,6 +49,114 @@ mod snapshot_tests {
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v18
+        ");
+    }
+
+    #[test]
+    fn test_send_direct_with_reordered_kwargs_has_snapshot() {
+        eval("
+            def foo(a:, b:, c:) = [a, b, c]
+            def test = foo(c: 3, a: 1, b: 2)
+            test
+            test
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          PatchPoint NoTracePoint
+          v11:Fixnum[3] = Const Value(3)
+          v13:Fixnum[1] = Const Value(1)
+          v15:Fixnum[2] = Const Value(2)
+          v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Object@0x1010)
+          v24:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
+          v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
+          v26:BasicObject = SendWithoutBlockDirect v24, :foo (0x1048), v13, v15, v11
+          v18:Any = Snapshot FrameState { pc: 0x1050, stack: [v26], locals: [] }
+          PatchPoint NoTracePoint
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_send_direct_with_kwargs_in_order_has_snapshot() {
+        eval("
+            def foo(a:, b:) = [a, b]
+            def test = foo(a: 1, b: 2)
+            test
+            test
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          PatchPoint NoTracePoint
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Object@0x1010)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
+          v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
+          v24:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
+          v16:Any = Snapshot FrameState { pc: 0x1050, stack: [v24], locals: [] }
+          PatchPoint NoTracePoint
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_send_direct_with_many_kwargs_no_reorder_snapshot() {
+        eval("
+            def foo(five, six, a:, b:, c:, d:, e:, f:) = [a, b, c, d, five, six, e, f]
+            def test = foo(5, 6, d: 4, c: 3, a: 1, b: 2, e: 7, f: 8)
+            test
+            test
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          PatchPoint NoTracePoint
+          v11:Fixnum[5] = Const Value(5)
+          v13:Fixnum[6] = Const Value(6)
+          v15:Fixnum[4] = Const Value(4)
+          v17:Fixnum[3] = Const Value(3)
+          v19:Fixnum[1] = Const Value(1)
+          v21:Fixnum[2] = Const Value(2)
+          v23:Fixnum[7] = Const Value(7)
+          v25:Fixnum[8] = Const Value(8)
+          v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
+          v27:BasicObject = SendWithoutBlock v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
+          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
+          PatchPoint NoTracePoint
+          CheckInterrupts
+          Return v27
         ");
     }
 }

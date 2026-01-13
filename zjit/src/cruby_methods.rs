@@ -219,9 +219,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
-    annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "empty?", inline_array_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
@@ -256,6 +255,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "<=", inline_integer_le);
     annotate!(rb_cInteger, "<<", inline_integer_lshift);
     annotate!(rb_cInteger, ">>", inline_integer_rshift);
+    annotate!(rb_cInteger, "[]", inline_integer_aref);
     annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
@@ -537,6 +537,30 @@ fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     None
 }
 
+fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::Array, state) {
+        let recv = fun.coerce_to(block, recv, types::Array, state);
+        let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+        let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::Array, state) {
+        let recv = fun.coerce_to(block, recv, types::Array, state);
+        let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+        let result_c = fun.push_insn(block, hir::Insn::IsBitEqual { left: length_cint, right: zero });
+        let result = fun.push_insn(block, hir::Insn::BoxBool { val: result_c });
+        return Some(result);
+    }
+    None
+}
+
 fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     if fun.likely_a(recv, types::Fixnum, state) {
@@ -654,6 +678,17 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     // TODO(max): If other_value > 63, rewrite to constant zero.
     if other_value < 0 || other_value > 63 { return None; }
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
+}
+
+fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[index] = args else { return None; };
+    if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+        let index = fun.coerce_to(block, index, types::Fixnum, state);
+        let result = fun.push_insn(block, hir::Insn::FixnumAref { recv, index });
+        return Some(result);
+    }
+    None
 }
 
 fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

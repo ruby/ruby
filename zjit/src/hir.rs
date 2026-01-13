@@ -6,6 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
+    backend::lir::C_ARG_OPNDS,
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
@@ -764,6 +765,7 @@ pub enum Insn {
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
+    FixnumAref { recv: InsnId, index: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -1027,6 +1029,7 @@ impl Insn {
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
             Insn::NewHash { elements, .. } => !elements.is_empty(),
+            Insn::ArrayLength { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -1048,6 +1051,7 @@ impl Insn {
             Insn::FixnumXor  { .. } => false,
             Insn::FixnumLShift { .. } => false,
             Insn::FixnumRShift { .. } => false,
+            Insn::FixnumAref { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
@@ -1252,6 +1256,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
+            Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1657,6 +1662,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
+    // asm.ccall() doesn't support 6+ args
+    if args.len() + 1 > C_ARG_OPNDS.len() { // +1 for self
+        function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
+        return false;
+    }
+
     // Because we exclude e.g. post parameters above, they are also excluded from the sum below.
     let lead_num = params.lead_num;
     let opt_num = params.opt_num;
@@ -1969,6 +1980,7 @@ impl Function {
             &BoxBool { val } => BoxBool { val: find!(val) },
             &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
             &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
+            &FixnumAref { recv, index } => FixnumAref { recv: find!(recv), index: find!(index) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -2182,6 +2194,7 @@ impl Function {
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { .. } => types::CInt64,
+            Insn::FixnumAref { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -2698,19 +2711,23 @@ impl Function {
                             }
 
                             let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let processed_args = if !kwarg.is_null() {
+                            let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => reordered,
+                                    Ok(reordered) => {
+                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                        (snapshot, reordered)
+                                    }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
                                 }
                             } else {
-                                args.clone()
+                                (state, args.clone())
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -2747,19 +2764,23 @@ impl Function {
                             }
 
                             let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                            let processed_args = if !kwarg.is_null() {
+                            let (send_state, processed_args) = if !kwarg.is_null() {
                                 match self.reorder_keyword_arguments(&args, kwarg, iseq) {
-                                    Ok(reordered) => reordered,
+                                    Ok(reordered) => {
+                                        let new_state = self.frame_state(state).with_reordered_args(&reordered);
+                                        let snapshot = self.push_insn(block, Insn::Snapshot { state: new_state });
+                                        (snapshot, reordered)
+                                    }
                                     Err(reason) => {
                                         self.set_dynamic_send_reason(insn_id, reason);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
                                 }
                             } else {
-                                args.clone()
+                                (state, args.clone())
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -4143,6 +4164,10 @@ impl Function {
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
+            &Insn::FixnumAref { recv, index } => {
+                worklist.push_back(recv);
+                worklist.push_back(index);
+            }
             &Insn::IsA { val, class } => {
                 worklist.push_back(val);
                 worklist.push_back(class);
@@ -4810,6 +4835,10 @@ impl Function {
             Insn::UnboxFixnum { val } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
             }
+            Insn::FixnumAref { recv, index } => {
+                self.assert_subtype(insn_id, recv, types::Fixnum)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
+            }
             Insn::FixnumAdd { left, right, .. }
             | Insn::FixnumSub { left, right, .. }
             | Insn::FixnumMult { left, right, .. }
@@ -5059,6 +5088,15 @@ impl FrameState {
     pub fn without_stack(&self) -> Self {
         let mut state = self.clone();
         state.stack.clear();
+        state
+    }
+
+    /// Return itself with send args reordered. Used when kwargs are reordered for callee.
+    fn with_reordered_args(&self, reordered_args: &[InsnId]) -> Self {
+        let mut state = self.clone();
+        let args_start = state.stack.len() - reordered_args.len();
+        state.stack.truncate(args_start);
+        state.stack.extend_from_slice(reordered_args);
         state
     }
 }
