@@ -621,14 +621,14 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_socket_accept
     server = Socket.new(:INET, :STREAM, 0)
     server.listen(5)
-    operations = nil
 
-    client_port = SecureRandom.rand(60001..65534)
+    client_port = SecureRandom.rand(60001..65535)
     client = Socket.new(:INET, :STREAM, 0)
     client_addr = Addrinfo.tcp('127.0.0.1', client_port)
     client.bind(client_addr)
     client.connect(server.connect_address)
 
+    operations = nil
     conn = nil
     addr = nil
 
@@ -656,4 +656,61 @@ class TestFiberScheduler < Test::Unit::TestCase
     conn&.close rescue nil
   end
 
+  def test_socket_accept_tcpserver
+    server_port = port = SecureRandom.rand(60001..65534)
+    server = TCPServer.new('127.0.0.1', server_port)
+
+    client_port = server_port + 1
+    client = Socket.new(:INET, :STREAM, 0)
+    client_addr = Addrinfo.tcp('127.0.0.1', client_port)
+    client.bind(client_addr)
+    client.connect(server.connect_address)
+
+    operations = nil
+    conn = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        conn = server.accept
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_accept, server.fileno, client_addr.to_s]
+    ], operations
+    assert_kind_of TCPSocket, conn
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+    conn&.close rescue nil
+  end
+
+  def test_socket_accept_error
+    server = Socket.new(:INET, :STREAM, 0)
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        server.accept
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTSOCK, error
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+  end
 end

@@ -587,7 +587,7 @@ class SocketIOScheduler < Scheduler
     descriptor = sock.fileno
 
     Fiber.blocking do
-      conn, addr = sock.accept
+      conn, addr = Socket.for_fd(sock.fileno).accept
       s = addr.to_s
       client_sockaddr.set_string(s)
       client_sockaddr.resize(s.bytesize)
