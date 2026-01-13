@@ -3798,18 +3798,22 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) => {
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
+                            u32::try_from(offset).is_ok() => {
+                        let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
-                                self.new_insn(Insn::Const { val: Const::CShape(recv_obj.shape_id_of()) })
+                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
+                                let val = unsafe { recv_ptr.byte_add(offset).read() };
+                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val.0 as u32)) })
                             }
                             _ => insn_id,
                         }
                     }
                     Insn::GuardBitEquals { val, expected, .. } => {
                         match self.find(val) {
-                            Insn::Const {val: const_val} if const_val == expected => {
+                            Insn::Const { val: const_val } if const_val == expected => {
                                 continue;
                             }
                             _ => insn_id
