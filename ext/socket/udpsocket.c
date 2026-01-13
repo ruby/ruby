@@ -153,6 +153,18 @@ udp_send_internal(VALUE v)
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        char *ptr = RSTRING_PTR(arg->sarg.mesg);
+        long len = RSTRING_LEN(arg->sarg.mesg);
+        VALUE dest = rb_str_new((char*)arg->res->ai->ai_addr, arg->res->ai->ai_addrlen);
+        VALUE ret = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, dest, ptr, len, 0, arg->sarg.flags);
+        RB_GC_GUARD(dest);
+        ssize_t result = rb_fiber_scheduler_io_result_apply(ret);
+        return SSIZET2NUM(result);
+    }
+
     for (res = arg->res->ai; res; res = res->ai_next) {
       retry:
         arg->sarg.fd = fptr->fd;
