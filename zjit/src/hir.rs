@@ -3777,6 +3777,23 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) => {
+                        let recv_type = self.type_of(recv);
+                        match recv_type.ruby_object() {
+                            Some(recv_obj) if recv_obj.is_frozen() => {
+                                self.new_insn(Insn::Const { val: Const::CShape(recv_obj.shape_id_of()) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::GuardBitEquals { val, expected, .. } => {
+                        match self.find(val) {
+                            Insn::Const {val: const_val} if const_val == expected => {
+                                continue;
+                            }
+                            _ => insn_id
+                        }
+                    }
                     Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
                         self.make_equal_to(insn_id, str);
                         // Don't bother re-inferring the type of str; we already know it.
