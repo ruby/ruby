@@ -566,4 +566,55 @@ class TestFiberScheduler < Test::Unit::TestCase
     s2.close rescue nil
   end
 
+  def test_socket_connect
+    s1 = UDPSocket.new
+    port = SecureRandom.rand(60001..65534)
+    addr = Addrinfo.udp('127.0.0.1', port)
+    
+    operations = nil
+    result = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        result = s1.connect('127.0.0.1', port)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_connect, s1.fileno, addr.to_s],
+    ], operations
+    assert_equal 0, result
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+  end
+
+  def test_socket_connect_error
+    s1 = UDPSocket.new
+    port = SecureRandom.rand(60001..65534)
+    
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.connect('127.0.0.1', port)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EBADF, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+  end
 end
