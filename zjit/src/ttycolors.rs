@@ -23,7 +23,7 @@ pub static NON_TTY_TERMINAL_COLOR: TerminalColor = TerminalColor {
 
 /// Terminal escape codes for colors, font weight, etc. Only enabled if stdout is a TTY.
 pub fn get_colors() -> &'static TerminalColor {
-    if crate::utils::stdout_supports_colors() {
+    if stdout_supports_colors() {
         &TTY_TERMINAL_COLOR
     } else {
         &NON_TTY_TERMINAL_COLOR

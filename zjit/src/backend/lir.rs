@@ -1903,7 +1903,7 @@ impl Assembler
 
 /// Return a result of fmt::Display for Assembler without escape sequence
 pub fn lir_string(asm: &Assembler) -> String {
-    use crate::utils::TTY_TERMINAL_COLOR;
+    use crate::ttycolors::TTY_TERMINAL_COLOR;
     format!("{asm}").replace(TTY_TERMINAL_COLOR.bold_begin, "").replace(TTY_TERMINAL_COLOR.bold_end, "")
 }
 
@@ -1911,7 +1911,7 @@ impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
         let mut label_counts: HashMap<&String, usize> = HashMap::new();
-        let colors = crate::utils::get_colors();
+        let colors = crate::ttycolors::get_colors();
         let bold_begin = colors.bold_begin;
         let bold_end = colors.bold_end;
         for label_name in self.label_names.iter() {
@@ -2507,7 +2507,7 @@ impl AssemblerPanicHook {
 
     /// Dump Assembler, highlighting the insn_idx line
     fn dump_asm(asm: &Assembler, insn_idx: usize) {
-        let colors = crate::utils::get_colors();
+        let colors = crate::ttycolors::get_colors();
         let bold_begin = colors.bold_begin;
         let bold_end = colors.bold_end;
         let lir_string = lir_string(asm);

@@ -33,7 +33,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
-    let colors = crate::utils::get_colors();
+    let colors = crate::ttycolors::get_colors();
     let bold_begin = colors.bold_begin;
     let bold_end = colors.bold_end;
 
