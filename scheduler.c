@@ -30,6 +30,8 @@ static ID id_unblock;
 
 static ID id_yield;
 
+static ID id_size;
+
 static ID id_timeout_after;
 static ID id_kernel_sleep;
 static ID id_process_wait;
@@ -43,6 +45,7 @@ static ID id_io_close;
 static ID id_socket_recv;
 static ID id_socket_send;
 static ID id_socket_connect;
+static ID id_socket_accept;
 
 static ID id_address_resolve;
 
@@ -298,6 +301,7 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  Hook methods are:
  *
  *  * #io_wait, #io_read, #io_write, #io_pread, #io_pwrite #io_select, and #io_close
+ *  * #socket_recv, #socket_send, #socket_connect, #socket_accept
  *  * #process_wait
  *  * #kernel_sleep
  *  * #timeout_after
@@ -330,6 +334,7 @@ Init_Fiber_Scheduler(void)
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
     id_yield = rb_intern_const("yield");
+    id_size = rb_intern_const("size");
 
     id_timeout_after = rb_intern_const("timeout_after");
     id_kernel_sleep = rb_intern_const("kernel_sleep");
@@ -354,6 +359,7 @@ Init_Fiber_Scheduler(void)
     id_socket_recv = rb_intern_const("socket_recv");
     id_socket_send = rb_intern_const("socket_send");
     id_socket_connect = rb_intern_const("socket_connect");
+    id_socket_accept = rb_intern_const("socket_accept");
 
     // Define an anonymous BlockingOperation class for internal use only
     // This is completely hidden from Ruby code and cannot be instantiated directly
@@ -387,6 +393,7 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 5);
     rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 5);
     rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
+    rb_define_method(rb_cFiberScheduler, "socket_accept", rb_fiber_scheduler_socket_accept, 2);
 #endif
 }
 
@@ -1109,7 +1116,7 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE bu
 
 /*
  *  Document-method: Fiber::Scheduler#socket_connect
- *  call-seq: socket_send(sock, addr) -> 0 or -errno
+ *  call-seq: socket_connect(sock, addr) -> 0 or -errno
  *
  *  Invoked by Socket#connect to connect the given +sock+ to the given address.
  *
@@ -1148,6 +1155,56 @@ rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
     } else {
         return fiber_scheduler_socket_connect((VALUE)&arguments);
     }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_accept
+ *  call-seq: socket_accept(sock, client_sockaddr) -> fd or -errno
+ *
+ *  Invoked by Socket#accept to accept an incoming connection on a socket
+ *  listening for connections.
+ *
+ *  The +client_sockaddr+ argument is an IO::Buffer to receive the client's
+ *  +sockaddr+. 
+ *
+ *  Suggested implementation should try to accept in a non-blocking manner and
+ *  call #io_wait if the +sock+ is not ready (which will yield control to other
+ *  fibers).
+ *
+ *  Expected to return the accepted fd if successful, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_accept(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_accept, 2, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, struct sockaddr *sockaddr, socklen_t *len)
+{
+    if (!rb_respond_to(scheduler, id_socket_accept)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *len, 0);
+
+    VALUE arguments[] = {
+        scheduler, sock, client_sockaddr
+    };
+
+    VALUE peer_fd;
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        peer_fd = rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_accept, (VALUE)&arguments);
+    } else {
+        peer_fd = fiber_scheduler_socket_accept((VALUE)&arguments);
+    }
+    *len = NUM2INT(rb_funcall(client_sockaddr, id_size, 0));
+    rb_io_buffer_free(client_sockaddr);
+    return peer_fd;
 }
 
 VALUE

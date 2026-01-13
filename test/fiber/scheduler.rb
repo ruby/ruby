@@ -525,6 +525,10 @@ class IOErrorScheduler < Scheduler
   def socket_connect(sock, addr)
     return -Errno::EBADF::Errno
   end
+
+  def socket_accept(sock, client_sockaddr)
+    return -Errno::ENOTSOCK::Errno
+  end
 end
 
 class SocketIOScheduler < Scheduler
@@ -576,6 +580,19 @@ class SocketIOScheduler < Scheduler
 
     Fiber.blocking do
       sock.connect(addr2.ip_address, addr2.ip_port)
+    end
+  end
+
+  def socket_accept(sock, client_sockaddr)
+    descriptor = sock.fileno
+
+    Fiber.blocking do
+      conn, addr = sock.accept
+      s = addr.to_s
+      client_sockaddr.set_string(s)
+      client_sockaddr.resize(s.bytesize)
+      self.operations << [:socket_accept, descriptor, addr.to_s]
+      conn.fileno
     end
   end
 end

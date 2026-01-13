@@ -168,8 +168,6 @@ rsock_is_dgram(rb_io_t *fptr)
     return socktype == SOCK_DGRAM;
 }
 
-#define INSPECT(str, obj) { printf(str); VALUE s = rb_funcall(obj, rb_intern("inspect"), 0); printf(": %s\n", StringValueCStr(s)); }
-
 VALUE
 rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 {
@@ -746,6 +744,23 @@ accept_blocking(void *data)
     return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
 }
 
+VALUE rsock_s_accept_fiber_scheduler(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler == Qnil) return Qundef;
+
+    VALUE peer = rb_fiber_scheduler_socket_accept(scheduler, io, sockaddr, len);
+    if (UNDEF_P(peer)) return Qundef;
+
+    if (rb_fiber_scheduler_io_result_apply(peer) < 0)
+        rb_sys_fail("accept(2)");
+
+    rb_update_max_fd(NUM2UINT(peer));
+    
+    if (!klass) return peer;
+    return rsock_init_sock(rb_obj_alloc(klass), NUM2UINT(peer));
+}
+
 VALUE
 rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 {
@@ -759,6 +774,10 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
     };
 
     int retry = 0, peer;
+
+    VALUE ret = rsock_s_accept_fiber_scheduler(klass,  io, sockaddr, len);
+    if (!UNDEF_P(ret))
+        return ret;
 
   retry:
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING

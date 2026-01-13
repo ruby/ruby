@@ -10,7 +10,7 @@
  * @brief      Scheduler APIs.
  */
 #include "ruby/internal/config.h"
-
+#include <sys/socket.h>
 #include <errno.h>
 
 #ifdef STDC_HEADERS
@@ -568,6 +568,18 @@ VALUE rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE sock, void *b
  * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
  */
 VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr);
+
+/**
+ * Non-blocking accept connection from the passed Socket.
+ *
+ * @param[in]   scheduler       Target scheduler.
+ * @param[in]   sock            An socket object to read from.
+ * @param[in]   sockaddr        Pointer to sockaddr for peer address
+ * @param[in]   sockaddr_len    Pointer to sockaddr length
+ * @retval      RUBY_Qundef     `scheduler` doesn't have `#socket_accept`.
+ * @return      otherwise       What `scheduler.socket_accept` returns `[-errno, fd]`.
+ */
+VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, struct sockaddr *sockaddr, socklen_t *len);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
