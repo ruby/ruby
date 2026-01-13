@@ -6872,12 +6872,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_ZOMBIE:
         return FALSE;
       case T_SYMBOL:
-        // TODO: restore original behavior
-        // if (RSYMBOL(obj)->id & ~ID_SCOPE_MASK) {
-        //     return FALSE;
-        // }
-        return false;
-        /* fall through */
       case T_STRING:
       case T_OBJECT:
       case T_FLOAT:
