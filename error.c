@@ -1383,14 +1383,14 @@ rb_unexpected_type(VALUE x, int t)
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    return rb_typeddata_inherited_p_inline(child, parent);
+    return rbimpl_typeddata_inherited_p_inline(child, parent);
 }
 
 #undef rb_typeddata_is_kind_of
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    return rb_typeddata_is_kind_of_inline(obj, data_type);
+    return rbimpl_typeddata_is_kind_of_inline(obj, data_type);
 }
 
 #undef rb_typeddata_is_instance_of
