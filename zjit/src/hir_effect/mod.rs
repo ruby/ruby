@@ -345,7 +345,7 @@ mod tests {
     }
 
     #[test]
-    fn effect_union_works() {
+    fn effect_union_is_idempotent() {
         assert_bit_equal(
             Effect::read(abstract_heaps::Any)
                 .union(Effect::write(abstract_heaps::Any)),
@@ -355,6 +355,10 @@ mod tests {
             effects::Empty.union(effects::Empty),
             effects::Empty
         );
+    }
+
+    #[test]
+    fn effect_union_contains_and_excludes() {
         assert_subeffect(
             effects::Control.union(effects::Frame),
             effects::Any
