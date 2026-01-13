@@ -59,32 +59,6 @@ stack = frame.subeffect 'Stack'
 # If it becomes an issue, this can be generated but for now we do it manually
 $int_label = 'u8'
 
-# Define a new effect that can be subclassed (most of them).
-# If c_name is given, mark the rb_cXYZ object as equivalent to this exact effect.
-def base_effect name, c_name: nil
-  effect = $object.subeffect name
-  exact = effect.subeffect(name+'Exact')
-  subclass = effect.subeffect(name+'Subclass')
-  if c_name
-    $exact_c_names[exact.name] = c_name
-    $inexact_c_names[subclass.name] = c_name
-  end
-  $builtin_exact << exact.name
-  $subclass << subclass.name
-  [effect, exact]
-end
-
-# Define a new effect that cannot be subclassed.
-# If c_name is given, mark the rb_cXYZ object as equivalent to this effect.
-def final_effect name, base: $object, c_name: nil
-  if c_name
-    $exact_c_names[name] = c_name
-  end
-  effect = base.subeffect name
-  $builtin_exact << effect.name
-  effect
-end
-
 # Assign individual bits to effect leaves and union bit patterns to nodes with subeffects
 num_bits = 0
 $bits = {"Empty" => ["0#{$int_label}"]}
@@ -141,10 +115,10 @@ puts "pub mod effect_types {"
 puts "  pub type EffectBits = #{$int_label};"
 puts "}"
 
-puts "pub mod effect_sets {
+puts "pub mod abstract_heaps {
   use super::*;"
 $bits.keys.sort.map {|effect_name|
-    puts "  pub const #{effect_name}: EffectSet = EffectSet::from_bits(bits::#{effect_name});"
+    puts "  pub const #{effect_name}: AbstractHeap = AbstractHeap::from_bits(bits::#{effect_name});"
 }
 puts "}"
 
@@ -152,13 +126,13 @@ puts "}"
 puts "pub mod effects {
   use super::*;"
 $bits.keys.sort.map {|effect_name|
-    puts "  pub const #{effect_name}: Effect = Effect::from_set(effect_sets::#{effect_name});"
+    puts "  pub const #{effect_name}: Effect = Effect::promote(abstract_heaps::#{effect_name});"
 }
 puts "}"
 
 # puts "pub mod effects {
 #   use super::*;"
 # $bits.keys.sort.map {|effect_name|
-#     puts "  pub const #{effect_name}: EffectSet = EffectSet::from_bits(bits::#{effect_name});"
+#     puts "  pub const #{effect_name}: AbstractHeap = AbstractHeap::from_bits(bits::#{effect_name});"
 # }
 # puts "}"

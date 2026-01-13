@@ -27,29 +27,29 @@ mod bits {
 pub mod effect_types {
   pub type EffectBits = u8;
 }
-pub mod effect_sets {
+pub mod abstract_heaps {
   use super::*;
-  pub const Allocator: EffectSet = EffectSet::from_bits(bits::Allocator);
-  pub const Any: EffectSet = EffectSet::from_bits(bits::Any);
-  pub const Control: EffectSet = EffectSet::from_bits(bits::Control);
-  pub const Empty: EffectSet = EffectSet::from_bits(bits::Empty);
-  pub const Frame: EffectSet = EffectSet::from_bits(bits::Frame);
-  pub const Locals: EffectSet = EffectSet::from_bits(bits::Locals);
-  pub const Memory: EffectSet = EffectSet::from_bits(bits::Memory);
-  pub const Other: EffectSet = EffectSet::from_bits(bits::Other);
-  pub const PC: EffectSet = EffectSet::from_bits(bits::PC);
-  pub const Stack: EffectSet = EffectSet::from_bits(bits::Stack);
+  pub const Allocator: AbstractHeap = AbstractHeap::from_bits(bits::Allocator);
+  pub const Any: AbstractHeap = AbstractHeap::from_bits(bits::Any);
+  pub const Control: AbstractHeap = AbstractHeap::from_bits(bits::Control);
+  pub const Empty: AbstractHeap = AbstractHeap::from_bits(bits::Empty);
+  pub const Frame: AbstractHeap = AbstractHeap::from_bits(bits::Frame);
+  pub const Locals: AbstractHeap = AbstractHeap::from_bits(bits::Locals);
+  pub const Memory: AbstractHeap = AbstractHeap::from_bits(bits::Memory);
+  pub const Other: AbstractHeap = AbstractHeap::from_bits(bits::Other);
+  pub const PC: AbstractHeap = AbstractHeap::from_bits(bits::PC);
+  pub const Stack: AbstractHeap = AbstractHeap::from_bits(bits::Stack);
 }
 pub mod effects {
   use super::*;
-  pub const Allocator: Effect = Effect::from_set(effect_sets::Allocator);
-  pub const Any: Effect = Effect::from_set(effect_sets::Any);
-  pub const Control: Effect = Effect::from_set(effect_sets::Control);
-  pub const Empty: Effect = Effect::from_set(effect_sets::Empty);
-  pub const Frame: Effect = Effect::from_set(effect_sets::Frame);
-  pub const Locals: Effect = Effect::from_set(effect_sets::Locals);
-  pub const Memory: Effect = Effect::from_set(effect_sets::Memory);
-  pub const Other: Effect = Effect::from_set(effect_sets::Other);
-  pub const PC: Effect = Effect::from_set(effect_sets::PC);
-  pub const Stack: Effect = Effect::from_set(effect_sets::Stack);
+  pub const Allocator: Effect = Effect::promote(abstract_heaps::Allocator);
+  pub const Any: Effect = Effect::promote(abstract_heaps::Any);
+  pub const Control: Effect = Effect::promote(abstract_heaps::Control);
+  pub const Empty: Effect = Effect::promote(abstract_heaps::Empty);
+  pub const Frame: Effect = Effect::promote(abstract_heaps::Frame);
+  pub const Locals: Effect = Effect::promote(abstract_heaps::Locals);
+  pub const Memory: Effect = Effect::promote(abstract_heaps::Memory);
+  pub const Other: Effect = Effect::promote(abstract_heaps::Other);
+  pub const PC: Effect = Effect::promote(abstract_heaps::PC);
+  pub const Stack: Effect = Effect::promote(abstract_heaps::Stack);
 }

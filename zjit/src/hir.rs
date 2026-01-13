@@ -13,7 +13,7 @@ use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
-use crate::hir_effect::{Effect, effect_sets, effects};
+use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
@@ -1057,20 +1057,19 @@ impl Insn {
     // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
     // TODO(Jacob): Add sideeffect failure bit
     fn effects_of(&self) -> Effect {
-        const allocates: Effect = Effect::from_sets(effect_sets::PC.union(effect_sets::Allocator), effect_sets::Allocator);
+        const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
         match &self {
             Insn::Const { .. } => effects::Empty,
-            // TODO(Jacob): I'm not sure about this one
             Insn::Param => effects::Empty,
             Insn::StringCopy { .. } => allocates,
             Insn::NewArray { .. } => allocates,
             // TODO(Jacob): Can we further constrain the read effects from Any?
-            Insn::ArrayLength { .. } => Effect::from_write(effect_sets::Empty),
+            Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::NewHash { elements, .. } => {
                 // NewHash's operands may be hashed and compared for equality, which could have
                 // side-effects. Empty hashes are definitely elidable.
                 if elements.is_empty() {
-                    Effect::from_write(effect_sets::Allocator)
+                    Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
@@ -1094,15 +1093,15 @@ impl Insn {
             Insn::FixnumXor  { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
-            Insn::GetLocal   { .. } => Effect::from_sets(effect_sets::Locals, effect_sets::Empty),
+            Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
             Insn::IsNil      { .. } => effects::Empty,
-            Insn::LoadPC => Effect::from_sets(effect_sets::PC, effect_sets::Empty),
+            Insn::LoadPC => Effect::read_write(abstract_heaps::PC, abstract_heaps::Empty),
             Insn::LoadEC => effects::Empty,
-            Insn::LoadSelf => effects::Empty,
-            Insn::LoadField { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            Insn::LoadSelf => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
+            Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
             Insn::CCall { elidable, .. } => {
                 if *elidable {
-                    Effect::from_write(effect_sets::Allocator)
+                    Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
@@ -1110,7 +1109,7 @@ impl Insn {
             },
              Insn::CCallWithFrame { elidable, .. } => {
                 if *elidable {
-                    Effect::from_write(effect_sets::Allocator)
+                    Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
@@ -1119,18 +1118,16 @@ impl Insn {
             Insn::ObjectAllocClass { .. } => allocates,
             Insn::NewRangeFixnum { .. } => allocates,
             // TODO(Jacob): Double check this one
-            Insn::StringGetbyte { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
             // TODO(Jacob): This reads EP (LEP?) and read effects can likely be bounded better
-            Insn::IsBlockGiven => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
-            // TODO(Jacob): See if we can ratchet down the read of this
-            Insn::BoxFixnum { .. } => Effect::from_sets(effect_sets::Other, effect_sets::Empty),
+            Insn::IsBlockGiven => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::BoxFixnum { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
             Insn::IsBitEqual { .. } => effects::Empty,
             // TODO(Jacob): Maybe this gets a stronger read effect?
             Insn::FixnumAref { .. } => effects::Empty,
-            // TODO(Jacob): This is a CCall but feels like we can restrict a lot more. Perhaps even effects::Empty?
-            Insn::IsA { .. } => allocates,
-            _ => Effect::from_sets(effect_sets::Any, effect_sets::Any),
+            Insn::IsA { .. } => effects::Empty,
+            _ => Effect::read_write(abstract_heaps::Any, abstract_heaps::Any),
         }
     }
 
@@ -1147,7 +1144,7 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
-        effect_sets::Allocator.includes(self.effects_of().write())
+        abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
 
