@@ -84,7 +84,7 @@ class Scheduler
         @writable.delete(io) if @writable[io] == fiber
         selected[fiber] = IO::READABLE
       elsif io == @urgent.first
-        @urgent.first.read_nonblock(1024)
+        @urgent.first.read_nonblock(1024) rescue nil
       end
     end
 
