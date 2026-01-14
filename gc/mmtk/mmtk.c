@@ -348,9 +348,8 @@ rb_mmtk_vm_live_bytes(void)
 static void
 make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 {
-    RUBY_ASSERT(RB_FL_TEST(obj, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)table));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
+    MMTK_ASSERT(RB_FL_TEST(obj, RUBY_FL_FINALIZE));
+    MMTK_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
 
     RB_FL_UNSET(obj, RUBY_FL_FINALIZE);
 
@@ -365,9 +364,9 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 static int
 rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
 {
-    RUBY_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
+    MMTK_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
+    MMTK_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
+    MMTK_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
 
     struct objspace *objspace = (struct objspace *)data;
 
@@ -445,7 +444,7 @@ rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
 static void
 rb_mmtk_update_global_tables(int table)
 {
-    RUBY_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
+    MMTK_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
 
     // TODO: set weak_only to true for non-moving GC
     rb_gc_vm_weak_table_foreach(
@@ -606,7 +605,7 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
 
     ccan_list_del(&cache->list_node);
 
-    RUBY_ASSERT(objspace->live_ractor_cache_count > 1);
+    MMTK_ASSERT(objspace->live_ractor_cache_count > 1);
     objspace->live_ractor_cache_count--;
 
     mmtk_destroy_mutator(cache->mutator);
@@ -1502,7 +1501,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     size_t n = 0;
 
 #define SET_ENTRY(na, v) do { \
-    RUBY_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    MMTK_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
     object_metadata_entries[n].name = ID_##na; \
     object_metadata_entries[n].val = v; \
     n++; \
