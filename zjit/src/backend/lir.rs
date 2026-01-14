@@ -2116,10 +2116,13 @@ impl Assembler
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
 
-        for (block_id, block) in self.basic_blocks.iter().enumerate() {
+        let mut sorted_blocks: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
+        sorted_blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
+
+        for block in sorted_blocks.iter() {
             for (idx, insn) in block.insns.iter().enumerate() {
                 if let Some(target @ Target::SideExit { .. }) = insn.target() {
-                    targets.insert((block_id, idx), target.clone());
+                    targets.insert((block.id.0, idx), target.clone());
                 }
             }
         }
