@@ -1031,14 +1031,14 @@ mod tests {
         assert!(shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
         assert!(!shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x5678))));
 
-        let ptr: *const u8 = 0x1000 as *const u8;
+        let ptr = 0x1000 as *const u8;
         let ptr_ty = Type::from_cptr(ptr);
         assert!(ptr_ty.has_value(Const::CPtr(ptr)));
         assert!(!ptr_ty.has_value(Const::CPtr(0x2000 as *const u8)));
 
-        let double_ty = Type::from_double(3.14159);
-        assert!(double_ty.has_value(Const::CDouble(3.14159)));
-        assert!(!double_ty.has_value(Const::CDouble(2.71828)));
+        let double_ty = Type::from_double(std::f64::consts::PI);
+        assert!(double_ty.has_value(Const::CDouble(std::f64::consts::PI)));
+        assert!(!double_ty.has_value(Const::CDouble(3.123)));
 
         let nan_ty = Type::from_double(f64::NAN);
         assert!(nan_ty.has_value(Const::CDouble(f64::NAN)));
