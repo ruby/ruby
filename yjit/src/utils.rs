@@ -160,8 +160,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
         }
     }
 
-    asm.cpush_all();
-
     let argument = match opnd {
         Opnd::Mem(_) | Opnd::Reg(_) | Opnd::InsnOut { .. } => {
             // Sign-extend the value if necessary
@@ -176,7 +174,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
     };
 
     asm.ccall(print_int_fn as *const u8, vec![argument]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a pointer
@@ -189,9 +186,7 @@ pub fn print_ptr(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(opnd.rm_num_bits() == 64);
 
-    asm.cpush_all();
     asm.ccall(print_ptr_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a value
@@ -204,9 +199,7 @@ pub fn print_value(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(matches!(opnd, Opnd::Value(_)));
 
-    asm.cpush_all();
     asm.ccall(print_value_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print constant string to stdout
@@ -221,7 +214,6 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
         }
     }
 
-    asm.cpush_all();
 
     let string_data = asm.new_label("string_data");
     let after_string = asm.new_label("after_string");
@@ -233,8 +225,6 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
 
     let opnd = asm.lea_jump_target(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
-
-    asm.cpop_all();
 }
 
 pub fn stdout_supports_colors() -> bool {
