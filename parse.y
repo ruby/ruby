@@ -3218,9 +3218,9 @@ begin_block	: block_open compstmt(top_stmts) '}'
                     {
                         restore_block_exit(p, $block_open);
                         p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-                                                          NEW_BEGIN($2, &@$));
+                                                          NEW_BEGIN($compstmt, &@$));
                         $$ = NEW_BEGIN(0, &@$);
-                    /*% ripper: BEGIN!($:2) %*/
+                    /*% ripper: BEGIN!($:compstmt) %*/
                     }
                 ;
 
@@ -3286,6 +3286,9 @@ allow_exits	: {$$ = allow_block_exit(p);};
 
 k_END		: keyword_END lex_ctxt
                     {
+                        if (p->ctxt.in_def) {
+                            rb_warn0("END in method; use at_exit");
+                        }
                         $$ = $2;
                         p->ctxt.in_rescue = before_rescue;
                     /*% ripper: $:2 %*/
@@ -3368,16 +3371,14 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         $$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-                | k_END allow_exits '{' compstmt(stmts) '}'
+                | k_END block_open compstmt(stmts) '}'[block_close]
                     {
-                        if (p->ctxt.in_def) {
-                            rb_warn0("END in method; use at_exit");
-                        }
-                        restore_block_exit(p, $allow_exits);
+                        clear_block_exit(p, true);
+                        restore_block_exit(p, $block_open);
                         p->ctxt = $k_END;
                         {
                             NODE *scope = NEW_SCOPE2(0 /* tbl */, 0 /* args */, $compstmt /* body */, NULL /* parent */, &@$);
-                            $$ = NEW_POSTEXE(scope, &@$, &@1, &@3, &@5);
+                            $$ = NEW_POSTEXE(scope, &@$, &@k_END, &@block_open, &@block_close);
                             RNODE_SCOPE(scope)->nd_parent = $$;
                         }
                     /*% ripper: END!($:compstmt) %*/
