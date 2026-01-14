@@ -53,18 +53,22 @@ pub struct BasicBlock {
 
     // Input parameters for this block
     pub parameters: Vec<Opnd>,
+
+    // RPO position of the source HIR block
+    pub rpo_index: usize,
 }
 
 pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
 
 impl BasicBlock {
-    fn new(id: BlockId, hir_block_id: hir::BlockId, entry: bool) -> Self {
+    fn new(id: BlockId, hir_block_id: hir::BlockId, entry: bool, rpo_index: usize) -> Self {
         Self {
             id,
             hir_block_id,
             entry,
             insns: vec![],
             parameters: vec![],
+            rpo_index,
         }
     }
 
@@ -1555,11 +1559,11 @@ impl Assembler
     }
 
     // Create a new LIR basic block.  Returns the newly created block
-    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool, set_current: bool) -> BlockId {
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool, rpo_index: usize) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let lir_bb = BasicBlock::new(bb_id, hir_block_id, entry);
+        let lir_bb = BasicBlock::new(bb_id, hir_block_id, entry, rpo_index);
         self.basic_blocks.push(lir_bb);
-        if set_current {
+        if entry {
             self.set_current_block(bb_id);
         }
         bb_id
@@ -1570,7 +1574,7 @@ impl Assembler
     // one assembler to a new one.
     pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry);
+        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry, old_block.rpo_index);
         self.basic_blocks.push(lir_bb);
         bb_id
     }
@@ -1593,7 +1597,9 @@ impl Assembler
     }
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
-        let blocks = take(&mut self.basic_blocks);
+        let mut blocks = take(&mut self.basic_blocks);
+        blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
+
         let mut iter = InsnIter {
             blocks,
             current_block_idx: 0,
@@ -1640,7 +1646,12 @@ impl Assembler
     pub fn linearize_instructions(&self) -> Vec<Insn> {
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
-        for block in &self.basic_blocks {
+
+        // Sort basic blocks by RPO index first, then by LIR block id
+        let mut sorted_blocks: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
+        sorted_blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
+
+        for block in sorted_blocks {
             // Process each instruction, expanding branch params if needed
             for insn in &block.insns {
                 self.expand_branch_insn(insn, &mut insns);

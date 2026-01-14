@@ -76,12 +76,12 @@ impl JITState {
     }
 
     /// Find or create a label for a given BlockId
-    fn get_label(&mut self, asm: &mut Assembler, block_id: lir::BlockId) -> Target {
-        match &self.labels[block_id.0] {
+    fn get_label(&mut self, asm: &mut Assembler, lir_block_id: lir::BlockId, hir_block_id: BlockId) -> Target {
+        match &self.labels[lir_block_id.0] {
             Some(label) => label.clone(),
             None => {
-                let label = asm.new_label(&format!("{block_id}"));
-                self.labels[block_id.0] = Some(label.clone());
+                let label = asm.new_label(&format!("{hir_block_id}+{}", lir_block_id.0));
+                self.labels[lir_block_id.0] = Some(label.clone());
                 label
             }
         }
@@ -177,7 +177,7 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
 pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    asm.new_block(BlockId(usize::MAX), true, true);
+    asm.new_block(BlockId(usize::MAX), true, usize::MAX);
     gen_entry_prologue(&mut asm);
 
     // Jump to the first block using a call instruction. This trampoline is used
@@ -272,20 +272,20 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     let reverse_post_order = function.rpo();
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
-    for &block_id in reverse_post_order.iter() {
-        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), false);
+    for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
         hir_to_lir.insert(block_id, lir_block_id);
     }
 
     // Compile each basic block
-    for &block_id in reverse_post_order.iter() {
+    for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
         let lir_block_id = hir_to_lir[&block_id];
         asm.set_current_block(lir_block_id);
 
         // Write a label to jump to the basic block
-        let label = jit.get_label(&mut asm, lir_block_id);
+        let label = jit.get_label(&mut asm, lir_block_id, block_id);
         asm.write_label(label);
 
         let block = function.block(block_id);
@@ -314,7 +314,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                     let lir_target = hir_to_lir[&target.target];
 
-                    let fall_through_target = asm.new_block(block_id, false, false);
+                    let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
                     let branch_edge = lir::BranchEdge {
                         target: lir_target,
@@ -329,7 +329,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     gen_if_false(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
                     asm.set_current_block(fall_through_target);
 
-                    let label = jit.get_label(&mut asm, fall_through_target);
+                    let label = jit.get_label(&mut asm, fall_through_target, block_id);
                     asm.write_label(label);
                 },
                 Insn::IfTrue { val, target } => {
@@ -337,7 +337,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                     let lir_target = hir_to_lir[&target.target];
 
-                    let fall_through_target = asm.new_block(block_id, false, false);
+                    let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
                     let branch_edge = lir::BranchEdge {
                         target: lir_target,
@@ -352,7 +352,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     gen_if_true(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
                     asm.set_current_block(fall_through_target);
 
-                    let label = jit.get_label(&mut asm, fall_through_target);
+                    let label = jit.get_label(&mut asm, fall_through_target, block_id);
                     asm.write_label(label);
                 }
                 Insn::Jump(target) => {
@@ -2644,7 +2644,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_block(BlockId(usize::MAX), true, true);
+    asm.new_block(BlockId(usize::MAX), true, usize::MAX);
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
@@ -2662,7 +2662,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 /// See [gen_function_stub] for how it's used.
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_block(BlockId(usize::MAX), true, true);
+    asm.new_block(BlockId(usize::MAX), true, usize::MAX);
     asm_comment!(asm, "function_stub_hit trampoline");
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
@@ -2703,7 +2703,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 /// Generate a trampoline that is used when a function exits without restoring PC and the stack
 pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm.new_block(BlockId(usize::MAX), true, true);
+    asm.new_block(BlockId(usize::MAX), true, usize::MAX);
 
     asm_comment!(asm, "side-exit trampoline");
     asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
@@ -2926,7 +2926,7 @@ impl IseqCall {
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
         cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
             let mut asm = Assembler::new();
-            asm.new_block(BlockId(usize::MAX), true, true);
+            asm.new_block(BlockId(usize::MAX), true, usize::MAX);
             callback(&mut asm);
             asm.compile(cb).unwrap();
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());

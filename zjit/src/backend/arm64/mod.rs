@@ -702,7 +702,7 @@ impl Assembler {
         asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
         // Create one giant block to linearize everything into
-        asm_local.new_block(hir::BlockId(usize::MAX), true, true);
+        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
 
         // Get linearized instructions with branch parameters expanded into ParallelMov
         let linearized_insns = self.linearize_instructions();
@@ -799,7 +799,7 @@ impl Assembler {
         asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
         // Create one giant block to linearize everything into
-        asm_local.new_block(hir::BlockId(usize::MAX), true, true);
+        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
 
         let asm = &mut asm_local;
 
@@ -1768,7 +1768,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true, true);
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1777,7 +1777,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true, true);
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -2191,7 +2191,7 @@ mod tests {
     #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-        asm.new_block(hir::BlockId(usize::MAX), true, true);
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
@@ -2645,7 +2645,7 @@ mod tests {
 
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true, true);
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
