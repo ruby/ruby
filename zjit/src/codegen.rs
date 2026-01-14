@@ -77,6 +77,11 @@ impl JITState {
 
     /// Find or create a label for a given BlockId
     fn get_label(&mut self, asm: &mut Assembler, lir_block_id: lir::BlockId, hir_block_id: BlockId) -> Target {
+        // Extend labels vector if the requested index is out of bounds
+        if lir_block_id.0 >= self.labels.len() {
+            self.labels.resize(lir_block_id.0 + 1, None);
+        }
+
         match &self.labels[lir_block_id.0] {
             Some(label) => label.clone(),
             None => {
