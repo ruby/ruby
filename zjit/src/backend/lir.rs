@@ -1822,6 +1822,39 @@ impl Assembler
         Some(new_moves)
     }
 
+    /// Strip branch arguments from a jump instruction, converting Target::Block(edge) with args
+    /// into Target::Label. This is needed after linearization since all blocks are merged into one.
+    pub fn strip_branch_args(&self, insn: Insn) -> Insn {
+        fn get_block_label(asm: &Assembler, block_id: BlockId) -> Label {
+            let block = &asm.basic_blocks[block_id.0];
+            match block.insns.first() {
+                Some(Insn::Label(Target::Label(label))) => label.clone(),
+                other => panic!("Expected first instruction of block {:?} to be a Label, but found: {:?}", block_id, other),
+            }
+        }
+
+        let asm = self;
+
+        match insn {
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(get_block_label(asm, edge.target))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(get_block_label(asm, edge.target))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(opnd, Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(opnd, Target::Label(get_block_label(asm, edge.target))),
+            _ => insn,
+        }
+    }
+
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
