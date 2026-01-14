@@ -1536,7 +1536,12 @@ fn gen_array_aref(
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    asm_ccall!(asm, rb_ary_entry, array, index)
+    let unboxed_idx = asm.load(index);
+    let array = asm.load(array);
+    let array_ptr = gen_array_ptr(asm, array);
+    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+    let elem_ptr = asm.add(array_ptr, elem_offset);
+    asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
 }
 
 fn gen_array_aset(

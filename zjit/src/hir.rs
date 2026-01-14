@@ -2215,13 +2215,10 @@ impl Function {
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
-            Insn::UnboxFixnum { val } => {
-                if let Some(fixnum) = self.type_of(*val).fixnum_value() {
-                    Type::from_cint(types::CInt64, fixnum)
-                } else {
-                    types::CInt64
-                }
-            },
+            Insn::UnboxFixnum { val } => self
+                .type_of(*val)
+                .fixnum_value()
+                .map_or(types::CInt64, |fixnum| Type::from_cint(types::CInt64, fixnum)),
             Insn::FixnumAref { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
@@ -6392,9 +6389,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), reason: SideExitReason::ExpandArray, state: exit_id });
                     for i in (0..num).rev() {
-                        // TODO(max): Add a short-cut path for long indices into an array where the
-                        // index is known to be in-bounds
                         let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
+                        // We do not emit a length guard here because in-bounds is already
+                        // ensured by the expandarray length check above.
                         let index = fun.push_insn(block, Insn::UnboxFixnum { val: index });
                         let element = fun.push_insn(block, Insn::ArrayAref { array, index });
                         state.stack_push(element);
