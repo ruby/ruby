@@ -1119,6 +1119,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     search.matches_mask = 0;
     search.has_matches = false;
     search.chunk_base = NULL;
+    search.chunk_end = NULL;
 #endif /* HAVE_SIMD */
 
     switch (rb_enc_str_coderange(obj)) {
