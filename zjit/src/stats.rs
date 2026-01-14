@@ -241,6 +241,8 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         // Caller has keyword arguments but callee doesn't expect them.
         send_fallback_unexpected_keyword_args,
+        // Singleton class previously created for receiver class.
+        send_fallback_singleton_class_seen,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_send_cfunc_variadic,
@@ -573,6 +575,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         UnexpectedKeywordArgs                     => send_fallback_unexpected_keyword_args,
+        SingletonClassSeen                        => send_fallback_singleton_class_seen,
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,

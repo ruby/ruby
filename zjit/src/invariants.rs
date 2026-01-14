@@ -436,6 +436,16 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
     });
 }
 
+/// Returns true if we've seen a singleton class of a given class since boot.
+/// This is used to avoid an invalidation loop where we repeatedly compile code
+/// that assumes no singleton class, only to have it invalidated.
+pub fn has_singleton_class_of(klass: VALUE) -> bool {
+    ZJITState::get_invariants()
+        .no_singleton_class_patch_points
+        .get(&klass)
+        .map_or(false, |patch_points| patch_points.is_empty())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
     if !zjit_enabled_p() {
@@ -444,11 +454,22 @@ pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        if let Some(patch_points) = invariants.no_singleton_class_patch_points.remove(&klass) {
-            let cb = ZJITState::get_code_block();
-            debug!("Singleton class created for {:?}", klass);
-            compile_patch_points!(cb, patch_points, "Singleton class created for {:?}", klass);
-            cb.mark_all_executable();
+        match invariants.no_singleton_class_patch_points.get_mut(&klass) {
+            Some(patch_points) => {
+                // Invalidate existing patch points and let has_singleton_class_of()
+                // return true when they are compiled again
+                let patch_points = mem::take(patch_points);
+                if !patch_points.is_empty() {
+                    let cb = ZJITState::get_code_block();
+                    debug!("Singleton class created for {:?}", klass);
+                    compile_patch_points!(cb, patch_points, "Singleton class created for {:?}", klass);
+                    cb.mark_all_executable();
+                }
+            }
+            None => {
+                // Let has_singleton_class_of() return true for this class
+                invariants.no_singleton_class_patch_points.insert(klass, HashSet::new());
+            }
         }
     });
 }
