@@ -10680,7 +10680,7 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:ArrayExact):
           v15:ArrayExact = ToArray v9
-          v17:BasicObject = InvokeSuper v8, 0x1000, v15 # SendFallbackReason: Uncategorized(invokesuper)
+          v17:BasicObject = InvokeSuper v8, 0x1000, v15 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v17
         ");
@@ -10719,7 +10719,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: call made with a block
           CheckInterrupts
           Return v11
         ");
@@ -10751,7 +10751,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v11
         ");
@@ -10800,7 +10800,7 @@ mod hir_opt_tests {
           v18:BasicObject = GetLocal :blk, l0, EP@4
           SetLocal :other_block, l0, EP@3, v36
           v25:BasicObject = GetLocal :other_block, l0, EP@3
-          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: Uncategorized(invokesuper)
+          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v27
         ");
@@ -10840,7 +10840,7 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:StaticSymbol[:succ] = Const Value(VALUE(0x1000))
-          v17:BasicObject = InvokeSuper v8, 0x1008, v9, v15 # SendFallbackReason: Uncategorized(invokesuper)
+          v17:BasicObject = InvokeSuper v8, 0x1008, v9, v15 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v17
         ");
@@ -10890,7 +10890,7 @@ mod hir_opt_tests {
           EntryPoint JIT(1)
           Jump bb4(v13, v14)
         bb4(v24:BasicObject, v25:BasicObject):
-          v31:BasicObject = InvokeSuper v24, 0x1018, v25 # SendFallbackReason: Uncategorized(invokesuper)
+          v31:BasicObject = InvokeSuper v24, 0x1018, v25 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v31
         ");

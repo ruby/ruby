@@ -249,6 +249,10 @@ make_counters! {
         send_fallback_obj_to_string_not_string,
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
+        send_fallback_super_call_with_block,
+        send_fallback_super_class_not_found,
+        send_fallback_super_target_not_found,
+        send_fallback_cannot_send_direct,
         send_fallback_uncategorized,
     }
 
@@ -586,6 +590,9 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
+        SuperCallWithBlock                        => send_fallback_super_call_with_block,
+        SuperClassNotFound                        => send_fallback_super_class_not_found,
+        SuperTargetNotFound                       => send_fallback_super_target_not_found,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
