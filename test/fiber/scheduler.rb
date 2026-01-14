@@ -310,7 +310,7 @@ class Scheduler
     end
 
     io = @urgent.last
-    io.write_nonblock('.')
+    io.write_nonblock('.') rescue nil
   end
 
   class FiberInterrupt
