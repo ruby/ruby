@@ -213,12 +213,12 @@ ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
  * appended to the result.
  */
 
- 
+
 #if defined(HAVE_SIMD_NEON)
 static inline unsigned char search_escape_basic_neon(search_state *search);
 #elif defined(HAVE_SIMD_SSE2)
 static inline unsigned char search_escape_basic_sse2(search_state *search);
-#endif 
+#endif
 
 static inline unsigned char search_escape_basic(search_state *search);
 
