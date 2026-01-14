@@ -1419,3 +1419,18 @@ assert_equal 'ok', %q{
     "ok"
   end
 }
+
+assert_equal '[1, 2, 3]', %q{
+  def target(*args) = args
+  def x = [1]
+  def forwarder(...) = target(*x, 2, ...)
+  forwarder(3).inspect
+}, '[Bug #21832] post-splat args before forwarding'
+
+assert_equal 'ok', <<~RUBY
+  def test(*, kw: false)
+    "ok"
+  end
+
+  test
+RUBY
