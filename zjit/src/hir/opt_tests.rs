@@ -1059,6 +1059,47 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_call_with_correct_and_too_many_args_for_method() {
+        eval("
+            def target(a = 1, b = 2, c = 3, d = 4) = [a, b, c, d]
+            def test = [target(), target(10, 20, 30), begin; target(10, 20, 30, 40, 50) rescue ArgumentError; end]
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
+          v44:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v45:BasicObject = SendWithoutBlockDirect v44, :target (0x1038)
+          v14:Fixnum[10] = Const Value(10)
+          v16:Fixnum[20] = Const Value(20)
+          v18:Fixnum[30] = Const Value(30)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
+          v48:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v49:BasicObject = SendWithoutBlockDirect v48, :target (0x1038), v14, v16, v18
+          v24:Fixnum[10] = Const Value(10)
+          v26:Fixnum[20] = Const Value(20)
+          v28:Fixnum[30] = Const Value(30)
+          v30:Fixnum[40] = Const Value(40)
+          v32:Fixnum[50] = Const Value(50)
+          v34:BasicObject = SendWithoutBlock v6, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
+          v37:ArrayExact = NewArray v45, v49, v34
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
     fn test_optimize_variadic_ccall() {
         eval("
             def test
