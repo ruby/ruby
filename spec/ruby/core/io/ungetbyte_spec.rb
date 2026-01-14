@@ -51,4 +51,20 @@ describe "IO#ungetbyte" do
     @io.close
     -> { @io.ungetbyte(42) }.should raise_error(IOError)
   end
+
+  it "adjusts the stream position" do
+    @io.pos.should == 0
+
+    # read one byte
+    b = @io.getbyte
+    @io.pos.should == 1
+    @io.ungetbyte(b)
+    @io.pos.should == 0
+
+    # read all
+    @io.read
+    pos = @io.pos
+    @io.ungetbyte(98)
+    @io.pos.should == pos - 1
+  end
 end
