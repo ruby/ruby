@@ -1669,6 +1669,40 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
+  def test_matchdata_large_capture_groups_stack
+    omit "thread machine stack size unsupported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
+    script = <<~'RUBY'
+      n = 20000
+      require "rbconfig/sizeof"
+      stack = RubyVM::DEFAULT_PARAMS[:thread_machine_stack_size]
+      size = RbConfig::SIZEOF["long"]
+      required = (n + 1) * 4 * size
+      if !stack || stack == 0 || stack >= required
+        puts "skip:#{stack}:#{required}"
+        exit
+      end
+
+      pattern = "(a)" * n
+      str = "a" * n
+
+      Thread.new do
+        m = Regexp.new(pattern).match(str)
+        m.offset(n)
+        m.inspect
+        puts "ok"
+      end.join
+    RUBY
+
+    out, err, status = EnvUtil.invoke_ruby([env, "-e", script], "", true, true, timeout: 30)
+    assert_not_predicate(status, :signaled?, err)
+    if out.start_with?("skip:")
+      omit "thread machine stack size not reduced (#{out.strip})"
+    end
+    assert_include(out, "ok")
+  end
+
   def test_regexp_popped
     EnvUtil.suppress_warning do
       assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
