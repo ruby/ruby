@@ -3135,6 +3135,50 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_call_with_pos_optional_and_maybe_too_many_args() {
+        eval("
+            def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
+            def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[6] = Const Value(6)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
+          v48:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v50:BasicObject = SendWithoutBlockDirect v48, :target (0x1038), v11
+          v16:Fixnum[10] = Const Value(10)
+          v18:Fixnum[20] = Const Value(20)
+          v20:Fixnum[30] = Const Value(30)
+          v22:Fixnum[6] = Const Value(6)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
+          v53:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v55:BasicObject = SendWithoutBlockDirect v53, :target (0x1038), v16, v18, v20, v22
+          v27:Fixnum[10] = Const Value(10)
+          v29:Fixnum[20] = Const Value(20)
+          v31:Fixnum[30] = Const Value(30)
+          v33:Fixnum[40] = Const Value(40)
+          v35:Fixnum[50] = Const Value(50)
+          v37:Fixnum[60] = Const Value(60)
+          v39:BasicObject = SendWithoutBlock v6, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
+          v41:ArrayExact = NewArray v50, v55, v39
+          CheckInterrupts
+          Return v41
+        ");
+    }
+
+    #[test]
     fn test_send_call_to_iseq_with_optional_kw() {
         eval("
             def foo(a: 1) = a
