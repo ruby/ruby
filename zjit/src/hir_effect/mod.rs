@@ -6,11 +6,18 @@ include!("hir_effect.inc.rs");
 
 // NOTE: Effect very intentionally does not support Eq or PartialEq; we almost never want to check
 // bit equality of types in the compiler but instead check subtyping, intersection, union, etc.
-/// The main work horse of effect inference and specialization. The main interfaces
+/// The AbstractHeap struct is the main work horse of effect inference and specialization. The main interfaces
 /// will look like:
 ///
-/// * is effect A a subset of effect B
-/// * union/meet effect A and effect B
+/// * is AbstractHeap A a subset of AbstractHeap B
+/// * union/meet AbstractHeap A and AbstractHeap B
+///
+/// or
+///
+/// * is Effect A a subset of Effect B
+/// * union/meet Effect A and Effect B
+///
+/// The AbstractHeap is the work horse because Effect is simply 2 AbstractHeaps; one for read, and one for write.
 ///
 /// Most questions can be rewritten in terms of these operations.
 ///
