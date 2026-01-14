@@ -9927,11 +9927,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestFrozen@0x1010, a@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozen@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:Fixnum[1] = Const Value(1)
+          v29:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9969,11 +9967,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestMultiIvars@0x1010, b@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestMultiIvars@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:Fixnum[20] = Const Value(20)
+          v29:Fixnum[20] = Const Value(20)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10009,11 +10005,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestFrozenStr@0x1010, name@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenStr@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:StringExact[VALUE(0x1050)] = Const Value(VALUE(0x1050))
+          v29:StringExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10049,11 +10043,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestFrozenNil@0x1010, value@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenNil@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:NilClass = Const Value(nil)
+          v29:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10129,11 +10121,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestAttrReader@0x1010, value@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestAttrReader@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:Fixnum[42] = Const Value(42)
+          v29:Fixnum[42] = Const Value(42)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10169,11 +10159,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestFrozenSym@0x1010, sym@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenSym@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:StaticSymbol[:hello] = Const Value(VALUE(0x1050))
+          v29:StaticSymbol[:hello] = Const Value(VALUE(0x1048))
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10209,11 +10197,9 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestFrozenBool@0x1010, flag@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestFrozenBool@0x1010)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
-          v28:TrueClass = Const Value(true)
+          v29:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -10288,22 +10274,18 @@ mod hir_opt_tests {
           v28:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
-          v39:CShape = LoadField v28, :_shape_id@0x1048
-          v40:CShape[0x1049] = GuardBitEquals v39, CShape(0x1049)
-          v52:Fixnum[100] = Const Value(100)
+          v53:Fixnum[100] = Const Value(100)
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
+          PatchPoint StableConstantNames(0x1048, NESTED_FROZEN)
           v34:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1050, cme:0x1058)
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
-          v43:CShape = LoadField v34, :_shape_id@0x1048
-          v44:CShape[0x1049] = GuardBitEquals v43, CShape(0x1049)
-          v53:Fixnum[200] = Const Value(200)
-          PatchPoint MethodRedefined(Integer@0x1088, +@0x1090, cme:0x1098)
-          v54:Fixnum[300] = Const Value(300)
+          v55:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
+          v56:Fixnum[300] = Const Value(300)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v54
+          Return v56
         ");
     }
 

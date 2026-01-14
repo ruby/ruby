@@ -3798,6 +3798,30 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
+                            u32::try_from(offset).is_ok() => {
+                        let offset = (offset as u32).to_usize();
+                        let recv_type = self.type_of(recv);
+                        match recv_type.ruby_object() {
+                            Some(recv_obj) if recv_obj.is_frozen() => {
+                                let recv_ptr = recv_obj.as_ptr() as *const u32;
+                                let val = unsafe { recv_ptr.byte_add(offset).read() };
+                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::GuardBitEquals { val, expected, .. } => {
+                        match self.find(val) {
+                            // TODO: Refactor this into a more general method like
+                            // has_value(Const) that can check on the value specialization
+                            // of the Type instead
+                            Insn::Const { val: const_val } if const_val == expected => {
+                                continue;
+                            }
+                            _ => insn_id
+                        }
+                    }
                     Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
                         self.make_equal_to(insn_id, str);
                         // Don't bother re-inferring the type of str; we already know it.
