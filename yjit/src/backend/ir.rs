@@ -1824,12 +1824,12 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
+    pub fn cpop_all(&mut self, reg_mapping: RegMapping) {
         self.push_insn(Insn::CPopAll);
 
         // Re-enable ccall's RegMappings assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_mapping(self.ctx.get_reg_mapping());
+        self.set_reg_mapping(reg_mapping);
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1840,14 +1840,16 @@ impl Assembler {
         self.push_insn(Insn::CPush(opnd));
     }
 
-    pub fn cpush_all(&mut self) {
+    pub fn cpush_all(&mut self) -> RegMapping {
         self.push_insn(Insn::CPushAll);
 
         // Mark all temps as not being in registers.
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_regs for GC.
+        let mapping = self.ctx.get_reg_mapping();
         self.set_reg_mapping(RegMapping::default());
+        mapping
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
