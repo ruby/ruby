@@ -8314,7 +8314,7 @@ fn gen_send_iseq(
     // We also do this after spill_regs() to avoid doubly spilling the same thing on asm.ccall().
     if get_option!(gen_stats) {
         // Protect caller-saved registers in case they're used for arguments
-        asm.cpush_all();
+        let mapping = asm.cpush_all();
 
         // Assemble the ISEQ name string
         let name_str = get_iseq_name(iseq);
@@ -8324,7 +8324,7 @@ fn gen_send_iseq(
 
         // Increment the counter for this cfunc
         asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
-        asm.cpop_all();
+        asm.cpop_all(mapping);
     }
 
     // The callee might change locals through Kernel#binding and other means.
