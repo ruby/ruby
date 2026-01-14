@@ -3101,6 +3101,40 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_call_with_pos_optional_and_kw_optional() {
+        eval("
+            def foo(r, x = 2, a:, b: 4) = [r, x, a, b]
+            def test = [foo(1, a: 3), foo(1, 2, b: 40, a: 30)] # with and without the optionals
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[3] = Const Value(3)
+          IncrCounter complex_arg_pass_param_kw_opt
+          v15:BasicObject = SendWithoutBlock v6, :foo, v11, v13 # SendFallbackReason: Complex argument passing
+          v18:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v22:Fixnum[40] = Const Value(40)
+          v24:Fixnum[30] = Const Value(30)
+          IncrCounter complex_arg_pass_param_kw_opt
+          v26:BasicObject = SendWithoutBlock v6, :foo, v18, v20, v22, v24 # SendFallbackReason: Complex argument passing
+          v28:ArrayExact = NewArray v15, v26
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
     fn test_send_call_to_iseq_with_optional_kw() {
         eval("
             def foo(a: 1) = a
