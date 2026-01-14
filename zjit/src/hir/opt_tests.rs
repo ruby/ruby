@@ -3833,8 +3833,8 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Proc@0x1000, call@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, call@0x1008, cme:0x1010)
           v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
           v24:BasicObject = InvokeProc v23, v14
           CheckInterrupts
@@ -3863,8 +3863,8 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Proc@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, []@0x1008, cme:0x1010)
           v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
           v25:BasicObject = InvokeProc v24, v14
           CheckInterrupts
@@ -3893,8 +3893,8 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[3] = Const Value(3)
-          PatchPoint MethodRedefined(Proc@0x1000, yield@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, yield@0x1008, cme:0x1010)
           v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
           v24:BasicObject = InvokeProc v23, v14
           CheckInterrupts
@@ -3923,8 +3923,8 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Proc@0x1000, ===@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, ===@0x1008, cme:0x1010)
           v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
           v24:BasicObject = InvokeProc v23, v14
           CheckInterrupts
