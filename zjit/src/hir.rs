@@ -3107,6 +3107,7 @@ impl Function {
 
                         let ci = unsafe { get_call_data_ci(cd) };
                         let flags = unsafe { rb_vm_ci_flag(ci) };
+                        assert!(flags & VM_CALL_FCALL != 0);
 
                         // Reject calls with complex argument handling.
                         let complex_arg_types = VM_CALL_ARGS_SPLAT
