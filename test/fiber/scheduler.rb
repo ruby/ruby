@@ -168,7 +168,7 @@ class Scheduler
     self.run
   ensure
     if @urgent
-      @urgent.each(&:close)
+      @urgent.each { it.close rescue nil }
       @urgent = nil
     end
 
