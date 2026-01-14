@@ -6545,10 +6545,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), reason: SideExitReason::ExpandArray, state: exit_id });
                     for i in (0..num).rev() {
-                        let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
                         // We do not emit a length guard here because in-bounds is already
                         // ensured by the expandarray length check above.
-                        let index = fun.push_insn(block, Insn::UnboxFixnum { val: index });
+                        let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
                         let element = fun.push_insn(block, Insn::ArrayAref { array, index });
                         state.stack_push(element);
                     }
