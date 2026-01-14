@@ -2160,6 +2160,54 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_aref]
   end
 
+  def test_array_fixnum_aref_negative_index
+    assert_compiles '3', %q{
+      def test(x) = [1,2,3][x]
+      test(-1)
+      test(-1)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_positive
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(10)
+      test(10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_negative
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(-10)
+      test(-10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_array_subclass
+    assert_compiles '3', %q{
+      class MyArray < Array; end
+      def test(arr, idx) = arr[idx]
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_aref_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx) = arr[idx]
+      test([1,2,3], 1)
+      test([1,2,3], 1)
+      begin
+        test([1,2,3], "1")
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
+  end
+
   def test_array_fixnum_aset
     assert_compiles '[1, 2, 7]', %q{
       def test(arr, idx)
