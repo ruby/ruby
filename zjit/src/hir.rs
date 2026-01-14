@@ -3812,14 +3812,11 @@ impl Function {
                         }
                     }
                     Insn::GuardBitEquals { val, expected, .. } => {
-                        match self.find(val) {
-                            // TODO: Refactor this into a more general method like
-                            // has_value(Const) that can check on the value specialization
-                            // of the Type instead
-                            Insn::Const { val: const_val } if const_val == expected => {
-                                continue;
-                            }
-                            _ => insn_id
+                        let recv_type = self.type_of(val);
+                        if recv_type.has_value(expected) {
+                            continue;
+                        } else {
+                            insn_id
                         }
                     }
                     Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
