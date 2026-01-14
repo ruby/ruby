@@ -399,7 +399,7 @@ impl IseqProfile {
         }
     }
 
-    /// Run a given callback with a mutable reference to every object in IseqProfile
+    /// Run a given callback with a mutable reference to every object in IseqProfile.
     pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
         for operands in &mut self.opnd_types {
             for distribution in operands {
@@ -410,7 +410,7 @@ impl IseqProfile {
             }
         }
 
-        // Update CME references if they move during compaction
+        // Update CME references if they move during compaction.
         for cme_value in self.super_cme.values_mut() {
             if let Some(cme) = cme_value {
                 callback(cme);

@@ -653,8 +653,18 @@ pub enum SendFallbackReason {
     SuperCallWithBlock,
     /// The profiled super class cannot be found.
     SuperClassNotFound,
+    /// The `super` call uses a complex argument pattern that the optimizer does not support.
+    SuperComplexArgsPass,
     /// The cached target of a `super` call could not be found.
     SuperTargetNotFound,
+    /// Attempted to specialize a `super` call that doesn't have profile data.
+    SuperNoProfiles,
+    /// Cannot optimize the `super` call due to the target method.
+    SuperNotOptimizedMethodType(MethodType),
+    /// The `super` call is polymorpic.
+    SuperPolymorphic,
+    /// The `super` target call uses a complex argument pattern that the optimizer does not support.
+    SuperTargetComplexArgsPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -694,7 +704,12 @@ impl Display for SendFallbackReason {
             SingletonClassSeen => write!(f, "Singleton class previously created for receiver class"),
             SuperCallWithBlock => write!(f, "super: call made with a block"),
             SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
+            SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
+            SuperNoProfiles => write!(f, "super: no profile data available"),
+            SuperNotOptimizedMethodType(method_type) => write!(f, "super: unsupported target method type {:?}", method_type),
+            SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
+            SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -3102,7 +3117,7 @@ impl Function {
 
                         if (flags & complex_arg_types) != 0 {
                             self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
                             continue;
                         }
 
@@ -3111,7 +3126,7 @@ impl Function {
                         // Get the profiled CME from the current method.
                         let Some(profiles) = self.profiles.as_ref() else {
                             self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, SendNoProfiles);
+                            self.set_dynamic_send_reason(insn_id, SuperNoProfiles);
                             continue;
                         };
 
@@ -3121,7 +3136,7 @@ impl Function {
                             // The absence of the super CME could be due to a missing profile, but
                             // if we've made it this far the value would have been deleted, indicating
                             // that the call is at least polymorphic and possibly megamorphic.
-                            self.set_dynamic_send_reason(insn_id, SendPolymorphic);
+                            self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
                             continue;
                         };
 
@@ -3149,7 +3164,7 @@ impl Function {
                         let def_type = unsafe { get_cme_def_type(super_cme) };
                         if def_type != VM_METHOD_TYPE_ISEQ {
                             self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
+                            self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
                             continue;
                         }
 
@@ -3158,7 +3173,7 @@ impl Function {
                         let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
                         if !can_direct_send(self, block, super_iseq, insn_id, args.as_slice()) {
                             self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                             continue;
                         }
 
