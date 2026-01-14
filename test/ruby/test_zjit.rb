@@ -833,6 +833,15 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_pos_optional_with_maybe_too_many_args
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]', %q{
+      def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
+      def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+      test
+      test
+    }, call_threshold: 2
+  end
+
   def test_send_all_arg_types
     assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
       def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
