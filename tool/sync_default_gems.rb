@@ -440,7 +440,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi", "pathname"].include?(gem)
+    return if ["rubygems", "mmtk", "cgi", "pathname", "Onigmo"].include?(gem)
 
     require "net/https"
     require "json"
