@@ -304,7 +304,6 @@ module SyncDefaultGems
     time: lib("ruby/time"),
     timeout: lib("ruby/timeout"),
     tmpdir: lib("ruby/tmpdir"),
-    tsort: lib("ruby/tsort"),
     un: lib("ruby/un"),
     uri: lib("ruby/uri", gemspec_in_subdir: true),
     weakref: lib("ruby/weakref"),
