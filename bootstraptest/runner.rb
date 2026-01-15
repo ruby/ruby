@@ -16,6 +16,7 @@ rescue LoadError
   $:.unshift File.join(File.dirname(__FILE__), '../lib')
   retry
 end
+require_relative '../tool/lib/test/jobserver'
 
 if !Dir.respond_to?(:mktmpdir)
   # copied from lib/tmpdir.rb
@@ -110,35 +111,7 @@ BT = Class.new(bt) do
 
   def wn=(wn)
     unless wn == 1
-      if /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ ENV.delete("MAKEFLAGS")
-        begin
-          if fifo = $3
-            fifo.gsub!(/\\(?=.)/, '')
-            r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
-            w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
-          else
-            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-          end
-        rescue
-          r.close if r
-        else
-          r.close_on_exec = true
-          w.close_on_exec = true
-          tokens = r.read_nonblock(wn > 0 ? wn : 1024, exception: false)
-          r.close
-          if String === tokens
-            tokens.freeze
-            auth = w
-            w = nil
-            at_exit {auth << tokens; auth.close}
-            wn = tokens.size + 1
-          else
-            w.close
-            wn = 1
-          end
-        end
-      end
+      wn = Test::JobServer.max_jobs(wn > 0 ? wn : 1024, ENV.delete("MAKEFLAGS")) || wn
       if wn <= 0
         require 'etc'
         wn = [Etc.nprocessors / 2, 1].max
@@ -163,7 +136,7 @@ def main
   BT.tty = nil
   BT.quiet = false
   BT.timeout = 180
-  BT.timeout_scale = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 3 : 1) # for --jit-wait
+  BT.timeout_scale = 1
   if (ts = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_i) > 1
     BT.timeout_scale *= ts
   end
@@ -236,7 +209,19 @@ End
         return true
       end
 
-      require_relative '../tool/lib/launchable'
+      begin
+        require_relative '../tool/lib/launchable'
+      rescue LoadError
+        # The following error sometimes happens, so we're going to skip writing Launchable report files in this case.
+        #
+        # ```
+        # /tmp/tmp.bISss9CtXZ/.ext/common/json/ext.rb:15:in 'Kernel#require':
+        #   /tmp/tmp.bISss9CtXZ/.ext/x86_64-linux/json/ext/parser.so:
+        #     undefined symbol: ruby_abi_version - ruby_abi_version (LoadError)
+        # ```
+        #
+        return true
+      end
       BT.launchable_test_reports = writer = Launchable::JsonStreamWriter.new($1)
       writer.write_array('testCases')
       at_exit {
@@ -286,7 +271,7 @@ End
     if defined?(RUBY_DESCRIPTION)
       puts "Driver is #{RUBY_DESCRIPTION}"
     elsif defined?(RUBY_PATCHLEVEL)
-      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{RUBY_PLATFORM}) [#{RUBY_PLATFORM}]"
+      puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{RUBY_PATCHLEVEL}) [#{RUBY_PLATFORM}]"
     else
       puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
     end
@@ -342,6 +327,7 @@ def concurrent_exec_test
   begin
     while BT.wn != term_wn
       if r = rq.pop
+        BT_STATE.count += 1
         case
         when BT.quiet
         when BT.tty
@@ -399,7 +385,7 @@ module Launchable
           }
         )
         @@duration = 0
-        @@failure_log.clear
+        @@failure_log = ''
       end
       @@last_test_name = relative_path
       @@duration += t
@@ -612,6 +598,8 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     end
   end
 
+  class Timeout < StandardError; end
+
   def get_result_string(opt = '', timeout: BT.timeout, **argh)
     if BT.ruby
       timeout = BT.apply_timeout_scale(timeout)
@@ -621,7 +609,11 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
         th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
-        th.value if th.join(timeout)
+        if th.join(timeout)
+          th.value
+        else
+          Timeout.new("timed out after #{timeout} seconds")
+        end
       ensure
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
@@ -878,9 +870,8 @@ def yjit_enabled?
   ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
 end
 
-def rjit_enabled?
-  # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
-  ENV.fetch('RUN_OPTS', '').include?('rjit')
+def zjit_enabled?
+  ENV.key?('RUBY_ZJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('zjit') || BT.ruby.include?('zjit')
 end
 
 exit main

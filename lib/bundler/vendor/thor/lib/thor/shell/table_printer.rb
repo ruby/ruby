@@ -102,32 +102,16 @@ class Bundler::Thor
 
       def truncate(string)
         return string unless @truncate
-        as_unicode do
-          chars = string.chars.to_a
-          if chars.length <= @truncate
-            chars.join
-          else
-            chars[0, @truncate - 3 - @indent].join + "..."
-          end
+        chars = string.chars.to_a
+        if chars.length <= @truncate
+          chars.join
+        else
+          chars[0, @truncate - 3 - @indent].join + "..."
         end
       end
 
       def indentation
         " " * @indent
-      end
-
-      if "".respond_to?(:encode)
-        def as_unicode
-          yield
-        end
-      else
-        def as_unicode
-          old = $KCODE # rubocop:disable Style/GlobalVars
-          $KCODE = "U" # rubocop:disable Style/GlobalVars
-          yield
-        ensure
-          $KCODE = old # rubocop:disable Style/GlobalVars
-        end
       end
     end
   end

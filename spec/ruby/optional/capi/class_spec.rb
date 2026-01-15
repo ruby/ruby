@@ -365,6 +365,8 @@ describe "C-API Class function" do
                                         "ClassUnder6",
                                         Class.new)
       }.should raise_error(TypeError)
+    ensure
+      CApiClassSpecs.send(:remove_const, :ClassUnder6)
     end
 
     it "defines a class for an existing Autoload" do

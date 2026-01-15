@@ -46,7 +46,7 @@ module Gem::Net   #:nodoc:
   # == Strategies
   #
   # - If you will make only a few GET requests,
-  #   consider using {OpenURI}[rdoc-ref:OpenURI].
+  #   consider using {OpenURI}[https://docs.ruby-lang.org/en/master/OpenURI.html].
   # - If you will make only a few requests of all kinds,
   #   consider using the various singleton convenience methods in this class.
   #   Each of the following methods automatically starts and finishes
@@ -67,6 +67,8 @@ module Gem::Net   #:nodoc:
   #     Gem::Net::HTTP.post(uri, data)
   #     params = {title: 'foo', body: 'bar', userId: 1}
   #     Gem::Net::HTTP.post_form(uri, params)
+  #     data = '{"title": "foo", "body": "bar", "userId": 1}'
+  #     Gem::Net::HTTP.put(uri, data)
   #
   # - If performance is important, consider using sessions, which lower request overhead.
   #   This {session}[rdoc-ref:Gem::Net::HTTP@Sessions] has multiple requests for
@@ -100,14 +102,14 @@ module Gem::Net   #:nodoc:
   #
   # == URIs
   #
-  # On the internet, a URI
+  # On the internet, a Gem::URI
   # ({Universal Resource Identifier}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier])
   # is a string that identifies a particular resource.
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
-  # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
+  # see {Gem::URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {Gem::URI::Generic}[rdoc-ref:Gem::URI::Generic] object
-  # represents an internet URI.
+  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem::URI/Generic.html] object
+  # represents an internet Gem::URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
   #
@@ -142,7 +144,7 @@ module Gem::Net   #:nodoc:
   #
   # === Queries
   #
-  # A host-specific query adds name/value pairs to the URI:
+  # A host-specific query adds name/value pairs to the Gem::URI:
   #
   #   _uri = uri.dup
   #   params = {userId: 1, completed: false}
@@ -152,7 +154,7 @@ module Gem::Net   #:nodoc:
   #
   # === Fragments
   #
-  # A {URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
+  # A {Gem::URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
   # in \Gem::Net::HTTP;
   # the same data is returned, regardless of whether a fragment is included.
   #
@@ -325,9 +327,9 @@ module Gem::Net   #:nodoc:
   #     res = http.request(req)
   #   end
   #
-  # Or if you simply want to make a GET request, you may pass in a URI
+  # Or if you simply want to make a GET request, you may pass in a Gem::URI
   # object that has an \HTTPS URL. \Gem::Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' :URI scheme:
+  # verification if the Gem::URI object has a 'https' Gem::URI scheme:
   #
   #   uri # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com/>
   #   Gem::Net::HTTP.get(uri)
@@ -372,7 +374,7 @@ module Gem::Net   #:nodoc:
   #
   # When environment variable <tt>'http_proxy'</tt>
   # is set to a \Gem::URI string,
-  # the returned +http+ will have the server at that URI as its proxy;
+  # the returned +http+ will have the server at that Gem::URI as its proxy;
   # note that the \Gem::URI string must have a protocol
   # such as <tt>'http'</tt> or <tt>'https'</tt>:
   #
@@ -456,6 +458,10 @@ module Gem::Net   #:nodoc:
   #
   # == What's Here
   #
+  # First, what's elsewhere. Class Gem::Net::HTTP:
+  #
+  # - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html#class-Object-label-What-27s+Here].
+  #
   # This is a categorized summary of methods and attributes.
   #
   # === \Gem::Net::HTTP Objects
@@ -469,8 +475,7 @@ module Gem::Net   #:nodoc:
   #
   # - {::start}[rdoc-ref:Gem::Net::HTTP.start]:
   #   Begins a new session in a new \Gem::Net::HTTP object.
-  # - {#started?}[rdoc-ref:Gem::Net::HTTP#started?]
-  #   (aliased as {#active?}[rdoc-ref:Gem::Net::HTTP#active?]):
+  # - {#started?}[rdoc-ref:Gem::Net::HTTP#started?]:
   #   Returns whether in a session.
   # - {#finish}[rdoc-ref:Gem::Net::HTTP#finish]:
   #   Ends an active session.
@@ -520,6 +525,8 @@ module Gem::Net   #:nodoc:
   #   Sends a POST request with form data and returns a response object.
   # - {::post}[rdoc-ref:Gem::Net::HTTP.post]:
   #   Sends a POST request with data and returns a response object.
+  # - {::put}[rdoc-ref:Gem::Net::HTTP.put]:
+  #   Sends a PUT request with data and returns a response object.
   # - {#copy}[rdoc-ref:Gem::Net::HTTP#copy]:
   #   Sends a COPY request and returns a response object.
   # - {#delete}[rdoc-ref:Gem::Net::HTTP#delete]:
@@ -548,18 +555,15 @@ module Gem::Net   #:nodoc:
   #   Sends a PUT request and returns a response object.
   # - {#request}[rdoc-ref:Gem::Net::HTTP#request]:
   #   Sends a request and returns a response object.
-  # - {#request_get}[rdoc-ref:Gem::Net::HTTP#request_get]
-  #   (aliased as {#get2}[rdoc-ref:Gem::Net::HTTP#get2]):
+  # - {#request_get}[rdoc-ref:Gem::Net::HTTP#request_get]:
   #   Sends a GET request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
-  # - {#request_head}[rdoc-ref:Gem::Net::HTTP#request_head]
-  #   (aliased as {#head2}[rdoc-ref:Gem::Net::HTTP#head2]):
+  # - {#request_head}[rdoc-ref:Gem::Net::HTTP#request_head]:
   #   Sends a HEAD request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
-  # - {#request_post}[rdoc-ref:Gem::Net::HTTP#request_post]
-  #   (aliased as {#post2}[rdoc-ref:Gem::Net::HTTP#post2]):
+  # - {#request_post}[rdoc-ref:Gem::Net::HTTP#request_post]:
   #   Sends a POST request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
@@ -597,8 +601,7 @@ module Gem::Net   #:nodoc:
   #   Returns whether +self+ is a proxy class.
   # - {#proxy?}[rdoc-ref:Gem::Net::HTTP#proxy?]:
   #   Returns whether +self+ has a proxy.
-  # - {#proxy_address}[rdoc-ref:Gem::Net::HTTP#proxy_address]
-  #   (aliased as {#proxyaddr}[rdoc-ref:Gem::Net::HTTP#proxyaddr]):
+  # - {#proxy_address}[rdoc-ref:Gem::Net::HTTP#proxy_address]:
   #   Returns the proxy address.
   # - {#proxy_from_env?}[rdoc-ref:Gem::Net::HTTP#proxy_from_env?]:
   #   Returns whether the proxy is taken from an environment variable.
@@ -710,8 +713,7 @@ module Gem::Net   #:nodoc:
   # === \HTTP Version
   #
   # - {::version_1_2?}[rdoc-ref:Gem::Net::HTTP.version_1_2?]
-  #   (aliased as {::is_version_1_2?}[rdoc-ref:Gem::Net::HTTP.is_version_1_2?]
-  #   and {::version_1_2}[rdoc-ref:Gem::Net::HTTP.version_1_2]):
+  #   (aliased as {::version_1_2}[rdoc-ref:Gem::Net::HTTP.version_1_2]):
   #   Returns true; retained for compatibility.
   #
   # === Debugging
@@ -722,7 +724,7 @@ module Gem::Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.4.0"
+    VERSION = "0.9.1"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -788,7 +790,7 @@ module Gem::Net   #:nodoc:
     #     "completed": false
     #   }
     #
-    # With URI object +uri+ and optional hash argument +headers+:
+    # With Gem::URI object +uri+ and optional hash argument +headers+:
     #
     #   uri = Gem::URI('https://jsonplaceholder.typicode.com/todos/1')
     #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
@@ -861,7 +863,7 @@ module Gem::Net   #:nodoc:
 
     # Posts data to a host; returns a Gem::Net::HTTPResponse object.
     #
-    # Argument +url+ must be a URI;
+    # Argument +url+ must be a Gem::URI;
     # argument +data+ must be a hash:
     #
     #   _uri = uri.dup
@@ -886,6 +888,39 @@ module Gem::Net   #:nodoc:
       start(url.hostname, url.port,
             :use_ssl => url.scheme == 'https' ) {|http|
         http.request(req)
+      }
+    end
+
+    # Sends a PUT request to the server; returns a Gem::Net::HTTPResponse object.
+    #
+    # Argument +url+ must be a URL;
+    # argument +data+ must be a string:
+    #
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = '{"title": "foo", "body": "bar", "userId": 1}'
+    #   headers = {'content-type': 'application/json'}
+    #   res = Gem::Net::HTTP.put(_uri, data, headers) # => #<Gem::Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
+    #
+    # Output:
+    #
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": 1,
+    #     "id": 101
+    #   }
+    #
+    # Related:
+    #
+    # - Gem::Net::HTTP::Put: request class for \HTTP method +PUT+.
+    # - Gem::Net::HTTP#put: convenience method for \HTTP method +PUT+.
+    #
+    def HTTP.put(url, data, header = nil)
+      start(url.hostname, url.port,
+            :use_ssl => url.scheme == 'https' ) {|http|
+        http.put(url, data, header)
       }
     end
 
@@ -1062,7 +1097,7 @@ module Gem::Net   #:nodoc:
     # For proxy-defining arguments +p_addr+ through +p_no_proxy+,
     # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     #
-    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
+    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil, p_use_ssl = nil)
       http = super address, port
 
       if proxy_class? then # from Gem::Net::HTTP::Proxy()
@@ -1071,6 +1106,7 @@ module Gem::Net   #:nodoc:
         http.proxy_port     = @proxy_port
         http.proxy_user     = @proxy_user
         http.proxy_pass     = @proxy_pass
+        http.proxy_use_ssl  = @proxy_use_ssl
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
@@ -1082,34 +1118,68 @@ module Gem::Net   #:nodoc:
         http.proxy_port    = p_port || default_port
         http.proxy_user    = p_user
         http.proxy_pass    = p_pass
+        http.proxy_use_ssl = p_use_ssl
       end
 
       http
+    end
+
+    class << HTTP
+      # Allows to set the default configuration that will be used
+      # when creating a new connection.
+      #
+      # Example:
+      #
+      #   Gem::Net::HTTP.default_configuration = {
+      #     read_timeout: 1,
+      #     write_timeout: 1
+      #   }
+      #   http = Gem::Net::HTTP.new(hostname)
+      #   http.open_timeout   # => 60
+      #   http.read_timeout   # => 1
+      #   http.write_timeout  # => 1
+      #
+      attr_accessor :default_configuration
     end
 
     # Creates a new \Gem::Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil) # :nodoc:
+      defaults = {
+        keep_alive_timeout: 2,
+        close_on_empty_response: false,
+        open_timeout: 60,
+        read_timeout: 60,
+        write_timeout: 60,
+        continue_timeout: nil,
+        max_retries: 1,
+        debug_output: nil,
+        response_body_encoding: false,
+        ignore_eof: true
+      }
+      options = defaults.merge(self.class.default_configuration || {})
+
       @address = address
       @port    = (port || HTTP.default_port)
       @ipaddr = nil
       @local_host = nil
       @local_port = nil
       @curr_http_version = HTTPVersion
-      @keep_alive_timeout = 2
+      @keep_alive_timeout = options[:keep_alive_timeout]
       @last_communicated = nil
-      @close_on_empty_response = false
+      @close_on_empty_response = options[:close_on_empty_response]
       @socket  = nil
       @started = false
-      @open_timeout = 60
-      @read_timeout = 60
-      @write_timeout = 60
-      @continue_timeout = nil
-      @max_retries = 1
-      @debug_output = nil
-      @response_body_encoding = false
-      @ignore_eof = true
+      @open_timeout = options[:open_timeout]
+      @read_timeout = options[:read_timeout]
+      @write_timeout = options[:write_timeout]
+      @continue_timeout = options[:continue_timeout]
+      @max_retries = options[:max_retries]
+      @debug_output = options[:debug_output]
+      @response_body_encoding = options[:response_body_encoding]
+      @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1117,6 +1187,7 @@ module Gem::Net   #:nodoc:
       @proxy_port     = nil
       @proxy_user     = nil
       @proxy_pass     = nil
+      @proxy_use_ssl  = nil
 
       @use_ssl = false
       @ssl_context = nil
@@ -1217,7 +1288,7 @@ module Gem::Net   #:nodoc:
     # - The name of an encoding.
     # - An alias for an encoding name.
     #
-    # See {Encoding}[rdoc-ref:Encoding].
+    # See {Encoding}[https://docs.ruby-lang.org/en/master/Encoding.html].
     #
     # Examples:
     #
@@ -1251,6 +1322,10 @@ module Gem::Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets whether the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
+    attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
     #
@@ -1440,23 +1515,6 @@ module Gem::Net   #:nodoc:
       @use_ssl = flag
     end
 
-    SSL_IVNAMES = [
-      :@ca_file,
-      :@ca_path,
-      :@cert,
-      :@cert_store,
-      :@ciphers,
-      :@extra_chain_cert,
-      :@key,
-      :@ssl_timeout,
-      :@ssl_version,
-      :@min_version,
-      :@max_version,
-      :@verify_callback,
-      :@verify_depth,
-      :@verify_mode,
-      :@verify_hostname,
-    ] # :nodoc:
     SSL_ATTRIBUTES = [
       :ca_file,
       :ca_path,
@@ -1473,7 +1531,9 @@ module Gem::Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ] # :nodoc:
+    ].freeze # :nodoc:
+
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
@@ -1490,11 +1550,11 @@ module Gem::Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[OpenSSL::SSL::SSL::Context#ciphers=].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[OpenSSL::SSL::SSL::Context#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1504,15 +1564,15 @@ module Gem::Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[OpenSSL::SSL::SSL::Context#ssl_version=].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[OpenSSL::SSL::SSL::Context#min_version=].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[OpenSSL::SSL::SSL::Context#max_version=].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1528,7 +1588,7 @@ module Gem::Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_mode].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[OpenSSL::SSL::SSL::Context#verify_hostname=].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -1576,6 +1636,21 @@ module Gem::Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1598,19 +1673,26 @@ module Gem::Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
+      begin
+        s = timeouted_connect(conn_addr, conn_port)
+      rescue => e
+        if (defined?(IO::TimeoutError) && e.is_a?(IO::TimeoutError)) || e.is_a?(Errno::ETIMEDOUT)  # for compatibility with previous versions
+          e = Gem::Net::OpenTimeout.new(e)
         end
-      }
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
         if proxy?
-          plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
+          if @proxy_use_ssl
+            proxy_sock = OpenSSL::SSL::SSLSocket.new(s)
+            ssl_socket_connect(proxy_sock, @open_timeout)
+          else
+            proxy_sock = s
+          end
+          proxy_sock = BufferedIO.new(proxy_sock, read_timeout: @read_timeout,
                                       write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
@@ -1621,8 +1703,8 @@ module Gem::Net   #:nodoc:
             buf << "Proxy-Authorization: Basic #{credential}\r\n"
           end
           buf << "\r\n"
-          plain_sock.write(buf)
-          HTTPResponse.read_new(plain_sock).value
+          proxy_sock.write(buf)
+          HTTPResponse.read_new(proxy_sock).value
           # assuming nothing left in buffers after successful CONNECT response
         end
 
@@ -1692,23 +1774,30 @@ module Gem::Net   #:nodoc:
     end
     private :connect
 
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+
+    def timeouted_connect(conn_addr, conn_port)
+      if TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+      else
+        Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        }
+      end
+    end
+    private :timeouted_connect
+
     def on_connect
     end
     private :on_connect
-
-    # Finishes the \HTTP session:
-    #
-    #   http = Gem::Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
 
     def do_finish
       @started = false
@@ -1730,13 +1819,14 @@ module Gem::Net   #:nodoc:
     @proxy_port = nil
     @proxy_user = nil
     @proxy_pass = nil
+    @proxy_use_ssl = nil
 
     # Creates an \HTTP proxy class which behaves like \Gem::Net::HTTP, but
     # performs all access via the specified proxy.
     #
     # This class is obsolete.  You may pass these same parameters directly to
     # \Gem::Net::HTTP.new.  See Gem::Net::HTTP.new for details of the arguments.
-    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil) #:nodoc:
+    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_use_ssl = nil) #:nodoc:
       return self unless p_addr
 
       Class.new(self) {
@@ -1754,8 +1844,11 @@ module Gem::Net   #:nodoc:
 
         @proxy_user = p_user
         @proxy_pass = p_pass
+        @proxy_use_ssl = p_use_ssl
       }
     end
+
+    # :startdoc:
 
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
@@ -1778,6 +1871,9 @@ module Gem::Net   #:nodoc:
       # Returns the password for accessing the proxy, or +nil+ if none;
       # see Gem::Net::HTTP@Proxy+Server.
       attr_reader :proxy_pass
+
+      # Use SSL when talking to the proxy. If Gem::Net::HTTP does not use a proxy, nil.
+      attr_reader :proxy_use_ssl
     end
 
     # Returns +true+ if a proxy server is defined, +false+ otherwise;
@@ -1793,7 +1889,7 @@ module Gem::Net   #:nodoc:
       @proxy_from_env
     end
 
-    # The proxy URI determined from the environment for this connection.
+    # The proxy Gem::URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
       return if @proxy_uri == false
       @proxy_uri ||= Gem::URI::HTTP.new(
@@ -1848,9 +1944,11 @@ module Gem::Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
-      require 'cgi/util'
+      require 'cgi/escape'
+      require 'cgi/util' unless defined?(CGI::EscapeExt)
       CGI.unescape(value)
     end
 
@@ -1875,6 +1973,7 @@ module Gem::Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2011,6 +2110,11 @@ module Gem::Net   #:nodoc:
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
     #   http = Gem::Net::HTTP.new(hostname)
     #   http.put('/todos/1', data) # => #<Gem::Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Gem::Net::HTTP::Put: request class for \HTTP method PUT.
+    # - Gem::Net::HTTP.put: sends PUT request, returns response body.
     #
     def put(path, data, initheader = nil)
       request(Put.new(path, initheader), data)
@@ -2324,7 +2428,9 @@ module Gem::Net   #:nodoc:
       res
     end
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    # :stopdoc:
+
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -2350,7 +2456,10 @@ module Gem::Net   #:nodoc:
           res
         }
         res.reading_body(@socket, req.response_body_permitted?) {
-          yield res if block_given?
+          if block_given?
+            count = max_retries # Don't restart in the middle of a download
+            yield res
+          end
         }
       rescue Gem::Net::OpenTimeout
         raise
@@ -2478,6 +2587,11 @@ module Gem::Net   #:nodoc:
     alias_method :D, :debug
   end
 
+  # for backward compatibility until Ruby 4.0
+  # https://bugs.ruby-lang.org/issues/20900
+  # https://github.com/bblimke/webmock/pull/1081
+  HTTPSession = HTTP
+  deprecate_constant :HTTPSession
 end
 
 require_relative 'http/exceptions'
@@ -2492,5 +2606,3 @@ require_relative 'http/response'
 require_relative 'http/responses'
 
 require_relative 'http/proxy_delta'
-
-require_relative 'http/backward'

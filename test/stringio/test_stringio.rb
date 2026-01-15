@@ -14,6 +14,24 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_do_not_mutate_shared_buffers
+    # Ensure we have two strings that are not embedded but have the same shared
+    # string reference.
+    #
+    # In this case, we must use eval because we need two strings literals that
+    # are long enough they cannot be embedded, but also contain the same bytes.
+
+    a = eval("+"+("x" * 1024).dump)
+    b = eval("+"+("x" * 1024).dump)
+
+    s = StringIO.new(b)
+    s.getc
+    s.ungetc '#'
+
+    # We mutated b, so a should not be mutated
+    assert_equal("x", a[0])
+  end
+
   def test_version
     assert_kind_of(String, StringIO::VERSION)
   end
@@ -46,6 +64,35 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.gets
     io.puts "abc"
     assert_nil io.string
+
+    # Null device StringIO just drop ungot string
+    io.ungetc '#'
+    assert_nil io.getc
+  end
+
+  def test_eof_null
+    io = StringIO.new(nil)
+    assert_predicate io, :eof?
+  end
+
+  def test_pread_null
+    io = StringIO.new(nil)
+    assert_raise(EOFError) { io.pread(1, 0) }
+  end
+
+  def test_read_null
+    io = StringIO.new(nil)
+    assert_equal "", io.read(0)
+  end
+
+  def test_seek_null
+    io = StringIO.new(nil)
+    assert_equal(0, io.seek(0, IO::SEEK_SET))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_CUR))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_END))  # This should not segfault
+    assert_equal(0, io.pos)
   end
 
   def test_truncate
@@ -465,6 +512,11 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_seek_frozen_string
+    f = StringIO.new(-"1234")
+    assert_equal(0, f.seek(1))
+  end
+
   def test_each_byte
     f = StringIO.new("1234")
     a = []
@@ -842,6 +894,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_match(/\Ab+\z/, s.string)
   end
 
+  def test_ungetc_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
+  end
+
   def test_ungetbyte_pos
     b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
     s = StringIO.new( b )
@@ -874,6 +937,17 @@ class TestStringIO < Test::Unit::TestCase
     s.ungetbyte('b' * (count * 5))
     assert_equal((count * 5), s.string.size)
     assert_match(/\Ab+\z/, s.string)
+  end
+
+  def test_ungetbyte_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetbyte(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
   end
 
   def test_frozen
@@ -922,7 +996,7 @@ class TestStringIO < Test::Unit::TestCase
     intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
     return if intptr_max > StringIO::MAX_LENGTH
     limit = intptr_max - 0x10
-    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-W0 -rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
       ary = []
@@ -990,6 +1064,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(s.string, :ascii_only?)
   end
 
+  def test_coderange_after_read_into_buffer
+    s = StringIO.new("01234567890".b)
+
+    buf = "¿Cómo estás? Ça va bien?"
+    assert_not_predicate(buf, :ascii_only?)
+
+    assert_predicate(s.string, :ascii_only?)
+
+    s.read(10, buf)
+
+    assert_predicate(buf, :ascii_only?)
+    assert_equal '0123456789', buf
+  end
+
   require "objspace"
   if ObjectSpace.respond_to?(:dump) && ObjectSpace.dump(eval(%{"test"})).include?('"chilled":true') # Ruby 3.4+ chilled strings
     def test_chilled_string
@@ -1006,6 +1094,13 @@ class TestStringIO < Test::Unit::TestCase
       io.string = chilled_string
       assert_warning(/literal string will be frozen/) { io << "test" }
       assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+
+    def test_chilled_string_set_enocoding
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning("") { io.set_encoding(Encoding::BINARY) }
       assert_same(chilled_string, io.string)
     end
   end

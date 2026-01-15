@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -93,12 +93,15 @@ describe "IO#readpartial" do
     @rd.readpartial(0).should == ""
   end
 
-  ruby_bug "#18421", ""..."3.0.4" do
-    it "clears and returns the given buffer if the length argument is 0" do
-      buffer = +"existing content"
-      @rd.readpartial(0, buffer).should == buffer
-      buffer.should == ""
-    end
+  it "raises IOError if the stream is closed and the length argument is 0" do
+    @rd.close
+    -> { @rd.readpartial(0) }.should raise_error(IOError, "closed stream")
+  end
+
+  it "clears and returns the given buffer if the length argument is 0" do
+    buffer = +"existing content"
+    @rd.readpartial(0, buffer).should == buffer
+    buffer.should == ""
   end
 
   it "preserves the encoding of the given buffer" do

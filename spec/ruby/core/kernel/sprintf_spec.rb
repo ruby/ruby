@@ -13,28 +13,52 @@ end
 
 describe "Kernel#sprintf" do
   it_behaves_like :kernel_sprintf, -> format, *args {
-    sprintf(format, *args)
+    r = nil
+    -> {
+      r = sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 
   it_behaves_like :kernel_sprintf_encoding, -> format, *args {
-    sprintf(format, *args)
+    r = nil
+    -> {
+      r = sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 
   it_behaves_like :kernel_sprintf_to_str, -> format, *args {
-    sprintf(format, *args)
+    r = nil
+    -> {
+      r = sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 end
 
 describe "Kernel.sprintf" do
   it_behaves_like :kernel_sprintf, -> format, *args {
-    Kernel.sprintf(format, *args)
+    r = nil
+    -> {
+      r = Kernel.sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 
   it_behaves_like :kernel_sprintf_encoding, -> format, *args {
-    Kernel.sprintf(format, *args)
+    r = nil
+    -> {
+      r = Kernel.sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 
   it_behaves_like :kernel_sprintf_to_str, -> format, *args {
-    Kernel.sprintf(format, *args)
+    r = nil
+    -> {
+      r = Kernel.sprintf(format, *args)
+    }.should_not complain(verbose: true)
+    r
   }
 end

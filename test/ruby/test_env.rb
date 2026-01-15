@@ -2,7 +2,9 @@
 require 'test/unit'
 
 class TestEnv < Test::Unit::TestCase
-  IGNORE_CASE = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  windows = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  IGNORE_CASE = windows
+  ENCODING = windows ? Encoding::UTF_8 : Encoding.find("locale")
   PATH_ENV = "PATH"
   INVALID_ENVVARS = [
     "foo\0bar",
@@ -345,12 +347,23 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
     s = ENV.inspect
+    expected = [%("foo" => "bar"), %("baz" => "qux")]
+    unless s.start_with?(/\{"foo"/i)
+      expected.reverse!
+    end
+    expected = '{' + expected.join(', ') + '}'
     if IGNORE_CASE
       s = s.upcase
-      assert(s == '{"FOO"=>"BAR", "BAZ"=>"QUX"}' || s == '{"BAZ"=>"QUX", "FOO"=>"BAR"}')
-    else
-      assert(s == '{"foo"=>"bar", "baz"=>"qux"}' || s == '{"baz"=>"qux", "foo"=>"bar"}')
+      expected = expected.upcase
     end
+    assert_equal(expected, s)
+  end
+
+  def test_inspect_encoding
+    ENV.clear
+    key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
+    ENV[key] = "foo"
+    assert_equal(%{{#{(key.encode(ENCODING) rescue key.b).inspect} => "foo"}}, ENV.inspect)
   end
 
   def test_to_a
@@ -359,12 +372,7 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     a = ENV.to_a
     assert_equal(2, a.size)
-    if IGNORE_CASE
-      a = a.map {|x| x.map {|y| y.upcase } }
-      assert(a == [%w(FOO BAR), %w(BAZ QUX)] || a == [%w(BAZ QUX), %w(FOO BAR)])
-    else
-      assert(a == [%w(foo bar), %w(baz qux)] || a == [%w(baz qux), %w(foo bar)])
-    end
+    check([%w(baz qux), %w(foo bar)], a)
   end
 
   def test_rehash
@@ -403,8 +411,7 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
-    assert_equal(encoding, v.encoding)
+    assert_equal(ENCODING, v.encoding)
   end
 
   def test_has_value2
@@ -450,13 +457,14 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
   end
 
-  def check(as, bs)
+  def assert_equal_env(as, bs)
     if IGNORE_CASE
       as = as.map {|k, v| [k.upcase, v] }
       bs = bs.map {|k, v| [k.upcase, v] }
     end
     assert_equal(as.sort, bs.sort)
   end
+  alias check assert_equal_env
 
   def test_shift
     ENV.clear
@@ -517,7 +525,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(huge_value, ENV["foo"])
   end
 
-  if /mswin|mingw/ =~ RUBY_PLATFORM
+  if windows
     def windows_version
       @windows_version ||= %x[ver][/Version (\d+)/, 1].to_i
     end
@@ -593,13 +601,13 @@ class TestEnv < Test::Unit::TestCase
       rescue Exception => e
         #{exception_var} = e
       end
-      Ractor.yield #{exception_var}.class
+      port.send #{exception_var}.class
     end;
   end
 
   def str_for_assert_raise_on_yielded_exception_class(expected_error_class, ractor_var)
     <<-"end;"
-      error_class = #{ractor_var}.take
+      error_class = #{ractor_var}.receive
       assert_raise(#{expected_error_class}) do
         if error_class < Exception
           raise error_class
@@ -641,100 +649,101 @@ class TestEnv < Test::Unit::TestCase
 
   def test_bracket_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        Ractor.yield ENV['test']
-        Ractor.yield ENV['TEST']
+      Ractor.new port = Ractor::Port.new do |port|
+        port << ENV['test']
+        port << ENV['TEST']
         ENV['test'] = 'foo'
-        Ractor.yield ENV['test']
-        Ractor.yield ENV['TEST']
+        port << ENV['test']
+        port << ENV['TEST']
         ENV['TEST'] = 'bar'
-        Ractor.yield ENV['TEST']
-        Ractor.yield ENV['test']
+        port << ENV['TEST']
+        port << ENV['test']
         #{str_for_yielding_exception_class("ENV[1]")}
         #{str_for_yielding_exception_class("ENV[1] = 'foo'")}
         #{str_for_yielding_exception_class("ENV['test'] = 0")}
       end
-      assert_nil(r.take)
-      assert_nil(r.take)
-      assert_equal('foo', r.take)
+      assert_nil(port.receive)
+      assert_nil(port.receive)
+      assert_equal('foo', port.receive)
       if #{ignore_case_str}
-        assert_equal('foo', r.take)
+        assert_equal('foo', port.receive)
       else
-        assert_nil(r.take)
+        assert_nil(port.receive)
       end
-      assert_equal('bar', r.take)
+      assert_equal('bar', port.receive)
       if #{ignore_case_str}
-        assert_equal('bar', r.take)
+        assert_equal('bar', port.receive)
       else
-        assert_equal('foo', r.take)
+        assert_equal('foo', port.receive)
       end
       3.times do
-        #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+        #{str_for_assert_raise_on_yielded_exception_class(TypeError, "port")}
       end
     end;
   end
 
   def test_dup_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         #{str_for_yielding_exception_class("ENV.dup")}
       end
-      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "port")}
     end;
   end
 
   def test_has_value_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      port = Ractor::Port.new
+      Ractor.new port do |port|
         val = 'a'
         val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
         ENV['test'] = val[0...-1]
-        Ractor.yield(ENV.has_value?(val))
-        Ractor.yield(ENV.has_value?(val.upcase))
+        port.send(ENV.has_value?(val))
+        port.send(ENV.has_value?(val.upcase))
         ENV['test'] = val
-        Ractor.yield(ENV.has_value?(val))
-        Ractor.yield(ENV.has_value?(val.upcase))
+        port.send(ENV.has_value?(val))
+        port.send(ENV.has_value?(val.upcase))
         ENV['test'] = val.upcase
-        Ractor.yield ENV.has_value?(val)
-        Ractor.yield ENV.has_value?(val.upcase)
+        port.send ENV.has_value?(val)
+        port.send ENV.has_value?(val.upcase)
       end
-      assert_equal(false, r.take)
-      assert_equal(false, r.take)
-      assert_equal(true, r.take)
-      assert_equal(false, r.take)
-      assert_equal(false, r.take)
-      assert_equal(true, r.take)
+      assert_equal(false, port.receive)
+      assert_equal(false, port.receive)
+      assert_equal(true, port.receive)
+      assert_equal(false, port.receive)
+      assert_equal(false, port.receive)
+      assert_equal(true, port.receive)
     end;
   end
 
   def test_key_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         val = 'a'
         val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
         ENV['test'] = val[0...-1]
-        Ractor.yield ENV.key(val)
-        Ractor.yield ENV.key(val.upcase)
+        port.send ENV.key(val)
+        port.send ENV.key(val.upcase)
         ENV['test'] = val
-        Ractor.yield ENV.key(val)
-        Ractor.yield ENV.key(val.upcase)
+        port.send ENV.key(val)
+        port.send ENV.key(val.upcase)
         ENV['test'] = val.upcase
-        Ractor.yield ENV.key(val)
-        Ractor.yield ENV.key(val.upcase)
+        port.send ENV.key(val)
+        port.send ENV.key(val.upcase)
       end
-      assert_nil(r.take)
-      assert_nil(r.take)
+      assert_nil(port.receive)
+      assert_nil(port.receive)
       if #{ignore_case_str}
-        assert_equal('TEST', r.take.upcase)
+        assert_equal('TEST', port.receive.upcase)
       else
-        assert_equal('test', r.take)
+        assert_equal('test', port.receive)
       end
-      assert_nil(r.take)
-      assert_nil(r.take)
+      assert_nil(port.receive)
+      assert_nil(port.receive)
       if #{ignore_case_str}
-        assert_equal('TEST', r.take.upcase)
+        assert_equal('TEST', port.receive.upcase)
       else
-        assert_equal('test', r.take)
+        assert_equal('test', port.receive)
       end
     end;
 
@@ -742,87 +751,87 @@ class TestEnv < Test::Unit::TestCase
 
   def test_delete_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         #{str_to_yield_invalid_envvar_errors("v", "ENV.delete(v)")}
-        Ractor.yield ENV.delete("TEST")
+        port.send ENV.delete("TEST")
         #{str_for_yielding_exception_class("ENV.delete('#{PATH_ENV}')")}
-        Ractor.yield(ENV.delete("TEST"){|name| "NO "+name})
+        port.send(ENV.delete("TEST"){|name| "NO "+name})
       end
-      #{str_to_receive_invalid_envvar_errors("r")}
-      assert_nil(r.take)
-      exception_class = r.take
+      #{str_to_receive_invalid_envvar_errors("port")}
+      assert_nil(port.receive)
+      exception_class = port.receive
       assert_equal(NilClass, exception_class)
-      assert_equal("NO TEST", r.take)
+      assert_equal("NO TEST", port.receive)
     end;
   end
 
   def test_getenv_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         #{str_to_yield_invalid_envvar_errors("v", "ENV[v]")}
         ENV["#{PATH_ENV}"] = ""
-        Ractor.yield ENV["#{PATH_ENV}"]
-        Ractor.yield ENV[""]
+        port.send ENV["#{PATH_ENV}"]
+        port.send ENV[""]
       end
-      #{str_to_receive_invalid_envvar_errors("r")}
-      assert_equal("", r.take)
-      assert_nil(r.take)
+      #{str_to_receive_invalid_envvar_errors("port")}
+      assert_equal("", port.receive)
+      assert_nil(port.receive)
     end;
   end
 
   def test_fetch_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["test"] = "foo"
-        Ractor.yield ENV.fetch("test")
+        port.send ENV.fetch("test")
         ENV.delete("test")
         #{str_for_yielding_exception_class("ENV.fetch('test')", exception_var: "ex")}
-        Ractor.yield ex.receiver.object_id
-        Ractor.yield ex.key
-        Ractor.yield ENV.fetch("test", "foo")
-        Ractor.yield(ENV.fetch("test"){"bar"})
+        port.send ex.receiver.object_id
+        port.send ex.key
+        port.send ENV.fetch("test", "foo")
+        port.send(ENV.fetch("test"){"bar"})
         #{str_to_yield_invalid_envvar_errors("v", "ENV.fetch(v)")}
         #{str_for_yielding_exception_class("ENV.fetch('#{PATH_ENV}', 'foo')")}
         ENV['#{PATH_ENV}'] = ""
-        Ractor.yield ENV.fetch('#{PATH_ENV}')
+        port.send ENV.fetch('#{PATH_ENV}')
       end
-      assert_equal("foo", r.take)
-      #{str_for_assert_raise_on_yielded_exception_class(KeyError, "r")}
-      assert_equal(ENV.object_id, r.take)
-      assert_equal("test", r.take)
-      assert_equal("foo", r.take)
-      assert_equal("bar", r.take)
-      #{str_to_receive_invalid_envvar_errors("r")}
-      exception_class = r.take
+      assert_equal("foo", port.receive)
+      #{str_for_assert_raise_on_yielded_exception_class(KeyError, "port")}
+      assert_equal(ENV.object_id, port.receive)
+      assert_equal("test", port.receive)
+      assert_equal("foo", port.receive)
+      assert_equal("bar", port.receive)
+      #{str_to_receive_invalid_envvar_errors("port")}
+      exception_class = port.receive
       assert_equal(NilClass, exception_class)
-      assert_equal("", r.take)
+      assert_equal("", port.receive)
     end;
   end
 
   def test_aset_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         #{str_for_yielding_exception_class("ENV['test'] = nil")}
         ENV["test"] = nil
-        Ractor.yield ENV["test"]
+        port.send ENV["test"]
         #{str_to_yield_invalid_envvar_errors("v", "ENV[v] = 'test'")}
         #{str_to_yield_invalid_envvar_errors("v", "ENV['test'] = v")}
       end
-      exception_class = r.take
+      exception_class = port.receive
       assert_equal(NilClass, exception_class)
-      assert_nil(r.take)
-      #{str_to_receive_invalid_envvar_errors("r")}
-      #{str_to_receive_invalid_envvar_errors("r")}
+      assert_nil(port.receive)
+      #{str_to_receive_invalid_envvar_errors("port")}
+      #{str_to_receive_invalid_envvar_errors("port")}
     end;
   end
 
   def test_keys_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         a = ENV.keys
-        Ractor.yield a
+        port.send a
       end
-      a = r.take
+      a = port.receive
       assert_kind_of(Array, a)
       a.each {|k| assert_kind_of(String, k) }
     end;
@@ -831,11 +840,11 @@ class TestEnv < Test::Unit::TestCase
 
   def test_each_key_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        ENV.each_key {|k| Ractor.yield(k)}
-        Ractor.yield "finished"
+      Ractor.new port = Ractor::Port.new do |port|
+        ENV.each_key {|k| port.send(k)}
+        port.send "finished"
       end
-      while((x=r.take) != "finished")
+      while((x=port.receive) != "finished")
         assert_kind_of(String, x)
       end
     end;
@@ -843,11 +852,11 @@ class TestEnv < Test::Unit::TestCase
 
   def test_values_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         a = ENV.values
-        Ractor.yield a
+        port.send a
       end
-      a = r.take
+      a = port.receive
       assert_kind_of(Array, a)
       a.each {|k| assert_kind_of(String, k) }
     end;
@@ -855,11 +864,11 @@ class TestEnv < Test::Unit::TestCase
 
   def test_each_value_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        ENV.each_value {|k| Ractor.yield(k)}
-        Ractor.yield "finished"
+      Ractor.new port = Ractor::Port.new do |port|
+        ENV.each_value {|k| port.send(k)}
+        port.send "finished"
       end
-      while((x=r.take) != "finished")
+      while((x=port.receive) != "finished")
         assert_kind_of(String, x)
       end
     end;
@@ -867,11 +876,11 @@ class TestEnv < Test::Unit::TestCase
 
   def test_each_pair_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        ENV.each_pair {|k, v| Ractor.yield([k,v])}
-        Ractor.yield "finished"
+      Ractor.new port = Ractor::Port.new do |port|
+        ENV.each_pair {|k, v| port.send([k,v])}
+        port.send "finished"
       end
-      while((k,v=r.take) != "finished")
+      while((k,v=port.receive) != "finished")
         assert_kind_of(String, k)
         assert_kind_of(String, v)
       end
@@ -880,116 +889,116 @@ class TestEnv < Test::Unit::TestCase
 
   def test_reject_bang_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         ENV.reject! {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
-        Ractor.yield [h1, h2]
-        Ractor.yield(ENV.reject! {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" })
+        port.send [h1, h2]
+        port.send(ENV.reject! {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" })
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
-      assert_nil(r.take)
+      assert_nil(port.receive)
     end;
   end
 
   def test_delete_if_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
-        Ractor.yield [h1, h2]
-        Ractor.yield (ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }).object_id
+        port.send [h1, h2]
+        port.send (ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" })
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
-      assert_equal(ENV.object_id, r.take)
+      assert_same(ENV, port.receive)
     end;
   end
 
   def test_select_bang_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         ENV.select! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
-        Ractor.yield [h1, h2]
-        Ractor.yield(ENV.select! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
+        port.send [h1, h2]
+        port.send(ENV.select! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
-      assert_nil(r.take)
+      assert_nil(port.receive)
     end;
   end
 
   def test_filter_bang_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         ENV.filter! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
-        Ractor.yield [h1, h2]
-        Ractor.yield(ENV.filter! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
+        port.send [h1, h2]
+        port.send(ENV.filter! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
-      assert_nil(r.take)
+      assert_nil(port.receive)
     end;
   end
 
   def test_keep_if_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
-        Ractor.yield [h1, h2]
-        Ractor.yield (ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }).object_id
+        port.send [h1, h2]
+        port.send (ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
-      assert_equal(ENV.object_id, r.take)
+      assert_equal(ENV, port.receive)
     end;
   end
 
   def test_values_at_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["test"] = "foo"
-        Ractor.yield ENV.values_at("test", "test")
+        port.send ENV.values_at("test", "test")
       end
-      assert_equal(["foo", "foo"], r.take)
+      assert_equal(["foo", "foo"], port.receive)
     end;
   end
 
   def test_select_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["test"] = "foo"
         h = ENV.select {|k| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
-        Ractor.yield h.size
+        port.send h.size
         k = h.keys.first
         v = h.values.first
-        Ractor.yield [k, v]
+        port.send [k, v]
       end
-      assert_equal(1, r.take)
-      k, v = r.take
+      assert_equal(1, port.receive)
+      k, v = port.receive
       if #{ignore_case_str}
         assert_equal("TEST", k.upcase)
         assert_equal("FOO", v.upcase)
@@ -1002,16 +1011,16 @@ class TestEnv < Test::Unit::TestCase
 
   def test_filter_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["test"] = "foo"
         h = ENV.filter {|k| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
-        Ractor.yield(h.size)
+        port.send(h.size)
         k = h.keys.first
         v = h.values.first
-        Ractor.yield [k, v]
+        port.send [k, v]
       end
-      assert_equal(1, r.take)
-      k, v = r.take
+      assert_equal(1, port.receive)
+      k, v = port.receive
       if #{ignore_case_str}
         assert_equal("TEST", k.upcase)
         assert_equal("FOO", v.upcase)
@@ -1024,49 +1033,49 @@ class TestEnv < Test::Unit::TestCase
 
   def test_slice_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         ENV["bar"] = "rab"
-        Ractor.yield(ENV.slice())
-        Ractor.yield(ENV.slice(""))
-        Ractor.yield(ENV.slice("unknown"))
-        Ractor.yield(ENV.slice("foo", "baz"))
+        port.send(ENV.slice())
+        port.send(ENV.slice(""))
+        port.send(ENV.slice("unknown"))
+        port.send(ENV.slice("foo", "baz"))
       end
-      assert_equal({}, r.take)
-      assert_equal({}, r.take)
-      assert_equal({}, r.take)
-      assert_equal({"foo"=>"bar", "baz"=>"qux"}, r.take)
+      assert_equal({}, port.receive)
+      assert_equal({}, port.receive)
+      assert_equal({}, port.receive)
+      assert_equal({"foo"=>"bar", "baz"=>"qux"}, port.receive)
     end;
   end
 
   def test_except_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         ENV["bar"] = "rab"
-        Ractor.yield ENV.except()
-        Ractor.yield ENV.except("")
-        Ractor.yield ENV.except("unknown")
-        Ractor.yield ENV.except("foo", "baz")
+        port.send ENV.except()
+        port.send ENV.except("")
+        port.send ENV.except("unknown")
+        port.send ENV.except("foo", "baz")
       end
-      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
-      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
-      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
-      assert_equal({"bar"=>"rab"}, r.take)
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, port.receive)
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, port.receive)
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, port.receive)
+      assert_equal({"bar"=>"rab"}, port.receive)
     end;
   end
 
   def test_clear_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
-        Ractor.yield ENV.size
+        port.send ENV.size
       end
-      assert_equal(0, r.take)
+      assert_equal(0, port.receive)
     end;
   end
 
@@ -1075,46 +1084,51 @@ class TestEnv < Test::Unit::TestCase
       r = Ractor.new do
         ENV.to_s
       end
-      assert_equal("ENV", r.take)
+      assert_equal("ENV", r.value)
     end;
   end
 
   def test_inspect_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         s = ENV.inspect
-        Ractor.yield s
+        port.send s
       end
-      s = r.take
+      s = port.receive
+      expected = ['"foo" => "bar"', '"baz" => "qux"']
+      unless s.start_with?(/\{"foo"/i)
+        expected.reverse!
+      end
+      expected = "{" + expected.join(', ') + "}"
       if #{ignore_case_str}
         s = s.upcase
-        assert(s == '{"FOO"=>"BAR", "BAZ"=>"QUX"}' || s == '{"BAZ"=>"QUX", "FOO"=>"BAR"}')
-      else
-        assert(s == '{"foo"=>"bar", "baz"=>"qux"}' || s == '{"baz"=>"qux", "foo"=>"bar"}')
+        expected = expected.upcase
       end
+      assert_equal(expected, s)
     end;
   end
 
   def test_to_a_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         a = ENV.to_a
-        Ractor.yield a
+        port.send a
       end
-      a = r.take
+      a = port.receive
       assert_equal(2, a.size)
+      expected = [%w(baz qux), %w(foo bar)]
       if #{ignore_case_str}
-        a = a.map {|x| x.map {|y| y.upcase } }
-        assert(a == [%w(FOO BAR), %w(BAZ QUX)] || a == [%w(BAZ QUX), %w(FOO BAR)])
-      else
-        assert(a == [%w(foo bar), %w(baz qux)] || a == [%w(baz qux), %w(foo bar)])
+        a = a.map {|x, y| [x.upcase, y]}
+        expected.map! {|x, y| [x.upcase, y]}
       end
+      a.sort!
+      assert_equal(expected, a)
     end;
   end
 
@@ -1123,59 +1137,59 @@ class TestEnv < Test::Unit::TestCase
       r = Ractor.new do
         ENV.rehash
       end
-      assert_nil(r.take)
+      assert_nil(r.value)
     end;
   end
 
   def test_size_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         s = ENV.size
         ENV["test"] = "foo"
-        Ractor.yield [s, ENV.size]
+        port.send [s, ENV.size]
       end
-      s, s2 = r.take
+      s, s2 = port.receive
       assert_equal(s + 1, s2)
     end;
   end
 
   def test_empty_p_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
-        Ractor.yield ENV.empty?
+        port.send ENV.empty?
         ENV["test"] = "foo"
-        Ractor.yield ENV.empty?
+        port.send ENV.empty?
       end
-      assert r.take
-      assert !r.take
+      assert port.receive
+      assert !port.receive
     end;
   end
 
   def test_has_key_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        Ractor.yield ENV.has_key?("test")
+      Ractor.new port = Ractor::Port.new do |port|
+        port.send ENV.has_key?("test")
         ENV["test"] = "foo"
-        Ractor.yield ENV.has_key?("test")
+        port.send ENV.has_key?("test")
         #{str_to_yield_invalid_envvar_errors("v", "ENV.has_key?(v)")}
       end
-      assert !r.take
-      assert r.take
-      #{str_to_receive_invalid_envvar_errors("r")}
+      assert !port.receive
+      assert port.receive
+      #{str_to_receive_invalid_envvar_errors("port")}
     end;
   end
 
   def test_assoc_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        Ractor.yield ENV.assoc("test")
+      Ractor.new port = Ractor::Port.new do |port|
+        port.send ENV.assoc("test")
         ENV["test"] = "foo"
-        Ractor.yield ENV.assoc("test")
+        port.send ENV.assoc("test")
         #{str_to_yield_invalid_envvar_errors("v", "ENV.assoc(v)")}
       end
-      assert_nil(r.take)
-      k, v = r.take
+      assert_nil(port.receive)
+      k, v = port.receive
       if #{ignore_case_str}
         assert_equal("TEST", k.upcase)
         assert_equal("FOO", v.upcase)
@@ -1183,7 +1197,7 @@ class TestEnv < Test::Unit::TestCase
         assert_equal("test", k)
         assert_equal("foo", v)
       end
-      #{str_to_receive_invalid_envvar_errors("r")}
+      #{str_to_receive_invalid_envvar_errors("port")}
       encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
       assert_equal(encoding, v.encoding)
     end;
@@ -1191,29 +1205,29 @@ class TestEnv < Test::Unit::TestCase
 
   def test_has_value2_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
-        Ractor.yield ENV.has_value?("foo")
+        port.send ENV.has_value?("foo")
         ENV["test"] = "foo"
-        Ractor.yield ENV.has_value?("foo")
+        port.send ENV.has_value?("foo")
       end
-      assert !r.take
-      assert r.take
+      assert !port.receive
+      assert port.receive
     end;
   end
 
   def test_rassoc_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
-        Ractor.yield ENV.rassoc("foo")
+        port.send ENV.rassoc("foo")
         ENV["foo"] = "bar"
         ENV["test"] = "foo"
         ENV["baz"] = "qux"
-        Ractor.yield ENV.rassoc("foo")
+        port.send ENV.rassoc("foo")
       end
-      assert_nil(r.take)
-      k, v = r.take
+      assert_nil(port.receive)
+      k, v = port.receive
       if #{ignore_case_str}
         assert_equal("TEST", k.upcase)
         assert_equal("FOO", v.upcase)
@@ -1226,39 +1240,39 @@ class TestEnv < Test::Unit::TestCase
 
   def test_to_hash_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h = {}
         ENV.each {|k, v| h[k] = v }
-        Ractor.yield [h, ENV.to_hash]
+        port.send [h, ENV.to_hash]
       end
-      h, h2 = r.take
+      h, h2 = port.receive
       assert_equal(h, h2)
     end;
   end
 
   def test_to_h_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
-        Ractor.yield [ENV.to_hash, ENV.to_h]
-        Ractor.yield [ENV.map {|k, v| ["$\#{k}", v.size]}.to_h, ENV.to_h {|k, v| ["$\#{k}", v.size]}]
+      Ractor.new port = Ractor::Port.new do |port|
+        port.send [ENV.to_hash, ENV.to_h]
+        port.send [ENV.map {|k, v| ["$\#{k}", v.size]}.to_h, ENV.to_h {|k, v| ["$\#{k}", v.size]}]
       end
-      a, b = r.take
+      a, b = port.receive
       assert_equal(a,b)
-      c, d = r.take
+      c, d = port.receive
       assert_equal(c,d)
     end;
   end
 
   def test_reject_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         h1 = {}
         ENV.each_pair {|k, v| h1[k] = v }
         ENV["test"] = "foo"
         h2 = ENV.reject {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
-        Ractor.yield [h1, h2]
+        port.send [h1, h2]
       end
-      h1, h2 = r.take
+      h1, h2 = port.receive
       assert_equal(h1, h2)
     end;
   end
@@ -1266,86 +1280,86 @@ class TestEnv < Test::Unit::TestCase
   def test_shift_in_ractor
     assert_ractor(<<-"end;")
       #{STR_DEFINITION_FOR_CHECK}
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         a = ENV.shift
         b = ENV.shift
-        Ractor.yield [a,b]
-        Ractor.yield ENV.shift
+        port.send [a,b]
+        port.send ENV.shift
       end
-      a,b = r.take
+      a,b = port.receive
       check([a, b], [%w(foo bar), %w(baz qux)])
-      assert_nil(r.take)
+      assert_nil(port.receive)
     end;
   end
 
   def test_invert_in_ractor
     assert_ractor(<<-"end;")
       #{STR_DEFINITION_FOR_CHECK}
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
-        Ractor.yield(ENV.invert)
+        port.send(ENV.invert)
       end
-      check(r.take.to_a, [%w(bar foo), %w(qux baz)])
+      check(port.receive.to_a, [%w(bar foo), %w(qux baz)])
     end;
   end
 
   def test_replace_in_ractor
     assert_ractor(<<-"end;")
       #{STR_DEFINITION_FOR_CHECK}
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["foo"] = "xxx"
         ENV.replace({"foo"=>"bar", "baz"=>"qux"})
-        Ractor.yield ENV.to_hash
+        port.send ENV.to_hash
         ENV.replace({"Foo"=>"Bar", "Baz"=>"Qux"})
-        Ractor.yield ENV.to_hash
+        port.send ENV.to_hash
       end
-      check(r.take.to_a, [%w(foo bar), %w(baz qux)])
-      check(r.take.to_a, [%w(Foo Bar), %w(Baz Qux)])
+      check(port.receive.to_a, [%w(foo bar), %w(baz qux)])
+      check(port.receive.to_a, [%w(Foo Bar), %w(Baz Qux)])
     end;
   end
 
   def test_update_in_ractor
     assert_ractor(<<-"end;")
       #{STR_DEFINITION_FOR_CHECK}
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         ENV.update({"baz"=>"quux","a"=>"b"})
-        Ractor.yield ENV.to_hash
+        port.send ENV.to_hash
         ENV.clear
         ENV["foo"] = "bar"
         ENV["baz"] = "qux"
         ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
-        Ractor.yield ENV.to_hash
+        port.send ENV.to_hash
       end
-      check(r.take.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
-      check(r.take.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+      check(port.receive.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
+      check(port.receive.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
     end;
   end
 
   def test_huge_value_in_ractor
     assert_ractor(<<-"end;")
       huge_value = "bar" * 40960
-      r = Ractor.new huge_value do |v|
+      Ractor.new port = Ractor::Port.new, huge_value do |port, v|
         ENV["foo"] = "bar"
         #{str_for_yielding_exception_class("ENV['foo'] = v ")}
-        Ractor.yield ENV["foo"]
+        port.send ENV["foo"]
       end
 
       if /mswin|ucrt/ =~ RUBY_PLATFORM
-        #{str_for_assert_raise_on_yielded_exception_class(Errno::EINVAL, "r")}
-        result = r.take
+        #{str_for_assert_raise_on_yielded_exception_class(Errno::EINVAL, "port")}
+        result = port.receive
         assert_equal("bar", result)
       else
-        exception_class = r.take
+        exception_class = port.receive
         assert_equal(NilClass, exception_class)
-        result = r.take
+        result = port.receive
         assert_equal(huge_value, result)
       end
     end;
@@ -1353,42 +1367,43 @@ class TestEnv < Test::Unit::TestCase
 
   def test_frozen_env_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         #{str_for_yielding_exception_class("ENV.freeze")}
       end
-      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "port")}
     end;
   end
 
   def test_frozen_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         ENV["#{PATH_ENV}"] = "/"
         ENV.each do |k, v|
-          Ractor.yield [k.frozen?]
-          Ractor.yield [v.frozen?]
+          port.send [k]
+          port.send [v]
         end
         ENV.each_key do |k|
-          Ractor.yield [k.frozen?]
+          port.send [k]
         end
         ENV.each_value do |v|
-          Ractor.yield [v.frozen?]
+          port.send [v]
         end
         ENV.each_key do |k|
-          Ractor.yield [ENV[k].frozen?, "[\#{k.dump}]"]
-          Ractor.yield [ENV.fetch(k).frozen?, "fetch(\#{k.dump})"]
+          port.send [ENV[k], "[\#{k.dump}]"]
+          port.send [ENV.fetch(k), "fetch(\#{k.dump})"]
         end
-        Ractor.yield "finished"
+        port.send "finished"
       end
-      while((params=r.take) != "finished")
-        assert(*params)
+      while((params=port.receive) != "finished")
+        value, *params = params
+        assert_predicate(value, :frozen?, *params)
       end
     end;
   end
 
   def test_shared_substring_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do
+      Ractor.new port = Ractor::Port.new do |port|
         bug12475 = '[ruby-dev:49655] [Bug #12475]'
         n = [*"0".."9"].join("")*3
         e0 = ENV[n0 = "E\#{n}"]
@@ -1398,9 +1413,9 @@ class TestEnv < Test::Unit::TestCase
         ENV[n1.chop] = "T\#{n}.".chop
         ENV[n0], e0 = e0, ENV[n0]
         ENV[n1], e1 = e1, ENV[n1]
-        Ractor.yield [n, e0, e1, bug12475]
+        port.send [n, e0, e1, bug12475]
       end
-      n, e0, e1, bug12475 = r.take
+      n, e0, e1, bug12475 = port.receive
       assert_equal("T\#{n}", e0, bug12475)
       assert_nil(e1, bug12475)
     end;
@@ -1416,7 +1431,7 @@ class TestEnv < Test::Unit::TestCase
     rescue Ractor::IsolationError => e
       e
     end
-    assert_equal Ractor::IsolationError, r_get.take.class
+    assert_equal Ractor::IsolationError, r_get.value.class
 
     r_get =  Ractor.new do
       ENV.instance_eval{ @a }
@@ -1424,7 +1439,7 @@ class TestEnv < Test::Unit::TestCase
       e
     end
 
-    assert_equal Ractor::IsolationError, r_get.take.class
+    assert_equal Ractor::IsolationError, r_get.value.class
 
     r_set = Ractor.new do
       ENV.instance_eval{ @b = "hello" }
@@ -1432,7 +1447,7 @@ class TestEnv < Test::Unit::TestCase
       e
     end
 
-    assert_equal Ractor::IsolationError, r_set.take.class
+    assert_equal Ractor::IsolationError, r_set.value.class
     RUBY
   end
 
@@ -1479,11 +1494,18 @@ class TestEnv < Test::Unit::TestCase
 
     def test_utf8
       text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
-      test = ENV["test"]
       ENV["test"] = text
       assert_equal text, ENV["test"]
-    ensure
-      ENV["test"] = test
+    end
+
+    def test_utf8_empty
+      key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
+      ENV[key] = "x"
+      assert_equal "x", ENV[key]
+      ENV[key] = ""
+      assert_equal "", ENV[key]
+      ENV[key] = nil
+      assert_nil ENV[key]
     end
   end
 end

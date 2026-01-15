@@ -58,7 +58,6 @@ class Gem::Source::Git < Gem::Source
 
     @remote   = true
     @root_dir = Gem.dir
-    @git      = ENV["git"] || "git"
   end
 
   def <=>(other)
@@ -81,6 +80,10 @@ class Gem::Source::Git < Gem::Source
       @need_submodules == other.need_submodules
   end
 
+  def git_command
+    ENV.fetch("git", "git")
+  end
+
   ##
   # Checks out the files for the repository into the install_dir.
 
@@ -90,18 +93,18 @@ class Gem::Source::Git < Gem::Source
     return false unless File.exist? repo_cache_dir
 
     unless File.exist? install_dir
-      system @git, "clone", "--quiet", "--no-checkout",
+      system git_command, "clone", "--quiet", "--no-checkout",
              repo_cache_dir, install_dir
     end
 
     Dir.chdir install_dir do
-      system @git, "fetch", "--quiet", "--force", "--tags", install_dir
+      system git_command, "fetch", "--quiet", "--force", "--tags", install_dir
 
-      success = system @git, "reset", "--quiet", "--hard", rev_parse
+      success = system git_command, "reset", "--quiet", "--hard", rev_parse
 
       if @need_submodules
         require "open3"
-        _, status = Open3.capture2e(@git, "submodule", "update", "--quiet", "--init", "--recursive")
+        _, status = Open3.capture2e(git_command, "submodule", "update", "--quiet", "--init", "--recursive")
 
         success &&= status.success?
       end
@@ -118,11 +121,11 @@ class Gem::Source::Git < Gem::Source
 
     if File.exist? repo_cache_dir
       Dir.chdir repo_cache_dir do
-        system @git, "fetch", "--quiet", "--force", "--tags",
+        system git_command, "fetch", "--quiet", "--force", "--tags",
                @repository, "refs/heads/*:refs/heads/*"
       end
     else
-      system @git, "clone", "--quiet", "--bare", "--no-hardlinks",
+      system git_command, "clone", "--quiet", "--bare", "--no-hardlinks",
              @repository, repo_cache_dir
     end
   end
@@ -182,7 +185,7 @@ class Gem::Source::Git < Gem::Source
     hash = nil
 
     Dir.chdir repo_cache_dir do
-      hash = Gem::Util.popen(@git, "rev-parse", @reference).strip
+      hash = Gem::Util.popen(git_command, "rev-parse", @reference).strip
     end
 
     raise Gem::Exception,
@@ -201,7 +204,7 @@ class Gem::Source::Git < Gem::Source
     return [] unless install_dir
 
     Dir.chdir install_dir do
-      Dir["{,*,*/*}.gemspec"].map do |spec_file|
+      Dir["{,*,*/*}.gemspec"].filter_map do |spec_file|
         directory = File.dirname spec_file
         file      = File.basename spec_file
 
@@ -218,7 +221,7 @@ class Gem::Source::Git < Gem::Source
           end
           spec
         end
-      end.compact
+      end
     end
   end
 

@@ -217,7 +217,7 @@ VALUE rb_ractor_make_shareable(VALUE obj);
  *
  * @param[in]   obj              Arbitrary ruby object to duplicate.
  * @exception   rb_eRactorError  Ractors cannot share `obj` by nature.
- * @return      A deep copy of `obj` which is sharable among Ractors.
+ * @return      A deep copy of `obj` which is shareable among Ractors.
  */
 VALUE rb_ractor_make_shareable_copy(VALUE obj);
 
@@ -259,6 +259,20 @@ rb_ractor_shareable_p(VALUE obj)
     else {
         return rb_ractor_shareable_p_continue(obj);
     }
+}
+
+// TODO: optimize on interpreter core
+#ifndef RB_OBJ_SET_SHAREABLE
+VALUE rb_obj_set_shareable(VALUE obj); // ractor.c
+#define RB_OBJ_SET_SHAREABLE(obj) rb_obj_set_shareable(obj)
+#endif
+
+static inline VALUE
+RB_OBJ_SET_FROZEN_SHAREABLE(VALUE obj)
+{
+    RB_OBJ_FREEZE(obj);
+    RB_OBJ_SET_SHAREABLE(obj);
+    return obj;
 }
 
 #endif /* RUBY_RACTOR_H */

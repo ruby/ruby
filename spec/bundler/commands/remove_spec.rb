@@ -43,21 +43,6 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  context "when --install flag is specified", bundler: "< 3" do
-    it "removes gems from .bundle" do
-      gemfile <<-G
-        source "https://gem.repo1"
-
-        gem "myrack"
-      G
-
-      bundle "remove myrack --install"
-
-      expect(out).to include("myrack was removed.")
-      expect(the_bundle).to_not include_gems "myrack"
-    end
-  end
-
   describe "remove single gem from gemfile" do
     context "when gem is present in gemfile" do
       it "shows success for removed gem" do
@@ -727,6 +712,25 @@ RSpec.describe "bundle remove" do
           gem "myrack"
         G
       end
+    end
+  end
+
+  context "when gem definition has parentheses" do
+    it "removes the gem" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem("myrack")
+        gem("myrack", ">= 0")
+        gem("myrack", require: false)
+      G
+
+      bundle "remove myrack"
+
+      expect(out).to include("myrack was removed.")
+      expect(gemfile).to eq <<~G
+        source "https://gem.repo1"
+      G
     end
   end
 end

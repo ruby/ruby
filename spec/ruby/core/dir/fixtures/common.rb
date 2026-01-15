@@ -192,13 +192,7 @@ module DirSpecs
     ]
   end
 
-  if RUBY_VERSION > '3.1'
-    def self.expected_glob_paths
-      expected_paths - ['..']
-    end
-  else
-    def self.expected_glob_paths
-      expected_paths
-    end
+  def self.expected_glob_paths
+    expected_paths - ['..']
   end
 end

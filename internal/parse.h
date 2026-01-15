@@ -13,11 +13,15 @@
 #include "internal/static_assert.h"
 
 // The default parser to use for Ruby code.
-// 0: parse.y
-// 1: Prism
-#ifndef RB_DEFAULT_PARSER
-#define RB_DEFAULT_PARSER 1
-#endif
+typedef enum {
+    RB_DEFAULT_PARSER_PARSE_Y,
+    RB_DEFAULT_PARSER_PRISM,
+} ruby_default_parser_enum;
+
+ruby_default_parser_enum rb_ruby_default_parser(void);
+void rb_ruby_default_parser_set(ruby_default_parser_enum parser);
+
+#define rb_ruby_prism_p() (rb_ruby_default_parser() == RB_DEFAULT_PARSER_PRISM)
 
 #ifdef UNIVERSAL_PARSER
 #define rb_encoding const void
@@ -70,12 +74,15 @@ rb_encoding *rb_ruby_parser_encoding(rb_parser_t *p);
 int rb_ruby_parser_end_seen_p(rb_parser_t *p);
 int rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag);
 rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
+void rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str);
 
 int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);
-int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
-int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc);
+typedef void (*rb_parser_reg_fragment_error_func)(struct parser_params *, VALUE);
+int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int, rb_parser_reg_fragment_error_func);
+int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
 int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq_struct *iseq);
+NODE *rb_parser_assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc);
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -104,7 +111,7 @@ VALUE rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p);
 int rb_ruby_parser_ruby_sourceline(rb_parser_t *p);
 int rb_ruby_parser_lex_state(rb_parser_t *p);
 void rb_ruby_ripper_parse0(rb_parser_t *p);
-int rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width);
+int rb_ruby_ripper_dedent_string(rb_parser_t *p, rb_parser_string_t *string, int width);
 int rb_ruby_ripper_initialized_p(rb_parser_t *p);
 void rb_ruby_ripper_parser_initialize(rb_parser_t *p);
 long rb_ruby_ripper_column(rb_parser_t *p);

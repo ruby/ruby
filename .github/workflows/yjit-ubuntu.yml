@@ -25,18 +25,18 @@ jobs:
     name: cargo test
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
@@ -57,18 +57,18 @@ jobs:
     name: cargo clippy
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
@@ -81,7 +81,9 @@ jobs:
         include:
           - test_task: 'yjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--with-gcc=clang-12 --enable-yjit=dev'
+            # Build with YJIT+ZJIT for output that works in the most number of configurations
+            configure: '--with-gcc=clang-14 --enable-yjit=dev --enable-zjit'
+            libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'check'
             # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
@@ -100,43 +102,35 @@ jobs:
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
 
-          - test_task: 'yjit-bench'
-            configure: '--enable-yjit=dev'
-            yjit_bench_opts: '--yjit-stats'
-            continue-on-test_task: true
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       RUBY_DEBUG: ci
-      BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
 
       - uses: ./.github/actions/setup/directories
@@ -152,6 +146,12 @@ jobs:
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
 
+      - name: Remove cargo
+        # Since this tests a `rustc` build for release, remove `cargo` to ensure
+        # that only `rustc` is used.
+        if: ${{ contains(matrix.configure, 'rustc') }}
+        run: sudo rm $(which -a cargo | uniq)
+
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
 
@@ -162,43 +162,62 @@ jobs:
 
       - run: make
 
-      - name: Enable YJIT through ENV
-        run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
+      - name: Verify that --yjit-dump-disasm works
+        run: |
+          ./miniruby --yjit-call-threshold=1 --yjit-dump-disasm -e0 | \
+          wc -l | \
+          ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
+        if: ${{ contains(matrix.configure, 'jit=dev') }}
+
+      - name: Set ENV for YJIT
+        run: |
+          echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
+          echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
 
       # Check that the binary was built with YJIT
       - name: Check YJIT enabled
         run: ./miniruby --yjit -v | grep "+YJIT"
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          is-yjit: true
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: make ${{ matrix.test_task }}
-        run: >-
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
-          YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
+        run: |
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+
+          set -x
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
+            RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS" \
+            YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
+          LIBCLANG_PATH: ${{ matrix.libclang_path }}
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
-      - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
-        run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
-        env:
-          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
+      - name: Dump crash logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: |
+          tail --verbose --lines=+1 rb_crash_*.txt
+          exit 1
 
       - uses: ./.github/actions/slack
         with:

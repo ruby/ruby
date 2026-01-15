@@ -58,46 +58,79 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
 }
 
 /**
+ * Checks if the given slice represents a number.
+ */
+static inline bool
+is_number(const char *string, size_t length) {
+    return pm_strspn_decimal_digit((const uint8_t *) string, (ptrdiff_t) length) == length;
+}
+
+/**
  * Set the version option on the given options struct by parsing the given
  * string. If the string contains an invalid option, this returns false.
  * Otherwise, it returns true.
  */
 PRISM_EXPORTED_FUNCTION bool
 pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
-    switch (length) {
-        case 0:
-            if (version == NULL) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        case 5:
-            assert(version != NULL);
-
-            if ((strncmp(version, "3.3.0", length) == 0) || (strncmp(version, "3.3.1", length) == 0)) {
-                options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
-                return true;
-            }
-
-            if (strncmp(version, "3.4.0", length) == 0) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        case 6:
-            assert(version != NULL);
-
-            if (strncmp(version, "latest", length) == 0) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        default:
-            return false;
+    if (version == NULL) {
+        options->version = PM_OPTIONS_VERSION_LATEST;
+        return true;
     }
+
+    if (length == 3) {
+        if (strncmp(version, "3.3", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            return true;
+        }
+
+        if (strncmp(version, "3.4", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5", 3) == 0 || strncmp(version, "4.0", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
+            return true;
+        }
+
+        if (strncmp(version, "4.1", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
+            return true;
+        }
+
+        return false;
+    }
+
+    if (length >= 4 && is_number(version + 4, length - 4)) {
+        if (strncmp(version, "3.3.", 4) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            return true;
+        }
+
+        if (strncmp(version, "3.4.", 4) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5.", 4) == 0 || strncmp(version, "4.0.", 4) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
+            return true;
+        }
+
+        if (strncmp(version, "4.1.", 4) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
+            return true;
+        }
+    }
+
+    if (length >= 6) {
+        if (strncmp(version, "latest", 7) == 0) { // 7 to compare the \0 as well
+            options->version = PM_OPTIONS_VERSION_LATEST;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -106,6 +139,22 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
 PRISM_EXPORTED_FUNCTION void
 pm_options_main_script_set(pm_options_t *options, bool main_script) {
     options->main_script = main_script;
+}
+
+/**
+ * Set the partial script option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
+    options->partial_script = partial_script;
+}
+
+/**
+ * Set the freeze option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_freeze_set(pm_options_t *options, bool freeze) {
+    options->freeze = freeze;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
@@ -142,6 +191,7 @@ PRISM_EXPORTED_FUNCTION bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
+    scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
     return scope->locals != NULL;
 }
 
@@ -151,6 +201,14 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
 PRISM_EXPORTED_FUNCTION const pm_string_t *
 pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
+}
+
+/**
+ * Set the forwarding option on the given scope struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
+    scope->forwarding = forwarding;
 }
 
 /**
@@ -242,6 +300,8 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->version = (pm_options_version_t) *data++;
     options->encoding_locked = ((uint8_t) *data++) > 0;
     options->main_script = ((uint8_t) *data++) > 0;
+    options->partial_script = ((uint8_t) *data++) > 0;
+    options->freeze = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;
@@ -258,6 +318,9 @@ pm_options_read(pm_options_t *options, const char *data) {
                 pm_options_free(options);
                 return;
             }
+
+            uint8_t forwarding = (uint8_t) *data++;
+            pm_options_scope_forwarding_set(&options->scopes[scope_index], forwarding);
 
             for (size_t local_index = 0; local_index < locals_count; local_index++) {
                 uint32_t local_length = pm_options_read_u32(data);

@@ -16,6 +16,8 @@ describe "SystemCallError" do
     exc = ExceptionSpecs::SCESub.new
     ScratchPad.recorded.should equal(:initialize)
     exc.should be_an_instance_of(ExceptionSpecs::SCESub)
+  ensure
+    ExceptionSpecs.send(:remove_const, :SCESub)
   end
 end
 
@@ -25,6 +27,7 @@ describe "SystemCallError.new" do
     @example_errno_class = Errno::EINVAL
     @last_known_errno = Errno.constants.size - 1
     @unknown_errno = Errno.constants.size
+    @some_human_readable = /[[:graph:]]+/
   end
 
   it "requires at least one argument" do
@@ -53,6 +56,11 @@ describe "SystemCallError.new" do
     e.should be_an_instance_of(@example_errno_class)
   end
 
+  it "sets an error message corresponding to an appropriate Errno class" do
+    e = SystemCallError.new(@example_errno)
+    e.message.should == 'Invalid argument'
+  end
+
   it "accepts an optional custom message preceding the errno" do
     exc = SystemCallError.new("custom message", @example_errno)
     exc.should be_an_instance_of(@example_errno_class)
@@ -79,6 +87,23 @@ describe "SystemCallError.new" do
   it "converts to Integer if errno is a Float" do
     SystemCallError.new('foo', 2.0).should == SystemCallError.new('foo', 2)
     SystemCallError.new('foo', 2.9).should == SystemCallError.new('foo', 2)
+  end
+
+  it "treats nil errno as unknown error value" do
+    SystemCallError.new(nil).should be_an_instance_of(SystemCallError)
+  end
+
+  it "treats nil custom message as if it is not passed at all" do
+    exc = SystemCallError.new(nil, @example_errno)
+    exc.message.should == 'Invalid argument'
+  end
+
+  it "sets an 'unknown error' message when an unknown error number" do
+    SystemCallError.new(-1).message.should =~ @some_human_readable
+  end
+
+  it "adds a custom error message to an 'unknown error' message when an unknown error number and a custom message specified" do
+    SystemCallError.new("custom message", -1).message.should =~ /#{@some_human_readable}.* - custom message/
   end
 
   it "converts to Integer if errno is a Complex convertible to Integer" do
@@ -115,12 +140,7 @@ end
 
 describe "SystemCallError#message" do
   it "returns the default message when no message is given" do
-    platform_is :aix do
-      SystemCallError.new(2**28).message.should =~ /Error .*occurred/i
-    end
-    platform_is_not :aix do
-      SystemCallError.new(2**28).message.should =~ /Unknown error/i
-    end
+    SystemCallError.new(2**28).message.should =~ @some_human_readable
   end
 
   it "returns the message given as an argument to new" do

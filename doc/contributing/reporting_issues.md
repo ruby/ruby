@@ -52,19 +52,30 @@ your feature it could help persuade Ruby core.
 
 Here is a template you can use for a feature proposal:
 
-```
-[Abstract]
-  Briefly summarize your feature
-[Background]
-  Describe current behavior
-[Proposal]
-  Describe your feature in detail
-[Use cases]
-  Give specific example uses of your feature
-[Discussion]
-  Describe why this feature is necessary and better than using existing features
-[See also]
-  Link to other related resources (such as implementations in other languages)
+```markdown
+# Abstract
+
+Briefly summarize your feature
+
+# Background
+
+Describe current behavior
+
+# Proposal
+
+Describe your feature in detail
+
+# Use cases
+
+Give specific example uses of your feature
+
+# Discussion
+
+Describe why this feature is necessary and better than using existing features
+
+# See also
+
+Link to other related resources (such as implementations in other languages)
 ```
 
 ## Backport requests

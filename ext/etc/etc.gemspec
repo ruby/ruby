@@ -24,7 +24,8 @@ Gem::Specification.new do |spec|
 
   changelogs = Dir.glob("logs/ChangeLog-[1-9]*[^~]", base: __dir__)
   spec.files         = %w[
-    LICENSE.txt
+    BSDL
+    COPYING
     README.md
     ChangeLog
     ext/etc/constdefs.h
@@ -39,5 +40,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = %w{ext/etc/extconf.rb}
 
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 2.7.0"
 end

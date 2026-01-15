@@ -67,7 +67,7 @@ assert_equal "#<Ractor:#1 running>", %q{
 # Return id, loc, and status for no-name ractor
 assert_match /^#<Ractor:#([^ ]*?) .+:[0-9]+ terminated>$/, %q{
   r = Ractor.new { '' }
-  r.take
+  r.join
   sleep 0.1 until r.inspect =~ /terminated/
   r.inspect
 }
@@ -75,7 +75,7 @@ assert_match /^#<Ractor:#([^ ]*?) .+:[0-9]+ terminated>$/, %q{
 # Return id, name, loc, and status for named ractor
 assert_match /^#<Ractor:#([^ ]*?) Test Ractor .+:[0-9]+ terminated>$/, %q{
   r = Ractor.new(name: 'Test Ractor') { '' }
-  r.take
+  r.join
   sleep 0.1 until r.inspect =~ /terminated/
   r.inspect
 }
@@ -86,7 +86,7 @@ assert_equal 'ok', %q{
   r = Ractor.new do
     'ok'
   end
-  r.take
+  r.value
 }
 
 # Passed arguments to Ractor.new will be a block parameter
@@ -96,7 +96,7 @@ assert_equal 'ok', %q{
   r = Ractor.new 'ok' do |msg|
     msg
   end
-  r.take
+  r.value
 }
 
 # Pass multiple arguments to Ractor.new
@@ -105,7 +105,7 @@ assert_equal 'ok', %q{
   r =  Ractor.new 'ping', 'pong' do |msg, msg2|
     [msg, msg2]
   end
-  'ok' if r.take == ['ping', 'pong']
+  'ok' if r.value == ['ping', 'pong']
 }
 
 # Ractor#send passes an object with copy to a Ractor
@@ -115,65 +115,23 @@ assert_equal 'ok', %q{
     msg = Ractor.receive
   end
   r.send 'ok'
-  r.take
+  r.value
 }
 
 # Ractor#receive_if can filter the message
-assert_equal '[2, 3, 1]', %q{
-  r = Ractor.new Ractor.current do |main|
-    main << 1
-    main << 2
-    main << 3
+assert_equal '[1, 2, 3]', %q{
+  ports = 3.times.map{Ractor::Port.new}
+
+  r = Ractor.new ports do |ports|
+    ports[0] << 3
+    ports[1] << 1
+    ports[2] << 2
   end
   a = []
-  a << Ractor.receive_if{|msg| msg == 2}
-  a << Ractor.receive_if{|msg| msg == 3}
-  a << Ractor.receive
-}
-
-# Ractor#receive_if with break
-assert_equal '[2, [1, :break], 3]', %q{
-  r = Ractor.new Ractor.current do |main|
-    main << 1
-    main << 2
-    main << 3
-  end
-
-  a = []
-  a << Ractor.receive_if{|msg| msg == 2}
-  a << Ractor.receive_if{|msg| break [msg, :break]}
-  a << Ractor.receive
-}
-
-# Ractor#receive_if can't be called recursively
-assert_equal '[[:e1, 1], [:e2, 2]]', %q{
-  r = Ractor.new Ractor.current do |main|
-    main << 1
-    main << 2
-    main << 3
-  end
-
-  a = []
-
-  Ractor.receive_if do |msg|
-    begin
-      Ractor.receive
-    rescue Ractor::Error
-      a << [:e1, msg]
-    end
-    true # delete 1 from queue
-  end
-
-  Ractor.receive_if do |msg|
-    begin
-      Ractor.receive_if{}
-    rescue Ractor::Error
-      a << [:e2, msg]
-    end
-    true # delete 2 from queue
-  end
-
-  a #
+  a << ports[1].receive # 1
+  a << ports[2].receive # 2
+  a << ports[0].receive # 3
+  a
 }
 
 # dtoa race condition
@@ -184,73 +142,145 @@ assert_equal '[:ok, :ok, :ok]', %q{
       10_000.times{ rand.to_s }
       :ok
     }
-  }.map(&:take)
+  }.map(&:value)
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
+assert_equal "42", %q{
+  a = 42
+  Ractor.shareable_lambda{ a }.call
+}
+
+# Ractor.shareable_proc issue for locals in proc [Bug #18023]
 assert_equal '[:a, :b, :c, :d, :e]', %q{
   v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
-  closure = Ractor.current.instance_eval{ Proc.new { [v1, v2, v3, v4, v5] } }
-
-  Ractor.make_shareable(closure).call
+  closure = Proc.new { [v1, v2, v3, v4, v5] }
+  Ractor.shareable_proc(&closure).call
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
-assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
-  a = :a
-  closure = Ractor.current.instance_eval do
-    -> {
-      b, c, d = :b, :c, :d
-      -> {
-        e, f, g = :e, :f, :g
-        -> { [a, b, c, d, e, f, g] }
-      }.call
-    }.call
+# Ractor.shareable_proc makes a copy of given Proc
+assert_equal '[true, true]', %q{
+  pr1 = Proc.new do
+    self
   end
+  pr2 = Ractor.shareable_proc(&pr1)
 
-  Ractor.make_shareable(closure).call
+  [pr1.call == self, pr2.call == nil]
 }
 
-# Now autoload in non-main Ractor is not supported
-assert_equal 'ok', %q{
-  autoload :Foo, 'foo.rb'
-  r = Ractor.new do
-    p Foo
-  rescue Ractor::UnsafeError
-    :ok
+# Ractor.shareable_proc keeps the original Proc intact
+assert_equal '[SyntaxError, [Object, 43, 43], Binding]', %q{
+  a = 42
+  pr1 = Proc.new do
+    [self.class, eval("a"), binding.local_variable_get(:a)]
   end
-  r.take
+  a += 1
+  pr2 = Ractor.shareable_proc(&pr1)
+
+  r = []
+  begin
+    pr2.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  r << pr1.call << pr1.binding.class
+}
+
+# Ractor.make_shareable mutates the original Proc
+# This is the current behavior, it's currently considered safe enough
+# because in most cases it would raise anyway due to not-shared self or not-shared captured variable value
+assert_equal '[[42, 42], Binding, true, SyntaxError, "Can\'t create Binding from isolated Proc"]', %q{
+  a = 42
+  pr1 = nil.instance_exec do
+    Proc.new do
+      [eval("a"), binding.local_variable_get(:a)]
+    end
+  end
+
+  r = [pr1.call, pr1.binding.class]
+
+  pr2 = Ractor.make_shareable(pr1)
+  r << pr1.equal?(pr2)
+
+  begin
+    pr1.call
+  rescue SyntaxError
+    r << SyntaxError
+  end
+
+  begin
+    r << pr1.binding
+  rescue ArgumentError
+    r << $!.message
+  end
+
+  r
+}
+
+# Ractor::IsolationError cases
+assert_equal '3', %q{
+  ok = 0
+
+  begin
+    a = 1
+    Ractor.shareable_proc{a}
+    a = 2
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
+
+  begin
+    cond = false
+    b = 1
+    b = 2 if cond
+    Ractor.shareable_proc{b}
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
+
+  begin
+    1.times{|i|
+      i = 2
+      Ractor.shareable_proc{i}
+    }
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
 }
 
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
-if ENV['GITHUB_WORKFLOW'] &&
-   ENV['GITHUB_WORKFLOW'] == 'Compilations'
+if ENV['GITHUB_WORKFLOW'] == 'Compilations'
    # ignore the follow
 else
 
-# Ractor.select(*ractors) receives a values from a ractors.
-# It is similar to select(2) and Go's select syntax.
-# The return value is [ch, received_value]
+# Ractor.select with a Ractor argument
 assert_equal 'ok', %q{
   # select 1
   r1 = Ractor.new{'r1'}
-  r, obj = Ractor.select(r1)
-  'ok' if r == r1 and obj == 'r1'
+  port, obj = Ractor.select(r1)
+  if port == r1 and obj == 'r1'
+    'ok'
+  else
+    # failed
+    [port, obj].inspect
+  end
 }
 
 # Ractor.select from two ractors.
 assert_equal '["r1", "r2"]', %q{
   # select 2
-  r1 = Ractor.new{'r1'}
-  r2 = Ractor.new{'r2'}
-  rs = [r1, r2]
+  p1 = Ractor::Port.new
+  p2 = Ractor::Port.new
+  r1 = Ractor.new(p1){|p1| p1 << 'r1'}
+  r2 = Ractor.new(p2){|p2| p2 << 'r2'}
+  ps = [p1, p2]
   as = []
-  r, obj = Ractor.select(*rs)
-  rs.delete(r)
+  port, obj = Ractor.select(*ps)
+  ps.delete(port)
   as << obj
-  r, obj = Ractor.select(*rs)
+  port, obj = Ractor.select(*ps)
   as << obj
   as.sort #=> ["r1", "r2"]
 }
@@ -286,29 +316,11 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
 } unless (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
-assert_match /specify at least one ractor/, %q{
+assert_match /specify at least one Ractor::Port or Ractor/, %q{
   begin
     Ractor.select
   rescue ArgumentError => e
     e.message
-  end
-}
-
-# Outgoing port of a ractor will be closed when the Ractor is terminated.
-assert_equal 'ok', %q{
-  r = Ractor.new do
-    'finish'
-  end
-
-  r.take
-  sleep 0.1 until r.inspect =~ /terminated/
-
-  begin
-    o = r.take
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    "ng: #{o}"
   end
 }
 
@@ -317,7 +329,7 @@ assert_equal 'ok', %q{
   r = Ractor.new do
   end
 
-  r.take # closed
+  r.join # closed
   sleep 0.1 until r.inspect =~ /terminated/
 
   begin
@@ -329,47 +341,16 @@ assert_equal 'ok', %q{
   end
 }
 
-# Raise Ractor::ClosedError when try to send into a closed actor
-assert_equal 'ok', %q{
-  r = Ractor.new { Ractor.receive }
-  r.close_incoming
-
-  begin
-    r.send(1)
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    'ng'
-  end
-}
-
-# Raise Ractor::ClosedError when try to take from closed actor
-assert_equal 'ok', %q{
-  r = Ractor.new do
-    Ractor.yield 1
-    Ractor.receive
-  end
-
-  r.close_outgoing
-  begin
-    r.take
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    'ng'
-  end
-}
-
-# Can mix with Thread#interrupt and Ractor#take [Bug #17366]
+# Can mix with Thread#interrupt and Ractor#join [Bug #17366]
 assert_equal 'err', %q{
-  Ractor.new{
+  Ractor.new do
     t = Thread.current
     begin
       Thread.new{ t.raise "err" }.join
     rescue => e
       e.message
     end
-  }.take
+  end.value
 }
 
 # Killed Ractor's thread yields nil
@@ -377,34 +358,18 @@ assert_equal 'nil', %q{
   Ractor.new{
     t = Thread.current
     Thread.new{ t.kill }.join
-  }.take.inspect #=> nil
+  }.value.inspect #=> nil
 }
 
-# Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
+# Raise Ractor::ClosedError when try to send into a ractor with closed default port
 assert_equal 'ok', %q{
-  r = Ractor.new Ractor.current do |main|
+  r = Ractor.new {
+    Ractor.current.close
+    Ractor.main << :ok
     Ractor.receive
-    main << true
-    Ractor.yield 1
-  end
+  }
 
-  r.close_outgoing
-  r << true
-  Ractor.receive
-
-  begin
-    r.take
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    'ng'
-  end
-}
-
-# Raise Ractor::ClosedError when try to send into a ractor with closed incoming port
-assert_equal 'ok', %q{
-  r = Ractor.new { Ractor.receive }
-  r.close_incoming
+  Ractor.receive # wait for ok
 
   begin
     r.send(1)
@@ -412,51 +377,6 @@ assert_equal 'ok', %q{
     'ok'
   else
     'ng'
-  end
-}
-
-# A ractor with closed incoming port still can send messages out
-assert_equal '[1, 2]', %q{
-  r = Ractor.new do
-    Ractor.yield 1
-    2
-  end
-  r.close_incoming
-
-  [r.take, r.take]
-}
-
-# Raise Ractor::ClosedError when try to take from a ractor with closed outgoing port
-assert_equal 'ok', %q{
-  r = Ractor.new do
-    Ractor.yield 1
-    Ractor.receive
-  end
-
-  sleep 0.01 # wait for Ractor.yield in r
-  r.close_outgoing
-  begin
-    r.take
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    'ng'
-  end
-}
-
-# A ractor with closed outgoing port still can receive messages from incoming port
-assert_equal 'ok', %q{
-  r = Ractor.new do
-    Ractor.receive
-  end
-
-  r.close_outgoing
-  begin
-    r.send(1)
-  rescue Ractor::ClosedError
-    'ng'
-  else
-    'ok'
   end
 }
 
@@ -464,105 +384,78 @@ assert_equal 'ok', %q{
 assert_equal 'true', %q{
   Ractor.new{
     Ractor.main
-  }.take == Ractor.current
+  }.value == Ractor.current
 }
 
 # a ractor with closed outgoing port should terminate
 assert_equal 'ok', %q{
   Ractor.new do
-    close_outgoing
+    Ractor.current.close
   end
 
   true until Ractor.count == 1
   :ok
 }
 
-# multiple Ractors can receive (wait) from one Ractor
-assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
-  pipe = Ractor.new do
-    loop do
-      Ractor.yield Ractor.receive
-    end
-  end
-
-  RN = 10
-  rs = RN.times.map{|i|
-    Ractor.new pipe, i do |pipe, i|
-      msg = pipe.take
-      msg # ping-pong
-    end
-  }
-  RN.times{|i|
-    pipe << i
-  }
-  RN.times.map{
-    r, n = Ractor.select(*rs)
-    rs.delete r
-    n
-  }.sort
-} unless /mswin/ =~ RUBY_PLATFORM # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
-
-# Ractor.select also support multiple take, receive and yield
-assert_equal '[true, true, true]', %q{
-  RN = 10
-  CR = Ractor.current
-
-  rs = (1..RN).map{
-    Ractor.new do
-      CR.send 'send' + CR.take #=> 'sendyield'
-      'take'
-    end
-  }
-  received = []
-  taken = []
-  yielded = []
-  until received.size == RN && taken.size == RN && yielded.size == RN
-    r, v = Ractor.select(CR, *rs, yield_value: 'yield')
-    case r
-    when :receive
-      received << v
-    when :yield
-      yielded << v
-    else
-      taken << v
-      rs.delete r
-    end
-  end
-  r = [received == ['sendyield'] * RN,
-       yielded  == [nil] * RN,
-       taken    == ['take'] * RN,
-  ]
-
-  STDERR.puts [received, yielded, taken].inspect
-  r
-}
-
-# multiple Ractors can send to one Ractor
-assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
-  pipe = Ractor.new do
-    loop do
-      Ractor.yield Ractor.receive
-    end
-  end
-
-  RN = 10
-  RN.times.map{|i|
-    Ractor.new pipe, i do |pipe, i|
-      pipe << i
-    end
-  }
-  RN.times.map{
-    pipe.take
-  }.sort
-}
-
-# an exception in a Ractor will be re-raised at Ractor#receive
+# an exception in a Ractor main thread will be re-raised at Ractor#receive
 assert_equal '[RuntimeError, "ok", true]', %q{
   r = Ractor.new do
     raise 'ok' # exception will be transferred receiver
   end
   begin
-    r.take
+    r.join
+  rescue Ractor::RemoteError => e
+    [e.cause.class,   #=> RuntimeError
+     e.cause.message, #=> 'ok'
+     e.ractor == r]   #=> true
+  end
+}
+
+# an exception in a Ractor will be re-raised at Ractor#value
+assert_equal '[RuntimeError, "ok", true]', %q{
+  r = Ractor.new do
+    raise 'ok' # exception will be transferred receiver
+  end
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    [e.cause.class,   #=> RuntimeError
+     e.cause.message, #=> 'ok'
+     e.ractor == r]   #=> true
+  end
+}
+
+# an exception in a Ractor non-main thread will not be re-raised at Ractor#receive
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Thread.new do
+      raise 'ng'
+    end
+    sleep 0.1
+    'ok'
+  end
+  r.value
+}
+
+# SystemExit from a Ractor is re-raised
+# [Bug #21505]
+assert_equal '[SystemExit, "exit", true]', %q{
+  r = Ractor.new { exit }
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    [e.cause.class,   #=> RuntimeError
+     e.cause.message, #=> 'ok'
+     e.ractor == r]   #=> true
+  end
+}
+
+# SystemExit from a Thread inside a Ractor is re-raised
+# [Bug #21505]
+assert_equal '[SystemExit, "exit", true]', %q{
+  r = Ractor.new { Thread.new { exit }.join }
+  begin
+    r.value
   rescue Ractor::RemoteError => e
     [e.cause.class,   #=> RuntimeError
      e.cause.message, #=> 'ok'
@@ -571,7 +464,7 @@ assert_equal '[RuntimeError, "ok", true]', %q{
 }
 
 # threads in a ractor will killed
-assert_equal '{:ok=>3}', %q{
+assert_equal '{ok: 3}', %q{
   Ractor.new Ractor.current do |main|
     q = Thread::Queue.new
     Thread.new do
@@ -601,7 +494,7 @@ assert_equal '{:ok=>3}', %q{
   end
 
   3.times.map{Ractor.receive}.tally
-} unless yjit_enabled? # `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec()
+} unless yjit_enabled? # YJIT: `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec()
 
 # unshareable object are copied
 assert_equal 'false', %q{
@@ -610,7 +503,7 @@ assert_equal 'false', %q{
     msg.object_id
   end
 
-  obj.object_id == r.take
+  obj.object_id == r.value
 }
 
 # To copy the object, now Marshal#dump is used
@@ -629,10 +522,11 @@ assert_equal "allocator undefined for Thread", %q{
 
 # send shareable and unshareable objects
 assert_equal "ok", <<~'RUBY', frozen_string_literal: false
-  echo_ractor = Ractor.new do
+  port = Ractor::Port.new
+  echo_ractor = Ractor.new port do |port|
     loop do
       v = Ractor.receive
-      Ractor.yield v
+      port << v
     end
   end
 
@@ -680,13 +574,13 @@ assert_equal "ok", <<~'RUBY', frozen_string_literal: false
 
   shareable_objects.map{|o|
     echo_ractor << o
-    o2 = echo_ractor.take
+    o2 = port.receive
     results << "#{o} is copied" unless o.object_id == o2.object_id
   }
 
   unshareable_objects.map{|o|
     echo_ractor << o
-    o2 = echo_ractor.take
+    o2 = port.receive
     results << "#{o.inspect} is not copied" if o.object_id == o2.object_id
   }
 
@@ -712,7 +606,7 @@ assert_equal [false, true, false].inspect, <<~'RUBY', frozen_string_literal: fal
   def check obj1
     obj2 = Ractor.new obj1 do |obj|
       obj
-    end.take
+    end.value
 
     obj1.object_id == obj2.object_id
   end
@@ -734,7 +628,7 @@ assert_equal 'hello world', <<~'RUBY', frozen_string_literal: false
 
   str = 'hello'
   r.send str, move: true
-  modified = r.take
+  modified = r.value
 
   begin
     str << ' exception' # raise Ractor::MovedError
@@ -754,7 +648,7 @@ assert_equal '[0, 1]', %q{
 
   a1 = [0]
   r.send a1, move: true
-  a2 = r.take
+  a2 = r.value
   begin
     a1 << 2 # raise Ractor::MovedError
   rescue Ractor::MovedError
@@ -762,70 +656,39 @@ assert_equal '[0, 1]', %q{
   end
 }
 
-# move with yield
-assert_equal 'hello', %q{
+# unshareable frozen objects should still be frozen in new ractor after move
+assert_equal 'true', %q{
   r = Ractor.new do
-    Thread.current.report_on_exception = false
-    obj = 'hello'
-    Ractor.yield obj, move: true
-    obj << 'world'
+    obj = receive
+    { frozen: obj.frozen? }
   end
-
-  str = r.take
-  begin
-    r.take
-  rescue Ractor::RemoteError
-    str #=> "hello"
-  end
+  obj = [Object.new].freeze
+  r.send(obj, move: true)
+  r.value[:frozen]
 }
 
-# yield/move should not make moved object when the yield is not succeeded
-assert_equal '"str"', %q{
-  R = Ractor.new{}
-  M = Ractor.current
-  r = Ractor.new do
-    s = 'str'
-    selected_r, v = Ractor.select R, yield_value: s, move: true
-    raise if selected_r != R # taken from R
-    M.send s.inspect # s should not be a moved object
-  end
-
-  Ractor.receive
-}
-
-# yield/move can fail
-assert_equal "allocator undefined for Thread", %q{
-  r = Ractor.new do
-    obj = Thread.new{}
-    Ractor.yield obj
-  rescue => e
-    e.message
-  end
-  r.take
-}
-
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (read)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   $gv = 1
   r = Ractor.new do
     $gv
   end
 
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
 }
 
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (write)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   r = Ractor.new do
     $gv = 1
   end
 
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -839,7 +702,7 @@ assert_equal 'ok', %q{
     }
   end
 
-  [$stdin, $stdout, $stderr].zip(r.take){|io, (oid, fno)|
+  [$stdin, $stdout, $stderr].zip(r.value){|io, (oid, fno)|
     raise "should not be different object" if io.object_id == oid
     raise "fd should be same" unless io.fileno == fno
   }
@@ -855,7 +718,7 @@ assert_equal 'ok', %q{
     'ok'
   end
 
-  r.take
+  r.value
 }
 
 # $DEBUG, $VERBOSE are Ractor local
@@ -913,7 +776,7 @@ assert_equal 'true', %q{
 
   h = Ractor.new do
     ractor_local_globals
-  end.take
+  end.value
   ractor_local_globals == h #=> true
 }
 
@@ -922,7 +785,8 @@ assert_equal 'false', %q{
   r = Ractor.new do
     self.object_id
   end
-  r.take == self.object_id #=> false
+  ret = r.value
+  ret == self.object_id
 }
 
 # self is a Ractor instance
@@ -930,7 +794,12 @@ assert_equal 'true', %q{
   r = Ractor.new do
     self.object_id
   end
-  r.object_id == r.take #=> true
+  ret = r.value
+  if r.object_id == ret #=> true
+    true
+  else
+    raise [ret, r.object_id].inspect
+  end
 }
 
 # given block Proc will be isolated, so can not access outer variables.
@@ -945,8 +814,39 @@ assert_equal 'ArgumentError', %q{
   end
 }
 
+# eval with outer locals in a Ractor raises SyntaxError
+# [Bug #21522]
+assert_equal 'SyntaxError', %q{
+  outer = 42
+  r = Ractor.new do
+    eval("outer")
+  end
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.class
+  end
+}
+
+# eval of an undefined name in a Ractor raises NameError
+assert_equal 'NameError', %q{
+  r = Ractor.new do
+    eval("totally_undefined_name")
+  end
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.class
+  end
+}
+
+# eval of a local defined inside the Ractor works
+assert_equal '99', %q{
+  Ractor.new { inner = 99; eval("inner").to_s }.value
+}
+
 # ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -958,7 +858,7 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 
   begin
-    r.take
+    r.value
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -974,7 +874,7 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 
   begin
-    r.take
+    r.value
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1000,7 +900,7 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 
   begin
-    r.take
+    r.value
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1021,7 +921,7 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 
   begin
-    r.take
+    r.value
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1035,7 +935,7 @@ assert_equal '11', %q{
 
     Ractor.new obj do |obj|
       obj.instance_variable_get('@a')
-    end.take.to_s
+    end.value.to_s
   }.join
 }
 
@@ -1061,25 +961,25 @@ assert_equal '333', %q{
     def self.fstr = @fstr
   end
 
-  a = Ractor.new{ C.int }.take
+  a = Ractor.new{ C.int }.value
   b = Ractor.new do
     C.str.to_i
   rescue Ractor::IsolationError
     10
-  end.take
+  end.value
   c = Ractor.new do
     C.fstr.to_i
-  end.take
+  end.value
 
-  d = Ractor.new{ M.int }.take
+  d = Ractor.new{ M.int }.value
   e = Ractor.new do
     M.str.to_i
   rescue Ractor::IsolationError
     20
-  end.take
+  end.value
   f = Ractor.new do
     M.fstr.to_i
-  end.take
+  end.value
 
 
   # 1 + 10 + 100 + 2 + 20 + 200
@@ -1097,32 +997,32 @@ assert_equal '["instance-variable", "instance-variable", nil]', %q{
 
   Ractor.new{
     [C.iv1, C.iv2, C.iv3]
-  }.take
+  }.value
 }
 
 # moved objects have their shape properly set to original object's shape
 assert_equal '1234', %q{
-class Obj
-  attr_accessor :a, :b, :c, :d
-  def initialize
-    @a = 1
-    @b = 2
-    @c = 3
+  class Obj
+    attr_accessor :a, :b, :c, :d
+    def initialize
+      @a = 1
+      @b = 2
+      @c = 3
+    end
   end
-end
-r = Ractor.new do
-  obj = receive
-  obj.d = 4
-  [obj.a, obj.b, obj.c, obj.d]
-end
-obj = Obj.new
-r.send(obj, move: true)
-values = r.take
-values.join
+  r = Ractor.new do
+    obj = receive
+    obj.d = 4
+    [obj.a, obj.b, obj.c, obj.d]
+  end
+  obj = Obj.new
+  r.send(obj, move: true)
+  values = r.value
+  values.join
 }
 
 # cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
   class C
     @@cv = 'str'
   end
@@ -1134,14 +1034,14 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
   end
 
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
 }
 
 # also cached cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
   class C
     @@cv = 'str'
     def self.cv
@@ -1156,7 +1056,7 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
   end
 
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1171,19 +1071,33 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
     C::CONST
   end
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
   RUBY
 
-# Constant cache should care about non-sharable constants
+# Constant cache should care about non-shareable constants
 assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
   s = str() # fill const cache
   begin
-    Ractor.new{ str() }.take
+    Ractor.new{ str() }.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
+# The correct constant path shall be reported
+assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+  STR = "hello"
+  module M
+    def self.str; STR; end
+  end
+
+  begin
+    Ractor.new{ M.str }.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1197,7 +1111,7 @@ assert_equal 'can not set constants with non-shareable objects by non-main Racto
     C::CONST = 'str'
   end
   begin
-    r.take
+    r.join
   rescue Ractor::RemoteError => e
     e.cause.message
   end
@@ -1208,7 +1122,7 @@ assert_equal "defined with an un-shareable Proc in a different Ractor", %q{
   str = "foo"
   define_method(:buggy){|i| str << "#{i}"}
   begin
-    Ractor.new{buggy(10)}.take
+    Ractor.new{buggy(10)}.join
   rescue => e
     e.cause.message
   end
@@ -1219,7 +1133,7 @@ assert_equal '[1000, 3]', %q{
   A = Array.new(1000).freeze # [nil, ...]
   H = {a: 1, b: 2, c: 3}.freeze
 
-  Ractor.new{ [A.size, H.size] }.take
+  Ractor.new{ [A.size, H.size] }.value
 }
 
 # Ractor.count
@@ -1229,15 +1143,15 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   ractors = (1..3).map { Ractor.new { Ractor.receive } }
   counts << Ractor.count
 
-  ractors[0].send('End 0').take
+  ractors[0].send('End 0').join
   sleep 0.1 until ractors[0].inspect =~ /terminated/
   counts << Ractor.count
 
-  ractors[1].send('End 1').take
+  ractors[1].send('End 1').join
   sleep 0.1 until ractors[1].inspect =~ /terminated/
   counts << Ractor.count
 
-  ractors[2].send('End 2').take
+  ractors[2].send('End 2').join
   sleep 0.1 until ractors[2].inspect =~ /terminated/
   counts << Ractor.count
 
@@ -1250,7 +1164,7 @@ assert_equal '0', %q{
     n = 0
     ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
     n
-  }.take
+  }.value
 }
 
 # ObjectSpace._id2ref can not handle unshareable objects with Ractors
@@ -1263,7 +1177,25 @@ assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
     rescue => e
       :ok
     end
-  end.take
+  end.value
+RUBY
+
+# Inserting into the id2ref table should be Ractor-safe
+assert_equal 'ok', <<~'RUBY'
+  # Force all calls to Kernel#object_id to insert into the id2ref table
+  obj = Object.new
+  ObjectSpace._id2ref(obj.object_id) rescue nil
+
+  10.times.map do
+    Ractor.new do
+      10_000.times do
+        a = Object.new
+        a.object_id
+      end
+    end
+  end.map(&:value)
+
+  :ok
 RUBY
 
 # Ractor.make_shareable(obj)
@@ -1347,19 +1279,42 @@ assert_equal 'true', %q{
   [a.frozen?, a[0].frozen?] == [true, false]
 }
 
-# Ractor.make_shareable(a_proc) makes a proc shareable.
-assert_equal 'true', %q{
-  a = [1, [2, 3], {a: "4"}]
+# Ractor.make_shareable(a_proc) requires a shareable receiver
+assert_equal '[:ok, "Proc\'s self is not shareable:"]', %q{
+  pr1 = nil.instance_exec { Proc.new{} }
+  pr2 = Proc.new{}
 
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      a
+  [pr1, pr2].map do |pr|
+    begin
+      Ractor.make_shareable(pr)
+    rescue Ractor::Error => e
+      e.message[/^.+?:/]
+    else
+      :ok
     end
   end
+}
 
-  Ractor.make_shareable(a) # referred value should be shareable
-  Ractor.make_shareable(pr)
-  Ractor.shareable?(pr)
+# Ractor.make_shareable(Method/UnboundMethod)
+assert_equal 'true', %q{
+  # raise because receiver is unshareable
+  begin
+    _m0 = Ractor.make_shareable(self.method(:__id__))
+  rescue => e
+    raise e unless e.message =~ /can not make shareable object/
+  else
+    raise "no error"
+  end
+
+  # Method with shareable receiver
+  M1 = Ractor.make_shareable(Object.method(:__id__))
+
+  # UnboundMethod
+  M2 = Ractor.make_shareable(Object.instance_method(:__id__))
+
+  Ractor.new do
+    Object.__id__ == M1.call && M1.call == M2.bind_call(Object)
+  end.value
 }
 
 # Ractor.shareable?(recursive_objects)
@@ -1394,29 +1349,10 @@ assert_equal '[C, M]', %q{
 assert_equal '1', %q{
   class C
     a = 1
-    define_method "foo", Ractor.make_shareable(Proc.new{ a })
-    a = 2
+    define_method "foo", Ractor.shareable_proc{ a }
   end
 
-  Ractor.new{ C.new.foo }.take
-}
-
-# Ractor.make_shareable(a_proc) makes a proc shareable.
-assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
-  a = b = nil
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      c = b # assign to a is okay because c is block local variable
-      # reading b is okay
-      a = b # assign to a is not allowed #=> Ractor::Error
-    end
-  end
-
-  begin
-    Ractor.make_shareable(pr)
-  rescue => e
-    e.message
-  end
+  Ractor.new{ C.new.foo }.value
 }
 
 # Ractor.make_shareable(obj, copy: true) makes copied shareable object.
@@ -1441,7 +1377,7 @@ assert_equal '[6, 10]', %q{
     Ractor.new{ # line 5
       a = 1
       b = 2
-    }.take
+    }.value
     c = 3       # line 9
   end
   rs
@@ -1451,7 +1387,7 @@ assert_equal '[6, 10]', %q{
 assert_equal '[true, false]', %q{
   Ractor.new([[]].freeze) { |ary|
     [ary.frozen?, ary.first.frozen? ]
-  }.take
+  }.value
 }
 
 # Ractor deep copies frozen objects (str)
@@ -1459,7 +1395,7 @@ assert_equal '[true, false]', %q{
   s = String.new.instance_eval { @x = []; freeze}
   Ractor.new(s) { |s|
     [s.frozen?, s.instance_variable_get(:@x).frozen?]
-  }.take
+  }.value
 }
 
 # Can not trap with not isolated Proc on non-main ractor
@@ -1467,15 +1403,15 @@ assert_equal '[:ok, :ok]', %q{
   a = []
   Ractor.new{
     trap(:INT){p :ok}
-  }.take
+  }.join
   a << :ok
 
   begin
     Ractor.new{
       s = 'str'
       trap(:INT){p s}
-    }.take
-  rescue => Ractor::RemoteError
+    }.join
+  rescue Ractor::RemoteError
     a << :ok
   end
 }
@@ -1504,13 +1440,46 @@ assert_equal '[nil, "b", "a"]', %q{
   ans = []
   Ractor.current[:key] = 'a'
   r = Ractor.new{
-    Ractor.yield self[:key]
+    Ractor.main << self[:key]
     self[:key] = 'b'
     self[:key]
   }
-  ans << r.take
-  ans << r.take
+  ans << Ractor.receive
+  ans << r.value
   ans << Ractor.current[:key]
+}
+
+assert_equal '1', %q{
+  N = 1_000
+  Ractor.new{
+    a = []
+    1_000.times.map{|i|
+      Thread.new(i){|i|
+        Thread.pass if i < N
+        a << Ractor.store_if_absent(:i){ i }
+        a << Ractor.current[:i]
+      }
+    }.each(&:join)
+    a.uniq.size
+  }.value
+}
+
+# Ractor-local storage
+assert_equal '2', %q{
+  Ractor.new {
+    fails = 0
+    begin
+      Ractor.main[:key] # cannot get ractor local storage from non-main ractor
+    rescue => e
+      fails += 1 if e.message =~ /Cannot get ractor local/
+    end
+    begin
+      Ractor.main[:key] = 'val'
+    rescue => e
+      fails += 1 if e.message =~ /Cannot set ractor local/
+    end
+    fails
+  }.value
 }
 
 ###
@@ -1526,10 +1495,28 @@ assert_equal "#{N}#{N}", %Q{
     Ractor.new{
       N.times{|i| -(i.to_s)}
     }
-  }.map{|r| r.take}.join
+  }.map{|r| r.value}.join
 }
 
-# Generic ivtbl
+assert_equal "ok", %Q{
+  N = #{N}
+  a, b = 2.times.map{
+    Ractor.new{
+      N.times.map{|i| -(i.to_s)}
+    }
+  }.map{|r| r.value}
+  N.times do |i|
+    unless a[i].equal?(b[i])
+      raise [a[i], b[i]].inspect
+    end
+    unless a[i] == i.to_s
+      raise [i, a[i], b[i]].inspect
+    end
+  end
+  :ok
+}
+
+# Generic fields_tbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
   2.times.map{
@@ -1542,21 +1529,20 @@ assert_equal "#{n}#{n}", %Q{
         obj.instance_variable_defined?("@a")
       end
     end
-  }.map{|r| r.take}.join
+  }.map{|r| r.value}.join
 }
 
-# NameError
-assert_equal "ok", %q{
+# Now NoMethodError is copyable
+assert_equal "NoMethodError", %q{
   obj = "".freeze # NameError refers the receiver indirectly
   begin
     obj.bar
   rescue => err
   end
-  begin
-    Ractor.new{} << err
-  rescue TypeError
-    'ok'
-  end
+
+  r = Ractor.new{ Ractor.receive }
+  r << err
+  r.value.class
 }
 
 assert_equal "ok", %q{
@@ -1574,54 +1560,27 @@ assert_equal "ok", %q{
 
 # Can yield back values while GC is sweeping [Bug #18117]
 assert_equal "ok", %q{
+  port = Ractor::Port.new
   workers = (0...8).map do
-    Ractor.new do
+    Ractor.new port do |port|
       loop do
         10_000.times.map { Object.new }
-        Ractor.yield Time.now
+        port << Time.now
+        Ractor.receive
       end
     end
   end
 
-  1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
+  100.times {
+    workers.each do
+      port.receive
+    end
+    workers.each do |w|
+      w.send(nil)
+    end
+  }
   "ok"
-} unless yjit_enabled? || rjit_enabled? # flaky
-
-assert_equal "ok", %q{
-  def foo(*); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(**); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(...); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo((x), (y)); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo([], []))
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
+} if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
 
 # check method cache invalidation
 assert_equal "ok", %q{
@@ -1686,14 +1645,41 @@ assert_equal 'true', %q{
   }
 
   n = CS.inject(1){|r, c| r * c.foo} * LN
-  rs.map{|r| r.take} == Array.new(RN){n}
+  rs.map{|r| r.value} == Array.new(RN){n}
+}
+
+# check method cache invalidation
+assert_equal 'true', %q{
+  class Foo
+    def hello = nil
+  end
+
+  r1 = Ractor.new do
+    1000.times do
+      class Foo
+        def hello = nil
+      end
+    end
+  end
+
+  r2 = Ractor.new do
+    1000.times do
+      o = Foo.new
+      o.hello
+    end
+  end
+
+  r1.value
+  r2.value
+
+  true
 }
 
 # check experimental warning
-assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor API is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
-  eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
+  eval("Ractor.new{}.value", nil, "test_ractor.rb", 1)
 }, frozen_string_literal: false
 
 # check moved object
@@ -1711,7 +1697,7 @@ assert_equal 'ok', %q{
   end
 
   r.send obj, move: true
-  r.take
+  r.value
 }
 
 ## Ractor::Selector
@@ -1787,10 +1773,11 @@ assert_equal '600', %q{
 
   RN = 100
   s = Ractor::Selector.new
+  port = Ractor::Port.new
   rs = RN.times.map{
     Ractor.new{
-      Ractor.main << Ractor.new{ Ractor.yield :v3; :v4 }
-      Ractor.main << Ractor.new{ Ractor.yield :v5; :v6 }
+      Ractor.main << Ractor.new(port){|port| port << :v3; :v4 }
+      Ractor.main << Ractor.new(port){|port| port << :v5; :v6 }
       Ractor.yield :v1
       :v2
     }
@@ -1836,3 +1823,734 @@ assert_equal 'true', %q{
   shareable = Ractor.make_shareable("chilled")
   shareable == "chilled" && Ractor.shareable?(shareable)
 }
+
+# require in Ractor
+assert_equal 'true', %q{
+  Module.new do
+    def require feature
+      return Ractor._require(feature) unless Ractor.main?
+      super
+    end
+    Object.prepend self
+    set_temporary_name 'Ractor#require'
+  end
+
+  Ractor.new{
+    begin
+      require 'tempfile'
+      Tempfile.new
+    rescue SystemStackError
+      # prism parser with -O0 build consumes a lot of machine stack
+      Data.define(:fileno).new(1)
+    end
+  }.value.fileno > 0
+}
+
+# require_relative in Ractor
+assert_equal 'true', %q{
+  dummyfile = File.join(__dir__, "dummy#{rand}.rb")
+  return true if File.exist?(dummyfile)
+
+  begin
+    File.write dummyfile, ''
+  rescue Exception
+    # skip on any errors
+    return true
+  end
+
+  begin
+    Ractor.new dummyfile do |f|
+      require_relative File.basename(f)
+    end.value
+  ensure
+    File.unlink dummyfile
+  end
+}
+
+# require_relative in Ractor
+assert_equal 'LoadError', %q{
+  dummyfile = File.join(__dir__, "not_existed_dummy#{rand}.rb")
+  return true if File.exist?(dummyfile)
+
+  Ractor.new dummyfile do |f|
+    begin
+      require_relative File.basename(f)
+    rescue LoadError => e
+      e.class
+    end
+  end.value
+}
+
+# autolaod in Ractor
+assert_equal 'true', %q{
+  autoload :Tempfile, 'tempfile'
+
+  r = Ractor.new do
+    begin
+      Tempfile.new
+    rescue SystemStackError
+      # prism parser with -O0 build consumes a lot of machine stack
+      Data.define(:fileno).new(1)
+    end
+  end
+  r.value.fileno > 0
+}
+
+# failed in autolaod in Ractor
+assert_equal 'LoadError', %q{
+  dummyfile = File.join(__dir__, "not_existed_dummy#{rand}.rb")
+  autoload :Tempfile, dummyfile
+
+  r = Ractor.new do
+    begin
+      Tempfile.new
+    rescue LoadError => e
+      e.class
+    end
+  end
+  r.value
+}
+
+# bind_call in Ractor [Bug #20934]
+assert_equal 'ok', %q{
+  2.times.map do
+    Ractor.new do
+      1000.times do
+        Object.instance_method(:itself).bind_call(self)
+      end
+    end
+  end.each(&:join)
+  GC.start
+  :ok.itself
+}
+
+# moved objects being corrupted if embeded (String)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "foobarbazfoobarbazfoobarbazfoobarbaz"
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Array)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Hash)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = { foo: 1, bar: 2 }
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (MatchData)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "foo".match(/o/)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Struct)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Struct.new(:a, :b, :c, :d, :e, :f).new(1, 2, 3, 4, 5, 6)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Object)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  class SomeObject
+    attr_reader :a, :b, :c, :d, :e, :f
+    def initialize
+      @a = @b = @c = @d = @e = @f = 1
+    end
+
+    def ==(o)
+      @a == o.a &&
+      @b == o.b &&
+      @c == o.c &&
+      @d == o.d &&
+      @e == o.e &&
+      @f == o.f
+    end
+  end
+
+  SomeObject.new # initial non-embeded
+
+  obj = SomeObject.new
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved arrays can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = [1]
+  ractor.send(obj, move: true)
+  begin
+    [].concat(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# moved strings can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "hello"
+  ractor.send(obj, move: true)
+  begin
+    "".replace(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# moved hashes can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = { a: 1 }
+  ractor.send(obj, move: true)
+  begin
+    {}.merge(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# move objects inside frozen containers
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  original = obj.dup
+  ractor.send([obj].freeze, move: true)
+  roundtripped_obj = ractor.value[0]
+  roundtripped_obj == original ? :ok : roundtripped_obj
+}
+
+# move object with generic ivar
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array, [1])
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array) == [1] ? :ok : roundtripped_obj
+}
+
+# move object with many generic ivars
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  0.upto(300) do |i|
+    obj.instance_variable_set(:"@array#{i}", [i])
+  end
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# move object with complex generic ivars
+assert_equal 'ok', %q{
+  # Make Array too_complex
+  30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
+
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array1, [1])
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# move object with generic ivars and existing id2ref table
+# [Bug #21664]
+assert_equal 'ok', %q{
+  obj = [1]
+  obj.instance_variable_set("@field", :ok)
+  ObjectSpace._id2ref(obj.object_id) # build id2ref table
+
+  ractor = Ractor.new { Ractor.receive }
+  ractor.send(obj, move: true)
+  obj = ractor.value
+  obj.instance_variable_get("@field")
+}
+
+# copy object with complex generic ivars
+assert_equal 'ok', %q{
+  # Make Array too_complex
+  30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
+
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array1, [1])
+
+  ractor.send(obj)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# copy object with many generic ivars
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  0.upto(300) do |i|
+    obj.instance_variable_set(:"@array#{i}", [i])
+  end
+
+  ractor.send(obj)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# moved composite types move their non-shareable parts properly
+assert_equal 'ok', %q{
+  k, v = String.new("key"), String.new("value")
+  h = { k => v }
+  h.instance_variable_set("@b", String.new("b"))
+  a = [k,v]
+  o_singleton = Object.new
+  def o_singleton.a
+    @a
+  end
+  o_singleton.instance_variable_set("@a", String.new("a"))
+  class MyObject
+    attr_reader :a
+    def initialize(a)
+      @a = a
+    end
+  end
+  struct_class = Struct.new(:a)
+  struct = struct_class.new(String.new('a'))
+  o = MyObject.new(String.new('a'))
+  port = Ractor::Port.new
+
+  r = Ractor.new port do |port|
+    loop do
+      obj = Ractor.receive
+      val = case obj
+      when Hash
+        obj['key'] == 'value' && obj.instance_variable_get("@b") == 'b'
+      when Array
+        obj[0] == 'key'
+      when Struct
+        obj.a == 'a'
+      when Object
+        obj.a == 'a'
+      end
+      port << val
+    end
+  end
+
+  objs = [h, a, o_singleton, o, struct]
+  objs.each_with_index do |obj, i|
+    klass = obj.class
+    parts_moved = {}
+    case obj
+    when Hash
+      parts_moved[klass] = [obj['key'], obj.instance_variable_get("@b")]
+    when Array
+      parts_moved[klass] = obj.dup # the contents
+    when Struct, Object
+      parts_moved[klass] = [obj.a]
+    end
+    r.send(obj, move: true)
+    val = port.receive
+    if val != true
+      raise "bad val in ractor for obj at i:#{i}"
+    end
+    begin
+      p obj
+    rescue
+    else
+      raise "should be moved"
+    end
+    parts_moved.each do |klass, parts|
+      parts.each_with_index do |part, j|
+        case part
+        when Ractor::MovedObject
+        else
+          raise "part for class #{klass} at i:#{j} should be moved"
+        end
+      end
+    end
+  end
+  'ok'
+}
+
+# fork after creating Ractor
+assert_equal 'ok', %q{
+begin
+  Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork { }
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      raise if r.value != nil
+    end
+  }
+  r.send(123)
+  raise unless r.value == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.send(123)
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.value == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Creating classes inside of Ractors
+# [Bug #18119]
+assert_equal 'ok', %q{
+  port = Ractor::Port.new
+  workers = (0...8).map do
+    Ractor.new port do |port|
+      loop do
+        100.times.map { Class.new }
+        port << nil
+      end
+    end
+  end
+
+  100.times { port.receive }
+
+  'ok'
+}
+
+# Using Symbol#to_proc inside ractors
+# [Bug #21354]
+assert_equal 'ok', %q{
+  :inspect.to_proc
+  Ractor.new do
+    # It should not use this cached proc, it should create a new one. If it used
+    # the cached proc, we would get a ractor_confirm_belonging error here.
+    :inspect.to_proc
+  end.join
+  'ok'
+}
+
+# take vm lock when deleting generic ivars from the global table
+assert_equal 'ok', %q{
+  Ractor.new do
+    a = [1, 2, 3]
+    a.object_id
+    a.dup # this deletes generic ivar on dupped object
+    'ok'
+  end.value
+}
+
+## Ractor#monitor
+
+# monitor port returns `:exited` when the monitering Ractor terminated.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.main << :ok1
+    :ok2
+  end
+
+  r.monitor port = Ractor::Port.new
+  Ractor.receive # :ok1
+  port.receive == :exited
+}
+
+# monitor port returns `:exited` even if the monitoring Ractor was terminated.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    :ok
+  end
+
+  r.join # wait for r's terminateion
+
+  r.monitor port = Ractor::Port.new
+  port.receive == :exited
+}
+
+# monitor returns false if the monitoring Ractor was terminated.
+assert_equal 'false', %q{
+  r = Ractor.new do
+    :ok
+  end
+
+  r.join # wait for r's terminateion
+
+  r.monitor Ractor::Port.new
+}
+
+# monitor port returns `:aborted` when the monitering Ractor is aborted.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.main << :ok1
+    raise 'ok'
+  end
+
+  r.monitor port = Ractor::Port.new
+  Ractor.receive # :ok1
+  port.receive == :aborted
+}
+
+# monitor port returns `:aborted` even if the monitoring Ractor was aborted.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    raise 'ok'
+  end
+
+  begin
+    r.join # wait for r's terminateion
+  rescue Ractor::RemoteError
+    # ignore
+  end
+
+  r.monitor port = Ractor::Port.new
+  port.receive == :aborted
+}
+
+## Ractor#join
+
+# Ractor#join returns self when the Ractor is terminated.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  r << :ok
+  r.join
+  r.inspect in /terminated/
+} if false # TODO
+
+# Ractor#join raises RemoteError when the remote Ractor aborted with an exception
+assert_equal 'err', %q{
+  r = Ractor.new do
+    raise 'err'
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+## Ractor#value
+
+# Ractor#value returns the last expression even if it is unshareable
+assert_equal 'true', %q{
+  r = Ractor.new do
+    obj = [1, 2]
+    obj << obj.object_id
+  end
+
+  ret = r.value
+  ret == [1, 2, ret.object_id]
+}
+
+# Only one Ractor can call Ractor#value
+assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %q{
+  r = Ractor.new do
+    'ok'
+  end
+
+  RN = 10
+
+  rs = RN.times.map do
+    Ractor.new r do |r|
+      begin
+        Ractor.main << r.value
+        Ractor.main << r.value # this ractor can get same result
+      rescue Ractor::Error => e
+        Ractor.main << e.message
+      end
+    end
+  end
+
+  (RN+1).times.map{
+    Ractor.receive
+  }.tally.sort
+}
+
+# Cause lots of inline CC misses.
+assert_equal 'ok', <<~'RUBY'
+  class A; def test; 1 + 1; end; end
+  class B; def test; 1 + 1; end; end
+  class C; def test; 1 + 1; end; end
+  class D; def test; 1 + 1; end; end
+  class E; def test; 1 + 1; end; end
+  class F; def test; 1 + 1; end; end
+  class G; def test; 1 + 1; end; end
+
+  objs = [A.new, B.new, C.new, D.new, E.new, F.new, G.new].freeze
+
+  def call_test(obj)
+    obj.test
+  end
+
+  ractors = 7.times.map do
+    Ractor.new(objs) do |objs|
+      objs = objs.shuffle
+      100_000.times do
+        objs.each do |o|
+          call_test(o)
+        end
+      end
+    end
+  end
+  ractors.each(&:join)
+  :ok
+RUBY
+
+# This test checks that we do not trigger a GC when we have malloc with Ractor
+# locks. We cannot trigger a GC with Ractor locks because GC requires VM lock
+# and Ractor barrier. If another Ractor is waiting on this Ractor lock, then it
+# will deadlock because the other Ractor will never join the barrier.
+#
+# Creating Ractor::Port requires locking the Ractor and inserting into an
+# st_table, which can call malloc.
+assert_equal 'ok', <<~'RUBY'
+  r = Ractor.new do
+    loop do
+      Ractor::Port.new
+    end
+  end
+
+  10.times do
+    10_000.times do
+      r.send(nil)
+    end
+    sleep(0.01)
+  end
+  :ok
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  begin
+    100.times do |i|
+      Ractor.new(i) do |j|
+        1000.times do |i|
+          "#{j}-#{i}"
+        end
+        Ractor.receive
+      end
+      pid = fork { }
+      _, status = Process.waitpid2 pid
+      raise unless status.success?
+    end
+
+    :ok
+  rescue NotImplementedError
+    :ok
+  end
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  begin
+    100.times do |i|
+      Ractor.new(i) do |j|
+        1000.times do |i|
+          "#{j}-#{i}"
+        end
+      end
+      pid = fork do
+        GC.verify_internal_consistency
+      end
+      _, status = Process.waitpid2 pid
+      raise unless status.success?
+    end
+
+    :ok
+  rescue NotImplementedError
+    :ok
+  end
+RUBY
+
+# When creating bmethods in Ractors, they should only be usable from their
+# defining ractor, even if it is GC'd
+assert_equal 'ok', <<~'RUBY'
+
+begin
+  CLASSES = 1000.times.map { Class.new }.freeze
+
+  # This would be better to run in parallel, but there's a bug with lambda
+  # creation and YJIT causing crashes in dev mode
+  ractors = CLASSES.map do |klass|
+    Ractor.new(klass) do |klass|
+      Ractor.receive
+      klass.define_method(:foo) {}
+    end
+  end
+
+  ractors.each do |ractor|
+    ractor << nil
+    ractor.join
+  end
+
+  ractors.clear
+  GC.start
+
+  any = 1000.times.map do
+    Ractor.new do
+      CLASSES.any? do |klass|
+        begin
+          klass.new.foo
+          true
+        rescue RuntimeError
+          false
+        end
+      end
+    end
+  end.map(&:value).none? && :ok
+rescue ThreadError => e
+  # ignore limited memory machine
+  if /can\'t create Thread/ =~ e.message
+    :ok
+  else
+    raise
+  end
+end
+RUBY

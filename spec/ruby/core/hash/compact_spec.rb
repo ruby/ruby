@@ -35,7 +35,7 @@ describe "Hash#compact" do
       hash.compact.default_proc.should == pr
     end
 
-    it "retains compare_by_identity_flag" do
+    it "retains compare_by_identity flag" do
       hash = {}.compare_by_identity
       hash.compact.compare_by_identity?.should == true
       hash[:a] = 1

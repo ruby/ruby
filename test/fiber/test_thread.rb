@@ -90,6 +90,47 @@ class TestFiberThread < Test::Unit::TestCase
     assert_equal :done, thread.value
   end
 
+  def test_spurious_unblock_during_thread_join
+    ready = Thread::Queue.new
+
+    target_thread = Thread.new do
+      ready.pop
+      :success
+    end
+
+    Thread.pass until target_thread.status == "sleep"
+
+    result = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      # Create a fiber that will join a long-running thread:
+      joining_fiber = Fiber.schedule do
+        result = target_thread.value
+      end
+
+      # Create another fiber that spuriously unblocks the joining fiber:
+      Fiber.schedule do
+        # This interrupts the join in joining_fiber:
+        scheduler.unblock(:spurious_wakeup, joining_fiber)
+
+        # This allows the unblock to be processed:
+        sleep(0)
+
+        # This allows the target thread to finish:
+        ready.push(:done)
+      end
+
+      scheduler.run
+    end
+
+    thread.join
+
+    assert_equal :success, result
+  end
+
   def test_broken_unblock
     thread = Thread.new do
       Thread.current.report_on_exception = false

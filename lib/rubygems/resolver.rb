@@ -2,7 +2,6 @@
 
 require_relative "dependency"
 require_relative "exceptions"
-require_relative "util/list"
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the
@@ -59,7 +58,7 @@ class Gem::Resolver
   def self.compose_sets(*sets)
     sets.compact!
 
-    sets = sets.map do |set|
+    sets = sets.flat_map do |set|
       case set
       when Gem::Resolver::BestSet then
         set
@@ -68,7 +67,7 @@ class Gem::Resolver
       else
         set
       end
-    end.flatten
+    end
 
     case sets.length
     when 0 then
@@ -144,7 +143,7 @@ class Gem::Resolver
     [spec, activation_request]
   end
 
-  def requests(s, act, reqs=[]) # :nodoc:
+  def requests(s, act, reqs = []) # :nodoc:
     return reqs if @ignore_dependencies
 
     s.fetch_development_dependencies if @development
@@ -183,7 +182,7 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
+    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.filter_map(&:payload)
   rescue Gem::Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
@@ -241,7 +240,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }. # rubocop:disable Performance/RegexpMatch
+        sort_by {|spec| [spec.version, -Gem::Platform.platform_specificity_match(spec.platform, Gem::Platform.local)] }.
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end

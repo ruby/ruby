@@ -6,7 +6,8 @@ require "socket"
 require '-test-/file'
 
 class TestFileExhaustive < Test::Unit::TestCase
-  DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+  ROOT_REGEXP = %r'\A(?:[a-z]:(?=(/))|//[^/]+/[^/]+)'i
+  DRIVE = Dir.pwd[ROOT_REGEXP]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
   NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
@@ -196,12 +197,32 @@ class TestFileExhaustive < Test::Unit::TestCase
     [regular_file, utf8_file].each do |file|
       assert_equal(file, File.open(file) {|f| f.path})
       assert_equal(file, File.path(file))
-      o = Object.new
-      class << o; self; end.class_eval do
-        define_method(:to_path) { file }
-      end
+      o = Struct.new(:to_path).new(file)
+      assert_equal(file, File.path(o))
+      o = Struct.new(:to_str).new(file)
       assert_equal(file, File.path(o))
     end
+
+    conv_error = ->(method, msg = "converting with #{method}") {
+      test = ->(&new) do
+        o = new.(42)
+        assert_raise(TypeError, msg) {File.path(o)}
+
+        o = new.("abc".encode(Encoding::UTF_32BE))
+        assert_raise(Encoding::CompatibilityError, msg) {File.path(o)}
+
+        ["\0", "a\0", "a\0c"].each do |path|
+          o = new.(path)
+          assert_raise(ArgumentError, msg) {File.path(o)}
+        end
+      end
+
+      test.call(&:itself)
+      test.call(&Struct.new(method).method(:new))
+    }
+
+    conv_error[:to_path]
+    conv_error[:to_str]
   end
 
   def assert_integer(n)
@@ -1278,9 +1299,10 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(regular_file, File.dirname(regular_file, 0))
     assert_equal(@dir, File.dirname(regular_file, 1))
     assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
-    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # rootdir and tmpdir are in different drives
-    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
     assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
+    root = "#{@dir[ROOT_REGEXP]||?/}#{$1}"
+    assert_equal(root, File.dirname(regular_file, regular_file.count('/')))
+    assert_equal(root, File.dirname(regular_file, regular_file.count('/') + 100))
   end
 
   def test_dirname_encoding
@@ -1475,6 +1497,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_test
+    omit 'timestamp check is unstable on macOS' if RUBY_PLATFORM =~ /darwin/
     fn1 = regular_file
     hardlinkfile
     sleep(1.1)

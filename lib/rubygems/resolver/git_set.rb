@@ -36,7 +36,6 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   def initialize # :nodoc:
     super()
 
-    @git             = ENV["git"] || "git"
     @need_submodules = {}
     @repositories    = {}
     @root_dir        = Gem.dir

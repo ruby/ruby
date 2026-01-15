@@ -10,6 +10,7 @@
  */
 #include "ruby/internal/config.h"      /* for HAVE_LONG_LONG */
 #include <limits.h>             /* for CHAR_BIT */
+#include "internal/bits.h"      /* for MUL_OVERFLOW_FIXNUM_P */
 #include "internal/compilers.h" /* for __has_builtin */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_big_mul */

@@ -8,12 +8,10 @@ describe :proc_dup, shared: true do
     a.call.should == b.call
   end
 
-  ruby_version_is "3.2" do
-    it "returns an instance of subclass" do
-      cl = Class.new(Proc)
+  it "returns an instance of subclass" do
+    cl = Class.new(Proc)
 
-      cl.new{}.send(@method).class.should == cl
-    end
+    cl.new{}.send(@method).class.should == cl
   end
 
   ruby_version_is "3.4" do
@@ -25,7 +23,7 @@ describe :proc_dup, shared: true do
     end
 
     it "copies the finalizer" do
-      code = <<-RUBY
+      code = <<-'RUBY'
         obj = Proc.new { }
 
         ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })

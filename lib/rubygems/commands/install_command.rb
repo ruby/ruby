@@ -239,11 +239,7 @@ You can use `i` command instead of `install`.
   # Loads post-install hooks
 
   def load_hooks # :nodoc:
-    if options[:install_as_default]
-      require_relative "../install_default_message"
-    else
-      require_relative "../install_message"
-    end
+    require_relative "../install_message"
     require_relative "../rdoc"
   end
 

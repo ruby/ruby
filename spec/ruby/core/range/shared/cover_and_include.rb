@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 
 describe :range_cover_and_include, shared: true do
@@ -20,13 +20,24 @@ describe :range_cover_and_include, shared: true do
   end
 
   it "returns true if other is an element of self for endless ranges" do
-    eval("(1..)").send(@method, 2.4).should == true
-    eval("(0.5...)").send(@method, 2.4).should == true
+    (1..).send(@method, 2.4).should == true
+    (0.5...).send(@method, 2.4).should == true
   end
 
   it "returns true if other is an element of self for beginless ranges" do
     (..10).send(@method, 2.4).should == true
     (...10.5).send(@method, 2.4).should == true
+  end
+
+  it "returns false if values are not comparable" do
+    (1..10).send(@method, nil).should == false
+    (1...10).send(@method, nil).should == false
+
+    (..10).send(@method, nil).should == false
+    (...10).send(@method, nil).should == false
+
+    (1..).send(@method, nil).should == false
+    (1...).send(@method, nil).should == false
   end
 
   it "compares values using <=>" do

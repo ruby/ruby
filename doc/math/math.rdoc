@@ -1,4 +1,4 @@
-\Module \Math provides methods for basic trigonometric,
+Module \Math provides methods for basic trigonometric,
 logarithmic, and transcendental functions, and for extracting roots.
 
 You can write its constants and method calls thus:

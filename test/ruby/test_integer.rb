@@ -57,20 +57,19 @@ class TestInteger < Test::Unit::TestCase
                           nil
                         end, "[ruby-dev:32084] [ruby-dev:34547]")
 
-    x = EnvUtil.suppress_warning {2 ** -0x4000000000000000}
-    assert_in_delta(0.0, (x / 2), Float::EPSILON)
+    assert_raise(ArgumentError) {2 ** -0x4000000000000000}
 
     <<~EXPRS.each_line.with_index(__LINE__+1) do |expr, line|
       crash01: 111r+11**-11111161111111
       crash02: 1118111111111**-1111111111111111**1+1==11111
-      crash03: -1111111**-1111*11 - -1111111** -111111111
+      crash03: -1111111**-1111*11 - -11** -1111111
       crash04: 1118111111111** -1111111111111111**1+11111111111**1 ===111
       crash05: 11** -111155555555555555  -55   !=5-555
       crash07: 1 + 111111111**-1111811111
       crash08: 18111111111**-1111111111111111**1 + 1111111111**-1111**1
       crash10: -7 - -1111111** -1111**11
       crash12: 1118111111111** -1111111111111111**1 + 1111 - -1111111** -1111*111111111119
-      crash13: 1.0i - -1111111** -111111111
+      crash13: 1.0i - -11** -1111111
       crash14: 11111**111111111**111111 * -11111111111111111111**-111111111111
       crash15: ~1**1111 + -~1**~1**111
       crash17: 11** -1111111**1111 /11i
@@ -80,7 +79,7 @@ class TestInteger < Test::Unit::TestCase
       crash21: 11**-10111111119-1i -1r
     EXPRS
       name, expr = expr.split(':', 2)
-      assert_ruby_status(%w"-W0", expr, name)
+      assert_ruby_status(%w"-W0", "begin; #{ expr }; rescue ArgumentError; end", name)
     end
   end
 
@@ -159,7 +158,9 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32le"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("iso-2022-jp"))}
 
-    assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
+    end
 
     obj = Struct.new(:s).new(%w[42 not-an-integer])
     def obj.to_str; s.shift; end
@@ -707,6 +708,10 @@ class TestInteger < Test::Unit::TestCase
 
     x = 0xffff_ffff_ffff_ffff
     assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
+  end
+
+  def test_bug_21217
+    assert_equal(0x10000 * 2**10, Integer.sqrt(0x100000008 * 2**20))
   end
 
   def test_fdiv

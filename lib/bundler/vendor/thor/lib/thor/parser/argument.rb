@@ -26,10 +26,7 @@ class Bundler::Thor
 
     def print_default
       if @type == :array and @default.is_a?(Array)
-        @default.map { |x|
-          p = x.gsub('"','\\"')
-          "\"#{p}\""
-        }.join(" ")
+        @default.map(&:dump).join(" ")
       else
         @default
       end

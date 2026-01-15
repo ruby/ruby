@@ -1,18 +1,19 @@
 //! Everything related to the collection of runtime stats in YJIT
-//! See the stats feature and the --yjit-stats command-line option
+//! See the --yjit-stats command-line option
 
-#![allow(dead_code)] // Counters are only used with the stats features
-
-use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 use std::collections::HashMap;
 
 use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
-use crate::yjit::yjit_enabled_p;
+use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
+
+#[cfg(feature = "stats_allocator")]
+#[path = "../../jit/src/lib.rs"]
+mod jit;
 
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
@@ -22,38 +23,9 @@ pub static mut rb_yjit_live_iseq_count: u64 = 0;
 #[no_mangle]
 pub static mut rb_yjit_iseq_alloc_count: u64 = 0;
 
-/// A middleware to count Rust-allocated bytes as yjit_alloc_size.
-#[global_allocator]
-static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
-
-pub struct StatsAlloc {
-    alloc_size: AtomicUsize,
-}
-
-unsafe impl GlobalAlloc for StatsAlloc {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc(layout)
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.alloc_size.fetch_sub(layout.size(), Ordering::SeqCst);
-        System.dealloc(ptr, layout)
-    }
-
-    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc_zeroed(layout)
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        if new_size > layout.size() {
-            self.alloc_size.fetch_add(new_size - layout.size(), Ordering::SeqCst);
-        } else if new_size < layout.size() {
-            self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
-        }
-        System.realloc(ptr, layout, new_size)
-    }
+/// The number of bytes YJIT has allocated on the Rust heap.
+pub fn yjit_alloc_size() -> usize {
+    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Mapping of C function / ISEQ name to integer indices
@@ -118,7 +90,9 @@ pub extern "C" fn incr_iseq_counter(idx: usize) {
     iseq_call_count[idx] += 1;
 }
 
-// YJIT exit counts for each instruction type
+/// YJIT exit counts for each instruction type.
+/// Note that `VM_INSTRUCTION_SIZE` is an upper bound and the actual number
+/// of VM opcodes may be different in the build. See [`rb_vm_instruction_size()`]
 const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
@@ -276,7 +250,9 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::deleted_defer_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
+    Counter::compilation_failure,
     Counter::max_inline_versions,
+    Counter::inline_block_count,
     Counter::num_contexts_encoded,
     Counter::context_cache_hits,
 
@@ -288,6 +264,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::invalidate_constant_ic_fill,
     Counter::invalidate_no_singleton_class,
     Counter::invalidate_ep_escape,
+    Counter::invalidate_everything,
 ];
 
 /// Macro to increase a counter by name and count
@@ -343,7 +320,6 @@ macro_rules! ptr_to_counter {
         }
     };
 }
-pub(crate) use ptr_to_counter;
 
 // Declare all the counters we track
 make_counters! {
@@ -351,6 +327,7 @@ make_counters! {
 
     // Method calls that fallback to dynamic dispatch
     send_singleton_class,
+    send_forwarding,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
@@ -377,8 +354,8 @@ make_counters! {
     send_iseq_arity_error,
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
+    send_iseq_block_arg_gc_unsafe,
     send_iseq_complex_discard_extras,
-    send_iseq_forwarding,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_mismatch,
@@ -414,6 +391,9 @@ make_counters! {
     send_bmethod_ractor,
     send_bmethod_block_arg,
     send_optimized_block_arg,
+    send_pred_not_fixnum,
+    send_pred_underflow,
+    send_str_dup_exivar,
 
     invokesuper_defined_class_mismatch,
     invokesuper_forwarding,
@@ -457,8 +437,10 @@ make_counters! {
     guard_send_not_fixnum_or_flonum,
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
+    guard_send_str_aref_not_fixnum,
 
     guard_send_cfunc_bad_splat_vargs,
+    guard_send_cfunc_block_not_nil,
 
     guard_invokesuper_me_changed,
 
@@ -507,8 +489,7 @@ make_counters! {
     opt_aset_not_array,
     opt_aset_not_fixnum,
     opt_aset_not_hash,
-
-    opt_aref_with_qundef,
+    opt_aset_frozen,
 
     opt_case_dispatch_megamorphic,
 
@@ -519,6 +500,7 @@ make_counters! {
     expandarray_postarg,
     expandarray_not_array,
     expandarray_to_ary,
+    expandarray_method_missing,
     expandarray_chain_max_depth,
 
     // getblockparam
@@ -556,6 +538,7 @@ make_counters! {
     compiled_branch_count,
     compile_time_ns,
     compilation_failure,
+    abandoned_block_count,
     block_next_count,
     defer_count,
     defer_empty_count,
@@ -563,6 +546,7 @@ make_counters! {
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
+    inline_block_count,
     num_contexts_encoded,
 
     freed_iseq_count,
@@ -577,6 +561,7 @@ make_counters! {
     invalidate_constant_ic_fill,
     invalidate_no_singleton_class,
     invalidate_ep_escape,
+    invalidate_everything,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
@@ -656,8 +641,7 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, key: VALUE) -
 
 /// Primitive called in yjit.rb
 ///
-/// Check if trace_exits generation is enabled. Requires the stats feature
-/// to be enabled.
+/// Check if trace_exits generation is enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     if get_option!(trace_exits).is_some() {
@@ -681,7 +665,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
         return Qnil;
     }
 
-    // If the stats feature is enabled, pass yjit_raw_samples and yjit_line_samples
+    // Pass yjit_raw_samples and yjit_line_samples
     // to the C function called rb_yjit_exit_locations_dict for parsing.
     let yjit_raw_samples = YjitExitLocations::get_raw_samples();
     let yjit_line_samples = YjitExitLocations::get_line_samples();
@@ -770,20 +754,26 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
-        set_stat_usize!(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
+        set_stat_usize!(hash, "yjit_alloc_size", yjit_alloc_size());
 
         // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
         set_stat_usize!(hash, "context_data_bytes", context_data.num_bytes());
-        set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_CACHE_BYTES);
+        set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        if rb_vm_insn_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insn_count as usize);
+        }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
 
         set_stat!(hash, "object_shape_count", rb_object_shape_count());
+
+        // Time since YJIT init in nanoseconds
+        let time_nanos = Instant::now().duration_since(YJIT_INIT_TIME.unwrap()).as_nanos();
+        set_stat_usize!(hash, "yjit_active_ns", time_nanos as usize);
     }
 
     // If we're not generating stats, put only default counters
@@ -818,7 +808,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 
         // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME"
         // and the value is the count of side exits for that instruction.
-        for op_idx in 0..VM_INSTRUCTION_SIZE_USIZE {
+        use crate::utils::IntoUsize;
+        for op_idx in 0..rb_vm_instruction_size().as_usize() {
             let op_name = insn_name(op_idx);
             let key_string = "exit_".to_owned() + &op_name;
             let count = EXIT_OP_COUNT[op_idx];
@@ -844,11 +835,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        let total_insns_count = retired_in_yjit + rb_vm_insns_count;
-        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
+        if rb_vm_insn_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insn_count;
+            set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
-        let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+            let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
+            set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+        }
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(
@@ -899,13 +892,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 }
 
 /// Record the backtrace when a YJIT exit occurs. This functionality requires
-/// that the stats feature is enabled as well as the --yjit-trace-exits option.
+/// the --yjit-trace-exits option.
 ///
 /// This function will fill two Vec's in YjitExitLocations to record the raw samples
 /// and line samples. Their length should be the same, however the data stored in
 /// them is different.
 #[no_mangle]
-pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
+pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
 {
     // Return if YJIT is not enabled
     if !yjit_enabled_p() {
@@ -929,10 +922,11 @@ pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
     // rb_vm_insn_addr2opcode won't work in cargo test --all-features
     // because it's a C function. Without insn call, this function is useless
     // so wrap the whole thing in a not test check.
+    let _ = exit_pc;
     #[cfg(not(test))]
     {
         // Get the opcode from the encoded insn handler at this PC
-        let insn = unsafe { rb_vm_insn_addr2opcode((*_exit_pc).as_ptr()) };
+        let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
 
         // Use the same buffer size as Stackprof.
         const BUFF_LEN: usize = 2048;

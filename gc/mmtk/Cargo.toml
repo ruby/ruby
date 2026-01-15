@@ -1,0 +1,42 @@
+[package]
+name = "mmtk_ruby"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+[lib]
+name = "mmtk_ruby"
+crate-type = ["cdylib", "staticlib"]
+
+[profile.release]
+lto = true
+
+[dependencies]
+libc = "0.2"
+log = "0.4.14"
+env_logger = "0.11.3"
+once_cell = "1.17.0"
+atomic_refcell = "0.1.9"
+probe = "0.5"
+sysinfo = "0.32.0"
+
+[dependencies.mmtk]
+features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery"]
+
+# Uncomment the following lines to use mmtk-core from the official repository.
+git = "https://github.com/mmtk/mmtk-core.git"
+rev = "c6317a3f1c262e33fc2e427e4cc999c17bcc4791"
+
+# Uncomment the following line to use mmtk-core from a local repository.
+# path = "../../../mmtk-core"
+
+[features]
+default = []
+
+# When moving an object, clear its original copy.
+clear_old_copy = []
+
+# Enable extra assertions in release build.  For debugging.
+extra_assert = []
+
+[workspace]

@@ -40,7 +40,8 @@ require 'socket'
 #   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
-  VERSION = "1.2.6"
+  # The version string
+  VERSION = "1.2.8"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -151,6 +152,16 @@ class IPAddr
     return self.clone.set(addr_mask(~@addr))
   end
 
+  # Returns a new ipaddr greater than the original address by offset
+  def +(offset)
+    self.clone.set(@addr + offset, @family)
+  end
+
+  # Returns a new ipaddr less than the original address by offset
+  def -(offset)
+    self.clone.set(@addr - offset, @family)
+  end
+
   # Returns true if two ipaddrs are equal.
   def ==(other)
     other = coerce_other(other)
@@ -227,10 +238,26 @@ class IPAddr
     return str
   end
 
+  # Returns a string containing the IP address representation with prefix.
+  def as_json(*)
+    if ipv4? && prefix == 32
+      to_s
+    elsif ipv6? && prefix == 128
+      to_s
+    else
+      cidr
+    end
+  end
+
+  # Returns a json string containing the IP address representation.
+  def to_json(*a)
+    %Q{"#{as_json(*a)}"}
+  end
+
   # Returns a string containing the IP address representation in
   # cidr notation
   def cidr
-    format("%s/%s", to_s, prefix)
+    "#{to_s}/#{prefix}"
   end
 
   # Returns a network byte ordered string form of the IP address.
@@ -327,7 +354,7 @@ class IPAddr
     _ipv4_compat?
   end
 
-  def _ipv4_compat?
+  def _ipv4_compat?             # :nodoc:
     if !ipv6? || (@addr >> 32) != 0
       return false
     end
@@ -341,7 +368,7 @@ class IPAddr
   # into an IPv4-mapped IPv6 address.
   def ipv4_mapped
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
     clone = self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
     clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
@@ -353,9 +380,11 @@ class IPAddr
   def ipv4_compat
     warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
-    return self.clone.set(@addr, Socket::AF_INET6)
+    clone = self.clone.set(@addr, Socket::AF_INET6)
+    clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
+    clone
   end
 
   # Returns a new ipaddr built by converting the IPv6 address into a
@@ -384,7 +413,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC3172.
   def ip6_arpa
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.arpa"
   end
@@ -392,7 +421,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC1886.
   def ip6_int
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.int"
   end
@@ -517,6 +546,7 @@ class IPAddr
   end
 
   protected
+  # :stopdoc:
 
   def begin_addr
     @addr & @mask_addr
@@ -532,6 +562,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
   end
+  #:startdoc:
 
   # Set +@addr+, the internal stored ip address, to given +addr+. The
   # parameter +addr+ is validated using the first +family+ member,
@@ -673,6 +704,7 @@ class IPAddr
     end
   end
 
+  # :stopdoc:
   def coerce_other(other)
     case other
     when IPAddr
@@ -693,8 +725,8 @@ class IPAddr
       octets = addr.split('.')
     end
     octets.inject(0) { |i, s|
-      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{@addr}"
-      (s != '0') && s.start_with?('0') and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{@addr}"
+      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{addr}"
+      (s != '0') && s.start_with?('0') and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{addr}"
       i << 8 | n
     }
   end
@@ -711,19 +743,19 @@ class IPAddr
       right = ''
     when RE_IPV6ADDRLIKE_COMPRESSED
       if $4
-        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{@addr}"
+        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{left}"
         addr = in_addr($~[4,4])
         left = $1
         right = $3 + '0:0'
       else
         left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
-          raise InvalidAddressError, "invalid address: #{@addr}"
+          raise InvalidAddressError, "invalid address: #{left}"
         left = $1
         right = $2
         addr = 0
       end
     else
-      raise InvalidAddressError, "invalid address: #{@addr}"
+      raise InvalidAddressError, "invalid address: #{left}"
     end
     l = left.split(':')
     r = right.split(':')
@@ -784,7 +816,7 @@ unless Socket.const_defined? :AF_INET6
   class << IPSocket
     private
 
-    def valid_v6?(addr)
+    def valid_v6?(addr) # :nodoc:
       case addr
       when IPAddr::RE_IPV6ADDRLIKE_FULL
         if $2

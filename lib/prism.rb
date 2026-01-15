@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 # The Prism Ruby parser.
 #
@@ -19,12 +20,14 @@ module Prism
   autoload :DSL, "prism/dsl"
   autoload :InspectVisitor, "prism/inspect_visitor"
   autoload :LexCompat, "prism/lex_compat"
-  autoload :LexRipper, "prism/lex_compat"
+  autoload :LexRipper, "prism/lex_ripper"
   autoload :MutationCompiler, "prism/mutation_compiler"
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
+  autoload :Relocation, "prism/relocation"
   autoload :Serialize, "prism/serialize"
+  autoload :StringQuery, "prism/string_query"
   autoload :Translation, "prism/translation"
   autoload :Visitor, "prism/visitor"
 
@@ -33,6 +36,26 @@ module Prism
 
   private_constant :LexCompat
   private_constant :LexRipper
+
+  # Raised when requested to parse as the currently running Ruby version but Prism has no support for it.
+  class CurrentVersionError < ArgumentError
+    # Initialize a new exception for the given ruby version string.
+    def initialize(version)
+      message = +"invalid version: Requested to parse as `version: 'current'`; "
+      segments =
+        if version.match?(/\A\d+\.\d+.\d+\z/)
+          version.split(".").map(&:to_i)
+        end
+
+      if segments && ((segments[0] < 3) || (segments[0] == 3 && segments[1] < 3))
+        message << " #{version} is below the minimum supported syntax."
+      else
+        message << " #{version} is unknown. Please update the `prism` gem."
+      end
+
+      super(message)
+    end
+  end
 
   # :call-seq:
   #   Prism::lex_compat(source, **options) -> LexCompat::Result
@@ -57,15 +80,16 @@ module Prism
   end
 
   # :call-seq:
-  #   Prism::load(source, serialized) -> ParseResult
+  #   Prism::load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
-  def self.load(source, serialized)
-    Serialize.load(source, serialized)
+  def self.load(source, serialized, freeze = false)
+    Serialize.load_parse(source, serialized, freeze)
   end
 end
 
 require_relative "prism/polyfill/byteindex"
+require_relative "prism/polyfill/warn"
 require_relative "prism/node"
 require_relative "prism/node_ext"
 require_relative "prism/parse_result"
@@ -75,13 +99,13 @@ require_relative "prism/parse_result"
 # it's going to require the built library. Otherwise, it's going to require a
 # module that uses FFI to call into the library.
 if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
-  require "prism/prism"
-
   # The C extension is the default backend on CRuby.
   Prism::BACKEND = :CEXT
-else
-  require_relative "prism/ffi"
 
+  require "prism/prism"
+else
   # The FFI backend is used on other Ruby implementations.
   Prism::BACKEND = :FFI
+
+  require_relative "prism/ffi"
 end

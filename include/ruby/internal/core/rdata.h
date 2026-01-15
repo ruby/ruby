@@ -142,7 +142,10 @@ struct RData {
      */
     RUBY_DATA_FUNC dfree;
 
-    /** Pointer to the actual C level struct that you want to wrap. */
+    /** Pointer to the actual C level struct that you want to wrap.
+      * This is after dmark and dfree to allow DATA_PTR to continue to work for
+      * both RData and non-embedded RTypedData.
+      */
     void *data;
 };
 
@@ -177,11 +180,6 @@ VALUE rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_D
  */
 VALUE rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
 
-/**
- * @private
- * Documented in include/ruby/internal/globals.h
- */
-RUBY_EXTERN VALUE rb_cObject;
 RBIMPL_SYMBOL_EXPORT_END()
 
 /**
@@ -346,14 +344,6 @@ rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_f
 {
     Data_Make_Struct0(result, klass, void, size, mark_func, free_func, *datap);
     return result;
-}
-
-RBIMPL_ATTR_DEPRECATED(("by: rb_data_object_wrap"))
-/** @deprecated  This function was renamed to rb_data_object_wrap(). */
-static inline VALUE
-rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
-{
-    return rb_data_object_wrap(klass, data, dmark, dfree);
 }
 
 /** @cond INTERNAL_MACRO */

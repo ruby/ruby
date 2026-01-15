@@ -143,13 +143,13 @@ module MonitorMixin
 
     private
 
-    def initialize(monitor)
+    def initialize(monitor) # :nodoc:
       @monitor = monitor
       @cond = Thread::ConditionVariable.new
     end
   end
 
-  def self.extend_object(obj)
+  def self.extend_object(obj) # :nodoc:
     super(obj)
     obj.__send__(:mon_initialize)
   end
@@ -238,6 +238,8 @@ module MonitorMixin
     @mon_data_owner_object_id = self.object_id
   end
 
+  # Ensures that the MonitorMixin is owned by the current thread,
+  # otherwise raises an exception.
   def mon_check_owner
     @mon_data.mon_check_owner
   end
@@ -254,6 +256,10 @@ end
 #   end
 #
 class Monitor
+  #
+  # Creates a new MonitorMixin::ConditionVariable associated with the
+  # Monitor object.
+  #
   def new_cond
     ::MonitorMixin::ConditionVariable.new(self)
   end

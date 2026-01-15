@@ -61,7 +61,6 @@ RSpec.describe "gemcutter's dependency API" do
     bundle :install, artifice: "endpoint"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -119,7 +118,7 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "falls back when the API errors out" do
-    simulate_platform x86_mswin32 do
+    simulate_platform "x86-mswin32" do
       build_repo2 do
         # The rcov gem is platform mswin32, but has no arch
         build_gem "rcov" do |s|
@@ -255,30 +254,12 @@ RSpec.describe "gemcutter's dependency API" do
     end
   end
 
-  it "fetches again when more dependencies are found in subsequent sources", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "endpoint_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0", "foo 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources using blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -314,11 +295,13 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "myrack 1.2"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources", bundler: "< 3" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
+  it "resolves indirect dependencies to the most scoped source that includes them" do
+    # In this scenario, the gem "somegem" only exists in repo4.  It depends on
+    # specific version of activesupport that exists only in repo1.  There
+    # happens also be a version of activesupport in repo4, but not the one that
+    # version 1.0.0 of somegem wants. This test makes sure that bundler tries to
+    # use the version in the most scoped source, even if not compatible, and
+    # gives a resolution error
     build_repo4 do
       build_gem "activesupport", "1.2.0"
       build_gem "somegem", "1.0.0" do |s|
@@ -328,14 +311,14 @@ RSpec.describe "gemcutter's dependency API" do
 
     gemfile <<-G
       source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem 'somegem', '1.0.0'
+      source "#{source_uri}/extra" do
+        gem 'somegem', '1.0.0'
+      end
     G
 
-    bundle :install, artifice: "endpoint_extra_api"
+    bundle :install, artifice: "compact_index_extra_api", raise_on_error: false
 
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
+    expect(err).to include("Could not find compatible versions")
   end
 
   it "prints API output properly with back deps" do
@@ -343,7 +326,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -359,33 +342,14 @@ RSpec.describe "gemcutter's dependency API" do
     expect(out).to include("Fetching source index from http://localgemserver.test/extra")
   end
 
-  it "does not fetch every spec when doing back deps", bundler: "< 3" do
+  it "does not fetch every spec when doing back deps" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    install_gemfile <<-G, artifice: "endpoint_extra_missing"
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    expect(the_bundle).to include_gems "back_deps 1.0"
-  end
-
-  it "does not fetch every spec when doing back deps using blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      build_gem "missing"
-
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "endpoint_extra_missing"
@@ -398,32 +362,12 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "endpoint_extra"
-    bundle "config set --local deployment true"
-    bundle :install, artifice: "endpoint_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode with blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -470,40 +414,6 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-  end
-
-  it "installs the binstubs", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --binstubs", artifice: "endpoint"
-
-    gembin "myrackup"
-    expect(out).to eq("1.0.0")
-  end
-
-  it "installs the bins when using --path and uses autoclean", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle", artifice: "endpoint"
-
-    expect(vendored_gems("bin/myrackup")).to exist
-  end
-
-  it "installs the bins when using --path and uses bundle clean", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle --no-clean", artifice: "endpoint"
-
-    expect(vendored_gems("bin/myrackup")).to exist
   end
 
   it "prints post_install_messages" do
@@ -579,19 +489,6 @@ RSpec.describe "gemcutter's dependency API" do
 
       bundle :install, artifice: "endpoint_500", raise_on_error: false
       expect(out).not_to include("#{user}:#{password}")
-    end
-
-    it "strips http basic auth creds when warning about ambiguous sources", bundler: "< 3" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        source "#{file_uri_for(gem_repo1)}"
-        gem "myrack"
-      G
-
-      bundle :install, artifice: "endpoint_basic_authentication"
-      expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
-      expect(err).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "does not pass the user / password to different hosts on redirect" do
@@ -707,14 +604,14 @@ RSpec.describe "gemcutter's dependency API" do
       end
     end
 
-    it "explains what to do to get it" do
+    it "explains what to do to get it, and includes original error" do
       gemfile <<-G
         source "#{source_uri.gsub(/http/, "https")}"
         gem "myrack"
       G
 
-      bundle :install, artifice: "fail", env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false
-      expect(err).to include("OpenSSL")
+      bundle :install, artifice: "fail", env: { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }, raise_on_error: false
+      expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end
 
@@ -752,7 +649,7 @@ RSpec.describe "gemcutter's dependency API" do
 
         bundle "install", artifice: "endpoint_marshal_fail"
       ensure
-        home(".gemrc").rmtree
+        FileUtils.rm_rf home(".gemrc")
       end
     end
   end

@@ -140,6 +140,7 @@ coverage.o: $(hdrdir)/ruby/internal/intern/re.h
 coverage.o: $(hdrdir)/ruby/internal/intern/ruby.h
 coverage.o: $(hdrdir)/ruby/internal/intern/select.h
 coverage.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+coverage.o: $(hdrdir)/ruby/internal/intern/set.h
 coverage.o: $(hdrdir)/ruby/internal/intern/signal.h
 coverage.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 coverage.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -182,12 +183,14 @@ coverage.o: $(top_srcdir)/id_table.h
 coverage.o: $(top_srcdir)/internal.h
 coverage.o: $(top_srcdir)/internal/array.h
 coverage.o: $(top_srcdir)/internal/basic_operators.h
+coverage.o: $(top_srcdir)/internal/box.h
 coverage.o: $(top_srcdir)/internal/compilers.h
 coverage.o: $(top_srcdir)/internal/gc.h
 coverage.o: $(top_srcdir)/internal/hash.h
 coverage.o: $(top_srcdir)/internal/imemo.h
 coverage.o: $(top_srcdir)/internal/sanitizers.h
 coverage.o: $(top_srcdir)/internal/serial.h
+coverage.o: $(top_srcdir)/internal/set_table.h
 coverage.o: $(top_srcdir)/internal/static_assert.h
 coverage.o: $(top_srcdir)/internal/thread.h
 coverage.o: $(top_srcdir)/internal/variable.h

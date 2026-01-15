@@ -73,20 +73,18 @@ describe "Process.setrlimit" do
         Process.setrlimit(:STACK, *Process.getrlimit(Process::RLIMIT_STACK)).should be_nil
       end
 
-      platform_is_not :solaris, :aix do
+      platform_is_not :aix do
         it "coerces :MEMLOCK into RLIMIT_MEMLOCK" do
           Process.setrlimit(:MEMLOCK, *Process.getrlimit(Process::RLIMIT_MEMLOCK)).should be_nil
         end
       end
 
-      platform_is_not :solaris do
-        it "coerces :NPROC into RLIMIT_NPROC" do
-          Process.setrlimit(:NPROC, *Process.getrlimit(Process::RLIMIT_NPROC)).should be_nil
-        end
+      it "coerces :NPROC into RLIMIT_NPROC" do
+        Process.setrlimit(:NPROC, *Process.getrlimit(Process::RLIMIT_NPROC)).should be_nil
+      end
 
-        it "coerces :RSS into RLIMIT_RSS" do
-          Process.setrlimit(:RSS, *Process.getrlimit(Process::RLIMIT_RSS)).should be_nil
-        end
+      it "coerces :RSS into RLIMIT_RSS" do
+        Process.setrlimit(:RSS, *Process.getrlimit(Process::RLIMIT_RSS)).should be_nil
       end
 
       platform_is :netbsd, :freebsd do
@@ -155,20 +153,18 @@ describe "Process.setrlimit" do
         Process.setrlimit("STACK", *Process.getrlimit(Process::RLIMIT_STACK)).should be_nil
       end
 
-      platform_is_not :solaris, :aix do
+      platform_is_not :aix do
         it "coerces 'MEMLOCK' into RLIMIT_MEMLOCK" do
           Process.setrlimit("MEMLOCK", *Process.getrlimit(Process::RLIMIT_MEMLOCK)).should be_nil
         end
       end
 
-      platform_is_not :solaris do
-        it "coerces 'NPROC' into RLIMIT_NPROC" do
-          Process.setrlimit("NPROC", *Process.getrlimit(Process::RLIMIT_NPROC)).should be_nil
-        end
+      it "coerces 'NPROC' into RLIMIT_NPROC" do
+        Process.setrlimit("NPROC", *Process.getrlimit(Process::RLIMIT_NPROC)).should be_nil
+      end
 
-        it "coerces 'RSS' into RLIMIT_RSS" do
-          Process.setrlimit("RSS", *Process.getrlimit(Process::RLIMIT_RSS)).should be_nil
-        end
+      it "coerces 'RSS' into RLIMIT_RSS" do
+        Process.setrlimit("RSS", *Process.getrlimit(Process::RLIMIT_RSS)).should be_nil
       end
 
       platform_is :netbsd, :freebsd do

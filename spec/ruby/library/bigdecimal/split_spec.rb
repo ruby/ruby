@@ -58,16 +58,16 @@ describe "BigDecimal#split" do
   end
 
   it "third value: the base (currently always ten)" do
-   @arr[2].should == 10
-   @arr_neg[2].should == 10
-   @arr_big[2].should == 10
-   @arr_big_neg[2].should == 10
-   @huge[2].should == 10
-   @infinity.split[2].should == 10
-   @nan.split[2].should == 10
-   @infinity_neg.split[2].should == 10
-   @zero.split[2].should == 10
-   @zero_neg.split[2].should == 10
+    @arr[2].should == 10
+    @arr_neg[2].should == 10
+    @arr_big[2].should == 10
+    @arr_big_neg[2].should == 10
+    @huge[2].should == 10
+    @infinity.split[2].should == 10
+    @nan.split[2].should == 10
+    @infinity_neg.split[2].should == 10
+    @zero.split[2].should == 10
+    @zero_neg.split[2].should == 10
   end
 
   it "fourth value: the exponent" do

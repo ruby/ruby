@@ -14,15 +14,16 @@
 #define GetHMAC(obj, ctx) do { \
     TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+        ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
 } while (0)
 
 /*
  * Classes
  */
-VALUE cHMAC;
-VALUE eHMACError;
+static VALUE cHMAC;
+static VALUE eHMACError;
+static ID id_md_holder;
 
 /*
  * Public
@@ -40,7 +41,7 @@ ossl_hmac_free(void *ctx)
 static const rb_data_type_t ossl_hmac_type = {
     "OpenSSL/HMAC",
     {
-	0, ossl_hmac_free,
+        0, ossl_hmac_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -73,17 +74,17 @@ ossl_hmac_alloc(VALUE klass)
  *
  * === Example
  *
- *	key = 'key'
- * 	instance = OpenSSL::HMAC.new(key, 'SHA1')
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
- * 	instance.class
- * 	#=> OpenSSL::HMAC
+ *      key = 'key'
+ *      instance = OpenSSL::HMAC.new(key, 'SHA1')
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      instance.class
+ *      #=> OpenSSL::HMAC
  *
  * === A note about comparisons
  *
  * Two instances can be securely compared with #== in constant time:
  *
- *	other_instance = OpenSSL::HMAC.new('key', 'SHA1')
+ *      other_instance = OpenSSL::HMAC.new('key', 'SHA1')
  *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *  instance == other_instance
  *  #=> true
@@ -94,33 +95,29 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
     EVP_MD_CTX *ctx;
     EVP_PKEY *pkey;
+    const EVP_MD *md;
+    VALUE md_holder;
 
     GetHMAC(self, ctx);
     StringValue(key);
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+    md = ossl_evp_md_fetch(digest, &md_holder);
     pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL,
                                         (unsigned char *)RSTRING_PTR(key),
                                         RSTRING_LENINT(key));
     if (!pkey)
         ossl_raise(eHMACError, "EVP_PKEY_new_raw_private_key");
-#else
-    pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
-                                (unsigned char *)RSTRING_PTR(key),
-                                RSTRING_LENINT(key));
-    if (!pkey)
-        ossl_raise(eHMACError, "EVP_PKEY_new_mac_key");
-#endif
-    if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest),
-                           NULL, pkey) != 1) {
+    if (EVP_DigestSignInit(ctx, NULL, md, NULL, pkey) != 1) {
         EVP_PKEY_free(pkey);
         ossl_raise(eHMACError, "EVP_DigestSignInit");
     }
+    rb_ivar_set(self, id_md_holder, md_holder);
     /* Decrement reference counter; EVP_MD_CTX still keeps it */
     EVP_PKEY_free(pkey);
 
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_hmac_copy(VALUE self, VALUE other)
 {
@@ -145,13 +142,13 @@ ossl_hmac_copy(VALUE self, VALUE other)
  *
  * === Example
  *
- *	first_chunk = 'The quick brown fox jumps '
- * 	second_chunk = 'over the lazy dog'
+ *      first_chunk = 'The quick brown fox jumps '
+ *      second_chunk = 'over the lazy dog'
  *
- * 	instance.update(first_chunk)
- * 	#=> 5b9a8038a65d571076d97fe783989e52278a492a
- * 	instance.update(second_chunk)
- * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ *      instance.update(first_chunk)
+ *      #=> 5b9a8038a65d571076d97fe783989e52278a492a
+ *      instance.update(second_chunk)
+ *      #=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
  *
  */
 static VALUE
@@ -229,14 +226,14 @@ ossl_hmac_hexdigest(VALUE self)
  *
  * === Example
  *
- *	data = "The quick brown fox jumps over the lazy dog"
- * 	instance = OpenSSL::HMAC.new('key', 'SHA1')
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      data = "The quick brown fox jumps over the lazy dog"
+ *      instance = OpenSSL::HMAC.new('key', 'SHA1')
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *
- * 	instance.update(data)
- * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
- * 	instance.reset
- * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *      instance.update(data)
+ *      #=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ *      instance.reset
+ *      #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *
  */
 static VALUE
@@ -259,11 +256,6 @@ ossl_hmac_reset(VALUE self)
 void
 Init_ossl_hmac(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * Document-class: OpenSSL::HMAC
      *
@@ -307,4 +299,6 @@ Init_ossl_hmac(void)
     rb_define_method(cHMAC, "hexdigest", ossl_hmac_hexdigest, 0);
     rb_define_alias(cHMAC, "inspect", "hexdigest");
     rb_define_alias(cHMAC, "to_s", "hexdigest");
+
+    id_md_holder = rb_intern_const("EVP_MD_holder");
 }

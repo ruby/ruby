@@ -47,7 +47,7 @@ struct rb_id_table {
 
 #if SIZEOF_VALUE == 8
 #define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key)
-#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items[i].key)
+#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->items[i].key)
 #define ITEM_COLLIDED(tbl, i) ((tbl)->items[i].collision)
 #define ITEM_SET_COLLIDED(tbl, i) ((tbl)->items[i].collision = 1)
 static inline void
@@ -80,9 +80,10 @@ round_capa(int capa)
     return (capa + 1) << 2;
 }
 
-static struct rb_id_table *
-rb_id_table_init(struct rb_id_table *tbl, int capa)
+struct rb_id_table *
+rb_id_table_init(struct rb_id_table *tbl, size_t s_capa)
 {
+    int capa = (int)s_capa;
     MEMZERO(tbl, struct rb_id_table, 1);
     if (capa > 0) {
         capa = round_capa(capa);
@@ -96,7 +97,13 @@ struct rb_id_table *
 rb_id_table_create(size_t capa)
 {
     struct rb_id_table *tbl = ALLOC(struct rb_id_table);
-    return rb_id_table_init(tbl, (int)capa);
+    return rb_id_table_init(tbl, capa);
+}
+
+void
+rb_id_table_free_items(struct rb_id_table *tbl)
+{
+    xfree(tbl->items);
 }
 
 void
@@ -291,6 +298,10 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 {
     int i, capa = tbl->capa;
 
+    if (!tbl->items) {
+        return;
+    }
+
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
             enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
@@ -324,3 +335,106 @@ rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_for
     }
 }
 
+static void
+managed_id_table_free(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_free_items(tbl);
+}
+
+static size_t
+managed_id_table_memsize(const void *data)
+{
+    const struct rb_id_table *tbl = (const struct rb_id_table *)data;
+    return rb_id_table_memsize(tbl) - sizeof(struct rb_id_table);
+}
+
+const rb_data_type_t rb_managed_id_table_type = {
+    .wrap_struct_name = "VM/managed_id_table",
+    .function = {
+        .dmark = NULL, // Nothing to mark
+        .dfree = managed_id_table_free,
+        .dsize = managed_id_table_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+static inline struct rb_id_table *
+managed_id_table_ptr(VALUE obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, T_DATA));
+    RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), &rb_managed_id_table_type));
+
+    return RTYPEDDATA_GET_DATA(obj);
+}
+
+VALUE
+rb_managed_id_table_create(const rb_data_type_t *type, size_t capa)
+{
+    struct rb_id_table *tbl;
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, type, tbl);
+    RB_OBJ_SET_SHAREABLE(obj);
+    rb_id_table_init(tbl, capa); // NOTE: this can cause GC, so dmark and dsize need to check tbl->items
+    return obj;
+}
+
+VALUE
+rb_managed_id_table_new(size_t capa)
+{
+    return rb_managed_id_table_create(&rb_managed_id_table_type, capa);
+}
+
+static enum rb_id_table_iterator_result
+managed_id_table_dup_i(ID id, VALUE val, void *data)
+{
+    struct rb_id_table *new_tbl = (struct rb_id_table *)data;
+    rb_id_table_insert(new_tbl, id, val);
+    return ID_TABLE_CONTINUE;
+}
+
+VALUE
+rb_managed_id_table_dup(VALUE old_table)
+{
+    struct rb_id_table *new_tbl;
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, RTYPEDDATA_TYPE(old_table), new_tbl);
+    struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
+    rb_id_table_init(new_tbl, old_tbl->num + 1);
+    rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);
+    return obj;
+}
+
+int
+rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp)
+{
+    return rb_id_table_lookup(managed_id_table_ptr(table), id, valp);
+}
+
+int
+rb_managed_id_table_insert(VALUE table, ID id, VALUE val)
+{
+    return rb_id_table_insert(managed_id_table_ptr(table), id, val);
+}
+
+size_t
+rb_managed_id_table_size(VALUE table)
+{
+    return rb_id_table_size(managed_id_table_ptr(table));
+}
+
+void
+rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
+{
+    rb_id_table_foreach(managed_id_table_ptr(table), func, data);
+}
+
+void
+rb_managed_id_table_foreach_values(VALUE table, rb_id_table_foreach_values_func_t *func, void *data)
+{
+    rb_id_table_foreach_values(managed_id_table_ptr(table), func, data);
+}
+
+int
+rb_managed_id_table_delete(VALUE table, ID id)
+{
+    return rb_id_table_delete(managed_id_table_ptr(table), id);
+}

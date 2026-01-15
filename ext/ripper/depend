@@ -1,7 +1,7 @@
 GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
-BISON = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
+LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 
 .SUFFIXES: .y
 
@@ -12,7 +12,7 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -o$@ - $< < $<
+	$(Q) $(LRAMA) -o$@ - $< < $<
 
 all: check
 static: check
@@ -181,6 +181,7 @@ eventids1.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids1.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -352,6 +353,7 @@ eventids2.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids2.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -532,6 +534,7 @@ ripper.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -581,6 +584,7 @@ ripper.o: $(top_srcdir)/internal/array.h
 ripper.o: $(top_srcdir)/internal/basic_operators.h
 ripper.o: $(top_srcdir)/internal/bignum.h
 ripper.o: $(top_srcdir)/internal/bits.h
+ripper.o: $(top_srcdir)/internal/box.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
@@ -598,8 +602,10 @@ ripper.o: $(top_srcdir)/internal/re.h
 ripper.o: $(top_srcdir)/internal/ruby_parser.h
 ripper.o: $(top_srcdir)/internal/sanitizers.h
 ripper.o: $(top_srcdir)/internal/serial.h
+ripper.o: $(top_srcdir)/internal/set_table.h
 ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
+ripper.o: $(top_srcdir)/internal/struct.h
 ripper.o: $(top_srcdir)/internal/symbol.h
 ripper.o: $(top_srcdir)/internal/thread.h
 ripper.o: $(top_srcdir)/internal/variable.h
@@ -770,6 +776,7 @@ ripper_init.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper_init.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/string.h

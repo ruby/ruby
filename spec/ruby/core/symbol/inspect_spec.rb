@@ -6,7 +6,7 @@ describe "Symbol#inspect" do
     :fred?     => ":fred?",
     :fred!     => ":fred!",
     :BAD!      => ":BAD!",
-    :_BAD!      => ":_BAD!",
+    :_BAD!     => ":_BAD!",
     :$ruby     => ":$ruby",
     :@ruby     => ":@ruby",
     :@@ruby    => ":@@ruby",
@@ -66,9 +66,9 @@ describe "Symbol#inspect" do
     :~         => ":~",
     :|         => ":|",
 
-    :"!"       => [":\"!\"",  ":!" ],
-    :"!="      => [":\"!=\"", ":!="],
-    :"!~"      => [":\"!~\"", ":!~"],
+    :"!"       => ":!",
+    :"!="      => ":!=",
+    :"!~"      => ":!~",
     :"\$"      => ":\"$\"", # for justice!
     :"&&"      => ":\"&&\"",
     :"'"       => ":\"\'\"",
@@ -96,10 +96,15 @@ describe "Symbol#inspect" do
     :"foo "    => ":\"foo \"",
     :" foo"    => ":\" foo\"",
     :" "       => ":\" \"",
+
+    :"ê"       => [":ê", ":\"\\u00EA\""],
+    :"测"      => [":测", ":\"\\u6D4B\""],
+    :"🦊"      => [":🦊", ":\"\\u{1F98A}\""],
   }
 
+  expected_by_encoding = Encoding::default_external == Encoding::UTF_8 ? 0 : 1
   symbols.each do |input, expected|
-    expected = expected[1] if expected.is_a?(Array)
+    expected = expected[expected_by_encoding] if expected.is_a?(Array)
     it "returns self as a symbol literal for #{expected}" do
       input.inspect.should == expected
     end

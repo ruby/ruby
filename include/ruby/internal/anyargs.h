@@ -84,12 +84,15 @@
 
 #elif defined(_WIN32) || defined(__CYGWIN__)
 # /* Skip due to [Bug #16134] */
+# define RBIMPL_CAST_FN_PTR 1
 
 #elif ! RBIMPL_HAS_ATTRIBUTE(transparent_union)
 # /* :TODO: improve here, please find a way to support. */
+# define RBIMPL_CAST_FN_PTR 1
 
 #elif ! defined(HAVE_VA_ARGS_MACRO)
 # /* :TODO: improve here, please find a way to support. */
+# define RBIMPL_CAST_FN_PTR 1
 
 #else
 # /** @cond INTERNAL_MACRO */
@@ -347,6 +350,25 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 #define rb_define_global_function(mid, func, arity)         RBIMPL_ANYARGS_DISPATCH_rb_define_global_function((arity), (func))((mid), (func), (arity))
 
 #endif /* __cplusplus */
+
+#if defined(RBIMPL_CAST_FN_PTR) && !defined(__cplusplus)
+/* In C23, K&R style prototypes are gone and so `void foo(ANYARGS)` became
+ * equivalent to `void foo(void)` unlike in earlier versions. This is a problem
+ * for rb_define_* functions since that makes all valid functions one can pass
+ * trip -Wincompatible-pointer-types, which we treat as errors. This is mostly
+ * not a problem for the __builtin_choose_expr path, but outside of that we
+ * need to add a cast for compatibility.
+ */
+#define rb_define_method(klass, mid, func, arity)           rb_define_method((klass), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_method_id(klass, mid, func, arity)        rb_define_method_id((klass), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_singleton_method(obj, mid, func, arity)   rb_define_singleton_method((obj), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_protected_method(klass, mid, func, arity) rb_define_protected_method((klass), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_private_method(klass, mid, func, arity)   rb_define_private_method((klass), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_module_function(mod, mid, func, arity)    rb_define_module_function((mod), (mid), (VALUE (*)(ANYARGS))(func), (arity))
+#define rb_define_global_function(mid, func, arity)         rb_define_global_function((mid), (VALUE (*)(ANYARGS))(func), (arity))
+
+#undef RBIMPL_CAST_FN_PTR
+#endif /* defined(RBIMPL_CAST_FN_PTR) && !defined(__cplusplus) */
 
 /**
  * This  macro is  to properly  cast  a function  parameter of  *_define_method

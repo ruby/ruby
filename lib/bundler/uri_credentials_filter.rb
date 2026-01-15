@@ -16,7 +16,7 @@ module Bundler
 
       if uri.userinfo
         # oauth authentication
-        if uri.password == "x-oauth-basic" || uri.password == "x"
+        if uri.password == "x-oauth-basic" || uri.password == "x" || uri.password.nil?
           # URI as string does not display with password if no user is set
           oauth_designation = uri.password
           uri.user = oauth_designation

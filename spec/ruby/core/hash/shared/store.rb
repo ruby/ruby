@@ -91,9 +91,9 @@ describe :hash_store, shared: true do
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do
-      hash = {1 => 2, 3 => 4, 5 => 6}
-      hash.each { hash.send(@method, 1, :foo) }
-      hash.should == {1 => :foo, 3 => 4, 5 => 6}
+    hash = {1 => 2, 3 => 4, 5 => 6}
+    hash.each { hash.send(@method, 1, :foo) }
+    hash.should == {1 => :foo, 3 => 4, 5 => 6}
   end
 
   it "does not dispatch to hash for Boolean, Integer, Float, String, or Symbol" do

@@ -65,13 +65,16 @@
 
 module Shellwords
   # The version number string.
-  VERSION = "0.2.0"
+  VERSION = "0.2.2"
 
   # Splits a string into an array of tokens in the same way the UNIX
   # Bourne shell does.
   #
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
+  #
+  # +line+ must not contain NUL characters because of nature of
+  # +exec+ system call.
   #
   # Note, however, that this is not a command line parser.  Shell
   # metacharacters except for the single and double quotes and
@@ -87,9 +90,14 @@ module Shellwords
   def shellsplit(line)
     words = []
     field = String.new
-    line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
+    line.scan(/\G\s*(?>([^\0\s\\\'\"]+)|'([^\0\']*)'|"((?:[^\0\"\\]|\\[^\0])*)"|(\\[^\0]?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
-      raise ArgumentError, "Unmatched quote: #{line.inspect}" if garbage
+      if garbage
+        b = $~.begin(0)
+        line = $~[0]
+        line = "..." + line if b > 0
+        raise ArgumentError, "#{garbage == "\0" ? 'Nul character' : 'Unmatched quote'} at #{b}: #{line}"
+      end
       # 2.2.3 Double-Quotes:
       #
       #   The <backslash> shall retain its special meaning as an
@@ -117,6 +125,9 @@ module Shellwords
   # Escapes a string so that it can be safely used in a Bourne shell
   # command line.  +str+ can be a non-string object that responds to
   # +to_s+.
+  #
+  # +str+ must not contain NUL characters because of nature of +exec+
+  # system call.
   #
   # Note that a resulted string should be used unquoted and is not
   # intended for use in double quotes nor in single quotes.
@@ -150,6 +161,9 @@ module Shellwords
     # An empty argument will be skipped, so return empty quotes.
     return "''".dup if str.empty?
 
+    # Shellwords cannot contain NUL characters.
+    raise ArgumentError, "NUL character" if str.index("\0")
+
     str = str.dup
 
     # Treat multibyte characters as is.  It is the caller's responsibility
@@ -175,6 +189,7 @@ module Shellwords
   # All elements are joined into a single string with fields separated by a
   # space, where each element is escaped for the Bourne shell and stringified
   # using +to_s+.
+  # See also Shellwords.shellescape.
   #
   #   ary = ["There's", "a", "time", "and", "place", "for", "everything"]
   #   argv = Shellwords.join(ary)

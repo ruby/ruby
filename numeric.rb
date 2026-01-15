@@ -1,4 +1,14 @@
 class Numeric
+  #  call-seq:
+  #    dup -> self
+  #
+  #  Returns +self+.
+  #
+  #  Related: Numeric#clone.
+  #
+  def dup
+    self
+  end
 
   #  call-seq:
   #    real? -> true or false
@@ -70,13 +80,27 @@ class Numeric
   end
 
   alias conj conjugate
+
+  #  call-seq:
+  #    +self -> self
+  #
+  #  Returns +self+.
+  #
+  def +@
+    self
+  end
 end
 
 class Integer
   # call-seq:
-  #    -int -> integer
+  #   -self -> integer
   #
-  # Returns +self+, negated.
+  # Returns +self+, negated:
+  #
+  #   -1    # => -1
+  #   -(-1) # => 1
+  #   -0    # => 0
+  #
   def -@
     Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_uminus(self)'
@@ -302,6 +326,29 @@ class Integer
   def denominator
     1
   end
+
+  with_jit do
+    if Primitive.rb_builtin_basic_definition_p(:downto)
+      undef :downto
+
+      def downto(to) # :nodoc:
+        Primitive.attr! :inline_block, :c_trace
+
+        # When no block is given, return an Enumerator that enumerates from `self` to `to`.
+        # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.
+        unless defined?(yield)
+          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &to, int_downto_size)'
+        end
+
+        from = self
+        while from >= to
+          yield from
+          from = from.pred
+        end
+        self
+      end
+    end
+  end
 end
 
 class Float
@@ -328,15 +375,16 @@ class Float
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
-  def magnitude
-    Primitive.attr! :leaf
-    Primitive.cexpr! 'rb_float_abs(self)'
-  end
+  alias magnitude abs
 
   # call-seq:
-  #   -float -> float
+  #   -self -> float
   #
-  # Returns +self+, negated.
+  # Returns +self+, negated:
+  #
+  #   -3.14    # => -3.14
+  #   -(-3.14) # => 3.14
+  #   -0.0     # => -0.0
   #
   def -@
     Primitive.attr! :leaf

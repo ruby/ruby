@@ -113,9 +113,9 @@ Also `have_constant`, `have_private_instance_method`, `have_singleton_method`, e
 }
 ```
 
-##### should_not raise_error
+##### `should_not raise_error`
 
-**To avoid!** Instead, use an expectation testing what the code in the lambda does.
+**Avoid this!** Instead, use an expectation testing what the code in the lambda does.
 If an exception is raised, it will fail the example anyway.
 
 ```ruby
@@ -179,7 +179,9 @@ In case there is a bug in MRI and the fix will be backported to previous version
 If it is not backported or not likely, use `ruby_version_is` instead.
 First, file a bug at https://bugs.ruby-lang.org/.
 The problem is `ruby_bug` would make non-MRI implementations fail this spec while MRI itself does not pass it, so it should only be used if the bug is/will be fixed and backported.
-Otherwise, non-MRI implementations would have to choose between being incompatible with the latest release of MRI to pass the spec or fail the spec, both which make no sense.
+Otherwise, non-MRI implementations would have to choose between being incompatible with the latest release of MRI (which has the bug) to pass the spec, or behave the same as the latest release of MRI (which has the bug) and fail the spec, both which make no sense.
+
+IOW, `ruby_bug '#NN', ''...'X.Y' do` is equivalent to `guard_not { RUBY_ENGINE == "ruby" && ruby_version_is ''...'X.Y' } do`. So it skips tests on MRI on specified versions (where a bug is present) and runs tests on alternative implementations only.
 
 ```ruby
 ruby_bug '#13669', ''...'3.2' do

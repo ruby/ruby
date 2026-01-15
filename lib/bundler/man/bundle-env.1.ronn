@@ -1,0 +1,10 @@
+bundle-env(1) -- Print information about the environment Bundler is running under
+=================================================================================
+
+## SYNOPSIS
+
+`bundle env`
+
+## DESCRIPTION
+
+Prints information about the environment Bundler is running under.

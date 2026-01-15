@@ -54,6 +54,27 @@ describe "Hash#transform_keys" do
   it "allows a combination of hash and block argument" do
     @hash.transform_keys({ a: :A }, &:to_s).should == { A: 1, 'b' => 2, 'c' => 3 }
   end
+
+  it "does not retain the default value" do
+    h = Hash.new(1)
+    h.transform_keys(&:succ).default.should be_nil
+    h[:a] = 1
+    h.transform_keys(&:succ).default.should be_nil
+  end
+
+  it "does not retain the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.transform_values(&:succ).default_proc.should be_nil
+    h[:a] = 1
+    h.transform_values(&:succ).default_proc.should be_nil
+  end
+
+  it "does not retain compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.transform_keys(&:succ)
+    h2.compare_by_identity?.should == false
+  end
 end
 
 describe "Hash#transform_keys!" do
@@ -76,24 +97,12 @@ describe "Hash#transform_keys!" do
     @hash.should == { b: 1, c: 2, d: 3, e: 4 }
   end
 
-  ruby_version_is ""..."3.0.2" do # https://bugs.ruby-lang.org/issues/17735
-    it "returns the processed keys if we break from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
-      end
-      @hash.should == { b: 1, c: 2 }
+  it "returns the processed keys and non evaluated keys if we break from the block" do
+    @hash.transform_keys! do |v|
+      break if v == :c
+      v.succ
     end
-  end
-
-  ruby_version_is "3.0.2" do
-    it "returns the processed keys and non evaluated keys if we break from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
-      end
-      @hash.should == { b: 1, c: 2, d: 4 }
-    end
+    @hash.should == { b: 1, c: 2, d: 4 }
   end
 
   it "keeps later pair if new keys conflict" do
@@ -129,7 +138,7 @@ describe "Hash#transform_keys!" do
     end
 
     it "raises a FrozenError on hash argument" do
-     ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
+      ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
     end
 
     context "when no block is given" do

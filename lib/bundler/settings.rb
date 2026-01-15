@@ -7,13 +7,10 @@ module Bundler
     autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
-      allow_offline_install
-      auto_clean_without_path
       auto_install
       cache_all
       cache_all_platforms
       clean
-      default_install_uses_path
       deployment
       disable_checksum_validation
       disable_exec_load
@@ -22,41 +19,26 @@ module Bundler
       disable_shared_gems
       disable_version_check
       force_ruby_platform
-      forget_cli_options
       frozen
       gem.changelog
       gem.coc
       gem.mit
+      gem.bundle
       git.allow_insecure
       global_gem_cache
       ignore_messages
       init_gems_rb
       inline
+      lockfile_checksums
       no_install
       no_prune
-      path_relative_to_cwd
       path.system
       plugins
       prefer_patch
-      print_only_version_number
-      setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
       update_requires_all_flag
-    ].freeze
-
-    REMEMBERED_KEYS = %w[
-      bin
-      cache_all
-      clean
-      deployment
-      frozen
-      no_prune
-      path
-      shebang
-      path.system
-      without
-      with
+      verbose
     ].freeze
 
     NUMBER_KEYS = %w[
@@ -83,8 +65,10 @@ module Bundler
       gem.rubocop
       gem.test
       gemfile
+      lockfile
       path
       shebang
+      simulate_version
       system_bindir
       trust-policy
       version
@@ -98,6 +82,11 @@ module Bundler
       "BUNDLE_RETRY" => 3,
       "BUNDLE_TIMEOUT" => 10,
       "BUNDLE_VERSION" => "lockfile",
+      "BUNDLE_LOCKFILE_CHECKSUMS" => true,
+      "BUNDLE_CACHE_ALL" => true,
+      "BUNDLE_PLUGINS" => true,
+      "BUNDLE_GLOBAL_GEM_CACHE" => false,
+      "BUNDLE_UPDATE_REQUIRES_ALL_FLAG" => false,
     }.freeze
 
     def initialize(root = nil)
@@ -129,12 +118,8 @@ module Bundler
     end
 
     def set_command_option(key, value)
-      if !is_remembered(key) || Bundler.feature_flag.forget_cli_options?
-        temporary(key => value)
-        value
-      else
-        set_local(key, value)
-      end
+      temporary(key => value)
+      value
     end
 
     def set_command_option_if_given(key, value)
@@ -273,7 +258,7 @@ module Bundler
       def use_system_gems?
         return true if system_path
         return false if explicit_path
-        !Bundler.feature_flag.default_install_uses_path?
+        !Bundler.feature_flag.bundler_5_mode?
       end
 
       def base_path
@@ -388,10 +373,6 @@ module Bundler
       ARRAY_KEYS.include?(self.class.key_to_s(key))
     end
 
-    def is_remembered(key)
-      REMEMBERED_KEYS.include?(self.class.key_to_s(key))
-    end
-
     def is_credential(key)
       key == "gem.push_key"
     end
@@ -425,8 +406,12 @@ module Bundler
       Validator.validate!(raw_key, converted_value(value, raw_key), hash)
 
       return unless file
+
+      SharedHelpers.filesystem_access(file.dirname, :create) do |p|
+        FileUtils.mkdir_p(p)
+      end
+
       SharedHelpers.filesystem_access(file) do |p|
-        FileUtils.mkdir_p(p.dirname)
         p.open("w") {|f| f.write(serializer_class.dump(hash)) }
       end
     end

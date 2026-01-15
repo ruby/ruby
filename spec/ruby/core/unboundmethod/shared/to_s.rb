@@ -20,22 +20,11 @@ describe :unboundmethod_to_s, shared: true do
   it "the String shows the method name, Module defined in and Module extracted from" do
     @from_module.send(@method).should =~ /\bfrom_mod\b/
     @from_module.send(@method).should =~ /\bUnboundMethodSpecs::Mod\b/
-
-    ruby_version_is ""..."3.2" do
-      @from_method.send(@method).should =~ /\bUnboundMethodSpecs::Methods\b/
-    end
   end
 
   it "returns a String including all details" do
-    ruby_version_is ""..."3.2" do
-      @from_module.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Methods(UnboundMethodSpecs::Mod)#from_mod"
-      @from_method.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Methods(UnboundMethodSpecs::Mod)#from_mod"
-    end
-
-    ruby_version_is "3.2" do
-      @from_module.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Mod#from_mod"
-      @from_method.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Mod#from_mod"
-    end
+    @from_module.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Mod#from_mod"
+    @from_method.send(@method).should.start_with? "#<UnboundMethod: UnboundMethodSpecs::Mod#from_mod"
   end
 
   it "does not show the defining module if it is the same as the origin" do

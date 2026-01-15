@@ -16,7 +16,7 @@ module Bundler
         def initialize(command)
           msg = String.new
           msg << "Bundler is trying to run `#{command}` at runtime. You probably need to run `bundle install`. However, "
-          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md "
+          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/ruby/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md "
           msg << "with steps to reproduce as well as the following\n\nCALLER: #{caller.join("\n")}"
           super msg
         end
@@ -84,10 +84,6 @@ module Bundler
           end
         end
 
-        def not_a_bare_repository?
-          git_local("rev-parse", "--is-bare-repository", dir: path).strip == "false"
-        end
-
         def contains?(commit)
           allowed_with_path do
             result, status = git_null("branch", "--contains", commit, dir: path)
@@ -125,7 +121,7 @@ module Bundler
                 FileUtils.rm_rf(p)
               end
               git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
-              File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
+              File.chmod((File.stat(destination).mode | 0o777) & ~File.umask, destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
               raise GitError, "Bundler could not install a gem because it needs to " \
@@ -149,6 +145,12 @@ module Bundler
             inner_command = "git -C $toplevel submodule deinit --force $sm_path"
             git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
           end
+        end
+
+        def installed_to?(destination)
+          # if copy_to is interrupted, it may leave a partially installed directory that
+          # contains .git but no other files -- consider this not to be installed
+          Dir.exist?(destination) && (Dir.children(destination) - [".git"]).any?
         end
 
         private
@@ -183,7 +185,8 @@ module Bundler
             _, err, status = capture(command, nil)
             return extra_ref if status.success?
 
-            if err.include?("Could not find remote branch")
+            if err.include?("Could not find remote branch") || # git up to 2.49
+               err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
               idx = command.index("--depth")
@@ -260,7 +263,7 @@ module Bundler
         end
 
         def not_pinned?
-          branch || tag || ref.nil?
+          branch_option || ref.nil?
         end
 
         def pinned_to_full_sha?
@@ -302,8 +305,8 @@ module Bundler
         end
 
         def has_revision_cached?
-          return unless @revision && path.exist?
-          git("cat-file", "-e", @revision, dir: path)
+          return unless commit && path.exist?
+          git("cat-file", "-e", commit, dir: path)
           true
         rescue GitError
           false
@@ -405,11 +408,7 @@ module Bundler
         def capture3_args_for(cmd, dir)
           return ["git", *cmd] unless dir
 
-          if Bundler.feature_flag.bundler_3_mode? || supports_minus_c?
-            ["git", "-C", dir.to_s, *cmd]
-          else
-            ["git", *cmd, { chdir: dir.to_s }]
-          end
+          ["git", "-C", dir.to_s, *cmd]
         end
 
         def extra_clone_args
@@ -424,7 +423,7 @@ module Bundler
           # anyways.
           return args if @revision
 
-          args += ["--branch", branch || tag] if branch || tag
+          args += ["--branch", branch_option] if branch_option
           args
         end
 
@@ -440,12 +439,12 @@ module Bundler
           extra_args
         end
 
-        def full_clone?
-          depth.nil?
+        def branch_option
+          branch || tag
         end
 
-        def supports_minus_c?
-          @supports_minus_c ||= Gem::Version.new(version) >= Gem::Version.new("1.8.5")
+        def full_clone?
+          depth.nil?
         end
 
         def needs_allow_any_sha1_in_want?

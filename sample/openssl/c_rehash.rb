@@ -156,7 +156,7 @@ private
   end
 
   def hash_name(name)
-    sprintf("%x", name.hash)
+    sprintf("%08x", name.hash)
   end
 
   def fingerprint(der)

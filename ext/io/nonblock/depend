@@ -138,6 +138,7 @@ nonblock.o: $(hdrdir)/ruby/internal/intern/re.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/ruby.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/select.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+nonblock.o: $(hdrdir)/ruby/internal/intern/set.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/signal.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/string.h

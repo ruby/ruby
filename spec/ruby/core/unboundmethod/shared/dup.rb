@@ -16,7 +16,7 @@ describe :unboundmethod_dup, shared: true do
     end
 
     it "copies the finalizer" do
-      code = <<-RUBY
+      code = <<-'RUBY'
         obj = Class.instance_method(:instance_method)
 
         ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })

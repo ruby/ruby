@@ -2167,7 +2167,7 @@ Wed Nov 20 11:46:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/json: merge JSON 1.8.1.
 	  https://github.com/nurse/json/compare/002ac2771ce32776b32ccd2d06e5604de6c36dcd...e09ffc0d7da25d0393873936c118c188c78dbac3
 	* Remove Rubinius exception since transcoding should be working now.
-	* Fix https://github.com/flori/json/issues/162 reported by Marc-Andre
+	* Fix https://github.com/ruby/json/issues/162 reported by Marc-Andre
 	  Lafortune <github_rocks@marc-andre.ca>. Thanks!
 	* Applied patches by Yui NARUSE <naruse@airemix.jp> to suppress
 	  warning with -Wchar-subscripts and better validate UTF-8 strings.
@@ -17913,7 +17913,7 @@ Tue Feb 12 12:02:35 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: merge JSON 1.7.7.
 	  This includes security fix. [CVE-2013-0269]
-	  https://github.com/flori/json/commit/d0a62f3ced7560daba2ad546d83f0479a5ae2cf2
+	  https://github.com/ruby/json/commit/d0a62f3ced7560daba2ad546d83f0479a5ae2cf2
 	  https://groups.google.com/d/topic/rubyonrails-security/4_YvCpLzL58/discussion
 
 Mon Feb 11 23:08:48 2013  Tanaka Akira  <akr@fsij.org>

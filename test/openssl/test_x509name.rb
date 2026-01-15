@@ -423,24 +423,14 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     assert_equal(nil, n3 <=> nil)
   end
 
-  def name_hash(name)
-    # OpenSSL 1.0.0 uses SHA1 for canonical encoding (not just a der) of
-    # X509Name for X509_NAME_hash.
-    name.respond_to?(:hash_old) ? name.hash_old : name.hash
-  end
+  def test_hash_old
+    omit_on_fips # MD5
 
-  def test_hash
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
     d = OpenSSL::Digest.digest('MD5', name.to_der)
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
-    assert_equal(expected, name_hash(name))
-    #
-    dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
-    name = OpenSSL::X509::Name.parse(dn)
-    d = OpenSSL::Digest.digest('MD5', name.to_der)
-    expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
-    assert_equal(expected, name_hash(name))
+    assert_equal(expected, name.hash_old)
   end
 
   def test_equality

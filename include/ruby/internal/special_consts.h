@@ -326,7 +326,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
-    return RB_IMMEDIATE_P(obj) || obj == RUBY_Qfalse;
+    return (obj == RUBY_Qfalse) || RB_IMMEDIATE_P(obj);
 }
 
 RBIMPL_ATTR_CONST()

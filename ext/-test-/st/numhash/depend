@@ -128,6 +128,7 @@ numhash.o: $(hdrdir)/ruby/internal/intern/re.h
 numhash.o: $(hdrdir)/ruby/internal/intern/ruby.h
 numhash.o: $(hdrdir)/ruby/internal/intern/select.h
 numhash.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+numhash.o: $(hdrdir)/ruby/internal/intern/set.h
 numhash.o: $(hdrdir)/ruby/internal/intern/signal.h
 numhash.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 numhash.o: $(hdrdir)/ruby/internal/intern/string.h

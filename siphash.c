@@ -140,6 +140,9 @@ xor64_to(uint64_t *v, const uint64_t s)
 #endif
 
 static const union {
+#if defined(__has_attribute) && __has_attribute(nonstring)
+    __attribute__((nonstring))
+#endif
     char bin[32];
     uint64_t u64[4];
 } sip_init_state_bin = {"uespemos""modnarod""arenegyl""setybdet"};

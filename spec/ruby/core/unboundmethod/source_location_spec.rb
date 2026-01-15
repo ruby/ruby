@@ -7,23 +7,23 @@ describe "UnboundMethod#source_location" do
   end
 
   it "sets the first value to the path of the file in which the method was defined" do
-    file = @method.source_location.first
+    file = @method.source_location[0]
     file.should be_an_instance_of(String)
     file.should == File.realpath('fixtures/classes.rb', __dir__)
   end
 
-  it "sets the last value to an Integer representing the line on which the method was defined" do
-    line = @method.source_location.last
+  it "sets the second value to an Integer representing the line on which the method was defined" do
+    line = @method.source_location[1]
     line.should be_an_instance_of(Integer)
     line.should == 5
   end
 
   it "returns the last place the method was defined" do
-    UnboundMethodSpecs::SourceLocation.method(:redefined).unbind.source_location.last.should == 13
+    UnboundMethodSpecs::SourceLocation.method(:redefined).unbind.source_location[1].should == 13
   end
 
   it "returns the location of the original method even if it was aliased" do
-    UnboundMethodSpecs::SourceLocation.instance_method(:aka).source_location.last.should == 17
+    UnboundMethodSpecs::SourceLocation.instance_method(:aka).source_location[1].should == 17
   end
 
   it "works for define_method methods" do
@@ -54,6 +54,12 @@ describe "UnboundMethod#source_location" do
     c = Class.new do
       eval('def m; end', nil, "foo", 100)
     end
-    c.instance_method(:m).source_location.should == ["foo", 100]
+    location = c.instance_method(:m).source_location
+    ruby_version_is(""..."4.1") do
+      location.should == ["foo", 100]
+    end
+    ruby_version_is("4.1") do
+      location.should == ["foo", 100, 0, 100, 10]
+    end
   end
 end

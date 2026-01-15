@@ -59,6 +59,8 @@ describe "Class#dup" do
   it "stores the new name if assigned to a constant" do
     CoreClassSpecs::RecordCopy = CoreClassSpecs::Record.dup
     CoreClassSpecs::RecordCopy.name.should == "CoreClassSpecs::RecordCopy"
+  ensure
+    CoreClassSpecs.send(:remove_const, :RecordCopy)
   end
 
   it "raises TypeError if called on BasicObject" do

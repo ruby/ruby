@@ -17,6 +17,7 @@
 #endif
 
 /* symbol.c */
+void rb_sym_global_symbols_mark_and_move(void);
 VALUE rb_to_symbol_type(VALUE obj);
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
 VALUE rb_sym_intern_ascii(const char *ptr, long len);
@@ -29,11 +30,11 @@ PUREFUNC(int rb_is_const_sym(VALUE sym));
 PUREFUNC(int rb_is_attrset_sym(VALUE sym));
 ID rb_make_internal_id(void);
 ID rb_make_temporary_id(size_t n);
+bool rb_obj_is_symbol_table(VALUE obj);
+void rb_sym_global_symbol_table_foreach_weak_reference(int (*callback)(VALUE *key, void *data), void *data);
 void rb_gc_free_dsymbol(VALUE);
 int rb_static_id_valid_p(ID id);
-
-/* vm.c */
-void rb_free_static_symid_str(void);
+void rb_free_global_symbol_table(void);
 
 #if __has_builtin(__builtin_constant_p)
 #define rb_sym_intern_ascii_cstr(ptr) \

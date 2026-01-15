@@ -27,6 +27,15 @@ jobs:
         include:
           - test_task: check
             os: macos-14
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gcc=gcc-14'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-14
@@ -35,9 +44,7 @@ jobs:
           - test_task: test-bundled-gems
             os: macos-14
           - test_task: check
-            os: macos-12
-          - test_task: check
-            os: macos-13
+            os: macos-15
       fail-fast: false
 
     env:
@@ -48,15 +55,13 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -89,24 +94,18 @@ jobs:
         continue-on-error: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
 
-      - run: |
-          make golf
-          case "${{ matrix.configure }}" in
-          *'--enable-shared'*)
-            make runnable
-            ./bin/goruby -veh
-            ;;
-          *)
-            ./goruby -veh
-            ;;
-          esac
+      - run: make hello
+
+      - name: runirb
+        run: |
+          echo IRB::VERSION | make runirb RUNOPT="-- -f"
 
       - name: Set test options for skipped tests
         run: |
@@ -116,6 +115,7 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os }}
@@ -124,6 +124,7 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: Set extra test options
         run: |
@@ -133,13 +134,18 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-        timeout-minutes: 60
+        timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
 
       - name: make skipped tests
         run: |
@@ -150,6 +156,14 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
 
       - uses: ./.github/actions/slack
         with:

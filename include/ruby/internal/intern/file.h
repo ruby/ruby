@@ -24,6 +24,9 @@
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
+#if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
+# include "ruby/backward.h"
+#endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

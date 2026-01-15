@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -27,7 +27,7 @@ describe "Array#pack with format 'A'" do
     ["abc"].pack("A*").should == "abc"
   end
 
-  it "padds the output with spaces when the count exceeds the size of the String" do
+  it "pads the output with spaces when the count exceeds the size of the String" do
     ["abc"].pack("A6").should == "abc   "
   end
 
@@ -55,7 +55,7 @@ describe "Array#pack with format 'a'" do
     ["abc"].pack("a*").should == "abc"
   end
 
-  it "padds the output with NULL bytes when the count exceeds the size of the String" do
+  it "pads the output with NULL bytes when the count exceeds the size of the String" do
     ["abc"].pack("a6").should == "abc\x00\x00\x00"
   end
 

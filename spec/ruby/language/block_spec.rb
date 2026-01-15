@@ -62,37 +62,18 @@ describe "A block yielded a single" do
       m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [4], 5, 6]
     end
 
-    ruby_version_is "3.2" do
-      it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
-        m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
-      end
-
-      it "does not autosplat single argument to required arguments when keyword arguments are present" do
-        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
-      end
-
-      it "raises error when required keyword arguments are present" do
-        -> {
-          m([1, 2]) { |a, b:, c:| [a, b, c] }
-        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
-      end
+    it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
+      m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
     end
 
-    ruby_version_is ''..."3.2" do
-      # https://bugs.ruby-lang.org/issues/18633
-      it "autosplats single argument to required arguments when a keyword rest argument is present" do
-        m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
-      end
+    it "does not autosplat single argument to required arguments when keyword arguments are present" do
+      m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
+    end
 
-      it "autosplats single argument to required arguments when optional keyword arguments are present" do
-        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [1, :b, :c]
-      end
-
-      it "raises error when required keyword arguments are present" do
-        -> {
-          m([1, 2]) { |a, b:, c:| [a, b, c] }
-        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
-      end
+    it "raises error when required keyword arguments are present" do
+      -> {
+        m([1, 2]) { |a, b:, c:| [a, b, c] }
+      }.should raise_error(ArgumentError, "missing keywords: :b, :c")
     end
 
     it "assigns elements to mixed argument types" do
@@ -294,7 +275,7 @@ describe "A block" do
     end
 
     it "may include a rescue clause" do
-      eval("@y.z do raise ArgumentError; rescue ArgumentError; 7; end").should == 7
+      @y.z do raise ArgumentError; rescue ArgumentError; 7; end.should == 7
     end
   end
 
@@ -308,7 +289,7 @@ describe "A block" do
     end
 
     it "may include a rescue clause" do
-      eval('@y.z do || raise ArgumentError; rescue ArgumentError; 7; end').should == 7
+      @y.z do || raise ArgumentError; rescue ArgumentError; 7; end.should == 7
     end
   end
 
@@ -337,7 +318,7 @@ describe "A block" do
     end
 
     it "may include a rescue clause" do
-      eval('@y.s(1) do |x| raise ArgumentError; rescue ArgumentError; 7; end').should == 7
+      @y.s(1) do |x| raise ArgumentError; rescue ArgumentError; 7; end.should == 7
     end
   end
 
@@ -737,9 +718,9 @@ describe "A block" do
     end
 
     it "accepts unnamed arguments" do
-      eval("lambda { |_,_| }").should be_an_instance_of(Proc)
-      eval("->(_,_) {}").should be_an_instance_of(Proc)
-      eval("Proc.new { |_,_| }").should be_an_instance_of(Proc)
+      lambda { |_,_| }.should be_an_instance_of(Proc) # rubocop:disable Style/Lambda
+      -> _,_ {}.should be_an_instance_of(Proc)
+      Proc.new { |_,_| }.should be_an_instance_of(Proc)
     end
   end
 
@@ -999,76 +980,159 @@ describe "Post-args" do
   end
 end
 
+# tested more thoroughly in language/delegation_spec.rb
 describe "Anonymous block forwarding" do
-  ruby_version_is "3.1" do
-    it "forwards blocks to other method that formally declares anonymous block" do
-      eval <<-EOF
-          def b(&); c(&) end
-          def c(&); yield :non_null end
-      EOF
+  it "forwards blocks to other method that formally declares anonymous block" do
+    def b(&); c(&) end
+    def c(&); yield :non_null end
 
-      b { |c| c }.should == :non_null
+    b { |c| c }.should == :non_null
+  end
+
+  it "requires the anonymous block parameter to be declared if directly passing a block" do
+    -> { eval "def a; b(&); end; def b; end" }.should raise_error(SyntaxError)
+  end
+
+  it "works when it's the only declared parameter" do
+    def inner; yield end
+    def block_only(&); inner(&) end
+
+    block_only { 1 }.should == 1
+  end
+
+  it "works alongside positional parameters" do
+    def inner; yield end
+    def pos(arg1, &); inner(&) end
+
+    pos(:a) { 1 }.should == 1
+  end
+
+  it "works alongside positional arguments and splatted keyword arguments" do
+    def inner; yield end
+    def pos_kwrest(arg1, **kw, &); inner(&) end
+
+    pos_kwrest(:a, arg: 3) { 1 }.should == 1
+  end
+
+  it "works alongside positional arguments and disallowed keyword arguments" do
+    def inner; yield end
+    def no_kw(arg1, **nil, &); inner(&) end
+
+    no_kw(:a) { 1 }.should == 1
+  end
+
+  it "works alongside explicit keyword arguments" do
+    eval <<-EOF
+        def inner; yield end
+        def rest_kw(*a, kwarg: 1, &); inner(&) end
+        def kw(kwarg: 1, &); inner(&) end
+        def pos_kw_kwrest(arg1, kwarg: 1, **kw, &); inner(&) end
+        def pos_rkw(arg1, kwarg1:, &); inner(&) end
+        def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &); inner(&) end
+        def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &); inner(&) end
+    EOF
+
+    rest_kw { 1 }.should == 1
+    kw { 1 }.should == 1
+    pos_kw_kwrest(:a) { 1 }.should == 1
+    pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
+    all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+    all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+  end
+end
+
+describe "`it` calls without arguments in a block with no ordinary parameters" do
+  ruby_version_is "3.3"..."3.4" do
+    it "emits a deprecation warning" do
+      -> {
+        eval "proc { it }"
+      }.should complain(/warning: `it` calls without arguments will refer to the first block param in Ruby 3.4; use it\(\) or self.it/)
     end
 
-    it "requires the anonymous block parameter to be declared if directly passing a block" do
-      -> { eval "def a; b(&); end; def b; end" }.should raise_error(SyntaxError)
+    it "emits a deprecation warning if numbered parameters are used" do
+      -> {
+        eval "proc { it; _1 }"
+      }.should complain(/warning: `it` calls without arguments will refer to the first block param in Ruby 3.4; use it\(\) or self.it/)
     end
 
-    it "works when it's the only declared parameter" do
-      eval <<-EOF
-          def inner; yield end
-          def block_only(&); inner(&) end
-      EOF
-
-      block_only { 1 }.should == 1
+    it "does not emit a deprecation warning when a block has parameters" do
+      -> { eval "proc { |a, b| it }" }.should_not complain
+      -> { eval "proc { |*rest| it }" }.should_not complain
+      -> { eval "proc { |*| it }" }.should_not complain
+      -> { eval "proc { |a:, b:| it }" }.should_not complain
+      -> { eval "proc { |**kw| it }" }.should_not complain
+      -> { eval "proc { |**| it }" }.should_not complain
+      -> { eval "proc { |&block| it }" }.should_not complain
+      -> { eval "proc { |&| it }" }.should_not complain
+      -> { eval "proc { || it }" }.should_not complain
     end
 
-    it "works alongside positional parameters" do
-      eval <<-EOF
-          def inner; yield end
-          def pos(arg1, &); inner(&) end
-      EOF
-
-      pos(:a) { 1 }.should == 1
+    it "does not emit a deprecation warning when `it` calls with arguments" do
+      -> { eval "proc { it(42) }" }.should_not complain
+      -> { eval "proc { it 42 }" }.should_not complain
     end
 
-    it "works alongside positional arguments and splatted keyword arguments" do
-      eval <<-EOF
-          def inner; yield end
-          def pos_kwrest(arg1, **kw, &); inner(&) end
-      EOF
-
-      pos_kwrest(:a, arg: 3) { 1 }.should == 1
+    it "does not emit a deprecation warning when `it` calls with a block" do
+      -> { eval "proc { it {} }" }.should_not complain
     end
 
-    it "works alongside positional arguments and disallowed keyword arguments" do
-      eval <<-EOF
-          def inner; yield end
-          def no_kw(arg1, **nil, &); inner(&) end
-      EOF
+    it "does not emit a deprecation warning when a local variable inside the block named `it` exists" do
+      -> { eval "proc { it = 42; it }" }.should_not complain
+    end
 
-      no_kw(:a) { 1 }.should == 1
+    it "does not emit a deprecation warning when `it` calls with explicit empty arguments list" do
+      -> { eval "proc { it() }" }.should_not complain
+    end
+
+    it "calls the method `it` if defined" do
+      o = Object.new
+      def o.it
+        21
+      end
+      suppress_warning do
+        o.instance_eval("proc { it * 2 }").call(1).should == 42
+      end
     end
   end
 
-  ruby_version_is "3.2" do
-    it "works alongside explicit keyword arguments" do
-      eval <<-EOF
-          def inner; yield end
-          def rest_kw(*a, kwarg: 1, &); inner(&) end
-          def kw(kwarg: 1, &); inner(&) end
-          def pos_kw_kwrest(arg1, kwarg: 1, **kw, &); inner(&) end
-          def pos_rkw(arg1, kwarg1:, &); inner(&) end
-          def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &); inner(&) end
-          def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &); inner(&) end
-      EOF
-
-      rest_kw { 1 }.should == 1
-      kw { 1 }.should == 1
-      pos_kw_kwrest(:a) { 1 }.should == 1
-      pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
-      all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
-      all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+  ruby_version_is "3.4" do
+    it "does not emit a deprecation warning" do
+      -> {
+        eval "proc { it }"
+      }.should_not complain
     end
+
+    it "acts as the first argument if no local variables exist" do
+      eval("proc { it * 2 }").call(5).should == 10
+    end
+
+    it "can be reassigned to act as a local variable" do
+      eval("proc { tmp = it; it = tmp * 2; it }").call(21).should == 42
+    end
+
+    it "can be used in nested calls" do
+      eval("proc { it.map { it * 2 } }").call([1, 2, 3]).should == [2, 4, 6]
+    end
+
+    it "cannot be mixed with numbered parameters" do
+      -> {
+        eval "proc { it + _1 }"
+      }.should raise_error(SyntaxError, /numbered parameters are not allowed when 'it' is already used|'it' is already used in/)
+
+      -> {
+        eval "proc { _1 + it }"
+      }.should raise_error(SyntaxError, /numbered parameter is already used in|'it' is not allowed when a numbered parameter is already used/)
+    end
+  end
+end
+
+describe "if `it` is defined as a variable" do
+  it "treats `it` as a captured variable if defined outside of a block" do
+    it = 5
+    proc { it }.call(0).should == 5
+  end
+
+  it "treats `it` as a local variable if defined inside of a block" do
+    proc { it = 5; it }.call(0).should == 5
   end
 end

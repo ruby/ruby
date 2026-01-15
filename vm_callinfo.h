@@ -279,9 +279,7 @@ struct rb_callcache {
     const VALUE flags;
 
     /* inline cache: key */
-    const VALUE klass; // should not mark it because klass can not be free'd
-                       // because of this marking. When klass is collected,
-                       // cc will be cleared (cc->klass = 0) at vm_ccs_free().
+    const VALUE klass; // Weak reference. When klass is collected, `cc->klass = Qundef`.
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct * const cme_;
@@ -289,7 +287,7 @@ struct rb_callcache {
 
     union {
         struct {
-          uintptr_t value; // Shape ID in upper bits, index in lower bits
+            uint64_t value; // Shape ID in former half, index in latter half
         } attr;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
@@ -297,14 +295,14 @@ struct rb_callcache {
     } aux_;
 };
 
-#define VM_CALLCACHE_UNMARKABLE FL_FREEZE
-#define VM_CALLCACHE_ON_STACK   FL_EXIVAR
-
 /* VM_CALLCACHE_IVAR used for IVAR/ATTRSET/STRUCT_AREF/STRUCT_ASET methods */
 #define VM_CALLCACHE_IVAR       IMEMO_FL_USER0
 #define VM_CALLCACHE_BF         IMEMO_FL_USER1
 #define VM_CALLCACHE_SUPER      IMEMO_FL_USER2
 #define VM_CALLCACHE_REFINEMENT IMEMO_FL_USER3
+#define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER4
+#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER5
+#define VM_CALLCACHE_INVALID_SUPER IMEMO_FL_USER6
 
 enum vm_cc_type {
     cc_type_normal, // chained from ccs
@@ -325,17 +323,29 @@ vm_cc_attr_index_initialize(const struct rb_callcache *cc, shape_id_t shape_id)
     vm_cc_attr_index_set(cc, (attr_index_t)-1, shape_id);
 }
 
+static inline VALUE
+cc_check_class(VALUE klass)
+{
+    VM_ASSERT(klass == Qundef || RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    return klass;
+}
+
+VALUE rb_vm_cc_table_create(size_t capa);
+VALUE rb_vm_cc_table_dup(VALUE old_table);
+void rb_vm_cc_table_delete(VALUE table, ID mid);
+
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
           const struct rb_callable_method_entry_struct *cme,
           vm_call_handler call,
           enum vm_cc_type type)
 {
-    struct rb_callcache *cc = IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    cc_check_class(klass);
+    struct rb_callcache *cc = SHAREABLE_IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    rb_gc_declare_weak_references((VALUE)cc);
+
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
-
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
 
     switch (type) {
       case cc_type_normal:
@@ -345,11 +355,17 @@ vm_cc_new(VALUE klass,
         break;
       case cc_type_refinement:
         *(VALUE *)&cc->flags |= VM_CALLCACHE_REFINEMENT;
+        rb_vm_insert_cc_refinement(cc);
         break;
     }
 
-    if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
-        vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+    if (cme) {
+        if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
+            vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+        }
+    }
+    else {
+        *(VALUE *)&cc->flags |= VM_CALLCACHE_INVALID_SUPER;
     }
 
     RB_DEBUG_COUNTER_INC(cc_new);
@@ -374,7 +390,7 @@ vm_cc_refinement_p(const struct rb_callcache *cc)
             (imemo_callcache << FL_USHIFT) |  \
             VM_CALLCACHE_UNMARKABLE |         \
             VM_CALLCACHE_ON_STACK,            \
-        .klass = clazz,                       \
+        .klass = cc_check_class(clazz),       \
         .cme_  = cme,                         \
         .call_ = call,                        \
         .aux_  = aux,                         \
@@ -384,8 +400,7 @@ static inline bool
 vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass == 0 ||
-              RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+    VM_ASSERT(cc_check_class(cc->klass));
     return cc->klass == klass;
 }
 
@@ -396,12 +411,32 @@ vm_cc_markable(const struct rb_callcache *cc)
     return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
+static inline bool
+vm_cc_invalid_super(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    // Set when calling super and there is no superclass.
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_INVALID_SUPER);
+}
+
+static inline bool
+vm_cc_valid(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc_check_class(cc->klass));
+
+    return !UNDEF_P(cc->klass);
+}
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
+              vm_cc_invalid_super(cc) ||
               cc->cme_ != NULL);
 
     return cc->cme_;
@@ -412,46 +447,31 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
 
-static inline attr_index_t
-vm_cc_attr_index(const struct rb_callcache *cc)
+static inline void
+vm_unpack_shape_and_index(const uint64_t cache_value, shape_id_t *shape_id, attr_index_t *index)
 {
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return (attr_index_t)((cc->aux_.attr.value & SHAPE_FLAG_MASK) - 1);
-}
-
-static inline shape_id_t
-vm_cc_attr_index_dest_shape_id(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-
-    return cc->aux_.attr.value >> SHAPE_FLAG_SHIFT;
+    union rb_attr_index_cache cache = {
+        .pack = cache_value,
+    };
+    *shape_id = cache.unpack.shape_id;
+    *index = cache.unpack.index - 1;
 }
 
 static inline void
-vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t * shape_id, attr_index_t * index)
+vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t *shape_id, attr_index_t *index)
 {
-    uintptr_t cache_value = cc->aux_.attr.value; // Atomically read 64 bits
-    *shape_id = (shape_id_t)(cache_value >> SHAPE_FLAG_SHIFT);
-    *index = (attr_index_t)(cache_value & SHAPE_FLAG_MASK) - 1;
-    return;
+    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(cc->aux_.attr.value), shape_id, index);
 }
 
 static inline void
-vm_ic_atomic_shape_and_index(const struct iseq_inline_iv_cache_entry *ic, shape_id_t * shape_id, attr_index_t * index)
+vm_ic_atomic_shape_and_index(const struct iseq_inline_iv_cache_entry *ic, shape_id_t *shape_id, attr_index_t *index)
 {
-    uintptr_t cache_value = ic->value; // Atomically read 64 bits
-    *shape_id = (shape_id_t)(cache_value >> SHAPE_FLAG_SHIFT);
-    *index = (attr_index_t)(cache_value & SHAPE_FLAG_MASK) - 1;
-    return;
-}
-
-static inline shape_id_t
-vm_ic_attr_index_dest_shape_id(const struct iseq_inline_iv_cache_entry *ic)
-{
-    return (shape_id_t)(ic->value >> SHAPE_FLAG_SHIFT);
+    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(ic->value), shape_id, index);
 }
 
 static inline unsigned int
@@ -464,24 +484,11 @@ vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 static inline bool
 vm_cc_invalidated_p(const struct rb_callcache *cc)
 {
-    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+    if (vm_cc_valid(cc) && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
         return false;
     }
     else {
         return true;
-    }
-}
-
-// For RJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
-static inline bool
-vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *cc_cme, VALUE klass)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    if (cc->klass == klass && !METHOD_ENTRY_INVALIDATED(cc_cme)) {
-        return 1;
-    }
-    else {
-        return 0;
     }
 }
 
@@ -501,17 +508,29 @@ set_vm_cc_ivar(const struct rb_callcache *cc)
     *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
 }
 
+static inline uint64_t
+vm_pack_shape_and_index(shape_id_t shape_id, attr_index_t index)
+{
+    union rb_attr_index_cache cache = {
+        .unpack = {
+            .shape_id = shape_id,
+            .index = index + 1,
+        }
+    };
+    return cache.pack;
+}
+
 static inline void
 vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t dest_shape_id)
 {
-    uintptr_t *attr_value = (uintptr_t *)&cc->aux_.attr.value;
+    uint64_t *attr_value = (uint64_t *)&cc->aux_.attr.value;
     if (!vm_cc_markable(cc)) {
-        *attr_value = (uintptr_t)INVALID_SHAPE_ID << SHAPE_FLAG_SHIFT;
+        *attr_value = vm_pack_shape_and_index(INVALID_SHAPE_ID, ATTR_INDEX_NOT_SET);
         return;
     }
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    *attr_value = (attr_index_t)(index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
+    *attr_value = vm_pack_shape_and_index(dest_shape_id, index);
     set_vm_cc_ivar(cc);
 }
 
@@ -522,15 +541,15 @@ vm_cc_ivar_p(const struct rb_callcache *cc)
 }
 
 static inline void
-vm_ic_attr_index_set(const rb_iseq_t *iseq, const struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
+vm_ic_attr_index_set(const rb_iseq_t *iseq, struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
 {
-    *(uintptr_t *)&ic->value = ((uintptr_t)dest_shape_id << SHAPE_FLAG_SHIFT) | (attr_index_t)(index + 1);
+    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(dest_shape_id, index));
 }
 
 static inline void
-vm_ic_attr_index_initialize(const struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
+vm_ic_attr_index_initialize(struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
 {
-    *(uintptr_t *)&ic->value = (uintptr_t)shape_id << SHAPE_FLAG_SHIFT;
+    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(shape_id, ATTR_INDEX_NOT_SET));
 }
 
 static inline void
@@ -561,9 +580,10 @@ vm_cc_invalidate(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(cc->klass != 0); // should be enable
+    // TODO: rb_multi_ractor_p() is a workaround to stabilize CI
+    VM_ASSERT(cc->klass != Qundef || rb_multi_ractor_p()); // should be enable
 
-    *(VALUE *)&cc->klass = 0;
+    *(VALUE *)&cc->klass = Qundef;
     RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
 }
 
@@ -585,8 +605,14 @@ struct rb_class_cc_entries {
         unsigned int argc;
         unsigned int flag;
         const struct rb_callcache *cc;
-    } *entries;
+    } entries[FLEX_ARY_LEN];
 };
+
+static inline size_t
+vm_ccs_alloc_size(size_t capa)
+{
+    return offsetof(struct rb_class_cc_entries, entries) + (sizeof(struct rb_class_cc_entries_entry) * capa);
+}
 
 #if VM_CHECK_MODE > 0
 
@@ -602,26 +628,28 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
-    if (vm_cc_cme(cc) == cme ||
-        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
+    bool valid;
+    RB_VM_LOCKING_NO_BARRIER() {
+        valid = vm_cc_cme(cc) == cme ||
+            (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+    }
+    if (valid) {
         return true;
     }
-    else {
 #if 1
         // debug print
 
-        fprintf(stderr, "iseq_overload:%d\n", (int)cme->def->iseq_overload);
+        fprintf(stderr, "iseq_overload:%d, cme:%p (def:%p), cm_cc_cme(cc):%p (def:%p)\n",
+                (int)cme->def->iseq_overload,
+                cme, cme->def,
+                vm_cc_cme(cc), vm_cc_cme(cc)->def);
         rp(cme);
         rp(vm_cc_cme(cc));
-        rb_vm_lookup_overloaded_cme(cme);
+        rp(rb_vm_lookup_overloaded_cme(cme));
 #endif
-        return false;
-    }
+    return false;
 }
 
 #endif
-
-// gc.c
-void rb_vm_ccs_free(struct rb_class_cc_entries *ccs);
 
 #endif /* RUBY_VM_CALLINFO_H */

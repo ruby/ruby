@@ -7,11 +7,11 @@ describe "String#lstrip" do
   it_behaves_like :string_strip, :lstrip
 
   it "returns a copy of self with leading whitespace removed" do
-   "  hello  ".lstrip.should == "hello  "
-   "  hello world  ".lstrip.should == "hello world  "
-   "\n\r\t\n\v\r hello world  ".lstrip.should == "hello world  "
-   "hello".lstrip.should == "hello"
-   " こにちわ".lstrip.should == "こにちわ"
+    "  hello  ".lstrip.should == "hello  "
+    "  hello world  ".lstrip.should == "hello world  "
+    "\n\r\t\n\v\r hello world  ".lstrip.should == "hello world  "
+    "hello".lstrip.should == "hello"
+    " こにちわ".lstrip.should == "こにちわ"
   end
 
   it "works with lazy substrings" do
@@ -22,8 +22,8 @@ describe "String#lstrip" do
   end
 
   it "strips leading \\0" do
-   "\x00hello".lstrip.should == "hello"
-   "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
+    "\x00hello".lstrip.should == "hello"
+    "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
   end
 end
 

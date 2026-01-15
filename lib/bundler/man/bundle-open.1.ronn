@@ -23,5 +23,6 @@ Will open the source directory for the 'rack' gem in your bundle.
 Will open the README.md file of the 'rack' gem source in your bundle.
 
 ## OPTIONS
-* `--path`:
+
+* `--path[=PATH]`:
   Specify GEM source relative path to open.

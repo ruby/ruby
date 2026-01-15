@@ -4,7 +4,7 @@ Everything in the [lib](https://github.com/ruby/ruby/tree/master/lib) directory 
 If you'd like to make contributions to standard libraries, do so in the standalone repositories, and the
 changes will be automatically mirrored into the Ruby repository.
 
-For example, CSV lives in [a separate repository](https://github.com/ruby/csv) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/csv).
+For example, ERB lives in [a separate repository](https://github.com/ruby/erb) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/erb).
 
 ## Maintainers
 
@@ -14,7 +14,7 @@ You can find the list of maintainers [here](https://docs.ruby-lang.org/en/master
 
 First, install its dependencies using:
 
-```
+```shell
 bundle install
 ```
 
@@ -22,7 +22,7 @@ bundle install
 
 If the library has a `/ext` directory, it has C files that you need to compile with:
 
-```
+```shell
 bundle exec rake compile
 ```
 
@@ -32,18 +32,18 @@ All standard libraries use [test-unit](https://github.com/test-unit/test-unit) a
 
 To run all tests:
 
-```
+```shell
 bundle exec rake test
 ```
 
 To run a single test file:
 
-```
+```shell
 bundle exec rake test TEST="test/test_foo.rb"
 ```
 
 To run a single test case:
 
-```
-bundle exec rake test TEST="test/test_foo.rb" TESTOPS="--name=/test_mytest/"
+```shell
+bundle exec rake test TEST="test/test_foo.rb" TESTOPTS="--name=/test_mytest/"
 ```

@@ -1,0 +1,5 @@
+def f(x = ...?a); end
+
+def f(x: ...?a); end
+
+def f() ...:a; end

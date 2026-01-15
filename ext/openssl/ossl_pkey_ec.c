@@ -15,25 +15,27 @@ static const rb_data_type_t ossl_ec_point_type;
 #define GetPKeyEC(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_EC) { \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A EC PKEY!"); \
+        ossl_raise(rb_eRuntimeError, "THIS IS NOT A EC PKEY!"); \
     } \
 } while (0)
 #define GetEC(obj, key) do { \
     EVP_PKEY *_pkey; \
     GetPKeyEC(obj, _pkey); \
     (key) = EVP_PKEY_get0_EC_KEY(_pkey); \
+    if ((key) == NULL) \
+        ossl_raise(ePKeyError, "failed to get EC_KEY from EVP_PKEY"); \
 } while (0)
 
 #define GetECGroup(obj, group) do { \
     TypedData_Get_Struct(obj, EC_GROUP, &ossl_ec_group_type, group); \
     if ((group) == NULL) \
-	ossl_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
+        ossl_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
 } while (0)
 
 #define GetECPoint(obj, point) do { \
     TypedData_Get_Struct(obj, EC_POINT, &ossl_ec_point_type, point); \
     if ((point) == NULL) \
-	ossl_raise(eEC_POINT, "EC_POINT is not initialized"); \
+        ossl_raise(eEC_POINT, "EC_POINT is not initialized"); \
 } while (0)
 #define GetECPointGroup(obj, group) do { \
     VALUE _group = rb_attr_get(obj, id_i_group); \
@@ -41,17 +43,13 @@ static const rb_data_type_t ossl_ec_point_type;
 } while (0)
 
 VALUE cEC;
-VALUE eECError;
-VALUE cEC_GROUP;
-VALUE eEC_GROUP;
-VALUE cEC_POINT;
-VALUE eEC_POINT;
+static VALUE cEC_GROUP;
+static VALUE eEC_GROUP;
+static VALUE cEC_POINT;
+static VALUE eEC_POINT;
 
-static ID s_GFp, s_GF2m;
-
-static ID ID_uncompressed;
-static ID ID_compressed;
-static ID ID_hybrid;
+static VALUE sym_GFp, sym_GF2m;
+static VALUE sym_uncompressed, sym_compressed, sym_hybrid;
 
 static ID id_i_group;
 
@@ -68,27 +66,27 @@ ec_key_new_from_group(VALUE arg)
     EC_KEY *ec;
 
     if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
-	EC_GROUP *group;
+        EC_GROUP *group;
 
-	GetECGroup(arg, group);
-	if (!(ec = EC_KEY_new()))
-	    ossl_raise(eECError, NULL);
+        GetECGroup(arg, group);
+        if (!(ec = EC_KEY_new()))
+            ossl_raise(ePKeyError, NULL);
 
-	if (!EC_KEY_set_group(ec, group)) {
-	    EC_KEY_free(ec);
-	    ossl_raise(eECError, NULL);
-	}
+        if (!EC_KEY_set_group(ec, group)) {
+            EC_KEY_free(ec);
+            ossl_raise(ePKeyError, NULL);
+        }
     } else {
-	int nid = OBJ_sn2nid(StringValueCStr(arg));
+        int nid = OBJ_sn2nid(StringValueCStr(arg));
 
-	if (nid == NID_undef)
-	    ossl_raise(eECError, "invalid curve name");
+        if (nid == NID_undef)
+            ossl_raise(ePKeyError, "invalid curve name");
 
-	if (!(ec = EC_KEY_new_by_curve_name(nid)))
-	    ossl_raise(eECError, NULL);
+        if (!(ec = EC_KEY_new_by_curve_name(nid)))
+            ossl_raise(ePKeyError, NULL);
 
-	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
-	EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
+        EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+        EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
     }
 
     return ec;
@@ -115,12 +113,12 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
         EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(obj) = pkey;
 
     if (!EC_KEY_generate_key(ec))
-	ossl_raise(eECError, "EC_KEY_generate_key");
+        ossl_raise(ePKeyError, "EC_KEY_generate_key");
 
     return obj;
 }
@@ -150,9 +148,14 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (NIL_P(arg)) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::EC.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         if (!(ec = EC_KEY_new()))
-            ossl_raise(eECError, "EC_KEY_new");
+            ossl_raise(ePKeyError, "EC_KEY_new");
         goto legacy;
+#endif
     }
     else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
         ec = ec_key_new_from_group(arg);
@@ -174,7 +177,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_EC) {
         EVP_PKEY_free(pkey);
-        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(ePKeyError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -184,13 +187,14 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
         EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
 #ifndef HAVE_EVP_PKEY_DUP
+/* :nodoc: */
 static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
@@ -204,12 +208,12 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 
     ec_new = EC_KEY_dup(ec);
     if (!ec_new)
-	ossl_raise(eECError, "EC_KEY_dup");
+        ossl_raise(ePKeyError, "EC_KEY_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec_new) != 1) {
         EC_KEY_free(ec_new);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(self) = pkey;
 
@@ -233,7 +237,7 @@ ossl_ec_key_get_group(VALUE self)
     GetEC(self, ec);
     group = EC_KEY_get0_group(ec);
     if (!group)
-	return Qnil;
+        return Qnil;
 
     return ec_group_new(group);
 }
@@ -248,7 +252,7 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -258,7 +262,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
     GetECGroup(group_v, group);
 
     if (EC_KEY_set_group(ec, group) != 1)
-        ossl_raise(eECError, "EC_KEY_set_group");
+        ossl_raise(ePKeyError, "EC_KEY_set_group");
 
     return group_v;
 #endif
@@ -290,7 +294,7 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -301,14 +305,14 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
         bn = GetBNPtr(private_key);
 
     switch (EC_KEY_set_private_key(ec, bn)) {
-    case 1:
+      case 1:
         break;
-    case 0:
+      case 0:
         if (bn == NULL)
             break;
-	/* fallthrough */
-    default:
-        ossl_raise(eECError, "EC_KEY_set_private_key");
+        /* fallthrough */
+      default:
+        ossl_raise(ePKeyError, "EC_KEY_set_private_key");
     }
 
     return private_key;
@@ -341,7 +345,7 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -352,14 +356,14 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
         GetECPoint(public_key, point);
 
     switch (EC_KEY_set_public_key(ec, point)) {
-    case 1:
+      case 1:
         break;
-    case 0:
+      case 0:
         if (point == NULL)
             break;
-	/* fallthrough */
-    default:
-        ossl_raise(eECError, "EC_KEY_set_public_key");
+        /* fallthrough */
+      default:
+        ossl_raise(ePKeyError, "EC_KEY_set_public_key");
     }
 
     return public_key;
@@ -463,7 +467,7 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
+        ossl_raise(ePKeyError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(argc, argv, self, 0);
     else
@@ -491,7 +495,7 @@ ossl_ec_key_to_der(VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
+        ossl_raise(ePKeyError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
@@ -513,14 +517,14 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_generate_key(ec) != 1)
-	ossl_raise(eECError, "EC_KEY_generate_key");
+        ossl_raise(ePKeyError, "EC_KEY_generate_key");
 
     return self;
 #endif
@@ -545,18 +549,18 @@ static VALUE ossl_ec_key_check_key(VALUE self)
     GetEC(self, ec);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eECError, "EVP_PKEY_CTX_new");
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
 
     if (EC_KEY_get0_private_key(ec) != NULL) {
         if (EVP_PKEY_check(pctx) != 1) {
             EVP_PKEY_CTX_free(pctx);
-            ossl_raise(eECError, "EVP_PKEY_check");
+            ossl_raise(ePKeyError, "EVP_PKEY_check");
         }
     }
     else {
         if (EVP_PKEY_public_check(pctx) != 1) {
             EVP_PKEY_CTX_free(pctx);
-            ossl_raise(eECError, "EVP_PKEY_public_check");
+            ossl_raise(ePKeyError, "EVP_PKEY_public_check");
         }
     }
 
@@ -566,7 +570,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)
-	ossl_raise(eECError, "EC_KEY_check_key");
+        ossl_raise(ePKeyError, "EC_KEY_check_key");
 #endif
 
     return Qtrue;
@@ -584,7 +588,7 @@ ossl_ec_group_free(void *ptr)
 static const rb_data_type_t ossl_ec_group_type = {
     "OpenSSL/ec_group",
     {
-	0, ossl_ec_group_free,
+        0, ossl_ec_group_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -604,7 +608,7 @@ ec_group_new(const EC_GROUP *group)
     obj = ossl_ec_group_alloc(cEC_GROUP);
     group_new = EC_GROUP_dup(group);
     if (!group_new)
-	ossl_raise(eEC_GROUP, "EC_GROUP_dup");
+        ossl_raise(eEC_GROUP, "EC_GROUP_dup");
     RTYPEDDATA_DATA(obj) = group_new;
 
     return obj;
@@ -632,7 +636,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(rb_eRuntimeError, "EC_GROUP is already initialized");
 
     switch (rb_scan_args(argc, argv, "13", &arg1, &arg2, &arg3, &arg4)) {
-    case 1:
+      case 1:
         if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
             const EC_GROUP *arg1_group;
 
@@ -644,7 +648,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
-		OSSL_BIO_reset(in);
+                OSSL_BIO_reset(in);
                 group = d2i_ECPKParameters_bio(in, NULL);
             }
 
@@ -654,11 +658,14 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 const char *name = StringValueCStr(arg1);
                 int nid = OBJ_sn2nid(name);
 
-		ossl_clear_error(); /* ignore errors in d2i_ECPKParameters_bio() */
+                ossl_clear_error(); /* ignore errors in d2i_ECPKParameters_bio() */
                 if (nid == NID_undef)
                     ossl_raise(eEC_GROUP, "unknown curve name (%"PRIsVALUE")", arg1);
-
+#if !defined(OPENSSL_IS_AWSLC)
                 group = EC_GROUP_new_by_curve_name(nid);
+#else /* EC_GROUPs are static and immutable by default in AWS-LC. */
+                group = EC_GROUP_new_by_curve_name_mutable(nid);
+#endif
                 if (group == NULL)
                     ossl_raise(eEC_GROUP, "unable to create curve (%"PRIsVALUE")", arg1);
 
@@ -668,33 +675,34 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         }
 
         break;
-    case 4:
+      case 4:
         if (SYMBOL_P(arg1)) {
-            ID id = SYM2ID(arg1);
             EC_GROUP *(*new_curve)(const BIGNUM *, const BIGNUM *, const BIGNUM *, BN_CTX *) = NULL;
             const BIGNUM *p = GetBNPtr(arg2);
             const BIGNUM *a = GetBNPtr(arg3);
             const BIGNUM *b = GetBNPtr(arg4);
 
-            if (id == s_GFp) {
+            if (arg1 == sym_GFp) {
                 new_curve = EC_GROUP_new_curve_GFp;
+            }
 #if !defined(OPENSSL_NO_EC2M)
-            } else if (id == s_GF2m) {
+            else if (arg1 == sym_GF2m) {
                 new_curve = EC_GROUP_new_curve_GF2m;
+            }
 #endif
-            } else {
+            else {
                 ossl_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
             }
 
             if ((group = new_curve(p, a, b, ossl_bn_ctx)) == NULL)
                 ossl_raise(eEC_GROUP, "EC_GROUP_new_by_GF*");
         } else {
-             ossl_raise(rb_eArgError, "unknown argument, must be :GFp or :GF2m");
+            ossl_raise(rb_eArgError, "unknown argument, must be :GFp or :GF2m");
         }
 
         break;
-    default:
-        ossl_raise(rb_eArgError, "wrong number of arguments");
+      default:
+        ossl_raise(rb_eArgError, "wrong number of arguments (given %d, expected 1 or 4)", argc);
     }
 
     ASSUME(group);
@@ -703,6 +711,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ec_group_initialize_copy(VALUE self, VALUE other)
 {
@@ -710,12 +719,12 @@ ossl_ec_group_initialize_copy(VALUE self, VALUE other)
 
     TypedData_Get_Struct(self, EC_GROUP, &ossl_ec_group_type, group_new);
     if (group_new)
-	ossl_raise(eEC_GROUP, "EC::Group already initialized");
+        ossl_raise(eEC_GROUP, "EC::Group already initialized");
     GetECGroup(other, group);
 
     group_new = EC_GROUP_dup(group);
     if (!group_new)
-	ossl_raise(eEC_GROUP, "EC_GROUP_dup");
+        ossl_raise(eEC_GROUP, "EC_GROUP_dup");
     RTYPEDDATA_DATA(self) = group_new;
 
     return self;
@@ -737,9 +746,9 @@ static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
     GetECGroup(b, group2);
 
     switch (EC_GROUP_cmp(group1, group2, ossl_bn_ctx)) {
-    case 0: return Qtrue;
-    case 1: return Qfalse;
-    default: ossl_raise(eEC_GROUP, "EC_GROUP_cmp");
+      case 0: return Qtrue;
+      case 1: return Qfalse;
+      default: ossl_raise(eEC_GROUP, "EC_GROUP_cmp");
     }
 }
 
@@ -759,7 +768,7 @@ static VALUE ossl_ec_group_get_generator(VALUE self)
     GetECGroup(self, group);
     generator = EC_GROUP_get0_generator(group);
     if (!generator)
-	return Qnil;
+        return Qnil;
 
     return ec_point_new(generator, group);
 }
@@ -802,11 +811,10 @@ static VALUE ossl_ec_group_get_order(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_order(group, bn, ossl_bn_ctx) != 1)
@@ -827,11 +835,10 @@ static VALUE ossl_ec_group_get_cofactor(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_cofactor(group, bn, ossl_bn_ctx) != 1)
@@ -842,25 +849,23 @@ static VALUE ossl_ec_group_get_cofactor(VALUE self)
 
 /*
  * call-seq:
- *   group.curve_name  => String
+ *    group.curve_name -> string or nil
  *
- * Returns the curve name (sn).
+ * Returns the curve name (short name) corresponding to this group, or +nil+
+ * if \OpenSSL does not have an OID associated with the group.
  *
  * See the OpenSSL documentation for EC_GROUP_get_curve_name()
  */
 static VALUE ossl_ec_group_get_curve_name(VALUE self)
 {
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
     int nid;
 
     GetECGroup(self, group);
-    if (group == NULL)
-        return Qnil;
-
     nid = EC_GROUP_get_curve_name(group);
-
-/* BUG: an nid or asn1 object should be returned, maybe. */
-    return rb_str_new2(OBJ_nid2sn(nid));
+    if (nid == NID_undef)
+        return Qnil;
+    return rb_str_new_cstr(OBJ_nid2sn(nid));
 }
 
 /*
@@ -953,37 +958,36 @@ static VALUE ossl_ec_group_set_asn1_flag(VALUE self, VALUE flag_v)
  */
 static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
 {
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
     point_conversion_form_t form;
-    VALUE ret;
 
     GetECGroup(self, group);
     form = EC_GROUP_get_point_conversion_form(group);
 
     switch (form) {
-    case POINT_CONVERSION_UNCOMPRESSED:	ret = ID_uncompressed; break;
-    case POINT_CONVERSION_COMPRESSED:	ret = ID_compressed; break;
-    case POINT_CONVERSION_HYBRID:	ret = ID_hybrid; break;
-    default:	ossl_raise(eEC_GROUP, "unsupported point conversion form: %d, this module should be updated", form);
+      case POINT_CONVERSION_UNCOMPRESSED:
+        return sym_uncompressed;
+      case POINT_CONVERSION_COMPRESSED:
+        return sym_compressed;
+      case POINT_CONVERSION_HYBRID:
+        return sym_hybrid;
+      default:
+        ossl_raise(eEC_GROUP, "unsupported point conversion form: %d, " \
+                   "this module should be updated", form);
     }
-
-   return ID2SYM(ret);
 }
 
 static point_conversion_form_t
 parse_point_conversion_form_symbol(VALUE sym)
 {
-    ID id = SYM2ID(sym);
-
-    if (id == ID_uncompressed)
-	return POINT_CONVERSION_UNCOMPRESSED;
-    else if (id == ID_compressed)
-	return POINT_CONVERSION_COMPRESSED;
-    else if (id == ID_hybrid)
-	return POINT_CONVERSION_HYBRID;
-    else
-	ossl_raise(rb_eArgError, "unsupported point conversion form %+"PRIsVALUE
-		   " (expected :compressed, :uncompressed, or :hybrid)", sym);
+    if (sym == sym_uncompressed)
+        return POINT_CONVERSION_UNCOMPRESSED;
+    if (sym == sym_compressed)
+        return POINT_CONVERSION_COMPRESSED;
+    if (sym == sym_hybrid)
+        return POINT_CONVERSION_HYBRID;
+    ossl_raise(rb_eArgError, "unsupported point conversion form %+"PRIsVALUE
+               " (expected :compressed, :uncompressed, or :hybrid)", sym);
 }
 
 /*
@@ -1088,20 +1092,20 @@ static VALUE ossl_ec_group_to_string(VALUE self, int format)
         ossl_raise(eEC_GROUP, "BIO_new(BIO_s_mem())");
 
     switch(format) {
-    case EXPORT_PEM:
+      case EXPORT_PEM:
         i = PEM_write_bio_ECPKParameters(out, group);
-    	break;
-    case EXPORT_DER:
+        break;
+      case EXPORT_DER:
         i = i2d_ECPKParameters_bio(out, group);
-    	break;
-    default:
+        break;
+      default:
         BIO_free(out);
-    	ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
+        ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
     }
 
     if (i != 1) {
         BIO_free(out);
-        ossl_raise(eECError, NULL);
+        ossl_raise(ePKeyError, NULL);
     }
 
     str = ossl_membio2str(out);
@@ -1145,11 +1149,11 @@ static VALUE ossl_ec_group_to_text(VALUE self)
 
     GetECGroup(self, group);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eEC_GROUP, "BIO_new(BIO_s_mem())");
+        ossl_raise(eEC_GROUP, "BIO_new(BIO_s_mem())");
     }
     if (!ECPKParameters_print(out, group, 0)) {
-	BIO_free(out);
-	ossl_raise(eEC_GROUP, NULL);
+        BIO_free(out);
+        ossl_raise(eEC_GROUP, NULL);
     }
     str = ossl_membio2str(out);
 
@@ -1169,7 +1173,7 @@ ossl_ec_point_free(void *ptr)
 static const rb_data_type_t ossl_ec_point_type = {
     "OpenSSL/EC_POINT",
     {
-	0, ossl_ec_point_free,
+        0, ossl_ec_point_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -1189,7 +1193,7 @@ ec_point_new(const EC_POINT *point, const EC_GROUP *group)
     obj = ossl_ec_point_alloc(cEC_POINT);
     point_new = EC_POINT_dup(point, group);
     if (!point_new)
-	ossl_raise(eEC_POINT, "EC_POINT_dup");
+        ossl_raise(eEC_POINT, "EC_POINT_dup");
     RTYPEDDATA_DATA(obj) = point_new;
     rb_ivar_set(obj, id_i_group, ec_group_new(group));
 
@@ -1217,39 +1221,39 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point);
     if (point)
-	rb_raise(eEC_POINT, "EC_POINT already initialized");
+        rb_raise(eEC_POINT, "EC_POINT already initialized");
 
     rb_scan_args(argc, argv, "11", &group_v, &arg2);
     if (rb_obj_is_kind_of(group_v, cEC_POINT)) {
-	if (argc != 1)
-	    rb_raise(rb_eArgError, "invalid second argument");
-	return ossl_ec_point_initialize_copy(self, group_v);
+        if (argc != 1)
+            rb_raise(rb_eArgError, "invalid second argument");
+        return ossl_ec_point_initialize_copy(self, group_v);
     }
 
     GetECGroup(group_v, group);
     if (argc == 1) {
-	point = EC_POINT_new(group);
-	if (!point)
-	    ossl_raise(eEC_POINT, "EC_POINT_new");
+        point = EC_POINT_new(group);
+        if (!point)
+            ossl_raise(eEC_POINT, "EC_POINT_new");
     }
     else {
-	if (rb_obj_is_kind_of(arg2, cBN)) {
-	    point = EC_POINT_bn2point(group, GetBNPtr(arg2), NULL, ossl_bn_ctx);
-	    if (!point)
-		ossl_raise(eEC_POINT, "EC_POINT_bn2point");
-	}
-	else {
-	    StringValue(arg2);
-	    point = EC_POINT_new(group);
-	    if (!point)
-		ossl_raise(eEC_POINT, "EC_POINT_new");
-	    if (!EC_POINT_oct2point(group, point,
-				    (unsigned char *)RSTRING_PTR(arg2),
-				    RSTRING_LEN(arg2), ossl_bn_ctx)) {
-		EC_POINT_free(point);
-		ossl_raise(eEC_POINT, "EC_POINT_oct2point");
-	    }
-	}
+        if (rb_obj_is_kind_of(arg2, cBN)) {
+            point = EC_POINT_bn2point(group, GetBNPtr(arg2), NULL, ossl_bn_ctx);
+            if (!point)
+                ossl_raise(eEC_POINT, "EC_POINT_bn2point");
+        }
+        else {
+            StringValue(arg2);
+            point = EC_POINT_new(group);
+            if (!point)
+                ossl_raise(eEC_POINT, "EC_POINT_new");
+            if (!EC_POINT_oct2point(group, point,
+                                    (unsigned char *)RSTRING_PTR(arg2),
+                                    RSTRING_LEN(arg2), ossl_bn_ctx)) {
+                EC_POINT_free(point);
+                ossl_raise(eEC_POINT, "EC_POINT_oct2point");
+            }
+        }
     }
 
     RTYPEDDATA_DATA(self) = point;
@@ -1258,6 +1262,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ec_point_initialize_copy(VALUE self, VALUE other)
 {
@@ -1267,7 +1272,7 @@ ossl_ec_point_initialize_copy(VALUE self, VALUE other)
 
     TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point_new);
     if (point_new)
-	ossl_raise(eEC_POINT, "EC::Point already initialized");
+        ossl_raise(eEC_POINT, "EC::Point already initialized");
     GetECPoint(other, point);
 
     group_v = rb_obj_dup(rb_attr_get(other, id_i_group));
@@ -1275,7 +1280,7 @@ ossl_ec_point_initialize_copy(VALUE self, VALUE other)
 
     point_new = EC_POINT_dup(point, group);
     if (!point_new)
-	ossl_raise(eEC_POINT, "EC_POINT_dup");
+        ossl_raise(eEC_POINT, "EC_POINT_dup");
     RTYPEDDATA_DATA(self) = point_new;
     rb_ivar_set(self, id_i_group, group_v);
 
@@ -1302,9 +1307,9 @@ static VALUE ossl_ec_point_eql(VALUE a, VALUE b)
     GetECGroup(group_v1, group);
 
     switch (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx)) {
-    case 0: return Qtrue;
-    case 1: return Qfalse;
-    default: ossl_raise(eEC_POINT, "EC_POINT_cmp");
+      case 0: return Qtrue;
+      case 1: return Qfalse;
+      default: ossl_raise(eEC_POINT, "EC_POINT_cmp");
     }
 
     UNREACHABLE;
@@ -1323,9 +1328,9 @@ static VALUE ossl_ec_point_is_at_infinity(VALUE self)
     GetECPointGroup(self, group);
 
     switch (EC_POINT_is_at_infinity(group, point)) {
-    case 1: return Qtrue;
-    case 0: return Qfalse;
-    default: ossl_raise(eEC_POINT, "EC_POINT_is_at_infinity");
+      case 1: return Qtrue;
+      case 0: return Qfalse;
+      default: ossl_raise(eEC_POINT, "EC_POINT_is_at_infinity");
     }
 
     UNREACHABLE;
@@ -1344,9 +1349,9 @@ static VALUE ossl_ec_point_is_on_curve(VALUE self)
     GetECPointGroup(self, group);
 
     switch (EC_POINT_is_on_curve(group, point, ossl_bn_ctx)) {
-    case 1: return Qtrue;
-    case 0: return Qfalse;
-    default: ossl_raise(eEC_POINT, "EC_POINT_is_on_curve");
+      case 1: return Qtrue;
+      case 0: return Qfalse;
+      default: ossl_raise(eEC_POINT, "EC_POINT_is_on_curve");
     }
 
     UNREACHABLE;
@@ -1367,7 +1372,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     GetECPointGroup(self, group);
 
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
-#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
+#if !defined(OSSL_HAVE_IMMUTABLE_PKEY) && !defined(OPENSSL_IS_AWSLC)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
         ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif
@@ -1438,12 +1443,12 @@ ossl_ec_point_to_octet_string(VALUE self, VALUE conversion_form)
 
     len = EC_POINT_point2oct(group, point, form, NULL, 0, ossl_bn_ctx);
     if (!len)
-	ossl_raise(eEC_POINT, "EC_POINT_point2oct");
+        ossl_raise(eEC_POINT, "EC_POINT_point2oct");
     str = rb_str_new(NULL, (long)len);
     if (!EC_POINT_point2oct(group, point, form,
-			    (unsigned char *)RSTRING_PTR(str), len,
-			    ossl_bn_ctx))
-	ossl_raise(eEC_POINT, "EC_POINT_point2oct");
+                            (unsigned char *)RSTRING_PTR(str), len,
+                            ossl_bn_ctx))
+        ossl_raise(eEC_POINT, "EC_POINT_point2oct");
     return str;
 }
 
@@ -1478,7 +1483,6 @@ static VALUE ossl_ec_point_add(VALUE self, VALUE other)
 /*
  * call-seq:
  *   point.mul(bn1 [, bn2]) => point
- *   point.mul(bns, points [, bn2]) => point
  *
  * Performs elliptic curve point multiplication.
  *
@@ -1486,11 +1490,9 @@ static VALUE ossl_ec_point_add(VALUE self, VALUE other)
  * generator of the group of _point_. _bn2_ may be omitted, and in that case,
  * the result is just <tt>bn1 * point</tt>.
  *
- * The second form calculates <tt>bns[0] * point + bns[1] * points[0] + ...
- * + bns[-1] * points[-1] + bn2 * G</tt>. _bn2_ may be omitted. _bns_ must be
- * an array of OpenSSL::BN. _points_ must be an array of
- * OpenSSL::PKey::EC::Point. Please note that <tt>points[0]</tt> is not
- * multiplied by <tt>bns[0]</tt>, but <tt>bns[1]</tt>.
+ * Before version 4.0.0, and when compiled with OpenSSL 1.1.1 or older, this
+ * method allowed another form:
+ *   point.mul(bns, points [, bn2]) => point
  */
 static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 {
@@ -1508,62 +1510,15 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     GetECPoint(result, point_result);
 
     rb_scan_args(argc, argv, "12", &arg1, &arg2, &arg3);
-    if (!RB_TYPE_P(arg1, T_ARRAY)) {
-	BIGNUM *bn = GetBNPtr(arg1);
+    if (RB_TYPE_P(arg1, T_ARRAY) || argc > 2)
+        rb_raise(rb_eNotImpError, "OpenSSL::PKey::EC::Point#mul with arrays " \
+                 "is no longer supported");
 
-	if (!NIL_P(arg2))
-	    bn_g = GetBNPtr(arg2);
-	if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
-	    ossl_raise(eEC_POINT, NULL);
-    } else {
-#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3) || defined(LIBRESSL_VERSION_NUMBER)
-        rb_raise(rb_eNotImpError, "calling #mul with arrays is not" \
-                 "supported by this OpenSSL version");
-#else
-	/*
-	 * bignums | arg1[0] | arg1[1] | arg1[2] | ...
-	 * points  | self    | arg2[0] | arg2[1] | ...
-	 */
-	long i, num;
-	VALUE bns_tmp, tmp_p, tmp_b;
-	const EC_POINT **points;
-	const BIGNUM **bignums;
-
-	Check_Type(arg1, T_ARRAY);
-	Check_Type(arg2, T_ARRAY);
-	if (RARRAY_LEN(arg1) != RARRAY_LEN(arg2) + 1) /* arg2 must be 1 larger */
-	    ossl_raise(rb_eArgError, "bns must be 1 longer than points; see the documentation");
-
-        rb_warning("OpenSSL::PKey::EC::Point#mul(ary, ary) is deprecated; " \
-                   "use #mul(bn) form instead");
-
-	num = RARRAY_LEN(arg1);
-	bns_tmp = rb_ary_tmp_new(num);
-	bignums = ALLOCV_N(const BIGNUM *, tmp_b, num);
-	for (i = 0; i < num; i++) {
-	    VALUE item = RARRAY_AREF(arg1, i);
-	    bignums[i] = GetBNPtr(item);
-	    rb_ary_push(bns_tmp, item);
-	}
-
-	points = ALLOCV_N(const EC_POINT *, tmp_p, num);
-	points[0] = point_self; /* self */
-	for (i = 0; i < num - 1; i++)
-	    GetECPoint(RARRAY_AREF(arg2, i), points[i + 1]);
-
-	if (!NIL_P(arg3))
-	    bn_g = GetBNPtr(arg3);
-
-	if (EC_POINTs_mul(group, point_result, bn_g, num, points, bignums, ossl_bn_ctx) != 1) {
-	    ALLOCV_END(tmp_b);
-	    ALLOCV_END(tmp_p);
-	    ossl_raise(eEC_POINT, NULL);
-	}
-
-	ALLOCV_END(tmp_b);
-	ALLOCV_END(tmp_p);
-#endif
-    }
+    BIGNUM *bn = GetBNPtr(arg1);
+    if (!NIL_P(arg2))
+        bn_g = GetBNPtr(arg2);
+    if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
+        ossl_raise(eEC_POINT, NULL);
 
     return result;
 }
@@ -1571,15 +1526,6 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 void Init_ossl_ec(void)
 {
 #undef rb_intern
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
-    eECError = rb_define_class_under(mPKey, "ECError", ePKeyError);
-
     /*
      * Document-class: OpenSSL::PKey::EC
      *
@@ -1601,17 +1547,15 @@ void Init_ossl_ec(void)
     eEC_GROUP = rb_define_class_under(cEC_GROUP, "Error", eOSSLError);
     eEC_POINT = rb_define_class_under(cEC_POINT, "Error", eOSSLError);
 
-    s_GFp = rb_intern("GFp");
-    s_GF2m = rb_intern("GF2m");
+    sym_GFp = ID2SYM(rb_intern_const("GFp"));
+    sym_GF2m = ID2SYM(rb_intern_const("GF2m"));
 
-    ID_uncompressed = rb_intern("uncompressed");
-    ID_compressed = rb_intern("compressed");
-    ID_hybrid = rb_intern("hybrid");
+    sym_uncompressed = ID2SYM(rb_intern_const("uncompressed"));
+    sym_compressed = ID2SYM(rb_intern_const("compressed"));
+    sym_hybrid = ID2SYM(rb_intern_const("hybrid"));
 
     rb_define_const(cEC, "NAMED_CURVE", INT2NUM(OPENSSL_EC_NAMED_CURVE));
-#if defined(OPENSSL_EC_EXPLICIT_CURVE)
     rb_define_const(cEC, "EXPLICIT_CURVE", INT2NUM(OPENSSL_EC_EXPLICIT_CURVE));
-#endif
 
     rb_define_singleton_method(cEC, "builtin_curves", ossl_s_builtin_curves, 0);
 

@@ -32,34 +32,21 @@ describe :array_pack_basic_non_float, shared: true do
     [@obj, @obj, @obj, @obj].pack("aa #{pack_format} # some comment \n#{pack_format}").should be_an_instance_of(String)
   end
 
-  ruby_version_is ""..."3.2" do
-    it "warns in verbose mode that a directive is unknown" do
-      # additional directive ('a') is required for the X directive
-      -> { [@obj, @obj].pack("a R" + pack_format) }.should complain(/unknown pack directive 'R'/, verbose: true)
-      -> { [@obj, @obj].pack("a 0" + pack_format) }.should complain(/unknown pack directive '0'/, verbose: true)
-      -> { [@obj, @obj].pack("a :" + pack_format) }.should complain(/unknown pack directive ':'/, verbose: true)
-    end
-  end
-
-  ruby_version_is "3.2"..."3.3" do
-    # https://bugs.ruby-lang.org/issues/19150
-    # NOTE: it's just a plan of the Ruby core team
+  ruby_version_is ""..."3.3" do
     it "warns that a directive is unknown" do
       # additional directive ('a') is required for the X directive
-      -> { [@obj, @obj].pack("a R" + pack_format) }.should complain(/unknown pack directive 'R'/)
-      -> { [@obj, @obj].pack("a 0" + pack_format) }.should complain(/unknown pack directive '0'/)
-      -> { [@obj, @obj].pack("a :" + pack_format) }.should complain(/unknown pack directive ':'/)
+      -> { [@obj, @obj].pack("a K" + pack_format) }.should complain(/unknown pack directive 'K' in 'a K#{pack_format}'/)
+      -> { [@obj, @obj].pack("a 0" + pack_format) }.should complain(/unknown pack directive '0' in 'a 0#{pack_format}'/)
+      -> { [@obj, @obj].pack("a :" + pack_format) }.should complain(/unknown pack directive ':' in 'a :#{pack_format}'/)
     end
   end
 
   ruby_version_is "3.3" do
-    # https://bugs.ruby-lang.org/issues/19150
-    # NOTE: Added this case just to not forget about the decision in the ticket
     it "raise ArgumentError when a directive is unknown" do
       # additional directive ('a') is required for the X directive
-      -> { [@obj, @obj].pack("a R" + pack_format) }.should raise_error(ArgumentError)
-      -> { [@obj, @obj].pack("a 0" + pack_format) }.should raise_error(ArgumentError)
-      -> { [@obj, @obj].pack("a :" + pack_format) }.should raise_error(ArgumentError)
+      -> { [@obj, @obj].pack("a R" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive 'R'/)
+      -> { [@obj, @obj].pack("a 0" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive '0'/)
+      -> { [@obj, @obj].pack("a :" + pack_format) }.should raise_error(ArgumentError, /unknown pack directive ':'/)
     end
   end
 

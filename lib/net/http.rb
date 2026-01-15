@@ -475,8 +475,7 @@ module Net   #:nodoc:
   #
   # - {::start}[rdoc-ref:Net::HTTP.start]:
   #   Begins a new session in a new \Net::HTTP object.
-  # - {#started?}[rdoc-ref:Net::HTTP#started?]
-  #   (aliased as {#active?}[rdoc-ref:Net::HTTP#active?]):
+  # - {#started?}[rdoc-ref:Net::HTTP#started?]:
   #   Returns whether in a session.
   # - {#finish}[rdoc-ref:Net::HTTP#finish]:
   #   Ends an active session.
@@ -556,18 +555,15 @@ module Net   #:nodoc:
   #   Sends a PUT request and returns a response object.
   # - {#request}[rdoc-ref:Net::HTTP#request]:
   #   Sends a request and returns a response object.
-  # - {#request_get}[rdoc-ref:Net::HTTP#request_get]
-  #   (aliased as {#get2}[rdoc-ref:Net::HTTP#get2]):
+  # - {#request_get}[rdoc-ref:Net::HTTP#request_get]:
   #   Sends a GET request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
-  # - {#request_head}[rdoc-ref:Net::HTTP#request_head]
-  #   (aliased as {#head2}[rdoc-ref:Net::HTTP#head2]):
+  # - {#request_head}[rdoc-ref:Net::HTTP#request_head]:
   #   Sends a HEAD request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
-  # - {#request_post}[rdoc-ref:Net::HTTP#request_post]
-  #   (aliased as {#post2}[rdoc-ref:Net::HTTP#post2]):
+  # - {#request_post}[rdoc-ref:Net::HTTP#request_post]:
   #   Sends a POST request and forms a response object;
   #   if a block given, calls the block with the object,
   #   otherwise returns the object.
@@ -605,8 +601,7 @@ module Net   #:nodoc:
   #   Returns whether +self+ is a proxy class.
   # - {#proxy?}[rdoc-ref:Net::HTTP#proxy?]:
   #   Returns whether +self+ has a proxy.
-  # - {#proxy_address}[rdoc-ref:Net::HTTP#proxy_address]
-  #   (aliased as {#proxyaddr}[rdoc-ref:Net::HTTP#proxyaddr]):
+  # - {#proxy_address}[rdoc-ref:Net::HTTP#proxy_address]:
   #   Returns the proxy address.
   # - {#proxy_from_env?}[rdoc-ref:Net::HTTP#proxy_from_env?]:
   #   Returns whether the proxy is taken from an environment variable.
@@ -718,8 +713,7 @@ module Net   #:nodoc:
   # === \HTTP Version
   #
   # - {::version_1_2?}[rdoc-ref:Net::HTTP.version_1_2?]
-  #   (aliased as {::is_version_1_2?}[rdoc-ref:Net::HTTP.is_version_1_2?]
-  #   and {::version_1_2}[rdoc-ref:Net::HTTP.version_1_2]):
+  #   (aliased as {::version_1_2}[rdoc-ref:Net::HTTP.version_1_2]):
   #   Returns true; retained for compatibility.
   #
   # === Debugging
@@ -730,7 +724,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.4.1"
+    VERSION = "0.9.1"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -1185,6 +1179,7 @@ module Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1327,6 +1322,9 @@ module Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets whether the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
@@ -1533,9 +1531,9 @@ module Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ] # :nodoc:
+    ].freeze # :nodoc:
 
-    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym } # :nodoc:
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
@@ -1552,11 +1550,11 @@ module Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[OpenSSL::SSL::SSL::Context#ciphers=].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[OpenSSL::SSL::SSL::Context#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1566,15 +1564,15 @@ module Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[OpenSSL::SSL::SSL::Context#ssl_version=].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[OpenSSL::SSL::SSL::Context#min_version=].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[OpenSSL::SSL::SSL::Context#max_version=].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1590,7 +1588,7 @@ module Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_mode].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[OpenSSL::SSL::SSL::Context#verify_hostname=].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -1638,6 +1636,21 @@ module Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1660,14 +1673,15 @@ module Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
+      begin
+        s = timeouted_connect(conn_addr, conn_port)
+      rescue => e
+        if (defined?(IO::TimeoutError) && e.is_a?(IO::TimeoutError)) || e.is_a?(Errno::ETIMEDOUT)  # for compatibility with previous versions
+          e = Net::OpenTimeout.new(e)
         end
-      }
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1760,23 +1774,30 @@ module Net   #:nodoc:
     end
     private :connect
 
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+
+    def timeouted_connect(conn_addr, conn_port)
+      if TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+      else
+        Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        }
+      end
+    end
+    private :timeouted_connect
+
     def on_connect
     end
     private :on_connect
-
-    # Finishes the \HTTP session:
-    #
-    #   http = Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
 
     def do_finish
       @started = false
@@ -1826,6 +1847,8 @@ module Net   #:nodoc:
         @proxy_use_ssl = p_use_ssl
       }
     end
+
+    # :startdoc:
 
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
@@ -1921,9 +1944,11 @@ module Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
-      require 'cgi/util'
+      require 'cgi/escape'
+      require 'cgi/util' unless defined?(CGI::EscapeExt)
       CGI.unescape(value)
     end
 
@@ -1948,6 +1973,7 @@ module Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2402,7 +2428,9 @@ module Net   #:nodoc:
       res
     end
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    # :stopdoc:
+
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -2559,6 +2587,11 @@ module Net   #:nodoc:
     alias_method :D, :debug
   end
 
+  # for backward compatibility until Ruby 4.0
+  # https://bugs.ruby-lang.org/issues/20900
+  # https://github.com/bblimke/webmock/pull/1081
+  HTTPSession = HTTP
+  deprecate_constant :HTTPSession
 end
 
 require_relative 'http/exceptions'
@@ -2573,5 +2606,3 @@ require_relative 'http/response'
 require_relative 'http/responses'
 
 require_relative 'http/proxy_delta'
-
-require_relative 'http/backward'

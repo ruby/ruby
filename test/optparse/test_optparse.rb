@@ -184,10 +184,9 @@ class TestOptionParser < Test::Unit::TestCase
       File.open(File.join(dir, "options.rb"), "w") do |f|
         f.puts "#{<<~"begin;"}\n#{<<~'end;'}"
         begin;
-          stdout = STDOUT.dup
+          stdout = $stdout.dup
           def stdout.tty?; true; end
-          Object.__send__(:remove_const, :STDOUT)
-          STDOUT = stdout
+          $stdout = stdout
           ARGV.options do |opt|
           end;
           100.times {|i| f.puts "  opt.on('--opt-#{i}') {}"}
@@ -216,5 +215,17 @@ class TestOptionParser < Test::Unit::TestCase
         assert_in_out_err([env, *args], "", [expected], chdir: dir)
       end
     end
+  end
+
+  def test_program_name
+    program = $0
+    $0 = "rdbg3.5"
+    assert_equal "rdbg3.5", OptionParser.new.program_name
+    RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split(" ") do |ext|
+      $0 = "rdbg3.5" + ext
+      assert_equal "rdbg3.5", OptionParser.new.program_name
+    end
+  ensure
+    $0 = program
   end
 end

@@ -197,6 +197,10 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE self)
 void
 Init_nonblock(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #ifndef RUBY_IO_NONBLOCK_METHODS
     rb_define_method(rb_cIO, "nonblock?", rb_io_nonblock_p, 0);
     rb_define_method(rb_cIO, "nonblock=", rb_io_nonblock_set, 1);

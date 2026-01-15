@@ -74,6 +74,7 @@ RSpec.describe "bundle install across platforms" do
     G
 
     expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+    expect(err).to be_empty
   end
 
   context "on universal Rubies" do
@@ -160,7 +161,7 @@ RSpec.describe "bundle install across platforms" do
 
       expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
-      simulate_new_machine
+      pristine_system_gems
       bundle "config set --local force_ruby_platform true"
       bundle "install"
 
@@ -194,7 +195,7 @@ RSpec.describe "bundle install across platforms" do
       build_gem("ffi", "1.9.23")
     end
 
-    simulate_platform java do
+    simulate_platform "java" do
       install_gemfile <<-G
         source "https://gem.repo4"
 
@@ -234,7 +235,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --add-platform ruby"
@@ -268,7 +269,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       expect(lockfile).to eq good_lockfile
@@ -329,7 +330,7 @@ RSpec.describe "bundle install across platforms" do
   end
 
   it "works with gems with platform-specific dependency having different requirements order" do
-    simulate_platform x64_mac do
+    simulate_platform "x86_64-darwin-15" do
       update_repo2 do
         build_gem "fspath", "3"
         build_gem "image_optim_pack", "1.2.3" do |s|
@@ -419,7 +420,7 @@ RSpec.describe "bundle install across platforms" do
         platform_specific
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 end
@@ -485,7 +486,7 @@ RSpec.describe "bundle install with platform conditionals" do
         tzinfo (~> 1.2)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install --verbose"
@@ -569,7 +570,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "https://gem.repo1"
 
-      gem "myrack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
+      gem "myrack", :platform => [:windows, :jruby]
     G
 
     bundle "install"
@@ -588,7 +589,7 @@ RSpec.describe "bundle install with platform conditionals" do
         myrack
       #{checksums_section_when_enabled}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -615,7 +616,7 @@ end
 
 RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
-    simulate_platform x86_mswin32 do
+    simulate_platform "x86-mswin32" do
       build_repo2 do
         # The rcov gem is platform mswin32, but has no arch
         build_gem "rcov" do |s|

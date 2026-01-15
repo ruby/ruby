@@ -2,12 +2,12 @@ require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 
-  describe "WIN32OLE_METHOD#helpcontext" do
+  describe "WIN32OLE::Method#helpcontext" do
     before :each do
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      @get_file_version = WIN32OLE_METHOD.new(ole_type, "GetFileVersion")
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "File")
-      @m_file_name = WIN32OLE_METHOD.new(ole_type, "name")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      @get_file_version = WIN32OLE::Method.new(ole_type, "GetFileVersion")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "File")
+      @m_file_name = WIN32OLE::Method.new(ole_type, "name")
     end
 
     it "raises ArgumentError if argument is given" do

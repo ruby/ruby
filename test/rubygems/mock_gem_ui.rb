@@ -16,7 +16,7 @@ class Gem::MockGemUi < Gem::StreamUI
     end
   end
 
-  class TermError < RuntimeError
+  class TermError < SystemExit
     attr_reader :exit_code
 
     def initialize(exit_code)
@@ -77,7 +77,7 @@ class Gem::MockGemUi < Gem::StreamUI
     @terminated
   end
 
-  def terminate_interaction(status=0)
+  def terminate_interaction(status = 0)
     @terminated = true
 
     raise TermError, status if status != 0

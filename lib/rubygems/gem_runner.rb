@@ -8,7 +8,6 @@
 
 require_relative "../rubygems"
 require_relative "command_manager"
-require_relative "deprecate"
 
 ##
 # Run an instance of the gem program.
@@ -29,6 +28,7 @@ class Gem::GemRunner
   # Run the gem command with the following arguments.
 
   def run(args)
+    validate_encoding args
     build_args = extract_build_args args
 
     do_configuration args
@@ -71,6 +71,14 @@ class Gem::GemRunner
   end
 
   private
+
+  def validate_encoding(args)
+    invalid_arg = args.find {|arg| !arg.valid_encoding? }
+
+    if invalid_arg
+      raise Gem::OptionParser::InvalidArgument.new("'#{invalid_arg.scrub}' has invalid encoding")
+    end
+  end
 
   def do_configuration(args)
     Gem.configuration = @config_file_class.new(args)

@@ -9,14 +9,15 @@ module Bundler
 
     def self.evaluate(gemfile, lockfile, unlock)
       builder = new
+      builder.lockfile(lockfile)
       builder.eval_gemfile(gemfile)
-      builder.to_definition(lockfile, unlock)
+      builder.to_definition(builder.lockfile_path, unlock)
     end
 
-    VALID_PLATFORMS = Bundler::Dependency::PLATFORM_MAP.keys.freeze
+    VALID_PLATFORMS = Bundler::CurrentRuby::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms type source install_if gemfile force_ruby_platform].freeze
+                    platform platforms source install_if force_ruby_platform].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
@@ -38,6 +39,7 @@ module Bundler
       @gemspecs             = []
       @gemfile              = nil
       @gemfiles             = []
+      @lockfile             = nil
       add_git_sources
     end
 
@@ -66,23 +68,23 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
+      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
       gemspecs.reject! {|s| s.name != name } if name
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 
       case specs_by_name_and_version.size
       when 1
         specs = specs_by_name_and_version.values.first
-        spec = specs.find {|s| s.match_platform(Bundler.local_platform) } || specs.first
+        spec = specs.find {|s| s.installable_on_platform?(Bundler.local_platform) } || specs.first
 
         @gemspecs << spec
 
-        gem spec.name, name: spec.name, path: path, glob: glob
+        path path, "glob" => glob, "name" => spec.name, "gemspec" => spec do
+          add_dependency spec.name
+        end
 
-        group(development_group) do
-          spec.development_dependencies.each do |dep|
-            gem dep.name, *(dep.requirement.as_list + [type: :development])
-          end
+        spec.development_dependencies.each do |dep|
+          add_dependency dep.name, dep.requirement.as_list, "gemspec_dev_dep" => true, "group" => development_group
         end
       when 0
         raise InvalidOption, "There are no gemspecs at #{expanded_path}"
@@ -94,63 +96,20 @@ module Bundler
 
     def gem(name, *args)
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
-      options["gemfile"] = @gemfile
       version = args || [">= 0"]
 
       normalize_options(name, version, options)
 
-      dep = Dependency.new(name, version, options)
+      add_dependency(name, version, options)
+    end
 
-      # if there's already a dependency with this name we try to prefer one
-      if current = @dependencies.find {|d| d.name == dep.name }
-        if current.requirement != dep.requirement
-          current_requirement_open = current.requirements_list.include?(">= 0")
+    # For usage in Dsl.evaluate, since lockfile is used as part of the Gemfile.
+    def lockfile_path
+      @lockfile
+    end
 
-          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
-          if gemspec_dep
-            gemfile_dep = [dep, current].find(&:runtime?)
-
-            unless current_requirement_open
-              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
-                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
-            end
-          else
-            update_prompt = ""
-
-            if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current_requirement_open
-                update_prompt = ". Gem already added"
-              else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
-
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
-              end
-            end
-
-            raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                           "#{update_prompt}"
-          end
-        end
-
-        # Always prefer the dependency from the Gemfile
-        if current.gemspec_dev_dep?
-          @dependencies.delete(current)
-        elsif dep.gemspec_dev_dep?
-          return
-        elsif current.source != dep.source
-          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
-        else
-          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                          "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once.\n" \
-                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
-        end
-      end
-
-      @dependencies << dep
+    def lockfile(file)
+      @lockfile = file
     end
 
     def source(source, *args, &blk)
@@ -193,8 +152,7 @@ module Bundler
     def path(path, options = {}, &blk)
       source_options = normalize_hash(options).merge(
         "path" => Pathname.new(path),
-        "root_path" => gemfile_root,
-        "gemspec" => gemspecs.find {|g| g.name == options["name"] }
+        "root_path" => gemfile_root
       )
 
       source_options["global"] = true unless block_given?
@@ -228,6 +186,7 @@ module Bundler
 
     def to_definition(lockfile, unlock)
       check_primary_source_safety
+      lockfile = @lockfile unless @lockfile.nil?
       Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
     end
 
@@ -284,6 +243,80 @@ module Bundler
     end
 
     private
+
+    def add_dependency(name, version = nil, options = {})
+      options["gemfile"] = @gemfile
+      options["source"] ||= @source
+      options["env"] ||= @env
+
+      dep = Dependency.new(name, version, options)
+
+      # if there's already a dependency with this name we try to prefer one
+      if current = @dependencies.find {|d| d.name == name }
+        if current.requirement != dep.requirement
+          current_requirement_open = current.requirements_list.include?(">= 0")
+
+          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
+          if gemspec_dep
+            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+
+            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+
+            if current_gemspec_range.intersects?(next_gemspec_range)
+              dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+            else
+              gemfile_dep = [dep, current].find(&:gemfile_dep?)
+
+              if gemfile_dep
+                raise GemfileError, "The #{name} dependency has conflicting requirements in Gemfile (#{gemfile_dep.requirement}) and gemspec (#{gemspec_dep.requirement})"
+              else
+                raise GemfileError, "Two gemspec development dependencies have conflicting requirements on the same gem: #{dep} and #{current}"
+              end
+            end
+          else
+            update_prompt = ""
+
+            if File.basename(@gemfile) == Injector::INJECTED_GEMS
+              if dep.requirements_list.include?(">= 0") && !current_requirement_open
+                update_prompt = ". Gem already added"
+              else
+                update_prompt = ". If you want to update the gem version, run `bundle update #{name}`"
+
+                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
+              end
+            end
+
+            raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
+                           "You specified: #{name} (#{current.requirement}) and #{name} (#{dep.requirement})" \
+                           "#{update_prompt}"
+          end
+        end
+
+        unless current.gemspec_dev_dep? && dep.gemspec_dev_dep?
+          # Always prefer the dependency from the Gemfile
+          if current.gemspec_dev_dep?
+            @dependencies.delete(current)
+          elsif dep.gemspec_dev_dep?
+            return
+          elsif current.source.to_s != dep.source.to_s
+            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                            "You specified that #{name} (#{dep.requirement}) should come from " \
+                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
+          else
+            Bundler.ui.warn "Your Gemfile lists the gem #{name} (#{current.requirement}) more than once.\n" \
+                            "You should probably keep only one of them.\n" \
+                            "Remove any duplicate entries and specify the gem only once.\n" \
+                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+          end
+        end
+      end
+
+      @dependencies << dep
+    end
 
     def with_gemfile(gemfile)
       expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
@@ -391,6 +424,13 @@ module Bundler
         raise GemfileError, "`#{p}` is not a valid platform. The available options are: #{VALID_PLATFORMS.inspect}"
       end
 
+      windows_platforms = platforms.select {|pl| pl.to_s.match?(/mingw|mswin/) }
+      if windows_platforms.any?
+        windows_platforms = windows_platforms.map! {|pl| ":#{pl}" }.join(", ")
+        deprecated_message = "Platform #{windows_platforms} will be removed in the future. Please use platform :windows instead."
+        Bundler::SharedHelpers.feature_deprecated! deprecated_message
+      end
+
       # Save sources passed in a key
       if opts.key?("source")
         source = normalize_source(opts["source"])
@@ -417,8 +457,6 @@ module Bundler
         opts["source"] = source
       end
 
-      opts["source"]         ||= @source
-      opts["env"]            ||= @env
       opts["platforms"]      = platforms.dup
       opts["group"]          = groups
       opts["should_include"] = install_if
@@ -457,14 +495,10 @@ module Bundler
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        message =
-          "The source :#{source} is deprecated because HTTP requests are insecure.\n" \
-          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
         removed_message =
           "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
           "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
-        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
-        "http://rubygems.org"
+        Bundler::SharedHelpers.feature_removed! removed_message
       when String
         source
       else
@@ -483,43 +517,18 @@ module Bundler
               "      gem 'rails'\n" \
               "    end\n\n"
 
-      SharedHelpers.major_deprecation(2, msg.strip)
+      SharedHelpers.feature_removed! msg.strip
     end
 
     def check_rubygems_source_safety
-      if @sources.implicit_global_source?
-        implicit_global_source_warning
-      elsif @sources.aggregate_global_source?
-        multiple_global_source_warning
-      end
-    end
-
-    def implicit_global_source_warning
-      Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
-        "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run. " \
-        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+      multiple_global_source_warning if @sources.aggregate_global_source?
     end
 
     def multiple_global_source_warning
-      if Bundler.feature_flag.bundler_3_mode?
-        msg = "This Gemfile contains multiple global sources. " \
-          "Each source after the first must include a block to indicate which gems " \
-          "should come from that source"
-        raise GemfileEvalError, msg
-      else
-        message =
-          "Your Gemfile contains multiple global sources. " \
-          "Using `source` more than once without a block is a security risk, and " \
-          "may result in installing unexpected gems. To resolve this warning, use " \
-          "a block to indicate which gems should come from the secondary source."
-        removed_message =
-          "Your Gemfile contains multiple global sources. " \
-          "Using `source` more than once without a block is a security risk, and " \
-          "may result in installing unexpected gems. To resolve this error, use " \
-          "a block to indicate which gems should come from the secondary source."
-        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
-      end
+      msg = "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
+      raise GemfileEvalError, msg
     end
 
     class DSLError < GemfileError
@@ -589,21 +598,21 @@ module Bundler
 
           trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
-          line_numer = trace_line.split(":")[1].to_i - 1
-          return m unless line_numer
+          line_number = trace_line.split(":")[1].to_i - 1
+          return m unless line_number
 
           lines      = contents.lines.to_a
           indent     = " #  "
           indicator  = indent.tr("#", ">")
-          first_line = line_numer.zero?
-          last_line  = (line_numer == (lines.count - 1))
+          first_line = line_number.zero?
+          last_line  = (line_number == (lines.count - 1))
 
           m << "\n"
           m << "#{indent}from #{trace_line.gsub(/:in.*$/, "")}\n"
           m << "#{indent}-------------------------------------------\n"
-          m << "#{indent}#{lines[line_numer - 1]}" unless first_line
-          m << "#{indicator}#{lines[line_numer]}"
-          m << "#{indent}#{lines[line_numer + 1]}" unless last_line
+          m << "#{indent}#{lines[line_number - 1]}" unless first_line
+          m << "#{indicator}#{lines[line_number]}"
+          m << "#{indent}#{lines[line_number + 1]}" unless last_line
           m << "\n" unless m.end_with?("\n")
           m << "#{indent}-------------------------------------------\n"
         end

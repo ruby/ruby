@@ -5,6 +5,8 @@ require "did_you_mean"
 require "tempfile"
 
 class ErrorHighlightTest < Test::Unit::TestCase
+  ErrorHighlight::DefaultFormatter.max_snippet_width = 80
+
   class DummyFormatter
     def self.message_for(corrections)
       ""
@@ -42,6 +44,17 @@ class ErrorHighlightTest < Test::Unit::TestCase
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
+      unless klass == ArgumentError && err.message =~ /\A(?:wrong number of arguments|missing keyword[s]?|unknown keyword[s]?|no keywords accepted)\b/
+        spot = ErrorHighlight.spot(err)
+        if spot
+          assert_kind_of(Integer, spot[:first_lineno])
+          assert_kind_of(Integer, spot[:first_column])
+          assert_kind_of(Integer, spot[:last_lineno])
+          assert_kind_of(Integer, spot[:last_column])
+          assert_kind_of(String, spot[:snippet])
+          assert_kind_of(Array, spot[:script_lines])
+        end
+      end
       assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
@@ -194,6 +207,15 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
         foo(
           42
         )
+    end
+  end
+
+  def test_CALL_arg_7
+    assert_error_message(ArgumentError, <<~END) do
+tried to create Proc object without a block (ArgumentError)
+    END
+
+      Proc.new
     end
   end
 
@@ -869,27 +891,13 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
-  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
-    def test_COLON2_5
-      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
-      assert_error_message(NameError, <<~END) do
-  uninitialized constant ErrorHighlightTest::NotDefined
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
-    end
-  else
-    def test_COLON2_5
-      assert_error_message(NameError, <<~END) do
+  def test_COLON2_5
+    # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+    assert_error_message(NameError, <<~END) do
 uninitialized constant ErrorHighlightTest::NotDefined
+    END
 
-        ErrorHighlightTest::NotDefined::NotDefined
-                          ^^^^^^^^^^^^
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
+      ErrorHighlightTest::NotDefined::NotDefined
     end
   end
 
@@ -1091,12 +1099,13 @@ no implicit conversion from nil to integer (TypeError)
   end
 
   def test_args_ATTRASGN_1
-    v = []
-    assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 1, expected 2..3) (ArgumentError)
+    v = method(:raise).to_proc
+    recv = NEW_MESSAGE_FORMAT ? "an instance of Proc" : v.inspect
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `[]=' for #{ recv }
 
       v [ ] = 1
-         ^^^^^^
+        ^^^^^
     END
 
       v [ ] = 1
@@ -1179,16 +1188,16 @@ no implicit conversion from nil to integer (TypeError)
   end
 
   def test_args_OP_ASGN1_aref_2
-    v = []
+    v = method(:raise).to_proc
 
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 0, expected 1..2) (ArgumentError)
+ArgumentError (ArgumentError)
 
-      v [ ] += 42
-         ^^^^^^^^
+      v [ArgumentError] += 42
+         ^^^^^^^^^^^^^^^^^^^^
     END
 
-      v [ ] += 42
+      v [ArgumentError] += 42
     end
   end
 
@@ -1232,7 +1241,7 @@ nil can't be coerced into Integer (TypeError)
     assert_error_message(NoMethodError, <<~END) do
 undefined method `time' for #{ ONE_RECV_MESSAGE }
 
-{:first_lineno=>#{ __LINE__ + 3 }, :first_column=>7, :last_lineno=>#{ __LINE__ + 3 }, :last_column=>12, :snippet=>"      1.time {}\\n"}
+#{{ first_lineno: __LINE__ + 3, first_column: 7, last_lineno: __LINE__ + 3, last_column: 12, snippet: "      1.time {}\n" }.inspect}
     END
 
       1.time {}
@@ -1276,6 +1285,151 @@ undefined method `time' for #{ ONE_RECV_MESSAGE }
     end
   end
 
+  def test_errors_on_small_terminal_window_at_the_end
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+...0000000000000000000000000000000000000000000000000000000000000000 + 1.time {}
+                                                                       ^^^^^
+    END
+
+    100000000000000000000000000000000000000000000000000000000000000000000000000000 + 1.time {}
+    end
+  end
+
+  def test_errors_on_small_terminal_window_at_the_beginning
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+      1.time { 10000000000000000000000000000000000000000000000000000000000000...
+       ^^^^^
+    END
+
+      1.time { 100000000000000000000000000000000000000000000000000000000000000000000000000000 }
+
+    end
+  end
+
+  def test_errors_on_small_terminal_window_at_the_middle_near_beginning
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+    100000000000000000000000000000000000000 + 1.time { 1000000000000000000000...
+                                               ^^^^^
+    END
+
+    100000000000000000000000000000000000000 + 1.time { 100000000000000000000000000000000000000 }
+    end
+  end
+
+  def test_errors_on_small_terminal_window_at_the_middle
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+...000000000000000000000000000000000 + 1.time { 10000000000000000000000000000...
+                                        ^^^^^
+    END
+
+    10000000000000000000000000000000000000000000000000000000000000000000000 + 1.time { 1000000000000000000000000000000 }
+    end
+  end
+
+  def test_errors_on_extremely_small_terminal_window
+    custom_max_width = 30
+    original_max_width = ErrorHighlight::DefaultFormatter.max_snippet_width
+
+    ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+...00000000 + 1.time { 1000...
+               ^^^^^
+    END
+
+      100000000000000 + 1.time { 100000000000000 }
+    end
+  ensure
+    ErrorHighlight::DefaultFormatter.max_snippet_width = original_max_width
+  end
+
+  def test_errors_on_terminal_window_smaller_than_min_width
+    custom_max_width = 5
+    original_max_width = ErrorHighlight::DefaultFormatter.max_snippet_width
+    min_snippet_width = ErrorHighlight::DefaultFormatter::MIN_SNIPPET_WIDTH
+
+    warning = nil
+    original_warn = Warning.instance_method(:warn)
+    Warning.class_eval do
+      remove_method(:warn)
+      define_method(:warn) {|str| warning = str}
+    end
+    begin
+      ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
+    ensure
+      Warning.class_eval do
+        remove_method(:warn)
+        define_method(:warn, original_warn)
+      end
+    end
+    assert_match "'max_snippet_width' adjusted to minimum value of #{min_snippet_width}", warning
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+...000 + 1.time {...
+          ^^^^^
+    END
+
+    100000000000000 + 1.time { 100000000000000 }
+    end
+  ensure
+    ErrorHighlight::DefaultFormatter.max_snippet_width = original_max_width
+  end
+
+  def test_errors_on_terminal_window_when_truncation_is_disabled
+    custom_max_width = nil
+    original_max_width = ErrorHighlight::DefaultFormatter.max_snippet_width
+
+    ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for #{ ONE_RECV_MESSAGE }
+
+      10000000000000000000000000000000000000000000000000000000000000000000000 + 1.time { 1000000000000000000000000000000 }
+                                                                                 ^^^^^
+    END
+
+      10000000000000000000000000000000000000000000000000000000000000000000000 + 1.time { 1000000000000000000000000000000 }
+    end
+  ensure
+    ErrorHighlight::DefaultFormatter.max_snippet_width = original_max_width
+  end
+
+  def test_errors_on_small_terminal_window_when_larger_than_viewport
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `timessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss!' for #{ ONE_RECV_MESSAGE }
+
+      1.timesssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    END
+
+      1.timessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss!
+    end
+  end
+
+  def test_errors_on_small_terminal_window_when_exact_size_of_viewport
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `timessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss!' for #{ ONE_RECV_MESSAGE }
+
+      1.timessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss!...
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    END
+
+      1.timessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss! * 1000
+    end
+  end
+
   def test_simulate_funcallv_from_embedded_ruby
     assert_error_message(NoMethodError, <<~END) do
 undefined method `foo' for #{ NIL_RECV_MESSAGE }
@@ -1285,6 +1439,199 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
     rescue NoMethodError => exc
       def exc.backtrace_locations = []
       raise
+    end
+  end
+
+  begin
+    ->{}.call(1)
+  rescue ArgumentError => exc
+    MethodDefLocationSupported =
+      RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location) &&
+      RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(exc.backtrace_locations.first)
+  end
+
+  def process_callee_snippet(str)
+    return str if MethodDefLocationSupported
+
+    str.sub(/\n +\|.*\n +\^+\n\z/, "")
+  end
+
+  WRONG_NUMBER_OF_ARGUMENTS_LINENO = __LINE__ + 1
+  def wrong_number_of_arguments_test(x, y)
+    x + y
+  end
+
+  def test_wrong_number_of_arguments_for_method
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       wrong_number_of_arguments_test(1)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ WRONG_NUMBER_OF_ARGUMENTS_LINENO }
+    |   def wrong_number_of_arguments_test(x, y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    END
+
+      wrong_number_of_arguments_test(1)
+    end
+  end
+
+  KEYWORD_TEST_LINENO = __LINE__ + 1
+  def keyword_test(kw1:, kw2:, kw3:)
+    kw1 + kw2 + kw3
+  end
+
+  def test_missing_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+missing keyword: :kw3 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       keyword_test(kw1: 1, kw2: 2)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    |   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^
+    END
+
+      keyword_test(kw1: 1, kw2: 2)
+    end
+  end
+
+  def test_missing_keywords # multiple missing keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+missing keywords: :kw2, :kw3 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       keyword_test(kw1: 1)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    |   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^
+    END
+
+      keyword_test(kw1: 1)
+    end
+  end
+
+  def test_unknown_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+unknown keyword: :kw4 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    |   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^
+    END
+
+      keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4)
+    end
+  end
+
+  def test_unknown_keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+unknown keywords: :kw4, :kw5 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4, kw5: 5)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    |   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^
+    END
+
+      keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4, kw5: 5)
+    end
+  end
+
+  WRONG_NUBMER_OF_ARGUMENTS_TEST2_LINENO = __LINE__ + 1
+  def wrong_number_of_arguments_test2(
+    long_argument_name_x,
+    long_argument_name_y,
+    long_argument_name_z
+  )
+    long_argument_name_x + long_argument_name_y + long_argument_name_z
+  end
+
+  def test_wrong_number_of_arguments_for_method2
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+wrong number of arguments (given 1, expected 3) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       wrong_number_of_arguments_test2(1)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ WRONG_NUBMER_OF_ARGUMENTS_TEST2_LINENO }
+    |   def wrong_number_of_arguments_test2(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    END
+
+      wrong_number_of_arguments_test2(1)
+    end
+  end
+
+  def test_wrong_number_of_arguments_for_lambda_literal
+    v = -> {}
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+wrong number of arguments (given 1, expected 0) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       v.call(1)
+             ^^^^^
+    callee: #{ __FILE__ }:#{ lineno - 1 }
+    |     v = -> {}
+              ^^
+    END
+
+      v.call(1)
+    end
+  end
+
+  def test_wrong_number_of_arguments_for_lambda_method
+    v = lambda { }
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+wrong number of arguments (given 1, expected 0) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       v.call(1)
+             ^^^^^
+    callee: #{ __FILE__ }:#{ lineno - 1 }
+    |     v = lambda { }
+                     ^
+    END
+
+      v.call(1)
+    end
+  end
+
+  DEFINE_METHOD_TEST_LINENO = __LINE__ + 1
+  define_method :define_method_test do |x, y|
+    x + y
+  end
+
+  def test_wrong_number_of_arguments_for_define_method
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       define_method_test(1)
+            ^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ DEFINE_METHOD_TEST_LINENO }
+    |   define_method :define_method_test do |x, y|
+                                          ^^
+    END
+
+      define_method_test(1)
     end
   end
 
@@ -1354,6 +1701,54 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
     actual_spot = ErrorHighlight.spot(node)
 
     assert_equal expected_spot, actual_spot
+  end
+
+  module SingletonMethodWithSpacing
+    LINENO = __LINE__ + 1
+    def self . baz(x:)
+      x
+    end
+  end
+
+  def test_singleton_method_with_spacing_missing_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+missing keyword: :x (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       SingletonMethodWithSpacing.baz
+                                      ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodWithSpacing::LINENO }
+    |     def self . baz(x:)
+                   ^^^^^
+    END
+
+      SingletonMethodWithSpacing.baz
+    end
+  end
+
+  module SingletonMethodMultipleKwargs
+    LINENO = __LINE__ + 1
+    def self.run(shop_id:, param1:)
+      shop_id + param1
+    end
+  end
+
+  def test_singleton_method_multiple_missing_keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, process_callee_snippet(<<~END)) do
+missing keywords: :shop_id, :param1 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 12 }
+    |       SingletonMethodMultipleKwargs.run
+                                         ^^^^
+    callee: #{ __FILE__ }:#{ SingletonMethodMultipleKwargs::LINENO }
+    |     def self.run(shop_id:, param1:)
+                  ^^^^
+    END
+
+      SingletonMethodMultipleKwargs.run
+    end
   end
 
   private

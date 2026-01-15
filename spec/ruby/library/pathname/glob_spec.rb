@@ -21,6 +21,10 @@ describe 'Pathname.glob' do
     Pathname.glob(@dir + 'lib/*.js').should == []
   end
 
+  it 'returns [] when the pathname does not exist' do
+    Pathname.glob('i_dont_exist/lib/*.js').should == []
+  end
+
   it 'returns matching file paths' do
     Pathname.glob(@dir + 'lib/*i*.rb').sort.should == [Pathname.new(@file_1), Pathname.new(@file_2)].sort
   end
@@ -65,6 +69,10 @@ describe 'Pathname#glob' do
 
   it 'returns [] for no match' do
     Pathname.new(@dir).glob('lib/*.js').should == []
+  end
+
+  it 'returns [] when the pathname does not exist' do
+    Pathname.new('./i_dont_exist').glob('lib/*.js').should == []
   end
 
   it 'returns matching file paths' do

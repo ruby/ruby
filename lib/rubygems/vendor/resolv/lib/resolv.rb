@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
 require 'socket'
-require_relative '../../timeout/lib/timeout'
+require_relative '../../../vendored_timeout'
 require 'io/wait'
-
-begin
-  require_relative '../../../vendored_securerandom'
-rescue LoadError
-end
+require_relative '../../../vendored_securerandom'
 
 # Gem::Resolv is a thread-aware DNS resolver library written in Ruby.  Gem::Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -37,7 +33,7 @@ end
 
 class Gem::Resolv
 
-  VERSION = "0.4.0"
+  VERSION = "0.6.2"
 
   ##
   # Looks up the first IP address for +name+.
@@ -83,9 +79,22 @@ class Gem::Resolv
 
   ##
   # Creates a new Gem::Resolv using +resolvers+.
+  #
+  # If +resolvers+ is not given, a hash, or +nil+, uses a Hosts resolver and
+  # and a DNS resolver.  If +resolvers+ is a hash, uses the hash as
+  # configuration for the DNS resolver.
 
-  def initialize(resolvers=nil, use_ipv6: nil)
-    @resolvers = resolvers || [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(use_ipv6: use_ipv6))]
+  def initialize(resolvers=(arg_not_set = true; nil), use_ipv6: (keyword_not_set = true; nil))
+    if !keyword_not_set && !arg_not_set
+      warn "Support for separate use_ipv6 keyword is deprecated, as it is ignored if an argument is provided. Do not provide a positional argument if using the use_ipv6 keyword argument.", uplevel: 1
+    end
+
+    @resolvers = case resolvers
+    when Hash, nil
+      [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(resolvers || {}))]
+    else
+      resolvers
+    end
   end
 
   ##
@@ -164,13 +173,16 @@ class Gem::Resolv
 
   class ResolvTimeout < Gem::Timeout::Error; end
 
+  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+  private_constant :WINDOWS
+
   ##
   # Gem::Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+    if WINDOWS
       begin
-        require 'win32/resolv'
+        require 'win32/resolv' unless defined?(Win32::Resolv)
         DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
@@ -396,13 +408,15 @@ class Gem::Resolv
     # be a Gem::Resolv::IPv4 or Gem::Resolv::IPv6
 
     def each_address(name)
-      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
       if use_ipv6?
         each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
       end
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
     end
 
     def use_ipv6? # :nodoc:
+      @config.lazy_initialize unless @config.instance_variable_get(:@initialized)
+
       use_ipv6 = @config.use_ipv6?
       unless use_ipv6.nil?
         return use_ipv6
@@ -513,35 +527,40 @@ class Gem::Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      begin
-        requester = make_udp_requester
+      truncated = {}
+      requesters = {}
+      udp_requester = begin
+        make_udp_requester
       rescue Errno::EACCES
         # fall back to TCP
       end
       senders = {}
+
       begin
-        @config.resolv(name) {|candidate, tout, nameserver, port|
-          requester ||= make_tcp_requester(nameserver, port)
+        @config.resolv(name) do |candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
-          unless sender = senders[[candidate, nameserver, port]]
+
+          requester = requesters.fetch([nameserver, port]) do
+            if !truncated[candidate] && udp_requester
+              udp_requester
+            else
+              requesters[[nameserver, port]] = make_tcp_requester(nameserver, port)
+            end
+          end
+
+          unless sender = senders[[candidate, requester, nameserver, port]]
             sender = requester.sender(msg, candidate, nameserver, port)
             next if !sender
-            senders[[candidate, nameserver, port]] = sender
+            senders[[candidate, requester, nameserver, port]] = sender
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
-              requester.close
               # Retry via TCP:
-              requester = make_tcp_requester(nameserver, port)
-              senders = {}
-              # This will use TCP for all remaining candidates (assuming the
-              # current candidate does not already respond successfully via
-              # TCP).  This makes sense because we already know the full
-              # response will not fit in an untruncated UDP packet.
+              truncated[candidate] = true
               redo
             else
               yield(reply, reply_name)
@@ -552,9 +571,10 @@ class Gem::Resolv
           else
             raise Config::OtherResolvError.new(reply_name.to_s)
           end
-        }
+        end
       ensure
-        requester&.close
+        udp_requester&.close
+        requesters.each_value { |requester| requester&.close }
       end
     end
 
@@ -569,6 +589,11 @@ class Gem::Resolv
 
     def make_tcp_requester(host, port) # :nodoc:
       return Requester::TCP.new(host, port)
+    rescue Errno::ECONNREFUSED
+      # Treat a refused TCP connection attempt to a nameserver like a timeout,
+      # as Gem::Resolv::DNS::Config#resolv considers ResolvTimeout exceptions as a
+      # hint to try the next nameserver:
+      raise ResolvTimeout
     end
 
     def extract_resources(msg, name, typeclass) # :nodoc:
@@ -602,16 +627,10 @@ class Gem::Resolv
       }
     end
 
-    if defined? Gem::SecureRandom
-      def self.random(arg) # :nodoc:
-        begin
-          Gem::SecureRandom.random_number(arg)
-        rescue NotImplementedError
-          rand(arg)
-        end
-      end
-    else
-      def self.random(arg) # :nodoc:
+    def self.random(arg) # :nodoc:
+      begin
+        Gem::SecureRandom.random_number(arg)
+      rescue NotImplementedError
         rand(arg)
       end
     end
@@ -643,8 +662,20 @@ class Gem::Resolv
       }
     end
 
-    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
-      begin
+    case RUBY_PLATFORM
+    when *[
+      # https://www.rfc-editor.org/rfc/rfc6056.txt
+      # Appendix A. Survey of the Algorithms in Use by Some Popular Implementations
+      /freebsd/, /linux/, /netbsd/, /openbsd/, /solaris/,
+      /darwin/, # the same as FreeBSD
+    ] then
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        udpsock.bind(bind_host, 0)
+      end
+    else
+      # Sequential port assignment
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        # Ephemeral port number range recommended by RFC 6056
         port = random(1024..65535)
         udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE, # POSIX
@@ -967,13 +998,13 @@ class Gem::Resolv
             next unless keyword
             case keyword
             when 'nameserver'
-              nameserver.concat(args)
+              nameserver.concat(args.each(&:freeze))
             when 'domain'
               next if args.empty?
-              search = [args[0]]
+              search = [args[0].freeze]
             when 'search'
               next if args.empty?
-              search = args
+              search = args.each(&:freeze)
             when 'options'
               args.each {|arg|
                 case arg
@@ -984,22 +1015,22 @@ class Gem::Resolv
             end
           }
         }
-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
+        return { :nameserver => nameserver.freeze, :search => search.freeze, :ndots => ndots.freeze }.freeze
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
-          config_hash = Config.parse_resolv_conf(filename)
+          Config.parse_resolv_conf(filename)
+        elsif WINDOWS
+          require 'win32/resolv' unless defined?(Win32::Resolv)
+          search, nameserver = Win32::Resolv.get_resolv_info
+          config_hash = {}
+          config_hash[:nameserver] = nameserver if nameserver
+          config_hash[:search] = [search].flatten if search
+          config_hash
         else
-          if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
-            require 'win32/resolv'
-            search, nameserver = Win32::Resolv.get_resolv_info
-            config_hash = {}
-            config_hash[:nameserver] = nameserver if nameserver
-            config_hash[:search] = [search].flatten if search
-          end
+          {}
         end
-        config_hash || {}
       end
 
       def lazy_initialize
@@ -1648,6 +1679,7 @@ class Gem::Resolv
           prev_index = @index
           save_index = nil
           d = []
+          size = -1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1668,7 +1700,10 @@ class Gem::Resolv
               end
               @index = idx
             else
-              d << self.get_label
+              l = self.get_label
+              d << l
+              size += 1 + l.string.bytesize
+              raise DecodeError.new("name label data exceed 255 octets") if size > 255
             end
           end
         end
@@ -1799,7 +1834,6 @@ class Gem::Resolv
         end
       end
     end
-
 
     ##
     # Base class for SvcParam. [RFC9460]
@@ -2095,7 +2129,14 @@ class Gem::Resolv
 
       attr_reader :ttl
 
-      ClassHash = {} # :nodoc:
+      ClassHash = Module.new do
+        module_function
+
+        def []=(type_class_value, klass)
+          type_value, class_value = type_class_value
+          Resource.const_set(:"Type#{type_value}_Class#{class_value}", klass)
+        end
+      end
 
       def encode_rdata(msg) # :nodoc:
         raise NotImplementedError.new
@@ -2133,7 +2174,9 @@ class Gem::Resolv
       end
 
       def self.get_class(type_value, class_value) # :nodoc:
-        return ClassHash[[type_value, class_value]] ||
+        cache = :"Type#{type_value}_Class#{class_value}"
+
+        return (const_defined?(cache) && const_get(cache)) ||
                Generic.create(type_value, class_value)
       end
 
@@ -2499,7 +2542,6 @@ class Gem::Resolv
 
         attr_reader :altitude
 
-
         def encode_rdata(msg) # :nodoc:
           msg.put_bytes(@version)
           msg.put_bytes(@ssize.scalar)
@@ -2563,7 +2605,7 @@ class Gem::Resolv
         end
 
         ##
-        # Flags for this proprty:
+        # Flags for this property:
         # - Bit 0 : 0 = not critical, 1 = critical
 
         attr_reader :flags
@@ -3439,4 +3481,3 @@ class Gem::Resolv
   AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 
 end
-

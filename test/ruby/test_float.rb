@@ -129,9 +129,9 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(a, 0, Float::EPSILON)
     a = Float("-.0")
     assert_in_delta(a, 0, Float::EPSILON)
-    assert_raise(ArgumentError){Float("0.")}
-    assert_raise(ArgumentError){Float("+0.")}
-    assert_raise(ArgumentError){Float("-0.")}
+    assert_equal(0.0, Float("0."))
+    assert_equal(0.0, Float("+0."))
+    assert_equal(0.0, Float("-0."))
     assert_raise(ArgumentError){Float(".")}
     assert_raise(ArgumentError){Float("+")}
     assert_raise(ArgumentError){Float("+.")}
@@ -139,12 +139,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("-.")}
     assert_raise(ArgumentError){Float("1e")}
     assert_raise(ArgumentError){Float("1__1")}
-    assert_raise(ArgumentError){Float("1.")}
-    assert_raise(ArgumentError){Float("1.e+00")}
-    assert_raise(ArgumentError){Float("0x.1")}
-    assert_raise(ArgumentError){Float("0x1.")}
-    assert_raise(ArgumentError){Float("0x1.0")}
-    assert_raise(ArgumentError){Float("0x1.p+0")}
+    assert_equal(1.0, Float("1."))
+    assert_equal(1.0, Float("1.e+00"))
+    assert_equal(0.0625, Float("0x.1"))
+    assert_equal(1.0, Float("0x1."))
+    assert_equal(1.0, Float("0x1.0"))
+    assert_equal(1.0, Float("0x1.p+0"))
     # add expected behaviour here.
     assert_equal(10, Float("1_0"))
 
@@ -191,7 +191,7 @@ class TestFloat < Test::Unit::TestCase
         break
       end
     end
-    assert_nil(x, ->{"%a" % x})
+    assert_equal(1.0, x, ->{"%a" % x})
   end
 
   def test_divmod
@@ -833,11 +833,15 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(15, Float('0xf'))
     assert_equal(15, Float('0xfp0'))
     assert_raise(ArgumentError) { Float('0xfp') }
-    assert_raise(ArgumentError) { Float('0xf.') }
+    assert_equal(15, Float('0xf.'))
     assert_raise(ArgumentError) { Float('0xf.p') }
-    assert_raise(ArgumentError) { Float('0xf.p0') }
-    assert_raise(ArgumentError) { Float('0xf.f') }
+    assert_equal(15, Float('0xf.p0'))
+    assert_equal(15.9375, Float('0xf.f'))
     assert_raise(ArgumentError) { Float('0xf.fp') }
+    assert_equal(0x10a, Float("0x1_0a"))
+    assert_equal(1.625, Float("0x1.a_0"))
+    assert_equal(3.25, Float("0x1.ap0_1"))
+    assert_raise(ArgumentError) { Float("0x1.ap0a") }
     begin
       verbose_bak, $VERBOSE = $VERBOSE, nil
       assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
@@ -857,7 +861,9 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32le"))}
     assert_raise(Encoding::CompatibilityError) {Float("0".encode("iso-2022-jp"))}
 
-    assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Float("\u{1f4a1}")}
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Float("\u{1f4a1}")}
+    end
   end
 
   def test_invalid_str

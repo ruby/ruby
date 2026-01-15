@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative 'shared/extract_range'
 require 'strscan'
@@ -29,6 +29,60 @@ describe "StringScanner#getch" do
     s = StringScanner.new('a')
     s.getch # skip one
     s.getch.should == nil
+  end
+
+  describe "#[] successive call with a capture group name" do
+    # https://github.com/ruby/strscan/issues/139
+    version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
+      it "returns nil" do
+        s = StringScanner.new("This is a test")
+        s.getch
+        s.should.matched?
+        s[:a].should be_nil
+      end
+    end
+    version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
+      it "raises IndexError" do
+        s = StringScanner.new("This is a test")
+        s.getch
+        s.should.matched?
+        -> { s[:a] }.should raise_error(IndexError)
+      end
+    end
+
+    it "returns a matching character when given Integer index" do
+      s = StringScanner.new("This is a test")
+      s.getch
+      s[0].should == "T"
+    end
+
+    # https://github.com/ruby/strscan/issues/135
+    version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
+      it "ignores the previous matching with Regexp" do
+        s = StringScanner.new("This is a test")
+
+        s.exist?(/(?<a>This)/)
+        s.should.matched?
+        s[:a].should == "This"
+
+        s.getch
+        s.should.matched?
+        s[:a].should be_nil
+      end
+    end
+    version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
+      it "ignores the previous matching with Regexp" do
+        s = StringScanner.new("This is a test")
+
+        s.exist?(/(?<a>This)/)
+        s.should.matched?
+        s[:a].should == "This"
+
+        s.getch
+        s.should.matched?
+        -> { s[:a] }.should raise_error(IndexError)
+      end
+    end
   end
 
   it_behaves_like :extract_range, :getch

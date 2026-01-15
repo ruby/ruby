@@ -29,16 +29,17 @@
 #include "ruby/util.h"
 #include "ruby/io.h"
 #include "vm_callinfo.h"
-#include "vm_core.h"
+#include "vm_sync.h"
 
 RUBY_EXTERN const char ruby_hexdigits[];
 
 #define BUFFER_CAPACITY 4096
 
 struct dump_config {
-    VALUE type;
-    VALUE stream;
+    VALUE given_output;
+    VALUE output_io;
     VALUE string;
+    FILE *stream;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
@@ -58,7 +59,7 @@ dump_flush(struct dump_config *dc)
 {
     if (dc->buffer_len) {
         if (dc->stream) {
-            size_t written = rb_io_bufwrite(dc->stream, dc->buffer, dc->buffer_len);
+            size_t written = fwrite(dc->buffer, sizeof(dc->buffer[0]), dc->buffer_len, dc->stream);
             if (written < dc->buffer_len) {
                 MEMMOVE(dc->buffer, dc->buffer + written, char, dc->buffer_len - written);
                 dc->buffer_len -= written;
@@ -384,8 +385,6 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t memsize;
     struct allocation_info *ainfo = objspace_lookup_allocation_info(obj);
     rb_io_t *fptr;
-    ID flags[RB_OBJ_GC_FLAGS_MAX];
-    size_t n, i;
     ID mid;
 
     if (SPECIAL_CONST_P(obj)) {
@@ -395,9 +394,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
-    if (BUILTIN_TYPE(obj) == T_NODE || BUILTIN_TYPE(obj) == T_IMEMO) {
+    if (BUILTIN_TYPE(obj) == T_NODE || (BUILTIN_TYPE(obj) == T_IMEMO && !IMEMO_TYPE_P(obj, imemo_fields))) {
         dc->cur_obj_klass = 0;
-    } else {
+    }
+    else {
         dc->cur_obj_klass = RBASIC_CLASS(obj);
     }
 
@@ -415,9 +415,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_shape_get_shape_id(obj);
-    dump_append(dc, ", \"shape_id\":");
-    dump_append_sizet(dc, shape_id);
+    if (BUILTIN_TYPE(obj) != T_IMEMO || IMEMO_TYPE_P(obj, imemo_fields)) {
+        size_t shape_id = rb_obj_shape_id(obj) & SHAPE_ID_OFFSET_MASK;
+        dump_append(dc, ", \"shape_id\":");
+        dump_append_sizet(dc, shape_id);
+    }
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
@@ -449,13 +451,16 @@ dump_object(VALUE obj, struct dump_config *dc)
             break;
 
           case imemo_callcache:
-            mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
-            if (mid != 0) {
-                dump_append(dc, ", \"called_id\":");
-                dump_append_id(dc, mid);
-
+            {
                 VALUE klass = ((const struct rb_callcache *)obj)->klass;
-                if (klass != 0) {
+                if (klass != Qundef) {
+                    mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+                    if (mid != 0) {
+                        dump_append(dc, ", \"called_id\":");
+                        dump_append_id(dc, mid);
+
+                    }
+
                     dump_append(dc, ", \"receiver_class\":");
                     dump_append_ref(dc, klass);
                 }
@@ -538,7 +543,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
         dump_append(dc, ", \"variation_count\":");
-        dump_append_d(dc, RCLASS_EXT(obj)->variation_count);
+        dump_append_d(dc, rb_class_variation_count(obj));
 
       case T_MODULE:
         if (rb_class_get_superclass(obj)) {
@@ -549,9 +554,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         if (dc->cur_obj_klass) {
             VALUE mod_name = rb_mod_name(obj);
             if (!NIL_P(mod_name)) {
-                dump_append(dc, ", \"name\":\"");
-                dump_append(dc, RSTRING_PTR(mod_name));
-                dump_append(dc, "\"");
+                dump_append(dc, ", \"name\":");
+                dump_append_string_value(dc, mod_name);
             }
             else {
                 VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
@@ -562,7 +566,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (RCLASS_SINGLETON_P(obj)) {
+            if (rb_class_singleton_p(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }
@@ -583,13 +587,13 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_OBJECT:
-        if (FL_TEST(obj, ROBJECT_EMBED)) {
+        if (!FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             dump_append(dc, ", \"embedded\":true");
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
-        if (rb_shape_obj_too_complex(obj)) {
+        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
+        if (rb_shape_obj_too_complex_p(obj)) {
             dump_append(dc, ", \"too_complex_shape\":true");
         }
         break;
@@ -638,14 +642,24 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_sizet(dc, memsize);
     }
 
-    if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
-        dump_append(dc, ", \"flags\":{");
-        for (i=0; i<n; i++) {
-            dump_append(dc, "\"");
-            dump_append(dc, rb_id2name(flags[i]));
-            dump_append(dc, "\":true");
-            if (i != n-1) dump_append(dc, ", ");
+    struct rb_gc_object_metadata_entry *gc_metadata = rb_gc_object_metadata(obj);
+    for (int i = 0; gc_metadata[i].name != 0; i++) {
+        if (i == 0) {
+            dump_append(dc, ", \"flags\":{");
         }
+        else {
+            dump_append(dc, ", ");
+        }
+
+        dump_append(dc, "\"");
+        dump_append(dc, rb_id2name(gc_metadata[i].name));
+        dump_append(dc, "\":");
+        dump_append_special_const(dc, gc_metadata[i].val);
+    }
+
+    /* If rb_gc_object_metadata had any entries, we need to close the opening
+     * `"flags":{`. */
+    if (gc_metadata[0].name != 0) {
         dump_append(dc, "}");
     }
 
@@ -658,15 +672,15 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
     struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
         dc->cur_page_slot_size = stride;
 
         if (dc->full_heap || RBASIC(v)->flags)
             dump_object(v, dc);
 
         if (ptr) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0;
@@ -697,16 +711,34 @@ root_obj_i(const char *category, VALUE obj, void *data)
 static void
 dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
-
+    dc->given_output = output;
     dc->full_heap = 0;
     dc->buffer_len = 0;
 
     if (TYPE(output) == T_STRING) {
-        dc->stream = Qfalse;
+        dc->stream = NULL;
         dc->string = output;
     }
     else {
-        dc->stream = output;
+        rb_io_t *fptr;
+        // Output should be an IO, typecheck and get a FILE* for writing.
+        // We cannot write with the usual IO code here because writes
+        // interleave with calls to rb_gc_mark(). The usual IO code can
+        // cause a thread switch, raise exceptions, and even run arbitrary
+        // ruby code through the fiber scheduler.
+        //
+        // Mark functions generally can't handle these possibilities so
+        // the usual IO code is unsafe in this context. (For example,
+        // there are many ways to crash when ruby code runs and mutates
+        // the execution context while rb_execution_context_mark() is in
+        // progress.)
+        //
+        // Using FILE* isn't perfect, but it avoids the most acute problems.
+        output = rb_io_get_io(output);
+        dc->output_io = rb_io_get_write_io(output);
+        rb_io_flush(dc->output_io);
+        GetOpenFile(dc->output_io, fptr);
+        dc->stream = rb_io_stdio_file(fptr);
         dc->string = Qfalse;
     }
 
@@ -730,24 +762,25 @@ dump_result(struct dump_config *dc)
 {
     dump_flush(dc);
 
+    if (dc->stream) {
+        fflush(dc->stream);
+    }
     if (dc->string) {
         return dc->string;
     }
-    else {
-        rb_io_flush(dc->stream);
-        return dc->stream;
-    }
+    return dc->given_output;
 }
 
-/* :nodoc: */
 static VALUE
-objspace_dump(VALUE os, VALUE obj, VALUE output)
+dump_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE obj = ((VALUE*)args_p)[0];
+    VALUE output = ((VALUE*)args_p)[1];
+
     if (!RB_SPECIAL_CONST_P(obj)) {
         dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
     }
-
     dump_output(&dc, output, Qnil, Qnil, Qnil);
 
     dump_object(obj, &dc);
@@ -755,69 +788,73 @@ objspace_dump(VALUE os, VALUE obj, VALUE output)
     return dump_result(&dc);
 }
 
+/* :nodoc: */
+static VALUE
+objspace_dump(VALUE os, VALUE obj, VALUE output)
+{
+    VALUE args[2];
+    args[0] = obj;
+    args[1] = output;
+    return rb_vm_lock_with_barrier(dump_locked, (void*)args);
+}
+
 static void
-shape_i(rb_shape_t *shape, void *data)
+shape_id_i(shape_id_t shape_id, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    size_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
 
     dump_append(dc, "{\"address\":");
-    dump_append_ref(dc, (VALUE)shape);
+    dump_append_ref(dc, (VALUE)RSHAPE(shape_id));
 
     dump_append(dc, ", \"type\":\"SHAPE\", \"id\":");
     dump_append_sizet(dc, shape_id);
 
-    if (shape->type != SHAPE_ROOT) {
+    if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, shape->parent_id);
+        dump_append_lu(dc, RSHAPE_PARENT_RAW_ID(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");
-    dump_append_sizet(dc, rb_shape_depth(shape));
+    dump_append_sizet(dc, rb_shape_depth(shape_id));
 
-    dump_append(dc, ", \"shape_type\":");
-    switch((enum shape_type)shape->type) {
+    switch (RSHAPE_TYPE(shape_id)) {
       case SHAPE_ROOT:
-        dump_append(dc, "\"ROOT\"");
+        dump_append(dc, ", \"shape_type\":\"ROOT\"");
         break;
       case SHAPE_IVAR:
-        dump_append(dc, "\"IVAR\"");
+        dump_append(dc, ", \"shape_type\":\"IVAR\"");
 
         dump_append(dc, ",\"edge_name\":");
-        dump_append_id(dc, shape->edge_name);
+        dump_append_id(dc, RSHAPE_EDGE_NAME(shape_id));
 
         break;
-      case SHAPE_FROZEN:
-        dump_append(dc, "\"FROZEN\"");
+      case SHAPE_OBJ_ID:
+        dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
         break;
-      case SHAPE_T_OBJECT:
-        dump_append(dc, "\"T_OBJECT\"");
-        break;
-      case SHAPE_OBJ_TOO_COMPLEX:
-        dump_append(dc, "\"OBJ_TOO_COMPLEX\"");
-        break;
-      default:
-        rb_bug("[objspace] unexpected shape type");
     }
 
     dump_append(dc, ", \"edges\":");
-    dump_append_sizet(dc, rb_shape_edges_count(shape));
+    dump_append_sizet(dc, rb_shape_edges_count(shape_id));
 
     dump_append(dc, ", \"memsize\":");
-    dump_append_sizet(dc, rb_shape_memsize(shape));
+    dump_append_sizet(dc, rb_shape_memsize(shape_id));
 
     dump_append(dc, "}\n");
 }
 
-/* :nodoc: */
 static VALUE
-objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
+dump_all_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE output = ((VALUE*)args_p)[0];
+    VALUE full = ((VALUE*)args_p)[1];
+    VALUE since = ((VALUE*)args_p)[2];
+    VALUE shapes = ((VALUE*)args_p)[3];
+
     dump_output(&dc, output, full, since, shapes);
 
     if (!dc.partial_dump || dc.since == 0) {
@@ -827,7 +864,7 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
     }
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
 
     /* dump all objects */
@@ -838,15 +875,39 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 
 /* :nodoc: */
 static VALUE
-objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
+objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
+{
+    VALUE args[4];
+    args[0] = output;
+    args[1] = full;
+    args[2] = since;
+    args[3] = shapes;
+    return rb_vm_lock_with_barrier(dump_all_locked, (void*)args);
+}
+
+static VALUE
+dump_shapes_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE output = ((VALUE*)args_p)[0];
+    VALUE shapes = ((VALUE*)args_p)[1];
+
     dump_output(&dc, output, Qfalse, Qnil, shapes);
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
     return dump_result(&dc);
+}
+
+/* :nodoc: */
+static VALUE
+objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
+{
+    VALUE args[2];
+    args[0] = output;
+    args[1] = shapes;
+    return rb_vm_lock_with_barrier(dump_shapes_locked, (void*)args);
 }
 
 void
@@ -856,11 +917,11 @@ Init_objspace_dump(VALUE rb_mObjSpace)
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
 
     rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);
     rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 4);
     rb_define_module_function(rb_mObjSpace, "_dump_shapes", objspace_dump_shapes, 2);
-
-    /* force create static IDs */
-    rb_obj_gc_flags(rb_mObjSpace, 0, 0);
 }

@@ -1,18 +1,12 @@
 # -*- frozen-string-literal: true -*-
 
 # :stopdoc:
+module Gem
+end
+# :startdoc:
 
-module Gem::BUNDLED_GEMS
+module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
-    "rexml" => "3.0.0",
-    "rss" => "3.0.0",
-    "webrick" => "3.0.0",
-    "matrix" => "3.1.0",
-    "net-ftp" => "3.1.0",
-    "net-imap" => "3.1.0",
-    "net-pop" => "3.1.0",
-    "net-smtp" => "3.1.0",
-    "prime" => "3.1.0",
     "racc" => "3.3.0",
     "abbrev" => "3.4.0",
     "base64" => "3.4.0",
@@ -26,30 +20,21 @@ module Gem::BUNDLED_GEMS
     "resolv-replace" => "3.4.0",
     "rinda" => "3.4.0",
     "syslog" => "3.4.0",
-    "ostruct" => "3.5.0",
-    "pstore" => "3.5.0",
-    "rdoc" => "3.5.0",
-    "win32ole" => "3.5.0",
-    "fiddle" => "3.5.0",
-    "logger" => "3.5.0",
-    "benchmark" => "3.5.0",
-    "irb" => "3.5.0",
-    "reline" => "3.5.0",
-    # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
+    "ostruct" => "4.0.0",
+    "pstore" => "4.0.0",
+    "rdoc" => "4.0.0",
+    "win32ole" => "4.0.0",
+    "fiddle" => "4.0.0",
+    "logger" => "4.0.0",
+    "benchmark" => "4.0.0",
+    "irb" => "4.0.0",
+    "reline" => "4.0.0",
+    # "readline" => "4.0.0", # This is wrapper for reline. We don't warn for this.
+    "tsort" => "4.1.0",
   }.freeze
-
-  SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
 
   EXACT = {
     "kconv" => "nkf",
-  }.freeze
-
-  PREFIXED = {
-    "bigdecimal" => true,
-    "csv" => true,
-    "drb" => true,
-    "rinda" => true,
-    "syslog" => true,
   }.freeze
 
   WARNED = {}                   # unfrozen
@@ -70,11 +55,7 @@ module Gem::BUNDLED_GEMS
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
         if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
-          if ::Gem::BUNDLED_GEMS.uplevel > 0
-            Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
-          else
-            Kernel.warn message
-          end
+          Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
         end
         kernel_class.send(:no_warning_require, name)
       end
@@ -88,108 +69,93 @@ module Gem::BUNDLED_GEMS
 
   def self.uplevel
     frame_count = 0
-    frames_to_skip = 3
+    require_labels = ["replace_require", "require"]
     uplevel = 0
     require_found = false
     Thread.each_caller_location do |cl|
       frame_count += 1
-      if frames_to_skip >= 1
-        frames_to_skip -= 1
-        next
-      end
-      uplevel += 1
+
       if require_found
-        if cl.base_label != "require"
+        unless require_labels.include?(cl.base_label)
           return uplevel
         end
       else
-        if cl.base_label == "require"
+        if require_labels.include?(cl.base_label)
           require_found = true
         end
       end
+      uplevel += 1
       # Don't show script name when bundle exec and call ruby script directly.
       if cl.path.end_with?("bundle")
-        frame_count = 0
-        break
+        return
       end
     end
-    require_found ? 1 : frame_count - 1
-  end
-
-  def self.find_gem(path)
-    if !path
-      return
-    elsif path.start_with?(ARCHDIR)
-      n = path.delete_prefix(ARCHDIR).sub(DLEXT, "")
-    elsif path.start_with?(LIBDIR)
-      n = path.delete_prefix(LIBDIR).chomp(".rb")
-    else
-      return
-    end
-    (EXACT[n] || !!SINCE[n]) or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
+    require_found ? 1 : (frame_count - 1).nonzero?
   end
 
   def self.warning?(name, specs: nil)
     # name can be a feature name or a file path with String or Pathname
-    feature = File.path(name)
-
-    # irb already has reline as a dependency on gemspec, so we don't want to warn about it.
-    # We should update this with a more general solution when we have another case.
-    # ex: Gem.loaded_specs[called_gem].dependencies.any? {|d| d.name == feature }
-    return false if feature.start_with?("reline") && caller_locations(2, 1)[0].to_s.include?("irb")
+    feature = File.path(name).sub(LIBEXT, "")
 
     # The actual checks needed to properly identify the gem being required
     # are costly (see [Bug #20641]), so we first do a much cheaper check
     # to exclude the vast majority of candidates.
-    if feature.include?("/")
-      # If requiring $LIBDIR/mutex_m.rb, we check SINCE_FAST_PATH["mutex_m"]
-      # We'll fail to warn requires for files that are not the entry point
-      # of the gem, e.g. require "logger/formatter.rb" won't warn.
-      # But that's acceptable because this warning is best effort,
-      # and in the overwhelming majority of cases logger.rb will end
-      # up required.
-      return unless SINCE_FAST_PATH[File.basename(feature, ".*")]
+    subfeature = if feature.include?("/")
+      # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
+      # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
+      feature.delete_prefix!(ARCHDIR)
+      feature.delete_prefix!(LIBDIR)
+      # 1. A segment for the EXACT mapping and SINCE check
+      # 2. A segment for the SINCE check for dashed names
+      # 3. A segment to check if there's a subfeature
+      segments = feature.split("/", 3)
+      name = segments.shift
+      name = EXACT[name] || name
+      if !SINCE[name]
+        name = "#{name}-#{segments.shift}"
+        return unless SINCE[name]
+      end
+      segments.any?
     else
-      return unless SINCE_FAST_PATH[feature]
+      name = EXACT[feature] || feature
+      return unless SINCE[name]
+      false
     end
 
-    # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
-    # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
-    name = feature.delete_prefix(ARCHDIR)
-    name.delete_prefix!(LIBDIR)
-    name.tr!("/", "-")
-    name.sub!(LIBEXT, "")
     return if specs.include?(name)
-    _t, path = $:.resolve_feature_path(feature)
-    if gem = find_gem(path)
-      return if specs.include?(gem)
-      caller = caller_locations(3, 3)&.find {|c| c&.absolute_path}
-      return if find_gem(caller&.absolute_path)
-    elsif SINCE[name] && !path
-      gem = true
-    else
-      return
+
+    # Don't warn if a hyphenated gem provides this feature
+    # (e.g., benchmark-ips provides benchmark/ips, not the benchmark gem)
+    if subfeature
+      feature_parts = feature.split("/")
+      if feature_parts.size >= 2
+        hyphenated_gem = "#{feature_parts[0]}-#{feature_parts[1]}"
+        return if specs.include?(hyphenated_gem)
+      end
     end
 
     return if WARNED[name]
     WARNED[name] = true
-    if gem == true
-      gem = name
-      "#{feature} was loaded from the standard library, but"
-    elsif gem
-      return if WARNED[gem]
-      WARNED[gem] = true
-      "#{feature} is found in #{gem}, which"
+
+    level = RUBY_VERSION < SINCE[name] ? :warning : :error
+
+    if subfeature
+      "#{feature} is found in #{name}, which"
     else
-      return
-    end + build_message(gem)
+      "#{feature} #{level == :warning ? "was loaded" : "used to be loaded"} from the standard library, but"
+    end + build_message(name, level)
   end
 
-  def self.build_message(gem)
-    msg = " #{RUBY_VERSION < SINCE[gem] ? "will no longer be" : "is not"} part of the default gems starting from Ruby #{SINCE[gem]}."
+  def self.build_message(name, level)
+    msg = if level == :warning
+      " will no longer be part of the default gems starting from Ruby #{SINCE[name]}"
+    else
+      " is not part of the default gems since Ruby #{SINCE[name]}."
+    end
 
     if defined?(Bundler)
-      msg += "\nYou can add #{gem} to your Gemfile or gemspec to silence this warning."
+      motivation = level == :warning ? "silence this warning" : "fix this error"
+      msg += "\nYou can add #{name} to your Gemfile or gemspec to #{motivation}."
 
       # We detect the gem name from caller_locations. First we walk until we find `require`
       # then take the first frame that's not from `require`.
@@ -227,31 +193,64 @@ module Gem::BUNDLED_GEMS
           end
         end
         if caller_gem
-          msg += "\nAlso please contact the author of #{caller_gem} to request adding #{gem} into its gemspec."
+          msg += "\nAlso please contact the author of #{caller_gem} to request adding #{name} into its gemspec."
         end
       end
     else
-      msg += " Install #{gem} from RubyGems."
+      msg += " Install #{name} from RubyGems."
     end
 
     msg
   end
 
-  freeze
+  def self.force_activate(gem)
+    require "bundler"
+    Bundler.reset!
+
+    builder = Bundler::Dsl.new
+
+    if Bundler::SharedHelpers.in_bundle?
+      if Bundler.locked_gems
+        Bundler.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
+      elsif Bundler.definition.gemfiles.size > 0
+        Bundler.definition.gemfiles.each{|gemfile| builder.eval_gemfile(gemfile) }
+      end
+    end
+
+    builder.gem gem
+
+    definition = builder.to_definition(nil, true)
+    definition.validate_runtime!
+
+    begin
+      orig_ui = Bundler.ui
+      orig_no_lock = Bundler::Definition.no_lock
+
+      ui = Bundler::UI::Shell.new
+      ui.level = "silent"
+      Bundler.ui = ui
+      Bundler::Definition.no_lock = true
+
+      Bundler::Runtime.new(nil, definition).setup
+    rescue Bundler::GemNotFound
+      warn "Failed to activate #{gem}, please install it with 'gem install #{gem}'"
+    ensure
+      Bundler.ui = orig_ui
+      Bundler::Definition.no_lock = orig_no_lock
+    end
+  end
 end
 
 # for RubyGems without Bundler environment.
 # If loading library is not part of the default gems and the bundled gems, warn it.
 class LoadError
-  def message
+  def message # :nodoc:
     return super unless path
 
     name = path.tr("/", "-")
     if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[name] && !Gem::BUNDLED_GEMS::WARNED[name]
-      warn name + Gem::BUNDLED_GEMS.build_message(name), uplevel: Gem::BUNDLED_GEMS.uplevel
+      warn name + Gem::BUNDLED_GEMS.build_message(name, :error), uplevel: Gem::BUNDLED_GEMS.uplevel
     end
     super
   end
 end
-
-# :startdoc:

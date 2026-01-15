@@ -4,36 +4,43 @@ require_relative 'utils'
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
 
 class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
-  NEW_KEYLEN = 2048
-
   def test_new_empty
-    dh = OpenSSL::PKey::DH.new
-    assert_equal nil, dh.p
-    assert_equal nil, dh.priv_key
-  end
-
-  def test_new_generate
-    # This test is slow
-    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
-    assert_key(dh)
-  end if ENV["OSSL_TEST_ALL"]
-
-  def test_new_break_on_non_fips
-    omit_on_fips
-
-    assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-    assert_raise(RuntimeError) do
-      OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
+    # pkeys are immutable with OpenSSL >= 3.0
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::DH.new }
+    else
+      dh = OpenSSL::PKey::DH.new
+      assert_nil(dh.p)
+      assert_nil(dh.priv_key)
     end
   end
 
-  def test_new_break_on_fips
-    omit_on_non_fips
+  def test_new_generate
+    begin
+      dh1 = OpenSSL::PKey::DH.new(512)
+    rescue OpenSSL::PKey::PKeyError
+      omit "generating 512-bit DH parameters failed; " \
+        "likely not supported by this OpenSSL build"
+    end
+    assert_equal(512, dh1.p.num_bits)
+    assert_key(dh1)
 
-    # The block argument is not executed in FIPS case.
-    # See https://github.com/ruby/openssl/issues/692 for details.
-    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise })
+    dh2 = OpenSSL::PKey::DH.generate(512)
+    assert_equal(512, dh2.p.num_bits)
+    assert_key(dh2)
+    assert_not_equal(dh1.p, dh2.p)
+  end if ENV["OSSL_TEST_ALL"] == "1"
+
+  def test_new_break
+    unless openssl? && OpenSSL.fips_mode
+      assert_raise(RuntimeError) do
+        OpenSSL::PKey::DH.new(2048) { raise }
+      end
+    else
+      # The block argument is not executed in FIPS case.
+      # See https://github.com/ruby/openssl/issues/692 for details.
+      assert_kind_of(OpenSSL::PKey::DH, OpenSSL::PKey::DH.new(2048) { raise })
+    end
   end
 
   def test_derive_key
@@ -55,15 +62,15 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_DHparams
-    dh = Fixtures.pkey("dh2048_ffdhe2048")
-    dh_params = dh.public_key
+    dh_params = Fixtures.pkey("dh2048_ffdhe2048")
 
     asn1 = OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh.p),
-      OpenSSL::ASN1::Integer(dh.g)
+      OpenSSL::ASN1::Integer(dh_params.p),
+      OpenSSL::ASN1::Integer(dh_params.g)
     ])
+    assert_equal(asn1.to_der, dh_params.to_der)
     key = OpenSSL::PKey::DH.new(asn1.to_der)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
 
     pem = <<~EOF
     -----BEGIN DH PARAMETERS-----
@@ -75,14 +82,20 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
     -----END DH PARAMETERS-----
     EOF
+    assert_equal(pem, dh_params.export)
 
     key = OpenSSL::PKey::DH.new(pem)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
+    assert_no_key(key)
     key = OpenSSL::PKey.read(pem)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
+    assert_no_key(key)
 
-    assert_equal asn1.to_der, dh.to_der
-    assert_equal pem, dh.export
+    key = OpenSSL::PKey.generate_key(dh_params)
+    assert_same_dh_params(dh_params, key)
+    assert_key(key)
+    assert_equal(dh_params.to_der, key.to_der)
+    assert_equal(dh_params.to_pem, key.to_pem)
   end
 
   def test_public_key
@@ -95,23 +108,25 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_generate_key
     # Deprecated in v3.0.0; incompatible with OpenSSL 3.0
-    # Creates a copy with params only
-    dh = Fixtures.pkey("dh2048_ffdhe2048").public_key
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
 
-    dh2 = dh.public_key
+    dh2 = OpenSSL::PKey::DH.new(dh.to_der)
     dh2.generate_key!
+    assert_not_equal(dh.pub_key, dh2.pub_key)
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
   end if !openssl?(3, 0, 0)
 
   def test_params_ok?
+    omit_on_fips
+
     # Skip the tests in old OpenSSL version 1.1.1c or early versions before
     # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
     # function pass the RFC 7919 FFDHE group texts.
     # https://github.com/openssl/openssl/pull/9435
-    unless openssl?(1, 1, 1, 4)
+    if openssl? && !openssl?(1, 1, 1, 4)
       pend 'DH check for RFC 7919 FFDHE group texts is not implemented'
     end
 
@@ -123,11 +138,41 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ]))
     assert_equal(true, dh1.params_ok?)
 
-    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh0.p + 1),
-      OpenSSL::ASN1::Integer(dh0.g)
-    ]))
-    assert_equal(false, dh2.params_ok?)
+    # AWS-LC automatically does parameter checks on the parsed params.
+    if aws_lc?
+      assert_raise(OpenSSL::PKey::PKeyError) {
+        OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(dh0.p + 1),
+          OpenSSL::ASN1::Integer(dh0.g)
+        ]))
+      }
+    else
+      dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::Integer(dh0.p + 1),
+        OpenSSL::ASN1::Integer(dh0.g)
+      ]))
+      assert_equal(false, dh2.params_ok?)
+    end
+
+  end
+
+  def test_params
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
+    assert_kind_of(OpenSSL::BN, dh.p)
+    assert_equal(dh.p, dh.params["p"])
+    assert_kind_of(OpenSSL::BN, dh.g)
+    assert_equal(dh.g, dh.params["g"])
+    assert_nil(dh.pub_key)
+    assert_nil(dh.params["pub_key"])
+    assert_nil(dh.priv_key)
+    assert_nil(dh.params["priv_key"])
+
+    dhkey = OpenSSL::PKey.generate_key(dh)
+    assert_equal(dh.params["p"], dhkey.params["p"])
+    assert_kind_of(OpenSSL::BN, dhkey.pub_key)
+    assert_equal(dhkey.pub_key, dhkey.params["pub_key"])
+    assert_kind_of(OpenSSL::BN, dhkey.priv_key)
+    assert_equal(dhkey.priv_key, dhkey.params["priv_key"])
   end
 
   def test_dup
@@ -176,14 +221,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def assert_key(dh)
-    assert(dh.public?)
-    assert(dh.private?)
-    assert(dh.pub_key)
-    assert(dh.priv_key)
+    assert_true(dh.public?)
+    assert_true(dh.private?)
+    assert_kind_of(OpenSSL::BN, dh.pub_key)
+    assert_kind_of(OpenSSL::BN, dh.priv_key)
   end
 
-  def assert_same_dh(expected, key)
-    check_component(expected, key, [:p, :q, :g, :pub_key, :priv_key])
+  def assert_same_dh_params(expected, key)
+    check_component(expected, key, [:p, :q, :g])
   end
 end
 

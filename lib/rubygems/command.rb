@@ -117,7 +117,7 @@ class Gem::Command
   # Unhandled arguments (gem names, files, etc.) are left in
   # <tt>options[:args]</tt>.
 
-  def initialize(command, summary=nil, defaults={})
+  def initialize(command, summary = nil, defaults = {})
     @command = command
     @summary = summary
     @program_name = "gem #{command}"
@@ -650,9 +650,6 @@ RubyGems is a package manager for Ruby.
     gem help platforms           gem platforms guide
     gem help <COMMAND>           show help on COMMAND
                                    (e.g. 'gem help install')
-    gem server                   present a web page at
-                                 http://localhost:8808/
-                                 with info about installed gems
   Further information:
     https://guides.rubygems.org
   HELP

@@ -11,8 +11,6 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     super
 
     @cmd = Gem::Commands::HelpCommand.new
-
-    load File.expand_path("rubygems_plugin.rb", __dir__) unless Gem::Commands.const_defined? :InterruptCommand
   end
 
   def test_gem_help_bad
@@ -38,7 +36,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
   def test_gem_help_build
     util_gem "build" do |out, err|
-      assert_match(/-C PATH *Run as if gem build was started in <PATH>/, out)
+      assert_match(/--platform PLATFORM\s+Specify the platform of gem to build/, out)
       assert_equal "", err
     end
   end

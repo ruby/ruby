@@ -15,8 +15,12 @@ pm_constant_id_list_init(pm_constant_id_list_t *list) {
  */
 void
 pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity) {
-    list->ids = xcalloc(capacity, sizeof(pm_constant_id_t));
-    if (list->ids == NULL) abort();
+    if (capacity) {
+        list->ids = xcalloc(capacity, sizeof(pm_constant_id_t));
+        if (list->ids == NULL) abort();
+    } else {
+        list->ids = NULL;
+    }
 
     list->size = 0;
     list->capacity = capacity;
@@ -260,7 +264,7 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
                 // constant and replace it with the shared constant.
                 xfree((void *) constant->start);
                 constant->start = start;
-                bucket->type = (unsigned int) (PM_CONSTANT_POOL_BUCKET_DEFAULT & 0x3);
+                bucket->type = (unsigned int) (type & 0x3);
             }
 
             return bucket->id;

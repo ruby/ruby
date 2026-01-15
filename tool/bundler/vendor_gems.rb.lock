@@ -1,0 +1,75 @@
+GIT
+  remote: https://github.com/cocoapods/molinillo.git
+  revision: 1d62d7d5f448e79418716dc779a4909509ccda2a
+  ref: 1d62d7d5f448e79418716dc779a4909509ccda2a
+  specs:
+    molinillo (0.8.0)
+
+GIT
+  remote: https://github.com/jhawthorn/pub_grub.git
+  revision: df6add45d1b4d122daff2f959c9bd1ca93d14261
+  ref: df6add45d1b4d122daff2f959c9bd1ca93d14261
+  specs:
+    pub_grub (0.5.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    connection_pool (2.5.4)
+    fileutils (1.8.0)
+    net-http (0.7.0)
+      uri
+    net-http-persistent (4.0.6)
+      connection_pool (~> 2.2, >= 2.2.4)
+    net-protocol (0.2.2)
+      timeout
+    optparse (0.8.0)
+    resolv (0.6.2)
+    securerandom (0.4.1)
+    thor (1.4.0)
+    timeout (0.4.4)
+    tsort (0.2.0)
+    uri (1.1.1)
+
+PLATFORMS
+  java
+  ruby
+  universal-java
+  x64-mingw-ucrt
+  x64-mswin64-140
+  x86_64-darwin
+  x86_64-linux
+
+DEPENDENCIES
+  fileutils (= 1.8.0)
+  molinillo!
+  net-http (= 0.7.0)
+  net-http-persistent (= 4.0.6)
+  net-protocol (= 0.2.2)
+  optparse (= 0.8.0)
+  pub_grub!
+  resolv (= 0.6.2)
+  securerandom (= 0.4.1)
+  thor (= 1.4.0)
+  timeout (= 0.4.4)
+  tsort (= 0.2.0)
+  uri (= 1.1.1)
+
+CHECKSUMS
+  connection_pool (2.5.4) sha256=e9e1922327416091f3f6542f5f4446c2a20745276b9aa796dd0bb2fd0ea1e70a
+  fileutils (1.8.0) sha256=8c6b1df54e2540bdb2f39258f08af78853aa70bad52b4d394bbc6424593c6e02
+  molinillo (0.8.0)
+  net-http (0.7.0) sha256=4db7d9f558f8ffd4dcf832d0aefd02320c569c7d4f857def49e585069673a425
+  net-http-persistent (4.0.6) sha256=2abb3a04438edf6cb9e0e7e505969605f709eda3e3c5211beadd621a2c84dd5d
+  net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8
+  optparse (0.8.0) sha256=ef6b7fbaf7ec331474f325bc08dd5622e6e1e651007a5341330ee4b08ce734f0
+  pub_grub (0.5.0)
+  resolv (0.6.2) sha256=61efe545cedddeb1b14f77e51f85c85ca66af5098fdbf567fadf32c34590fb14
+  securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
+  thor (1.4.0) sha256=8763e822ccb0f1d7bee88cde131b19a65606657b847cc7b7b4b82e772bcd8a3d
+  timeout (0.4.4) sha256=f0f6f970104b82427cd990680f539b6bbb8b1e55efa913a55c6492935e4e0edb
+  tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
+  uri (1.1.1) sha256=379fa58d27ffb1387eaada68c749d1426738bd0f654d812fcc07e7568f5c57c6
+
+BUNDLED WITH
+  4.0.0.dev

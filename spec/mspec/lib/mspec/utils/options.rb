@@ -204,6 +204,13 @@ class MSpecOptions
        "Load FILE containing configuration options", &block)
   end
 
+  def env
+    on("--env", "KEY=VALUE", "Set environment variable") do |env|
+      key, value = env.split('=', 2)
+      ENV[key] = value
+    end
+  end
+
   def targets
     on("-t", "--target", "TARGET",
        "Implementation to run the specs, where TARGET is:") do |t|
@@ -482,8 +489,17 @@ class MSpecOptions
     end
   end
 
+  def launchable
+    on("--launchable-test-reports", "DIR",
+       "DIR The directory for reporting test results in Launchable JSON format") do |o|
+      require 'mspec/runner/formatters/launchable'
+      config[:launchable] = LaunchableFormatter.setDir(o)
+    end
+  end
+
   def all
     configure {}
+    env
     targets
     formatters
     filters
@@ -500,5 +516,6 @@ class MSpecOptions
     action_filters
     actions
     debug
+    launchable
   end
 end

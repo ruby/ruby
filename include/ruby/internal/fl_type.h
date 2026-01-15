@@ -59,10 +59,8 @@
 #define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)         /**< @old{RUBY_FL_WB_PROTECTED} */
 #define FL_PROMOTED     RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED)             /**< @old{RUBY_FL_PROMOTED} */
 #define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)             /**< @old{RUBY_FL_FINALIZE} */
-#define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)                /**< @old{RUBY_FL_TAINT} */
 #define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)            /**< @old{RUBY_FL_SHAREABLE} */
 #define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)            /**< @old{RUBY_FL_UNTRUSTED} */
-#define FL_SEEN_OBJ_ID  RBIMPL_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)          /**< @old{RUBY_FL_SEEN_OBJ_ID} */
 #define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)               /**< @old{RUBY_FL_EXIVAR} */
 #define FL_FREEZE       RBIMPL_CAST((VALUE)RUBY_FL_FREEZE)               /**< @old{RUBY_FL_FREEZE} */
 
@@ -218,11 +216,11 @@ ruby_fl_type {
     RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag is no longer in use
+     * This flag meaning is type dependent, currently only used by T_DATA.
      *
      * @internal
      */
-    RUBY_FL_UNUSED6    = (1<<6),
+    RUBY_FL_USERPRIV0    = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
@@ -239,16 +237,16 @@ ruby_fl_type {
     RUBY_FL_FINALIZE     = (1<<7),
 
     /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
+     * @deprecated  This flag was an implementation detail that should never have
+     *              no been exposed. Exists  here for  backwards
      *              compatibility only.  You can safely forget about it.
      */
-    RUBY_FL_TAINT
+    RUBY_FL_EXIVAR
 
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+    RBIMPL_ATTR_DEPRECATED(("FL_EXIVAR is an outdated implementation detail, it should not be used."))
 #elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_TAINT)
+# pragma deprecated(RUBY_FL_EXIVAR)
 #endif
 
                          = 0,
@@ -265,52 +263,19 @@ ruby_fl_type {
      */
     RUBY_FL_SHAREABLE    = (1<<8),
 
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_UNTRUSTED
+   /**
+    * This object weakly refers to other objects.
+    *
+    * @internal
+    */
+    RUBY_FL_WEAK_REFERENCE = (1<<9),
 
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_UNTRUSTED)
-#endif
-
-                         = 0,
-
-    /**
-     * This flag has something to do with  object IDs.  Unlike in the old days,
-     * an object's object  ID (that a user can  query using `Object#object_id`)
-     * is no longer its physical address represented using Ruby level integers.
-     * It is  now a  monotonic-increasing integer  unrelated to  the underlying
-     * memory arrangement.  Object IDs are assigned when necessary; objects are
-     * born without one,  and will eventually have such  property when queried.
-     * The interpreter has to manage which one is which.  This is the flag that
-     * helps the  management.  Objects  with this  flag set  are the  ones with
-     * object IDs assigned.
-     *
-     * @internal
-     *
-     * But honestly, @shyouhei  doesn't think this flag should  be visible from
-     * 3rd parties.  It must be an implementation detail that they should never
-     * know.  Might better be hidden.
-     */
-    RUBY_FL_SEEN_OBJ_ID  = (1<<9),
-
-    /**
-     * This flag has something to do with instance variables.  3rd parties need
-     * not  know, but  there are  several ways  to store  an object's  instance
-     * variables.   Objects  with this  flag  use  so-called "generic"  backend
-     * storage.  This  distinction is purely an  implementation detail.  People
-     * need not be aware of this working behind-the-scene.
-     *
-     * @internal
-     *
-     * As of writing everything except ::RObject and RModule use this scheme.
-     */
-    RUBY_FL_EXIVAR       = (1<<10),
+   /**
+    * This flag is no longer in use
+    *
+    * @internal
+    */
+    RUBY_FL_UNUSED10 = (1<<10),
 
     /**
      * This flag has something to do with data immutability.  When this flag is
@@ -370,7 +335,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_ELTS_SHARED  = RUBY_FL_USER2,
+    RUBY_ELTS_SHARED  = RUBY_FL_USER0,
 
     /**
      * This flag has something to do with an object's class.  There are kind of
@@ -396,23 +361,6 @@ ruby_fl_type {
      * know.  Might better be hidden.
      */
     RUBY_FL_SINGLETON = RUBY_FL_USER1,
-};
-
-enum {
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_DUPPED
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_DUPPED)
-#endif
-
-    = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
 };
 
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
@@ -446,10 +394,8 @@ RB_FL_ABLE(VALUE obj)
     if (RB_SPECIAL_CONST_P(obj)) {
         return false;
     }
-    else if (RB_TYPE_P(obj, RUBY_T_NODE)) {
-        return false;
-    }
     else {
+        RBIMPL_ASSERT_OR_ASSUME(!RB_TYPE_P(obj, RUBY_T_NODE));
         return true;
     }
 }
@@ -739,128 +685,6 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
     if (RB_FL_ABLE(obj)) {
         RB_FL_REVERSE_RAW(obj, flags);
     }
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTABLE(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline VALUE
-RB_OBJ_TAINTED_RAW(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTED(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT_RAW(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

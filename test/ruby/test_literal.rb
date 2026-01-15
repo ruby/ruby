@@ -97,6 +97,12 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "ab", eval("?a 'b'")
     assert_equal "a\nb", eval("<<A 'b'\na\nA")
 
+    assert_raise(SyntaxError) {eval('"\C-' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\C-\\' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\M-' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\M-\\' "\u3042" '"')}
+
+    assert_equal "\x09 \xC9 \x89", eval('"\C-\111 \M-\111 \M-\C-\111"')
   ensure
     $VERBOSE = verbose_bak
   end
@@ -674,6 +680,11 @@ class TestRubyLiteral < Test::Unit::TestCase
 
   ensure
     $VERBOSE = verbose_bak
+  end
+
+  def test_rational_float
+    assert_equal(12, 0.12r * 100)
+    assert_equal(12, 0.1_2r * 100)
   end
 
   def test_symbol_list

@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef _WIN32
 # include "missing/file.h"
@@ -131,6 +132,14 @@ int flock(int, int);
 # define STAT(p, s)      stat((p), (s))
 #endif /* _WIN32 */
 
+#ifdef HAVE_STRUCT_STATX_STX_BTIME
+# define ST_(name) stx_ ## name
+typedef struct statx_timestamp stat_timestamp;
+#else
+# define ST_(name) st_ ## name
+typedef struct timespec stat_timestamp;
+#endif
+
 #if defined _WIN32 || defined __APPLE__
 # define USE_OSPATH 1
 # define TO_OSPATH(str) rb_str_encode_ospath(str)
@@ -171,6 +180,13 @@ int flock(int, int);
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+
+#define UIANY2NUM(x) \
+    ((sizeof(x) <= sizeof(unsigned int)) ? \
+     UINT2NUM((unsigned)(x)) : \
+     (sizeof(x) <= sizeof(unsigned long)) ? \
+     ULONG2NUM((unsigned long)(x)) : \
+     ULL2NUM((unsigned LONG_LONG)(x)))
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
@@ -271,6 +287,18 @@ rb_str_encode_ospath(VALUE path)
 # define NORMALIZE_UTF8PATH 1
 
 # ifdef HAVE_WORKING_FORK
+static CFMutableStringRef
+mutable_CFString_new(CFStringRef *s, const char *ptr, long len)
+{
+    const CFAllocatorRef alloc = kCFAllocatorDefault;
+    *s = CFStringCreateWithBytesNoCopy(alloc, (const UInt8 *)ptr, len,
+                                       kCFStringEncodingUTF8, FALSE,
+                                       kCFAllocatorNull);
+    return CFStringCreateMutableCopy(alloc, len, *s);
+}
+
+#   define mutable_CFString_release(m, s) (CFRelease(m), CFRelease(s))
+
 static void
 rb_CFString_class_initialize_before_fork(void)
 {
@@ -297,15 +325,17 @@ rb_CFString_class_initialize_before_fork(void)
     /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
     const char small_str[] = "/";
     long len = sizeof(small_str) - 1;
-
-    const CFAllocatorRef alloc = kCFAllocatorDefault;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(alloc,
-                                                  (const UInt8 *)small_str,
-                                                  len, kCFStringEncodingUTF8,
-                                                  FALSE, kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(alloc, len, s);
-    CFRelease(m);
-    CFRelease(s);
+    CFStringRef s;
+    /*
+     * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
+     * shipped with macOS 15.0 24A5331b does not return `NSTaggedPointerString`
+     * instance for the first call (totally not sure why). CoreFoundation
+     * shipped with macOS 15.1 does not have this issue.
+     */
+    for (int i = 0; i < 2; i++) {
+        CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
+        mutable_CFString_release(m, s);
+    }
 }
 # endif /* HAVE_WORKING_FORK */
 
@@ -314,11 +344,8 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
     CFIndex buflen = 0;
     CFRange all;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault,
-                                                  (const UInt8 *)ptr, len,
-                                                  kCFStringEncodingUTF8, FALSE,
-                                                  kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(kCFAllocatorDefault, len, s);
+    CFStringRef s;
+    CFMutableStringRef m = mutable_CFString_new(&s, ptr, len);
     long oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
@@ -328,8 +355,7 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
     CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE,
                      (UInt8 *)(RSTRING_PTR(str) + oldlen), buflen, &buflen);
     rb_str_set_len(str, oldlen + buflen);
-    CFRelease(m);
-    CFRelease(s);
+    mutable_CFString_release(m, s);
     return str;
 }
 
@@ -348,7 +374,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
         int r = rb_enc_precise_mbclen(p, e, enc);
         if (!MBCLEN_CHARFOUND_P(r)) {
             /* invalid byte shall not happen but */
-            static const char invalid[3] = "\xEF\xBF\xBD";
+            RBIMPL_ATTR_NONSTRING() static const char invalid[3] = "\xEF\xBF\xBD";
             rb_str_append_normalized_ospath(str, p1, p-p1);
             rb_str_cat(str, invalid, sizeof(invalid));
             p += 1;
@@ -483,6 +509,10 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     return LONG2FIX(argc);
 }
 
+static stat_timestamp stat_atimespec(const struct stat *st);
+static stat_timestamp stat_mtimespec(const struct stat *st);
+static stat_timestamp stat_ctimespec(const struct stat *st);
+
 static const rb_data_type_t stat_data_type = {
     "stat",
     {
@@ -494,29 +524,67 @@ static const rb_data_type_t stat_data_type = {
 };
 
 struct rb_stat {
-    struct stat stat;
+    rb_io_stat_data stat;
     bool initialized;
 };
 
-static VALUE
-stat_new_0(VALUE klass, const struct stat *st)
+static struct rb_stat *
+stat_alloc(VALUE klass, VALUE *obj)
 {
     struct rb_stat *rb_st;
-    VALUE obj = TypedData_Make_Struct(klass, struct rb_stat, &stat_data_type, rb_st);
+    *obj = TypedData_Make_Struct(klass, struct rb_stat, &stat_data_type, rb_st);
+    return rb_st;
+}
+
+VALUE
+rb_stat_new(const struct stat *st)
+{
+    VALUE obj;
+    struct rb_stat *rb_st = stat_alloc(rb_cStat, &obj);
+    if (st) {
+#if RUBY_USE_STATX
+# define CP(m) .stx_ ## m = st->st_ ## m
+# define CP_32(m) .stx_ ## m = (uint32_t)st->st_ ## m
+# define CP_TS(m) .stx_ ## m = stat_ ## m ## spec(st)
+        rb_st->stat = (struct statx){
+            .stx_mask = STATX_BASIC_STATS,
+            CP(mode),
+            CP_32(nlink),
+            CP(uid),
+            CP(gid),
+            CP_TS(atime),
+            CP_TS(mtime),
+            CP_TS(ctime),
+            CP(ino),
+            CP(size),
+            CP(blocks),
+        };
+# undef CP
+# undef CP_TS
+#else
+        rb_st->stat = *st;
+#endif
+        rb_st->initialized = true;
+    }
+
+    return obj;
+}
+
+#ifndef rb_statx_new
+VALUE
+rb_statx_new(const rb_io_stat_data *st)
+{
+    VALUE obj;
+    struct rb_stat *rb_st = stat_alloc(rb_cStat, &obj);
     if (st) {
         rb_st->stat = *st;
         rb_st->initialized = true;
     }
     return obj;
 }
+#endif
 
-VALUE
-rb_stat_new(const struct stat *st)
-{
-    return stat_new_0(rb_cStat, st);
-}
-
-static struct stat*
+static rb_io_stat_data*
 get_stat(VALUE self)
 {
     struct rb_stat* rb_st;
@@ -525,29 +593,51 @@ get_stat(VALUE self)
     return &rb_st->stat;
 }
 
-static struct timespec stat_mtimespec(const struct stat *st);
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_mtimespec(const rb_io_stat_data *st)
+{
+    return st->stx_mtime;
+}
+#else
+# define statx_mtimespec stat_mtimespec
+#endif
 
 /*
  *  call-seq:
- *     stat <=> other_stat    -> -1, 0, 1, nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares File::Stat objects by comparing their respective modification
- *  times.
+ *  Compares +self+ and +other+, by comparing their modification times;
+ *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
  *
- *  +nil+ is returned if +other_stat+ is not a File::Stat object
+ *  Returns:
  *
- *     f1 = File.new("f1", "w")
- *     sleep 1
- *     f2 = File.new("f2", "w")
- *     f1.stat <=> f2.stat   #=> -1
+ *  - +-1+, if <tt>self.mtime</tt> is earlier.
+ *  - +0+, if the two values are equal.
+ *  - +1+, if <tt>self.mtime</tt> is later.
+ *  - +nil+, if +other+ is not a File::Stat object.
+ *
+ *  Examples:
+ *
+ *    stat0 = File.stat('README.md')
+ *    stat1 = File.stat('NEWS.md')
+ *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
+ *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
+ *    stat0 <=> stat1     # => -1
+ *    stat0 <=> stat0.dup # => 0
+ *    stat1 <=> stat0     # => 1
+ *    stat0 <=> :foo      # => nil
+ *
+ *  \Class \File::Stat includes module Comparable,
+ *  each of whose methods uses File::Stat#<=> for comparison.
  */
 
 static VALUE
 rb_stat_cmp(VALUE self, VALUE other)
 {
     if (rb_obj_is_kind_of(other, rb_obj_class(self))) {
-        struct timespec ts1 = stat_mtimespec(get_stat(self));
-        struct timespec ts2 = stat_mtimespec(get_stat(other));
+        stat_timestamp ts1 = statx_mtimespec(get_stat(self));
+        stat_timestamp ts2 = statx_mtimespec(get_stat(other));
         if (ts1.tv_sec == ts2.tv_sec) {
             if (ts1.tv_nsec == ts2.tv_nsec) return INT2FIX(0);
             if (ts1.tv_nsec < ts2.tv_nsec) return INT2FIX(-1);
@@ -584,7 +674,11 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
-#if SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
+#if RUBY_USE_STATX
+    unsigned int m = get_stat(self)->stx_dev_major;
+    unsigned int n = get_stat(self)->stx_dev_minor;
+    return ULL2NUM(makedev(m, n));
+#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_dev);
 #elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
     return ULONG2NUM(get_stat(self)->st_dev);
@@ -607,7 +701,9 @@ rb_stat_dev(VALUE self)
 static VALUE
 rb_stat_dev_major(VALUE self)
 {
-#if defined(major)
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_dev_major);
+#elif defined(major)
     return UINT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
@@ -628,7 +724,9 @@ rb_stat_dev_major(VALUE self)
 static VALUE
 rb_stat_dev_minor(VALUE self)
 {
-#if defined(minor)
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_dev_minor);
+#elif defined(minor)
     return UINT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
@@ -648,16 +746,15 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
+    rb_io_stat_data *ptr = get_stat(self);
 #ifdef HAVE_STRUCT_STAT_ST_INOHIGH
     /* assume INTEGER_PACK_LSWORD_FIRST and st_inohigh is just next of st_ino */
-    return rb_integer_unpack(&get_stat(self)->st_ino, 2,
+    return rb_integer_unpack(&ptr->st_ino, 2,
             SIZEOF_STRUCT_STAT_ST_INO, 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP);
-#elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->st_ino);
 #else
-    return ULONG2NUM(get_stat(self)->st_ino);
+    return UIANY2NUM(ptr->ST_(ino));
 #endif
 }
 
@@ -677,7 +774,7 @@ rb_stat_ino(VALUE self)
 static VALUE
 rb_stat_mode(VALUE self)
 {
-    return UINT2NUM(ST2UINT(get_stat(self)->st_mode));
+    return UINT2NUM(ST2UINT(get_stat(self)->ST_(mode)));
 }
 
 /*
@@ -696,20 +793,9 @@ static VALUE
 rb_stat_nlink(VALUE self)
 {
     /* struct stat::st_nlink is nlink_t in POSIX.  Not the case for Windows. */
-    const struct stat *ptr = get_stat(self);
+    const rb_io_stat_data *ptr = get_stat(self);
 
-    if (sizeof(ptr->st_nlink) <= sizeof(int)) {
-        return UINT2NUM((unsigned)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(long)) {
-        return ULONG2NUM((unsigned long)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(LONG_LONG)) {
-        return ULL2NUM((unsigned LONG_LONG)ptr->st_nlink);
-    }
-    else {
-        rb_bug(":FIXME: don't know what to do");
-    }
+    return UIANY2NUM(ptr->ST_(nlink));
 }
 
 /*
@@ -725,7 +811,7 @@ rb_stat_nlink(VALUE self)
 static VALUE
 rb_stat_uid(VALUE self)
 {
-    return UIDT2NUM(get_stat(self)->st_uid);
+    return UIDT2NUM(get_stat(self)->ST_(uid));
 }
 
 /*
@@ -741,7 +827,7 @@ rb_stat_uid(VALUE self)
 static VALUE
 rb_stat_gid(VALUE self)
 {
-    return GIDT2NUM(get_stat(self)->st_gid);
+    return GIDT2NUM(get_stat(self)->ST_(gid));
 }
 
 /*
@@ -759,16 +845,18 @@ rb_stat_gid(VALUE self)
 static VALUE
 rb_stat_rdev(VALUE self)
 {
-#ifdef HAVE_STRUCT_STAT_ST_RDEV
-# if SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->st_rdev);
-# elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->st_rdev);
-# else
-    return ULL2NUM(get_stat(self)->st_rdev);
-# endif
-#else
+#if RUBY_USE_STATX
+    unsigned int m = get_stat(self)->stx_rdev_major;
+    unsigned int n = get_stat(self)->stx_rdev_minor;
+    return ULL2NUM(makedev(m, n));
+#elif !defined(HAVE_STRUCT_STAT_ST_RDEV)
     return Qnil;
+#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
+    return DEVT2NUM(get_stat(self)->ST_(rdev));
+#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->ST_(rdev));
+#else
+    return ULL2NUM(get_stat(self)->ST_(rdev));
 #endif
 }
 
@@ -786,8 +874,10 @@ rb_stat_rdev(VALUE self)
 static VALUE
 rb_stat_rdev_major(VALUE self)
 {
-#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
-    return UINT2NUM(major(get_stat(self)->st_rdev));
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_rdev_major);
+#elif defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
+    return UINT2NUM(major(get_stat(self)->ST_(rdev)));
 #else
     return Qnil;
 #endif
@@ -807,8 +897,10 @@ rb_stat_rdev_major(VALUE self)
 static VALUE
 rb_stat_rdev_minor(VALUE self)
 {
-#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
-    return UINT2NUM(minor(get_stat(self)->st_rdev));
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_rdev_minor);
+#elif defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
+    return UINT2NUM(minor(get_stat(self)->ST_(rdev)));
 #else
     return Qnil;
 #endif
@@ -826,7 +918,7 @@ rb_stat_rdev_minor(VALUE self)
 static VALUE
 rb_stat_size(VALUE self)
 {
-    return OFFT2NUM(get_stat(self)->st_size);
+    return OFFT2NUM(get_stat(self)->ST_(size));
 }
 
 /*
@@ -844,7 +936,7 @@ static VALUE
 rb_stat_blksize(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
-    return ULONG2NUM(get_stat(self)->st_blksize);
+    return ULONG2NUM(get_stat(self)->ST_(blksize));
 #else
     return Qnil;
 #endif
@@ -866,34 +958,44 @@ rb_stat_blocks(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLOCKS
 # if SIZEOF_STRUCT_STAT_ST_BLOCKS > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->st_blocks);
+    return ULL2NUM(get_stat(self)->ST_(blocks));
 # else
-    return ULONG2NUM(get_stat(self)->st_blocks);
+    return ULONG2NUM(get_stat(self)->ST_(blocks));
 # endif
 #else
     return Qnil;
 #endif
 }
 
-static struct timespec
+static stat_timestamp
 stat_atimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_atime;
 #if defined(HAVE_STRUCT_STAT_ST_ATIM)
-    ts.tv_nsec = st->st_atim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_atim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC)
-    ts.tv_nsec = st->st_atimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_atimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
-    ts.tv_nsec = (long)st->st_atimensec;
+    ts.tv_nsec = (uint32_t)st->st_atimensec;
 #else
-    ts.tv_nsec = 0;
+    ts.tv_nsec = 0
 #endif
     return ts;
 }
 
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_atimespec(const rb_io_stat_data *st)
+{
+    return st->stx_atime;
+}
+#else
+# define statx_atimespec stat_atimespec
+#endif
+
 static VALUE
-stat_time(const struct timespec ts)
+stat_time(const stat_timestamp ts)
 {
     return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
 }
@@ -904,17 +1006,17 @@ stat_atime(const struct stat *st)
     return stat_time(stat_atimespec(st));
 }
 
-static struct timespec
+static stat_timestamp
 stat_mtimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_mtime;
 #if defined(HAVE_STRUCT_STAT_ST_MTIM)
-    ts.tv_nsec = st->st_mtim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_mtim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
-    ts.tv_nsec = st->st_mtimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_mtimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-    ts.tv_nsec = (long)st->st_mtimensec;
+    ts.tv_nsec = (uint32_t)st->st_mtimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -927,22 +1029,32 @@ stat_mtime(const struct stat *st)
     return stat_time(stat_mtimespec(st));
 }
 
-static struct timespec
+static stat_timestamp
 stat_ctimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_ctime;
 #if defined(HAVE_STRUCT_STAT_ST_CTIM)
-    ts.tv_nsec = st->st_ctim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_ctim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMESPEC)
-    ts.tv_nsec = st->st_ctimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_ctimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMENSEC)
-    ts.tv_nsec = (long)st->st_ctimensec;
+    ts.tv_nsec = (uint32_t)st->st_ctimensec;
 #else
     ts.tv_nsec = 0;
 #endif
     return ts;
 }
+
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_ctimespec(const rb_io_stat_data *st)
+{
+    return st->stx_ctime;
+}
+#else
+# define statx_ctimespec stat_ctimespec
+#endif
 
 static VALUE
 stat_ctime(const struct stat *st)
@@ -952,16 +1064,16 @@ stat_ctime(const struct stat *st)
 
 #define HAVE_STAT_BIRTHTIME
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
-typedef struct stat statx_data;
 static VALUE
-stat_birthtime(const struct stat *st)
+statx_birthtime(const rb_io_stat_data *st)
 {
-    const struct timespec *ts = &st->st_birthtimespec;
+    const stat_timestamp *ts = &st->ST_(birthtimespec);
     return rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 }
+#elif defined(HAVE_STRUCT_STATX_STX_BTIME)
+static VALUE statx_birthtime(const rb_io_stat_data *st);
 #elif defined(_WIN32)
-typedef struct stat statx_data;
-# define stat_birthtime stat_ctime
+# define statx_birthtime stat_ctime
 #else
 # undef HAVE_STAT_BIRTHTIME
 #endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
@@ -980,7 +1092,7 @@ typedef struct stat statx_data;
 static VALUE
 rb_stat_atime(VALUE self)
 {
-    return stat_atime(get_stat(self));
+    return stat_time(statx_atimespec(get_stat(self)));
 }
 
 /*
@@ -996,7 +1108,7 @@ rb_stat_atime(VALUE self)
 static VALUE
 rb_stat_mtime(VALUE self)
 {
-    return stat_mtime(get_stat(self));
+    return stat_time(statx_mtimespec(get_stat(self)));
 }
 
 /*
@@ -1016,7 +1128,7 @@ rb_stat_mtime(VALUE self)
 static VALUE
 rb_stat_ctime(VALUE self)
 {
-    return stat_ctime(get_stat(self));
+    return stat_time(statx_ctimespec(get_stat(self)));
 }
 
 #if defined(HAVE_STAT_BIRTHTIME)
@@ -1045,7 +1157,7 @@ rb_stat_ctime(VALUE self)
 static VALUE
 rb_stat_birthtime(VALUE self)
 {
-    return stat_birthtime(get_stat(self));
+    return statx_birthtime(get_stat(self));
 }
 #else
 # define rb_stat_birthtime rb_f_notimplement
@@ -1143,14 +1255,14 @@ no_gvl_fstat(void *data)
 }
 
 static int
-fstat_without_gvl(int fd, struct stat *st)
+fstat_without_gvl(rb_io_t *fptr, struct stat *st)
 {
     no_gvl_stat_data data;
 
-    data.file.fd = fd;
+    data.file.fd = fptr->fd;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_fstat, &data, fd);
+    return (int)rb_io_blocking_region(fptr, no_gvl_fstat, &data);
 }
 
 static void *
@@ -1174,6 +1286,8 @@ stat_without_gvl(const char *path, struct stat *st)
 #if !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
     defined(HAVE_STRUCT_STATX_STX_BTIME)
 
+# define STATX(path, st, mask) statx(AT_FDCWD, path, 0, mask, st)
+
 # ifndef HAVE_STATX
 #   ifdef HAVE_SYSCALL_H
 #     include <syscall.h>
@@ -1191,18 +1305,18 @@ statx(int dirfd, const char *pathname, int flags,
 #   endif /* __linux__ */
 # endif /* HAVE_STATX */
 
-typedef struct no_gvl_statx_data {
+typedef struct no_gvl_rb_io_stat_data {
     struct statx *stx;
     int fd;
     const char *path;
     int flags;
     unsigned int mask;
-} no_gvl_statx_data;
+} no_gvl_rb_io_stat_data;
 
 static VALUE
 io_blocking_statx(void *data)
 {
-    no_gvl_statx_data *arg = data;
+    no_gvl_rb_io_stat_data *arg = data;
     return (VALUE)statx(arg->fd, arg->path, arg->flags, arg->mask, arg->stx);
 }
 
@@ -1213,22 +1327,33 @@ no_gvl_statx(void *data)
 }
 
 static int
-statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
+statx_without_gvl(const char *path, rb_io_stat_data *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, AT_FDCWD, path, 0, mask};
+    no_gvl_rb_io_stat_data data = {stx, AT_FDCWD, path, 0, mask};
 
     /* call statx(2) with pathname */
     return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
 }
 
 static int
-fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
+lstatx_without_gvl(const char *path, rb_io_stat_data *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fd, "", AT_EMPTY_PATH, mask};
+    no_gvl_rb_io_stat_data data = {stx, AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, mask};
+
+    /* call statx(2) with pathname */
+    return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
+}
+
+static int
+fstatx_without_gvl(rb_io_t *fptr, rb_io_stat_data *stx, unsigned int mask)
+{
+    no_gvl_rb_io_stat_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
-    return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
+    return (int)rb_io_blocking_region(fptr, io_blocking_statx, &data);
 }
+
+#define FSTATX(fd, st) statx(fd, "", AT_EMPTY_PATH, STATX_ALL, st)
 
 static int
 rb_statx(VALUE file, struct statx *stx, unsigned int mask)
@@ -1239,8 +1364,9 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
+
         GetOpenFile(tmp, fptr);
-        result = fstatx_without_gvl(fptr->fd, stx, mask);
+        result = fstatx_without_gvl(fptr, stx, mask);
         file = tmp;
     }
     else {
@@ -1267,7 +1393,7 @@ statx_notimplement(const char *field_name)
 }
 
 static VALUE
-statx_birthtime(const struct statx *stx, VALUE fname)
+statx_birthtime(const rb_io_stat_data *stx)
 {
     if (!statx_has_birthtime(stx)) {
         /* birthtime is not supported on the filesystem */
@@ -1276,19 +1402,26 @@ statx_birthtime(const struct statx *stx, VALUE fname)
     return rb_time_nano_new((time_t)stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
 
-typedef struct statx statx_data;
-# define HAVE_STAT_BIRTHTIME
+#else
 
-#elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
-# define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
-# define statx_birthtime(st, fname) stat_birthtime(st)
+# define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
+# define lstatx_without_gvl(path, st, mask) lstat_without_gvl(path, st)
+# define rb_statx(file, stx, mask) rb_stat(file, stx)
+# define STATX(path, st, mask) STAT(path, st)
+
+#if defined(HAVE_STAT_BIRTHTIME)
 # define statx_has_birthtime(st) 1
-# define rb_statx(file, st, mask) rb_stat(file, st)
 #else
 # define statx_has_birthtime(st) 0
+#endif
+
 #endif /* !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
         defined(HAVE_STRUCT_STATX_STX_BTIME) */
+
+#ifndef FSTAT
+# define FSTAT(fd, st) fstat(fd, st)
+#endif
 
 static int
 rb_stat(VALUE file, struct stat *st)
@@ -1301,7 +1434,7 @@ rb_stat(VALUE file, struct stat *st)
         rb_io_t *fptr;
 
         GetOpenFile(tmp, fptr);
-        result = fstat_without_gvl(fptr->fd, st);
+        result = fstat_without_gvl(fptr, st);
         file = tmp;
     }
     else {
@@ -1326,14 +1459,14 @@ rb_stat(VALUE file, struct stat *st)
 static VALUE
 rb_file_s_stat(VALUE klass, VALUE fname)
 {
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (stat_without_gvl(RSTRING_PTR(fname), &st) < 0) {
+    if (statx_without_gvl(RSTRING_PTR(fname), &st, STATX_ALL) < 0) {
         rb_sys_fail_path(fname);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 }
 
 /*
@@ -1355,13 +1488,13 @@ static VALUE
 rb_io_stat(VALUE obj)
 {
     rb_io_t *fptr;
-    struct stat st;
+    rb_io_stat_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fptr->fd, &st) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 }
 
 #ifdef HAVE_LSTAT
@@ -1401,14 +1534,14 @@ static VALUE
 rb_file_s_lstat(VALUE klass, VALUE fname)
 {
 #ifdef HAVE_LSTAT
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
+    if (lstatx_without_gvl(StringValueCStr(fname), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fname);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 #else
     return rb_file_s_stat(klass, fname);
 #endif
@@ -1433,16 +1566,16 @@ rb_file_lstat(VALUE obj)
 {
 #ifdef HAVE_LSTAT
     rb_io_t *fptr;
-    struct stat st;
+    rb_io_stat_data st;
     VALUE path;
 
     GetOpenFile(obj, fptr);
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (lstat_without_gvl(RSTRING_PTR(path), &st) == -1) {
+    if (lstatx_without_gvl(RSTRING_PTR(path), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 #else
     return rb_io_stat(obj);
 #endif
@@ -2053,7 +2186,7 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *    File.owned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
- * effective used id of the calling process is the owner of
+ * effective user id of the calling process is the owner of
  * the file.
  *
  * _file_name_ can be an IO object.
@@ -2227,36 +2360,36 @@ rb_file_s_size(VALUE klass, VALUE fname)
 }
 
 static VALUE
-rb_file_ftype(const struct stat *st)
+rb_file_ftype(mode_t mode)
 {
     const char *t;
 
-    if (S_ISREG(st->st_mode)) {
+    if (S_ISREG(mode)) {
         t = "file";
     }
-    else if (S_ISDIR(st->st_mode)) {
+    else if (S_ISDIR(mode)) {
         t = "directory";
     }
-    else if (S_ISCHR(st->st_mode)) {
+    else if (S_ISCHR(mode)) {
         t = "characterSpecial";
     }
 #ifdef S_ISBLK
-    else if (S_ISBLK(st->st_mode)) {
+    else if (S_ISBLK(mode)) {
         t = "blockSpecial";
     }
 #endif
 #ifdef S_ISFIFO
-    else if (S_ISFIFO(st->st_mode)) {
+    else if (S_ISFIFO(mode)) {
         t = "fifo";
     }
 #endif
 #ifdef S_ISLNK
-    else if (S_ISLNK(st->st_mode)) {
+    else if (S_ISLNK(mode)) {
         t = "link";
     }
 #endif
 #ifdef S_ISSOCK
-    else if (S_ISSOCK(st->st_mode)) {
+    else if (S_ISSOCK(mode)) {
         t = "socket";
     }
 #endif
@@ -2293,7 +2426,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
         rb_sys_fail_path(fname);
     }
 
-    return rb_file_ftype(&st);
+    return rb_file_ftype(st.st_mode);
 }
 
 /*
@@ -2318,7 +2451,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_atime(&st);
+    return stat_time(stat_atimespec(&st));
 }
 
 /*
@@ -2342,7 +2475,7 @@ rb_file_atime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_atime(&st);
+    return stat_time(stat_atimespec(&st));
 }
 
 /*
@@ -2367,7 +2500,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_mtime(&st);
+    return stat_time(stat_mtimespec(&st));
 }
 
 /*
@@ -2390,7 +2523,7 @@ rb_file_mtime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_mtime(&st);
+    return stat_time(stat_mtimespec(&st));
 }
 
 /*
@@ -2419,7 +2552,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_ctime(&st);
+    return stat_time(stat_ctimespec(&st));
 }
 
 /*
@@ -2445,7 +2578,7 @@ rb_file_ctime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_ctime(&st);
+    return stat_time(stat_ctimespec(&st));
 }
 
 #if defined(HAVE_STAT_BIRTHTIME)
@@ -2466,14 +2599,14 @@ rb_file_ctime(VALUE obj)
 VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
-    statx_data st;
+    rb_io_stat_data st;
 
     if (rb_statx(fname, &st, STATX_BTIME) < 0) {
         int e = errno;
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return statx_birthtime(&st, fname);
+    return statx_birthtime(&st);
 }
 #else
 # define rb_file_s_birthtime rb_f_notimplement
@@ -2496,13 +2629,13 @@ static VALUE
 rb_file_birthtime(VALUE obj)
 {
     rb_io_t *fptr;
-    statx_data st;
+    rb_io_stat_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstatx_without_gvl(fptr->fd, &st, STATX_BTIME) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_BTIME) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return statx_birthtime(&st, fptr->pathv);
+    return statx_birthtime(&st);
 }
 #else
 # define rb_file_birthtime rb_f_notimplement
@@ -2615,11 +2748,11 @@ io_blocking_fchmod(void *ptr)
 }
 
 static int
-rb_fchmod(int fd, mode_t mode)
+rb_fchmod(struct rb_io* io, mode_t mode)
 {
     (void)rb_chmod; /* suppress unused-function warning when HAVE_FCHMOD */
-    struct nogvl_fchmod_data data = {.fd = fd, .mode = mode};
-    return (int)rb_thread_io_blocking_region(io_blocking_fchmod, &data, fd);
+    struct nogvl_fchmod_data data = {.fd = io->fd, .mode = mode};
+    return (int)rb_thread_io_blocking_region(io, io_blocking_fchmod, &data);
 }
 #endif
 
@@ -2649,7 +2782,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (rb_fchmod(fptr->fd, mode) == -1) {
+    if (rb_fchmod(fptr, mode) == -1) {
         if (HAVE_FCHMOD || errno != ENOSYS)
             rb_sys_fail_path(fptr->pathv);
     }
@@ -3018,7 +3151,7 @@ static int
 utime_internal(const char *path, void *arg)
 {
     struct utime_args *v = arg;
-    const struct timespec *tsp = v->tsp;
+    const stat_timestamp *tsp = v->tsp;
     struct utimbuf utbuf, *utp = NULL;
     if (tsp) {
         utbuf.actime = tsp[0].tv_sec;
@@ -4533,6 +4666,11 @@ rb_check_realpath_emulate_rescue(VALUE arg, VALUE exc)
 {
     return Qnil;
 }
+#elif !defined(NEEDS_REALPATH_BUFFER) && defined(__APPLE__) && \
+    (!defined(MAC_OS_X_VERSION_10_6) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6))
+/* realpath() on OSX < 10.6 doesn't implement automatic allocation */
+# include <sys/syslimits.h>
+# define NEEDS_REALPATH_BUFFER 1
 #endif /* HAVE_REALPATH */
 
 static VALUE
@@ -4542,6 +4680,11 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     VALUE unresolved_path;
     char *resolved_ptr = NULL;
     VALUE resolved;
+# if defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER
+    char resolved_buffer[PATH_MAX];
+# else
+    char *const resolved_buffer = NULL;
+# endif
 
     if (mode == RB_REALPATH_DIR) {
         return rb_check_realpath_emulate(basedir, path, origenc, mode);
@@ -4553,13 +4696,17 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     }
     if (origenc) unresolved_path = TO_OSPATH(unresolved_path);
 
-    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
-        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), resolved_buffer)) == NULL) {
+        /*
+           wasi-libc 22 and later support realpath(3) but return ENOTSUP
+           when the underlying host syscall returns it.
+           glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
            returning ENOTDIR in that case.
            glibc realpath(3) can also return ENOENT for paths that exist,
            such as /dev/fd/5.
            Fallback to the emulated approach in either of those cases. */
-        if (errno == ENOTDIR ||
+        if (errno == ENOTSUP ||
+            errno == ENOTDIR ||
             (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
             return rb_check_realpath_emulate(basedir, path, origenc, mode);
 
@@ -4570,9 +4717,11 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         rb_sys_fail_path(unresolved_path);
     }
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+# if !(defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER)
     free(resolved_ptr);
+# endif
 
-# if !defined(__LINUX__) && !defined(__APPLE__)
+# if !defined(__linux__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
      * conversion is needed */
     struct stat st;
@@ -4582,7 +4731,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         }
         rb_sys_fail_path(unresolved_path);
     }
-# endif /* !defined(__LINUX__) && !defined(__APPLE__) */
+# endif /* !defined(__linux__) && !defined(__APPLE__) */
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
@@ -4925,8 +5074,11 @@ rb_file_dirname_n(VALUE fname, int n)
             break;
         }
     }
-    if (p == name)
-        return rb_usascii_str_new2(".");
+    if (p == name) {
+        dirname = rb_str_new(".", 1);
+        rb_enc_copy(dirname, fname);
+        return dirname;
+    }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end, enc);
@@ -5061,6 +5213,22 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
  *
+ * If +path+ is not a String:
+ *
+ * 1. If it has the +to_path+ method, that method will be called to
+ *    coerce to a String.
+ *
+ * 2. Otherwise, or if the coerced result is not a String too, the
+ *    standard coersion using +to_str+ method will take place on that
+ *    object. (See also String.try_convert)
+ *
+ * The coerced string must satisfy the following conditions:
+ *
+ * 1. It must be in an ASCII-compatible encoding; otherwise, an
+ *    Encoding::CompatibilityError is raised.
+ *
+ * 2. It must not contain the NUL character (<tt>\0</tt>); otherwise,
+ *    an ArgumentError is raised.
  */
 
 static VALUE
@@ -5266,7 +5434,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     }
     rb_io_flush_raw(obj, 0);
     fa.fd = fptr->fd;
-    if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
+    if ((int)rb_io_blocking_region(fptr, nogvl_ftruncate, &fa) < 0) {
         rb_sys_fail_path(fptr->pathv);
     }
     return INT2FIX(0);
@@ -5366,7 +5534,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
         rb_io_flush_raw(obj, 0);
     }
-    while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
+    while ((int)rb_io_blocking_region(fptr, rb_thread_flock, op) < 0) {
         int e = errno;
         switch (e) {
           case EAGAIN:
@@ -5443,14 +5611,14 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid.                |
  *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid).         |
  *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe).                         |
- *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid.          |
+ *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effective uid/gid.         |
  *      | <tt>'R'</tt> | Like <tt>'r'</tt>, but uses the real uid/gid (not the effective uid/gid). |
  *      | <tt>'S'</tt> | Whether the entity is a socket.                                           |
  *      | <tt>'u'</tt> | Whether the entity's setuid bit is set.                                   |
  *      | <tt>'w'</tt> | Whether the entity is writable by the caller's effective uid/gid.         |
  *      | <tt>'W'</tt> | Like <tt>'w'</tt>, but uses the real uid/gid (not the effective uid/gid). |
  *      | <tt>'x'</tt> | Whether the entity is executable by the caller's effective uid/gid.       |
- *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effecive uid/git).  |
+ *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effective uid/git). |
  *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
  *
  *  - This test operates only on the entity at `path0`,
@@ -5600,7 +5768,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 
     if (strchr("=<>", cmd)) {
         struct stat st1, st2;
-        struct timespec t1, t2;
+        stat_timestamp t1, t2;
 
         CHECK(2);
         if (rb_stat(argv[1], &st1) < 0) return Qfalse;
@@ -5652,12 +5820,13 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_stat_s_alloc(VALUE klass)
 {
-    return stat_new_0(klass, 0);
+    VALUE obj;
+    stat_alloc(rb_cStat, &obj);
+    return obj;
 }
 
 /*
  * call-seq:
- *
  *   File::Stat.new(file_name)  -> stat
  *
  * Create a File::Stat object for the given file name (raising an
@@ -5667,11 +5836,11 @@ rb_stat_s_alloc(VALUE klass)
 static VALUE
 rb_stat_init(VALUE obj, VALUE fname)
 {
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (STAT(StringValueCStr(fname), &st) == -1) {
+    if (STATX(StringValueCStr(fname), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fname);
     }
 
@@ -5717,7 +5886,7 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 static VALUE
 rb_stat_ftype(VALUE obj)
 {
-    return rb_file_ftype(get_stat(obj));
+    return rb_file_ftype(get_stat(obj)->ST_(mode));
 }
 
 /*
@@ -5734,7 +5903,7 @@ rb_stat_ftype(VALUE obj)
 static VALUE
 rb_stat_d(VALUE obj)
 {
-    if (S_ISDIR(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISDIR(get_stat(obj)->ST_(mode))) return Qtrue;
     return Qfalse;
 }
 
@@ -5750,7 +5919,7 @@ static VALUE
 rb_stat_p(VALUE obj)
 {
 #ifdef S_IFIFO
-    if (S_ISFIFO(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISFIFO(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5776,7 +5945,7 @@ static VALUE
 rb_stat_l(VALUE obj)
 {
 #ifdef S_ISLNK
-    if (S_ISLNK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISLNK(get_stat(obj)->ST_(mode))) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -5797,7 +5966,7 @@ static VALUE
 rb_stat_S(VALUE obj)
 {
 #ifdef S_ISSOCK
-    if (S_ISSOCK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISSOCK(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5820,7 +5989,7 @@ static VALUE
 rb_stat_b(VALUE obj)
 {
 #ifdef S_ISBLK
-    if (S_ISBLK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISBLK(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5841,7 +6010,7 @@ rb_stat_b(VALUE obj)
 static VALUE
 rb_stat_c(VALUE obj)
 {
-    if (S_ISCHR(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISCHR(get_stat(obj)->ST_(mode))) return Qtrue;
 
     return Qfalse;
 }
@@ -5861,14 +6030,14 @@ rb_stat_c(VALUE obj)
 static VALUE
 rb_stat_owned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == geteuid()) return Qtrue;
+    if (get_stat(obj)->ST_(uid) == geteuid()) return Qtrue;
     return Qfalse;
 }
 
 static VALUE
 rb_stat_rowned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == getuid()) return Qtrue;
+    if (get_stat(obj)->ST_(uid) == getuid()) return Qtrue;
     return Qfalse;
 }
 
@@ -5888,7 +6057,7 @@ static VALUE
 rb_stat_grpowned(VALUE obj)
 {
 #ifndef _WIN32
-    if (rb_group_member(get_stat(obj)->st_gid)) return Qtrue;
+    if (rb_group_member(get_stat(obj)->ST_(gid))) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -5907,21 +6076,21 @@ rb_stat_grpowned(VALUE obj)
 static VALUE
 rb_stat_r(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) return Qtrue;
 #endif
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IRUSR);
+        return RBOOL(st->ST_(mode) & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IRGRP);
+        return RBOOL(st->ST_(mode) & S_IRGRP);
 #endif
 #ifdef S_IROTH
-    if (!(st->st_mode & S_IROTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -5940,21 +6109,21 @@ rb_stat_r(VALUE obj)
 static VALUE
 rb_stat_R(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) return Qtrue;
 #endif
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IRUSR);
+        return RBOOL(st->ST_(mode) & S_IRUSR);
 #endif
 #ifdef S_IRGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IRGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IRGRP);
 #endif
 #ifdef S_IROTH
-    if (!(st->st_mode & S_IROTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -5976,9 +6145,9 @@ static VALUE
 rb_stat_wr(VALUE obj)
 {
 #ifdef S_IROTH
-    struct stat *st = get_stat(obj);
-    if ((st->st_mode & (S_IROTH)) == S_IROTH) {
-        return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    rb_io_stat_data *st = get_stat(obj);
+    if ((st->ST_(mode) & (S_IROTH)) == S_IROTH) {
+        return UINT2NUM(st->ST_(mode) & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
 #endif
     return Qnil;
@@ -5998,21 +6167,21 @@ rb_stat_wr(VALUE obj)
 static VALUE
 rb_stat_w(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) return Qtrue;
 #endif
 #ifdef S_IWUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IWUSR);
+        return RBOOL(st->ST_(mode) & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IWGRP);
+        return RBOOL(st->ST_(mode) & S_IWGRP);
 #endif
 #ifdef S_IWOTH
-    if (!(st->st_mode & S_IWOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6031,21 +6200,21 @@ rb_stat_w(VALUE obj)
 static VALUE
 rb_stat_W(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) return Qtrue;
 #endif
 #ifdef S_IWUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IWUSR);
+        return RBOOL(st->ST_(mode) & S_IWUSR);
 #endif
 #ifdef S_IWGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IWGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IWGRP);
 #endif
 #ifdef S_IWOTH
-    if (!(st->st_mode & S_IWOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6067,9 +6236,9 @@ static VALUE
 rb_stat_ww(VALUE obj)
 {
 #ifdef S_IWOTH
-    struct stat *st = get_stat(obj);
-    if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
-        return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    rb_io_stat_data *st = get_stat(obj);
+    if ((st->ST_(mode) & (S_IWOTH)) == S_IWOTH) {
+        return UINT2NUM(st->ST_(mode) & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
 #endif
     return Qnil;
@@ -6091,23 +6260,23 @@ rb_stat_ww(VALUE obj)
 static VALUE
 rb_stat_x(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) {
-        return RBOOL(st->st_mode & S_IXUGO);
+        return RBOOL(st->ST_(mode) & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IXUSR);
+        return RBOOL(st->ST_(mode) & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IXGRP);
+        return RBOOL(st->ST_(mode) & S_IXGRP);
 #endif
 #ifdef S_IXOTH
-    if (!(st->st_mode & S_IXOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6123,23 +6292,23 @@ rb_stat_x(VALUE obj)
 static VALUE
 rb_stat_X(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) {
-        return RBOOL(st->st_mode & S_IXUGO);
+        return RBOOL(st->ST_(mode) & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IXUSR);
+        return RBOOL(st->ST_(mode) & S_IXUSR);
 #endif
 #ifdef S_IXGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IXGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IXGRP);
 #endif
 #ifdef S_IXOTH
-    if (!(st->st_mode & S_IXOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6158,7 +6327,7 @@ rb_stat_X(VALUE obj)
 static VALUE
 rb_stat_f(VALUE obj)
 {
-    if (S_ISREG(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISREG(get_stat(obj)->ST_(mode))) return Qtrue;
     return Qfalse;
 }
 
@@ -6176,7 +6345,7 @@ rb_stat_f(VALUE obj)
 static VALUE
 rb_stat_z(VALUE obj)
 {
-    if (get_stat(obj)->st_size == 0) return Qtrue;
+    if (get_stat(obj)->ST_(size) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -6195,7 +6364,7 @@ rb_stat_z(VALUE obj)
 static VALUE
 rb_stat_s(VALUE obj)
 {
-    rb_off_t size = get_stat(obj)->st_size;
+    rb_off_t size = get_stat(obj)->ST_(size);
 
     if (size == 0) return Qnil;
     return OFFT2NUM(size);
@@ -6216,7 +6385,7 @@ static VALUE
 rb_stat_suid(VALUE obj)
 {
 #ifdef S_ISUID
-    if (get_stat(obj)->st_mode & S_ISUID) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISUID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6237,7 +6406,7 @@ static VALUE
 rb_stat_sgid(VALUE obj)
 {
 #ifdef S_ISGID
-    if (get_stat(obj)->st_mode & S_ISGID) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISGID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6258,7 +6427,7 @@ static VALUE
 rb_stat_sticky(VALUE obj)
 {
 #ifdef S_ISVTX
-    if (get_stat(obj)->st_mode & S_ISVTX) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISVTX) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6337,95 +6506,6 @@ rb_is_absolute_path(const char *path)
     if (path[0] == '/') return 1;
 #endif
     return 0;
-}
-
-#ifndef ENABLE_PATH_CHECK
-# if defined DOSISH || defined __CYGWIN__
-#   define ENABLE_PATH_CHECK 0
-# else
-#   define ENABLE_PATH_CHECK 1
-# endif
-#endif
-
-#if ENABLE_PATH_CHECK
-static int
-path_check_0(VALUE path)
-{
-    struct stat st;
-    const char *p0 = StringValueCStr(path);
-    const char *e0;
-    rb_encoding *enc;
-    char *p = 0, *s;
-
-    if (!rb_is_absolute_path(p0)) {
-        char *buf = ruby_getcwd();
-        VALUE newpath;
-
-        newpath = rb_str_new2(buf);
-        xfree(buf);
-
-        rb_str_cat2(newpath, "/");
-        rb_str_cat2(newpath, p0);
-        path = newpath;
-        p0 = RSTRING_PTR(path);
-    }
-    e0 = p0 + RSTRING_LEN(path);
-    enc = rb_enc_get(path);
-    for (;;) {
-#ifndef S_IWOTH
-# define S_IWOTH 002
-#endif
-        if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
-#ifdef S_ISVTX
-            && !(p && (st.st_mode & S_ISVTX))
-#endif
-            && !access(p0, W_OK)) {
-            rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
-#if SIZEOF_DEV_T > SIZEOF_INT
-                        PRI_MODET_PREFIX"o",
-#else
-                        "o",
-#endif
-                        p0, st.st_mode);
-            if (p) *p = '/';
-            RB_GC_GUARD(path);
-            return 0;
-        }
-        s = strrdirsep(p0, e0, enc);
-        if (p) *p = '/';
-        if (!s || s == p0) return 1;
-        p = s;
-        e0 = p;
-        *p = '\0';
-    }
-}
-#endif
-
-int
-rb_path_check(const char *path)
-{
-#if ENABLE_PATH_CHECK
-    const char *p0, *p, *pend;
-    const char sep = PATH_SEP_CHAR;
-
-    if (!path) return 1;
-
-    pend = path + strlen(path);
-    p0 = path;
-    p = strchr(path, sep);
-    if (!p) p = pend;
-
-    for (;;) {
-        if (!path_check_0(rb_str_new(p0, p - p0))) {
-            return 0;		/* not safe */
-        }
-        p0 = p + 1;
-        if (p0 > pend) break;
-        p = strchr(p0, sep);
-        if (!p) p = pend;
-    }
-#endif
-    return 1;
 }
 
 int
@@ -6630,7 +6710,7 @@ const char ruby_null_device[] =
 /*
  *  A \File object is a representation of a file in the underlying platform.
  *
- *  \Class \File extends module FileTest, supporting such singleton methods
+ *  Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
  *  == About the Examples
@@ -7287,7 +7367,7 @@ const char ruby_null_device[] =
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \File:
+ *  First, what's elsewhere. Class \File:
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
@@ -7533,7 +7613,7 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * \Module +File::Constants+ defines file-related constants.
+     * Module +File::Constants+ defines file-related constants.
      *
      * There are two families of constants here:
      *

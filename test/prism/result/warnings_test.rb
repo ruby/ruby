@@ -259,6 +259,8 @@ module Prism
 
       refute_warning("def foo; bar = 1; tap { bar }; end")
       refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
+
+      refute_warning("def foo; bar = 1; end", line: -2, compare: false)
     end
 
     def test_void_statements
@@ -337,7 +339,7 @@ module Prism
       assert_warning("tap { redo; foo }", "statement not reached")
     end
 
-    if RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+    if windows?
       def test_shebang_ending_with_carriage_return
         refute_warning("#!ruby\r\np(123)\n", compare: false)
       end

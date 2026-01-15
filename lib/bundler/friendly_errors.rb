@@ -80,7 +80,7 @@ module Bundler
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}
 
-        If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}, and copy and paste the report template above in there.
+        If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}. Make sure to copy and paste the full output of this command under the "What happened instead?" section.
       EOS
     end
 
@@ -102,13 +102,14 @@ module Bundler
     def issues_url(exception)
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
-      require "cgi"
-      "https://github.com/rubygems/rubygems/search?q=" \
+      require "cgi/escape"
+      require "cgi/util" unless defined?(CGI::EscapeExt)
+      "https://github.com/ruby/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end
 
     def new_issue_url
-      "https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md"
+      "https://github.com/ruby/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md"
     end
   end
 

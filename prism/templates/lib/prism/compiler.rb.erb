@@ -29,13 +29,15 @@ module Prism
 
     # Visit the child nodes of the given node.
     def visit_child_nodes(node)
-      node.compact_child_nodes.map { |node| node.accept(self) }
+      node.each_child_node.map { |node| node.accept(self) }
     end
 
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
     # Compile a <%= node.name %> node
-    alias visit_<%= node.human %> visit_child_nodes
+    def visit_<%= node.human %>(node)
+      node.each_child_node.map { |node| node.accept(self) }
+    end
     <%- end -%>
   end
 end

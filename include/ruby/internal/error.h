@@ -53,6 +53,9 @@ typedef enum {
     /** Warning is for performance issues (not enabled by -w). */
     RB_WARN_CATEGORY_PERFORMANCE,
 
+    /** Warning is for checking unused block strictly */
+    RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK,
+
     RB_WARN_CATEGORY_DEFAULT_BITS = (
         (1U << RB_WARN_CATEGORY_DEPRECATED) |
         (1U << RB_WARN_CATEGORY_EXPERIMENTAL) |
@@ -62,6 +65,7 @@ typedef enum {
         (1U << RB_WARN_CATEGORY_DEPRECATED) |
         (1U << RB_WARN_CATEGORY_EXPERIMENTAL) |
         (1U << RB_WARN_CATEGORY_PERFORMANCE) |
+        (1U << RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK) |
         0)
 } rb_warning_category_t;
 
@@ -417,11 +421,12 @@ void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite waiting, int err, const 
 RBIMPL_ATTR_COLD()
 RBIMPL_ATTR_NORETURN()
 /**
+ * @private
+ *
  * Fails with the given object's type incompatibility to the type.
  *
- * It  seems this  function is  visible from  extension libraries  only because
- * RTYPEDDATA_TYPE() uses  it on RUBY_DEBUG.   So you can basically  ignore it;
- * use some other fine-grained method instead.
+ * This  is  an implementation  detail  of  Check_Type.   People don't  use  it
+ * directly.
  *
  * @param[in]  self           The object in question.
  * @param[in]  t              Expected type of the object.

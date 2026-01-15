@@ -23,7 +23,19 @@
  * some platforms they aren't included unless this is already defined.
  */
 #define __STDC_FORMAT_MACROS
+// Include sys/types.h before inttypes.h to work around issue with
+// certain versions of GCC and newlib which causes omission of PRIx64
+#include <sys/types.h>
 #include <inttypes.h>
+
+/**
+ * When we are parsing using recursive descent, we want to protect against
+ * malicious payloads that could attempt to crash our parser. We do this by
+ * specifying a maximum depth to which we are allowed to recurse.
+ */
+#ifndef PRISM_DEPTH_MAXIMUM
+    #define PRISM_DEPTH_MAXIMUM 10000
+#endif
 
 /**
  * By default, we compile with -fvisibility=hidden. When this is enabled, we
@@ -128,14 +140,15 @@
 #endif
 
 /**
- * isinf on Windows is defined as accepting a float, but on POSIX systems it
- * accepts a float, a double, or a long double. We want to mirror this behavior
- * on windows.
+ * isinf on POSIX systems it accepts a float, a double, or a long double.
+ * But mingw didn't provide an isinf macro, only an isinf function that only
+ * accepts floats, so we need to use _finite instead.
  */
-#ifdef _WIN32
-#   include <float.h>
-#   undef isinf
-#   define isinf(x) (sizeof(x) == sizeof(float) ? !_finitef(x) : !_finite(x))
+#ifdef __MINGW64__
+    #include <float.h>
+    #define PRISM_ISINF(x) (!_finite(x))
+#else
+    #define PRISM_ISINF(x) isinf(x)
 #endif
 
 /**
@@ -210,6 +223,38 @@
 
     /** Exclude the full set of encodings, using the minimal only. */
     #define PRISM_ENCODING_EXCLUDE_FULL
+#endif
+
+/**
+ * Support PRISM_LIKELY and PRISM_UNLIKELY to help the compiler optimize its
+ * branch predication.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+    /** The compiler should predicate that this branch will be taken. */
+    #define PRISM_LIKELY(x) __builtin_expect(!!(x), 1)
+
+    /** The compiler should predicate that this branch will not be taken. */
+    #define PRISM_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+    /** Void because this platform does not support branch prediction hints. */
+    #define PRISM_LIKELY(x)   (x)
+
+    /** Void because this platform does not support branch prediction hints. */
+    #define PRISM_UNLIKELY(x) (x)
+#endif
+
+/**
+ * We use -Wimplicit-fallthrough to guard potentially unintended fall-through between cases of a switch.
+ * Use PRISM_FALLTHROUGH to explicitly annotate cases where the fallthrough is intentional.
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L // C23 or later
+    #define PRISM_FALLTHROUGH [[fallthrough]];
+#elif defined(__GNUC__) || defined(__clang__)
+    #define PRISM_FALLTHROUGH __attribute__((fallthrough));
+#elif defined(_MSC_VER)
+    #define PRISM_FALLTHROUGH __fallthrough;
+#else
+    #define PRISM_FALLTHROUGH
 #endif
 
 #endif

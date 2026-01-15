@@ -528,13 +528,13 @@ pub enum Insn {
 impl Insn {
     /// Create an iterator that will yield a non-mutable reference to each
     /// operand in turn for this instruction.
-    pub(super) fn opnd_iter(&self) -> InsnOpndIterator {
+    pub(super) fn opnd_iter(&self) -> InsnOpndIterator<'_> {
         InsnOpndIterator::new(self)
     }
 
     /// Create an iterator that will yield a mutable reference to each operand
     /// in turn for this instruction.
-    pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator {
+    pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator<'_> {
         InsnOpndMutIterator::new(self)
     }
 
@@ -1086,7 +1086,7 @@ impl Assembler
     }
 
     /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs2() -> &'static [Reg] {
+    pub fn get_temp_regs() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
         &TEMP_REGS[0..num_regs]
     }
@@ -1204,7 +1204,7 @@ impl Assembler
 
         // Convert Opnd::Stack to Opnd::Reg
         fn reg_opnd(opnd: &Opnd, reg_idx: usize) -> Opnd {
-            let regs = Assembler::get_temp_regs2();
+            let regs = Assembler::get_temp_regs();
             if let Opnd::Stack { num_bits, .. } = *opnd {
                 incr_counter!(temp_reg_opnd);
                 Opnd::Reg(regs[reg_idx]).with_num_bits(num_bits).unwrap()
@@ -1317,7 +1317,7 @@ impl Assembler
     }
 
     /// Spill a stack temp from a register to the stack
-    fn spill_reg(&mut self, opnd: Opnd) {
+    pub fn spill_reg(&mut self, opnd: Opnd) {
         assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_opnd()), None);
 
         // Use different RegMappings for dest and src operands
@@ -1602,7 +1602,7 @@ impl Assembler
                 if c_args.len() > 0 {
                     // Resolve C argument dependencies
                     let c_args_len = c_args.len() as isize;
-                    let moves = Self::reorder_reg_moves(&c_args.drain(..).into_iter().collect());
+                    let moves = Self::reorder_reg_moves(&std::mem::take(&mut c_args));
                     shift_live_ranges(&mut shifted_live_ranges, asm.insns.len(), moves.len() as isize - c_args_len);
 
                     // Push batched C arguments
@@ -1824,12 +1824,12 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
+    pub fn cpop_all(&mut self, reg_mapping: RegMapping) {
         self.push_insn(Insn::CPopAll);
 
         // Re-enable ccall's RegMappings assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_mapping(self.ctx.get_reg_mapping());
+        self.set_reg_mapping(reg_mapping);
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1840,14 +1840,16 @@ impl Assembler {
         self.push_insn(Insn::CPush(opnd));
     }
 
-    pub fn cpush_all(&mut self) {
+    pub fn cpush_all(&mut self) -> RegMapping {
         self.push_insn(Insn::CPushAll);
 
         // Mark all temps as not being in registers.
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_regs for GC.
+        let mapping = self.ctx.get_reg_mapping();
         self.set_reg_mapping(RegMapping::default());
+        mapping
     }
 
     pub fn cret(&mut self, opnd: Opnd) {

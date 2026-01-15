@@ -106,6 +106,24 @@ describe "Invoking a method" do
     specs.yield_now(&o).should == :from_to_proc
   end
 
+  ruby_version_is "4.0" do
+    it "raises TypeError if 'to_proc' doesn't return a Proc" do
+      o = LangSendSpecs::RawToProc.new(42)
+
+      -> {
+        specs.makeproc(&o)
+      }.should raise_error(TypeError, "can't convert LangSendSpecs::RawToProc to Proc (LangSendSpecs::RawToProc#to_proc gives Integer)")
+    end
+
+    it "raises TypeError if block object isn't a Proc and doesn't respond to `to_proc`" do
+      o = Object.new
+
+      -> {
+        specs.makeproc(&o)
+      }.should raise_error(TypeError, "no implicit conversion of Object into Proc")
+    end
+  end
+
   it "raises a SyntaxError with both a literal block and an object as block" do
     -> {
       eval "specs.oneb(10, &l){ 42 }"

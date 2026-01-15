@@ -1,39 +1,14 @@
 # Used by configure and make to download or update mirrored Ruby and GCC
-# files. This will use HTTPS if possible, falling back to HTTP.
+# files.
+
+# -*- frozen-string-literal: true -*-
 
 require 'fileutils'
 require 'open-uri'
 require 'pathname'
-begin
-  require 'net/https'
-rescue LoadError
-  https = 'http'
-else
-  https = 'https'
-
-  # open-uri of ruby 2.2.0 accepts an array of PEMs as ssl_ca_cert, but old
-  # versions do not.  so, patching OpenSSL::X509::Store#add_file instead.
-  class OpenSSL::X509::Store
-    alias orig_add_file add_file
-    def add_file(pems)
-      Array(pems).each do |pem|
-        if File.directory?(pem)
-          add_path pem
-        else
-          orig_add_file pem
-        end
-      end
-    end
-  end
-  # since open-uri internally checks ssl_ca_cert using File.directory?,
-  # allow to accept an array.
-  class <<File
-    alias orig_directory? directory?
-    def File.directory? files
-      files.is_a?(Array) ? false : orig_directory?(files)
-    end
-  end
-end
+verbose, $VERBOSE = $VERBOSE, nil
+require 'net/https'
+$VERBOSE = verbose
 
 class Downloader
   def self.find(dlname)
@@ -42,47 +17,37 @@ class Downloader
     end
   end
 
-  def self.https=(https)
-    @@https = https
-  end
-
-  def self.https?
-    @@https == 'https'
-  end
-
-  def self.https
-    @@https
-  end
-
   def self.get_option(argv, options)
     false
   end
 
   class GNU < self
-    def self.download(name, *rest)
-      if https?
-        begin
-          super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest)
-        rescue => e
-          m1, m2 = e.message.split("\n", 2)
-          STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
-          super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
-        end
+    Mirrors = %w[
+      https://raw.githubusercontent.com/autotools-mirror/autoconf/refs/heads/master/build-aux/
+      https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master
+    ]
+
+    def self.download(name, *rest, **options)
+      Mirrors.each_with_index do |url, i|
+        super("#{url}/#{name}", name, *rest, **options)
+      rescue => e
+        raise if i + 1 == Mirrors.size # no more URLs
+        m1, m2 = e.message.split("\n", 2)
+        STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
       else
-        super("https://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
+        return
       end
     end
   end
 
   class RubyGems < self
-    def self.download(name, dir = nil, since = true, options = {})
+    def self.download(name, dir = nil, since = true, **options)
       require 'rubygems'
-      options = options.dup
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
       if Gem::Version.new(name[/-\K[^-]*(?=\.gem\z)/]).prerelease?
         options[:ignore_http_client_errors] = true
       end
-      super("https://rubygems.org/downloads/#{name}", name, dir, since, options)
+      super("https://rubygems.org/downloads/#{name}", name, dir, since, **options)
     end
   end
 
@@ -107,16 +72,13 @@ class Downloader
       end
     end
 
-    def self.download(name, dir = nil, since = true, options = {})
-      options = options.dup
-      unicode_beta = options.delete(:unicode_beta)
+    def self.download(name, dir = nil, since = true, unicode_beta: nil, **options)
       name_dir_part = name.sub(/[^\/]+$/, '')
       if unicode_beta == 'YES'
         if INDEX.size == 0
-          index_options = options.dup
-          index_options[:cache_save] = false # TODO: make sure caching really doesn't work for index file
+          cache_save = false # TODO: make sure caching really doesn't work for index file
           index_data = File.read(under(dir, "index.html")) rescue nil
-          index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, index_options)
+          index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, cache_save: cache_save, **options)
           INDEX[:index] = File.read(index_file)
           since = true unless INDEX[:index] == index_data
         end
@@ -125,7 +87,7 @@ class Downloader
         beta_name = INDEX[:index][/#{Regexp.quote(file_base)}(-[0-9.]+d\d+)?\.txt/]
         # make sure we always check for new versions of files,
         # because they can easily change in the beta period
-        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, options)
+        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, **options)
       else
         index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
         if index_file.exist? and name_dir_part !~ /^(12\.1\.0|emoji\/12\.0)/
@@ -133,7 +95,7 @@ class Downloader
                 "Remove all files in this directory and in .downloaded-cache/ " +
                 "because they may be leftovers from the beta period."
         end
-        super(UNICODE_PUBLIC+name, name, dir, since, options)
+        super(UNICODE_PUBLIC+name, name, dir, since, **options)
       end
     end
   end
@@ -198,28 +160,22 @@ class Downloader
   # Example usage:
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
-  def self.download(url, name, dir = nil, since = true, options = {})
-    options = options.dup
+  def self.download(url, name, dir = nil, since = true,
+                    cache_save: ENV["CACHE_SAVE"] != "no", cache_dir: nil,
+                    ignore_http_client_errors: nil,
+                    dryrun: nil, verbose: false, **options)
     url = URI(url)
-    dryrun = options.delete(:dryrun)
-
     if name
       file = Pathname.new(under(dir, name))
     else
       name = File.basename(url.path)
     end
-    cache_save = options.delete(:cache_save) {
-      ENV["CACHE_SAVE"] != "no"
-    }
-    cache = cache_file(url, name, options.delete(:cache_dir))
+    cache = cache_file(url, name, cache_dir)
     file ||= cache
     if since.nil? and file.exist?
-      if $VERBOSE
+      if verbose
         $stdout.puts "#{file} already exists"
         $stdout.flush
-      end
-      if cache_save
-        save_cache(cache, file, name)
       end
       return file.to_path
     end
@@ -227,33 +183,21 @@ class Downloader
       puts "Download #{url} into #{file}"
       return
     end
-    if link_cache(cache, file, name, $VERBOSE)
+    if link_cache(cache, file, name, verbose: verbose)
       return file.to_path
     end
-    if !https? and URI::HTTPS === url
-      warn "*** using http instead of https ***"
-      url.scheme = 'http'
-      url = URI(url.to_s)
-    end
-    if $VERBOSE
+    if verbose
       $stdout.print "downloading #{name} ... "
       $stdout.flush
     end
     mtime = nil
-    ignore_http_client_errors = options.delete(:ignore_http_client_errors)
     options = options.merge(http_options(file, since.nil? ? true : since))
     begin
-      data = with_retry(10) do
-        data = url.read(options)
-        if mtime = data.meta["last-modified"]
-          mtime = Time.httpdate(mtime)
-        end
-        data
-      end
+      data = with_retry(10) {url.read(options)}
     rescue OpenURI::HTTPError => http_error
       case http_error.message
       when /^304 / # 304 Not Modified
-        if $VERBOSE
+        if verbose
           $stdout.puts "#{name} not modified"
           $stdout.flush
         end
@@ -277,6 +221,10 @@ class Downloader
         return file.to_path
       end
       raise
+    else
+      if mtime = data.meta["last-modified"]
+        mtime = Time.httpdate(mtime)
+      end
     end
     dest = (cache_save && cache && !cache.exist? ? cache : file)
     dest.parent.mkpath
@@ -288,7 +236,7 @@ class Downloader
     if mtime
       dest.utime(mtime, mtime)
     end
-    if $VERBOSE
+    if verbose
       $stdout.puts "done"
       $stdout.flush
     end
@@ -306,20 +254,24 @@ class Downloader
     dir ? File.join(dir, File.basename(name)) : name
   end
 
+  def self.default_cache_dir
+    if cache_dir = ENV['CACHE_DIR']
+      return cache_dir unless cache_dir.empty?
+    end
+    ".downloaded-cache"
+  end
+
   def self.cache_file(url, name, cache_dir = nil)
     case cache_dir
     when false
       return nil
     when nil
-      cache_dir = ENV['CACHE_DIR']
-      if !cache_dir or cache_dir.empty?
-        cache_dir = ".downloaded-cache"
-      end
+      cache_dir = default_cache_dir
     end
     Pathname.new(cache_dir) + (name || File.basename(URI(url).path))
   end
 
-  def self.link_cache(cache, file, name, verbose = false)
+  def self.link_cache(cache, file, name, verbose: false)
     return false unless cache and cache.exist?
     return true if cache.eql?(file)
     if /cygwin/ !~ RUBY_PLATFORM or /winsymlink:nativestrict/ =~ ENV['CYGWIN']
@@ -391,8 +343,6 @@ class Downloader
   private_class_method :with_retry
 end
 
-Downloader.https = https.freeze
-
 if $0 == __FILE__
   since = true
   options = {}
@@ -460,7 +410,7 @@ if $0 == __FILE__
     end
     ARGV.shift
   end
-  $VERBOSE = true
+  options[:verbose] = true
   if dl
     args.each do |name|
       dir = destdir
@@ -479,10 +429,10 @@ if $0 == __FILE__
         end
         name = "#{prefix}/#{name}"
       end
-      dl.download(name, dir, since, options)
+      dl.download(name, dir, since, **options)
     end
   else
     abort "usage: #{$0} url name" unless args.size == 2
-    Downloader.download(args[0], args[1], destdir, since, options)
+    Downloader.download(args[0], args[1], destdir, since, **options)
   end
 end

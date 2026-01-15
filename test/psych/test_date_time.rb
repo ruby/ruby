@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require_relative 'helper'
-require 'date'
 
 module Psych
   class TestDateTime < TestCase
@@ -85,6 +84,21 @@ module Psych
       yaml = Psych.dump h
       assert_match('&', yaml)
       assert_match('*', yaml)
+    end
+
+    def test_overwritten_to_s
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+      s = Psych.dump(Date.new(2023, 9, 2), permitted_classes: [Date])
+      assert_separately(%W[-rpsych -rdate - #{s}], "#{<<~"begin;"}\n#{<<~'end;'}")
+      class Date
+        undef to_s
+        def to_s; strftime("%D"); end
+      end
+      expected = ARGV.shift
+      begin;
+        s = Psych.dump(Date.new(2023, 9, 2), permitted_classes: [Date])
+        assert_equal(expected, s)
+      end;
     end
   end
 end

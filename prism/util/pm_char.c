@@ -185,7 +185,7 @@ pm_strspn_number_kind_underscores(const uint8_t *string, ptrdiff_t length, const
         size++;
     }
 
-    if (string[size - 1] == '_') *invalid = string + size - 1;
+    if (size > 0 && string[size - 1] == '_') *invalid = string + size - 1;
     return size;
 }
 

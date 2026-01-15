@@ -39,7 +39,7 @@ struct RSymbol {
 #define is_attrset_id(id) ((id)==idASET||id_type(id)==ID_ATTRSET)
 #define is_const_id(id) (id_type(id)==ID_CONST)
 #define is_class_id(id) (id_type(id)==ID_CLASS)
-#define is_junk_id(id) (id_type(id)==ID_JUNK)
+#define is_internal_id(id) (id_type(id)==ID_INTERNAL)
 
 static inline int
 id_type(ID id)
@@ -57,13 +57,6 @@ static const uint32_t RB_ID_SERIAL_MAX = /* 256M on LP32 */
     UINT32_MAX >>
     ((sizeof(ID)-sizeof(rb_id_serial_t))*CHAR_BIT < RUBY_ID_SCOPE_SHIFT ?
      RUBY_ID_SCOPE_SHIFT : 0);
-
-typedef struct {
-    rb_id_serial_t last_id;
-    st_table *str_sym;
-    VALUE ids;
-    VALUE dsymbol_fstr_hash;
-} rb_symbols_t;
 
 static inline rb_id_serial_t
 rb_id_to_serial(ID id)
@@ -98,7 +91,7 @@ sym_type(VALUE sym)
 #define is_attrset_sym(sym) (sym_type(sym)==ID_ATTRSET)
 #define is_const_sym(sym) (sym_type(sym)==ID_CONST)
 #define is_class_sym(sym) (sym_type(sym)==ID_CLASS)
-#define is_junk_sym(sym) (sym_type(sym)==ID_JUNK)
+#define is_internal_sym(sym) (sym_type(sym)==ID_INTERNAL)
 
 #ifndef RIPPER
 RUBY_FUNC_EXPORTED

@@ -87,11 +87,7 @@ class Gem::Package::TarReader::Entry
   # Full name of the tar entry
 
   def full_name
-    if @header.prefix != ""
-      File.join @header.prefix, @header.name
-    else
-      @header.name
-    end
+    @header.full_name.force_encoding(Encoding::UTF_8)
   rescue ArgumentError => e
     raise unless e.message == "string contains null byte"
     raise Gem::Package::TarInvalidError,

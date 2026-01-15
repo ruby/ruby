@@ -4,7 +4,7 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.7.2";
+IO_CONSOLE_VERSION = "0.8.2";
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -84,6 +84,11 @@ getattr(int fd, conmode *t)
 static ID id_getc, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
 
+#ifndef HAVE_RB_INTERNED_STR_CSTR
+# define rb_str_to_interned_str(str) rb_str_freeze(str)
+# define rb_interned_str_cstr(str) rb_str_freeze(rb_usascii_str_new_cstr(str))
+#endif
+
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
 #elif defined HAVE_RB_SCHEDULER_TIMEOUT
@@ -125,7 +130,14 @@ io_get_write_io_fallback(VALUE io)
 #define rb_io_get_write_io io_get_write_io_fallback
 #endif
 
-#define sys_fail(io) rb_sys_fail_str(rb_io_path(io))
+#ifndef DHAVE_RB_SYSERR_FAIL_STR
+# define rb_syserr_fail_str(e, mesg) rb_exc_raise(rb_syserr_new_str(e, mesg))
+#endif
+
+#define sys_fail(io) do { \
+    int err = errno; \
+    rb_syserr_fail_str(err, rb_io_path(io)); \
+} while (0)
 
 #ifndef HAVE_RB_F_SEND
 #ifndef RB_PASS_CALLED_KEYWORDS
@@ -828,6 +840,9 @@ console_winsize(VALUE io)
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
 
+static VALUE console_scroll(VALUE io, int line);
+static VALUE console_goto(VALUE io, VALUE y, VALUE x);
+
 /*
  * call-seq:
  *   io.winsize = [rows, columns]
@@ -844,6 +859,8 @@ console_set_winsize(VALUE io, VALUE size)
 #if defined _WIN32
     HANDLE wh;
     int newrow, newcol;
+    COORD oldsize;
+    SMALL_RECT oldwindow;
     BOOL ret;
 #endif
     VALUE row, col, xpixel, ypixel;
@@ -879,18 +896,62 @@ console_set_winsize(VALUE io, VALUE size)
     if (!GetConsoleScreenBufferInfo(wh, &ws)) {
 	rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
     }
-    ws.dwSize.X = newcol;
-    ret = SetConsoleScreenBufferSize(wh, ws.dwSize);
-    ws.srWindow.Left = 0;
-    ws.srWindow.Top = 0;
-    ws.srWindow.Right = newcol-1;
-    ws.srWindow.Bottom = newrow-1;
-    if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
-	rb_syserr_fail(LAST_ERROR, "SetConsoleWindowInfo");
+    oldsize = ws.dwSize;
+    oldwindow = ws.srWindow;
+    if (ws.srWindow.Right + 1 < newcol) {
+        ws.dwSize.X = newcol;
     }
-    /* retry when shrinking buffer after shrunk window */
-    if (!ret && !SetConsoleScreenBufferSize(wh, ws.dwSize)) {
-	rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
+    if (ws.dwSize.Y < newrow) {
+        ws.dwSize.Y = newrow;
+    }
+    /* expand screen buffer first if needed */
+    if (!SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+        rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
+    }
+    /* refresh ws for new dwMaximumWindowSize */
+    if (!GetConsoleScreenBufferInfo(wh, &ws)) {
+        rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
+    }
+    /* check new size before modifying buffer content */
+    if (newrow <= 0 || newcol <= 0 ||
+        newrow > ws.dwMaximumWindowSize.Y ||
+        newcol > ws.dwMaximumWindowSize.X) {
+        SetConsoleScreenBufferSize(wh, oldsize);
+        /* remove scrollbar if possible */
+        SetConsoleWindowInfo(wh, TRUE, &oldwindow);
+        rb_raise(rb_eArgError, "out of range winsize: [%d, %d]", newrow, newcol);
+    }
+    /* shrink screen buffer width */
+    ws.dwSize.X = newcol;
+    /* shrink screen buffer height if window height were the same */
+    if (oldsize.Y == ws.srWindow.Bottom - ws.srWindow.Top + 1) {
+        ws.dwSize.Y = newrow;
+    }
+    ws.srWindow.Left = 0;
+    ws.srWindow.Right = newcol - 1;
+    ws.srWindow.Bottom = ws.srWindow.Top + newrow -1;
+    if (ws.dwCursorPosition.Y > ws.srWindow.Bottom) {
+        console_scroll(io, ws.dwCursorPosition.Y - ws.srWindow.Bottom);
+        ws.dwCursorPosition.Y = ws.srWindow.Bottom;
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X));
+    }
+    if (ws.srWindow.Bottom > ws.dwSize.Y - 1) {
+        console_scroll(io, ws.srWindow.Bottom - (ws.dwSize.Y - 1));
+        ws.dwCursorPosition.Y -= ws.srWindow.Bottom - (ws.dwSize.Y - 1);
+        console_goto(io, INT2FIX(ws.dwCursorPosition.Y), INT2FIX(ws.dwCursorPosition.X));
+	ws.srWindow.Bottom = ws.dwSize.Y - 1;
+    }
+    ws.srWindow.Top = ws.srWindow.Bottom - (newrow - 1);
+    /* perform changes to winsize */
+    if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
+        int last_error = LAST_ERROR;
+        SetConsoleScreenBufferSize(wh, oldsize);
+	rb_syserr_fail(last_error, "SetConsoleWindowInfo");
+    }
+    /* perform screen buffer shrinking if necessary */
+    if ((ws.dwSize.Y < oldsize.Y || ws.dwSize.X < oldsize.X) &&
+        !SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+        rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
     }
     /* remove scrollbar if possible */
     if (!SetConsoleWindowInfo(wh, TRUE, &ws.srWindow)) {
@@ -1209,7 +1270,7 @@ console_cursor_pos(VALUE io)
     if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
-    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y), UINT2NUM(ws.dwCursorPosition.X));
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.Y - ws.srWindow.Top), UINT2NUM(ws.dwCursorPosition.X));
 #else
     static const struct query_args query = {"\033[6n", 0};
     VALUE resp = console_vt_response(0, 0, io, &query);
@@ -1242,11 +1303,17 @@ static VALUE
 console_goto(VALUE io, VALUE y, VALUE x)
 {
 #ifdef _WIN32
-    COORD pos;
-    int fd = GetWriteFD(io);
-    pos.X = NUM2UINT(x);
-    pos.Y = NUM2UINT(y);
-    if (!SetConsoleCursorPosition((HANDLE)rb_w32_get_osfhandle(fd), pos)) {
+    HANDLE h;
+    rb_console_size_t ws;
+    COORD *pos = &ws.dwCursorPosition;
+
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
+    if (!GetConsoleScreenBufferInfo(h, &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    pos->X = NUM2UINT(x);
+    pos->Y = ws.srWindow.Top + NUM2UINT(y);
+    if (!SetConsoleCursorPosition(h, *pos)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
@@ -1639,8 +1706,6 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     VALUE con = 0;
     VALUE sym = 0;
 
-    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
-
     if (argc) {
         Check_Type(sym = argv[0], T_SYMBOL);
     }
@@ -1811,6 +1876,61 @@ io_getpass(int argc, VALUE *argv, VALUE io)
     return str_chomp(str);
 }
 
+#if defined(_WIN32) || defined(HAVE_TTYNAME_R) || defined(HAVE_TTYNAME)
+/*
+ * call-seq:
+ *   io.ttyname       -> string or nil
+ *
+ * Returns name of associated terminal (tty) if +io+ is not a tty.
+ * Returns +nil+ otherwise.
+ */
+static VALUE
+console_ttyname(VALUE io)
+{
+    int fd = rb_io_descriptor(io);
+    if (!isatty(fd)) return Qnil;
+# if defined _WIN32
+    return rb_usascii_str_new_lit("con");
+# elif defined HAVE_TTYNAME_R
+    {
+	char termname[1024], *tn = termname;
+	size_t size = sizeof(termname);
+	int e;
+	if (ttyname_r(fd, tn, size) == 0)
+	    return rb_interned_str_cstr(tn);
+	if ((e = errno) == ERANGE) {
+	    VALUE s = rb_str_new(0, size);
+	    while (1) {
+		tn = RSTRING_PTR(s);
+		size = rb_str_capacity(s);
+		if (ttyname_r(fd, tn, size) == 0) {
+		    return rb_str_to_interned_str(rb_str_resize(s, strlen(tn)));
+		}
+		if ((e = errno) != ERANGE) break;
+		if ((size *= 2) >= INT_MAX/2) break;
+		rb_str_resize(s, size);
+	    }
+	}
+	rb_syserr_fail_str(e, rb_sprintf("ttyname_r(%d)", fd));
+	UNREACHABLE_RETURN(Qnil);
+    }
+# elif defined HAVE_TTYNAME
+    {
+	const char *tn = ttyname(fd);
+	if (!tn) {
+	    int e = errno;
+	    rb_syserr_fail_str(e, rb_sprintf("ttyname(%d)", fd));
+	}
+	return rb_interned_str_cstr(tn);
+    }
+# else
+#   error No ttyname function
+# endif
+}
+#else
+# define console_ttyname rb_f_notimplement
+#endif
+
 /*
  * IO console methods
  */
@@ -1878,6 +1998,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
+    rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :stopdoc: */
@@ -1889,7 +2010,7 @@ InitVM_console(void)
     {
 	/* :stopdoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
-        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(IO_CONSOLE_VERSION));
+        rb_define_const(cConmode, "VERSION", rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION)));
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);

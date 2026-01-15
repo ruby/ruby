@@ -76,6 +76,9 @@ module Bundler::PubGrub
     end
 
     def initialize(min: nil, max: nil, include_min: false, include_max: false, name: nil)
+      raise ArgumentError, "Ranges without a lower bound cannot have include_min == true" if !min && include_min == true
+      raise ArgumentError, "Ranges without an upper bound cannot have include_max == true" if !max && include_max == true
+
       @min = min
       @max = max
       @include_min = include_min
@@ -311,10 +314,19 @@ module Bundler::PubGrub
 
     def contiguous_to?(other)
       return false if other.empty?
+      return true if any?
 
-      intersects?(other) ||
-        (min == other.max && (include_min || other.include_max)) ||
-        (max == other.min && (include_max || other.include_min))
+      intersects?(other) || contiguous_below?(other) || contiguous_above?(other)
+    end
+
+    def contiguous_below?(other)
+      return false if !max || !other.min
+
+      max == other.min && (include_max || other.include_min)
+    end
+
+    def contiguous_above?(other)
+      other.contiguous_below?(self)
     end
 
     def allows_all?(other)
@@ -375,15 +387,15 @@ module Bundler::PubGrub
     def invert
       return self.class.empty if any?
 
-      low = VersionRange.new(max: min, include_max: !include_min)
-      high = VersionRange.new(min: max, include_min: !include_max)
+      low = -> { VersionRange.new(max: min, include_max: !include_min) }
+      high = -> { VersionRange.new(min: max, include_min: !include_max) }
 
       if !min
-        high
+        high.call
       elsif !max
-        low
+        low.call
       else
-        low.union(high)
+        low.call.union(high.call)
       end
     end
 

@@ -8,7 +8,6 @@
 
 require_relative "installer_uninstaller_utils"
 require_relative "exceptions"
-require_relative "deprecate"
 require_relative "package"
 require_relative "ext"
 require_relative "user_interaction"
@@ -27,8 +26,6 @@ require_relative "user_interaction"
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
-  extend Gem::Deprecate
-
   ##
   # Paths where env(1) might live.  Some systems are broken and have it in
   # /bin
@@ -66,31 +63,7 @@ class Gem::Installer
 
   attr_reader :package
 
-  @path_warning = false
-
   class << self
-    #
-    # Changes in rubygems to lazily loading `rubygems/command` (in order to
-    # lazily load `optparse` as a side effect) affect bundler's custom installer
-    # which uses `Gem::Command` without requiring it (up until bundler 2.2.29).
-    # This hook is to compensate for that missing require.
-    #
-    # TODO: Remove when rubygems no longer supports running on bundler older
-    # than 2.2.29.
-
-    def inherited(klass)
-      if klass.name == "Bundler::RubyGemsGemInstaller"
-        require "rubygems/command"
-      end
-
-      super(klass)
-    end
-
-    ##
-    # True if we've warned about PATH not including Gem.bindir
-
-    attr_accessor :path_warning
-
     ##
     # Overrides the executable format.
     #
@@ -177,7 +150,7 @@ class Gem::Installer
   #               process. If not set, then Gem::Command.build_args is used
   # :post_install_message:: Print gem post install message if true
 
-  def initialize(package, options={})
+  def initialize(package, options = {})
     require "fileutils"
 
     @options = options
@@ -188,15 +161,6 @@ class Gem::Installer
     @package.dir_mode = options[:dir_mode]
     @package.prog_mode = options[:prog_mode]
     @package.data_mode = options[:data_mode]
-
-    if @gem_home == Gem.user_dir
-      # If we get here, then one of the following likely happened:
-      # - `--user-install` was specified
-      # - `Gem::PathSupport#home` fell back to `Gem.user_dir`
-      # - GEM_HOME was manually set to `Gem.user_dir`
-
-      check_that_user_bin_dir_is_in_path
-    end
   end
 
   ##
@@ -244,8 +208,7 @@ class Gem::Installer
       ruby_executable = true
       existing = io.read.slice(/
           ^\s*(
-            gem \s |
-            load \s Gem\.bin_path\( |
+            Gem\.activate_and_load_bin_path\( |
             load \s Gem\.activate_bin_path\(
           )
           (['"])(.*?)(\2),
@@ -308,11 +271,7 @@ class Gem::Installer
     run_pre_install_hooks
 
     # Set loaded_from to ensure extension_dir is correct
-    if @options[:install_as_default]
-      spec.loaded_from = default_spec_file
-    else
-      spec.loaded_from = spec_file
-    end
+    spec.loaded_from = spec_file
 
     # Completely remove any previous gem files
     FileUtils.rm_rf gem_dir
@@ -321,24 +280,17 @@ class Gem::Installer
     dir_mode = options[:dir_mode]
     FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
 
-    if @options[:install_as_default]
-      extract_bin
-      write_default_spec
-    else
-      extract_files
+    extract_files
 
-      build_extensions
-      write_build_info_file
-      run_post_build_hooks
-    end
+    build_extensions
+    write_build_info_file
+    run_post_build_hooks
 
     generate_bin
     generate_plugins
 
-    unless @options[:install_as_default]
-      write_spec
-      write_cache_file
-    end
+    write_spec
+    write_cache_file
 
     File.chmod(dir_mode, gem_dir) if dir_mode
 
@@ -427,15 +379,6 @@ class Gem::Installer
   end
 
   ##
-  # Unpacks the gem into the given directory.
-
-  def unpack(directory)
-    @gem_dir = directory
-    extract_files
-  end
-  rubygems_deprecate :unpack
-
-  ##
   # The location of the spec file that is installed.
   #
 
@@ -443,12 +386,18 @@ class Gem::Installer
     File.join gem_home, "specifications", "#{spec.full_name}.gemspec"
   end
 
+  def default_spec_dir
+    dir = File.join(gem_home, "specifications", "default")
+    FileUtils.mkdir_p dir
+    dir
+  end
+
   ##
   # The location of the default spec file for default gems.
   #
 
   def default_spec_file
-    File.join gem_home, "specifications", "default", "#{spec.full_name}.gemspec"
+    File.join default_spec_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -488,11 +437,21 @@ class Gem::Installer
   end
 
   def generate_bin # :nodoc:
-    return if spec.executables.nil? || spec.executables.empty?
+    executables = spec.executables
+    return if executables.nil? || executables.empty?
+
+    if @gem_home == Gem.user_dir
+      # If we get here, then one of the following likely happened:
+      # - `--user-install` was specified
+      # - `Gem::PathSupport#home` fell back to `Gem.user_dir`
+      # - GEM_HOME was manually set to `Gem.user_dir`
+
+      check_that_user_bin_dir_is_in_path(executables)
+    end
 
     ensure_writable_dir @bin_dir
 
-    spec.executables.each do |filename|
+    executables.each do |filename|
       bin_path = File.join gem_dir, spec.bindir, filename
       next unless File.exist? bin_path
 
@@ -676,6 +635,7 @@ class Gem::Installer
     @build_root          = options[:build_root]
 
     @build_args = options[:build_args]
+    @build_jobs = options[:build_jobs]
 
     @gem_home = @install_dir || user_install_dir || Gem.dir
 
@@ -694,9 +654,7 @@ class Gem::Installer
     end
   end
 
-  def check_that_user_bin_dir_is_in_path # :nodoc:
-    return if self.class.path_warning
-
+  def check_that_user_bin_dir_is_in_path(executables) # :nodoc:
     user_bin_dir = @bin_dir || Gem.bindir(gem_home)
     user_bin_dir = user_bin_dir.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
 
@@ -712,8 +670,7 @@ class Gem::Installer
 
     unless path.include? user_bin_dir
       unless !Gem.win_platform? && (path.include? user_bin_dir.sub(ENV["HOME"], "~"))
-        alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
-        self.class.path_warning = true
+        alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables (#{executables.join(", ")}) will not run."
       end
     end
   end
@@ -758,54 +715,53 @@ class Gem::Installer
   def app_script_text(bin_file_name)
     # NOTE: that the `load` lines cannot be indented, as old RG versions match
     # against the beginning of the line
-    <<-TEXT
-#{shebang bin_file_name}
-#
-# This file was generated by RubyGems.
-#
-# The application '#{spec.name}' is installed as part of a gem, and
-# this file is here to facilitate running it.
-#
+    <<~TEXT
+      #{shebang bin_file_name}
+      #
+      # This file was generated by RubyGems.
+      #
+      # The application '#{spec.name}' is installed as part of a gem, and
+      # this file is here to facilitate running it.
+      #
 
-require 'rubygems'
-#{gemdeps_load(spec.name)}
-version = "#{Gem::Requirement.default_prerelease}"
+      require 'rubygems'
+      #{gemdeps_load(spec.name)}
+      version = "#{Gem::Requirement.default_prerelease}"
 
-str = ARGV.first
-if str
-  str = str.b[/\\A_(.*)_\\z/, 1]
-  if str and Gem::Version.correct?(str)
-    #{explicit_version_requirement(spec.name)}
-    ARGV.shift
-  end
-end
+      str = ARGV.first
+      if str
+        str = str.b[/\\A_(.*)_\\z/, 1]
+        if str and Gem::Version.correct?(str)
+          #{explicit_version_requirement(spec.name)}
+          ARGV.shift
+        end
+      end
 
-if Gem.respond_to?(:activate_bin_path)
-load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
-else
-gem #{spec.name.dump}, version
-load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
-end
-TEXT
+      if Gem.respond_to?(:activate_and_load_bin_path)
+        Gem.activate_and_load_bin_path('#{spec.name}', '#{bin_file_name}', version)
+      else
+        load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+      end
+    TEXT
   end
 
   def gemdeps_load(name)
     return "" if name == "bundler"
 
-    <<-TEXT
+    <<~TEXT
 
-Gem.use_gemdeps
-TEXT
+      Gem.use_gemdeps
+    TEXT
   end
 
   def explicit_version_requirement(name)
     code = "version = str"
     return code unless name == "bundler"
 
-    code += <<-TEXT
+    code += <<~TEXT
 
-    ENV['BUNDLER_VERSION'] = str
-TEXT
+      ENV['BUNDLER_VERSION'] = str
+    TEXT
   end
 
   ##
@@ -820,9 +776,9 @@ TEXT
 
     if File.exist?(File.join(bindir, ruby_exe))
       # stub & ruby.exe within same folder.  Portable
-      <<-TEXT
-@ECHO OFF
-@"%~dp0#{ruby_exe}" "%~dpn0" %*
+      <<~TEXT
+        @ECHO OFF
+        @"%~dp0#{ruby_exe}" "%~dpn0" %*
       TEXT
     elsif bindir.downcase.start_with? rb_topdir.downcase
       # stub within ruby folder, but not standard bin.  Portable
@@ -830,16 +786,16 @@ TEXT
       from = Pathname.new bindir
       to   = Pathname.new "#{rb_topdir}/bin"
       rel  = to.relative_path_from from
-      <<-TEXT
-@ECHO OFF
-@"%~dp0#{rel}/#{ruby_exe}" "%~dpn0" %*
+      <<~TEXT
+        @ECHO OFF
+        @"%~dp0#{rel}/#{ruby_exe}" "%~dpn0" %*
       TEXT
     else
       # outside ruby folder, maybe -user-install or bundler.  Portable, but ruby
       # is dependent on PATH
-      <<-TEXT
-@ECHO OFF
-@#{ruby_exe} "%~dpn0" %*
+      <<~TEXT
+        @ECHO OFF
+        @#{ruby_exe} "%~dpn0" %*
       TEXT
     end
   end
@@ -848,7 +804,7 @@ TEXT
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig
+    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig, build_jobs
 
     builder.build_extensions
   end
@@ -917,11 +873,7 @@ TEXT
 
     ensure_loadable_spec
 
-    if options[:install_as_default]
-      Gem.ensure_default_gem_subdirectories gem_home
-    else
-      Gem.ensure_gem_subdirectories gem_home
-    end
+    Gem.ensure_gem_subdirectories gem_home
 
     return true if @force
 
@@ -962,11 +914,8 @@ TEXT
   end
 
   def ensure_writable_dir(dir) # :nodoc:
-    begin
-      Dir.mkdir dir, *[options[:dir_mode] && 0o755].compact
-    rescue SystemCallError
-      raise unless File.directory? dir
-    end
+    require "fileutils"
+    FileUtils.mkdir_p dir, mode: options[:dir_mode] && 0o755
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
   end
@@ -993,6 +942,15 @@ TEXT
                     end
   end
 
+  def build_jobs
+    @build_jobs ||= begin
+                      require "etc"
+                      Etc.nprocessors + 1
+                    rescue LoadError
+                      1
+                    end
+  end
+
   def rb_config
     Gem.target_rbconfig
   end
@@ -1007,18 +965,17 @@ TEXT
 
   def bash_prolog_script
     if load_relative_enabled?
-      script = +<<~EOS
-        bindir="${0%/*}"
-      EOS
-
-      script << %(exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n)
-
       <<~EOS
         #!/bin/sh
         # -*- ruby -*-
         _=_\\
         =begin
-        #{script.chomp}
+        bindir="${0%/*}"
+        ruby="$bindir/#{ruby_install_name}"
+        if [ ! -f "$ruby" ]; then
+          ruby="#{ruby_install_name}"
+        fi
+        exec "$ruby" "-x" "$0" "$@"
         =end
       EOS
     else

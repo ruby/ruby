@@ -13,18 +13,22 @@
 } -%>
 
 #include "vm_insnhelper.h"
-% RubyVM::BareInstructions.to_a.each do |insn|
+% RubyVM::BareInstruction.all.each do |insn|
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::OperandsUnifications.to_a.each do |insn|
+% RubyVM::OperandsUnification.all.each do |insn|
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::InstructionsUnifications.to_a.each do |insn|
+% RubyVM::InstructionsUnification.all.each do |insn|
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::TraceInstructions.to_a.each do |insn|
+% RubyVM::ZJITInstruction.all.each do |insn|
+<%= render 'zjit_instruction', locals: { insn: insn } -%>
+% end
+%
+% RubyVM::TraceInstruction.all.each do |insn|
 <%= render 'trace_instruction', locals: { insn: insn } -%>
 % end

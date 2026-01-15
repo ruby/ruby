@@ -156,7 +156,7 @@ describe "ObjectSpace.define_finalizer" do
   end
 
   it "allows multiple finalizers with different 'callables' to be defined" do
-    code = <<-RUBY
+    code = <<-'RUBY'
       obj = Object.new
 
       ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized1\n" })
@@ -168,25 +168,48 @@ describe "ObjectSpace.define_finalizer" do
     ruby_exe(code).lines.sort.should == ["finalized1\n", "finalized2\n"]
   end
 
-  ruby_version_is "3.1" do
-    describe "when $VERBOSE is not nil" do
-      it "warns if an exception is raised in finalizer" do
-        code = <<-RUBY
-          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
-        RUBY
+  it "defines same finalizer only once" do
+    code = <<~RUBY
+      obj = Object.new
+      p = proc { |id| print "ok" }
+      ObjectSpace.define_finalizer(obj, p.dup)
+      ObjectSpace.define_finalizer(obj, p.dup)
+    RUBY
 
-        ruby_exe(code, args: "2>&1").should include("warning: Exception in finalizer", "finalizing")
-      end
+    ruby_exe(code).should == "ok"
+  end
+
+  it "returns the defined finalizer" do
+    obj = Object.new
+    p = proc { |id| }
+    p2 = p.dup
+
+    ret = ObjectSpace.define_finalizer(obj, p)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
+
+    ret = ObjectSpace.define_finalizer(obj, p2)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
+  end
+
+  describe "when $VERBOSE is not nil" do
+    it "warns if an exception is raised in finalizer" do
+      code = <<-RUBY
+        ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+      RUBY
+
+      ruby_exe(code, args: "2>&1").should include("warning: Exception in finalizer", "finalizing")
     end
+  end
 
-    describe "when $VERBOSE is nil" do
-      it "does not warn even if an exception is raised in finalizer" do
-        code = <<-RUBY
-          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
-        RUBY
+  describe "when $VERBOSE is nil" do
+    it "does not warn even if an exception is raised in finalizer" do
+      code = <<-RUBY
+        ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+      RUBY
 
-        ruby_exe(code, args: "2>&1", options: "-W0").should == ""
-      end
+      ruby_exe(code, args: "2>&1", options: "-W0").should == ""
     end
   end
 end

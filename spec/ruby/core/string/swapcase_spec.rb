@@ -5,9 +5,9 @@ require_relative 'fixtures/classes'
 
 describe "String#swapcase" do
   it "returns a new string with all uppercase chars from self converted to lowercase and vice versa" do
-   "Hello".swapcase.should == "hELLO"
-   "cYbEr_PuNk11".swapcase.should == "CyBeR_pUnK11"
-   "+++---111222???".swapcase.should == "+++---111222???"
+    "Hello".swapcase.should == "hELLO"
+    "cYbEr_PuNk11".swapcase.should == "CyBeR_pUnK11"
+    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
   it "returns a String in the same encoding as self" do

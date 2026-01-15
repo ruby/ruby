@@ -18,6 +18,14 @@ class Gem::Commands::SourcesCommand < Gem::Command
       options[:add] = value
     end
 
+    add_option "--append SOURCE_URI", "Append source (can be used multiple times)" do |value, options|
+      options[:append] = value
+    end
+
+    add_option "-p", "--prepend SOURCE_URI", "Prepend source (can be used multiple times)" do |value, options|
+      options[:prepend] = value
+    end
+
     add_option "-l", "--list", "List sources" do |value, options|
       options[:list] = value
     end
@@ -26,8 +34,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
       options[:remove] = value
     end
 
-    add_option "-c", "--clear-all",
-               "Remove all sources (clear the cache)" do |value, options|
+    add_option "-c", "--clear-all", "Remove all sources (clear the cache)" do |value, options|
       options[:clear_all] = value
     end
 
@@ -57,6 +64,60 @@ class Gem::Commands::SourcesCommand < Gem::Command
         Gem.sources << source
         Gem.configuration.write
 
+        say "#{source_uri} added to sources"
+      end
+    rescue Gem::URI::Error, ArgumentError
+      say "#{source_uri} is not a URI"
+      terminate_interaction 1
+    rescue Gem::RemoteFetcher::FetchError => e
+      say "Error fetching #{Gem::Uri.redact(source.uri)}:\n\t#{e.message}"
+      terminate_interaction 1
+    end
+  end
+
+  def append_source(source_uri) # :nodoc:
+    check_rubygems_https source_uri
+
+    source = Gem::Source.new source_uri
+
+    check_typo_squatting(source)
+
+    begin
+      source.load_specs :released
+      was_present = Gem.sources.include?(source)
+      Gem.sources.append source
+      Gem.configuration.write
+
+      if was_present
+        say "#{source_uri} moved to end of sources"
+      else
+        say "#{source_uri} added to sources"
+      end
+    rescue Gem::URI::Error, ArgumentError
+      say "#{source_uri} is not a URI"
+      terminate_interaction 1
+    rescue Gem::RemoteFetcher::FetchError => e
+      say "Error fetching #{Gem::Uri.redact(source.uri)}:\n\t#{e.message}"
+      terminate_interaction 1
+    end
+  end
+
+  def prepend_source(source_uri) # :nodoc:
+    check_rubygems_https source_uri
+
+    source = Gem::Source.new source_uri
+
+    check_typo_squatting(source)
+
+    begin
+      source.load_specs :released
+      was_present = Gem.sources.include?(source)
+      Gem.sources.prepend source
+      Gem.configuration.write
+
+      if was_present
+        say "#{source_uri} moved to top of sources"
+      else
         say "#{source_uri} added to sources"
       end
     rescue Gem::URI::Error, ArgumentError
@@ -128,7 +189,7 @@ yourself to use your own gem server.
 Without any arguments the sources lists your currently configured sources:
 
   $ gem sources
-  *** CURRENT SOURCES ***
+  *** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***
 
   https://rubygems.org
 
@@ -147,33 +208,49 @@ Since all of these sources point to the same set of gems you only need one
 of them in your list.  https://rubygems.org is recommended as it brings the
 protections of an SSL connection to gem downloads.
 
-To add a source use the --add argument:
+To add a private gem source use the --prepend argument to insert it before
+the default source. This is usually the best place for private gem sources:
 
-    $ gem sources --add https://rubygems.org
-    https://rubygems.org added to sources
+    $ gem sources --prepend https://my.private.source
+    https://my.private.source added to sources
 
 RubyGems will check to see if gems can be installed from the source given
 before it is added.
 
+To add or move a source after all other sources, use --append:
+
+    $ gem sources --append https://rubygems.org
+    https://rubygems.org moved to end of sources
+
 To remove a source use the --remove argument:
 
-    $ gem sources --remove https://rubygems.org/
-    https://rubygems.org/ removed from sources
+    $ gem sources --remove https://my.private.source/
+    https://my.private.source/ removed from sources
 
     EOF
   end
 
   def list # :nodoc:
-    say "*** CURRENT SOURCES ***"
+    if configured_sources
+      header = "*** CURRENT SOURCES ***"
+      list = configured_sources
+    else
+      header = "*** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***"
+      list = Gem.sources
+    end
+
+    say header
     say
 
-    Gem.sources.each do |src|
+    list.each do |src|
       say src
     end
   end
 
   def list? # :nodoc:
     !(options[:add] ||
+      options[:prepend] ||
+      options[:append] ||
       options[:clear_all] ||
       options[:remove] ||
       options[:update])
@@ -182,11 +259,13 @@ To remove a source use the --remove argument:
   def execute
     clear_all if options[:clear_all]
 
-    source_uri = options[:add]
-    add_source source_uri if source_uri
+    add_source options[:add] if options[:add]
 
-    source_uri = options[:remove]
-    remove_source source_uri if source_uri
+    prepend_source options[:prepend] if options[:prepend]
+
+    append_source options[:append] if options[:append]
+
+    remove_source options[:remove] if options[:remove]
 
     update if options[:update]
 
@@ -194,13 +273,21 @@ To remove a source use the --remove argument:
   end
 
   def remove_source(source_uri) # :nodoc:
-    if Gem.sources.include? source_uri
-      Gem.sources.delete source_uri
+    source = Gem::Source.new source_uri
+
+    if configured_sources&.include? source
+      Gem.sources.delete source
       Gem.configuration.write
 
-      say "#{source_uri} removed from sources"
+      if default_sources.include?(source) && configured_sources.one?
+        alert_warning "Removing a default source when it is the only source has no effect. Add a different source to #{config_file_name} if you want to stop using it as a source."
+      else
+        say "#{source_uri} removed from sources"
+      end
+    elsif configured_sources
+      say "source #{source_uri} cannot be removed because it's not present in #{config_file_name}"
     else
-      say "source #{source_uri} not present in cache"
+      say "source #{source_uri} cannot be removed because there are no configured sources in #{config_file_name}"
     end
   end
 
@@ -223,5 +310,22 @@ To remove a source use the --remove argument:
     else
       say "*** Unable to remove #{desc} source cache ***"
     end
+  end
+
+  private
+
+  def default_sources
+    Gem::SourceList.from(Gem.default_sources)
+  end
+
+  def configured_sources
+    return @configured_sources if defined?(@configured_sources)
+
+    configuration_sources = Gem.configuration.sources
+    @configured_sources = Gem::SourceList.from(configuration_sources) if configuration_sources
+  end
+
+  def config_file_name
+    Gem.configuration.config_file_name
   end
 end

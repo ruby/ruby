@@ -29,27 +29,81 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app_lock).to exist
     end
 
-    it "does not create ./.bundle by default", bundler: "< 3" do
-      gemfile <<-G
+    it "creates lockfile based on the lockfile method in Gemfile" do
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install"
+
+      expect(bundled_app("OmgFile.lock")).to exist
+    end
+
+    it "creates lockfile using BUNDLE_LOCKFILE instead of lockfile method" do
+      ENV["BUNDLE_LOCKFILE"] = "ReallyOmgFile.lock"
+      install_gemfile <<-G
+        lockfile "OmgFile.lock"
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    ensure
+      ENV.delete("BUNDLE_LOCKFILE")
+    end
+
+    it "creates lockfile based on --lockfile option is given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("ReallyOmgFile.lock")).to exist
+    end
+
+    it "does not make a lockfile if lockfile false is used in Gemfile" do
+      install_gemfile <<-G
+        lockfile false
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+
+      expect(bundled_app_lock).not_to exist
+    end
+
+    it "does not create ./.bundle by default" do
+      install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
+    end
+
+    it "will create a ./.bundle by default", bundler: "5" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      expect(bundled_app(".bundle")).to exist
     end
 
     it "does not create ./.bundle by default when installing to system gems" do
-      gemfile <<-G
+      install_gemfile <<-G, env: { "BUNDLE_PATH__SYSTEM" => "true" }
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install, env: { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
-    it "creates lock files based on the Gemfile name" do
+    it "creates lockfiles based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
         gem "myrack", "1.0"
@@ -58,6 +112,29 @@ RSpec.describe "bundle install with gem sources" do
       bundle "install --gemfile OmgFile"
 
       expect(bundled_app("OmgFile.lock")).to exist
+    end
+
+    it "doesn't create a lockfile if --no-lock option is given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --no-lock"
+
+      expect(bundled_app("OmgFile.lock")).not_to exist
+    end
+
+    it "doesn't create a lockfile if --no-lock and --lockfile options are given" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "https://gem.repo1"
+        gem "myrack", "1.0"
+      G
+
+      bundle "install --gemfile OmgFile --no-lock --lockfile ReallyOmgFile.lock"
+
+      expect(bundled_app("OmgFile.lock")).not_to exist
+      expect(bundled_app("ReallyOmgFile.lock")).not_to exist
     end
 
     it "doesn't delete the lockfile if one already exists" do
@@ -100,13 +177,30 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      FileUtils.rm_rf(default_bundle_path("gems/myrack-1.0.0"))
+      FileUtils.rm_r(default_bundle_path("gems/myrack-1.0.0"))
 
       bundle "install --verbose"
 
       expect(out).to include("Installing myrack 1.0.0")
       expect(default_bundle_path("gems/myrack-1.0.0")).to exist
       expect(the_bundle).to include_gems("myrack 1.0.0")
+    end
+
+    it "does not state that it's constantly reinstalling empty gems" do
+      build_repo4 do
+        build_gem "empty", "1.0.0", no_default: true
+      end
+
+      install_gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "empty"
+      G
+      gem_dir = default_bundle_path("gems/empty-1.0.0")
+      expect(gem_dir).to be_empty
+
+      bundle "install --verbose"
+      expect(out).not_to include("Installing empty")
     end
 
     it "fetches gems when multiple versions are specified" do
@@ -238,13 +332,12 @@ RSpec.describe "bundle install with gem sources" do
     it "loads env plugins" do
       plugin_msg = "hello from an env plugin!"
       create_file "plugins/rubygems_plugin.rb", "puts '#{plugin_msg}'"
-      rubylib = ENV["RUBYLIB"].to_s.split(File::PATH_SEPARATOR).unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR)
-      install_gemfile <<-G, env: { "RUBYLIB" => rubylib }
+      install_gemfile <<-G, env: { "RUBYLIB" => rubylib.unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR) }
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      expect(last_command.stdboth).to include(plugin_msg)
+      expect(stdboth).to include(plugin_msg)
     end
 
     describe "with a gem that installs multiple platforms" do
@@ -282,7 +375,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32 do
+        simulate_platform "x86-mswin32" do
           install_gemfile <<-G
             source "https://gem.repo1"
             gem "platform_specific"
@@ -291,64 +384,49 @@ RSpec.describe "bundle install with gem sources" do
           expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
         end
       end
-    end
 
-    describe "doing bundle install foo" do
-      before do
-        gemfile <<-G
-          source "https://gem.repo1"
-          gem "myrack"
-        G
-      end
-
-      it "works" do
-        bundle "config set --local path vendor"
-        bundle "install"
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-
-      it "allows running bundle install --system without deleting foo", bundler: "< 3" do
-        bundle "install --path vendor"
-        bundle "install --system"
-        FileUtils.rm_rf(bundled_app("vendor"))
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-
-      it "allows running bundle install --system after deleting foo", bundler: "< 3" do
-        bundle "install --path vendor"
-        FileUtils.rm_rf(bundled_app("vendor"))
-        bundle "install --system"
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-    end
-
-    it "finds gems in multiple sources", bundler: "< 3" do
-      build_repo2 do
-        build_gem "myrack", "1.2" do |s|
-          s.executables = "myrackup"
+      it "installs gems for aarch64-mingw-ucrt" do
+        simulate_platform "aarch64-mingw-ucrt" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
         end
+
+        expect(out).to include("Installing platform_specific 1.0 (aarch64-mingw-ucrt)")
       end
-
-      install_gemfile <<-G, artifice: "compact_index_extra"
-        source "https://gemserver.test"
-        source "https://gemserver.test/extra"
-
-        gem "activesupport", "1.2.3"
-        gem "myrack", "1.2"
-      G
-
-      expect(the_bundle).to include_gems "myrack 1.2", "activesupport 1.2.3"
     end
 
-    it "gives a useful error if no sources are set" do
+    it "gives useful errors if no global sources are set, and gems not installed locally, with and without a lockfile" do
       install_gemfile <<-G, raise_on_error: false
         gem "myrack"
       G
 
-      expect(err).to include("This Gemfile does not include an explicit global source. " \
-        "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run. " \
-        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\".")
+      expect(err).to eq("Could not find gem 'myrack' in locally installed gems.")
+
+      lockfile <<~L
+        GEM
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      bundle "install", raise_on_error: false
+
+      expect(err).to include(
+        "Because your Gemfile specifies no global remote source, your bundle is locked to " \
+        "myrack (1.0.0) from locally installed gems. However, myrack (1.0.0) is not installed. " \
+        "You'll need to either add a global remote source to your Gemfile or make sure myrack (1.0.0) " \
+        "is available locally before rerunning Bundler."
+      )
     end
 
     it "creates a Gemfile.lock on a blank Gemfile" do
@@ -426,7 +504,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("my-private-gem 1.0")
     end
 
-    it "throws a warning if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with different requirements" do
+    it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with compatible requirements" do
       build_lib "my-gem", path: bundled_app do |s|
         s.add_development_dependency "rubocop", "~> 1.36.0"
       end
@@ -446,14 +524,32 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle :install
 
-      expect(err).to include("A gemspec development dependency (rubocop, ~> 1.36.0) is being overridden by a Gemfile dependency (rubocop, >= 0).")
-      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
+      expect(err).to be_empty
 
-      # This is not the best behavior I believe, it would be better if both
-      # requirements are considered if they are compatible, and a version
-      # satisfying both is chosen. But not sure about changing it right now, so
-      # I went with a warning for the time being.
-      expect(the_bundle).to include_gems("rubocop 1.37.1")
+      expect(the_bundle).to include_gems("rubocop 1.36.0")
+    end
+
+    it "raises an error if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with incompatible requirements" do
+      build_lib "my-gem", path: bundled_app do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+        build_gem "rubocop", "1.37.1"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gemspec
+
+        gem "rubocop", "~> 1.37.0", group: :development
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("The rubocop dependency has conflicting requirements in Gemfile (~> 1.37.0) and gemspec (~> 1.36.0)")
     end
 
     it "includes the gem without warning if two gemspecs add it with the same requirement" do
@@ -485,33 +581,85 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rubocop 1.36.0")
     end
 
-    it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do
-      build_lib "my-gem", path: bundled_app do |s|
-        s.add_development_dependency "rails", ">= 5"
+    it "includes the gem without warning if two gemspecs add it with compatible requirements" do
+      gem1 = tmp("my-gem-1")
+      gem2 = tmp("my-gem-2")
+
+      build_lib "my-gem", path: gem1 do |s|
+        s.add_development_dependency "rubocop", "~> 1.0"
+      end
+
+      build_lib "my-gem-2", path: gem2 do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
       end
 
       build_repo4 do
-        build_gem "rails", "7.0.8"
+        build_gem "rubocop", "1.36.0"
       end
 
       gemfile <<~G
         source "https://gem.repo4"
 
-        gem "rails", "~> 7.0.8"
-
-        gemspec
+        gemspec path: "#{gem1}"
+        gemspec path: "#{gem2}"
       G
 
       bundle :install
 
-      expect(err).to include("A gemspec development dependency (rails, >= 5) is being overridden by a Gemfile dependency (rails, ~> 7.0.8).")
-      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
+      expect(err).to be_empty
+      expect(the_bundle).to include_gems("rubocop 1.36.0")
+    end
 
-      # This is not the best behavior I believe, it would be better if both
-      # requirements are considered if they are compatible, and a version
-      # satisfying both is chosen. But not sure about changing it right now, so
-      # I went with a warning for the time being.
-      expect(the_bundle).to include_gems("rails 7.0.8")
+    it "errors out if two gemspecs add it with incompatible requirements" do
+      gem1 = tmp("my-gem-1")
+      gem2 = tmp("my-gem-2")
+
+      build_lib "my-gem", path: gem1 do |s|
+        s.add_development_dependency "rubocop", "~> 2.0"
+      end
+
+      build_lib "my-gem-2", path: gem2 do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gemspec path: "#{gem1}"
+        gemspec path: "#{gem2}"
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
+    end
+
+    it "errors out if a gem is specified in a gemspec and in the Gemfile" do
+      gem = tmp("my-gem-1")
+
+      build_lib "rubocop", path: gem do |s|
+        s.add_development_dependency "rubocop", "~> 1.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "rubocop", :path => "#{gem}"
+        gemspec path: "#{gem}"
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("There was an error parsing `Gemfile`: You cannot specify the same gem twice coming from different sources.")
+      expect(err).to include("You specified that rubocop (>= 0) should come from source at `#{gem}` and gemspec at `#{gem}`")
     end
 
     it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do
@@ -596,8 +744,6 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "gracefully handles error when rubygems server is unavailable" do
-      skip "networking issue" if Gem.win_platform?
-
       install_gemfile <<-G, artifice: nil, raise_on_error: false
         source "https://gem.repo1"
         source "http://0.0.0.0:9384" do
@@ -605,20 +751,19 @@ RSpec.describe "bundle install with gem sources" do
         end
       G
 
-      expect(err).to include("Could not fetch specs from http://0.0.0.0:9384/")
+      expect(err).to eq("Could not reach host 0.0.0.0:9384. Check your network connection and try again.")
       expect(err).not_to include("file://")
     end
 
     it "fails gracefully when downloading an invalid specification from the full index" do
       build_repo2(build_compact_index: false) do
         build_gem "ajp-rails", "0.0.0", gemspec: false, skip_validation: true do |s|
-          bad_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
+          invalid_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
           s.
             instance_variable_get(:@spec).
-            instance_variable_set(:@dependencies, bad_deps)
-
-          raise "failed to set bad deps" unless s.dependencies == bad_deps
+            instance_variable_set(:@dependencies, invalid_deps)
         end
+
         build_gem "ruby-ajp", "1.0.0"
       end
 
@@ -628,7 +773,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "ajp-rails", "0.0.0"
       G
 
-      expect(last_command.stdboth).not_to match(/Error Report/i)
+      expect(stdboth).not_to match(/Error Report/i)
       expect(err).to include("An error occurred while installing ajp-rails (0.0.0), and Bundler cannot continue.").
         and include("Bundler::APIResponseInvalidDependenciesError")
     end
@@ -688,10 +833,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -714,10 +859,10 @@ RSpec.describe "bundle install with gem sources" do
          DEPENDENCIES
          #{checksums}
          RUBY VERSION
-            #{Bundler::RubyVersion.system}
+           #{Bundler::RubyVersion.system}
 
          BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
         L
       end
 
@@ -833,7 +978,7 @@ RSpec.describe "bundle install with gem sources" do
       bundle "config set --local path vendor"
       bundle :install, raise_on_error: false
       expect(err).to include(bundle_path.to_s)
-      expect(err).to include("grant write permissions")
+      expect(err).to include("grant executable permissions")
     end
   end
 
@@ -863,6 +1008,36 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).to include(
         "There was an error while trying to create `#{gems_path.join("myrack-1.0.0")}`. " \
         "It is likely that you need to grant executable permissions for all parent directories and write permissions for `#{gems_path}`."
+      )
+    end
+  end
+
+  describe "when there's an empty install folder (like with default gems) without cd permissions", :permissions do
+    let(:full_gem_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems/myrack-1.0.0") }
+
+    before do
+      FileUtils.mkdir_p(full_gem_path)
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", full_gem_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, raise_on_error: false
+      ensure
+        FileUtils.chmod("+x", full_gem_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to write to `#{full_gem_path}`. " \
+        "It is likely that you need to grant write permissions for that path."
       )
     end
   end
@@ -983,7 +1158,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-x", foo_path)
 
       begin
-        bundle "install --redownload", raise_on_error: false
+        bundle "install --force", raise_on_error: false
       ensure
         FileUtils.chmod("+x", foo_path)
       end
@@ -1010,7 +1185,7 @@ RSpec.describe "bundle install with gem sources" do
       G
     end
 
-    it "should display a proper message to explain the problem" do
+    it "should still work" do
       bundle "config set --local path vendor"
       bundle :install
       expect(out).to include("Bundle complete!")
@@ -1019,7 +1194,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-w", gem_home)
 
       begin
-        bundle "install --redownload"
+        bundle "install --force"
       ensure
         FileUtils.chmod("+w", gem_home)
       end
@@ -1053,7 +1228,7 @@ RSpec.describe "bundle install with gem sources" do
 
       FileUtils.chmod(0o777, gems_path)
 
-      bundle "install --redownload", raise_on_error: false
+      bundle "install --force", raise_on_error: false
 
       expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
     end
@@ -1131,6 +1306,108 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "parallel make" do
+    before do
+      unless Gem::Installer.private_method_defined?(:build_jobs)
+        skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
+      end
+
+      @old_makeflags = ENV["MAKEFLAGS"]
+      @gemspec = nil
+
+      extconf_code = <<~CODE
+        require "mkmf"
+        create_makefile("foo")
+      CODE
+
+      build_repo4 do
+        build_gem "mypsych", "4.0.6" do |s|
+          @gemspec = s
+          extension = "ext/mypsych/extconf.rb"
+          s.extensions = extension
+
+          s.write(extension, extconf_code)
+        end
+      end
+    end
+
+    after do
+      if @old_makeflags
+        ENV["MAKEFLAGS"] = @old_makeflags
+      else
+        ENV.delete("MAKEFLAGS")
+      end
+    end
+
+    it "doesn't pass down -j to make when MAKEFLAGS is set" do
+      ENV["MAKEFLAGS"] = "-j1"
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).not_to include("make -j8")
+    end
+
+    it "pass down the BUNDLE_JOBS to RubyGems when running the compilation of an extension" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j8")
+    end
+
+    it "uses nprocessors by default" do
+      ENV.delete("MAKEFLAGS")
+
+      install_gemfile(<<~G)
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+
+      gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
+
+      expect(gem_make_out).to include("make -j#{Etc.nprocessors + 1}")
+    end
+  end
+
+  describe "when configured path is UTF-8 and a file inside a gem package too" do
+    let(:app_path) do
+      path = tmp("♥")
+      FileUtils.mkdir_p(path)
+      path
+    end
+
+    let(:path) do
+      root.join("vendor/bundle")
+    end
+
+    before do
+      build_repo4 do
+        build_gem "mygem" do |s|
+          s.write "spec/fixtures/_posts/2016-04-01-错误.html"
+        end
+      end
+    end
+
+    it "works" do
+      bundle "config path #{app_path}/vendor/bundle", dir: app_path
+
+      install_gemfile app_path.join("Gemfile"),<<~G, dir: app_path
+        source "https://gem.repo4"
+        gem "mygem", "1.0"
+      G
+    end
+  end
+
   context "after installing with --standalone" do
     before do
       install_gemfile <<-G
@@ -1195,7 +1472,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       simulate_platform("x86_64-linux", &example)
@@ -1204,7 +1481,8 @@ RSpec.describe "bundle install with gem sources" do
     it "adds the current platform to the lockfile" do
       bundle "install --verbose"
 
-      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+      expect(out).to include("re-resolving dependencies because your lockfile is missing the current platform")
+      expect(out).not_to include("you are adding a new platform to your lockfile")
 
       expect(lockfile).to eq <<~L
         GEM
@@ -1221,7 +1499,7 @@ RSpec.describe "bundle install with gem sources" do
           libv8
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1297,7 +1575,7 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1338,11 +1616,60 @@ RSpec.describe "bundle install with gem sources" do
           loofah (~> 2.12.0)
         #{checksums}
         RUBY VERSION
-           #{Bundler::RubyVersion.system}
+          #{Bundler::RubyVersion.system}
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
+    end
+  end
+
+  context "when lockfile has incorrect dependencies" do
+    before do
+      build_repo2
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack_middleware"
+      G
+
+      system_gems "myrack_middleware-1.0", path: default_bundle_path
+
+      # we want to raise when the 1.0 line should be followed by "            myrack (= 0.9.1)" but isn't
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo2/
+          specs:
+            myrack_middleware (1.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack_middleware
+
+        BUNDLED WITH
+         #{Bundler::VERSION}
+      L
+    end
+
+    it "raises a clear error message when frozen" do
+      bundle "config set frozen true"
+      bundle "install", raise_on_error: false
+
+      expect(exitstatus).to eq(41)
+      expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    end
+
+    it "updates the lockfile when not frozen" do
+      missing_dep = "myrack (0.9.1)"
+      expect(lockfile).not_to include(missing_dep)
+
+      bundle "config set frozen false"
+      bundle :install
+
+      expect(lockfile).to include(missing_dep)
+      expect(out).to include("now installed")
     end
   end
 
@@ -1385,68 +1712,94 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   context "with --prefer-local flag" do
-    before do
-      build_repo4 do
-        build_gem "foo", "1.0.1"
-        build_gem "foo", "1.0.0"
-        build_gem "bar", "1.0.0"
+    context "and gems available locally" do
+      before do
+        build_repo4 do
+          build_gem "foo", "1.0.1"
+          build_gem "foo", "1.0.0"
+          build_gem "bar", "1.0.0"
 
-        build_gem "a", "1.0.0" do |s|
-          s.add_dependency "foo", "~> 1.0.0"
+          build_gem "a", "1.0.0" do |s|
+            s.add_dependency "foo", "~> 1.0.0"
+          end
+
+          build_gem "b", "1.0.0" do |s|
+            s.add_dependency "foo", "~> 1.0.1"
+          end
         end
 
-        build_gem "b", "1.0.0" do |s|
-          s.add_dependency "foo", "~> 1.0.1"
+        system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
+      end
+
+      it "fetches remote sources when not available locally" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "foo"
+          gem "bar"
+        G
+
+        expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "fetches remote sources when local version does not match requirements" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "foo", "1.0.1"
+          gem "bar"
+        G
+
+        expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "uses the locally available version for sub-dependencies when possible" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "a"
+        G
+
+        expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "b"
+        G
+
+        expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
+        expect(last_command).to be_success
+      end
+    end
+
+    context "and no gems available locally" do
+      before do
+        build_repo4 do
+          build_gem "myreline", "0.3.8"
+          build_gem "debug", "0.2.1"
+
+          build_gem "debug", "1.10.0" do |s|
+            s.add_dependency "myreline"
+          end
         end
       end
 
-      system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
-    end
+      it "resolves to the latest version if no gems are available locally" do
+        install_gemfile <<~G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
 
-    it "fetches remote sources when not available locally" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
+          gem "debug"
+        G
 
-        gem "foo"
-        gem "bar"
-      G
-
-      expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "fetches remote sources when local version does not match requirements" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "foo", "1.0.1"
-        gem "bar"
-      G
-
-      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "uses the locally available version for sub-dependencies when possible" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "a"
-      G
-
-      expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "b"
-      G
-
-      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
-      expect(last_command).to be_success
+        expect(out).to include("Fetching debug 1.10.0").and include("Installing debug 1.10.0").and include("Fetching myreline 0.3.8").and include("Installing myreline 0.3.8")
+        expect(last_command).to be_success
+      end
     end
   end
 
@@ -1543,7 +1896,7 @@ RSpec.describe "bundle install with gem sources" do
           zzz!
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -1603,5 +1956,80 @@ RSpec.describe "bundle install with gem sources" do
     expected_executables = [vendored_gems("bin/myrackup").to_s]
     expected_executables << vendored_gems("bin/myrackup.bat").to_s if Gem.win_platform?
     expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
+
+  it "prevents removing binstubs when BUNDLE_CLEAN is set" do
+    build_repo4 do
+      build_gem "kamal", "4.0.6" do |s|
+        s.executables = ["kamal"]
+      end
+    end
+
+    gemfile = <<~G
+      source "https://gem.repo4"
+      gem "kamal"
+    G
+
+    install_gemfile(gemfile, env: { "BUNDLE_CLEAN" => "true", "BUNDLE_PATH" => "vendor/bundle" })
+
+    expected_executables = [vendored_gems("bin/kamal").to_s]
+    expected_executables << vendored_gems("bin/kamal.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
+
+  it "preserves lockfile versions conservatively" do
+    build_repo4 do
+      build_gem "mypsych", "4.0.6" do |s|
+        s.add_dependency "mystringio"
+      end
+
+      build_gem "mypsych", "5.1.2" do |s|
+        s.add_dependency "mystringio"
+      end
+
+      build_gem "mystringio", "3.1.0"
+      build_gem "mystringio", "3.1.1"
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          mypsych (4.0.6)
+            mystringio
+          mystringio (3.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        mypsych (~> 4.0)
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    install_gemfile <<~G
+      source "https://gem.repo4"
+      gem "mypsych", "~> 5.0"
+    G
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          mypsych (5.1.2)
+            mystringio
+          mystringio (3.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        mypsych (~> 5.0)
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
   end
 end

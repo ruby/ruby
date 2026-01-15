@@ -9,6 +9,10 @@ module Bundler
       spec
     end
 
+    def insecurely_materialized?
+      false
+    end
+
     attr_reader :checksum
     attr_accessor :stub, :ignored
 
@@ -28,6 +32,17 @@ module Bundler
 
     # @!group Stub Delegates
 
+    def ignored?
+      return @ignored unless @ignored.nil?
+
+      @ignored = missing_extensions?
+      return false unless @ignored
+
+      warn "Source #{source} is ignoring #{self} because it is missing extensions"
+
+      true
+    end
+
     def manually_installed?
       # This is for manually installed gems which are gems that were fixed in place after a
       # failed installation. Once the issue was resolved, the user then manually created
@@ -45,8 +60,8 @@ module Bundler
       true
     end
 
-    def activated
-      stub.activated
+    def activated?
+      stub.activated?
     end
 
     def activated=(activated)
@@ -99,6 +114,10 @@ module Bundler
 
     def raw_require_paths
       stub.raw_require_paths
+    end
+
+    def inspect
+      "#<#{self.class} @name=\"#{name}\" (#{full_name.delete_prefix("#{name}-")})>"
     end
 
     private

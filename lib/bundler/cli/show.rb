@@ -6,7 +6,7 @@ module Bundler
     def initialize(options, gem_name)
       @options = options
       @gem_name = gem_name
-      @verbose = options[:verbose] || options[:outdated]
+      @verbose = options[:verbose]
       @latest_specs = fetch_latest_specs if @verbose
     end
 
@@ -24,7 +24,7 @@ module Bundler
           return unless spec
           path = spec.full_gem_path
           unless File.directory?(path)
-            return Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at: #{path}"
+            return Bundler.ui.warn "The gem #{gem_name} is missing. It should be installed at #{path}, but was not found"
           end
         end
         return Bundler.ui.info(path)
@@ -57,12 +57,8 @@ module Bundler
 
     def fetch_latest_specs
       definition = Bundler.definition(true)
-      if options[:outdated]
-        Bundler.ui.info "Fetching remote specs for outdated check...\n\n"
-        Bundler.ui.silence { definition.resolve_remotely! }
-      else
-        definition.resolve_with_cache!
-      end
+      Bundler.ui.info "Fetching remote specs for outdated check...\n\n"
+      Bundler.ui.silence { definition.remotely! }
       Bundler.reset!
       definition.specs
     end

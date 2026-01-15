@@ -7,6 +7,7 @@
 #define PRISM_OPTIONS_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_char.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
@@ -38,7 +39,25 @@ typedef struct pm_options_scope {
 
     /** The names of the locals in the scope. */
     pm_string_t *locals;
+
+    /** Flags for the set of forwarding parameters in this scope. */
+    uint8_t forwarding;
 } pm_options_scope_t;
+
+/** The default value for parameters. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_NONE = 0x0;
+
+/** When the scope is fowarding with the * parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS = 0x1;
+
+/** When the scope is fowarding with the ** parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS = 0x2;
+
+/** When the scope is fowarding with the & parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_BLOCK = 0x4;
+
+/** When the scope is fowarding with the ... parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_ALL = 0x8;
 
 // Forward declaration needed by the callback typedef.
 struct pm_options;
@@ -63,11 +82,26 @@ typedef void (*pm_options_shebang_callback_t)(struct pm_options *options, const 
  * parse in the same way as a specific version of CRuby would have.
  */
 typedef enum {
-    /** The current version of prism. */
-    PM_OPTIONS_VERSION_LATEST = 0,
+    /** If an explicit version is not provided, the current version of prism will be used. */
+    PM_OPTIONS_VERSION_UNSET = 0,
 
     /** The vendored version of prism in CRuby 3.3.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_3 = 1
+    PM_OPTIONS_VERSION_CRUBY_3_3 = 1,
+
+    /** The vendored version of prism in CRuby 3.4.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_4 = 2,
+
+    /** The vendored version of prism in CRuby 4.0.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_5 = 3,
+
+    /** The vendored version of prism in CRuby 4.0.x. */
+    PM_OPTIONS_VERSION_CRUBY_4_0 = 3,
+
+    /** The vendored version of prism in CRuby 4.1.x. */
+    PM_OPTIONS_VERSION_CRUBY_4_1 = 4,
+
+    /** The current version of prism. */
+    PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_1
 } pm_options_version_t;
 
 /**
@@ -146,6 +180,23 @@ typedef struct pm_options {
      * to pass this information to the parser so that it can behave correctly.
      */
     bool main_script;
+
+    /**
+     * When the file being parsed is considered a "partial" script, jumps will
+     * not be marked as errors if they are not contained within loops/blocks.
+     * This is used in the case that you're parsing a script that you know will
+     * be embedded inside another script later, but you do not have that context
+     * yet. For example, when parsing an ERB template that will be evaluated
+     * inside another script.
+     */
+    bool partial_script;
+
+    /**
+     * Whether or not the parser should freeze the nodes that it creates. This
+     * makes it possible to have a deeply frozen AST that is safe to share
+     * between concurrency primitives.
+     */
+    bool freeze;
 } pm_options_t;
 
 /**
@@ -192,6 +243,8 @@ static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
  * @param shebang_callback The shebang callback to set.
  * @param shebang_callback_data Any additional data that should be passed along
  *   to the callback.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data);
 
@@ -200,6 +253,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *optio
  *
  * @param options The options struct to set the filepath on.
  * @param filepath The filepath to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath);
 
@@ -208,6 +263,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, cons
  *
  * @param options The options struct to set the line on.
  * @param line The line to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t line);
 
@@ -216,6 +273,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t 
  *
  * @param options The options struct to set the encoding on.
  * @param encoding The encoding to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding);
 
@@ -224,6 +283,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
  *
  * @param options The options struct to set the encoding_locked value on.
  * @param encoding_locked The encoding_locked value to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked);
 
@@ -232,6 +293,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *option
  *
  * @param options The options struct to set the frozen string literal value on.
  * @param frozen_string_literal The frozen string literal value to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
 
@@ -240,6 +303,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *
  *
  * @param options The options struct to set the command line option on.
  * @param command_line The command_line value to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, uint8_t command_line);
 
@@ -252,6 +317,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
  * @param version The version to set.
  * @param length The length of the version string.
  * @return Whether or not the version was parsed successfully.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length);
 
@@ -260,8 +327,30 @@ PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const
  *
  * @param options The options struct to set the main script value on.
  * @param main_script The main script value to set.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, bool main_script);
+
+/**
+ * Set the partial script option on the given options struct.
+ *
+ * @param options The options struct to set the partial script value on.
+ * @param partial_script The partial script value to set.
+ *
+ * \public \memberof pm_options
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options, bool partial_script);
+
+/**
+ * Set the freeze option on the given options struct.
+ *
+ * @param options The options struct to set the freeze value on.
+ * @param freeze The freeze value to set.
+ *
+ * \public \memberof pm_options
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
@@ -269,6 +358,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, b
  * @param options The options struct to initialize the scopes array on.
  * @param scopes_count The number of scopes to allocate.
  * @return Whether or not the scopes array was initialized successfully.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
 
@@ -278,6 +369,8 @@ PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_
  * @param options The options struct to get the scope from.
  * @param index The index of the scope to get.
  * @return A pointer to the scope at the given index.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm_options_t *options, size_t index);
 
@@ -288,6 +381,8 @@ PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm
  * @param scope The scope struct to initialize.
  * @param locals_count The number of locals to allocate.
  * @return Whether or not the scope was initialized successfully.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
 
@@ -297,13 +392,27 @@ PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, si
  * @param scope The scope struct to get the local from.
  * @param index The index of the local to get.
  * @return A pointer to the local at the given index.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index);
+
+/**
+ * Set the forwarding option on the given scope struct.
+ *
+ * @param scope The scope struct to set the forwarding on.
+ * @param forwarding The forwarding value to set.
+ *
+ * \public \memberof pm_options
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding);
 
 /**
  * Free the internal memory associated with the options.
  *
  * @param options The options struct whose internal memory should be freed.
+ *
+ * \public \memberof pm_options
  */
 PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
 
@@ -330,6 +439,10 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `1`     | -l command line option     |
  * | `1`     | -a command line option     |
  * | `1`     | the version                |
+ * | `1`     | encoding locked            |
+ * | `1`     | main script                |
+ * | `1`     | partial script             |
+ * | `1`     | freeze                     |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *
@@ -345,6 +458,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |
+ * | `1`     | the forwarding flags       |
  * | ...     | the locals                 |
  *
  * Each local is laid out as follows:
@@ -362,8 +476,8 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * * The encoding can have a length of 0, in which case we'll use the default
  *   encoding (UTF-8). If it's not 0, it should correspond to a name of an
  *   encoding that can be passed to `Encoding.find` in Ruby.
- * * The frozen string literal and suppress warnings fields are booleans, so
- *   their values should be either 0 or 1.
+ * * The frozen string literal, encoding locked, main script, and partial script
+ *   fields are booleans, so their values should be either 0 or 1.
  * * The number of scopes can be 0.
  *
  * @param options The options struct to deserialize into.

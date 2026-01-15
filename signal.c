@@ -45,6 +45,7 @@
 #include "ruby_atomic.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -402,7 +403,6 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     return rb_call_super(2, args);
 }
 
-void rb_malloc_info_show_results(void); /* gc.c */
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 static void reset_sigmask(int sig);
 #endif
@@ -413,7 +413,6 @@ ruby_default_signal(int sig)
 #if USE_DEBUG_COUNTER
     rb_debug_counter_show_results("killed by signal.");
 #endif
-    rb_malloc_info_show_results();
 
     signal(sig, SIG_DFL);
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
@@ -665,6 +664,10 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+static rb_nativethread_lock_t sig_check_lock;
+#endif
+
 static int
 signal_ignored(int sig)
 {
@@ -674,9 +677,16 @@ signal_ignored(int sig)
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
     func = old.sa_handler;
+#elif defined SIG_GET
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
+    // SIG_GET: Returns the current value of the signal.
+    func = signal(sig, SIG_GET);
 #else
-    sighandler_t old = signal(sig, SIG_DFL);
+    sighandler_t old;
+    rb_native_mutex_lock(&sig_check_lock);
+    old = signal(sig, SIG_DFL);
     signal(sig, old);
+    rb_native_mutex_unlock(&sig_check_lock);
     func = old;
 #endif
     if (func == SIG_IGN) return 1;
@@ -708,7 +718,7 @@ sighandler(int sig)
 int
 rb_signal_buff_size(void)
 {
-    return signal_buff.size;
+    return RUBY_ATOMIC_LOAD(signal_buff.size);
 }
 
 static void
@@ -736,7 +746,7 @@ rb_get_next_signal(void)
 {
     int i, sig = 0;
 
-    if (signal_buff.size != 0) {
+    if (rb_signal_buff_size() != 0) {
         for (i=1; i<RUBY_NSIG; i++) {
             if (signal_buff.cnt[i] > 0) {
                 ATOMIC_DEC(signal_buff.cnt[i]);
@@ -751,13 +761,15 @@ rb_get_next_signal(void)
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
 static const char *received_signal;
-# define clear_received_signal() (void)(ruby_disable_gc = 0, received_signal = 0)
+# define clear_received_signal() do { \
+    if (GET_VM() != NULL) rb_gc_enable(); \
+    received_signal = 0; \
+} while (0)
 #else
 # define clear_received_signal() ((void)0)
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -803,7 +815,8 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
-#   if __DARWIN_UNIX03
+#   include <AvailabilityMacros.h>
+#   if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 #     define MCTX_SS_REG(reg) __ss.__##reg
 #   else
 #     define MCTX_SS_REG(reg) ss.reg
@@ -842,13 +855,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
         (sp_page <= fault_page && fault_page <= bp_page)) {
         rb_execution_context_t *ec = GET_EC();
-        int crit = FALSE;
+        ruby_stack_overflow_critical_level crit = rb_stack_overflow_signal;
         int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
         while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
             /* drop the last tag if it is close to the fault,
              * otherwise it can cause stack overflow again at the same
              * place. */
-            if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
+            if (!ec->tag->prev || !--uplevel) {
+                crit = rb_stack_overflow_fatal;
+                break;
+            }
+            rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
@@ -860,10 +877,12 @@ static void
 check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    if (!ec) return;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     if (ruby_stack_overflowed_p(th, addr)) {
         reset_sigmask(sig);
-        rb_ec_stack_overflow(th->ec, FALSE);
+        rb_ec_stack_overflow(th->ec, 1);
     }
 }
 # endif
@@ -930,6 +949,20 @@ sigsegv(int sig SIGINFO_ARG)
 }
 #endif
 
+#ifdef SIGABRT
+
+static sighandler_t default_sigabrt_handler;
+NORETURN(static ruby_sigaction_t sigabrt);
+
+static void
+sigabrt(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("ABRT");
+    CHECK_STACK_OVERFLOW();
+    rb_bug_for_fatal_signal(default_sigabrt_handler, sig, SIGINFO_CTX, "Aborted" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
 #ifdef SIGILL
 
 static sighandler_t default_sigill_handler;
@@ -971,7 +1004,7 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
     if (prev) {
         ssize_t RB_UNUSED_VAR(err);
         static const int stderr_fd = 2;
-#define NOZ(name, str) name[sizeof(str)-1] = str
+#define NOZ(name, str) RBIMPL_ATTR_NONSTRING() name[sizeof(str)-1] = str
         static const char NOZ(msg1, " received in ");
         static const char NOZ(msg2, " handler\n");
 
@@ -1000,7 +1033,9 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
         ruby_abort();
     }
 
-    ruby_disable_gc = 1;
+    if (GET_VM() != NULL) {
+        rb_gc_disable_no_rest();
+    }
 }
 #endif
 
@@ -1031,7 +1066,7 @@ signal_exec(VALUE cmd, int sig)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         VALUE signum = INT2NUM(sig);
-        rb_eval_cmd_kw(cmd, rb_ary_new3(1, signum), RB_NO_KEYWORDS);
+        rb_eval_cmd_call_kw(cmd, 1, &signum, RB_NO_KEYWORDS);
     }
     EC_POP_TAG();
     ec = GET_EC();
@@ -1217,11 +1252,6 @@ trap_handler(VALUE *cmd, int sig)
                 break;
             }
         }
-        else {
-            rb_proc_t *proc;
-            GetProcPtr(*cmd, proc);
-            (void)proc;
-        }
     }
 
     return func;
@@ -1316,31 +1346,36 @@ reserved_signal_p(int signo)
 
 /*
  * call-seq:
- *   Signal.trap( signal, command ) -> obj
- *   Signal.trap( signal ) {| | block } -> obj
+ *   Signal.trap(signal, command) -> obj
+ *   Signal.trap(signal) { ... } -> obj
  *
- * Specifies the handling of signals. The first parameter is a signal
- * name (a string such as ``SIGALRM'', ``SIGUSR1'', and so on) or a
- * signal number. The characters ``SIG'' may be omitted from the
- * signal name. The command or block specifies code to be run when the
+ * Specifies the handling of signals. Returns the previous handler for
+ * the given signal.
+ *
+ * Argument +signal+ is a signal name (a string or symbol such
+ * as +SIGALRM+ or +SIGUSR1+) or an integer signal number. When +signal+
+ * is a string or symbol, the leading characters +SIG+ may be omitted.
+ *
+ * Argument +command+ or block provided specifies code to be run when the
  * signal is raised.
- * If the command is the string ``IGNORE'' or ``SIG_IGN'', the signal
- * will be ignored.
- * If the command is ``DEFAULT'' or ``SIG_DFL'', the Ruby's default handler
- * will be invoked.
- * If the command is ``EXIT'', the script will be terminated by the signal.
- * If the command is ``SYSTEM_DEFAULT'', the operating system's default
- * handler will be invoked.
- * Otherwise, the given command or block will be run.
- * The special signal name ``EXIT'' or signal number zero will be
- * invoked just prior to program termination.
- * trap returns the previous handler for the given signal.
+ *
+ * Argument +command+ may also be a string or symbol with the following special
+ * values:
+ *
+ * - +IGNORE+, +SIG_IGN+: the signal will be ignored.
+ * - +DEFAULT+, +SIG_DFL+: Ruby's default handler will be invoked.
+ * - +EXIT+: the process will be terminated by the signal.
+ * - +SYSTEM_DEFAULT+: the operating system's default handler will be invoked.
+ *
+ * The special signal name +EXIT+ or signal number zero will be
+ * invoked just prior to program termination:
  *
  *     Signal.trap(0, proc { puts "Terminating: #{$$}" })
  *     Signal.trap("CLD")  { puts "Child died" }
  *     fork && Process.wait
  *
- * <em>produces:</em>
+ * Outputs:
+ *
  *     Terminating: 27461
  *     Child died
  *     Terminating: 27460
@@ -1496,6 +1531,9 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 
     // It should be ready to call rb_signal_exec()
     VM_ASSERT(GET_THREAD()->pending_interrupt_queue);
@@ -1534,6 +1572,10 @@ Init_signal(void)
         RB_ALTSTACK_INIT(GET_VM()->main_altstack, rb_allocate_sigaltstack());
         force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
 #endif
+
+#ifdef SIGABRT
+        force_install_sighandler(SIGABRT, (sighandler_t)sigabrt, &default_sigabrt_handler);
+#endif
     }
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sig_do_nothing);
@@ -1547,4 +1589,12 @@ Init_signal(void)
 #endif
 
     rb_enable_interrupt();
+}
+
+void
+rb_signal_atfork(void)
+{
+#if defined(HAVE_WORKING_FORK) && !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 }

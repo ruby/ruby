@@ -98,7 +98,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
-        unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+        unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
     }
 }
 
@@ -1155,8 +1155,8 @@ impl Assembler
                     let regs = Assembler::get_caller_save_regs();
 
                     // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
                     emit_pop(cb, Self::SCRATCH0);
+                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
@@ -1341,16 +1341,13 @@ impl Assembler
             Err(EmitError::RetryOnNextPage) => {
                 // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
                 // range limit. We can easily exceed the limit in case the jump straddles two pages.
-                // In this case, we retry with a fresh page.
+                // In this case, we retry with a fresh page once.
                 cb.set_label_state(starting_label_state);
-                cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation);
-                let result = asm.arm64_emit(cb, &mut ocb);
-                assert_ne!(
-                    Err(EmitError::RetryOnNextPage),
-                    result,
-                    "should not fail when writing to a fresh code page"
-                );
-                result
+                if cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation) {
+                    asm.arm64_emit(cb, &mut ocb)
+                } else {
+                    Err(EmitError::OutOfMemory)
+                }
             }
             result => result
         };
@@ -1364,7 +1361,7 @@ impl Assembler
             #[cfg(not(test))]
             cb.without_page_end_reserve(|cb| {
                 for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
-                    unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+                    unsafe { rb_jit_icache_invalidate(start as _, end as _) };
                 }
             });
 
@@ -1422,7 +1419,7 @@ mod tests {
     fn test_emit_cpop_all() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.cpop_all();
+        asm.cpop_all(crate::core::RegMapping::default());
         asm.compile_with_num_regs(&mut cb, 0);
     }
 

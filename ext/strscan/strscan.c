@@ -22,7 +22,15 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.1.dev"
+#define STRSCAN_VERSION "3.1.7.dev"
+
+
+#ifdef HAVE_RB_DEPRECATE_CONSTANT
+/* In ruby 3.0, defined but exposed in external headers */
+extern void rb_deprecate_constant(VALUE mod, const char *name);
+#else
+# define rb_deprecate_constant(mod, name) ((void)0)
+#endif
 
 /* =======================================================================
                          Data Type Definitions
@@ -30,7 +38,8 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 static VALUE StringScanner;
 static VALUE ScanError;
-static ID id_byteslice;
+
+static int usascii_encindex, utf8_encindex, binary_encindex;
 
 struct strscanner
 {
@@ -56,8 +65,13 @@ struct strscanner
 };
 
 #define MATCHED_P(s)          ((s)->flags & FLAG_MATCHED)
-#define MATCHED(s)             (s)->flags |= FLAG_MATCHED
-#define CLEAR_MATCH_STATUS(s)  (s)->flags &= ~FLAG_MATCHED
+#define MATCHED(s)            ((s)->flags |= FLAG_MATCHED)
+#define CLEAR_MATCHED(s)      ((s)->flags &= ~FLAG_MATCHED)
+#define CLEAR_NAMED_CAPTURES(s) ((s)->regex = Qnil)
+#define CLEAR_MATCH_STATUS(s) do {\
+    CLEAR_MATCHED(s);\
+    CLEAR_NAMED_CAPTURES(s);\
+} while (0)
 
 #define S_PBEG(s)  (RSTRING_PTR((s)->str))
 #define S_LEN(s)  (RSTRING_LEN((s)->str))
@@ -90,7 +104,6 @@ static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
 
 static VALUE strscan_s_mustc _((VALUE self));
 static VALUE strscan_terminate _((VALUE self));
-static VALUE strscan_clear _((VALUE self));
 static VALUE strscan_get_string _((VALUE self));
 static VALUE strscan_set_string _((VALUE self, VALUE str));
 static VALUE strscan_concat _((VALUE self, VALUE str));
@@ -112,13 +125,11 @@ static VALUE strscan_search_full _((VALUE self, VALUE re,
 static void adjust_registers_to_matched _((struct strscanner *p));
 static VALUE strscan_getch _((VALUE self));
 static VALUE strscan_get_byte _((VALUE self));
-static VALUE strscan_getbyte _((VALUE self));
 static VALUE strscan_peek _((VALUE self, VALUE len));
-static VALUE strscan_peep _((VALUE self, VALUE len));
+static VALUE strscan_scan_base10_integer _((VALUE self));
 static VALUE strscan_unscan _((VALUE self));
 static VALUE strscan_bol_p _((VALUE self));
 static VALUE strscan_eos_p _((VALUE self));
-static VALUE strscan_empty_p _((VALUE self));
 static VALUE strscan_rest_p _((VALUE self));
 static VALUE strscan_matched_p _((VALUE self));
 static VALUE strscan_matched _((VALUE self));
@@ -201,7 +212,7 @@ strscan_memsize(const void *ptr)
 static const rb_data_type_t strscanner_type = {
     "StringScanner",
     {strscan_mark, strscan_free, strscan_memsize},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -213,7 +224,6 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    p->regex = Qnil;
     return obj;
 }
 
@@ -228,7 +238,7 @@ strscan_s_allocate(VALUE klass)
  * is the given `string`;
  * sets the [fixed-anchor property][10]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.string        # => "foobarbaz"
  * scanner.fixed_anchor? # => false
@@ -266,7 +276,7 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
         p->fixed_anchor_p = false;
     }
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
 
     return self;
 }
@@ -296,7 +306,7 @@ strscan_init_copy(VALUE vself, VALUE vorig)
     orig = check_strscan(vorig);
     if (self != orig) {
 	self->flags = orig->flags;
-	self->str = orig->str;
+	RB_OBJ_WRITE(vself, &self->str, orig->str);
 	self->prev = orig->prev;
 	self->curr = orig->curr;
 	if (rb_reg_region_copy(&self->regs, &orig->regs))
@@ -336,7 +346,7 @@ strscan_s_mustc(VALUE self)
  * and clears [match values][9];
  * returns +self+:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.exist?(/bar/)          # => 6
  * scanner.reset                  # => #<StringScanner 0/9 @ "fooba...">
@@ -379,21 +389,6 @@ strscan_terminate(VALUE self)
 }
 
 /*
- * call-seq:
- *   clear -> self
- *
- * This method is obsolete; use the equivalent method StringScanner#terminate.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_clear(VALUE self)
-{
-    rb_warning("StringScanner#clear is obsolete; use #terminate instead");
-    return strscan_terminate(self);
-}
-
-/*
  * :markup: markdown
  * :include: strscan/link_refs.txt
  *
@@ -402,7 +397,7 @@ strscan_clear(VALUE self)
  *
  * Returns the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobar')
  * scanner.string # => "foobar"
  * scanner.concat('baz')
@@ -432,7 +427,7 @@ strscan_get_string(VALUE self)
  * - Clears [match values][9].
  * - Returns `other_string`.
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobar')
  * scanner.scan(/foo/)
  * put_situation(scanner)
@@ -460,7 +455,7 @@ strscan_set_string(VALUE self, VALUE str)
     struct strscanner *p = check_strscan(self);
 
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
     p->curr = 0;
     CLEAR_MATCH_STATUS(p);
     return str;
@@ -480,7 +475,7 @@ strscan_set_string(VALUE self, VALUE str)
  *   or [match values][9].
  *
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foo')
  * scanner.string           # => "foo"
  * scanner.terminate
@@ -517,7 +512,7 @@ strscan_get_pos(VALUE self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    return INT2FIX(p->curr);
+    return LONG2NUM(p->curr);
 }
 
 /*
@@ -547,7 +542,7 @@ strscan_set_pos(VALUE self, VALUE v)
     long i;
 
     GET_SCANNER(self, p);
-    i = NUM2INT(v);
+    i = NUM2LONG(v);
     if (i < 0) i += S_LEN(p);
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
@@ -568,19 +563,20 @@ match_target(struct strscanner *p)
 }
 
 static inline void
-set_registers(struct strscanner *p, size_t length)
+set_registers(struct strscanner *p, size_t pos, size_t length)
 {
     const int at = 0;
     OnigRegion *regs = &(p->regs);
     onig_region_clear(regs);
     if (onig_region_set(regs, at, 0, 0)) return;
     if (p->fixed_anchor_p) {
-        regs->beg[at] = p->curr;
-        regs->end[at] = p->curr + length;
+        regs->beg[at] = pos + p->curr;
+        regs->end[at] = pos + p->curr + length;
     }
     else
     {
-        regs->end[at] = length;
+        regs->beg[at] = pos;
+        regs->end[at] = pos + length;
     }
 }
 
@@ -626,12 +622,13 @@ rb_reg_onig_match(VALUE re, VALUE str,
                   OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
                   void *args, struct re_registers *regs)
 {
+    OnigPosition result;
     regex_t *reg = rb_reg_prepare_re(re, str);
 
     bool tmpreg = reg != RREGEXP_PTR(re);
     if (!tmpreg) RREGEXP(re)->usecnt++;
 
-    OnigPosition result = match(reg, str, regs, args);
+    result = match(reg, str, regs, args);
 
     if (!tmpreg) RREGEXP(re)->usecnt--;
     if (tmpreg) {
@@ -681,6 +678,14 @@ strscan_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_pt
                        ONIG_OPTION_NONE);
 }
 
+static void
+strscan_enc_check(VALUE str1, VALUE str2)
+{
+    if (RB_ENCODING_GET(str1) != RB_ENCODING_GET(str2)) {
+        rb_enc_check(str1, str2);
+    }
+}
+
 static VALUE
 strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly)
 {
@@ -694,12 +699,13 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
 
     if (RB_TYPE_P(pattern, T_REGEXP)) {
-        p->regex = pattern;
-        OnigPosition ret = rb_reg_onig_match(pattern,
-                                             p->str,
-                                             headonly ? strscan_match : strscan_search,
-                                             (void *)p,
-                                             &(p->regs));
+        OnigPosition ret;
+        RB_OBJ_WRITE(self, &p->regex, pattern);
+        ret = rb_reg_onig_match(p->regex,
+                                p->str,
+                                headonly ? strscan_match : strscan_search,
+                                (void *)p,
+                                &(p->regs));
 
         if (ret == ONIG_MISMATCH) {
             return Qnil;
@@ -707,23 +713,27 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
     else {
         StringValue(pattern);
-        rb_enc_check(p->str, pattern);
         if (S_RESTLEN(p) < RSTRING_LEN(pattern)) {
+            strscan_enc_check(p->str, pattern);
             return Qnil;
         }
 
         if (headonly) {
+            strscan_enc_check(p->str, pattern);
+
             if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern));
-        } else {
+            set_registers(p, 0, RSTRING_LEN(pattern));
+        }
+        else {
+            rb_encoding *enc = rb_enc_check(p->str, pattern);
             long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
-                                    CURPTR(p), S_RESTLEN(p), rb_enc_get(pattern));
+                                    CURPTR(p), S_RESTLEN(p), enc);
             if (pos == -1) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern) + pos);
+            set_registers(p, pos, RSTRING_LEN(pattern));
         }
     }
 
@@ -772,7 +782,7 @@ strscan_scan(VALUE self, VALUE re)
  * - Returns the size in bytes of the matched substring.
  *
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.match?(/bar/) => 3
@@ -805,7 +815,7 @@ strscan_scan(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Does not increment positions.
  *
- * ```
+ * ```rb
  * scanner.match?(/nope/)         # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -844,7 +854,7 @@ strscan_skip(VALUE self, VALUE re)
  * - Returns the matched substring.
  * - Sets all [match values][9].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.check('bar') # => "bar"
@@ -877,7 +887,7 @@ strscan_skip(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Clears all [match values][9].
  *
- * ```
+ * ```rb
  * scanner.check(/nope/)          # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -944,7 +954,7 @@ strscan_scan_until(VALUE self, VALUE re)
  *   and the end of the matched substring.
  * - Sets all [match values][9].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbazbatbam')
  * scanner.pos = 6
  * scanner.exist?(/bat/) # => 6
@@ -976,7 +986,7 @@ strscan_scan_until(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Clears all [match values][9].
  *
- * ```
+ * ```rb
  * scanner.exist?(/nope/)         # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -1018,7 +1028,7 @@ strscan_skip_until(VALUE self, VALUE re)
  *   which extends from the current [position][2]
  *   to the end of the matched substring.
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbazbatbam')
  * scanner.pos = 6
  * scanner.check_until(/bat/) # => "bazbat"
@@ -1050,7 +1060,7 @@ strscan_skip_until(VALUE self, VALUE re)
  * - Clears all [match values][9].
  * - Returns `nil`.
  *
- * ```
+ * ```rb
  * scanner.check_until(/nope/)    # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -1139,13 +1149,14 @@ static VALUE
 strscan_scan_byte(VALUE self)
 {
     struct strscanner *p;
+    VALUE byte;
 
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
     if (EOS_P(p))
         return Qnil;
 
-    VALUE byte = INT2FIX((unsigned char)*CURPTR(p));
+    byte = INT2FIX((unsigned char)*CURPTR(p));
     p->prev = p->curr;
     p->curr++;
     MATCHED(p);
@@ -1196,22 +1207,6 @@ strscan_get_byte(VALUE self)
 }
 
 /*
- * call-seq:
- *   getbyte
- *
- * Equivalent to #get_byte.
- * This method is obsolete; use #get_byte instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_getbyte(VALUE self)
-{
-    rb_warning("StringScanner#getbyte is obsolete; use #get_byte instead");
-    return strscan_get_byte(self);
-}
-
-/*
  * :markup: markdown
  * :include: strscan/link_refs.txt
  *
@@ -1221,7 +1216,7 @@ strscan_getbyte(VALUE self)
  * Returns the substring `string[pos, length]`;
  * does not update [match values][9] or [positions][11]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.peek(3)   # => "bar"
@@ -1246,20 +1241,121 @@ strscan_peek(VALUE self, VALUE vlen)
     return extract_beg_len(p, p->curr, len);
 }
 
-/*
- * call-seq:
- *   peep
- *
- * Equivalent to #peek.
- * This method is obsolete; use #peek instead.
- */
-
- /* :nodoc: */
 static VALUE
-strscan_peep(VALUE self, VALUE vlen)
+strscan_parse_integer(struct strscanner *p, int base, long len)
 {
-    rb_warning("StringScanner#peep is obsolete; use #peek instead");
-    return strscan_peek(self, vlen);
+    VALUE buffer_v, integer;
+
+    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
+
+    MEMCPY(buffer, CURPTR(p), char, len);
+    buffer[len] = '\0';
+    integer = rb_cstr2inum(buffer, base);
+    RB_ALLOCV_END(buffer_v);
+    p->curr += len;
+
+    MATCHED(p);
+    adjust_registers_to_matched(p);
+
+    return integer;
+}
+
+static inline bool
+strscan_ascii_compat_fastpath(VALUE str) {
+    int encindex = ENCODING_GET_INLINED(str);
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    return encindex == utf8_encindex || encindex == binary_encindex || encindex == usascii_encindex;
+}
+
+static inline void
+strscan_must_ascii_compat(VALUE str)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    if (RB_LIKELY(strscan_ascii_compat_fastpath(str))) {
+        return;
+    }
+
+    rb_must_asciicompat(str);
+}
+
+/* :nodoc: */
+static VALUE
+strscan_scan_base10_integer(VALUE self)
+{
+    char *ptr;
+    long len = 0, remaining_len;
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    CLEAR_MATCH_STATUS(p);
+
+    strscan_must_ascii_compat(p->str);
+
+    ptr = CURPTR(p);
+
+    remaining_len = S_RESTLEN(p);
+
+    if (remaining_len <= 0) {
+        return Qnil;
+    }
+
+    if (ptr[len] == '-' || ptr[len] == '+') {
+        len++;
+    }
+
+    if (!rb_isdigit(ptr[len])) {
+        return Qnil;
+    }
+
+    p->prev = p->curr;
+
+    while (len < remaining_len && rb_isdigit(ptr[len])) {
+        len++;
+    }
+
+    return strscan_parse_integer(p, 10, len);
+}
+
+/* :nodoc: */
+static VALUE
+strscan_scan_base16_integer(VALUE self)
+{
+    char *ptr;
+    long len = 0, remaining_len;
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    CLEAR_MATCH_STATUS(p);
+
+    strscan_must_ascii_compat(p->str);
+
+    ptr = CURPTR(p);
+
+    remaining_len = S_RESTLEN(p);
+
+    if (remaining_len <= 0) {
+        return Qnil;
+    }
+
+    if (ptr[len] == '-' || ptr[len] == '+') {
+        len++;
+    }
+
+    if ((remaining_len >= (len + 3)) && ptr[len] == '0' && ptr[len + 1] == 'x' && rb_isxdigit(ptr[len + 2])) {
+        len += 2;
+    }
+
+    if (len >= remaining_len || !rb_isxdigit(ptr[len])) {
+        return Qnil;
+    }
+
+    p->prev = p->curr;
+
+    while (len < remaining_len && rb_isxdigit(ptr[len])) {
+        len++;
+    }
+
+    return strscan_parse_integer(p, 16, len);
 }
 
 /*
@@ -1272,7 +1368,7 @@ strscan_peep(VALUE self, VALUE vlen)
  * Sets the [position][2] to its value previous to the recent successful
  * [match][17] attempt:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.scan(/foo/)
  * put_situation(scanner)
@@ -1293,7 +1389,7 @@ strscan_peep(VALUE self, VALUE vlen)
  *
  * Raises an exception if match values are clear:
  *
- * ```
+ * ```rb
  * scanner.scan(/nope/)           # => nil
  * match_values_cleared?(scanner) # => true
  * scanner.unscan                 # Raises StringScanner::Error.
@@ -1367,7 +1463,7 @@ strscan_bol_p(VALUE self)
  * Returns whether the [position][2]
  * is at the end of the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.eos? # => false
  * pos = 3
@@ -1388,26 +1484,9 @@ strscan_eos_p(VALUE self)
 
 /*
  * call-seq:
- *   empty?
- *
- * Equivalent to #eos?.
- * This method is obsolete, use #eos? instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_empty_p(VALUE self)
-{
-    rb_warning("StringScanner#empty? is obsolete; use #eos? instead");
-    return strscan_eos_p(self);
-}
-
-/*
- * call-seq:
  *   rest?
  *
  * Returns true if and only if there is more data in the string.  See #eos?.
- * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
  *   # These two are opposites
@@ -1436,7 +1515,7 @@ strscan_rest_p(VALUE self)
  * `false` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched?       # => false
  * scanner.pos = 3
@@ -1468,7 +1547,7 @@ strscan_matched_p(VALUE self)
  * or `nil` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched        # => nil
  * scanner.pos = 3
@@ -1503,7 +1582,7 @@ strscan_matched(VALUE self)
  * or `nil` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched_size   # => nil
  *
@@ -1529,19 +1608,17 @@ strscan_matched_size(VALUE self)
 static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end, rb_encoding *enc)
 {
-    int num;
-
-    num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
-	(const unsigned char* )name, (const unsigned char* )name_end, regs);
-    if (num >= 1) {
-	return num;
+    if (RTEST(regexp)) {
+        int num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
+                                              (const unsigned char* )name,
+                                              (const unsigned char* )name_end,
+                                              regs);
+        if (num >= 1) {
+	    return num;
+        }
     }
-    else {
-	rb_enc_raise(enc, rb_eIndexError, "undefined group name reference: %.*s",
-					  rb_long2int(name_end - name), name);
-    }
-
-    UNREACHABLE;
+    rb_enc_raise(enc, rb_eIndexError, "undefined group name reference: %.*s",
+                 rb_long2int(name_end - name), name);
 }
 
 /*
@@ -1557,14 +1634,14 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * When there are captures:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)
  * ```
  *
  * - `specifier` zero: returns the entire matched substring:
  *
- *     ```
+ *     ```rb
  *     scanner[0]         # => "Fri Dec 12 "
  *     scanner.pre_match  # => ""
  *     scanner.post_match # => "1975 14:39"
@@ -1572,7 +1649,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` positive integer. returns the `n`th capture, or `nil` if out of range:
  *
- *     ```
+ *     ```rb
  *     scanner[1] # => "Fri"
  *     scanner[2] # => "Dec"
  *     scanner[3] # => "12"
@@ -1581,7 +1658,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` negative integer. counts backward from the last subgroup:
  *
- *     ```
+ *     ```rb
  *     scanner[-1] # => "12"
  *     scanner[-4] # => "Fri Dec 12 "
  *     scanner[-5] # => nil
@@ -1589,7 +1666,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` symbol or string. returns the named subgroup, or `nil` if no such:
  *
- *     ```
+ *     ```rb
  *     scanner[:wday]  # => "Fri"
  *     scanner['wday'] # => "Fri"
  *     scanner[:month] # => "Dec"
@@ -1599,7 +1676,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * When there are no captures, only `[0]` returns non-`nil`:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.exist?(/bar/)
  * scanner[0] # => "bar"
@@ -1608,7 +1685,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * For a failed match, even `[0]` returns `nil`:
  *
- * ```
+ * ```rb
  * scanner.scan(/nope/) # => nil
  * scanner[0]           # => nil
  * scanner[1]           # => nil
@@ -1630,7 +1707,6 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
-            if (!RTEST(p->regex)) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
@@ -1659,7 +1735,7 @@ strscan_aref(VALUE self, VALUE idx)
  * Returns the count of captures if the most recent match attempt succeeded, `nil` otherwise;
  * see [Captures Match Values][13]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.size                        # => nil
  *
@@ -1693,7 +1769,7 @@ strscan_size(VALUE self)
  * Returns the array of [captured match values][13] at indexes `(1..)`
  * if the most recent match attempt succeeded, or `nil` otherwise:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.captures         # => nil
  *
@@ -1748,7 +1824,7 @@ strscan_captures(VALUE self)
  * For each `specifier`, the returned substring is `[specifier]`;
  * see #[].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
  * scanner.match?(pattern)
@@ -1788,7 +1864,7 @@ strscan_values_at(int argc, VALUE *argv, VALUE self)
  * or `nil` otherwise;
  * see [Basic Match Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pre_match      # => nil
  *
@@ -1825,7 +1901,7 @@ strscan_pre_match(VALUE self)
  * or `nil` otherwise;
  * see [Basic Match Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.post_match     # => nil
  *
@@ -1860,7 +1936,7 @@ strscan_post_match(VALUE self)
  * Returns the 'rest' of the [stored string][1] (all after the current [position][2]),
  * which is the [target substring][3]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.rest # => "foobarbaz"
  * scanner.pos = 3
@@ -1891,7 +1967,7 @@ strscan_rest(VALUE self)
  *
  * Returns the size (in bytes) of the #rest of the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.rest      # => "foobarbaz"
  * scanner.rest_size # => 9
@@ -1918,22 +1994,6 @@ strscan_rest_size(VALUE self)
     return INT2FIX(i);
 }
 
-/*
- * call-seq:
- *   restsize
- *
- * <tt>s.restsize</tt> is equivalent to <tt>s.rest_size</tt>.
- * This method is obsolete; use #rest_size instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_restsize(VALUE self)
-{
-    rb_warning("StringScanner#restsize is obsolete; use #rest_size instead");
-    return strscan_rest_size(self);
-}
-
 #define INSPECT_LENGTH 5
 
 /*
@@ -1950,7 +2010,7 @@ strscan_restsize(VALUE self)
  * 3. The substring preceding the current position.
  * 4. The substring following the current position (which is also the [target substring][3]).
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new("Fri Dec 12 1975 14:39")
  * scanner.pos = 11
  * scanner.inspect # => "#<StringScanner 11/21 \"...c 12 \" @ \"1975 ...\">"
@@ -1958,14 +2018,14 @@ strscan_restsize(VALUE self)
  *
  * If at beginning-of-string, item 4 above (following substring) is omitted:
  *
- * ```
+ * ```rb
  * scanner.reset
  * scanner.inspect # => "#<StringScanner 0/21 @ \"Fri D...\">"
  * ```
  *
  * If at end-of-string, all items above are omitted:
  *
- * ```
+ * ```rb
  * scanner.terminate
  * scanner.inspect # => "#<StringScanner fin>"
  * ```
@@ -2076,7 +2136,10 @@ named_captures_iter(const OnigUChar *name,
     VALUE value = RUBY_Qnil;
     int i;
     for (i = 0; i < back_num; i++) {
-        value = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        VALUE v = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        if (!RB_NIL_P(v)) {
+            value = v;
+        }
     }
     rb_hash_aset(data->captures, key, value);
     return 0;
@@ -2093,7 +2156,7 @@ named_captures_iter(const OnigUChar *name,
  * if the most recent match attempt succeeded, or nil otherwise;
  * see [Captured Match Values][13]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.named_captures # => {}
  *
@@ -2114,8 +2177,8 @@ static VALUE
 strscan_named_captures(VALUE self)
 {
     struct strscanner *p;
-    GET_SCANNER(self, p);
     named_captures_data data;
+    GET_SCANNER(self, p);
     data.self = self;
     data.captures = rb_hash_new();
     if (!RB_NIL_P(p->regex)) {
@@ -2128,6 +2191,13 @@ strscan_named_captures(VALUE self)
 /* =======================================================================
                               Ruby Interface
    ======================================================================= */
+
+/*
+ * Document-class: StringScanner::Error
+ *
+ * The error class for StringScanner.
+ * See StringScanner#unscan.
+ */
 
 /*
  * Document-class: StringScanner
@@ -2149,12 +2219,15 @@ Init_strscan(void)
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 
-    id_byteslice = rb_intern("byteslice");
+    usascii_encindex = rb_usascii_encindex();
+    utf8_encindex = rb_utf8_encindex();
+    binary_encindex = rb_ascii8bit_encindex();
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
     if (!rb_const_defined(rb_cObject, id_scanerr)) {
 	rb_const_set(rb_cObject, id_scanerr, ScanError);
+	rb_deprecate_constant(rb_cObject, "ScanError");
     }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
@@ -2162,6 +2235,7 @@ Init_strscan(void)
     tmp = rb_str_new2("$Id$");
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
+    rb_deprecate_constant(StringScanner, "Id");
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
@@ -2169,7 +2243,6 @@ Init_strscan(void)
     rb_define_singleton_method(StringScanner, "must_C_version", strscan_s_mustc, 0);
     rb_define_method(StringScanner, "reset",       strscan_reset,       0);
     rb_define_method(StringScanner, "terminate",   strscan_terminate,   0);
-    rb_define_method(StringScanner, "clear",       strscan_clear,       0);
     rb_define_method(StringScanner, "string",      strscan_get_string,  0);
     rb_define_method(StringScanner, "string=",     strscan_set_string,  1);
     rb_define_method(StringScanner, "concat",      strscan_concat,      1);
@@ -2194,18 +2267,18 @@ Init_strscan(void)
 
     rb_define_method(StringScanner, "getch",       strscan_getch,       0);
     rb_define_method(StringScanner, "get_byte",    strscan_get_byte,    0);
-    rb_define_method(StringScanner, "getbyte",     strscan_getbyte,     0);
     rb_define_method(StringScanner, "scan_byte",   strscan_scan_byte,   0);
     rb_define_method(StringScanner, "peek",        strscan_peek,        1);
     rb_define_method(StringScanner, "peek_byte",   strscan_peek_byte,   0);
-    rb_define_method(StringScanner, "peep",        strscan_peep,        1);
+
+    rb_define_private_method(StringScanner, "scan_base10_integer", strscan_scan_base10_integer, 0);
+    rb_define_private_method(StringScanner, "scan_base16_integer", strscan_scan_base16_integer, 0);
 
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);
 
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
     rb_alias(StringScanner, rb_intern("bol?"), rb_intern("beginning_of_line?"));
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
-    rb_define_method(StringScanner, "empty?",      strscan_empty_p,     0);
     rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);
 
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
@@ -2220,11 +2293,12 @@ Init_strscan(void)
 
     rb_define_method(StringScanner, "rest",        strscan_rest,        0);
     rb_define_method(StringScanner, "rest_size",   strscan_rest_size,   0);
-    rb_define_method(StringScanner, "restsize",    strscan_restsize,    0);
 
     rb_define_method(StringScanner, "inspect",     strscan_inspect,     0);
 
     rb_define_method(StringScanner, "fixed_anchor?", strscan_fixed_anchor_p, 0);
 
     rb_define_method(StringScanner, "named_captures", strscan_named_captures, 0);
+
+    rb_require("strscan/strscan");
 }

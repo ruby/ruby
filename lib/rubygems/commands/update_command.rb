@@ -317,16 +317,10 @@ command to remove old versions.
 
   #
   # Oldest version we support downgrading to. This is the version that
-  # originally ships with the first patch version of each ruby, because we never
-  # test each ruby against older rubygems, so we can't really guarantee it
-  # works. Version list can be checked here: https://stdgems.org/rubygems
+  # originally ships with the oldest supported patch version of ruby.
   #
   def oldest_supported_version
     @oldest_supported_version ||=
-      if Gem.ruby_version > Gem::Version.new("3.1.a")
-        Gem::Version.new("3.3.3")
-      else
-        Gem::Version.new("3.2.3")
-      end
+      Gem::Version.new("3.3.3")
   end
 end

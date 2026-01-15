@@ -56,7 +56,9 @@
    (c-basic-offset . 4)
    (tab-width . 8)
    (indent-tabs-mode . nil)
-   (setq show-trailing-whitespace t)
+   (show-trailing-whitespace . t)
+   (c-backslash-column . 1)
+   (c-backslash-max-column . 1)
    (c-offsets-alist
     (case-label . *)
     (label . (ruby-style-label-indent *))
@@ -64,6 +66,17 @@
     (statement-case-open . *)
     (statement-block-intro . (ruby-style-case-indent +))
     (access-label /)
+    )))
+
+(c-add-style
+ "prism"
+ '("bsd"
+   (c-basic-offset . 4)
+   (tab-width . 8)
+   (indent-tabs-mode . nil)
+   (show-trailing-whitespace . t)
+   (c-offsets-alist
+    (case-label . +)
     )))
 
 ;;;###autoload

@@ -268,7 +268,11 @@ class TestMarshal < Test::Unit::TestCase
   classISO8859_1.name
   ClassISO8859_1 = classISO8859_1
 
-  def test_class_nonascii
+  moduleUTF8 = const_set("C\u{30af 30e9 30b9}", Module.new)
+  moduleUTF8.name
+  ModuleUTF8 = moduleUTF8
+
+  def test_nonascii_class_instance
     a = ClassUTF8.new
     assert_instance_of(ClassUTF8, Marshal.load(Marshal.dump(a)), '[ruby-core:24790]')
 
@@ -299,6 +303,12 @@ class TestMarshal < Test::Unit::TestCase
       assert_equal(a.instance_variables, b.instance_variables, bug1932)
       assert_equal(b, b.instance_variable_get(a.instance_variables[0]), bug1932)
     end
+  end
+
+  def test_nonascii_class_module
+    assert_same(ClassUTF8, Marshal.load(Marshal.dump(ClassUTF8)))
+    assert_same(ClassISO8859_1, Marshal.load(Marshal.dump(ClassISO8859_1)))
+    assert_same(ModuleUTF8, Marshal.load(Marshal.dump(ModuleUTF8)))
   end
 
   def test_regexp2
@@ -457,6 +467,30 @@ class TestMarshal < Test::Unit::TestCase
     o2 = Marshal.load(Marshal.dump(o1))
     assert_equal(o1.class, o2.class)
     assert_equal(o1.foo, o2.foo)
+  end
+
+  class TooComplex
+    def initialize
+      @marshal_too_complex = 1
+    end
+  end
+
+  def test_complex_shape_object_id_not_dumped
+    if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS)
+      assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
+    end
+    8.times do |i|
+      TooComplex.new.instance_variable_set("@TestObjectIdTooComplex#{i}", 1)
+    end
+    obj = TooComplex.new
+    ivar = "@a#{rand(10_000).to_s.rjust(5, '0')}"
+    obj.instance_variable_set(ivar, 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+    end
+    obj.object_id
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
   end
 
   def test_marshal_complex
@@ -653,10 +687,10 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
-    end
+    end if c
   end
 
   def test_unloadable_userdef
@@ -670,9 +704,17 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
+    end if c
+  end
+
+  def test_recursive_userdef
+    t = Time.utc(0)
+    t.instance_eval {@v = t}
+    assert_raise_with_message(RuntimeError, /recursive\b.*\b_dump/) do
+      Marshal.dump(t)
     end
   end
 

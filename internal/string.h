@@ -15,9 +15,11 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
 
-#define STR_NOEMBED      FL_USER1
-#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
-#define STR_CHILLED      FL_USER3
+#define STR_SHARED                  FL_USER0 /* = ELTS_SHARED */
+#define STR_NOEMBED                 FL_USER1
+#define STR_CHILLED                 (FL_USER2 | FL_USER3)
+#define STR_CHILLED_LITERAL         FL_USER2
+#define STR_CHILLED_SYMBOL_TO_S     FL_USER3
 
 enum ruby_rstring_private_flags {
     RSTRING_CHILLED = STR_CHILLED,
@@ -28,6 +30,7 @@ enum ruby_rstring_private_flags {
 #endif
 
 /* string.c */
+VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
@@ -51,12 +54,19 @@ int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
 int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
+VALUE rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty);
 VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 void rb_str_make_embedded(VALUE);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
+VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
+VALUE rb_str_frozen_bare_string(VALUE);
+
+/* error.c */
+void rb_warn_unchilled_literal(VALUE str);
+void rb_warn_unchilled_symbol_to_s(VALUE str);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
@@ -74,6 +84,9 @@ VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
+void rb_gc_free_fstring(VALUE obj);
+bool rb_obj_is_fstring_table(VALUE obj);
+void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
@@ -123,14 +136,18 @@ CHILLED_STRING_P(VALUE obj)
 static inline void
 CHILLED_STRING_MUTATED(VALUE str)
 {
+    VALUE chilled_reason = RB_FL_TEST_RAW(str, STR_CHILLED);
     FL_UNSET_RAW(str, STR_CHILLED);
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "literal string will be frozen in the future");
-}
-
-static inline void
-STR_CHILL_RAW(VALUE str)
-{
-    FL_SET_RAW(str, STR_CHILLED);
+    switch (chilled_reason) {
+      case STR_CHILLED_SYMBOL_TO_S:
+        rb_warn_unchilled_symbol_to_s(str);
+        break;
+      case STR_CHILLED_LITERAL:
+        rb_warn_unchilled_literal(str);
+        break;
+      default:
+        rb_bug("RString was chilled for multiple reasons");
+    }
 }
 
 static inline bool

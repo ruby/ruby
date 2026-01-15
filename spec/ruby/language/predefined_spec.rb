@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative '../core/exception/shared/set_backtrace'
 require 'stringio'
 
 # The following tables are excerpted from Programming Ruby: The Pragmatic Programmer's Guide'
@@ -71,7 +72,7 @@ describe "Predefined global $~" do
     match2.should_not == nil
     $~.should == match2
 
-    eval 'match3 = /baz/.match("baz")'
+    match3 = /baz/.match("baz")
 
     match3.should_not == nil
     $~.should == match3
@@ -88,8 +89,8 @@ describe "Predefined global $~" do
     $~ = /foo/.match("foo")
     $~.should be_an_instance_of(MatchData)
 
-    -> { $~ = Object.new }.should raise_error(TypeError)
-    -> { $~ = 1 }.should raise_error(TypeError)
+    -> { $~ = Object.new }.should raise_error(TypeError, 'wrong argument type Object (expected MatchData)')
+    -> { $~ = 1 }.should raise_error(TypeError, 'wrong argument type Integer (expected MatchData)')
   end
 
   it "changes the value of derived capture globals when assigned" do
@@ -136,6 +137,19 @@ describe "Predefined global $&" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $&.encoding.should equal(Encoding::EUC_JP)
   end
+
+  it "is read-only" do
+    -> {
+      eval %q{$& = ""}
+    }.should raise_error(SyntaxError, /Can't set variable \$&/)
+  end
+
+  it "is read-only when aliased" do
+    alias $predefined_spec_ampersand $&
+    -> {
+      $predefined_spec_ampersand = ""
+    }.should raise_error(NameError, '$predefined_spec_ampersand is a read-only variable')
+  end
 end
 
 describe "Predefined global $`" do
@@ -153,6 +167,19 @@ describe "Predefined global $`" do
   it "sets an empty result to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /a/
     $`.encoding.should equal(Encoding::ISO_8859_1)
+  end
+
+  it "is read-only" do
+    -> {
+      eval %q{$` = ""}
+    }.should raise_error(SyntaxError, /Can't set variable \$`/)
+  end
+
+  it "is read-only when aliased" do
+    alias $predefined_spec_backquote $`
+    -> {
+      $predefined_spec_backquote = ""
+    }.should raise_error(NameError, '$predefined_spec_backquote is a read-only variable')
   end
 end
 
@@ -172,6 +199,19 @@ describe "Predefined global $'" do
     "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /c/
     $'.encoding.should equal(Encoding::ISO_8859_1)
   end
+
+  it "is read-only" do
+    -> {
+      eval %q{$' = ""}
+    }.should raise_error(SyntaxError, /Can't set variable \$'/)
+  end
+
+  it "is read-only when aliased" do
+    alias $predefined_spec_single_quote $'
+    -> {
+      $predefined_spec_single_quote = ""
+    }.should raise_error(NameError, '$predefined_spec_single_quote is a read-only variable')
+  end
 end
 
 describe "Predefined global $+" do
@@ -189,6 +229,19 @@ describe "Predefined global $+" do
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $+.encoding.should equal(Encoding::EUC_JP)
+  end
+
+  it "is read-only" do
+    -> {
+      eval %q{$+ = ""}
+    }.should raise_error(SyntaxError, /Can't set variable \$\+/)
+  end
+
+  it "is read-only when aliased" do
+    alias $predefined_spec_plus $+
+    -> {
+      $predefined_spec_plus = ""
+    }.should raise_error(NameError, '$predefined_spec_plus is a read-only variable')
   end
 end
 
@@ -229,7 +282,7 @@ describe "Predefined global $stdout" do
   end
 
   it "raises TypeError error if assigned to nil" do
-    -> { $stdout = nil }.should raise_error(TypeError)
+    -> { $stdout = nil }.should raise_error(TypeError, '$stdout must have write method, NilClass given')
   end
 
   it "raises TypeError error if assigned to object that doesn't respond to #write" do
@@ -243,6 +296,22 @@ describe "Predefined global $stdout" do
 end
 
 describe "Predefined global $!" do
+  it "is Fiber-local" do
+    Fiber.new do
+      raise "hi"
+    rescue
+      Fiber.yield
+    end.resume
+
+    $!.should == nil
+  end
+
+  it "is read-only" do
+    -> {
+      $! = []
+    }.should raise_error(NameError, '$! is a read-only variable')
+  end
+
   # See http://jira.codehaus.org/browse/JRUBY-5550
   it "remains nil after a failed core class \"checked\" coercion against a class that defines method_missing" do
     $!.should == nil
@@ -502,6 +571,75 @@ describe "Predefined global $!" do
   end
 end
 
+describe "Predefined global $@" do
+  it "is Fiber-local" do
+    Fiber.new do
+      raise "hi"
+    rescue
+      Fiber.yield
+    end.resume
+
+    $@.should == nil
+  end
+
+  it "is set to a backtrace of a rescued exception" do
+    begin
+      raise
+    rescue
+      $@.should be_an_instance_of(Array)
+      $@.should == $!.backtrace
+    end
+  end
+
+  it "is cleared when an exception is rescued" do
+    begin
+      raise
+    rescue
+    end
+
+    $@.should == nil
+  end
+
+  it "is not set when there is no current exception" do
+    $@.should == nil
+  end
+
+  it "is set to a backtrace of a rescued exception" do
+    begin
+      raise
+    rescue
+      $@.should be_an_instance_of(Array)
+      $@.should == $!.backtrace
+    end
+  end
+
+  it "is not read-only" do
+    begin
+      raise
+    rescue
+      $@ = []
+      $@.should == []
+    end
+  end
+
+  it_behaves_like :exception_set_backtrace, -> backtrace {
+    exception = nil
+    begin
+      raise
+    rescue
+      $@ = backtrace
+      exception = $!
+    end
+    exception
+  }
+
+  it "cannot be assigned when there is no a rescued exception" do
+    -> {
+      $@ = []
+    }.should raise_error(ArgumentError, '$! not set')
+  end
+end
+
 # Input/Output Variables
 # ---------------------------------------------------------------------------------------------------
 #
@@ -549,12 +687,39 @@ describe "Predefined global $/" do
     $VERBOSE = @verbose
   end
 
-  it "can be assigned a String" do
-    str = "abc"
-    $/ = str
-    $/.should equal(str)
+  ruby_version_is ""..."4.0" do
+    it "can be assigned a String" do
+      str = +"abc"
+      $/ = str
+      $/.should equal(str)
+    end
   end
 
+  ruby_version_is "4.0" do
+    it "makes a new frozen String from the assigned String" do
+      string_subclass = Class.new(String)
+      str = string_subclass.new("abc")
+      str.instance_variable_set(:@ivar, 1)
+      $/ = str
+      $/.should.frozen?
+      $/.should be_an_instance_of(String)
+      $/.should_not.instance_variable_defined?(:@ivar)
+      $/.should == str
+    end
+
+    it "makes a new frozen String if it's not frozen" do
+      str = +"abc"
+      $/ = str
+      $/.should.frozen?
+      $/.should == str
+    end
+
+    it "assigns the given String if it's frozen and has no instance variables" do
+      str = "abc".freeze
+      $/ = str
+      $/.should equal(str)
+    end
+  end
   it "can be assigned nil" do
     $/ = nil
     $/.should be_nil
@@ -573,15 +738,19 @@ describe "Predefined global $/" do
     obj = mock("$/ value")
     obj.should_not_receive(:to_str)
 
-    -> { $/ = obj }.should raise_error(TypeError)
+    -> { $/ = obj }.should raise_error(TypeError, 'value of $/ must be String')
   end
 
   it "raises a TypeError if assigned an Integer" do
-    -> { $/ = 1 }.should raise_error(TypeError)
+    -> { $/ = 1 }.should raise_error(TypeError, 'value of $/ must be String')
   end
 
   it "raises a TypeError if assigned a boolean" do
-    -> { $/ = true }.should raise_error(TypeError)
+    -> { $/ = true }.should raise_error(TypeError, 'value of $/ must be String')
+  end
+
+  it "warns if assigned non-nil" do
+    -> { $/ = "_" }.should complain(/warning: (?:non-nil )?[`']\$\/' is deprecated/)
   end
 end
 
@@ -598,10 +767,38 @@ describe "Predefined global $-0" do
     $VERBOSE = @verbose
   end
 
-  it "can be assigned a String" do
-    str = "abc"
-    $-0 = str
-    $-0.should equal(str)
+  ruby_version_is ""..."4.0" do
+    it "can be assigned a String" do
+      str = +"abc"
+      $-0 = str
+      $-0.should equal(str)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "makes a new frozen String from the assigned String" do
+      string_subclass = Class.new(String)
+      str = string_subclass.new("abc")
+      str.instance_variable_set(:@ivar, 1)
+      $-0 = str
+      $-0.should.frozen?
+      $-0.should be_an_instance_of(String)
+      $-0.should_not.instance_variable_defined?(:@ivar)
+      $-0.should == str
+    end
+
+    it "makes a new frozen String if it's not frozen" do
+      str = +"abc"
+      $-0 = str
+      $-0.should.frozen?
+      $-0.should == str
+    end
+
+    it "assigns the given String if it's frozen and has no instance variables" do
+      str = "abc".freeze
+      $-0 = str
+      $-0.should equal(str)
+    end
   end
 
   it "can be assigned nil" do
@@ -622,15 +819,19 @@ describe "Predefined global $-0" do
     obj = mock("$-0 value")
     obj.should_not_receive(:to_str)
 
-    -> { $-0 = obj }.should raise_error(TypeError)
+    -> { $-0 = obj }.should raise_error(TypeError, 'value of $-0 must be String')
   end
 
   it "raises a TypeError if assigned an Integer" do
-    -> { $-0 = 1 }.should raise_error(TypeError)
+    -> { $-0 = 1 }.should raise_error(TypeError, 'value of $-0 must be String')
   end
 
   it "raises a TypeError if assigned a boolean" do
-    -> { $-0 = true }.should raise_error(TypeError)
+    -> { $-0 = true }.should raise_error(TypeError, 'value of $-0 must be String')
+  end
+
+  it "warns if assigned non-nil" do
+    -> { $-0 = "_" }.should complain(/warning: (?:non-nil )?[`']\$-0' is deprecated/)
   end
 end
 
@@ -664,12 +865,16 @@ describe "Predefined global $\\" do
     obj = mock("$\\ value")
     obj.should_not_receive(:to_str)
 
-    -> { $\ = obj }.should raise_error(TypeError)
+    -> { $\ = obj }.should raise_error(TypeError, 'value of $\ must be String')
   end
 
   it "raises a TypeError if assigned not String" do
-    -> { $\ = 1 }.should raise_error(TypeError)
-    -> { $\ = true }.should raise_error(TypeError)
+    -> { $\ = 1 }.should raise_error(TypeError, 'value of $\ must be String')
+    -> { $\ = true }.should raise_error(TypeError, 'value of $\ must be String')
+  end
+
+  it "warns if assigned non-nil" do
+    -> { $\ = "_" }.should complain(/warning: (?:non-nil )?[`']\$\\' is deprecated/)
   end
 end
 
@@ -683,11 +888,11 @@ describe "Predefined global $," do
   end
 
   it "raises TypeError if assigned a non-String" do
-    -> { $, = Object.new }.should raise_error(TypeError)
+    -> { $, = Object.new }.should raise_error(TypeError, 'value of $, must be String')
   end
 
   it "warns if assigned non-nil" do
-    -> { $, = "_" }.should complain(/warning: [`']\$,' is deprecated/)
+    -> { $, = "_" }.should complain(/warning: (?:non-nil )?[`']\$,' is deprecated/)
   end
 end
 
@@ -724,7 +929,7 @@ describe "Predefined global $;" do
   end
 
   it "warns if assigned non-nil" do
-    -> { $; = "_" }.should complain(/warning: [`']\$;' is deprecated/)
+    -> { $; = "_" }.should complain(/warning: (?:non-nil )?[`']\$;' is deprecated/)
   end
 end
 
@@ -758,7 +963,7 @@ describe "Predefined global $_" do
     match.should == "bar\n"
     $_.should == match
 
-    eval 'match = stdin.gets'
+    match = stdin.gets
 
     match.should == "baz\n"
     $_.should == match
@@ -868,22 +1073,28 @@ describe "Execution variable $:" do
   it "is read-only" do
     -> {
       $: = []
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$: is a read-only variable')
 
     -> {
       $LOAD_PATH = []
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$LOAD_PATH is a read-only variable')
 
     -> {
       $-I = []
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$-I is a read-only variable')
   end
 
   it "default $LOAD_PATH entries until sitelibdir included have @gem_prelude_index set" do
     skip "no sense in ruby itself" if MSpecScript.instance_variable_defined?(:@testing_ruby)
 
-    $:.should.include?(RbConfig::CONFIG['sitelibdir'])
-    idx = $:.index(RbConfig::CONFIG['sitelibdir'])
+    if platform_is :windows
+      # See https://github.com/ruby/setup-ruby/pull/762#issuecomment-2917460440
+      $:.should.find { |e| File.realdirpath(e) == RbConfig::CONFIG['sitelibdir'] }
+      idx = $:.index { |e| File.realdirpath(e) == RbConfig::CONFIG['sitelibdir'] }
+    else
+      $:.should.include?(RbConfig::CONFIG['sitelibdir'])
+      idx = $:.index(RbConfig::CONFIG['sitelibdir'])
+    end
 
     $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
     $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
@@ -898,11 +1109,11 @@ describe "Global variable $\"" do
   it "is read-only" do
     -> {
       $" = []
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$" is a read-only variable')
 
     -> {
       $LOADED_FEATURES = []
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$LOADED_FEATURES is a read-only variable')
   end
 end
 
@@ -910,7 +1121,7 @@ describe "Global variable $<" do
   it "is read-only" do
     -> {
       $< = nil
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$< is a read-only variable')
   end
 end
 
@@ -918,7 +1129,7 @@ describe "Global variable $FILENAME" do
   it "is read-only" do
     -> {
       $FILENAME = "-"
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$FILENAME is a read-only variable')
   end
 end
 
@@ -926,7 +1137,7 @@ describe "Global variable $?" do
   it "is read-only" do
     -> {
       $? = nil
-    }.should raise_error(NameError)
+    }.should raise_error(NameError, '$? is a read-only variable')
   end
 
   it "is thread-local" do
@@ -937,19 +1148,19 @@ end
 
 describe "Global variable $-a" do
   it "is read-only" do
-    -> { $-a = true }.should raise_error(NameError)
+    -> { $-a = true }.should raise_error(NameError, '$-a is a read-only variable')
   end
 end
 
 describe "Global variable $-l" do
   it "is read-only" do
-    -> { $-l = true }.should raise_error(NameError)
+    -> { $-l = true }.should raise_error(NameError, '$-l is a read-only variable')
   end
 end
 
 describe "Global variable $-p" do
   it "is read-only" do
-    -> { $-p = true }.should raise_error(NameError)
+    -> { $-p = true }.should raise_error(NameError, '$-p is a read-only variable')
   end
 end
 
@@ -1100,7 +1311,7 @@ describe "The predefined standard object nil" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("nil = true") }.should raise_error(SyntaxError)
+    -> { eval("nil = true") }.should raise_error(SyntaxError, /Can't assign to nil/)
   end
 end
 
@@ -1110,7 +1321,7 @@ describe "The predefined standard object true" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("true = false") }.should raise_error(SyntaxError)
+    -> { eval("true = false") }.should raise_error(SyntaxError, /Can't assign to true/)
   end
 end
 
@@ -1120,13 +1331,13 @@ describe "The predefined standard object false" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("false = nil") }.should raise_error(SyntaxError)
+    -> { eval("false = nil") }.should raise_error(SyntaxError, /Can't assign to false/)
   end
 end
 
 describe "The self pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    -> { eval("self = 1") }.should raise_error(SyntaxError)
+    -> { eval("self = 1") }.should raise_error(SyntaxError, /Can't change the value of self/)
   end
 end
 
@@ -1317,9 +1528,9 @@ end
 
 describe "$LOAD_PATH.resolve_feature_path" do
   it "returns what will be loaded without actual loading, .rb file" do
-    extension, path = $LOAD_PATH.resolve_feature_path('set')
+    extension, path = $LOAD_PATH.resolve_feature_path('pp')
     extension.should == :rb
-    path.should.end_with?('/set.rb')
+    path.should.end_with?('/pp.rb')
   end
 
   it "returns what will be loaded without actual loading, .so file" do
@@ -1331,16 +1542,8 @@ describe "$LOAD_PATH.resolve_feature_path" do
     path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
   end
 
-  ruby_version_is ""..."3.1" do
-    it "raises LoadError if feature cannot be found" do
-      -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "return nil if feature cannot be found" do
-      $LOAD_PATH.resolve_feature_path('noop').should be_nil
-    end
+  it "return nil if feature cannot be found" do
+    $LOAD_PATH.resolve_feature_path('noop').should be_nil
   end
 end
 

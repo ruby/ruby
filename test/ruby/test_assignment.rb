@@ -248,6 +248,16 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
   end
 
+  def test_massign_optimized_literal_bug_21012
+    a = []
+    def a.[]=(*args)
+      push args
+    end
+    a["a", "b"], = 1
+    a["a", 10], = 2
+    assert_equal [["a", "b", 1], ["a", 10, 2]], a
+  end
+
   def test_assign_rescue
     a = raise rescue 2; assert_equal(2, a)
     a, b = raise rescue [3,4]; assert_equal([3, 4], [a, b])

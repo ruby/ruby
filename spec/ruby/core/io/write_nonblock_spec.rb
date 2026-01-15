@@ -43,7 +43,7 @@ platform_is_not :windows do
 
     it "checks if the file is writable if writing zero bytes" do
       -> {
-         @readonly_file.write_nonblock("")
+        @readonly_file.write_nonblock("")
       }.should raise_error(IOError)
     end
   end

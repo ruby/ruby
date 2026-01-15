@@ -7,15 +7,13 @@ require_relative "test_helper"
 module Prism
   class LexTest < TestCase
     except = [
-      # It seems like there are some oddities with nested heredocs and ripper.
-      # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
-      "seattlerb/heredoc_nested.txt",
-      "whitequark/dedenting_heredoc.txt",
-      # Ripper seems to have a bug that the regex portions before and after
-      # the heredoc are combined into a single token. See
-      # https://bugs.ruby-lang.org/issues/19838.
+      # https://bugs.ruby-lang.org/issues/21756
       "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt"
+      # Prism emits a single string in some cases when ripper splits them up
+      "whitequark/dedenting_heredoc.txt",
+      "heredocs_with_fake_newlines.txt",
+      # Prism emits BEG for `on_regexp_end`
+      "spanning_heredoc_newlines.txt",
     ]
 
     if RUBY_VERSION < "3.3.0"
@@ -28,9 +26,20 @@ module Prism
       # Example: <<~'   EOF' or <<-'  EOF'
       # https://bugs.ruby-lang.org/issues/19539
       except << "heredocs_leading_whitespace.txt"
+      except << "whitequark/ruby_bug_19539.txt"
+
+      # https://bugs.ruby-lang.org/issues/19025
+      except << "whitequark/numparam_ruby_bug_19025.txt"
+      # https://bugs.ruby-lang.org/issues/18878
+      except << "whitequark/ruby_bug_18878.txt"
+      # https://bugs.ruby-lang.org/issues/19281
+      except << "whitequark/ruby_bug_19281.txt"
     end
 
-    Fixture.each(except: except) do |fixture|
+    # https://bugs.ruby-lang.org/issues/21168#note-5
+    except << "command_method_call_2.txt"
+
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_lex(fixture) }
     end
 
@@ -79,7 +88,7 @@ module Prism
     def assert_lex(fixture)
       source = fixture.read
 
-      result = Prism.lex_compat(source)
+      result = Prism.lex_compat(source, version: "current")
       assert_equal [], result.errors
 
       Prism.lex_ripper(source).zip(result.value).each do |(ripper, prism)|

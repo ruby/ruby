@@ -16,6 +16,13 @@ describe "Thread#key?" do
     @th.key?(:stanley.to_s).should == false
   end
 
+  it "converts a key that is neither String nor Symbol with #to_str" do
+    key = mock('key')
+    key.should_receive(:to_str).and_return('oliver')
+
+    @th.key?(key).should == true
+  end
+
   it "raises exceptions on the wrong type of keys" do
     -> { Thread.current.key? nil }.should raise_error(TypeError)
     -> { Thread.current.key? 5 }.should raise_error(TypeError)

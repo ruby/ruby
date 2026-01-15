@@ -4,12 +4,22 @@
 
 =end
 
-require 'win32/registry'
+require 'win32/resolv.so'
 
 module Win32
   module Resolv
-    API = Registry::API
-    Error = Registry::Error
+    # Error at Win32 API
+    class Error < StandardError
+      # +code+ Win32 Error code
+      # +message+ Formatted message for +code+
+      def initialize(code, message)
+        super(message)
+        @code = code
+      end
+
+      # Win32 error code
+      attr_reader :code
+    end
 
     def self.get_hosts_path
       path = get_hosts_dir
@@ -34,98 +44,59 @@ module Win32
       end
       [ search, nameserver ]
     end
-  end
-end
-
-begin
-  require 'win32/resolv.so'
-rescue LoadError
-end
-
-module Win32
-#====================================================================
-# Windows NT
-#====================================================================
-  module Resolv
-    module SZ
-      refine Registry do
-        # ad hoc workaround for broken registry
-        def read_s(key)
-          type, str = read(key)
-          unless type == Registry::REG_SZ
-            warn "Broken registry, #{name}\\#{key} was #{Registry.type2name(type)}, ignored"
-            return String.new
-          end
-          str
-        end
-      end
-    end
-    using SZ
-
-    TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
 
     class << self
       private
       def get_hosts_dir
-        Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-          reg.read_s_expand('DataBasePath')
+        tcpip_params do |params|
+          params.value('DataBasePath')
         end
       end
 
       def get_info
         search = nil
         nameserver = get_dns_server_list
-        Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-          begin
-            slist = reg.read_s('SearchList')
-            search = slist.split(/,\s*/) unless slist.empty?
-          rescue Registry::Error
-          end
+
+        tcpip_params do |params|
+          slist = params.value('SearchList')
+          search = slist.split(/,\s*/) if slist and !slist.empty?
 
           if add_search = search.nil?
             search = []
-            begin
-              nvdom = reg.read_s('NV Domain')
-              unless nvdom.empty?
-                @search = [ nvdom ]
-                if reg.read_i('UseDomainNameDevolution') != 0
-                  if /^\w+\./ =~ nvdom
-                    devo = $'
-                  end
+            domain = params.value('Domain')
+
+            if domain and !domain.empty?
+              search = [ domain ]
+              udmnd = params.value('UseDomainNameDevolution')
+              if udmnd&.nonzero?
+                if /^\w+\./ =~ domain
+                  devo = $'
                 end
               end
-            rescue Registry::Error
             end
           end
 
-          reg.open('Interfaces') do |h|
-            h.each_key do |iface, |
-              h.open(iface) do |regif|
-                next unless ns = %w[NameServer DhcpNameServer].find do |key|
-                  begin
-                    ns = regif.read_s(key)
-                  rescue Registry::Error
-                  else
-                    break ns.split(/[,\s]\s*/) unless ns.empty?
-                  end
-                end
-                next if (nameserver & ns).empty?
+          params.open('Interfaces') do |reg|
+            reg.each_key do |iface|
+              next unless ns = %w[NameServer DhcpNameServer].find do |key|
+                ns = iface.value(key)
+                break ns.split(/[,\s]\s*/) if ns and !ns.empty?
+              end
 
-                if add_search
-                  begin
-                    [ 'Domain', 'DhcpDomain' ].each do |key|
-                      dom = regif.read_s(key)
-                      unless dom.empty?
-                        search.concat(dom.split(/,\s*/))
-                        break
-                      end
-                    end
-                  rescue Registry::Error
+              next if (nameserver & ns).empty?
+
+              if add_search
+                [ 'Domain', 'DhcpDomain' ].each do |key|
+                  dom = iface.value(key)
+                  if dom and !dom.empty?
+                    search.concat(dom.split(/,\s*/))
+                    break
                   end
                 end
               end
             end
           end
+
           search << devo if add_search and devo
         end
         [ search.uniq, nameserver.uniq ]

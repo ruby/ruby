@@ -12,7 +12,7 @@ source = false
 templates = []
 
 ARGV.options do |o|
-  o.on('-i', '--input=PATH') {|v| template << v}
+  o.on('-i', '--input=PATH') {|v| templates << v}
   o.on('-x', '--source') {source = true}
   out.def_options(o)
   o.order!(ARGV)

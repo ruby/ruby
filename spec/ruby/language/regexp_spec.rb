@@ -62,7 +62,7 @@ describe "Literal Regexps" do
     end
   end
 
-  it "supports non-paired delimiters delimiters with %r" do
+  it "supports non-paired delimiters with %r" do
     LanguageSpecs.non_paired_delimiters.each do |c|
       eval("%r#{c} foo #{c}").should == / foo /
     end
@@ -112,7 +112,7 @@ describe "Literal Regexps" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
   end
 
-  ruby_bug "#13671", ""..."3.5" do # https://bugs.ruby-lang.org/issues/13671
+  ruby_bug "#13671", ""..."4.0" do # https://bugs.ruby-lang.org/issues/13671
     it "handles a lookbehind with ss characters" do
       r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
       r.should =~ "✨"

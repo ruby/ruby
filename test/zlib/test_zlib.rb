@@ -9,6 +9,9 @@ require 'securerandom'
 begin
   require 'zlib'
 rescue LoadError
+else
+  z = "/zlib.#{RbConfig::CONFIG["DLEXT"]}"
+  LOADED_ZLIB, = $".select {|f| f.end_with?(z)}
 end
 
 if defined? Zlib
@@ -545,7 +548,7 @@ if defined? Zlib
       zd = Zlib::Deflate.new
 
       s = SecureRandom.random_bytes(1024**2)
-      assert_raise(Zlib::InProgressError) do
+      assert_raise(ThreadError) do
         zd.deflate(s) do
           zd.deflate(s)
         end
@@ -563,7 +566,7 @@ if defined? Zlib
 
       s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
 
-      assert_raise(Zlib::InProgressError) do
+      assert_raise(ThreadError) do
         zi.inflate(s) do
           zi.inflate(s)
         end
@@ -1525,7 +1528,7 @@ if defined? Zlib
     end
 
     def test_gunzip_no_memory_leak
-      assert_no_memory_leak(%[-rzlib], "#{<<~"{#"}", "#{<<~'};'}")
+      assert_no_memory_leak(%W[-r#{LOADED_ZLIB}], "#{<<~"{#"}", "#{<<~'};'}")
       d = Zlib.gzip("data")
       {#
         10_000.times {Zlib.gunzip(d)}

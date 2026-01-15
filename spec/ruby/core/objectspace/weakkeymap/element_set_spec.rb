@@ -8,10 +8,6 @@ ruby_version_is "3.3" do
       map[key].should == value
     end
 
-    def should_not_accept(map, key, value)
-      -> { map[key] = value }.should raise_error(ArgumentError)
-    end
-
     it "is correct" do
       map = ObjectSpace::WeakKeyMap.new
       key1, key2 = %w[a b].map(&:upcase)
@@ -40,32 +36,47 @@ ruby_version_is "3.3" do
       should_accept(map, y, x)
     end
 
-    it "rejects symbols as keys" do
+    it "does not duplicate and freeze String keys (like Hash#[]= does)" do
       map = ObjectSpace::WeakKeyMap.new
-      should_not_accept(map, :foo, true)
-      should_not_accept(map, rand.to_s.to_sym, true)
+      key = +"a"
+      map[key] = 1
+
+      map.getkey("a").should.equal? key
+      map.getkey("a").should_not.frozen?
+
+      key.should == "a" # keep the key alive until here to keep the map entry
     end
 
-    it "rejects integers as keys" do
-      map = ObjectSpace::WeakKeyMap.new
-      should_not_accept(map, 42, true)
-      should_not_accept(map, 2 ** 68, true)
-    end
+    context "a key cannot be garbage collected" do
+      it "raises ArgumentError when Integer is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[1] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
 
-    it "rejects floats as keys" do
-      map = ObjectSpace::WeakKeyMap.new
-      should_not_accept(map, 4.2, true)
-    end
+      it "raises ArgumentError when Float is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[1.0] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
 
-    it "rejects booleans as keys" do
-      map = ObjectSpace::WeakKeyMap.new
-      should_not_accept(map, true, true)
-      should_not_accept(map, false, true)
-    end
+      it "raises ArgumentError when Symbol is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[:a] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
 
-    it "rejects nil as keys" do
-      map = ObjectSpace::WeakKeyMap.new
-      should_not_accept(map, nil, true)
+      it "raises ArgumentError when true is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[true] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
+
+      it "raises ArgumentError when false is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[false] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
+
+      it "raises ArgumentError when nil is used as a key" do
+        map = ObjectSpace::WeakKeyMap.new
+        -> { map[nil] = "x" }.should raise_error(ArgumentError, /WeakKeyMap (keys )?must be garbage collectable/)
+      end
     end
   end
 end

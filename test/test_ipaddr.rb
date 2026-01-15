@@ -196,6 +196,24 @@ class TC_IPAddr < Test::Unit::TestCase
     }
     assert_equal("::192.168.1.2", b.to_s)
     assert_equal(Socket::AF_INET6, b.family)
+    assert_equal(128, b.prefix)
+
+    a = IPAddr.new("192.168.0.0/16")
+    assert_warning(/obsolete/) {
+      b = a.ipv4_compat
+    }
+    assert_equal("::192.168.0.0", b.to_s)
+    assert_equal(Socket::AF_INET6, b.family)
+    assert_equal(112, b.prefix)
+  end
+
+  def test_ipv4_compat_with_error_message
+    e = assert_raise(IPAddr::InvalidAddressError) do
+      assert_warning(/obsolete/) {
+        IPAddr.new('2001:db8::').ipv4_compat
+      }
+    end
+    assert_equal('not an IPv4 address: 2001:db8::', e.message)
   end
 
   def test_ipv4_mapped
@@ -215,6 +233,13 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(Socket::AF_INET6, b.family)
   end
 
+  def test_ipv4_mapped_with_error_message
+    e = assert_raise(IPAddr::InvalidAddressError) do
+      IPAddr.new('2001:db8::').ipv4_mapped
+    end
+    assert_equal('not an IPv4 address: 2001:db8::', e.message)
+  end
+
   def test_reverse
     assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.arpa", IPAddr.new("3ffe:505:2::f").reverse)
     assert_equal("1.2.168.192.in-addr.arpa", IPAddr.new("192.168.2.1").reverse)
@@ -222,16 +247,18 @@ class TC_IPAddr < Test::Unit::TestCase
 
   def test_ip6_arpa
     assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.arpa", IPAddr.new("3ffe:505:2::f").ip6_arpa)
-    assert_raise(IPAddr::InvalidAddressError) {
+    e = assert_raise(IPAddr::InvalidAddressError) {
       IPAddr.new("192.168.2.1").ip6_arpa
     }
+    assert_equal('not an IPv6 address: 192.168.2.1', e.message)
   end
 
   def test_ip6_int
     assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.int", IPAddr.new("3ffe:505:2::f").ip6_int)
-    assert_raise(IPAddr::InvalidAddressError) {
+    e = assert_raise(IPAddr::InvalidAddressError) {
       IPAddr.new("192.168.2.1").ip6_int
     }
+    assert_equal('not an IPv6 address: 192.168.2.1', e.message)
   end
 
   def test_prefix_writer
@@ -258,6 +285,20 @@ class TC_IPAddr < Test::Unit::TestCase
   def test_to_s
     assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0001", IPAddr.new("3ffe:505:2::1").to_string)
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
+  end
+
+  def test_as_json
+    assert_equal("192.168.1.2", IPAddr.new("192.168.1.2").as_json)
+    assert_equal("192.168.1.0/24", IPAddr.new("192.168.1.2/24").as_json)
+    assert_equal("2001:200:300::1", IPAddr.new("2001:200:300::1").as_json)
+    assert_equal("2001:200:300::/48", IPAddr.new("2001:200:300::/48").as_json)
+  end
+
+  def test_to_json
+    assert_equal("\"192.168.1.2\"", IPAddr.new("192.168.1.2").to_json)
+    assert_equal("\"192.168.1.0/24\"", IPAddr.new("192.168.1.2/24").to_json)
+    assert_equal("\"2001:200:300::1\"", IPAddr.new("2001:200:300::1").to_json)
+    assert_equal("\"2001:200:300::/48\"", IPAddr.new("2001:200:300::/48").to_json)
   end
 
   def test_netmask
@@ -383,6 +424,46 @@ class TC_Operator < Test::Unit::TestCase
     a = ~@in6_addr_any
     assert_equal(IN6MASK128, a.to_s)
     assert_equal("::", @in6_addr_any.to_s)
+  end
+
+  def test_plus
+    a = IPAddr.new("192.168.1.10")
+    assert_equal("192.168.1.20", (a + 10).to_s)
+
+    a = IPAddr.new("0.0.0.0")
+    assert_equal("0.0.0.10", (a + 10).to_s)
+
+    a = IPAddr.new("255.255.255.255")
+    assert_raise(IPAddr::InvalidAddressError) { a + 10 }
+
+    a = IPAddr.new("3ffe:505:2::a")
+    assert_equal("3ffe:505:2::14", (a + 10).to_s)
+
+    a = IPAddr.new("::")
+    assert_equal("::a", (a + 10).to_s)
+
+    a = IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+    assert_raise(IPAddr::InvalidAddressError) { a + 10 }
+  end
+
+  def test_minus
+    a = IPAddr.new("192.168.1.10")
+    assert_equal("192.168.1.0", (a - 10).to_s)
+
+    a = IPAddr.new("0.0.0.0")
+    assert_raise(IPAddr::InvalidAddressError) { a - 10 }
+
+    a = IPAddr.new("255.255.255.255")
+    assert_equal("255.255.255.245", (a - 10).to_s)
+
+    a = IPAddr.new("3ffe:505:2::a")
+    assert_equal("3ffe:505:2::", (a - 10).to_s)
+
+    a = IPAddr.new("::")
+    assert_raise(IPAddr::InvalidAddressError) { a - 10 }
+
+    a = IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+    assert_equal("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fff5", (a - 10).to_s)
   end
 
   def test_equal
@@ -556,5 +637,22 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, s.include?(a4))
     assert_equal(true, s.include?(a5))
     assert_equal(true, s.include?(a6))
+  end
+
+  def test_raises_invalid_address_error_with_error_message
+    e = assert_raise(IPAddr::InvalidAddressError) do
+      IPAddr.new('192.168.0.1000')
+    end
+    assert_equal('invalid address: 192.168.0.1000', e.message)
+
+    e = assert_raise(IPAddr::InvalidAddressError) do
+      IPAddr.new('192.168.01.100')
+    end
+    assert_equal('zero-filled number in IPv4 address is ambiguous: 192.168.01.100', e.message)
+
+    e = assert_raise(IPAddr::InvalidAddressError) do
+      IPAddr.new('INVALID')
+    end
+    assert_equal('invalid address: INVALID', e.message)
   end
 end

@@ -128,6 +128,7 @@ usrcompat.o: $(hdrdir)/ruby/internal/intern/re.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/ruby.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/select.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+usrcompat.o: $(hdrdir)/ruby/internal/intern/set.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/signal.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/string.h

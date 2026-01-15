@@ -9,14 +9,28 @@ if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
 end
 
+# Bundler CLI will have different help text depending on whether any of these
+# variables is set, since the `-e` flag `bundle gem` with require an explicit
+# value if they are not set, but will use their value by default if set. So make
+# sure they are `nil` before loading bundler to get a consistent help text,
+# since some tests rely on that.
+ENV["EDITOR"] = nil
+ENV["VISUAL"] = nil
+ENV["BUNDLER_EDITOR"] = nil
 require "bundler"
+
+# If we use shared GEM_HOME and install multiple versions, it may cause
+# unexpected test failures.
+gem "diff-lcs"
+
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
 require "rspec/support/differ"
+gem "rubygems-generate_index"
+require "rubygems/indexer"
 
 require_relative "support/builders"
-require_relative "support/build_metadata"
 require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"
@@ -24,6 +38,7 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
+require_relative "support/windows_tag_group"
 
 $debug = false
 
@@ -42,6 +57,7 @@ RSpec.configure do |config|
   config.include Spec::Path
   config.include Spec::Platforms
   config.include Spec::Permissions
+  config.include Spec::WindowsTagGroup
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -76,6 +92,10 @@ RSpec.configure do |config|
 
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
+
+    # Simulate bundler has not yet been loaded
+    ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
+
     ENV["BUNDLER_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["BUNDLE_APP_CONFIG"] = nil
@@ -87,19 +107,15 @@ RSpec.configure do |config|
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    Spec::Helpers.install_dev_bundler unless ENV["CI"]
-
     extend(Spec::Builders)
-
-    check_test_gems!
 
     build_repo1
 
-    reset_paths!
+    reset!
   end
 
   config.around :each do |example|
-    FileUtils.cp_r pristine_system_gem_path, system_gem_path
+    default_system_gems
 
     with_gem_path_as(system_gem_path) do
       Bundler.ui.silence { example.run }
@@ -116,7 +132,18 @@ RSpec.configure do |config|
     reset!
   end
 
-  config.after :suite do
-    FileUtils.rm_rf Spec::Path.pristine_system_gem_path
+  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+    file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
+
+    config.define_derived_metadata(file_path: file_pattern) do |metadata|
+      metadata[tag] = true
+    end
   end
+
+  config.before(:context) do |example|
+    metadata = example.class.metadata
+    if metadata[:type] != :aruba && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    end
+  end unless Spec::Path.ruby_core?
 end

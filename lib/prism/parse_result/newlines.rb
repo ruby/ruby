@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   class ParseResult < Result
@@ -63,7 +64,7 @@ module Prism
 
   class Node
     def newline_flag? # :nodoc:
-      @newline_flag ? true : false
+      !!defined?(@newline_flag)
     end
 
     def newline_flag!(lines) # :nodoc:

@@ -11,7 +11,7 @@ describe "Range#===" do
   it_behaves_like :range_cover_and_include, :===
   it_behaves_like :range_cover, :===
 
-  ruby_bug "#19533", "3.2"..."3.3" do
+  ruby_bug "#19533", ""..."3.3" do
     it "returns true on any value if begin and end are both nil" do
       (nil..nil).should === 1
     end

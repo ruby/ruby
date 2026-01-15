@@ -102,15 +102,22 @@ prefix or only the files that are requireable.
   end
 
   def files_in_default_gem(spec)
-    spec.files.map do |file|
-      case file
-      when %r{\A#{spec.bindir}/}
-        # $' is POSTMATCH
-        [RbConfig::CONFIG["bindir"], $']
-      when /\.so\z/
-        [RbConfig::CONFIG["archdir"], file]
+    spec.files.filter_map do |file|
+      if file.start_with?("#{spec.bindir}/")
+        [RbConfig::CONFIG["bindir"], file.delete_prefix("#{spec.bindir}/")]
       else
-        [RbConfig::CONFIG["rubylibdir"], file]
+        gem spec.name, spec.version
+
+        require_path = spec.require_paths.find do |path|
+          file.start_with?("#{path}/")
+        end
+
+        requirable_part = file.delete_prefix("#{require_path}/")
+
+        resolve = $LOAD_PATH.resolve_feature_path(requirable_part)&.last
+        next unless resolve
+
+        [resolve.delete_suffix(requirable_part), requirable_part]
       end
     end
   end
@@ -182,8 +189,8 @@ prefix or only the files that are requireable.
   end
 
   def specification_directories # :nodoc:
-    options[:specdirs].map do |i|
+    options[:specdirs].flat_map do |i|
       [i, File.join(i, "specifications")]
-    end.flatten
+    end
   end
 end

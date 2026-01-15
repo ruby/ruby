@@ -1,16 +1,20 @@
 # frozen_string_literal: true
 
-# Allows for declaring a Gemfile inline in a ruby script, optionally installing
-# any gems that aren't already installed on the user's system.
+# Allows for declaring a Gemfile inline in a ruby script, installing any gems
+# that aren't already installed on the user's system.
 #
 # @note Every gem that is specified in this 'Gemfile' will be `require`d, as if
 #       the user had manually called `Bundler.require`. To avoid a requested gem
 #       being automatically required, add the `:require => false` option to the
 #       `gem` dependency declaration.
 #
-# @param install [Boolean] whether gems that aren't already installed on the
-#                          user's system should be installed.
-#                          Defaults to `false`.
+# @param force_latest_compatible [Boolean] Force installing the *latest*
+#                                          compatible versions of the gems,
+#                                          even if compatible versions are
+#                                          already installed locally.
+#                                          This also logs output if the
+#                                          `:quiet` option is not set.
+#                                          Defaults to `false`.
 #
 # @param gemfile [Proc]    a block that is evaluated as a `Gemfile`.
 #
@@ -29,21 +33,27 @@
 #
 #          puts Pod::VERSION # => "0.34.4"
 #
-def gemfile(install = false, options = {}, &gemfile)
+def gemfile(force_latest_compatible = false, options = {}, &gemfile)
   require_relative "../bundler"
   Bundler.reset!
 
   opts = options.dup
   ui = opts.delete(:ui) { Bundler::UI::Shell.new }
-  ui.level = "silent" if opts.delete(:quiet) || !install
+  ui.level = "silent" if opts.delete(:quiet) || !force_latest_compatible
   Bundler.ui = ui
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
-  Bundler.with_unbundled_env do
+  old_gemfile = ENV["BUNDLE_GEMFILE"]
+  old_lockfile = ENV["BUNDLE_LOCKFILE"]
+
+  Bundler.unbundle_env!
+
+  begin
     Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
     Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
+    Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", "Gemfile.lock"
 
-    Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
+    Bundler::Plugin.gemfile_install(&gemfile) if Bundler.settings[:plugins]
     builder = Bundler::Dsl.new
     builder.instance_eval(&gemfile)
 
@@ -51,7 +61,7 @@ def gemfile(install = false, options = {}, &gemfile)
       definition = builder.to_definition(nil, true)
       definition.validate_runtime!
 
-      if install || definition.missing_specs?
+      if force_latest_compatible || definition.missing_specs?
         Bundler.settings.temporary(inline: true, no_install: false) do
           installer = Bundler::Installer.install(Bundler.root, definition, system: true)
           installer.post_install_messages.each do |name, message|
@@ -80,9 +90,17 @@ def gemfile(install = false, options = {}, &gemfile)
 
       runtime.require
     end
-  end
+  ensure
+    if old_gemfile
+      ENV["BUNDLE_GEMFILE"] = old_gemfile
+    else
+      ENV["BUNDLE_GEMFILE"] = ""
+    end
 
-  if ENV["BUNDLE_GEMFILE"].nil?
-    ENV["BUNDLE_GEMFILE"] = ""
+    if old_lockfile
+      ENV["BUNDLE_LOCKFILE"] = old_lockfile
+    else
+      ENV["BUNDLE_LOCKFILE"] = ""
+    end
   end
 end

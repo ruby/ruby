@@ -1,4 +1,4 @@
 break 1,;
-       ^ expected an argument
+        ^ unexpected ';'; expected an argument
 ^~~~~~~~ Invalid break
 

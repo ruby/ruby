@@ -67,13 +67,13 @@
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
 } while (0)
 
-VALUE mOCSP;
-VALUE eOCSPError;
-VALUE cOCSPReq;
-VALUE cOCSPRes;
-VALUE cOCSPBasicRes;
-VALUE cOCSPSingleRes;
-VALUE cOCSPCertId;
+static VALUE mOCSP;
+static VALUE eOCSPError;
+static VALUE cOCSPReq;
+static VALUE cOCSPRes;
+static VALUE cOCSPBasicRes;
+static VALUE cOCSPSingleRes;
+static VALUE cOCSPCertId;
 
 static void
 ossl_ocsp_request_free(void *ptr)
@@ -84,7 +84,7 @@ ossl_ocsp_request_free(void *ptr)
 static const rb_data_type_t ossl_ocsp_request_type = {
     "OpenSSL/OCSP/REQUEST",
     {
-	0, ossl_ocsp_request_free,
+        0, ossl_ocsp_request_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -98,7 +98,7 @@ ossl_ocsp_response_free(void *ptr)
 static const rb_data_type_t ossl_ocsp_response_type = {
     "OpenSSL/OCSP/RESPONSE",
     {
-	0, ossl_ocsp_response_free,
+        0, ossl_ocsp_response_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -112,7 +112,7 @@ ossl_ocsp_basicresp_free(void *ptr)
 static const rb_data_type_t ossl_ocsp_basicresp_type = {
     "OpenSSL/OCSP/BASICRESP",
     {
-	0, ossl_ocsp_basicresp_free,
+        0, ossl_ocsp_basicresp_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -126,7 +126,7 @@ ossl_ocsp_singleresp_free(void *ptr)
 static const rb_data_type_t ossl_ocsp_singleresp_type = {
     "OpenSSL/OCSP/SINGLERESP",
     {
-	0, ossl_ocsp_singleresp_free,
+        0, ossl_ocsp_singleresp_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -140,7 +140,7 @@ ossl_ocsp_certid_free(void *ptr)
 static const rb_data_type_t ossl_ocsp_certid_type = {
     "OpenSSL/OCSP/CERTID",
     {
-	0, ossl_ocsp_certid_free,
+        0, ossl_ocsp_certid_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -149,10 +149,14 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
  * Public
  */
 static VALUE
-ossl_ocspcertid_new(OCSP_CERTID *cid)
+ossl_ocspcid_new(const OCSP_CERTID *cid)
 {
     VALUE obj = NewOCSPCertId(cOCSPCertId);
-    SetOCSPCertId(obj, cid);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    OCSP_CERTID *cid_new = OCSP_CERTID_dup((OCSP_CERTID *)cid);
+    if (!cid_new)
+        ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+    SetOCSPCertId(obj, cid_new);
     return obj;
 }
 
@@ -167,12 +171,13 @@ ossl_ocspreq_alloc(VALUE klass)
 
     obj = NewOCSPReq(klass);
     if (!(req = OCSP_REQUEST_new()))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPReq(obj, req);
 
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
 {
@@ -184,7 +189,7 @@ ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
 
     req_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_REQUEST), req);
     if (!req_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
+        ossl_raise(eOCSPError, "ASN1_item_dup");
 
     SetOCSPReq(self, req_new);
     OCSP_REQUEST_free(req_old);
@@ -210,15 +215,15 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	GetOCSPReq(self, req);
-	arg = ossl_to_der_if_possible(arg);
-	StringValue(arg);
-	p = (unsigned char *)RSTRING_PTR(arg);
-	req_new = d2i_OCSP_REQUEST(NULL, &p, RSTRING_LEN(arg));
-	if (!req_new)
-	    ossl_raise(eOCSPError, "d2i_OCSP_REQUEST");
-	SetOCSPReq(self, req_new);
-	OCSP_REQUEST_free(req);
+        GetOCSPReq(self, req);
+        arg = ossl_to_der_if_possible(arg);
+        StringValue(arg);
+        p = (unsigned char *)RSTRING_PTR(arg);
+        req_new = d2i_OCSP_REQUEST(NULL, &p, RSTRING_LEN(arg));
+        if (!req_new)
+            ossl_raise(eOCSPError, "d2i_OCSP_REQUEST");
+        SetOCSPReq(self, req_new);
+        OCSP_REQUEST_free(req);
     }
 
     return self;
@@ -244,13 +249,13 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &val);
     if(NIL_P(val)) {
-	GetOCSPReq(self, req);
-	ret = OCSP_request_add1_nonce(req, NULL, -1);
+        GetOCSPReq(self, req);
+        ret = OCSP_request_add1_nonce(req, NULL, -1);
     }
     else{
-	StringValue(val);
-	GetOCSPReq(self, req);
-	ret = OCSP_request_add1_nonce(req, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
+        StringValue(val);
+        GetOCSPReq(self, req);
+        ret = OCSP_request_add1_nonce(req, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -307,10 +312,10 @@ ossl_ocspreq_add_certid(VALUE self, VALUE certid)
     GetOCSPCertId(certid, id);
 
     if (!(id_new = OCSP_CERTID_dup(id)))
-	ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+        ossl_raise(eOCSPError, "OCSP_CERTID_dup");
     if (!OCSP_request_add0_id(req, id_new)) {
-	OCSP_CERTID_free(id_new);
-	ossl_raise(eOCSPError, "OCSP_request_add0_id");
+        OCSP_CERTID_free(id_new);
+        ossl_raise(eOCSPError, "OCSP_request_add0_id");
     }
 
     return self;
@@ -327,21 +332,19 @@ static VALUE
 ossl_ocspreq_get_certid(VALUE self)
 {
     OCSP_REQUEST *req;
-    OCSP_ONEREQ *one;
-    OCSP_CERTID *id;
-    VALUE ary, tmp;
-    int i, count;
 
     GetOCSPReq(self, req);
-    count = OCSP_request_onereq_count(req);
-    ary = (count > 0) ? rb_ary_new() : Qnil;
-    for(i = 0; i < count; i++){
-	one = OCSP_request_onereq_get0(req, i);
-	tmp = NewOCSPCertId(cOCSPCertId);
-	if(!(id = OCSP_CERTID_dup(OCSP_onereq_get0_id(one))))
-	    ossl_raise(eOCSPError, NULL);
-	SetOCSPCertId(tmp, id);
-	rb_ary_push(ary, tmp);
+    int count = OCSP_request_onereq_count(req);
+    if (count < 0)
+        ossl_raise(eOCSPError, "OCSP_request_onereq_count");
+    if (count == 0)
+        return Qnil;
+
+    VALUE ary = rb_ary_new_capa(count);
+    for (int i = 0; i < count; i++) {
+        OCSP_ONEREQ *one = OCSP_request_onereq_get0(req, i);
+        OCSP_CERTID *cid = OCSP_onereq_get0_id(one);
+        rb_ary_push(ary, ossl_ocspcid_new(cid));
     }
 
     return ary;
@@ -366,7 +369,7 @@ ossl_ocspreq_get_certid(VALUE self)
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags, digest;
+    VALUE signer_cert, signer_key, certs, flags, digest, md_holder;
     OCSP_REQUEST *req;
     X509 *signer;
     EVP_PKEY *key;
@@ -380,19 +383,17 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
     if (!NIL_P(flags))
-	flg = NUM2INT(flags);
-    if (NIL_P(digest))
-	md = NULL;
-    else
-	md = ossl_evp_get_digestbyname(digest);
+        flg = NUM2INT(flags);
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
     if (NIL_P(certs))
-	flg |= OCSP_NOCERTS;
+        flg |= OCSP_NOCERTS;
     else
-	x509s = ossl_x509_ary2sk(certs);
+        x509s = ossl_x509_ary2sk(certs);
 
     ret = OCSP_request_sign(req, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if (!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret)
+        ossl_raise(eOCSPError, "OCSP_request_sign");
 
     return self;
 }
@@ -426,7 +427,7 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
     result = OCSP_request_verify(req, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
     if (result <= 0)
-	ossl_clear_error();
+        ossl_clear_error();
 
     return result > 0 ? Qtrue : Qfalse;
 }
@@ -445,11 +446,11 @@ ossl_ocspreq_to_der(VALUE self)
 
     GetOCSPReq(self, req);
     if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_OCSP_REQUEST(req, &p) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -493,7 +494,7 @@ ossl_ocspres_s_create(VALUE klass, VALUE status, VALUE basic_resp)
     else GetOCSPBasicRes(basic_resp, bs); /* NO NEED TO DUP */
     obj = NewOCSPRes(klass);
     if(!(res = OCSP_response_create(st, bs)))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPRes(obj, res);
 
     return obj;
@@ -507,12 +508,13 @@ ossl_ocspres_alloc(VALUE klass)
 
     obj = NewOCSPRes(klass);
     if(!(res = OCSP_RESPONSE_new()))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPRes(obj, res);
 
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ocspres_initialize_copy(VALUE self, VALUE other)
 {
@@ -524,7 +526,7 @@ ossl_ocspres_initialize_copy(VALUE self, VALUE other)
 
     res_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_RESPONSE), res);
     if (!res_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
+        ossl_raise(eOCSPError, "ASN1_item_dup");
 
     SetOCSPRes(self, res_new);
     OCSP_RESPONSE_free(res_old);
@@ -550,15 +552,15 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	GetOCSPRes(self, res);
-	arg = ossl_to_der_if_possible(arg);
-	StringValue(arg);
-	p = (unsigned char *)RSTRING_PTR(arg);
-	res_new = d2i_OCSP_RESPONSE(NULL, &p, RSTRING_LEN(arg));
-	if (!res_new)
-	    ossl_raise(eOCSPError, "d2i_OCSP_RESPONSE");
-	SetOCSPRes(self, res_new);
-	OCSP_RESPONSE_free(res);
+        GetOCSPRes(self, res);
+        arg = ossl_to_der_if_possible(arg);
+        StringValue(arg);
+        p = (unsigned char *)RSTRING_PTR(arg);
+        res_new = d2i_OCSP_RESPONSE(NULL, &p, RSTRING_LEN(arg));
+        if (!res_new)
+            ossl_raise(eOCSPError, "d2i_OCSP_RESPONSE");
+        SetOCSPRes(self, res_new);
+        OCSP_RESPONSE_free(res);
     }
 
     return self;
@@ -619,7 +621,7 @@ ossl_ocspres_get_basic(VALUE self)
     GetOCSPRes(self, res);
     ret = NewOCSPBasicRes(cOCSPBasicRes);
     if(!(bs = OCSP_response_get1_basic(res)))
-	return Qnil;
+        return Qnil;
     SetOCSPBasicRes(ret, bs);
 
     return ret;
@@ -642,11 +644,11 @@ ossl_ocspres_to_der(VALUE self)
 
     GetOCSPRes(self, res);
     if((len = i2d_OCSP_RESPONSE(res, NULL)) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_OCSP_RESPONSE(res, &p) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -663,12 +665,13 @@ ossl_ocspbres_alloc(VALUE klass)
 
     obj = NewOCSPBasicRes(klass);
     if(!(bs = OCSP_BASICRESP_new()))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPBasicRes(obj, bs);
 
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
 {
@@ -680,7 +683,7 @@ ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
 
     bs_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
     if (!bs_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
+        ossl_raise(eOCSPError, "ASN1_item_dup");
 
     SetOCSPBasicRes(self, bs_new);
     OCSP_BASICRESP_free(bs_old);
@@ -705,15 +708,15 @@ ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg);
     if (!NIL_P(arg)) {
-	GetOCSPBasicRes(self, res);
-	arg = ossl_to_der_if_possible(arg);
-	StringValue(arg);
-	p = (unsigned char *)RSTRING_PTR(arg);
-	res_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
-	if (!res_new)
-	    ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
-	SetOCSPBasicRes(self, res_new);
-	OCSP_BASICRESP_free(res);
+        GetOCSPBasicRes(self, res);
+        arg = ossl_to_der_if_possible(arg);
+        StringValue(arg);
+        p = (unsigned char *)RSTRING_PTR(arg);
+        res_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
+        if (!res_new)
+            ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
+        SetOCSPBasicRes(self, res_new);
+        OCSP_BASICRESP_free(res);
     }
 
     return self;
@@ -758,13 +761,13 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &val);
     if(NIL_P(val)) {
-	GetOCSPBasicRes(self, bs);
-	ret = OCSP_basic_add1_nonce(bs, NULL, -1);
+        GetOCSPBasicRes(self, bs);
+        ret = OCSP_basic_add1_nonce(bs, NULL, -1);
     }
     else{
-	StringValue(val);
-	GetOCSPBasicRes(self, bs);
-	ret = OCSP_basic_add1_nonce(bs, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
+        StringValue(val);
+        GetOCSPBasicRes(self, bs);
+        ret = OCSP_basic_add1_nonce(bs, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -777,12 +780,12 @@ add_status_convert_time(VALUE obj)
     ASN1_TIME *time;
 
     if (RB_INTEGER_TYPE_P(obj))
-	time = X509_gmtime_adj(NULL, NUM2INT(obj));
+        time = X509_gmtime_adj(NULL, NUM2INT(obj));
     else
-	time = ossl_x509_time_adjust(NULL, obj);
+        time = ossl_x509_time_adjust(NULL, obj);
 
     if (!time)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
 
     return (VALUE)time;
 }
@@ -816,8 +819,8 @@ add_status_convert_time(VALUE obj)
  */
 static VALUE
 ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
-			 VALUE reason, VALUE revtime,
-			 VALUE thisupd, VALUE nextupd, VALUE ext)
+                         VALUE reason, VALUE revtime,
+                         VALUE thisupd, VALUE nextupd, VALUE ext)
 {
     OCSP_BASICRESP *bs;
     OCSP_SINGLERESP *single;
@@ -831,16 +834,16 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     GetOCSPCertId(cid, id);
     st = NUM2INT(status);
     if (!NIL_P(ext)) { /* All ext's members must be X509::Extension */
-	ext = rb_check_array_type(ext);
-	for (i = 0; i < RARRAY_LEN(ext); i++)
-	    OSSL_Check_Kind(RARRAY_AREF(ext, i), cX509Ext);
+        ext = rb_check_array_type(ext);
+        for (i = 0; i < RARRAY_LEN(ext); i++)
+            OSSL_Check_Kind(RARRAY_AREF(ext, i), cX509Ext);
     }
 
     if (st == V_OCSP_CERTSTATUS_REVOKED) {
-	rsn = NUM2INT(reason);
-	tmp = rb_protect(add_status_convert_time, revtime, &rstatus);
-	if (rstatus) goto err;
-	rev = (ASN1_TIME *)tmp;
+        rsn = NUM2INT(reason);
+        tmp = rb_protect(add_status_convert_time, revtime, &rstatus);
+        if (rstatus) goto err;
+        rev = (ASN1_TIME *)tmp;
     }
 
     tmp = rb_protect(add_status_convert_time, thisupd, &rstatus);
@@ -848,29 +851,29 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     ths = (ASN1_TIME *)tmp;
 
     if (!NIL_P(nextupd)) {
-	tmp = rb_protect(add_status_convert_time, nextupd, &rstatus);
-	if (rstatus) goto err;
-	nxt = (ASN1_TIME *)tmp;
+        tmp = rb_protect(add_status_convert_time, nextupd, &rstatus);
+        if (rstatus) goto err;
+        nxt = (ASN1_TIME *)tmp;
     }
 
     if(!(single = OCSP_basic_add1_status(bs, id, st, rsn, rev, ths, nxt))){
-	error = 1;
-	goto err;
+        error = 1;
+        goto err;
     }
 
     if(!NIL_P(ext)){
-	X509_EXTENSION *x509ext;
+        X509_EXTENSION *x509ext;
 
-	for(i = 0; i < RARRAY_LEN(ext); i++){
-	    x509ext = GetX509ExtPtr(RARRAY_AREF(ext, i));
-	    if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){
-		error = 1;
-		goto err;
-	    }
-	}
+        for(i = 0; i < RARRAY_LEN(ext); i++){
+            x509ext = GetX509ExtPtr(RARRAY_AREF(ext, i));
+            if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){
+                error = 1;
+                goto err;
+            }
+        }
     }
 
- err:
+  err:
     ASN1_TIME_free(ths);
     ASN1_TIME_free(nxt);
     ASN1_TIME_free(rev);
@@ -896,48 +899,40 @@ static VALUE
 ossl_ocspbres_get_status(VALUE self)
 {
     OCSP_BASICRESP *bs;
-    OCSP_SINGLERESP *single;
-    OCSP_CERTID *cid;
-    ASN1_TIME *revtime, *thisupd, *nextupd;
-    int status, reason;
-    X509_EXTENSION *x509ext;
-    VALUE ret, ary, ext;
-    int count, ext_count, i, j;
 
     GetOCSPBasicRes(self, bs);
-    ret = rb_ary_new();
-    count = OCSP_resp_count(bs);
-    for(i = 0; i < count; i++){
-	single = OCSP_resp_get0(bs, i);
-	if(!single) continue;
+    VALUE ret = rb_ary_new();
+    int count = OCSP_resp_count(bs);
+    for (int i = 0; i < count; i++) {
+        OCSP_SINGLERESP *single = OCSP_resp_get0(bs, i);
+        ASN1_TIME *revtime, *thisupd, *nextupd;
+        int reason;
 
-	revtime = thisupd = nextupd = NULL;
-	status = OCSP_single_get0_status(single, &reason, &revtime,
-					 &thisupd, &nextupd);
-	if(status < 0) continue;
-	if(!(cid = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(single)))) /* FIXME */
-	    ossl_raise(eOCSPError, NULL);
-	ary = rb_ary_new();
-	rb_ary_push(ary, ossl_ocspcertid_new(cid));
-	rb_ary_push(ary, INT2NUM(status));
-	rb_ary_push(ary, INT2NUM(reason));
-	rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
-	rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
-	rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
-	ext = rb_ary_new();
-	ext_count = OCSP_SINGLERESP_get_ext_count(single);
-	for(j = 0; j < ext_count; j++){
-	    x509ext = OCSP_SINGLERESP_get_ext(single, j);
-	    rb_ary_push(ext, ossl_x509ext_new(x509ext));
-	}
-	rb_ary_push(ary, ext);
-	rb_ary_push(ret, ary);
+        int status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
+        if (status < 0)
+            ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+        VALUE ary = rb_ary_new();
+        rb_ary_push(ary, ossl_ocspcid_new(OCSP_SINGLERESP_get0_id(single)));
+        rb_ary_push(ary, INT2NUM(status));
+        rb_ary_push(ary, INT2NUM(reason));
+        rb_ary_push(ary, revtime ? asn1time_to_time(revtime) : Qnil);
+        rb_ary_push(ary, thisupd ? asn1time_to_time(thisupd) : Qnil);
+        rb_ary_push(ary, nextupd ? asn1time_to_time(nextupd) : Qnil);
+        VALUE ext = rb_ary_new();
+        int ext_count = OCSP_SINGLERESP_get_ext_count(single);
+        for (int j = 0; j < ext_count; j++) {
+            X509_EXTENSION *x509ext = OCSP_SINGLERESP_get_ext(single, j);
+            rb_ary_push(ext, ossl_x509ext_new(x509ext));
+        }
+        rb_ary_push(ary, ext);
+        rb_ary_push(ret, ary);
     }
 
     return ret;
 }
 
-static VALUE ossl_ocspsres_new(OCSP_SINGLERESP *);
+static VALUE ossl_ocspsres_new(const OCSP_SINGLERESP *);
 
 /*
  * call-seq:
@@ -955,17 +950,10 @@ ossl_ocspbres_get_responses(VALUE self)
 
     GetOCSPBasicRes(self, bs);
     count = OCSP_resp_count(bs);
-    ret = rb_ary_new2(count);
+    ret = rb_ary_new_capa(count);
 
     for (i = 0; i < count; i++) {
-	OCSP_SINGLERESP *sres, *sres_new;
-
-	sres = OCSP_resp_get0(bs, i);
-	sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
-	if (!sres_new)
-	    ossl_raise(eOCSPError, "ASN1_item_dup");
-
-	rb_ary_push(ret, ossl_ocspsres_new(sres_new));
+        rb_ary_push(ret, ossl_ocspsres_new(OCSP_resp_get0(bs, i)));
     }
 
     return ret;
@@ -983,7 +971,6 @@ static VALUE
 ossl_ocspbres_find_response(VALUE self, VALUE target)
 {
     OCSP_BASICRESP *bs;
-    OCSP_SINGLERESP *sres, *sres_new;
     OCSP_CERTID *id;
     int n;
 
@@ -991,14 +978,8 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
     GetOCSPBasicRes(self, bs);
 
     if ((n = OCSP_resp_find(bs, id, -1)) == -1)
-	return Qnil;
-
-    sres = OCSP_resp_get0(bs, n);
-    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
-    if (!sres_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    return ossl_ocspsres_new(sres_new);
+        return Qnil;
+    return ossl_ocspsres_new(OCSP_resp_get0(bs, n));
 }
 
 /*
@@ -1017,7 +998,7 @@ ossl_ocspbres_find_response(VALUE self, VALUE target)
 static VALUE
 ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags, digest;
+    VALUE signer_cert, signer_key, certs, flags, digest, md_holder;
     OCSP_BASICRESP *bs;
     X509 *signer;
     EVP_PKEY *key;
@@ -1031,19 +1012,17 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
     if (!NIL_P(flags))
-	flg = NUM2INT(flags);
-    if (NIL_P(digest))
-	md = NULL;
-    else
-	md = ossl_evp_get_digestbyname(digest);
+        flg = NUM2INT(flags);
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
     if (NIL_P(certs))
-	flg |= OCSP_NOCERTS;
+        flg |= OCSP_NOCERTS;
     else
-	x509s = ossl_x509_ary2sk(certs);
+        x509s = ossl_x509_ary2sk(certs);
 
     ret = OCSP_basic_sign(bs, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if (!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret)
+        ossl_raise(eOCSPError, "OCSP_basic_sign");
 
     return self;
 }
@@ -1072,7 +1051,7 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
     result = OCSP_basic_verify(bs, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
     if (result <= 0)
-	ossl_clear_error();
+        ossl_clear_error();
 
     return result > 0 ? Qtrue : Qfalse;
 }
@@ -1093,11 +1072,11 @@ ossl_ocspbres_to_der(VALUE self)
 
     GetOCSPBasicRes(self, res);
     if ((len = i2d_OCSP_BASICRESP(res, NULL)) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_OCSP_BASICRESP(res, &p) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -1107,12 +1086,18 @@ ossl_ocspbres_to_der(VALUE self)
  * OCSP::SingleResponse
  */
 static VALUE
-ossl_ocspsres_new(OCSP_SINGLERESP *sres)
+ossl_ocspsres_new(const OCSP_SINGLERESP *sres)
 {
     VALUE obj;
+    OCSP_SINGLERESP *sres_new;
 
     obj = NewOCSPSingleRes(cOCSPSingleRes);
-    SetOCSPSingleRes(obj, sres);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP),
+                             (OCSP_SINGLERESP *)sres);
+    if (!sres_new)
+        ossl_raise(eOCSPError, "ASN1_item_dup");
+    SetOCSPSingleRes(obj, sres_new);
 
     return obj;
 }
@@ -1125,7 +1110,7 @@ ossl_ocspsres_alloc(VALUE klass)
 
     obj = NewOCSPSingleRes(klass);
     if (!(sres = OCSP_SINGLERESP_new()))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPSingleRes(obj, sres);
 
     return obj;
@@ -1150,13 +1135,14 @@ ossl_ocspsres_initialize(VALUE self, VALUE arg)
     p = (unsigned char*)RSTRING_PTR(arg);
     res_new = d2i_OCSP_SINGLERESP(NULL, &p, RSTRING_LEN(arg));
     if (!res_new)
-	ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
+        ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
     SetOCSPSingleRes(self, res_new);
     OCSP_SINGLERESP_free(res);
 
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
 {
@@ -1168,7 +1154,7 @@ ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
 
     sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
     if (!sres_new)
-	ossl_raise(eOCSPError, "ASN1_item_dup");
+        ossl_raise(eOCSPError, "ASN1_item_dup");
 
     SetOCSPSingleRes(self, sres_new);
     OCSP_SINGLERESP_free(sres_old);
@@ -1207,15 +1193,15 @@ ossl_ocspsres_check_validity(int argc, VALUE *argv, VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, NULL, NULL, &this_update, &next_update);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
 
     ret = OCSP_check_validity(this_update, next_update, nsec, maxsec);
 
     if (ret)
-	return Qtrue;
+        return Qtrue;
     else {
-	ossl_clear_error();
-	return Qfalse;
+        ossl_clear_error();
+        return Qfalse;
     }
 }
 
@@ -1229,12 +1215,9 @@ static VALUE
 ossl_ocspsres_get_certid(VALUE self)
 {
     OCSP_SINGLERESP *sres;
-    OCSP_CERTID *id;
 
     GetOCSPSingleRes(self, sres);
-    id = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(sres)); /* FIXME */
-
-    return ossl_ocspcertid_new(id);
+    return ossl_ocspcid_new(OCSP_SINGLERESP_get0_id(sres));
 }
 
 /*
@@ -1260,7 +1243,7 @@ ossl_ocspsres_get_cert_status(VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, NULL, NULL, NULL, NULL);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
 
     return INT2NUM(status);
 }
@@ -1279,9 +1262,9 @@ ossl_ocspsres_get_this_update(VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, NULL, NULL, &time, NULL);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
     if (!time)
-	return Qnil;
+        return Qnil;
 
     return asn1time_to_time(time);
 }
@@ -1300,9 +1283,9 @@ ossl_ocspsres_get_next_update(VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, NULL, NULL, NULL, &time);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
     if (!time)
-	return Qnil;
+        return Qnil;
 
     return asn1time_to_time(time);
 }
@@ -1321,11 +1304,11 @@ ossl_ocspsres_get_revocation_time(VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, NULL, &time, NULL, NULL);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
     if (status != V_OCSP_CERTSTATUS_REVOKED)
-	ossl_raise(eOCSPError, "certificate is not revoked");
+        ossl_raise(eOCSPError, "certificate is not revoked");
     if (!time)
-	return Qnil;
+        return Qnil;
 
     return asn1time_to_time(time);
 }
@@ -1343,9 +1326,9 @@ ossl_ocspsres_get_revocation_reason(VALUE self)
     GetOCSPSingleRes(self, sres);
     status = OCSP_single_get0_status(sres, &reason, NULL, NULL, NULL);
     if (status < 0)
-	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+        ossl_raise(eOCSPError, "OCSP_single_get0_status");
     if (status != V_OCSP_CERTSTATUS_REVOKED)
-	ossl_raise(eOCSPError, "certificate is not revoked");
+        ossl_raise(eOCSPError, "certificate is not revoked");
 
     return INT2NUM(reason);
 }
@@ -1367,8 +1350,8 @@ ossl_ocspsres_get_extensions(VALUE self)
     count = OCSP_SINGLERESP_get_ext_count(sres);
     ary = rb_ary_new2(count);
     for (i = 0; i < count; i++) {
-	ext = OCSP_SINGLERESP_get_ext(sres, i);
-	rb_ary_push(ary, ossl_x509ext_new(ext)); /* will dup */
+        ext = OCSP_SINGLERESP_get_ext(sres, i);
+        rb_ary_push(ary, ossl_x509ext_new(ext)); /* will dup */
     }
 
     return ary;
@@ -1390,11 +1373,11 @@ ossl_ocspsres_to_der(VALUE self)
 
     GetOCSPSingleRes(self, sres);
     if ((len = i2d_OCSP_SINGLERESP(sres, NULL)) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_OCSP_SINGLERESP(sres, &p) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -1412,12 +1395,13 @@ ossl_ocspcid_alloc(VALUE klass)
 
     obj = NewOCSPCertId(klass);
     if(!(id = OCSP_CERTID_new()))
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     SetOCSPCertId(obj, id);
 
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
 {
@@ -1429,7 +1413,7 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
 
     cid_new = OCSP_CERTID_dup(cid);
     if (!cid_new)
-	ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+        ossl_raise(eOCSPError, "OCSP_CERTID_dup");
 
     SetOCSPCertId(self, cid_new);
     OCSP_CERTID_free(cid_old);
@@ -1459,27 +1443,28 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 
     GetOCSPCertId(self, id);
     if (rb_scan_args(argc, argv, "12", &subject, &issuer, &digest) == 1) {
-	VALUE arg;
-	const unsigned char *p;
+        VALUE arg;
+        const unsigned char *p;
 
-	arg = ossl_to_der_if_possible(subject);
-	StringValue(arg);
-	p = (unsigned char *)RSTRING_PTR(arg);
-	newid = d2i_OCSP_CERTID(NULL, &p, RSTRING_LEN(arg));
-	if (!newid)
-	    ossl_raise(eOCSPError, "d2i_OCSP_CERTID");
+        arg = ossl_to_der_if_possible(subject);
+        StringValue(arg);
+        p = (unsigned char *)RSTRING_PTR(arg);
+        newid = d2i_OCSP_CERTID(NULL, &p, RSTRING_LEN(arg));
+        if (!newid)
+            ossl_raise(eOCSPError, "d2i_OCSP_CERTID");
     }
     else {
-	X509 *x509s, *x509i;
-	const EVP_MD *md;
+        X509 *x509s, *x509i;
+        const EVP_MD *md;
+        VALUE md_holder;
 
-	x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
-	x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
-	md = !NIL_P(digest) ? ossl_evp_get_digestbyname(digest) : NULL;
+        x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
+        x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
+        md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
 
-	newid = OCSP_cert_to_id(md, x509s, x509i);
-	if (!newid)
-	    ossl_raise(eOCSPError, "OCSP_cert_to_id");
+        newid = OCSP_cert_to_id(md, x509s, x509i);
+        if (!newid)
+            ossl_raise(eOCSPError, "OCSP_cert_to_id");
     }
 
     SetOCSPCertId(self, newid);
@@ -1565,8 +1550,9 @@ ossl_ocspcid_get_issuer_name_hash(VALUE self)
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(&name_hash, NULL, NULL, NULL, id);
 
-    ret = rb_str_new(NULL, name_hash->length * 2);
-    ossl_bin2hex(name_hash->data, RSTRING_PTR(ret), name_hash->length);
+    ret = rb_str_new(NULL, ASN1_STRING_length(name_hash) * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(name_hash), RSTRING_PTR(ret),
+                 ASN1_STRING_length(name_hash));
 
     return ret;
 }
@@ -1588,8 +1574,9 @@ ossl_ocspcid_get_issuer_key_hash(VALUE self)
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, NULL, &key_hash, NULL, id);
 
-    ret = rb_str_new(NULL, key_hash->length * 2);
-    ossl_bin2hex(key_hash->data, RSTRING_PTR(ret), key_hash->length);
+    ret = rb_str_new(NULL, ASN1_STRING_length(key_hash) * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(key_hash), RSTRING_PTR(ret),
+                 ASN1_STRING_length(key_hash));
 
     return ret;
 }
@@ -1606,19 +1593,10 @@ ossl_ocspcid_get_hash_algorithm(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OBJECT *oid;
-    BIO *out;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, &oid, NULL, NULL, id);
-
-    if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eOCSPError, "BIO_new");
-
-    if (!i2a_ASN1_OBJECT(out, oid)) {
-	BIO_free(out);
-	ossl_raise(eOCSPError, "i2a_ASN1_OBJECT");
-    }
-    return ossl_membio2str(out);
+    return ossl_asn1obj_to_string_long_name(oid);
 }
 
 /*
@@ -1637,11 +1615,11 @@ ossl_ocspcid_to_der(VALUE self)
 
     GetOCSPCertId(self, id);
     if ((len = i2d_OCSP_CERTID(id, NULL)) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_OCSP_CERTID(id, &p) <= 0)
-	ossl_raise(eOCSPError, NULL);
+        ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -1650,11 +1628,6 @@ ossl_ocspcid_to_der(VALUE self)
 void
 Init_ossl_ocsp(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     /*
      * OpenSSL::OCSP implements Online Certificate Status Protocol requests
      * and responses.

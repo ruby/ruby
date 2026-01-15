@@ -65,6 +65,8 @@ describe "Module#const_defined?" do
     str = "CS_CONSTλ".encode("euc-jp")
     ConstantSpecs.const_set str, 1
     ConstantSpecs.const_defined?(str).should be_true
+  ensure
+    ConstantSpecs.send(:remove_const, str)
   end
 
   it "returns false if the constant is not defined in the receiver, its superclass, or any included modules" do

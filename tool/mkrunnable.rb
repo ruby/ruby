@@ -34,7 +34,10 @@ vendordir = config["vendordir"]
 rubylibdir = config["rubylibdir"]
 rubyarchdir = config["rubyarchdir"]
 archdir = "#{extout}/#{arch}"
-exedir = libdirname == "archlibdir" ? "#{config["libexecdir"]}/#{arch}/bin" : bindir
+exedir = bindir
+if libdirname == "archlibdir"
+  exedir = exedir.sub(%r[/\K(?=[^/]+\z)]) {extout+"/"}
+end
 [exedir, libdir, archdir].uniq.each do |dir|
   File.directory?(dir) or mkdir_p(dir)
 end

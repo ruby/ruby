@@ -24,4 +24,9 @@ describe "StringScanner#initialize" do
     scan = StringScanner.new(m)
     scan.string.should == s
   end
+
+  it "accepts a fixed_anchor keyword argument" do
+    s = StringScanner.new("foo", fixed_anchor: true)
+    s.should.fixed_anchor?
+  end
 end

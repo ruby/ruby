@@ -330,7 +330,7 @@ class Gem::RequestSet::GemDependencyAPI
   # git: ::
   #   Install this dependency from a git repository:
   #
-  #     gem 'private_gem', git: git@my.company.example:private_gem.git'
+  #     gem 'private_gem', git: 'git@my.company.example:private_gem.git'
   #
   # gist: ::
   #   Install this dependency from the gist ID:

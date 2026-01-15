@@ -14,13 +14,15 @@
 #define GetPKeyDSA(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) { /* PARANOIA? */ \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
+        ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
     } \
 } while (0)
 #define GetDSA(obj, dsa) do { \
     EVP_PKEY *_pkey; \
     GetPKeyDSA((obj), _pkey); \
     (dsa) = EVP_PKEY_get0_DSA(_pkey); \
+    if ((dsa) == NULL) \
+        ossl_raise(ePKeyError, "failed to get DSA from EVP_PKEY"); \
 } while (0)
 
 static inline int
@@ -41,7 +43,6 @@ DSA_PRIVATE(VALUE obj, OSSL_3_const DSA *dsa)
  * Classes
  */
 VALUE cDSA;
-VALUE eDSAError;
 
 /*
  * Private
@@ -56,6 +57,7 @@ VALUE eDSAError;
  *
  * If called without arguments, creates a new instance with no key components
  * set. They can be set individually by #set_pqg and #set_key.
+ * This form is not compatible with OpenSSL 3.0 or later.
  *
  * If called with a String, tries to parse as DER or PEM encoding of a \DSA key.
  * See also OpenSSL::PKey.read which can parse keys of any kinds.
@@ -96,10 +98,15 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::DSA.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         dsa = DSA_new();
         if (!dsa)
-            ossl_raise(eDSAError, "DSA_new");
+            ossl_raise(ePKeyError, "DSA_new");
         goto legacy;
+#endif
     }
 
     pass = ossl_pem_passwd_value(pass);
@@ -117,12 +124,12 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     pkey = ossl_pkey_read_generic(in, pass);
     BIO_free(in);
     if (!pkey)
-        ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
+        ossl_raise(ePKeyError, "Neither PUB key nor PRIV key");
 
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_DSA) {
         EVP_PKEY_free(pkey);
-        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(ePKeyError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -133,13 +140,14 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa) != 1) {
         EVP_PKEY_free(pkey);
         DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DSA");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
 #ifndef HAVE_EVP_PKEY_DUP
+/* :nodoc: */
 static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {
@@ -155,13 +163,13 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
                               (d2i_of_void *)d2i_DSAPrivateKey,
                               (char *)dsa);
     if (!dsa_new)
-	ossl_raise(eDSAError, "ASN1_dup");
+        ossl_raise(ePKeyError, "ASN1_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa_new) != 1) {
         EVP_PKEY_free(pkey);
         DSA_free(dsa_new);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DSA");
     }
     RTYPEDDATA_DATA(self) = pkey;
 
@@ -304,35 +312,6 @@ ossl_dsa_to_der(VALUE self)
 
 
 /*
- *  call-seq:
- *    dsa.params -> hash
- *
- * Stores all parameters of key to the hash
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dsa_get_params(VALUE self)
-{
-    OSSL_3_const DSA *dsa;
-    VALUE hash;
-    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
-
-    GetDSA(self, dsa);
-    DSA_get0_pqg(dsa, &p, &q, &g);
-    DSA_get0_key(dsa, &pub_key, &priv_key);
-
-    hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
-    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
-    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(g));
-    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pub_key));
-    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(priv_key));
-
-    return hash;
-}
-
-/*
  * Document-method: OpenSSL::PKey::DSA#set_pqg
  * call-seq:
  *   dsa.set_pqg(p, q, g) -> self
@@ -355,20 +334,6 @@ OSSL_PKEY_BN_DEF2(dsa, DSA, key, pub_key, priv_key)
 void
 Init_ossl_dsa(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
-    /* Document-class: OpenSSL::PKey::DSAError
-     *
-     * Generic exception that is raised if an operation on a DSA PKey
-     * fails unexpectedly or in case an instantiation of an instance of DSA
-     * fails due to non-conformant input data.
-     */
-    eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
-
     /* Document-class: OpenSSL::PKey::DSA
      *
      * DSA, the Digital Signature Algorithm, is specified in NIST's
@@ -396,8 +361,6 @@ Init_ossl_dsa(void)
     DEF_OSSL_PKEY_BN(cDSA, dsa, priv_key);
     rb_define_method(cDSA, "set_pqg", ossl_dsa_set_pqg, 3);
     rb_define_method(cDSA, "set_key", ossl_dsa_set_key, 2);
-
-    rb_define_method(cDSA, "params", ossl_dsa_get_params, 0);
 }
 
 #else /* defined NO_DSA */

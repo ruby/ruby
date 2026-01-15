@@ -94,7 +94,7 @@ describe :stringio_write_string, shared: true do
   end
 
   it "does not transcode the given string when the external encoding is set and the string encoding is BINARY" do
-    str = "été".b
+    str = "été_".b
     io = StringIO.new.set_encoding(Encoding::UTF_16BE)
     io.external_encoding.should == Encoding::UTF_16BE
 

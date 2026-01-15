@@ -130,7 +130,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_dash_i_respects_default_library_extension_priority
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     pend "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file("a")
@@ -180,6 +180,22 @@ class TestGemRequire < Gem::TestCase
 
     assert_require "b/c"
     assert_equal %w[a-1 b-1], loaded_spec_names
+  end
+
+  def test_require_is_not_lazy_with_shadowed_default_gem
+    b1_default = new_default_spec("b", "1", nil, "foo.rb")
+    install_default_gems b1_default
+
+    a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
+    b1 = util_spec("b", "1", nil, "lib/foo.rb")
+    install_specs b1, a1
+
+    # Load default ruby gems fresh as if we've just started a ruby script.
+    Gem::Specification.reset
+
+    assert_require "test_gem_require_a"
+    assert_equal %w[a-1 b-1], loaded_spec_names
+    assert_equal unresolved_names, []
   end
 
   def test_require_is_lazy_with_inexact_req
@@ -705,11 +721,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
       end
     end
   end

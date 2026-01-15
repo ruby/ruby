@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require "stringio"
 require_relative 'shared/read'
+require_relative 'shared/sysread'
 
 describe "StringIO#sysread when passed length, buffer" do
   it_behaves_like :stringio_read, :sysread
@@ -30,6 +31,10 @@ describe "StringIO#sysread when passed nil" do
     @io.sysread(nil).should == "example"
     @io.sysread(nil).should == ""
   end
+end
+
+describe "StringIO#sysread when passed length" do
+  it_behaves_like :stringio_sysread_length, :sysread
 end
 
 describe "StringIO#sysread when passed [length]" do

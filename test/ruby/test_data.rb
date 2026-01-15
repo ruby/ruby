@@ -259,9 +259,10 @@ class TestData < Test::Unit::TestCase
     assert_equal(klass.new, test)
     assert_not_equal(Data.define.new, test)
 
-    assert_equal('#<data >', test.inspect)
+    assert_equal('#<data>', test.inspect)
     assert_equal([], test.members)
     assert_equal({}, test.to_h)
+    assert_predicate(test, :frozen?)
   end
 
   def test_dup
@@ -279,5 +280,11 @@ class TestData < Test::Unit::TestCase
     assert_equal(test, loaded)
     assert_not_same(test, loaded)
     assert_predicate(loaded, :frozen?)
+  end
+
+  def test_frozen_subclass
+    test = Class.new(Data.define(:a)).freeze.new(a: 0)
+    assert_kind_of(Data, test)
+    assert_equal([:a], test.members)
   end
 end

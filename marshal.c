@@ -40,6 +40,7 @@
 #include "ruby/util.h"
 #include "builtin.h"
 #include "shape.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -100,6 +101,7 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
+#define s_encoding_long rb_id_encoding()
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -114,6 +116,7 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_encoding_long "encoding"
 #define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
@@ -142,12 +145,14 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
 
     compat_allocator_table();
     compat = ALLOC(marshal_compat_t);
-    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->newclass, newclass);
-    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->oldclass, oldclass);
+    compat->newclass = newclass;
+    compat->oldclass = oldclass;
     compat->dumper = dumper;
     compat->loader = loader;
 
     st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
+    RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, newclass);
+    RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, oldclass);
 }
 
 struct dump_arg {
@@ -156,6 +161,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
+    st_table *userdefs;
     st_index_t num_entries;
 };
 
@@ -204,6 +210,7 @@ mark_dump_arg(void *ptr)
     rb_mark_set(p->symbols);
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
+    rb_mark_set(p->userdefs);
     rb_gc_mark(p->str);
 }
 
@@ -221,6 +228,7 @@ memsize_dump_arg(const void *ptr)
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
     if (p->encodings) memsize += rb_st_memsize(p->encodings);
     return memsize;
 }
@@ -454,6 +462,31 @@ w_float(double d, struct dump_arg *arg)
     }
 }
 
+
+static VALUE
+w_encivar(VALUE str, struct dump_arg *arg)
+{
+    VALUE encname = encoding_name(str, arg);
+    if (NIL_P(encname) ||
+        is_ascii_string(str)) {
+        return Qnil;
+    }
+    w_byte(TYPE_IVAR, arg);
+    return encname;
+}
+
+static void
+w_encname(VALUE encname, struct dump_arg *arg)
+{
+    if (!NIL_P(encname)) {
+        struct dump_call_arg c_arg;
+        c_arg.limit = 1;
+        c_arg.arg = arg;
+        w_long(1L, arg);
+        w_encoding(encname, &c_arg);
+    }
+}
+
 static void
 w_symbol(VALUE sym, struct dump_arg *arg)
 {
@@ -470,24 +503,11 @@ w_symbol(VALUE sym, struct dump_arg *arg)
         if (!sym) {
             rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, sym);
         }
-        encname = encoding_name(sym, arg);
-        if (NIL_P(encname) ||
-            is_ascii_string(sym)) {
-            encname = Qnil;
-        }
-        else {
-            w_byte(TYPE_IVAR, arg);
-        }
+        encname = w_encivar(sym, arg);
         w_byte(TYPE_SYMBOL, arg);
         w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
         st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
-        if (!NIL_P(encname)) {
-            struct dump_call_arg c_arg;
-            c_arg.limit = 1;
-            c_arg.arg = arg;
-            w_long(1L, arg);
-            w_encoding(encname, &c_arg);
-        }
+        w_encname(encname, arg);
     }
 }
 
@@ -525,7 +545,7 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
         klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-        if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
+        if (!RICLASS_IS_ORIGIN_P(klass) ||
                 BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
             VALUE path = rb_class_name(RBASIC(klass)->klass);
             w_byte(TYPE_EXTENDED, arg);
@@ -578,13 +598,21 @@ rb_hash_ruby2_keywords(VALUE obj)
     RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
 }
 
-static inline bool
-to_be_skipped_id(const ID id)
+/*
+ * if instance variable name `id` is a special name to be skipped,
+ * returns the name of it.  otherwise it cannot be dumped (unnamed),
+ * returns `name` as-is.  returns NULL for ID that can be dumped.
+ */
+static inline const char *
+skipping_ivar_name(const ID id, const char *name)
 {
-    if (id == s_encoding_short) return true;
-    if (id == s_ruby2_keywords_flag) return true;
-    if (id == rb_id_encoding()) return true;
-    return !rb_id2str(id);
+#define IS_SKIPPED_IVAR(idname) \
+    ((id == idname) && (name = name_##idname, true))
+    if (IS_SKIPPED_IVAR(s_encoding_short)) return name;
+    if (IS_SKIPPED_IVAR(s_ruby2_keywords_flag)) return name;
+    if (IS_SKIPPED_IVAR(s_encoding_long)) return name;
+    if (!rb_id2str(id)) return name;
+    return NULL;
 }
 
 struct w_ivar_arg {
@@ -597,15 +625,12 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 {
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
+    const char unnamed[] = "", *ivname = skipping_ivar_name(id, unnamed);
 
-    if (to_be_skipped_id(id)) {
-        if (id == s_encoding_short) {
-            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
-        }
-        if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
+    if (ivname) {
+        if (ivname != unnamed) {
+            rb_warn("instance variable '%s' on class %"PRIsVALUE" is not dumped",
+                    ivname, CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
     }
@@ -618,7 +643,7 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 static int
 obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+    if (!skipping_ivar_name(id, "") && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
     return ST_CONTINUE;
@@ -702,20 +727,18 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 static void
 w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
 {
-    shape_id_t shape_id = rb_shape_get_shape_id(arg->obj);
+    shape_id_t shape_id = rb_obj_shape_id(arg->obj);
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
 
-    if (shape_id != rb_shape_get_shape_id(arg->obj)) {
-        rb_shape_t * expected_shape = rb_shape_get_shape_by_id(shape_id);
-        rb_shape_t * actual_shape = rb_shape_get_shape(arg->obj);
-
+    shape_id_t actual_shape_id = rb_obj_shape_id(arg->obj);
+    if (shape_id != actual_shape_id) {
         // If the shape tree got _shorter_ then we probably removed an IV
         // If the shape tree got longer, then we probably added an IV.
         // The exception message might not be accurate when someone adds and
         // removes the same number of IVs, but they will still get an exception
-        if (rb_shape_depth(expected_shape) > rb_shape_depth(actual_shape)) {
+        if (rb_shape_depth(shape_id) > rb_shape_depth(rb_obj_shape_id(arg->obj))) {
             rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
                     CLASS_OF(arg->obj));
         }
@@ -887,6 +910,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_index_t hasiv2;
             VALUE encname2;
 
+            if (arg->userdefs && st_is_member(arg->userdefs, (st_data_t)obj)) {
+                rb_raise(rb_eRuntimeError, "can't dump recursive object using _dump()");
+            }
             v = INT2NUM(limit);
             v = dump_funcall(arg, obj, s_dump, 1, &v);
             if (!RB_TYPE_P(v, T_STRING)) {
@@ -903,7 +929,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_class(TYPE_USERDEF, obj, arg, FALSE);
             w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
             if (hasiv) {
+                st_data_t userdefs = (st_data_t)obj;
+                if (!arg->userdefs) {
+                    arg->userdefs = rb_init_identtable();
+                }
+                st_add_direct(arg->userdefs, userdefs, 0);
                 w_ivar(hasiv, ivobj, encname, &c_arg);
+                st_delete(arg->userdefs, &userdefs, NULL);
             }
             w_remember(obj, arg);
             return;
@@ -935,19 +967,23 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             if (FL_TEST(obj, FL_SINGLETON)) {
                 rb_raise(rb_eTypeError, "singleton class can't be dumped");
             }
-            w_byte(TYPE_CLASS, arg);
             {
                 VALUE path = class2path(obj);
+                VALUE encname = w_encivar(path, arg);
+                w_byte(TYPE_CLASS, arg);
                 w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+                w_encname(encname, arg);
                 RB_GC_GUARD(path);
             }
             break;
 
           case T_MODULE:
-            w_byte(TYPE_MODULE, arg);
             {
                 VALUE path = class2path(obj);
+                VALUE encname = w_encivar(path, arg);
+                w_byte(TYPE_MODULE, arg);
                 w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+                w_encname(encname, arg);
                 RB_GC_GUARD(path);
             }
             break;
@@ -1048,7 +1084,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRUCT:
             w_class(TYPE_STRUCT, obj, arg, TRUE);
             {
-                long len = RSTRUCT_LEN(obj);
+                long len = RSTRUCT_LEN_RAW(obj);
                 VALUE mem;
                 long i;
 
@@ -1056,7 +1092,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 mem = rb_struct_members(obj);
                 for (i=0; i<len; i++) {
                     w_symbol(RARRAY_AREF(mem, i), arg);
-                    w_object(RSTRUCT_GET(obj, i), arg, limit);
+                    w_object(RSTRUCT_GET_RAW(obj, i), arg, limit);
                 }
             }
             break;
@@ -1110,6 +1146,10 @@ clear_dump_arg(struct dump_arg *arg)
         st_free_table(arg->encodings);
         arg->encodings = 0;
     }
+    if (arg->userdefs) {
+        st_free_table(arg->userdefs);
+        arg->userdefs = 0;
+    }
 }
 
 NORETURN(static inline void io_needed(void));
@@ -1149,7 +1189,7 @@ io_needed(void)
  * * anonymous Class/Module.
  * * objects which are related to system (ex: Dir, File::Stat, IO, File, Socket
  *   and so on)
- * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
+ * * an instance of MatchData, Method, UnboundMethod, Proc, Thread,
  *   ThreadGroup, Continuation
  * * objects which define singleton methods
  */
@@ -1187,6 +1227,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->num_entries = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
+    arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
         if (!rb_respond_to(port, s_write)) {
@@ -1387,7 +1428,7 @@ long
 ruby_marshal_read_long(const char **buf, long len)
 {
     long x;
-    struct RString src;
+    struct RString src = {RBASIC_INIT};
     struct load_arg arg;
     memset(&arg, 0, sizeof(arg));
     arg.src = rb_setup_fake_str(&src, *buf, len, 0);
@@ -1491,7 +1532,7 @@ name_equal(const char *name, size_t nlen, const char *p, long l)
 static int
 sym2encidx(VALUE sym, VALUE val)
 {
-    static const char name_encoding[8] = "encoding";
+    RBIMPL_ATTR_NONSTRING() static const char name_encoding[8] = "encoding";
     const char *p;
     long l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return -1;
@@ -1684,6 +1725,34 @@ r_copy_ivar(VALUE v, VALUE data)
                  "can't override instance variable of "type" '%"PRIsVALUE"'", \
                  (str))
 
+static int
+r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
+{
+    int idx = sym2encidx(sym, val);
+    if (idx >= 0) {
+        if (rb_enc_capable(obj)) {
+            rb_enc_associate_index(obj, idx);
+        }
+        else {
+            rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static long
+r_encname(VALUE obj, struct load_arg *arg)
+{
+    long len = r_long(arg);
+    if (len > 0) {
+        VALUE sym = r_symbol(arg);
+        VALUE val = r_object(arg);
+        len -= r_ivar_encoding(obj, arg, sym, val);
+    }
+    return len;
+}
+
 static void
 r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
@@ -1700,14 +1769,7 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
         do {
             VALUE sym = r_symbol(arg);
             VALUE val = r_object(arg);
-            int idx = sym2encidx(sym, val);
-            if (idx >= 0) {
-                if (rb_enc_capable(obj)) {
-                    rb_enc_associate_index(obj, idx);
-                }
-                else {
-                    rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
-                }
+            if (r_ivar_encoding(obj, arg, sym, val)) {
                 if (has_encoding) *has_encoding = TRUE;
             }
             else if (symname_equal_lit(sym, name_s_ruby2_keywords_flag)) {
@@ -2231,6 +2293,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         {
             VALUE str = r_bytes(arg);
 
+            if (ivp && *ivp > 0) *ivp = r_encname(str, arg) > 0;
             v = path2class(str);
             prohibit_ivar("class", str);
             v = r_entry(v, arg);
@@ -2242,6 +2305,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         {
             VALUE str = r_bytes(arg);
 
+            if (ivp && *ivp > 0) *ivp = r_encname(str, arg) > 0;
             v = path2module(str);
             prohibit_ivar("module", str);
             v = r_entry(v, arg);
@@ -2508,19 +2572,19 @@ Init_marshal(void)
 }
 
 static int
-marshal_compat_table_mark_i(st_data_t key, st_data_t value, st_data_t _)
+marshal_compat_table_mark_and_move_i(st_data_t key, st_data_t value, st_data_t _)
 {
     marshal_compat_t *p = (marshal_compat_t *)value;
-    rb_gc_mark_movable(p->newclass);
-    rb_gc_mark_movable(p->oldclass);
+    rb_gc_mark_and_move(&p->newclass);
+    rb_gc_mark_and_move(&p->oldclass);
     return ST_CONTINUE;
 }
 
 static void
-marshal_compat_table_mark(void *tbl)
+marshal_compat_table_mark_and_move(void *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_mark_i, 0);
+    st_foreach(tbl, marshal_compat_table_mark_and_move_i, 0);
 }
 
 static int
@@ -2543,29 +2607,13 @@ marshal_compat_table_memsize(const void *data)
     return st_memsize(data) + sizeof(marshal_compat_t) * st_table_size(data);
 }
 
-static int
-marshal_compat_table_compact_i(st_data_t key, st_data_t value, st_data_t _)
-{
-    marshal_compat_t *p = (marshal_compat_t *)value;
-    p->newclass = rb_gc_location(p->newclass);
-    p->oldclass = rb_gc_location(p->oldclass);
-    return ST_CONTINUE;
-}
-
-static void
-marshal_compat_table_compact(void *tbl)
-{
-    if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_compact_i, 0);
-}
-
 static const rb_data_type_t marshal_compat_type = {
     .wrap_struct_name = "marshal_compat_table",
     .function = {
-        .dmark = marshal_compat_table_mark,
+        .dmark = marshal_compat_table_mark_and_move,
         .dfree = marshal_compat_table_free,
         .dsize = marshal_compat_table_memsize,
-        .dcompact = marshal_compat_table_compact,
+        .dcompact = marshal_compat_table_mark_and_move,
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
 };

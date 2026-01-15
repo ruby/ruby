@@ -23,25 +23,12 @@ describe 'Assignments' do
         ScratchPad.recorded.should == [:receiver, :argument, :rhs]
       end
 
-      # similar tests for evaluation order are located in language/constants_spec.rb
-      ruby_version_is ''...'3.2' do
-        it 'evaluates expressions right to left when assignment with compounded constant' do
-          m = Module.new
-          ScratchPad.record []
+      it 'evaluates expressions left to right when assignment with compounded constant' do
+        m = Module.new
+        ScratchPad.record []
 
-          (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
-          ScratchPad.recorded.should == [:rhs, :module]
-        end
-      end
-
-      ruby_version_is '3.2' do
-        it 'evaluates expressions left to right when assignment with compounded constant' do
-          m = Module.new
-          ScratchPad.record []
-
-          (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
-          ScratchPad.recorded.should == [:module, :rhs]
-        end
+        (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
+        ScratchPad.recorded.should == [:module, :rhs]
       end
 
       it 'raises TypeError after evaluation of right-hand-side when compounded constant module is not a module' do
@@ -52,6 +39,65 @@ describe 'Assignments' do
         }.should raise_error(TypeError)
 
         ScratchPad.recorded.should == [:rhs]
+      end
+    end
+
+    context "given block argument" do
+      before do
+        @klass = Class.new do
+          def initialize(h) @h = h end
+          def [](k, &block) @h[k]; end
+          def []=(k, v, &block) @h[k] = v; end
+        end
+      end
+
+      ruby_version_is ""..."3.4" do
+        it "accepts block argument" do
+          obj = @klass.new(a: 1)
+          block = proc {}
+
+          eval "obj[:a, &block] = 2"
+          eval("obj[:a, &block]").should == 2
+        end
+      end
+
+      ruby_version_is "3.4" do
+        it "raises SyntaxError" do
+          obj = @klass.new(a: 1)
+          block = proc {}
+
+          -> {
+            eval "obj[:a, &block] = 2"
+          }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+        end
+      end
+    end
+
+    context "given keyword arguments" do
+      before do
+        @klass = Class.new do
+          attr_reader :x
+
+          def []=(*args, **kw)
+            @x = [args, kw]
+          end
+        end
+      end
+
+      ruby_version_is ""..."3.4" do
+        it "supports keyword arguments in index assignments" do
+          a = @klass.new
+          eval "a[1, 2, 3, b: 4] = 5"
+          a.x.should == [[1, 2, 3, {b: 4}, 5], {}]
+        end
+      end
+
+      ruby_version_is "3.4" do
+        it "raises SyntaxError when given keyword arguments in index assignments" do
+          a = @klass.new
+          -> { eval "a[1, 2, 3, b: 4] = 5" }.should raise_error(SyntaxError,
+            /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
+        end
       end
     end
   end
@@ -125,6 +171,77 @@ describe 'Assignments' do
 
         a = klass_with_private_methods.new(k: 0)
         a.public_method(:k, 2).should == 2
+      end
+
+      context "given block argument" do
+        before do
+          @klass = Class.new do
+            def initialize(h) @h = h end
+            def [](k, &block) @h[k]; end
+            def []=(k, v, &block) @h[k] = v; end
+          end
+        end
+
+        ruby_version_is ""..."3.4" do
+          it "accepts block argument" do
+            obj = @klass.new(a: 1)
+            block = proc {}
+
+            eval "obj[:a, &block] += 2"
+            eval("obj[:a, &block]").should == 3
+          end
+        end
+
+        ruby_version_is "3.4" do
+          it "raises SyntaxError" do
+            obj = @klass.new(a: 1)
+            block = proc {}
+
+            -> {
+              eval "obj[:a, &block] += 2"
+            }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+          end
+        end
+      end
+
+      context "given keyword arguments" do
+        before do
+          @klass = Class.new do
+            attr_reader :x
+
+            def [](*args)
+              100
+            end
+
+            def []=(*args, **kw)
+              @x = [args, kw]
+            end
+          end
+        end
+
+        ruby_version_is ""..."3.3" do
+          it "supports keyword arguments in index assignments" do
+            a = @klass.new
+            eval "a[1, 2, 3, b: 4] += 5"
+            a.x.should == [[1, 2, 3, {b: 4}, 105], {}]
+          end
+        end
+
+        ruby_version_is "3.3"..."3.4" do
+          it "supports keyword arguments in index assignments" do
+            a = @klass.new
+            eval "a[1, 2, 3, b: 4] += 5"
+            a.x.should == [[1, 2, 3, 105], {b: 4}]
+          end
+        end
+
+        ruby_version_is "3.4" do
+          it "raises SyntaxError when given keyword arguments in index assignments" do
+            a = @klass.new
+            -> { eval "a[1, 2, 3, b: 4] += 5" }.should raise_error(SyntaxError,
+              /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
+          end
+        end
       end
 
       context 'splatted argument' do
@@ -276,158 +393,102 @@ end
 
 describe 'Multiple assignments' do
   describe 'evaluation order' do
-    ruby_version_is ''...'3.1' do
-      it 'evaluates expressions right to left when assignment with an accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with an accessor' do
+      object = Object.new
+      def object.a=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:c, :d, :a, :b]
-      end
-
-      it 'evaluates expressions right to left when assignment with a nested accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:b, :a]
-      end
+      (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
+      ScratchPad.recorded.should == [:a, :b, :c, :d]
     end
 
-    ruby_version_is '3.1' do
-      it 'evaluates expressions left to right when assignment with an accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a nested accessor' do
+      object = Object.new
+      def object.a=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:a, :b, :c, :d]
-      end
-
-      it 'evaluates expressions left to right when assignment with a nested accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:a, :b]
-      end
-
-      it 'evaluates expressions left to right when assignment with a deeply nested accessor' do
-        o = Object.new
-        def o.a=(value) end
-        def o.b=(value) end
-        def o.c=(value) end
-        def o.d=(value) end
-        def o.e=(value) end
-        def o.f=(value) end
-        ScratchPad.record []
-
-        (ScratchPad << :a; o).a,
-          ((ScratchPad << :b; o).b,
-          ((ScratchPad << :c; o).c, (ScratchPad << :d; o).d),
-          (ScratchPad << :e; o).e),
-        (ScratchPad << :f; o).f = (ScratchPad << :value; :value)
-
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
-      end
+      ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
+      ScratchPad.recorded.should == [:a, :b]
     end
 
-    ruby_version_is ''...'3.1' do
-      it 'evaluates expressions right to left when assignment with a #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a deeply nested accessor' do
+      o = Object.new
+      def o.a=(value) end
+      def o.b=(value) end
+      def o.c=(value) end
+      def o.d=(value) end
+      def o.e=(value) end
+      def o.f=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
-        ScratchPad.recorded.should == [:e, :f, :a, :b, :c, :d]
-      end
+      (ScratchPad << :a; o).a,
+        ((ScratchPad << :b; o).b,
+        ((ScratchPad << :c; o).c, (ScratchPad << :d; o).d),
+        (ScratchPad << :e; o).e),
+      (ScratchPad << :f; o).f = (ScratchPad << :value; :value)
 
-      it 'evaluates expressions right to left when assignment with a nested #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
-        ScratchPad.recorded.should == [:c, :a, :b]
-      end
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
     end
 
-    ruby_version_is '3.1' do
-      it 'evaluates expressions left to right when assignment with a #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a #[]=' do
+      object = Object.new
+      def object.[]=(_, _) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f]
-      end
-
-      it 'evaluates expressions left to right when assignment with a nested #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
-        ScratchPad.recorded.should == [:a, :b, :c]
-      end
-
-      it 'evaluates expressions left to right when assignment with a deeply nested #[]=' do
-        o = Object.new
-        def o.[]=(_, _) end
-        ScratchPad.record []
-
-        (ScratchPad << :ra; o)[(ScratchPad << :aa; :aa)],
-          ((ScratchPad << :rb; o)[(ScratchPad << :ab; :ab)],
-          ((ScratchPad << :rc; o)[(ScratchPad << :ac; :ac)], (ScratchPad << :rd; o)[(ScratchPad << :ad; :ad)]),
-          (ScratchPad << :re; o)[(ScratchPad << :ae; :ae)]),
-        (ScratchPad << :rf; o)[(ScratchPad << :af; :af)] = (ScratchPad << :value; :value)
-
-        ScratchPad.recorded.should == [:ra, :aa, :rb, :ab, :rc, :ac, :rd, :ad, :re, :ae, :rf, :af, :value]
-      end
+      (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f]
     end
 
-    ruby_version_is ''...'3.2' do
-      it 'evaluates expressions right to left when assignment with compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a nested #[]=' do
+      object = Object.new
+      def object.[]=(_, _) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:c, :d, :a, :b]
-      end
+      ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
+      ScratchPad.recorded.should == [:a, :b, :c]
     end
 
-    ruby_version_is '3.2' do
-      it 'evaluates expressions left to right when assignment with compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a deeply nested #[]=' do
+      o = Object.new
+      def o.[]=(_, _) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:a, :b, :c, :d]
-      end
+      (ScratchPad << :ra; o)[(ScratchPad << :aa; :aa)],
+        ((ScratchPad << :rb; o)[(ScratchPad << :ab; :ab)],
+        ((ScratchPad << :rc; o)[(ScratchPad << :ac; :ac)], (ScratchPad << :rd; o)[(ScratchPad << :ad; :ad)]),
+        (ScratchPad << :re; o)[(ScratchPad << :ae; :ae)]),
+      (ScratchPad << :rf; o)[(ScratchPad << :af; :af)] = (ScratchPad << :value; :value)
 
-      it 'evaluates expressions left to right when assignment with a nested compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+      ScratchPad.recorded.should == [:ra, :aa, :rb, :ab, :rc, :ac, :rd, :ad, :re, :ae, :rf, :af, :value]
+    end
 
-        ((ScratchPad << :a; m)::A, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:a, :b]
-      end
+    it 'evaluates expressions left to right when assignment with compounded constant' do
+      m = Module.new
+      ScratchPad.record []
 
-      it 'evaluates expressions left to right when assignment with deeply nested compounded constants' do
-        m = Module.new
-        ScratchPad.record []
+      (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
+      ScratchPad.recorded.should == [:a, :b, :c, :d]
+    end
 
-        (ScratchPad << :a; m)::A,
-          ((ScratchPad << :b; m)::B,
-          ((ScratchPad << :c; m)::C, (ScratchPad << :d; m)::D),
-          (ScratchPad << :e; m)::E),
-        (ScratchPad << :f; m)::F = (ScratchPad << :value; :value)
+    it 'evaluates expressions left to right when assignment with a nested compounded constant' do
+      m = Module.new
+      ScratchPad.record []
 
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
-      end
+      ((ScratchPad << :a; m)::A, foo), bar = [(ScratchPad << :b; :b)]
+      ScratchPad.recorded.should == [:a, :b]
+    end
+
+    it 'evaluates expressions left to right when assignment with deeply nested compounded constants' do
+      m = Module.new
+      ScratchPad.record []
+
+      (ScratchPad << :a; m)::A,
+        ((ScratchPad << :b; m)::B,
+        ((ScratchPad << :c; m)::C, (ScratchPad << :d; m)::D),
+        (ScratchPad << :e; m)::E),
+      (ScratchPad << :f; m)::F = (ScratchPad << :value; :value)
+
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
     end
   end
 

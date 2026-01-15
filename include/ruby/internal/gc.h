@@ -45,7 +45,7 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define RUBY_REF_EDGE(s, p) offsetof(s, p)
-#define RUBY_REFS_LIST_PTR(l) (RUBY_DATA_FUNC)(l)
+#define RUBY_REFS_LIST_PTR(l) (RUBY_DATA_FUNC)(uintptr_t)(l)
 #define RUBY_REF_END SIZE_MAX
 #define RUBY_REFERENCES(t) static const size_t t[]
 #define RUBY_REFERENCES_START(t) RUBY_REFERENCES(t) = {
@@ -822,8 +822,5 @@ rb_obj_write(
     rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
     return a;
 }
-
-RBIMPL_ATTR_DEPRECATED(("Will be removed soon"))
-static inline void rb_gc_force_recycle(VALUE obj){}
 
 #endif /* RBIMPL_GC_H */

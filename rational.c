@@ -609,9 +609,13 @@ nurat_denominator(VALUE self)
 
 /*
  * call-seq:
- *    -rat  ->  rational
+ *    -self -> rational
  *
- * Negates +rat+.
+ * Returns +self+, negated:
+ *
+ *   -(1/3r)   # => (-1/3)
+ *   -(-1/3r)  # => (1/3)
+ *
  */
 VALUE
 rb_rational_uminus(VALUE self)
@@ -715,16 +719,27 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 static double nurat_to_double(VALUE self);
 /*
- * call-seq:
- *    rat + numeric  ->  numeric
+ *  call-seq:
+ *    self + other -> numeric
  *
- * Performs addition.
+ *  Returns the sum of +self+ and +other+:
  *
- *    Rational(2, 3)  + Rational(2, 3)   #=> (4/3)
- *    Rational(900)   + Rational(1)      #=> (901/1)
- *    Rational(-2, 9) + Rational(-9, 2)  #=> (-85/18)
- *    Rational(9, 8)  + 4                #=> (41/8)
- *    Rational(20, 9) + 9.8              #=> 12.022222222222222
+ *    Rational(2, 3) + 0  # => (2/3)
+ *    Rational(2, 3) + 1  # => (5/3)
+ *    Rational(2, 3) + -1 # => (-1/3)
+ *
+ *    Rational(2, 3) + Complex(1, 0)     # => ((5/3)+0i)
+ *
+ *    Rational(2, 3) + Rational(1, 1)     # => (5/3)
+ *    Rational(2, 3) + Rational(3, 2)     # => (13/6)
+ *    Rational(2, 3) + Rational(3.0, 2.0) # => (13/6)
+ *    Rational(2, 3) + Rational(3.1, 2.1) # => (30399297484750849/14186338826217063)
+ *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    Rational(2, 3) + 1.0 # => 1.6666666666666665
+ *    Rational(2, 3) + Complex(1.0, 0.0) # => (1.6666666666666665+0.0i)
+ *
  */
 VALUE
 rb_rational_plus(VALUE self, VALUE other)
@@ -757,9 +772,9 @@ rb_rational_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat - numeric  ->  numeric
+ *    self - other -> numeric
  *
- * Performs subtraction.
+ * Returns the difference of +self+ and +other+:
  *
  *    Rational(2, 3)  - Rational(2, 3)   #=> (0/1)
  *    Rational(900)   - Rational(1)      #=> (899/1)
@@ -853,15 +868,17 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *    rat * numeric  ->  numeric
+ *   self * other -> numeric
  *
- * Performs multiplication.
+ * Returns the numeric product of +self+ and +other+:
  *
- *    Rational(2, 3)  * Rational(2, 3)   #=> (4/9)
- *    Rational(900)   * Rational(1)      #=> (900/1)
- *    Rational(-2, 9) * Rational(-9, 2)  #=> (1/1)
- *    Rational(9, 8)  * 4                #=> (9/2)
- *    Rational(20, 9) * 9.8              #=> 21.77777777777778
+ *   Rational(9, 8)  * 4               #=> (9/2)
+ *   Rational(20, 9) * 9.8             #=> 21.77777777777778
+ *   Rational(9, 8)  * Complex(1, 2)   # => ((9/8)+(9/4)*i)
+ *   Rational(2, 3)  * Rational(2, 3)  #=> (4/9)
+ *   Rational(900)   * Rational(1)     #=> (900/1)
+ *   Rational(-2, 9) * Rational(-9, 2) #=> (1/1)
+ *
  */
 VALUE
 rb_rational_mul(VALUE self, VALUE other)
@@ -894,10 +911,9 @@ rb_rational_mul(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat / numeric     ->  numeric
- *    rat.quo(numeric)  ->  numeric
+ *    self / other -> numeric
  *
- * Performs division.
+ * Returns the quotient of +self+ and +other+:
  *
  *    Rational(2, 3)  / Rational(2, 3)   #=> (1/1)
  *    Rational(900)   / Rational(1)      #=> (900/1)
@@ -971,9 +987,9 @@ nurat_fdiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat ** numeric  ->  numeric
+ *    self ** exponent -> numeric
  *
- * Performs exponentiation.
+ * Returns +self+ raised to the power +exponent+:
  *
  *    Rational(2)    ** Rational(3)     #=> (8/1)
  *    Rational(10)   ** -2              #=> (1/100)
@@ -1048,8 +1064,7 @@ rb_rational_pow(VALUE self, VALUE other)
         }
     }
     else if (RB_BIGNUM_TYPE_P(other)) {
-        rb_warn("in a**b, b may be too big");
-        return rb_float_pow(nurat_to_f(self), other);
+        rb_raise(rb_eArgError, "exponent is too large");
     }
     else if (RB_FLOAT_TYPE_P(other) || RB_TYPE_P(other, T_RATIONAL)) {
         return rb_float_pow(nurat_to_f(self), other);
@@ -1062,20 +1077,30 @@ rb_rational_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rational <=> numeric  ->  -1, 0, +1, or nil
+ *   self <=> other -> -1, 0, 1, or nil
  *
- * Returns -1, 0, or +1 depending on whether +rational+ is
- * less than, equal to, or greater than +numeric+.
+ * Compares +self+ and +other+.
  *
- * +nil+ is returned if the two values are incomparable.
+ * Returns:
  *
- *    Rational(2, 3) <=> Rational(2, 3)  #=> 0
- *    Rational(5)    <=> 5               #=> 0
- *    Rational(2, 3) <=> Rational(1, 3)  #=> 1
- *    Rational(1, 3) <=> 1               #=> -1
- *    Rational(1, 3) <=> 0.3             #=> 1
+ * - +-1+, if +self+ is less than +other+.
+ * - +0+, if the two values are the same.
+ * - +1+, if +self+ is greater than +other+.
+ * - +nil+, if the two values are incomparable.
  *
- *    Rational(1, 3) <=> "0.3"           #=> nil
+ * Examples:
+ *
+ *   Rational(2, 3) <=> Rational(4, 3) # => -1
+ *   Rational(2, 1) <=> Rational(2, 1) # => 0
+ *   Rational(2, 1) <=> 2              # => 0
+ *   Rational(2, 1) <=> 2.0            # => 0
+ *   Rational(2, 1) <=> Complex(2, 0)  # => 0
+ *   Rational(4, 3) <=> Rational(2, 3) # => 1
+ *   Rational(4, 3) <=> :foo           # => nil
+ *
+ * \Class \Rational includes module Comparable,
+ * each of whose methods uses Rational#<=> for comparison.
+ *
  */
 VALUE
 rb_rational_cmp(VALUE self, VALUE other)
@@ -1120,9 +1145,9 @@ rb_rational_cmp(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat == object  ->  true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if +rat+ equals +object+ numerically.
+ * Returns whether +self+ and +other+ are numerically equal:
  *
  *    Rational(2, 3)  == Rational(2, 3)   #=> true
  *    Rational(5)     == 5                #=> true
@@ -2110,39 +2135,6 @@ rb_float_denominator(VALUE self)
 
 /*
  * call-seq:
- *   to_r  ->  (0/1)
- *
- * Returns zero as a Rational:
- *
- *   nil.to_r # => (0/1)
- *
- */
-static VALUE
-nilclass_to_r(VALUE self)
-{
-    return rb_rational_new1(INT2FIX(0));
-}
-
-/*
- * call-seq:
- *   rationalize(eps = nil)  ->  (0/1)
- *
- * Returns zero as a Rational:
- *
- *   nil.rationalize # => (0/1)
- *
- * Argument +eps+ is ignored.
- *
- */
-static VALUE
-nilclass_rationalize(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    return nilclass_to_r(self);
-}
-
-/*
- * call-seq:
  *    int.to_r  ->  rational
  *
  * Returns the value as a rational.
@@ -2501,31 +2493,32 @@ string_to_r_strict(VALUE self, int raise)
 
 /*
  * call-seq:
- *    str.to_r  ->  rational
+ *    str.to_r -> rational
  *
- * Returns the result of interpreting leading characters in +str+
- * as a rational.  Leading whitespace and extraneous characters
- * past the end of a valid number are ignored.
- * Digit sequences can be separated by an underscore.
- * If there is not a valid number at the start of +str+,
- * zero is returned.  This method never raises an exception.
+ * Returns the result of interpreting leading characters in +self+ as a rational value:
  *
- *    '  2  '.to_r       #=> (2/1)
- *    '300/2'.to_r       #=> (150/1)
- *    '-9.2'.to_r        #=> (-46/5)
- *    '-9.2e2'.to_r      #=> (-920/1)
- *    '1_234_567'.to_r   #=> (1234567/1)
- *    '21 June 09'.to_r  #=> (21/1)
- *    '21/06/09'.to_r    #=> (7/2)
- *    'BWV 1079'.to_r    #=> (0/1)
+ *   '123'.to_r       # => (123/1)   # Integer literal.
+ *   '300/2'.to_r     # => (150/1)   # Rational literal.
+ *   '-9.2'.to_r      # => (-46/5)   # Float literal.
+ *   '-9.2e2'.to_r    # => (-920/1)  # Float literal.
  *
- * NOTE: "0.3".to_r isn't the same as 0.3.to_r.  The former is
- * equivalent to "3/10".to_r, but the latter isn't so.
+ * Ignores leading and trailing whitespace, and trailing non-numeric characters:
  *
- *    "0.3".to_r == 3/10r  #=> true
- *    0.3.to_r   == 3/10r  #=> false
+ *   ' 2 '.to_r       # => (2/1)
+ *   '21-Jun-09'.to_r # => (21/1)
  *
- * See also Kernel#Rational.
+ * Returns \Rational zero if there are no leading numeric characters.
+ *
+ *   'BWV 1079'.to_r  # => (0/1)
+ *
+ * NOTE: <tt>'0.3'.to_r</tt> is equivalent to <tt>3/10r</tt>,
+ * but is different from <tt>0.3.to_r</tt>:
+ *
+ *   '0.3'.to_r # => (3/10)
+ *   3/10r      # => (3/10)
+ *   0.3.to_r   # => (5404319552844595/18014398509481984)
+ *
+ * Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 static VALUE
 string_to_r(VALUE self)
@@ -2716,7 +2709,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *
  * You can convert certain objects to Rationals with:
  *
- * - \Method #Rational.
+ * - Method #Rational.
  *
  * Examples
  *
@@ -2824,8 +2817,6 @@ Init_Rational(void)
     rb_define_method(rb_cFloat, "numerator", rb_float_numerator, 0);
     rb_define_method(rb_cFloat, "denominator", rb_float_denominator, 0);
 
-    rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
-    rb_define_method(rb_cNilClass, "rationalize", nilclass_rationalize, -1);
     rb_define_method(rb_cInteger, "to_r", integer_to_r, 0);
     rb_define_method(rb_cInteger, "rationalize", integer_rationalize, -1);
     rb_define_method(rb_cFloat, "to_r", float_to_r, 0);

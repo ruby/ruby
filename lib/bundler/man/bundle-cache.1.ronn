@@ -1,9 +1,9 @@
 bundle-cache(1) -- Package your needed `.gem` files into your application
-===========================================================================
+=========================================================================
 
 ## SYNOPSIS
 
-`bundle cache`
+`bundle cache` [*OPTIONS*]
 
 alias: `package`, `pack`
 
@@ -13,11 +13,27 @@ Copy all of the `.gem` files needed to run the application into the
 `vendor/cache` directory. In the future, when running [`bundle install(1)`](bundle-install.1.html),
 use the gems in the cache in preference to the ones on `rubygems.org`.
 
+## OPTIONS
+
+* `--all-platforms`:
+  Include gems for all platforms present in the lockfile, not only the current one.
+
+* `--cache-path=CACHE-PATH`:
+  Specify a different cache path than the default (vendor/cache).
+
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of Gemfile.
+
+* `--no-install`:
+  Don't install the gems, only update the cache.
+
+* `--quiet`:
+  Only output warnings and errors.
+
 ## GIT AND PATH GEMS
 
 The `bundle cache` command can also package `:git` and `:path` dependencies
-besides .gem files. This needs to be explicitly enabled via the `--all` option.
-Once used, the `--all` option will be remembered.
+besides .gem files. This can be disabled setting `cache_all` to false.
 
 ## SUPPORT FOR MULTIPLE PLATFORMS
 

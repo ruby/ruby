@@ -9,4 +9,3 @@ void Init_psych_yaml_tree(void)
     VALUE visitor   = rb_define_class_under(visitors, "Visitor", rb_cObject);
     cPsychVisitorsYamlTree = rb_define_class_under(visitors, "YAMLTree", visitor);
 }
-/* vim: set noet sws=4 sw=4: */

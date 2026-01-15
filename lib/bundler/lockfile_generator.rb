@@ -29,7 +29,7 @@ module Bundler
     private
 
     def add_sources
-      definition.send(:sources).lock_sources.each_with_index do |source, idx|
+      definition.sources.lock_sources.each_with_index do |source, idx|
         out << "\n" unless idx.zero?
 
         # Add the source header
@@ -95,7 +95,7 @@ module Bundler
           out << "  #{key}: #{val}\n"
         end
       when String
-        out << "   #{value}\n"
+        out << "  #{value}\n"
       else
         raise ArgumentError, "#{value.inspect} can't be serialized in a lockfile"
       end

@@ -2,7 +2,7 @@
 
 require_relative "endpoint"
 
-$LOAD_PATH.unshift Dir[Spec::Path.base_system_gem_path.join("gems/compact_index*/lib")].first.to_s
+$LOAD_PATH.unshift Dir[Spec::Path.scoped_base_system_gem_path.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"
 require "digest"
 
@@ -67,14 +67,14 @@ class CompactIndexAPI < Endpoint
       @gems ||= {}
       @gems[gem_repo] ||= begin
         specs = Bundler::Deprecate.skip_during do
-          %w[specs.4.8 prerelease_specs.4.8].map do |filename|
+          %w[specs.4.8 prerelease_specs.4.8].flat_map do |filename|
             spec_index = gem_repo.join(filename)
             next [] unless File.exist?(spec_index)
 
             Marshal.load(File.binread(spec_index)).map do |name, version, platform|
               load_spec(name, version, platform, gem_repo)
             end
-          end.flatten
+          end
         end
 
         specs.group_by(&:name).map do |name, versions|

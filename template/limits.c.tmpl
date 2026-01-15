@@ -82,7 +82,7 @@ Init_limits(void)
 #define MAX2NUM(name) ULONG2NUM(name ## _MAX)
 #define MIN2NUM(name)  LONG2NUM(name ## _MIN)
 #endif
-#define DEFINE(k, v) rb_hash_aset(h, rb_str_new_cstr(#k), v)
+#define DEFINE(k, v) rb_hash_aset(h, rb_usascii_str_new_lit(#k), v)
 
 % limits.each do |type|
 #ifdef <%= type %>_MAX

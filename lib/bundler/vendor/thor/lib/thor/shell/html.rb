@@ -64,7 +64,7 @@ class Bundler::Thor
       # Ask something to the user and receives a response.
       #
       # ==== Example
-      # ask("What is your name?")
+      #   ask("What is your name?")
       #
       # TODO: Implement #ask for Bundler::Thor::Shell::HTML
       def ask(statement, color = nil)

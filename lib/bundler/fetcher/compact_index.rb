@@ -10,7 +10,7 @@ module Bundler
         method = instance_method(method_name)
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
-          method.bind(self).call(*args, &blk)
+          method.bind_call(self, *args, &blk)
         rescue NetworkDownError, CompactIndexClient::Updater::MismatchedChecksumError => e
           raise HTTPError, e.message
         rescue AuthenticationRequiredError, BadAuthenticationError
@@ -110,7 +110,7 @@ module Bundler
         def call(path, headers)
           fetcher.downloader.fetch(fetcher.fetch_uri + path, headers)
         rescue NetworkDownError => e
-          raise unless Bundler.feature_flag.allow_offline_install? && headers["If-None-Match"]
+          raise unless headers["If-None-Match"]
           ui.warn "Using the cached data for the new index because of a network error: #{e}"
           Gem::Net::HTTPNotModified.new(nil, nil, nil)
         end

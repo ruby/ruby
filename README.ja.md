@@ -1,9 +1,10 @@
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
-[![Actions Status: RJIT](https://github.com/ruby/ruby/workflows/RJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"RJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
+
+[English](rdoc-ref:README.md)
 
 # Rubyとは
 
@@ -40,11 +41,15 @@ https://www.ruby-lang.org/ja/downloads/
 
 ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
-    $ git clone https://github.com/ruby/ruby.git
+```console
+$ git clone https://github.com/ruby/ruby.git
+```
 
 他のブランチの一覧は次のコマンドで見られます．
 
-    $ git ls-remote https://github.com/ruby/ruby.git
+```console
+$ git ls-remote https://github.com/ruby/ruby.git
+```
 
 Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
 コミッタはこちらを使います．

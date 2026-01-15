@@ -10,7 +10,7 @@ If the match attempt succeeds:
 - Sets [match values][9].
 - Returns the size of the matched substring.
 
-```
+```rb
 scanner = StringScanner.new(HIRAGANA_TEXT)
 scanner.string           # => "こんにちは"
 scanner.pos = 6
@@ -43,7 +43,7 @@ If the match attempt fails:
 - Clears match values.
 - Returns `nil`.
 
-```
+```rb
 scanner.skip_until(/nope/)     # => nil
 match_values_cleared?(scanner) # => true
 ```

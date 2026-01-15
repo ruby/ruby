@@ -285,6 +285,12 @@ module DefinedSpecs
     end
   end
 
+  module ModuleWithConstMissing
+    def self.const_missing(const)
+      const
+    end
+  end
+
   class SuperWithIntermediateModules
     include IntermediateModule1
     include IntermediateModule2

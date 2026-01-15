@@ -243,6 +243,10 @@ class TestThread < Test::Unit::TestCase
 
   def test_join_argument_conversion
     t = Thread.new {}
+
+    # Make sure that the thread terminates
+    Thread.pass while t.status
+
     assert_raise(TypeError) {t.join(:foo)}
 
     limit = Struct.new(:to_f, :count).new(0.05)
@@ -323,7 +327,6 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -1477,10 +1480,9 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    opts = { timeout: 5, timeout_error: nil }
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
 
-    # prevent SIGABRT from slow shutdown with RJIT
-    opts[:reprieve] = 3 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+    opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false
@@ -1556,5 +1558,98 @@ q.pop
     assert_equal(true, t.pending_interrupt?)
     assert_equal(true, t.pending_interrupt?(Exception))
     assert_equal(false, t.pending_interrupt?(ArgumentError))
+  end
+
+  def test_deadlock_backtrace
+    bug21127 = '[ruby-core:120930] [Bug #21127]'
+
+    expected_stderr = [
+      /-:12:in 'Thread#join': No live threads left. Deadlock\? \(fatal\)\n/,
+      /2 threads, 2 sleeps current:\w+ main thread:\w+\n/,
+      /\* #<Thread:\w+ sleep_forever>\n/,
+      :*,
+      /^\s*-:6:in 'Object#frame_for_deadlock_test_2'/,
+      :*,
+      /\* #<Thread:\w+ -:10 sleep_forever>\n/,
+      :*,
+      /^\s*-:2:in 'Object#frame_for_deadlock_test_1'/,
+      :*,
+    ]
+
+    assert_in_out_err([], <<-INPUT, [], expected_stderr, bug21127)
+      def frame_for_deadlock_test_1
+        yield
+      end
+
+      def frame_for_deadlock_test_2
+        yield
+      end
+
+      q = Thread::Queue.new
+      t = Thread.new { frame_for_deadlock_test_1 { q.pop } }
+
+      frame_for_deadlock_test_2 { t.join }
+    INPUT
+  end
+
+  # [Bug #21342]
+  def test_unlock_locked_mutex_with_collected_fiber
+    bug21127 = '[ruby-core:120930] [Bug #21127]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      5.times do
+        m = Mutex.new
+        Thread.new do
+          m.synchronize do
+          end
+        end.join
+        Fiber.new do
+          GC.start
+          m.lock
+        end.resume
+      end
+    end;
+  end
+
+  def test_unlock_locked_mutex_with_collected_fiber2
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      MUTEXES = []
+      5.times do
+        m = Mutex.new
+        Fiber.new do
+          GC.start
+          m.lock
+        end.resume
+        MUTEXES << m
+      end
+      10.times do
+        MUTEXES.clear
+        GC.start
+      end
+    end;
+  end
+
+  def test_mutexes_locked_in_fiber_dont_have_aba_issue_with_new_fibers
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      mutexes = 1000.times.map do
+        Mutex.new
+      end
+
+      mutexes.map do |m|
+        Fiber.new do
+          m.lock
+        end.resume
+      end
+
+      GC.start
+
+      1000.times.map do
+        Fiber.new do
+          raise "FAILED!" if mutexes.any?(&:owned?)
+        end.resume
+      end
+    end;
   end
 end

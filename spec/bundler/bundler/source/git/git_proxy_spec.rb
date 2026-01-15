@@ -2,7 +2,7 @@
 
 RSpec.describe Bundler::Source::Git::GitProxy do
   let(:path) { Pathname("path") }
-  let(:uri) { "https://github.com/rubygems/rubygems.git" }
+  let(:uri) { "https://github.com/ruby/rubygems.git" }
   let(:ref) { nil }
   let(:branch) { nil }
   let(:tag) { nil }
@@ -64,7 +64,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     it "adds username and password to URI" do
       Bundler.settings.temporary(uri => "u:p") do
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
-        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/ruby/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
@@ -72,13 +72,13 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     it "adds username and password to URI for host" do
       Bundler.settings.temporary("github.com" => "u:p") do
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
-        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/ruby/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
 
     it "does not add username and password to mismatched URI" do
-      Bundler.settings.temporary("https://u:p@github.com/rubygems/rubygems-mismatch.git" => "u:p") do
+      Bundler.settings.temporary("https://u:p@github.com/ruby/rubygems-mismatch.git" => "u:p") do
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
@@ -87,7 +87,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     it "keeps original userinfo" do
       Bundler.settings.temporary("github.com" => "u:p") do
-        original = "https://orig:info@github.com/rubygems/rubygems.git"
+        original = "https://orig:info@github.com/ruby/rubygems.git"
         git_proxy = described_class.new(Pathname("path"), original, options)
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", original, path.to_s], nil).and_return(["", "", clone_result])
@@ -199,7 +199,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   end
 
   context "URI is HTTP" do
-    let(:uri) { "http://github.com/rubygems/rubygems.git" }
+    let(:uri) { "http://github.com/ruby/rubygems.git" }
     let(:without_depth_arguments) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--single-branch"] }
     let(:fail_clone_result) { double(Process::Status, success?: false) }
 
@@ -209,6 +209,129 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       expect(git_proxy).to receive(:capture).with([*without_depth_arguments, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
 
       subject.checkout
+    end
+  end
+
+  describe "#installed_to?" do
+    let(:destination) { "install/dir" }
+    let(:destination_dir_exists) { true }
+    let(:children) { ["gem.gemspec", "README.me", ".git", "Rakefile"] }
+
+    before do
+      allow(Dir).to receive(:exist?).with(destination).and_return(destination_dir_exists)
+      allow(Dir).to receive(:children).with(destination).and_return(children)
+    end
+
+    context "when destination dir exists with children other than just .git" do
+      it "returns true" do
+        expect(git_proxy.installed_to?(destination)).to be true
+      end
+    end
+
+    context "when destination dir does not exist" do
+      let(:destination_dir_exists) { false }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+
+    context "when destination dir is empty" do
+      let(:children) { [] }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+
+    context "when destination dir has only .git directory" do
+      let(:children) { [".git"] }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+  end
+
+  describe "#checkout" do
+    context "when the repository isn't cloned" do
+      before do
+        allow(path).to receive(:exist?).and_return(false)
+      end
+
+      it "clones the repository" do
+        allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
+        subject.checkout
+      end
+    end
+
+    context "when the repository is cloned" do
+      before do
+        allow(path).to receive(:exist?).and_return(true)
+      end
+
+      context "with a locked revision" do
+        let(:revision) { Digest::SHA1.hexdigest("ruby") }
+
+        context "when the revision exists locally" do
+          it "uses the cached revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", revision, dir: path).and_return(true)
+            subject.checkout
+          end
+        end
+
+        context "when the revision doesn't exist locally" do
+          it "fetches the specific revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", revision, dir: path).and_raise(Bundler::GitError)
+            expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--depth", "1", "--", uri, "#{revision}:refs/#{revision}-sha"], path).and_return(["", "", clone_result])
+            subject.checkout
+          end
+        end
+      end
+
+      context "with no explicit ref" do
+        it "fetches the HEAD revision" do
+          parsed_revision = Digest::SHA1.hexdigest("ruby")
+          allow(git_proxy).to receive(:git_local).with("rev-parse", "--abbrev-ref", "HEAD", dir: path).and_return(parsed_revision)
+          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+          expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--depth", "1", "--", uri, "refs/heads/#{parsed_revision}:refs/heads/#{parsed_revision}"], path).and_return(["", "", clone_result])
+          subject.checkout
+        end
+      end
+
+      context "with a commit ref" do
+        let(:ref) { Digest::SHA1.hexdigest("ruby") }
+
+        context "when the revision exists locally" do
+          it "uses the cached revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", ref, dir: path).and_return(true)
+            subject.checkout
+          end
+        end
+
+        context "when the revision doesn't exist locally" do
+          it "fetches the specific revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", ref, dir: path).and_raise(Bundler::GitError)
+            expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--depth", "1", "--", uri, "#{ref}:refs/#{ref}-sha"], path).and_return(["", "", clone_result])
+            subject.checkout
+          end
+        end
+      end
+
+      context "with a non-commit ref" do
+        let(:ref) { "HEAD" }
+
+        it "fetches all revisions" do
+          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+          expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--", uri, "refs/*:refs/*"], path).and_return(["", "", clone_result])
+          subject.checkout
+        end
+      end
     end
   end
 end

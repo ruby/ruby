@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'socket'
-require 'openssl'
 
 module TestNetHTTPUtils
 
@@ -14,10 +13,10 @@ module TestNetHTTPUtils
       @procs = {}
 
       if @config['ssl_enable']
+        require 'openssl'
         context = OpenSSL::SSL::SSLContext.new
         context.cert = @config['ssl_certificate']
         context.key = @config['ssl_private_key']
-        context.tmp_dh_callback = @config['ssl_tmp_dh_callback']
         @ssl_server = OpenSSL::SSL::SSLServer.new(@server, context)
       end
 
@@ -27,12 +26,14 @@ module TestNetHTTPUtils
     def start
       @thread = Thread.new do
         loop do
-          socket = @ssl_server ? @ssl_server.accept : @server.accept
+          socket = (@ssl_server || @server).accept
           run(socket)
         rescue
         ensure
-          socket.close if socket
+          socket&.close
         end
+      ensure
+        (@ssl_server || @server).close
       end
     end
 
@@ -42,7 +43,6 @@ module TestNetHTTPUtils
 
     def shutdown
       @thread&.kill
-      @server&.close
       @thread&.join
     end
 
@@ -68,6 +68,11 @@ module TestNetHTTPUtils
 
       if headers['Expect'] == '100-continue'
         socket.write "HTTP/1.1 100 Continue\r\n\r\n"
+      end
+
+      # Set default Content-Type if not provided
+      if !headers['Content-Type'] && (method == 'POST' || method == 'PUT' || method == 'PATCH')
+        headers['Content-Type'] = 'application/octet-stream'
       end
 
       req = Request.new(method, path, headers, socket)
@@ -305,16 +310,18 @@ module TestNetHTTPUtils
     scheme = headers['X-Request-Scheme'] || 'http'
     host = @config['host']
     port = socket.addr[1]
-    charset = parse_content_type(headers['Content-Type'])[1]
+    content_type = headers['Content-Type'] || 'application/octet-stream'
+    charset = parse_content_type(content_type)[1]
     path = "#{scheme}://#{host}:#{port}#{path}"
     path = path.encode(charset) if charset
-    response = "HTTP/1.1 200 OK\r\nContent-Type: #{headers['Content-Type']}\r\nContent-Length: #{body.bytesize}\r\nX-request-uri: #{path}\r\n\r\n#{body}"
+    response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\nX-request-uri: #{path}\r\n\r\n#{body}"
     socket.print(response)
   end
 
   def handle_patch(path, headers, socket)
     body = socket.read(headers['Content-Length'].to_i)
-    response = "HTTP/1.1 200 OK\r\nContent-Type: #{headers['Content-Type']}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
+    content_type = headers['Content-Type'] || 'application/octet-stream'
+    response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
     socket.print(response)
   end
 

@@ -16,7 +16,7 @@
     TypedData_Wrap_Struct((klass), &ossl_engine_type, 0)
 #define SetEngine(obj, engine) do { \
     if (!(engine)) { \
-	ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
+        ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
     RTYPEDDATA_DATA(obj) = (engine); \
 } while(0)
@@ -37,35 +37,25 @@
  *
  * See also, https://www.openssl.org/docs/crypto/engine.html
  */
-VALUE cEngine;
+static VALUE cEngine;
 /* Document-class: OpenSSL::Engine::EngineError
  *
  * This is the generic exception for OpenSSL::Engine related errors
  */
-VALUE eEngineError;
+static VALUE eEngineError;
 
 /*
  * Private
  */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
 #define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x) \
 do{\
-  if(!strcmp(#engine_name, RSTRING_PTR(name))){\
-    if (OPENSSL_init_crypto(OPENSSL_INIT_ENGINE_##x, NULL))\
-      return Qtrue;\
-    else\
-      ossl_raise(eEngineError, "OPENSSL_init_crypto"); \
-  }\
+    if(!strcmp(#engine_name, RSTRING_PTR(name))){\
+        if (OPENSSL_init_crypto(OPENSSL_INIT_ENGINE_##x, NULL))\
+        return Qtrue;\
+        else\
+        ossl_raise(eEngineError, "OPENSSL_init_crypto"); \
+    }\
 }while(0)
-#else
-#define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x)  \
-do{\
-  if(!strcmp(#engine_name, RSTRING_PTR(name))){\
-    ENGINE_load_##engine_name();\
-    return Qtrue;\
-  }\
-}while(0)
-#endif
 
 static void
 ossl_engine_free(void *engine)
@@ -76,7 +66,7 @@ ossl_engine_free(void *engine)
 static const rb_data_type_t ossl_engine_type = {
     "OpenSSL/Engine",
     {
-	0, ossl_engine_free,
+        0, ossl_engine_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -102,50 +92,10 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         return Qtrue;
     }
     StringValueCStr(name);
-#ifdef HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic, DYNAMIC);
-#endif
-#ifndef OPENSSL_NO_STATIC_ENGINE
-#ifdef HAVE_ENGINE_LOAD_4758CCA
-    OSSL_ENGINE_LOAD_IF_MATCH(4758cca, 4758CCA);
-#endif
-#ifdef HAVE_ENGINE_LOAD_AEP
-    OSSL_ENGINE_LOAD_IF_MATCH(aep, AEP);
-#endif
-#ifdef HAVE_ENGINE_LOAD_ATALLA
-    OSSL_ENGINE_LOAD_IF_MATCH(atalla, ATALLA);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CHIL
-    OSSL_ENGINE_LOAD_IF_MATCH(chil, CHIL);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CSWIFT
-    OSSL_ENGINE_LOAD_IF_MATCH(cswift, CSWIFT);
-#endif
-#ifdef HAVE_ENGINE_LOAD_NURON
-    OSSL_ENGINE_LOAD_IF_MATCH(nuron, NURON);
-#endif
-#ifdef HAVE_ENGINE_LOAD_SUREWARE
-    OSSL_ENGINE_LOAD_IF_MATCH(sureware, SUREWARE);
-#endif
-#ifdef HAVE_ENGINE_LOAD_UBSEC
-    OSSL_ENGINE_LOAD_IF_MATCH(ubsec, UBSEC);
-#endif
-#ifdef HAVE_ENGINE_LOAD_PADLOCK
     OSSL_ENGINE_LOAD_IF_MATCH(padlock, PADLOCK);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CAPI
     OSSL_ENGINE_LOAD_IF_MATCH(capi, CAPI);
-#endif
-#ifdef HAVE_ENGINE_LOAD_GMP
-    OSSL_ENGINE_LOAD_IF_MATCH(gmp, GMP);
-#endif
-#ifdef HAVE_ENGINE_LOAD_GOST
-    OSSL_ENGINE_LOAD_IF_MATCH(gost, GOST);
-#endif
-#endif
-#ifdef HAVE_ENGINE_LOAD_CRYPTODEV
     OSSL_ENGINE_LOAD_IF_MATCH(cryptodev, CRYPTODEV);
-#endif
     OSSL_ENGINE_LOAD_IF_MATCH(openssl, OPENSSL);
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
@@ -163,9 +113,6 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
 {
-#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10100000
-    ENGINE_cleanup();
-#endif
     return Qnil;
 }
 
@@ -183,12 +130,12 @@ ossl_engine_s_engines(VALUE klass)
 
     ary = rb_ary_new();
     for(e = ENGINE_get_first(); e; e = ENGINE_get_next(e)){
-	obj = NewEngine(klass);
-	/* Need a ref count of two here because of ENGINE_free being
-	 * called internally by OpenSSL when moving to the next ENGINE
-	 * and by us when releasing the ENGINE reference */
-	ENGINE_up_ref(e);
-	SetEngine(obj, e);
+        obj = NewEngine(klass);
+        /* Need a ref count of two here because of ENGINE_free being
+         * called internally by OpenSSL when moving to the next ENGINE
+         * and by us when releasing the ENGINE reference */
+        ENGINE_up_ref(e);
+        SetEngine(obj, e);
         rb_ary_push(ary, obj);
     }
 
@@ -216,13 +163,13 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
     ossl_engine_s_load(1, &id, klass);
     obj = NewEngine(klass);
     if(!(e = ENGINE_by_id(RSTRING_PTR(id))))
-	ossl_raise(eEngineError, NULL);
+        ossl_raise(eEngineError, NULL);
     SetEngine(obj, e);
     if(rb_block_given_p()) rb_yield(obj);
     if(!ENGINE_init(e))
-	ossl_raise(eEngineError, NULL);
+        ossl_raise(eEngineError, NULL);
     ENGINE_ctrl(e, ENGINE_CTRL_SET_PASSWORD_CALLBACK,
-		0, NULL, (void(*)(void))ossl_pem_passwd_cb);
+                0, NULL, (void(*)(void))ossl_pem_passwd_cb);
     ossl_clear_error();
 
     return obj;
@@ -237,7 +184,7 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
  *    OpenSSL::Engine.load
  *    OpenSSL::Engine.engines #=> [#<OpenSSL::Engine#>, ...]
  *    OpenSSL::Engine.engines.first.id
- *	#=> "rsax"
+ *      #=> "rsax"
  */
 static VALUE
 ossl_engine_get_id(VALUE self)
@@ -256,7 +203,7 @@ ossl_engine_get_id(VALUE self)
  *    OpenSSL::Engine.load
  *    OpenSSL::Engine.engines #=> [#<OpenSSL::Engine#>, ...]
  *    OpenSSL::Engine.engines.first.name
- *	#=> "RSAX engine support"
+ *      #=> "RSAX engine support"
  *
  */
 static VALUE
@@ -327,11 +274,11 @@ ossl_engine_get_cipher(VALUE self, VALUE name)
  * Will raise an EngineError if the digest is unavailable.
  *
  *    e = OpenSSL::Engine.by_id("openssl")
- *	#=> #<OpenSSL::Engine id="openssl" name="Software engine support">
+ *      #=> #<OpenSSL::Engine id="openssl" name="Software engine support">
  *    e.digest("SHA1")
- *	#=> #<OpenSSL::Digest: da39a3ee5e6b4b0d3255bfef95601890afd80709>
+ *      #=> #<OpenSSL::Digest: da39a3ee5e6b4b0d3255bfef95601890afd80709>
  *    e.digest("zomg")
- *	#=> OpenSSL::Engine::EngineError: no such digest `zomg'
+ *      #=> OpenSSL::Engine::EngineError: no such digest `zomg'
  */
 static VALUE
 ossl_engine_get_digest(VALUE self, VALUE name)
@@ -373,7 +320,7 @@ ossl_engine_load_privkey(int argc, VALUE *argv, VALUE self)
     GetEngine(self, e);
     pkey = ENGINE_load_private_key(e, sid, NULL, sdata);
     if (!pkey) ossl_raise(eEngineError, NULL);
-    obj = ossl_pkey_new(pkey);
+    obj = ossl_pkey_wrap(pkey);
     OSSL_PKEY_SET_PRIVATE(obj);
 
     return obj;
@@ -403,7 +350,7 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
     pkey = ENGINE_load_public_key(e, sid, NULL, sdata);
     if (!pkey) ossl_raise(eEngineError, NULL);
 
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 /*
@@ -418,7 +365,7 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
  * your OS.
  *
  * [All flags]  0xFFFF
- * [No flags]	0x0000
+ * [No flags]   0x0000
  *
  * See also <openssl/engine.h>
  */
@@ -452,7 +399,7 @@ ossl_engine_ctrl_cmd(int argc, VALUE *argv, VALUE self)
     GetEngine(self, e);
     rb_scan_args(argc, argv, "11", &cmd, &val);
     ret = ENGINE_ctrl_cmd_string(e, StringValueCStr(cmd),
-				 NIL_P(val) ? NULL : StringValueCStr(val), 0);
+                                 NIL_P(val) ? NULL : StringValueCStr(val), 0);
     if (!ret) ossl_raise(eEngineError, NULL);
 
     return self;
@@ -462,11 +409,11 @@ static VALUE
 ossl_engine_cmd_flag_to_name(int flag)
 {
     switch(flag){
-    case ENGINE_CMD_FLAG_NUMERIC:  return rb_str_new2("NUMERIC");
-    case ENGINE_CMD_FLAG_STRING:   return rb_str_new2("STRING");
-    case ENGINE_CMD_FLAG_NO_INPUT: return rb_str_new2("NO_INPUT");
-    case ENGINE_CMD_FLAG_INTERNAL: return rb_str_new2("INTERNAL");
-    default: return rb_str_new2("UNKNOWN");
+      case ENGINE_CMD_FLAG_NUMERIC:  return rb_str_new2("NUMERIC");
+      case ENGINE_CMD_FLAG_STRING:   return rb_str_new2("STRING");
+      case ENGINE_CMD_FLAG_NO_INPUT: return rb_str_new2("NO_INPUT");
+      case ENGINE_CMD_FLAG_INTERNAL: return rb_str_new2("INTERNAL");
+      default: return rb_str_new2("UNKNOWN");
     }
 }
 
@@ -486,13 +433,13 @@ ossl_engine_get_cmds(VALUE self)
     GetEngine(self, e);
     ary = rb_ary_new();
     if ((defn = ENGINE_get_cmd_defns(e)) != NULL){
-	for (p = defn; p->cmd_num > 0; p++){
-	    tmp = rb_ary_new();
-	    rb_ary_push(tmp, rb_str_new2(p->cmd_name));
-	    rb_ary_push(tmp, rb_str_new2(p->cmd_desc));
-	    rb_ary_push(tmp, ossl_engine_cmd_flag_to_name(p->cmd_flags));
-	    rb_ary_push(ary, tmp);
-	}
+        for (p = defn; p->cmd_num > 0; p++){
+            tmp = rb_ary_new();
+            rb_ary_push(tmp, rb_str_new2(p->cmd_name));
+            rb_ary_push(tmp, rb_str_new2(p->cmd_desc));
+            rb_ary_push(tmp, ossl_engine_cmd_flag_to_name(p->cmd_flags));
+            rb_ary_push(ary, tmp);
+        }
     }
 
     return ary;
@@ -511,7 +458,7 @@ ossl_engine_inspect(VALUE self)
 
     GetEngine(self, e);
     return rb_sprintf("#<%"PRIsVALUE" id=\"%s\" name=\"%s\">",
-		      rb_obj_class(self), ENGINE_get_id(e), ENGINE_get_name(e));
+                      rb_obj_class(self), ENGINE_get_id(e), ENGINE_get_name(e));
 }
 
 #define DefEngineConst(x) rb_define_const(cEngine, #x, INT2NUM(ENGINE_##x))
@@ -519,11 +466,6 @@ ossl_engine_inspect(VALUE self)
 void
 Init_ossl_engine(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-#endif
-
     cEngine = rb_define_class_under(mOSSL, "Engine", rb_cObject);
     eEngineError = rb_define_class_under(cEngine, "EngineError", eOSSLError);
 
@@ -549,12 +491,6 @@ Init_ossl_engine(void)
     DefEngineConst(METHOD_DSA);
     DefEngineConst(METHOD_DH);
     DefEngineConst(METHOD_RAND);
-#ifdef ENGINE_METHOD_BN_MOD_EXP
-    DefEngineConst(METHOD_BN_MOD_EXP);
-#endif
-#ifdef ENGINE_METHOD_BN_MOD_EXP_CRT
-    DefEngineConst(METHOD_BN_MOD_EXP_CRT);
-#endif
     DefEngineConst(METHOD_CIPHERS);
     DefEngineConst(METHOD_DIGESTS);
     DefEngineConst(METHOD_ALL);

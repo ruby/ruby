@@ -39,7 +39,7 @@ A regexp may be used:
   most such methods accept an argument that may be either a string
   or the (much more powerful) regexp.
 
-  See {Regexp Methods}[rdoc-ref:regexp/methods.rdoc].
+  See {Regexp Methods}[rdoc-ref:language/regexp/methods.rdoc].
 
 == \Regexp Objects
 
@@ -78,9 +78,9 @@ A regular expression may be created with:
     %r(foo) # => /foo/
     %r<foo> # => /foo/
 
-- \Method Regexp.new.
+- Method Regexp.new.
 
-== \Method <tt>match</tt>
+== Method <tt>match</tt>
 
 Each of the methods Regexp#match, String#match, and Symbol#match
 returns a MatchData object if a match was found, +nil+ otherwise;
@@ -99,7 +99,7 @@ each also sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
   'foo bar' =~ /bar/ # => 4
   /baz/ =~ 'foo bar' # => nil
 
-== \Method <tt>match?</tt>
+== Method <tt>match?</tt>
 
 Each of the methods Regexp#match?, String#match?, and Symbol#match?
 returns +true+ if a match was found, +false+ otherwise;
@@ -126,6 +126,9 @@ The affected global variables are:
   matched group, or +nil+.
   Note that <tt>$0</tt> is quite different;
   it returns the name of the currently executing program.
+
+These variables, except for <tt>$~</tt>, are shorthands for methods of
+<tt>$~</tt>.  See MatchData@Global+variables+equivalence.
 
 Examples:
 
@@ -436,6 +439,10 @@ without including the tags in the match:
   /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
   # => #<MatchData "bold">
 
+The pattern in lookbehind must be fixed-width.
+But top-level alternatives can be of various lengths.
+ex. (?<=a|bc) is OK. (?<=aaa(?:b|cd)) is not allowed.
+
 ==== Match-Reset Anchor
 
 - <tt>\K</tt>: Match reset:
@@ -477,7 +484,7 @@ Each alternative is a subexpression, and may be composed of other subexpressions
   re.match('bar') # => #<MatchData "b" 1:"b">
   re.match('ooz') # => #<MatchData "z" 1:"z">
 
-\Method Regexp.union provides a convenient way to construct
+Method Regexp.union provides a convenient way to construct
 a regexp with alternatives.
 
 === Quantifiers
@@ -495,7 +502,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w*/.match('x')
     # => #<MatchData "x">
     /\w*/.match('xyz')
-    # => #<MatchData "yz">
+    # => #<MatchData "xyz">
 
 - <tt>+</tt> - Matches one or more times:
 
@@ -682,7 +689,7 @@ the captured substrings are assigned to local variables with corresponding names
   dollars # => "3"
   cents   # => "67"
 
-\Method Regexp#named_captures returns a hash of the capture names and substrings;
+Method Regexp#named_captures returns a hash of the capture names and substrings;
 method Regexp#names returns an array of the capture names.
 
 ==== Atomic Grouping
@@ -706,7 +713,7 @@ Analysis:
 
 1. The leading subexpression <tt>"</tt> in the pattern matches the first character
    <tt>"</tt> in the target string.
-2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
+2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote"</tt>
    (including the trailing double-quote).
 3. Now there is nothing left in the target string to match
    the trailing subexpression <tt>"</tt> in the pattern;
@@ -814,7 +821,7 @@ Or by using <tt>\P</tt> (uppercase +P+):
   /\P{Alpha}/.match('1') # => #<MatchData "1">
   /\P{Alpha}/.match('a') # => nil
 
-See {Unicode Properties}[rdoc-ref:regexp/unicode_properties.rdoc]
+See {Unicode Properties}[rdoc-ref:language/regexp/unicode_properties.rdoc]
 for regexps based on the numerous properties.
 
 Some commonly-used properties correspond to POSIX bracket expressions:
@@ -836,8 +843,9 @@ Some commonly-used properties correspond to POSIX bracket expressions:
 These are also commonly used:
 
 - <tt>/\p{Emoji}/</tt>: Unicode emoji.
-- <tt>/\p{Graph}/</tt>: Non-blank character
-  (excludes spaces, control characters, and similar).
+- <tt>/\p{Graph}/</tt>: Characters excluding <tt>/\p{Cntrl}/</tt> and <tt>/\p{Space}/</tt>.
+  Note that invisible characters under the Unicode
+  {"Format"}[https://www.compart.com/en/unicode/category/Cf] category are included.
 - <tt>/\p{Word}/</tt>: A member in one of these Unicode character
   categories (see below) or having one of these Unicode properties:
 
@@ -897,7 +905,7 @@ Numbers:
 - {Nl, Letter_Number}[https://www.compart.com/en/unicode/category/Nl].
 - {No, Other_Number}[https://www.compart.com/en/unicode/category/No].
 
-Punctation:
+Punctuation:
 
 - +P+, +Punctuation+: +Pc+, +Pd+, +Pe+, +Pf+, +Pi+, +Po+, or +Ps+.
 - {Pc, Connector_Punctuation}[https://www.compart.com/en/unicode/category/Pc].
@@ -1056,7 +1064,7 @@ Example:
   re.match('tEst') # => #<MatchData "tEst">
   re.match('tEST') # => nil
 
-\Method Regexp#options returns an integer whose value showing
+Method Regexp#options returns an integer whose value showing
 the settings for case-insensitivity mode, multiline mode, and extended mode.
 
 === Case-Insensitive Mode
@@ -1070,7 +1078,7 @@ Modifier +i+ enables case-insensitive mode:
   /foo/i.match('FOO')
   # => #<MatchData "FOO">
 
-\Method Regexp#casefold? returns whether the mode is case-insensitive.
+Method Regexp#casefold? returns whether the mode is case-insensitive.
 
 === Multiline Mode
 
@@ -1243,7 +1251,7 @@ the potential vulnerability arising from this is the {regular expression denial-
 
 \Regexp matching can apply an optimization to prevent ReDoS attacks.
 When the optimization is applied, matching time increases linearly (not polynomially or exponentially)
-in relation to the input size, and a ReDoS attach is not possible.
+in relation to the input size, and a ReDoS attack is not possible.
 
 This optimization is applied if the pattern meets these criteria:
 
@@ -1264,13 +1272,13 @@ because the optimization uses memoization (which may invoke large memory consump
 
 == References
 
-Read (online PDF books):
+Read:
 
-- {Mastering Regular Expressions}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf]
+- <i>Mastering Regular Expressions</i>
   by Jeffrey E.F. Friedl.
-- {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
+- <i>Regular Expressions Cookbook</i>
   by Jan Goyvaerts & Steven Levithan.
 
-Explore, test (interactive online editor):
+Explore, test:
 
-- {Rubular}[https://rubular.com/].
+- {Rubular}[https://rubular.com/]: interactive online editor.

@@ -544,6 +544,8 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._parse('')
     assert_equal({}, h)
+
+    assert_raise(TypeError) {Date._parse(nil)}
   end
 
   def test_parse
@@ -589,10 +591,13 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test__parse_too_long_year
-    str = "Jan 1" + "0" * 100_000
-    h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
-    assert_equal(100_000, Math.log10(h[:year]))
-    assert_equal(1, h[:mon])
+    # Math.log10 does not support so big numbers like 10^100_000 on TruffleRuby
+    unless RUBY_ENGINE == 'truffleruby'
+      str = "Jan 1" + "0" * 100_000
+      h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
+      assert_equal(100_000, Math.log10(h[:year]))
+      assert_equal(1, h[:mon])
+    end
 
     str = "Jan - 1" + "0" * 100_000
     h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
@@ -1300,5 +1305,21 @@ class TestDateParse < Test::Unit::TestCase
     assert_raise(ArgumentError) { DateTime.jisx0301("1" * 1000) }
 
     assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
+  end
+
+  def test_string_argument
+    s = '2001-02-03T04:05:06Z'
+    obj = Class.new(Struct.new(:to_str, :count)) do
+      def to_str
+        self.count +=1
+        super
+      end
+    end.new(s, 0)
+
+    all_assertions_foreach(nil, :_parse, :_iso8601, :_rfc3339, :_xmlschema) do |m|
+      obj.count = 0
+      assert_not_equal({}, Date.__send__(m, obj))
+      assert_equal(1, obj.count)
+    end
   end
 end

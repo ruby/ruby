@@ -36,6 +36,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], ("a" ... "b").to_a)
     assert_equal(["a", "b"], ("a" .. "b").to_a)
     assert_equal([*"a".."z", "aa"], ("a"..).take(27))
+    assert_equal([*"a".."z"], eval("('a' || 'b')..'z'").to_a)
   end
 
   def test_range_numeric_string
@@ -121,13 +122,15 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
+    assert_equal([10,9,8], (..10).max(3))
+    assert_equal([9,8,7], (...10).max(3))
     assert_raise(RangeError) { (1..).max(3) }
     assert_raise(RangeError) { (1...).max(3) }
 
     assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
 
     assert_equal(2, (..2).max)
-    assert_raise(TypeError) { (...2).max }
+    assert_equal(1, (...2).max)
     assert_raise(TypeError) { (...2.0).max }
 
     assert_equal(Float::INFINITY, (1..Float::INFINITY).max)
@@ -594,6 +597,22 @@ class TestRange < Test::Unit::TestCase
     assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
   end
 
+  def test_step_with_nonnumeric_endpoint
+    num = Data.define(:value) do
+      def coerce(o); [o, 100]; end
+      def <=>(o) value<=>o; end
+      def +(o) with(value: value + o) end
+    end
+    i = num.new(100)
+
+    assert_equal([100], (100..100).step(10).to_a)
+    assert_equal([], (100...100).step(10).to_a)
+    assert_equal([100], (100..i).step(10).to_a)
+    assert_equal([i], (i..100).step(10).to_a)
+    assert_equal([], (100...i).step(10).to_a)
+    assert_equal([], (i...100).step(10).to_a)
+  end
+
   def test_each
     a = []
     (0..10).each {|x| a << x }
@@ -823,6 +842,25 @@ class TestRange < Test::Unit::TestCase
     assert_equal [5, 4, 3, 2, 1], a
   end
 
+  def test_reverse_each_size
+    assert_equal(3, (1..3).reverse_each.size)
+    assert_equal(3, (1..3.3).reverse_each.size)
+    assert_raise(TypeError) { (1..nil).reverse_each.size }
+    assert_raise(TypeError) { (1.1..3).reverse_each.size }
+    assert_raise(TypeError) { (1.1..3.3).reverse_each.size }
+    assert_raise(TypeError) { (1.1..nil).reverse_each.size }
+    assert_equal(Float::INFINITY, (..3).reverse_each.size)
+    assert_raise(TypeError) { (nil..3.3).reverse_each.size }
+    assert_raise(TypeError) { (nil..nil).reverse_each.size }
+
+    assert_equal(2, (1...3).reverse_each.size)
+    assert_equal(3, (1...3.3).reverse_each.size)
+
+    assert_equal(nil, ('a'..'z').reverse_each.size)
+    assert_raise(TypeError) { ('a'..).reverse_each.size }
+    assert_raise(TypeError) { (..'z').reverse_each.size }
+  end
+
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
@@ -835,16 +873,20 @@ class TestRange < Test::Unit::TestCase
   def test_first_last
     assert_equal([0, 1, 2], (0..10).first(3))
     assert_equal([8, 9, 10], (0..10).last(3))
+    assert_equal([8, 9, 10], (nil..10).last(3))
     assert_equal(0, (0..10).first)
     assert_equal(10, (0..10).last)
+    assert_equal(10, (nil..10).last)
     assert_equal("a", ("a".."c").first)
     assert_equal("c", ("a".."c").last)
     assert_equal(0, (2..0).last)
 
     assert_equal([0, 1, 2], (0...10).first(3))
     assert_equal([7, 8, 9], (0...10).last(3))
+    assert_equal([7, 8, 9], (nil...10).last(3))
     assert_equal(0, (0...10).first)
     assert_equal(10, (0...10).last)
+    assert_equal(10, (nil...10).last)
     assert_equal("a", ("a"..."c").first)
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
@@ -1416,6 +1458,12 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1..).to_a }
   end
 
+  def test_to_set
+    assert_equal(Set[1,2,3,4,5], (1..5).to_set)
+    assert_equal(Set[1,2,3,4], (1...5).to_set)
+    assert_raise(RangeError) { (1..).to_set }
+  end
+
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
   end
@@ -1472,6 +1520,7 @@ class TestRange < Test::Unit::TestCase
     assert_operator((nil..nil), :overlap?, (3..))
     assert_operator((nil...nil), :overlap?, (nil..))
     assert_operator((nil..nil), :overlap?, (..3))
+    assert_operator((..3), :overlap?, (nil..nil))
 
     assert_raise(TypeError) { (1..3).overlap?(1) }
 

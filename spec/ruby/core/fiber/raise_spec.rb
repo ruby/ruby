@@ -4,6 +4,7 @@ require_relative '../../shared/kernel/raise'
 
 describe "Fiber#raise" do
   it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, FiberSpecs::NewFiberToRaise
 end
 
 describe "Fiber#raise" do
@@ -42,7 +43,7 @@ describe "Fiber#raise" do
     -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error' }.should raise_error(FiberSpecs::CustomError, 'test error')
   end
 
-  it 'accepts error class with with error message and backtrace information' do
+  it 'accepts error class with error message and backtrace information' do
     -> {
       FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error', ['foo', 'boo']
     }.should raise_error(FiberSpecs::CustomError) { |e|
@@ -130,7 +131,6 @@ end
 
 describe "Fiber#raise" do
   it "transfers and raises on a transferring fiber" do
-    require "fiber"
     root = Fiber.current
     fiber = Fiber.new { root.transfer }
     fiber.transfer

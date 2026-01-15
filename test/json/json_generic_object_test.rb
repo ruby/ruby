@@ -1,11 +1,20 @@
-#frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'test_helper'
 
-class JSONGenericObjectTest < Test::Unit::TestCase
-  include JSON
+# ostruct is required to test JSON::GenericObject
+begin
+  require "ostruct"
+rescue LoadError
+  return
+end
 
+class JSONGenericObjectTest < Test::Unit::TestCase
   def setup
-    @go = GenericObject[ :a => 1, :b => 2 ]
+    if defined?(JSON::GenericObject)
+      @go = JSON::GenericObject[ :a => 1, :b => 2 ]
+    else
+      omit("JSON::GenericObject is not available")
+    end
   end
 
   def test_attributes
@@ -37,23 +46,23 @@ class JSONGenericObjectTest < Test::Unit::TestCase
         )
       assert_equal 1, l.a
       assert_equal @go,
-        l = JSON('{ "a": 1, "b": 2 }', :object_class => GenericObject)
+        l = JSON('{ "a": 1, "b": 2 }', :object_class => JSON::GenericObject)
       assert_equal 1, l.a
-      assert_equal GenericObject[:a => GenericObject[:b => 2]],
-        l = JSON('{ "a": { "b": 2 } }', :object_class => GenericObject)
+      assert_equal JSON::GenericObject[:a => JSON::GenericObject[:b => 2]],
+        l = JSON('{ "a": { "b": 2 } }', :object_class => JSON::GenericObject)
       assert_equal 2, l.a.b
     end
   end
 
   def test_from_hash
-    result  = GenericObject.from_hash(
+    result  = JSON::GenericObject.from_hash(
       :foo => { :bar => { :baz => true }, :quux => [ { :foobar => true } ] })
-    assert_kind_of GenericObject, result.foo
-    assert_kind_of GenericObject, result.foo.bar
+    assert_kind_of JSON::GenericObject, result.foo
+    assert_kind_of JSON::GenericObject, result.foo.bar
     assert_equal   true, result.foo.bar.baz
-    assert_kind_of GenericObject, result.foo.quux.first
+    assert_kind_of JSON::GenericObject, result.foo.quux.first
     assert_equal   true, result.foo.quux.first.foobar
-    assert_equal   true, GenericObject.from_hash(true)
+    assert_equal   true, JSON::GenericObject.from_hash(true)
   end
 
   def test_json_generic_object_load
@@ -79,4 +88,4 @@ class JSONGenericObjectTest < Test::Unit::TestCase
   ensure
     JSON::GenericObject.json_creatable = false
   end
-end if defined?(JSON::GenericObject)
+end

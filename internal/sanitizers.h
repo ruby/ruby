@@ -16,7 +16,7 @@
 #endif
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
-# if __has_feature(address_sanitizer)
+# if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 #  define RUBY_ASAN_ENABLED
 #  include <sanitizer/asan_interface.h>
 # endif
@@ -26,6 +26,13 @@
 # if __has_feature(memory_sanitizer)
 #  define RUBY_MSAN_ENABLED
 #  include <sanitizer/msan_interface.h>
+# endif
+#endif
+
+#ifdef HAVE_SANITIZER_TSAN_INTERFACE_H
+# if __has_feature(thread_sanitizer) || defined(__SANITIZE_THREAD__)
+#  define RUBY_TSAN_ENABLED
+#  include <sanitizer/tsan_interface.h>
 # endif
 #endif
 
@@ -39,6 +46,12 @@
 #elif defined(RUBY_ASAN_ENABLED)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     __attribute__((__no_sanitize__("address"), __noinline__)) x
+#elif defined(RUBY_MSAN_ENABLED)
+    # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    __attribute__((__no_sanitize__("memory"), __noinline__)) x
+#elif defined(RUBY_TSAN_ENABLED)
+# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    __attribute__((__no_sanitize__("thread"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE_ADDRESS(NOINLINE(x))
@@ -54,10 +67,11 @@
 # include "internal/warnings.h"
 # undef NO_SANITIZE
 # define NO_SANITIZE(x, y) \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Wattributes); \
+    COMPILER_WARNING_PUSH \
+    COMPILER_WARNING_IGNORED(-Wattributes) \
     __attribute__((__no_sanitize__(x))) y; \
-    COMPILER_WARNING_POP
+    COMPILER_WARNING_POP \
+    y
 #endif
 
 #ifndef NO_SANITIZE
@@ -115,25 +129,22 @@ asan_poison_memory_region(const volatile void *ptr, size_t size)
     __asan_poison_memory_region(ptr, size);
 }
 
+#ifdef RUBY_ASAN_ENABLED
+#define asan_poison_object_if(ptr, obj) do { \
+        if (ptr) rb_asan_poison_object(obj); \
+    } while (0)
+#else
+#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
+#endif
+
+#ifdef RUBY_ASAN_ENABLED
+RUBY_SYMBOL_EXPORT_BEGIN
 /**
  * This is a variant of asan_poison_memory_region that takes a VALUE.
  *
  * @param[in]  obj   target object.
  */
-static inline void
-asan_poison_object(VALUE obj)
-{
-    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
-    asan_poison_memory_region(ptr, SIZEOF_VALUE);
-}
-
-#ifdef RUBY_ASAN_ENABLED
-#define asan_poison_object_if(ptr, obj) do { \
-        if (ptr) asan_poison_object(obj); \
-    } while (0)
-#else
-#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
-#endif
+void rb_asan_poison_object(VALUE obj);
 
 /**
  * This function predicates if the given object is fully addressable or not.
@@ -142,12 +153,22 @@ asan_poison_object(VALUE obj)
  * @retval     0          the given object is fully addressable.
  * @retval     otherwise  pointer to first such byte who is poisoned.
  */
-static inline void *
-asan_poisoned_object_p(VALUE obj)
-{
-    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
-    return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
-}
+void *rb_asan_poisoned_object_p(VALUE obj);
+
+/**
+ * This is a variant of asan_unpoison_memory_region that takes a VALUE.
+ *
+ * @param[in]  obj       target object.
+ * @param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
+void rb_asan_unpoison_object(VALUE obj, bool newobj_p);
+
+RUBY_SYMBOL_EXPORT_END
+#else
+# define rb_asan_poison_object(obj) ((void)obj)
+# define rb_asan_poisoned_object_p(obj) ((void)obj, NULL)
+# define rb_asan_unpoison_object(obj, newobj_p) ((void)obj, (void)newobj_p)
+#endif
 
 /**
  * This function asserts that a (formally poisoned) memory region from ptr to
@@ -176,24 +197,11 @@ asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p
     }
 }
 
-/**
- * This is a variant of asan_unpoison_memory_region that takes a VALUE.
- *
- * @param[in]  obj       target object.
- * @param[in]  malloc_p  if the memory region is like a malloc's return value or not.
- */
-static inline void
-asan_unpoison_object(VALUE obj, bool newobj_p)
-{
-    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
-    asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
-}
-
 static inline void *
 asan_unpoison_object_temporary(VALUE obj)
 {
-    void *ptr = asan_poisoned_object_p(obj);
-    asan_unpoison_object(obj, false);
+    void *ptr = rb_asan_poisoned_object_p(obj);
+    rb_asan_unpoison_object(obj, false);
     return ptr;
 }
 
@@ -201,11 +209,40 @@ static inline void *
 asan_poison_object_restore(VALUE obj, void *ptr)
 {
     if (ptr) {
-        asan_poison_object(obj);
+        rb_asan_poison_object(obj);
     }
     return NULL;
 }
 
+#define asan_unpoisoning_object(obj) \
+    for (void *poisoned = asan_unpoison_object_temporary(obj), \
+              *unpoisoning = &poisoned; /* flag to loop just once */ \
+         unpoisoning; \
+         unpoisoning = asan_poison_object_restore(obj, poisoned))
+
+
+static inline void *
+asan_unpoison_memory_region_temporary(void *ptr, size_t len)
+{
+    void *poisoned_ptr = __asan_region_is_poisoned(ptr, len);
+    asan_unpoison_memory_region(ptr, len, false);
+    return poisoned_ptr;
+}
+
+static inline void *
+asan_poison_memory_region_restore(void *ptr, size_t len, void *poisoned_ptr)
+{
+    if (poisoned_ptr) {
+        asan_poison_memory_region(ptr, len);
+    }
+    return NULL;
+}
+
+#define asan_unpoisoning_memory_region(ptr, len) \
+    for (void *poisoned = asan_unpoison_memory_region_temporary(ptr, len), \
+              *unpoisoning = &poisoned; /* flag to loop just once */ \
+         unpoisoning; \
+         unpoisoning = asan_poison_memory_region_restore(ptr, len, poisoned))
 
 /**
  * Checks if the given pointer is on an ASAN fake stack. If so, it returns the
@@ -293,5 +330,17 @@ asan_get_fake_stack_extents(void *thread_fake_stack_handle, VALUE slot,
     return false;
 }
 
+extern const char ruby_asan_default_options[];
+
+#ifdef RUBY_ASAN_ENABLED
+/* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
+ * that even tests which fork ruby with a clean environment will run ASAN with the right
+ * settings */
+# undef RUBY__ASAN_DEFAULT_OPTIONS
+# define RUBY__ASAN_DEFAULT_OPTIONS \
+    RBIMPL_SYMBOL_EXPORT_BEGIN() \
+    const char * __asan_default_options(void) {return ruby_asan_default_options;} \
+    RBIMPL_SYMBOL_EXPORT_END()
+#endif
 
 #endif /* INTERNAL_SANITIZERS_H */

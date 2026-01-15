@@ -59,7 +59,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       before { allow(subject).to receive(:default_gemfile).and_return(gemfile_path) }
 
-      it "returns the lock file path" do
+      it "returns the lockfile path" do
         expect(subject.default_lockfile).to eq(expected_lockfile_path)
       end
     end
@@ -159,7 +159,7 @@ RSpec.describe Bundler::SharedHelpers do
     let(:pwd_stub) { nil }
 
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(source_root)
+      expect(subject.pwd).to eq(source_root.to_s)
     end
   end
 
@@ -258,8 +258,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ensures bundler's ruby version lib path is in ENV['RUBYLIB']" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths).to include(ruby_lib_path)
+        expect(rubylib).to include(ruby_lib_path)
       end
     end
 
@@ -276,8 +275,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       subject.set_bundle_environment
 
-      paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-      expect(paths.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
+      expect(rubylib.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
     end
 
     it "exits if bundle path contains the unix-like path separator" do
@@ -356,7 +354,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['PATH'] should only contain one instance of bundle bin path" do
         subject.set_bundle_environment
-        paths = (ENV["PATH"]).split(File::PATH_SEPARATOR)
+        paths = ENV["PATH"].split(File::PATH_SEPARATOR)
         expect(paths.count(bundle_path)).to eq(1)
       end
     end
@@ -425,7 +423,7 @@ RSpec.describe Bundler::SharedHelpers do
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
         bin_path = ENV["BUNDLE_BIN_PATH"]
-        expect(bin_path).to eq(bindir.join("bundle").to_s)
+        expect(bin_path).to eq(exedir.join("bundle").to_s)
         expect(File.exist?(bin_path)).to be true
       end
     end
@@ -441,8 +439,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['RUBYLIB'] should only contain one instance of bundler's ruby version lib path" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths.count(ruby_lib_path)).to eq(1)
+        expect(rubylib.count(ruby_lib_path)).to eq(1)
       end
     end
   end
@@ -458,7 +455,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context "system throws Errno::EACESS" do
-      let(:file_op_block) { proc {|_path| raise Errno::EACCES } }
+      let(:file_op_block) { proc {|_path| raise Errno::EACCES.new("/path") } }
 
       it "raises a PermissionError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
@@ -513,39 +510,9 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "raises a GenericSystemCallError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
-          Bundler::GenericSystemCallError, /error accessing.+underlying.+Shields down/m
+          Bundler::GenericSystemCallError, /error creating.+underlying.+Shields down/m
         )
       end
-    end
-  end
-
-  describe "#major_deprecation" do
-    before { allow(Bundler).to receive(:bundler_major_version).and_return(37) }
-    before { allow(Bundler.ui).to receive(:warn) }
-
-    it "prints and raises nothing below the deprecated major version" do
-      subject.major_deprecation(38, "Message")
-      subject.major_deprecation(39, "Message", removed_message: "Removal", print_caller_location: true)
-      expect(Bundler.ui).not_to have_received(:warn)
-    end
-
-    it "prints but does not raise _at_ the deprecated major version" do
-      subject.major_deprecation(37, "Message")
-      subject.major_deprecation(37, "Message", removed_message: "Removal")
-      expect(Bundler.ui).to have_received(:warn).with("[DEPRECATED] Message").twice
-
-      subject.major_deprecation(37, "Message", print_caller_location: true)
-      expect(Bundler.ui).to have_received(:warn).
-        with(a_string_matching(/^\[DEPRECATED\] Message \(called at .*:\d+\)$/))
-    end
-
-    it "raises the appropriate errors when _past_ the deprecated major version" do
-      expect { subject.major_deprecation(36, "Message") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Message")
-      expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
-      expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
-        to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
     end
   end
 end

@@ -59,12 +59,15 @@ class Gem::Licenses
     Artistic-1.0-Perl
     Artistic-1.0-cl8
     Artistic-2.0
+    Artistic-dist
+    Aspell-RU
     BSD-1-Clause
     BSD-2-Clause
     BSD-2-Clause-Darwin
     BSD-2-Clause-Patent
     BSD-2-Clause-Views
     BSD-2-Clause-first-lines
+    BSD-2-Clause-pkgconf-disclaimer
     BSD-3-Clause
     BSD-3-Clause-Attribution
     BSD-3-Clause-Clear
@@ -104,6 +107,7 @@ class Gem::Licenses
     Bitstream-Vera
     BlueOak-1.0.0
     Boehm-GC
+    Boehm-GC-without-fee
     Borceux
     Brian-Gladman-2-Clause
     Brian-Gladman-3-Clause
@@ -163,6 +167,8 @@ class Gem::Licenses
     CC-BY-SA-3.0-IGO
     CC-BY-SA-4.0
     CC-PDDC
+    CC-PDM-1.0
+    CC-SA-1.0
     CC0-1.0
     CDDL-1.0
     CDDL-1.1
@@ -202,6 +208,7 @@ class Gem::Licenses
     Cornell-Lossless-JPEG
     Cronyx
     Crossword
+    CryptoSwift
     CrystalStacker
     Cube
     D-FSL-1.0
@@ -212,6 +219,10 @@ class Gem::Licenses
     DRL-1.0
     DRL-1.1
     DSDP
+    DocBook-DTD
+    DocBook-Schema
+    DocBook-Stylesheet
+    DocBook-XML
     Dotseqn
     ECL-1.0
     ECL-2.0
@@ -234,7 +245,10 @@ class Gem::Licenses
     FSFAP-no-warranty-disclaimer
     FSFUL
     FSFULLR
+    FSFULLRSD
     FSFULLRWD
+    FSL-1.1-ALv2
+    FSL-1.1-MIT
     FTL
     Fair
     Ferguson-Twofish
@@ -270,11 +284,14 @@ class Gem::Licenses
     GPL-2.0-or-later
     GPL-3.0-only
     GPL-3.0-or-later
+    Game-Programming-Gems
     Giftware
     Glide
     Glulxe
     Graphics-Gems
     Gutmann
+    HDF5
+    HIDAPI
     HP-1986
     HP-1989
     HPND
@@ -285,6 +302,7 @@ class Gem::Licenses
     HPND-Kevlin-Henney
     HPND-MIT-disclaimer
     HPND-Markus-Kuhn
+    HPND-Netrek
     HPND-Pbmplus
     HPND-UC
     HPND-UC-export-US
@@ -316,6 +334,7 @@ class Gem::Licenses
     Imlib2
     Info-ZIP
     Inner-Net-2.0
+    InnoSetup
     Intel
     Intel-ACPI
     Interbase-1.0
@@ -360,9 +379,11 @@ class Gem::Licenses
     Linux-man-pages-copyleft-2-para
     Linux-man-pages-copyleft-var
     Lucida-Bitmap-Fonts
+    MIPS
     MIT
     MIT-0
     MIT-CMU
+    MIT-Click
     MIT-Festival
     MIT-Khronos-old
     MIT-Modern-Variant
@@ -415,10 +436,10 @@ class Gem::Licenses
     NPL-1.1
     NPOSL-3.0
     NRL
+    NTIA-PD
     NTP
     NTP-0
     Naumen
-    Net-SNMP
     NetCDF
     Newsletr
     Nokia
@@ -500,6 +521,7 @@ class Gem::Licenses
     RSCPL
     Rdisc
     Ruby
+    Ruby-pty
     SAX-PD
     SAX-PD-2.0
     SCEA
@@ -513,19 +535,23 @@ class Gem::Licenses
     SISSL
     SISSL-1.2
     SL
+    SMAIL-GPL
     SMLNJ
     SMPPL
     SNIA
+    SOFA
     SPL-1.0
     SSH-OpenSSH
     SSH-short
     SSLeay-standalone
     SSPL-1.0
+    SUL-1.0
     SWL
     Saxpath
     SchemeReport
     Sendmail
     Sendmail-8.23
+    Sendmail-Open-Source-1.1
     SimPL-2.0
     Sleepycat
     Soundex
@@ -551,17 +577,22 @@ class Gem::Licenses
     TU-Berlin-1.0
     TU-Berlin-2.0
     TermReadKey
+    ThirdEye
+    TrustedQSL
     UCAR
     UCL-1.0
     UMich-Merit
     UPL-1.0
     URT-RLE
+    Ubuntu-font-1.0
     Unicode-3.0
     Unicode-DFS-2015
     Unicode-DFS-2016
     Unicode-TOU
     UnixCrypt
     Unlicense
+    Unlicense-libtelnet
+    Unlicense-libwhirlpool
     VOSTROM
     VSL-1.0
     Vim
@@ -574,6 +605,7 @@ class Gem::Licenses
     Wsuipa
     X11
     X11-distribute-modifications-variant
+    X11-swapped
     XFree86-1.1
     XSkat
     Xdebug-1.03
@@ -592,6 +624,7 @@ class Gem::Licenses
     Zimbra-1.4
     Zlib
     any-OSI
+    any-OSI-perl-modules
     bcrypt-Solar-Designer
     blessing
     bzip2-1.0.6
@@ -608,10 +641,13 @@ class Gem::Licenses
     etalab-2.0
     fwlw
     gSOAP-1.3b
+    generic-xts
     gnuplot
     gtkbook
     hdparm
     iMatix
+    jove
+    libpng-1.6.35
     libpng-2.0
     libselinux-1.0
     libtiff
@@ -619,10 +655,12 @@ class Gem::Licenses
     lsof
     magaz
     mailprio
+    man2html
     metamail
     mpi-permissive
     mpich2
     mplus
+    ngrep
     pkgconf
     pnmstitch
     psfrag
@@ -636,6 +674,7 @@ class Gem::Licenses
     threeparttable
     ulem
     w3m
+    wwl
     xinetd
     xkeyboard-config-Zinoviev
     xlock
@@ -671,6 +710,7 @@ class Gem::Licenses
     LGPL-2.1+
     LGPL-3.0
     LGPL-3.0+
+    Net-SNMP
     Nunit
     StandardML-NJ
     bzip2-1.0.5
@@ -691,9 +731,11 @@ class Gem::Licenses
     Bison-exception-1.24
     Bison-exception-2.2
     Bootloader-exception
+    CGAL-linking-exception
     CLISP-exception-2.0
     Classpath-exception-2.0
     DigiRule-FOSS-exception
+    Digia-Qt-LGPL-exception-1.1
     FLTK-exception
     Fawkes-Runtime-exception
     Font-exception-2.0
@@ -703,6 +745,7 @@ class Gem::Licenses
     GNAT-exception
     GNOME-examples-exception
     GNU-compiler-exception
+    GPL-3.0-389-ds-base-exception
     GPL-3.0-interface-exception
     GPL-3.0-linking-exception
     GPL-3.0-linking-source-exception
@@ -710,6 +753,7 @@ class Gem::Licenses
     GStreamer-exception-2005
     GStreamer-exception-2008
     Gmsh-exception
+    Independent-modules-exception
     KiCad-libraries-exception
     LGPL-3.0-linking-exception
     LLGPL
@@ -738,13 +782,18 @@ class Gem::Licenses
     WxWindows-exception-3.1
     cryptsetup-OpenSSL-exception
     eCos-exception-2.0
+    erlang-otp-linking-exception
     fmt-exception
     freertos-exception-2.0
     gnu-javamail-exception
+    harbour-exception
     i2p-gpl-java-exception
     libpri-OpenH323-exception
     mif-exception
+    mxml-exception
     openvpn-openssl-exception
+    polyparse-exception
+    romic-exception
     stunnel-exception
     u-boot-exception-2.0
     vsftpd-openssl-exception

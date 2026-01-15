@@ -1114,6 +1114,33 @@ class TestArray < Test::Unit::TestCase
     assert_not_include(a, [1,2])
   end
 
+  def test_monkey_patch_include?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      $-w = false
+      class Array
+        alias :old_include? :include?
+        def include? x
+          return true if x == :always
+          old_include?(x)
+        end
+      end
+      def test
+        a, c, always = :a, :c, :always
+        [
+          [:a, :b].include?(a),
+          [:a, :b].include?(c),
+          [:a, :b].include?(always),
+        ]
+      end
+      v = test
+      class Array
+        alias :include? :old_include?
+      end
+      assert_equal [true, false, true], v
+    end;
+  end
+
   def test_intersect?
     a = @cls[ 1, 2, 3]
     assert_send([a, :intersect?, [3]])
@@ -1282,32 +1309,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(ary.join(':'), ary2.join(':'))
     assert_not_nil(x =~ /def/)
 
-=begin
-    skipping "Not tested:
-        D,d & double-precision float, native format\\
-        E & double-precision float, little-endian byte order\\
-        e & single-precision float, little-endian byte order\\
-        F,f & single-precision float, native format\\
-        G & double-precision float, network (big-endian) byte order\\
-        g & single-precision float, network (big-endian) byte order\\
-        I & unsigned integer\\
-        i & integer\\
-        L & unsigned long\\
-        l & long\\
-
-        N & long, network (big-endian) byte order\\
-        n & short, network (big-endian) byte-order\\
-        P & pointer to a structure (fixed-length string)\\
-        p & pointer to a null-terminated string\\
-        S & unsigned short\\
-        s & short\\
-        V & long, little-endian byte order\\
-        v & short, little-endian byte order\\
-        X & back up a byte\\
-        x & null byte\\
-        Z & ASCII string (null padded, count is width)\\
-"
-=end
+    # more comprehensive tests are in test_pack.rb
   end
 
   def test_pack_with_buffer
@@ -2689,6 +2691,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal(2, [0, 1].fetch(2, 2))
   end
 
+  def test_fetch_values
+    ary = @cls[1, 2, 3]
+    assert_equal([], ary.fetch_values())
+    assert_equal([1], ary.fetch_values(0))
+    assert_equal([3, 1, 3], ary.fetch_values(2, 0, -1))
+    assert_raise(TypeError) {ary.fetch_values("")}
+    assert_raise(IndexError) {ary.fetch_values(10)}
+    assert_raise(IndexError) {ary.fetch_values(-20)}
+    assert_equal(["10 not found"], ary.fetch_values(10) {|i| "#{i} not found"})
+    assert_equal(["10 not found", 3], ary.fetch_values(10, 2) {|i| "#{i} not found"})
+  end
+
   def test_index2
     a = [0, 1, 2]
     assert_equal(a, a.index.to_a)
@@ -3005,13 +3019,12 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
-  def test_shuffle_random
-    gen = proc do
-      10000000
-    end
-    class << gen
-      alias rand call
-    end
+  def test_shuffle_random_out_of_range
+    gen = random_generator {10000000}
+    assert_raise(RangeError) {
+      [*0..2].shuffle(random: gen)
+    }
+    gen = random_generator {-1}
     assert_raise(RangeError) {
       [*0..2].shuffle(random: gen)
     }
@@ -3019,27 +3032,16 @@ class TestArray < Test::Unit::TestCase
 
   def test_shuffle_random_clobbering
     ary = (0...10000).to_a
-    gen = proc do
+    gen = random_generator do
       ary.replace([])
       0.5
-    end
-    class << gen
-      alias rand call
     end
     assert_raise(RuntimeError) {ary.shuffle!(random: gen)}
   end
 
   def test_shuffle_random_zero
-    zero = Object.new
-    def zero.to_int
-      0
-    end
-    gen_to_int = proc do |max|
-      zero
-    end
-    class << gen_to_int
-      alias rand call
-    end
+    zero = Struct.new(:to_int).new(0)
+    gen_to_int = random_generator {|max| zero}
     ary = (0...10000).to_a
     assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
   end
@@ -3107,18 +3109,10 @@ class TestArray < Test::Unit::TestCase
   def test_sample_random_generator
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
-    gen0 = proc do |max|
-      max/2
-    end
-    class << gen0
-      alias rand call
-    end
-    gen1 = proc do |max|
+    gen0 = random_generator {|max| max/2}
+    gen1 = random_generator do |max|
       ary.replace([])
       max/2
-    end
-    class << gen1
-      alias rand call
     end
     assert_equal(5000, ary.sample(random: gen0))
     assert_nil(ary.sample(random: gen1))
@@ -3150,18 +3144,21 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_sample_random_generator_half
-    half = Object.new
-    def half.to_int
-      5000
-    end
-    gen_to_int = proc do |max|
-      half
-    end
-    class << gen_to_int
-      alias rand call
-    end
+    half = Struct.new(:to_int).new(5000)
+    gen_to_int = random_generator {|max| half}
     ary = (0...10000).to_a
     assert_equal(5000, ary.sample(random: gen_to_int))
+  end
+
+  def test_sample_random_out_of_range
+    gen = random_generator {10000000}
+    assert_raise(RangeError) {
+      [*0..2].sample(random: gen)
+    }
+    gen = random_generator {-1}
+    assert_raise(RangeError) {
+      [*0..2].sample(random: gen)
+    }
   end
 
   def test_sample_random_invalid_generator
@@ -3587,12 +3584,36 @@ class TestArray < Test::Unit::TestCase
     assert_equal((1..67).to_a.reverse, var_0)
   end
 
+  def test_find
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(2, ary.find {|x| x % 2 == 0 })
+    assert_equal(nil, ary.find {|x| false })
+    assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+  end
+
+  def test_rfind
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(4, ary.rfind {|x| x % 2 == 0 })
+    assert_equal(1, ary.rfind {|x| x < 2 })
+    assert_equal(5, ary.rfind {|x| x > 4 })
+    assert_equal(nil, ary.rfind {|x| false })
+    assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
+    assert_equal(nil, ary.rfind {|x| ary.clear; false })
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
       EnvUtil.suppress_warning {require 'continuation'}
     end
     omit 'requires callcc support' unless respond_to?(:callcc, true)
+  end
+
+  def random_generator(&block)
+    class << block
+      alias rand call
+    end
+    block
   end
 end
 

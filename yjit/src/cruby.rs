@@ -84,6 +84,7 @@
 
 use std::convert::From;
 use std::ffi::{CString, CStr};
+use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -122,7 +123,6 @@ extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
-    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -197,8 +197,8 @@ pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
-pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
-pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_jit_fix_div_fix as rb_fix_div_fix;
+pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -361,6 +361,11 @@ impl VALUE {
         !self.special_const_p()
     }
 
+    /// Shareability between ractors. `RB_OBJ_SHAREABLE_P()`.
+    pub fn shareable_p(self) -> bool {
+        (self.builtin_flags() & RUBY_FL_SHAREABLE as usize) != 0
+    }
+
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
@@ -440,28 +445,16 @@ impl VALUE {
     }
 
     pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_shape_obj_too_complex(self) }
+        unsafe { rb_yjit_shape_obj_too_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_shape_get_shape_id(self) }
-    }
-
-    pub fn shape_of(self) -> *mut rb_shape {
-        unsafe {
-            let shape = rb_shape_get_shape_by_id(self.shape_id_of());
-
-            if shape.is_null() {
-                panic!("Shape should not be null");
-            } else {
-                shape
-            }
-        }
+        unsafe { rb_obj_shape_id(self) }
     }
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 
@@ -541,9 +534,7 @@ impl VALUE {
 
         ptr
     }
-}
 
-impl VALUE {
     pub fn fixnum_from_usize(item: usize) -> Self {
         assert!(item <= (RUBY_FIXNUM_MAX as usize)); // An unsigned will always be greater than RUBY_FIXNUM_MIN
         let k: usize = item.wrapping_add(item.wrapping_add(1));
@@ -562,6 +553,18 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     /// For `.into()` convenience
     fn from(cme: *const rb_callable_method_entry_t) -> Self {
         VALUE(cme as usize)
+    }
+}
+
+impl From<&str> for VALUE {
+    fn from(value: &str) -> Self {
+        rust_str_to_ruby(value)
+    }
+}
+
+impl From<String> for VALUE {
+    fn from(value: String) -> Self {
+        rust_str_to_ruby(&value)
     }
 }
 
@@ -596,16 +599,21 @@ impl From<VALUE> for u16 {
 }
 
 /// Produce a Ruby string from a Rust string slice
-#[cfg(feature = "disasm")]
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
 
 /// Produce a Ruby symbol from a Rust string slice
 pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
+}
+
+/// Produce an ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
 }
 
 /// Produce an owned Rust String from a C char pointer
@@ -625,6 +633,12 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
 pub struct SourceLocation {
     pub file: &'static CStr,
     pub line: c_int,
+}
+
+impl Debug for SourceLocation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}:{}", self.file.to_string_lossy(), self.line))
+    }
 }
 
 /// Make a [SourceLocation] at the current spot.
@@ -667,7 +681,7 @@ where
     let line = loc.line;
     let mut recursive_lock_level: c_uint = 0;
 
-    unsafe { rb_yjit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -687,7 +701,7 @@ where
         }
     };
 
-    unsafe { rb_yjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }
@@ -758,12 +772,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
     pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
-    // Constants from rb_execution_context_t vm_core.h
-    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
-
     // Constants from rb_thread_t in vm_core.h
     pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;
 
@@ -806,8 +814,11 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: method_missing     content: b"method_missing"
         name: to_ary             content: b"to_ary"
+        name: to_s               content: b"to_s"
         name: eq                 content: b"=="
+        name: include_p          content: b"include?"
     }
 }
 

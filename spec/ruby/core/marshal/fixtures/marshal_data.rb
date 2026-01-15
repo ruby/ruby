@@ -1,4 +1,7 @@
-# -*- encoding: binary -*-
+# encoding: binary
+
+require_relative 'marshal_multibyte_data'
+
 class UserDefined
   class Nested
     def ==(other)
@@ -94,6 +97,25 @@ class UserDefinedString
   end
 end
 
+module MarshalSpec
+  class UserDefinedDumpWithIVars
+    attr_reader :string
+
+    def initialize(string, ivar_value)
+      @string = string
+      @string.instance_variable_set(:@foo, ivar_value)
+    end
+
+    def _dump(depth)
+      @string
+    end
+
+    def self._load(data)
+      new(data)
+    end
+  end
+end
+
 class UserPreviouslyDefinedWithInitializedIvar
   attr_accessor :field1, :field2
 end
@@ -133,6 +155,32 @@ class UserMarshalWithIvar
   def ==(other)
     self.class === other and
     @data = other.data
+  end
+end
+
+module MarshalSpec
+  class UserMarshalDumpWithIvar
+    attr_reader :data
+
+    def initialize(data, ivar_value)
+      @data = data
+      @ivar_value = ivar_value
+    end
+
+    def marshal_dump
+      obj = [data]
+      obj.instance_variable_set(:@foo, @ivar_value)
+      obj
+    end
+
+    def marshal_load(o)
+      @data = o[0]
+    end
+
+    def ==(other)
+      self.class === other and
+        @data = other.data
+    end
   end
 end
 
@@ -266,17 +314,6 @@ module MarshalSpec
       "Foo"
     end
   end
-
-  module_eval(<<~ruby.dup.force_encoding(Encoding::UTF_8))
-    class MultibyteぁあぃいClass
-    end
-
-    module MultibyteけげこごModule
-    end
-
-    class MultibyteぁあぃいTime < Time
-    end
-  ruby
 
   class ObjectWithFreezeRaisingException < Object
     def freeze
@@ -494,6 +531,20 @@ module MarshalSpec
                  "\004\bS:\024Struct::Pyramid\000"],
     "Random" => random_data,
   }
+
+  module DataSpec
+    Measure = Data.define(:amount, :unit)
+    Empty = Data.define
+
+    MeasureExtended = Class.new(Measure)
+    MeasureExtended.extend(Enumerable)
+
+    class MeasureWithOverriddenName < Measure
+      def self.name
+        "Foo"
+      end
+    end
+  end
 end
 
 class ArraySub < Array

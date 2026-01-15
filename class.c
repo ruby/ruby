@@ -21,6 +21,7 @@
 #include "debug_counter.h"
 #include "id_table.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/class.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
@@ -29,7 +30,9 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
+#include "ruby/ractor.h"
 #include "yjit.h"
+#include "zjit.h"
 
 /* Flags of T_CLASS
  *
@@ -38,24 +41,22 @@
  *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    RUBY_FL_SINGLETON
  *           This class is a singleton class.
- * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
- *           The RCLASS_SUPERCLASSES contains the class as the last element.
- *           This means that this class owns the RCLASS_SUPERCLASSES list.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the class.
- * endif
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This class's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
+ * 3:    RCLASS_IS_INITIALIZED
+ *           Class has been initialized.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
  */
 
 /* Flags of T_ICLASS
  *
- * 0:    RICLASS_IS_ORIGIN
- * 3:    RICLASS_ORIGIN_SHARED_MTBL
- *           The T_ICLASS does not own the method table.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID. This is set but not used.
- * endif
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This module's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
  */
 
 /* Flags of T_MODULE
@@ -63,139 +64,666 @@
  * 0:    RCLASS_IS_ROOT
  *           The class has been added to the VM roots. Will always be marked and pinned.
  *           This is done for classes defined from C to allow storing them in global variables.
- * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
- *           Module has not been initialized.
- * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
- *           See RCLASS_SUPERCLASSES_INCLUDE_SELF in T_CLASS.
- * 3:    RMODULE_IS_REFINEMENT
+ * 1:    <reserved>
+ *          Ensures that RUBY_FL_SINGLETON is never set on a T_MODULE. See `rb_class_real`.
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This module's prime classext is the only classext and writable from any boxes.
+ *           If unset, the prime classext is writable only from the root box.
+ * 3:    RCLASS_IS_INITIALIZED
+ *           Module has been initialized.
+ * 4:    RCLASS_BOXABLE
+ *           Is a builtin class that may be boxed. It larger than a normal class.
+ * 5:    RMODULE_IS_REFINEMENT
  *           Module is used for refinements.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the module.
- * endif
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
+static enum rb_id_table_iterator_result
+cvar_table_free_i(VALUE value, void *ctx)
+{
+    xfree((void *)value);
+    return ID_TABLE_CONTINUE;
+}
+
+rb_classext_t *
+rb_class_unlink_classext(VALUE klass, const rb_box_t *box)
+{
+    st_data_t ext;
+    st_data_t key = (st_data_t)box->box_object;
+    VALUE obj_id = rb_obj_id(klass);
+    st_delete(box->classext_cow_classes, &obj_id, 0);
+    st_delete(RCLASS_CLASSEXT_TBL(klass), &key, &ext);
+    return (rb_classext_t *)ext;
+}
+
+void
+rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
+{
+    struct rb_id_table *tbl;
+
+    rb_id_table_free(RCLASSEXT_M_TBL(ext));
+
+    if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
+        rb_free_const_table(tbl);
+    }
+
+    if ((tbl = RCLASSEXT_CVC_TBL(ext)) != NULL) {
+        rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
+        rb_id_table_free(tbl);
+    }
+
+    rb_class_classext_free_subclasses(ext, klass, false);
+
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(is_prime); // superclasses should only be used on prime
+        xfree(RCLASSEXT_SUPERCLASSES(ext));
+    }
+
+    if (!is_prime) { // the prime classext will be freed with RClass
+        xfree(ext);
+    }
+}
+
+void
+rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
+{
+    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
+        /* Method table is not shared for origin iclasses of classes */
+        rb_id_table_free(RCLASSEXT_M_TBL(ext));
+    }
+
+    if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
+        rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
+    }
+
+    rb_class_classext_free_subclasses(ext, klass, false);
+
+    if (!is_prime) { // the prime classext will be freed with RClass
+        xfree(ext);
+    }
+}
+
+static void
+iclass_free_orphan_classext(VALUE klass, rb_classext_t *ext)
+{
+    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
+        /* Method table is not shared for origin iclasses of classes */
+        rb_id_table_free(RCLASSEXT_M_TBL(ext));
+    }
+
+    if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
+        rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
+    }
+
+    rb_class_classext_free_subclasses(ext, klass, true); // replacing this classext with a newer one
+
+    xfree(ext);
+}
+
+struct rb_class_set_box_classext_args {
+    VALUE obj;
+    rb_classext_t *ext;
+};
+
+static int
+set_box_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
+{
+    struct rb_class_set_box_classext_args *args = (struct rb_class_set_box_classext_args *)a;
+
+    if (existing) {
+        if (LIKELY(BUILTIN_TYPE(args->obj) == T_ICLASS)) {
+            iclass_free_orphan_classext(args->obj, (rb_classext_t *)*val_ptr);
+        }
+        else {
+            rb_bug("Updating existing classext for non-iclass never happen");
+        }
+    }
+
+    *val_ptr = (st_data_t)args->ext;
+
+    return ST_CONTINUE;
+}
+
+void
+rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
+{
+    struct rb_class_set_box_classext_args args = {
+        .obj = obj,
+        .ext = ext,
+    };
+
+    VM_ASSERT(BOX_USER_P(box));
+
+    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, set_box_classext_update, (st_data_t)&args);
+    st_insert(box->classext_cow_classes, (st_data_t)rb_obj_id(obj), obj);
+
+    // FIXME: This is done here because this is the first time the objects in
+    // the classext are exposed via this class. It's likely that if GC
+    // compaction occurred between the VALUEs being copied in and this
+    // writebarrier trigger the values will be stale.
+    rb_gc_writebarrier_remember(obj);
+}
+
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-static rb_subclass_entry_t *
-push_subclass_entry_to_list(VALUE super, VALUE klass)
+struct duplicate_id_tbl_data {
+    struct rb_id_table *tbl;
+    VALUE klass;
+};
+
+static enum rb_id_table_iterator_result
+duplicate_classext_id_table_i(ID key, VALUE value, void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_insert(tbl, key, value);
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+duplicate_classext_m_tbl_i(ID key, VALUE value, void *data)
+{
+    struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
+    rb_method_table_insert0(arg->klass, arg->tbl, key, me, false);
+    return ID_TABLE_CONTINUE;
+}
+
+static struct rb_id_table *
+duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missing)
+{
+    struct rb_id_table *tbl;
+    if (!orig) {
+        if (init_missing)
+            return rb_id_table_create(0);
+        else
+            return NULL;
+    }
+    tbl = rb_id_table_create(rb_id_table_size(orig));
+    struct duplicate_id_tbl_data data = {
+        .tbl = tbl,
+        .klass = klass,
+    };
+    rb_id_table_foreach(orig, duplicate_classext_m_tbl_i, &data);
+    return tbl;
+}
+
+static struct rb_id_table *
+duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
+{
+    struct rb_id_table *tbl;
+
+    if (!orig) {
+        if (init_missing)
+            return rb_id_table_create(0);
+        else
+            return NULL;
+    }
+    tbl = rb_id_table_create(rb_id_table_size(orig));
+    rb_id_table_foreach(orig, duplicate_classext_id_table_i, tbl);
+    return tbl;
+}
+
+static rb_const_entry_t *
+duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
+{
+    // See also: setup_const_entry (variable.c)
+    rb_const_entry_t *dst = ZALLOC(rb_const_entry_t);
+
+    dst->flag = src->flag;
+    dst->line = src->line;
+    RB_OBJ_WRITE(klass, &dst->value, src->value);
+    RB_OBJ_WRITE(klass, &dst->file, src->file);
+
+    return dst;
+}
+
+static enum rb_id_table_iterator_result
+duplicate_classext_const_tbl_i(ID key, VALUE value, void *data)
+{
+    struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
+    rb_const_entry_t *entry = duplicate_classext_const_entry((rb_const_entry_t *)value, arg->klass);
+
+    rb_id_table_insert(arg->tbl, key, (VALUE)entry);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static struct rb_id_table *
+duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
+{
+    struct rb_id_table *dst;
+
+    if (!src)
+        return NULL;
+
+    dst = rb_id_table_create(rb_id_table_size(src));
+
+    struct duplicate_id_tbl_data data = {
+        .tbl = dst,
+        .klass = klass,
+    };
+    rb_id_table_foreach(src, duplicate_classext_const_tbl_i, (void *)&data);
+
+    return dst;
+}
+
+static VALUE
+box_subclasses_tbl_key(const rb_box_t *box)
+{
+    if (!box){
+        return 0;
+    }
+    return (VALUE)box->box_id;
+}
+
+static void
+duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
+{
+    rb_subclass_anchor_t *anchor, *orig_anchor;
+    rb_subclass_entry_t *head, *cur, *cdr, *entry, *first = NULL;
+    rb_box_subclasses_t *box_subclasses;
+    struct st_table *tbl;
+
+    if (RCLASSEXT_SUBCLASSES(orig)) {
+        orig_anchor = RCLASSEXT_SUBCLASSES(orig);
+        box_subclasses = orig_anchor->box_subclasses;
+        tbl = ((rb_box_subclasses_t *)box_subclasses)->tbl;
+
+        anchor = ZALLOC(rb_subclass_anchor_t);
+        anchor->box_subclasses = rb_box_subclasses_ref_inc(box_subclasses);
+
+        head = ZALLOC(rb_subclass_entry_t);
+        anchor->head = head;
+
+        RCLASSEXT_SUBCLASSES(copy) = anchor;
+
+        cur = head;
+        entry = orig_anchor->head;
+        RUBY_ASSERT(!entry->klass);
+        // The head entry has NULL klass always. See rb_class_foreach_subclass().
+        entry = entry->next;
+        while (entry) {
+            if (rb_objspace_garbage_object_p(entry->klass)) {
+                entry = entry->next;
+                continue;
+            }
+            cdr = ZALLOC(rb_subclass_entry_t);
+            cdr->klass = entry->klass;
+            cdr->prev = cur;
+            cur->next = cdr;
+            if (!first) {
+                VALUE box_id = box_subclasses_tbl_key(RCLASSEXT_BOX(copy));
+                first = cdr;
+                st_insert(tbl, box_id, (st_data_t)first);
+            }
+            cur = cdr;
+            entry = entry->next;
+        }
+    }
+
+    if (RCLASSEXT_BOX_SUPER_SUBCLASSES(orig))
+        RCLASSEXT_BOX_SUPER_SUBCLASSES(copy) = rb_box_subclasses_ref_inc(RCLASSEXT_BOX_SUPER_SUBCLASSES(orig));
+    if (RCLASSEXT_BOX_MODULE_SUBCLASSES(orig))
+        RCLASSEXT_BOX_MODULE_SUBCLASSES(copy) = rb_box_subclasses_ref_inc(RCLASSEXT_BOX_MODULE_SUBCLASSES(orig));
+}
+
+static void
+class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_box_t *box)
+{
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+
+    rb_classext_t *src = RCLASS_EXT_PRIME(iclass);
+    rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, box);
+    int first_set = 0;
+
+    if (ext) {
+        // iclass classext for the ns is only for cc/callable_m_tbl if it's created earlier than module's one
+        rb_invalidate_method_caches(RCLASSEXT_CALLABLE_M_TBL(ext), RCLASSEXT_CC_TBL(ext));
+    }
+
+    ext = ZALLOC(rb_classext_t);
+
+    RCLASSEXT_BOX(ext) = box;
+
+    RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
+
+    // See also: rb_include_class_new()
+    if (RCLASSEXT_ICLASS_IS_ORIGIN(src) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src)) {
+        RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(src), iclass, true);
+    }
+    else {
+        RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
+    }
+
+    RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(mod_ext);
+    RCLASSEXT_CVC_TBL(ext) = RCLASSEXT_CVC_TBL(mod_ext);
+
+    // Those are cache and should be recreated when methods are called
+    // RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
+    // RCLASSEXT_CC_TBL(ext) = NULL;
+
+    // subclasses, box_super_subclasses_tbl, box_module_subclasses_tbl
+    duplicate_classext_subclasses(src, ext);
+
+    RCLASSEXT_SET_ORIGIN(ext, iclass, RCLASSEXT_ORIGIN(src));
+    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = RCLASSEXT_ICLASS_IS_ORIGIN(src);
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src);
+
+    RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
+
+    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
+
+    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
+    if (first_set) {
+        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
+    }
+}
+
+rb_classext_t *
+rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+
+    rb_classext_t *ext = ZALLOC(rb_classext_t);
+    bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
+
+    RCLASSEXT_BOX(ext) = box;
+
+    RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
+
+    RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
+    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = true;
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = false;
+
+    if (orig->fields_obj) {
+        RB_OBJ_WRITE(klass, &ext->fields_obj, rb_imemo_fields_clone(orig->fields_obj));
+    }
+
+    if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
+        RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(orig);
+        RCLASSEXT_SHARED_CONST_TBL(ext) = true;
+    }
+    else {
+        RCLASSEXT_CONST_TBL(ext) = duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig), klass);
+        RCLASSEXT_SHARED_CONST_TBL(ext) = false;
+    }
+    /*
+     * callable_m_tbl is for `super` chain, and entries will be created when the super chain is called.
+     * so initially, it can be NULL and let it be created lazily.
+     * RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
+     *
+     * cc_tbl is for method inline cache, and method calls from different boxes never occur on
+     * the same code, so the copied classext should have a different cc_tbl from the prime one.
+     * RCLASSEXT_CC_TBL(copy) = NULL
+     */
+
+    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
+
+    // subclasses, subclasses_index
+    duplicate_classext_subclasses(orig, ext);
+
+    RCLASSEXT_SET_ORIGIN(ext, klass, RCLASSEXT_ORIGIN(orig));
+    /*
+     * Members not copied to box's classext values
+     * * refined_class
+     * * as.class.allocator / as.singleton_class.attached_object
+     * * includer
+     * * max IV count
+     * * variation count
+     */
+    RCLASSEXT_PERMANENT_CLASSPATH(ext) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
+    RCLASSEXT_CLONED(ext) = RCLASSEXT_CLONED(orig);
+    RCLASSEXT_CLASSPATH(ext) = RCLASSEXT_CLASSPATH(orig);
+
+    /* For the usual T_CLASS/T_MODULE, iclass flags are always false */
+
+    if (dup_iclass) {
+        VALUE iclass;
+        /*
+         * ICLASS has the same m_tbl/const_tbl/cvc_tbl with the included module.
+         * So the module's classext is copied, its tables should be also referred
+         * by the ICLASS's classext for the box.
+         */
+        rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
+        rb_subclass_entry_t *subclass_entry = anchor->head;
+        while (subclass_entry) {
+            if (subclass_entry->klass && RB_TYPE_P(subclass_entry->klass, T_ICLASS)) {
+                iclass = subclass_entry->klass;
+                VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+                if (RBASIC_CLASS(iclass) == klass) {
+                    // Is the subclass an ICLASS including this module into another class
+                    // If so we need to re-associate it under our box with the new ext
+                    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
+                    class_duplicate_iclass_classext(iclass, ext, box);
+                }
+            }
+            subclass_entry = subclass_entry->next;
+        }
+    }
+
+    return ext;
+}
+
+void
+rb_class_ensure_writable(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    RCLASS_EXT_WRITABLE(klass);
+}
+
+struct class_classext_foreach_arg {
+    rb_class_classext_foreach_callback_func *func;
+    void * callback_arg;
+};
+
+static int
+class_classext_foreach_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    struct class_classext_foreach_arg *foreach_arg = (struct class_classext_foreach_arg *)arg;
+    rb_class_classext_foreach_callback_func *func = foreach_arg->func;
+    func((rb_classext_t *)value, false, (VALUE)key, foreach_arg->callback_arg);
+    return ST_CONTINUE;
+}
+
+void
+rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg)
+{
+    st_table *tbl = RCLASS_CLASSEXT_TBL(klass);
+    struct class_classext_foreach_arg foreach_arg;
+    if (tbl) {
+        foreach_arg.func = func;
+        foreach_arg.callback_arg = arg;
+        rb_st_foreach(tbl, class_classext_foreach_i, (st_data_t)&foreach_arg);
+    }
+    func(RCLASS_EXT_PRIME(klass), true, (VALUE)NULL, arg);
+}
+
+VALUE
+rb_class_super_of(VALUE klass)
+{
+    return RCLASS_SUPER(klass);
+}
+
+VALUE
+rb_class_singleton_p(VALUE klass)
+{
+    return RCLASS_SINGLETON_P(klass);
+}
+
+unsigned char
+rb_class_variation_count(VALUE klass)
+{
+    return RCLASS_VARIATION_COUNT(klass);
+}
+
+static void
+push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
 {
     rb_subclass_entry_t *entry, *head;
+    rb_subclass_anchor_t *anchor;
+    rb_box_subclasses_t *box_subclasses;
+    struct st_table *tbl;
+    const rb_box_t *box = rb_current_box();
 
     entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
 
-    head = RCLASS_SUBCLASSES(super);
-    if (!head) {
-        head = ZALLOC(rb_subclass_entry_t);
-        RCLASS_SUBCLASSES(super) = head;
-    }
-    entry->next = head->next;
-    entry->prev = head;
+    RB_VM_LOCKING() {
+        anchor = RCLASS_WRITABLE_SUBCLASSES(super);
+        VM_ASSERT(anchor);
+        box_subclasses = (rb_box_subclasses_t *)anchor->box_subclasses;
+        VM_ASSERT(box_subclasses);
+        tbl = box_subclasses->tbl;
+        VM_ASSERT(tbl);
 
-    if (head->next) {
-        head->next->prev = entry;
+        head = anchor->head;
+        if (head->next) {
+            head->next->prev = entry;
+            entry->next = head->next;
+        }
+        head->next = entry;
+        entry->prev = head;
+        st_insert(tbl, box_subclasses_tbl_key(box), (st_data_t)entry);
     }
-    head->next = entry;
 
-    return entry;
+    if (is_module) {
+        RCLASS_WRITE_BOX_MODULE_SUBCLASSES(klass, anchor->box_subclasses);
+    }
+    else {
+        RCLASS_WRITE_BOX_SUPER_SUBCLASSES(klass, anchor->box_subclasses);
+    }
 }
 
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
     if (super && !UNDEF_P(super)) {
-        rb_subclass_entry_t *entry = push_subclass_entry_to_list(super, klass);
-        RCLASS_SUBCLASS_ENTRY(klass) = entry;
+        push_subclass_entry_to_list(super, klass, false);
     }
 }
 
 static void
 rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
-    rb_subclass_entry_t *entry = push_subclass_entry_to_list(module, iclass);
-    RCLASS_MODULE_SUBCLASS_ENTRY(iclass) = entry;
+    if (module && !UNDEF_P(module)) {
+        push_subclass_entry_to_list(module, iclass, true);
+    }
 }
 
-void
-rb_class_remove_subclass_head(VALUE klass)
+static struct rb_subclass_entry *
+class_get_subclasses_for_ns(struct st_table *tbl, VALUE box_id)
 {
-    rb_subclass_entry_t *head = RCLASS_SUBCLASSES(klass);
+    st_data_t value;
+    if (st_lookup(tbl, (st_data_t)box_id, &value)) {
+        return (struct rb_subclass_entry *)value;
+    }
+    return NULL;
+}
 
-    if (head) {
-        if (head->next) {
-            head->next->prev = NULL;
+static int
+remove_class_from_subclasses_replace_first_entry(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    *value = arg;
+    return ST_CONTINUE;
+}
+
+static void
+remove_class_from_subclasses(struct st_table *tbl, VALUE box_id, VALUE klass)
+{
+    rb_subclass_entry_t *entry = class_get_subclasses_for_ns(tbl, box_id);
+    bool first_entry = true;
+    while (entry) {
+        if (entry->klass == klass) {
+            rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
+
+            if (prev) {
+                prev->next = next;
+            }
+            if (next) {
+                next->prev = prev;
+            }
+
+            if (first_entry) {
+                if (next) {
+                    st_update(tbl, box_id, remove_class_from_subclasses_replace_first_entry, (st_data_t)next);
+                }
+                else {
+                    // no subclass entries in this ns after the deletion
+                    st_delete(tbl, &box_id, NULL);
+                }
+            }
+
+            xfree(entry);
+
+            break;
         }
-        RCLASS_SUBCLASSES(klass) = NULL;
-        xfree(head);
+        else if (first_entry) {
+            first_entry = false;
+        }
+        entry = entry->next;
     }
 }
 
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry = RCLASS_SUBCLASS_ENTRY(klass);
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_box_subclasses_t *box_subclasses = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
 
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
-        xfree(entry);
-    }
-
-    RCLASS_SUBCLASS_ENTRY(klass) = NULL;
+    if (!box_subclasses) return;
+    remove_class_from_subclasses(box_subclasses->tbl, box_subclasses_tbl_key(RCLASSEXT_BOX(ext)), klass);
+    rb_box_subclasses_ref_dec(box_subclasses);
+    RCLASSEXT_BOX_SUPER_SUBCLASSES(ext) = 0;
 }
 
 void
-rb_class_remove_from_module_subclasses(VALUE klass)
+rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacing)
 {
-    rb_subclass_entry_t *entry = RCLASS_MODULE_SUBCLASS_ENTRY(klass);
+    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
+    struct st_table *tbl = anchor->box_subclasses->tbl;
+    VALUE box_id = box_subclasses_tbl_key(RCLASSEXT_BOX(ext));
+    rb_subclass_entry_t *next, *entry = anchor->head;
 
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
+    while (entry) {
+        next = entry->next;
         xfree(entry);
+        entry = next;
     }
+    VM_ASSERT(
+        rb_box_subclasses_ref_count(anchor->box_subclasses) > 0,
+        "box_subclasses refcount (%p) %ld", anchor->box_subclasses, rb_box_subclasses_ref_count(anchor->box_subclasses));
+    st_delete(tbl, &box_id, NULL);
+    rb_box_subclasses_ref_dec(anchor->box_subclasses);
+    xfree(anchor);
 
-    RCLASS_MODULE_SUBCLASS_ENTRY(klass) = NULL;
+    if (RCLASSEXT_BOX_SUPER_SUBCLASSES(ext)) {
+        rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
+        if (!replacing) remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        rb_box_subclasses_ref_dec(box_sub);
+    }
+    if (RCLASSEXT_BOX_MODULE_SUBCLASSES(ext)) {
+        rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_MODULE_SUBCLASSES(ext);
+        if (!replacing) remove_class_from_subclasses(box_sub->tbl, box_id, klass);
+        rb_box_subclasses_ref_dec(box_sub);
+    }
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
-    // RCLASS_SUBCLASSES should always point to our head element which has NULL klass
-    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES(klass);
-    // if we have a subclasses list, then the head is a placeholder with no valid
-    // class. So ignore it and use the next element in the list (if one exists)
-    if (cur) {
-        RUBY_ASSERT(!cur->klass);
-        cur = cur->next;
-    }
-
+    rb_subclass_entry_t *tmp;
+    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES_FIRST(klass);
     /* do not be tempted to simplify this loop into a for loop, the order of
        operations is important here if `f` modifies the linked list */
     while (cur) {
         VALUE curklass = cur->klass;
-        cur = cur->next;
+        tmp = cur->next;
         // do not trigger GC during f, otherwise the cur will become
         // a dangling pointer if the subclass is collected
         f(curklass, arg);
+        cur = tmp;
     }
 }
 
@@ -205,67 +733,147 @@ class_detach_subclasses(VALUE klass, VALUE arg)
     rb_class_remove_from_super_subclasses(klass);
 }
 
-void
-rb_class_detach_subclasses(VALUE klass)
-{
-    rb_class_foreach_subclass(klass, class_detach_subclasses, Qnil);
-}
-
 static void
-class_detach_module_subclasses(VALUE klass, VALUE arg)
+class_switch_superclass(VALUE super, VALUE klass)
 {
-    rb_class_remove_from_module_subclasses(klass);
-}
-
-void
-rb_class_detach_module_subclasses(VALUE klass)
-{
-    rb_class_foreach_subclass(klass, class_detach_module_subclasses, Qnil);
+    RB_VM_LOCKING() {
+        class_detach_subclasses(klass, Qnil);
+        rb_class_subclass_add(super, klass);
+    }
 }
 
 /**
- * Allocates a struct RClass for a new class.
+ * Allocates a struct RClass for a new class, iclass, or module.
  *
- * @param flags     initial value for basic.flags of the returned class.
- * @param klass     the class of the returned class.
- * @return          an uninitialized Class object.
- * @pre  `klass` must refer `Class` class or an ancestor of Class.
- * @pre  `(flags | T_CLASS) != 0`
- * @post the returned class can safely be `#initialize` 'd.
+ * @param type      The type of the RClass (T_CLASS, T_ICLASS, or T_MODULE)
+ * @param klass     value for basic.klass of the returned object.
+ * @return          an uninitialized Class/IClass/Module object.
+ * @pre  `klass` must refer to a class or module
  *
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc(VALUE flags, VALUE klass)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 {
-    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
+    rb_box_subclasses_t *box_subclasses;
+    rb_subclass_anchor_t *anchor;
+    const rb_box_t *box = rb_current_box();
 
-    flags &= T_MASK;
+    if (!ruby_box_init_done) {
+        boxable = true;
+    }
+
+    size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
+    if (boxable) {
+        alloc_size = sizeof(struct RClass_boxable);
+    }
+
+    // class_alloc is supposed to return a new object that is not promoted yet.
+    // So, we need to avoid GC after NEWOBJ_OF.
+    // To achieve that, we allocate subclass lists before NEWOBJ_OF.
+    //
+    // TODO: Note that this could cause memory leak.
+    // If NEWOBJ_OF fails with out of memory, these buffers will leak.
+    box_subclasses = ZALLOC(rb_box_subclasses_t);
+    box_subclasses->refcount = 1;
+    box_subclasses->tbl = st_init_numtable();
+    anchor = ZALLOC(rb_subclass_anchor_t);
+    anchor->box_subclasses = box_subclasses;
+    anchor->head = ZALLOC(rb_subclass_entry_t);
+
+    RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
+
+    VALUE flags = type | FL_SHAREABLE;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+    if (boxable) flags |= RCLASS_BOXABLE;
+
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
-    memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
+    obj->object_id = 0;
+
+    memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
       RCLASS_M_TBL(obj) = 0;
-      RCLASS_IV_INDEX_TBL(obj) = 0;
+      RCLASS_FIELDS(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
-      RCLASS_SUBCLASSES(obj) = NULL;
-      RCLASS_PARENT_SUBCLASSES(obj) = NULL;
-      RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
+
+    if (boxable) {
+        ((struct RClass_boxable *)obj)->box_classext_tbl = NULL;
+    }
+
+    RCLASS_PRIME_BOX((VALUE)obj) = box;
+    // Classes/Modules defined in user boxes are
+    // writable directly because it exists only in a box.
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !boxable || BOX_USER_P(box));
+
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
-    RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
+    RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
+
+    RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
 
     return (VALUE)obj;
 }
 
-static void
-RCLASS_M_TBL_INIT(VALUE c)
+static VALUE
+class_alloc(enum ruby_value_type type, VALUE klass)
 {
-    RCLASS_M_TBL(c) = rb_id_table_create(0);
+    bool boxable = rb_box_available() && BOX_ROOT_P(rb_current_box());
+    return class_alloc0(type, klass, boxable);
+}
+
+static VALUE
+class_associate_super(VALUE klass, VALUE super, bool init)
+{
+    if (super && !UNDEF_P(super)) {
+        class_switch_superclass(super, klass);
+    }
+    if (init) {
+        RCLASS_SET_SUPER(klass, super);
+    }
+    else {
+        RCLASS_WRITE_SUPER(klass, super);
+    }
+    rb_class_update_superclasses(klass);
+    return super;
+}
+
+VALUE
+rb_class_set_super(VALUE klass, VALUE super)
+{
+    return class_associate_super(klass, super, false);
+}
+
+static void
+class_initialize_method_table(VALUE c)
+{
+    // initialize the prime classext m_tbl
+    RCLASS_SET_M_TBL(c, rb_id_table_create(0));
+}
+
+static void
+class_clear_method_table(VALUE c)
+{
+    RCLASS_WRITE_M_TBL(c, rb_id_table_create(0));
+}
+
+static VALUE
+class_boot_boxable(VALUE super, bool boxable)
+{
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable);
+
+    // initialize method table prior to class_associate_super()
+    // because class_associate_super() may cause GC and promote klass
+    class_initialize_method_table(klass);
+
+    class_associate_super(klass, super, true);
+    if (super && !UNDEF_P(super)) {
+        rb_class_set_initialized(klass);
+    }
+
+    return (VALUE)klass;
 }
 
 /**
@@ -280,18 +888,13 @@ RCLASS_M_TBL_INIT(VALUE c)
 VALUE
 rb_class_boot(VALUE super)
 {
-    VALUE klass = class_alloc(T_CLASS, rb_cClass);
-
-    RCLASS_SET_SUPER(klass, super);
-    RCLASS_M_TBL_INIT(klass);
-
-    return (VALUE)klass;
+    return class_boot_boxable(super, false);
 }
 
 static VALUE *
 class_superclasses_including_self(VALUE klass)
 {
-    if (FL_TEST_RAW(klass, RCLASS_SUPERCLASSES_INCLUDE_SELF))
+    if (RCLASS_SUPERCLASSES_WITH_SELF_P(klass))
         return RCLASS_SUPERCLASSES(klass);
 
     size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
@@ -300,14 +903,14 @@ class_superclasses_including_self(VALUE klass)
         memcpy(superclasses, RCLASS_SUPERCLASSES(klass), sizeof(VALUE) * depth);
     superclasses[depth] = klass;
 
-    RCLASS_SUPERCLASSES(klass) = superclasses;
-    FL_SET_RAW(klass, RCLASS_SUPERCLASSES_INCLUDE_SELF);
     return superclasses;
 }
 
 void
 rb_class_update_superclasses(VALUE klass)
 {
+    VALUE *superclasses;
+    size_t super_depth;
     VALUE super = RCLASS_SUPER(klass);
 
     if (!RB_TYPE_P(klass, T_CLASS)) return;
@@ -336,8 +939,17 @@ rb_class_update_superclasses(VALUE klass)
             return;
     }
 
-    RCLASS_SUPERCLASSES(klass) = class_superclasses_including_self(super);
-    RCLASS_SUPERCLASS_DEPTH(klass) = RCLASS_SUPERCLASS_DEPTH(super) + 1;
+    super_depth = RCLASS_SUPERCLASS_DEPTH(super);
+    if (RCLASS_SUPERCLASSES_WITH_SELF_P(super)) {
+        superclasses = RCLASS_SUPERCLASSES(super);
+    }
+    else {
+        superclasses = class_superclasses_including_self(super);
+        RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true);
+    }
+
+    size_t depth = super_depth == RCLASS_MAX_SUPERCLASS_DEPTH ? super_depth : super_depth + 1;
+    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false);
 }
 
 void
@@ -363,8 +975,10 @@ rb_class_new(VALUE super)
     VALUE klass = rb_class_boot(super);
 
     if (super != rb_cObject && super != rb_cBasicObject) {
-        RCLASS_EXT(klass)->max_iv_count = RCLASS_EXT(super)->max_iv_count;
+        RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     }
+
+    RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
 
     return klass;
 }
@@ -379,8 +993,7 @@ static void
 clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
     if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-        rb_cref_t *new_cref;
-        rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
+        rb_cref_t *new_cref = rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass);
         rb_add_method_iseq(new_klass, mid, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
     }
     else {
@@ -430,7 +1043,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     if (orig == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "can't copy the root class");
     }
-    if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
+    if (RCLASS_INITIALIZED_P(clone)) {
         rb_raise(rb_eTypeError, "already initialized class");
     }
     if (RCLASS_SINGLETON_P(orig)) {
@@ -468,7 +1081,7 @@ copy_tables(VALUE clone, VALUE orig)
 {
     if (RCLASS_CONST_TBL(clone)) {
         rb_free_const_table(RCLASS_CONST_TBL(clone));
-        RCLASS_CONST_TBL(clone) = 0;
+        RCLASS_WRITE_CONST_TBL(clone, 0, false);
     }
     if (RCLASS_CVC_TBL(orig)) {
         struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(orig);
@@ -478,52 +1091,38 @@ copy_tables(VALUE clone, VALUE orig)
         ctx.clone = clone;
         ctx.new_table = rb_cvc_tbl_dup;
         rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
-        RCLASS_CVC_TBL(clone) = rb_cvc_tbl_dup;
+        RCLASS_WRITE_CVC_TBL(clone, rb_cvc_tbl_dup);
     }
     rb_id_table_free(RCLASS_M_TBL(clone));
-    RCLASS_M_TBL(clone) = 0;
+    RCLASS_WRITE_M_TBL(clone, 0);
     if (!RB_TYPE_P(clone, T_ICLASS)) {
-        st_data_t id;
-
-        rb_iv_tbl_copy(clone, orig);
-        CONST_ID(id, "__tmp_classpath__");
-        rb_attr_delete(clone, id);
-        CONST_ID(id, "__classpath__");
-        rb_attr_delete(clone, id);
+        rb_fields_tbl_copy(clone, orig);
     }
     if (RCLASS_CONST_TBL(orig)) {
         struct clone_const_arg arg;
-
-        arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);
+        struct rb_id_table *const_tbl;
+        struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
+        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
         arg.klass = clone;
-        rb_id_table_foreach(RCLASS_CONST_TBL(orig), clone_const_i, &arg);
+        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
+        RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
     }
 }
 
 static bool ensure_origin(VALUE klass);
 
-/**
- * If this flag is set, that module is allocated but not initialized yet.
- */
-enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER1};
-
-static inline bool
-RMODULE_UNINITIALIZED(VALUE module)
-{
-    return FL_TEST_RAW(module, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
-}
-
 void
-rb_module_set_initialized(VALUE mod)
+rb_class_set_initialized(VALUE klass)
 {
-    FL_UNSET_RAW(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE));
+    FL_SET_RAW(klass, RCLASS_IS_INITIALIZED);
     /* no more re-initialization */
 }
 
 void
 rb_module_check_initializable(VALUE mod)
 {
-    if (!RMODULE_UNINITIALIZED(mod)) {
+    if (RCLASS_INITIALIZED_P(mod)) {
         rb_raise(rb_eTypeError, "already initialized module");
     }
 }
@@ -532,9 +1131,11 @@ rb_module_check_initializable(VALUE mod)
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    /* Only class or module is valid here, but other classes may enter here and
+     * only hit an exception on the OBJ_INIT_COPY checks
+     */
     switch (BUILTIN_TYPE(clone)) {
       case T_CLASS:
-      case T_ICLASS:
         class_init_copy_check(clone, orig);
         break;
       case T_MODULE:
@@ -545,28 +1146,35 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (!OBJ_INIT_COPY(clone, orig)) return clone;
 
+    RUBY_ASSERT(RB_TYPE_P(orig, T_CLASS) || RB_TYPE_P(orig, T_MODULE));
+    RUBY_ASSERT(BUILTIN_TYPE(clone) == BUILTIN_TYPE(orig));
+
+    rb_class_set_initialized(clone);
+
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
-    RCLASS_EXT(clone)->cloned = true;
-    RCLASS_EXT(orig)->cloned = true;
+    RCLASS_SET_CLONED(clone, true);
+    RCLASS_SET_CLONED(orig, true);
 
     if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
-    RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    if (BUILTIN_TYPE(clone) == T_CLASS) {
+        RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
         arg.old_klass = orig;
         arg.new_klass = clone;
-        RCLASS_M_TBL_INIT(clone);
+        class_initialize_method_table(clone);
         rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
     }
 
     if (RCLASS_ORIGIN(orig) == orig) {
-        RCLASS_SET_SUPER(clone, RCLASS_SUPER(orig));
+        rb_class_set_super(clone, RCLASS_SUPER(orig));
     }
     else {
         VALUE p = RCLASS_SUPER(orig);
@@ -586,15 +1194,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             if (BUILTIN_TYPE(p) != T_ICLASS) {
                 rb_bug("non iclass between module/class and origin");
             }
-            clone_p = class_alloc(RBASIC(p)->flags, METACLASS_OF(p));
-            /* We should set the m_tbl right after allocation before anything
-             * that can trigger GC to avoid clone_p from becoming old and
-             * needing to fire write barriers. */
+            clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
             RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
-            RCLASS_SET_SUPER(prev_clone_p, clone_p);
+            rb_class_set_super(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
-            RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
-            RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
+            RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -606,8 +1210,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             }
             else if ((origin_len = RARRAY_LEN(origin_stack)) > 1 &&
                      RARRAY_AREF(origin_stack, origin_len - 1) == p) {
-                RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
-                RICLASS_SET_ORIGIN_SHARED_MTBL(clone_p);
+                RCLASS_WRITE_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
+                RICLASS_WRITE_ORIGIN_SHARED_MTBL(clone_p);
                 rb_ary_resize(origin_stack, origin_len);
                 add_subclass = FALSE;
             }
@@ -619,15 +1223,15 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
         if (p == orig_origin) {
             if (clone_p) {
-                RCLASS_SET_SUPER(clone_p, clone_origin);
-                RCLASS_SET_SUPER(clone_origin, RCLASS_SUPER(orig_origin));
+                rb_class_set_super(clone_p, clone_origin);
+                rb_class_set_super(clone_origin, RCLASS_SUPER(orig_origin));
             }
             copy_tables(clone_origin, orig_origin);
             if (RCLASS_M_TBL(orig_origin)) {
                 struct clone_method_arg arg;
                 arg.old_klass = orig;
                 arg.new_klass = clone;
-                RCLASS_M_TBL_INIT(clone_origin);
+                class_initialize_method_table(clone_origin);
                 rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
             }
         }
@@ -664,7 +1268,8 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     else {
         /* copy singleton(unnamed) class */
         bool klass_of_clone_is_new;
-        VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
+        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE clone = class_alloc(T_CLASS, 0);
 
         if (BUILTIN_TYPE(obj) == T_CLASS) {
             klass_of_clone_is_new = true;
@@ -678,18 +1283,22 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
             RBASIC_SET_CLASS(clone, klass_metaclass_clone);
         }
 
-        RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-        rb_iv_tbl_copy(clone, klass);
+        // initialize method table before any GC chance
+        class_initialize_method_table(clone);
+
+        rb_class_set_super(clone, RCLASS_SUPER(klass));
+        rb_fields_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
-            arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);
+            struct rb_id_table *table;
+            arg.tbl = table = rb_id_table_create(rb_id_table_size(RCLASS_CONST_TBL(klass)));
             arg.klass = clone;
             rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            RCLASS_SET_CONST_TBL(clone, table, false);
         }
         if (!UNDEF_P(attach)) {
             rb_singleton_class_attached(clone, attach);
         }
-        RCLASS_M_TBL_INIT(clone);
         {
             struct clone_method_arg arg;
             arg.old_klass = klass;
@@ -766,7 +1375,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = rb_class_boot(Qundef);
+    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE));
 
     FL_SET(metaclass, FL_SINGLETON);
     rb_singleton_class_attached(metaclass, klass);
@@ -783,7 +1392,8 @@ make_metaclass(VALUE klass)
 
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
-    RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
+    class_associate_super(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass, true);
+    rb_class_set_initialized(klass);
 
     // Full class ancestry may not have been filled until we reach here.
     rb_class_update_superclasses(METACLASS_OF(metaclass));
@@ -801,12 +1411,13 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = rb_class_boot(orig_class);
+    VALUE klass = class_boot_boxable(orig_class, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
     rb_yjit_invalidate_no_singleton_class(orig_class);
+    rb_zjit_invalidate_no_singleton_class(orig_class);
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;
@@ -982,9 +1593,8 @@ VALUE
 rb_define_class(const char *name, VALUE super)
 {
     VALUE klass;
-    ID id;
+    ID id = rb_intern(name);
 
-    id = rb_intern(name);
     if (rb_const_defined(rb_cObject, id)) {
         klass = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(klass, T_CLASS)) {
@@ -1061,8 +1671,7 @@ VALUE
 rb_module_s_alloc(VALUE klass)
 {
     VALUE mod = class_alloc(T_MODULE, klass);
-    RCLASS_M_TBL_INIT(mod);
-    FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    class_initialize_method_table(mod);
     return mod;
 }
 
@@ -1070,7 +1679,7 @@ static inline VALUE
 module_new(VALUE klass)
 {
     VALUE mdl = class_alloc(T_MODULE, klass);
-    RCLASS_M_TBL_INIT(mdl);
+    class_initialize_method_table(mdl);
     return (VALUE)mdl;
 }
 
@@ -1097,9 +1706,8 @@ VALUE
 rb_define_module(const char *name)
 {
     VALUE module;
-    ID id;
+    ID id = rb_intern(name);
 
-    id = rb_intern(name);
     if (rb_const_defined(rb_cObject, id)) {
         module = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(module, T_MODULE)) {
@@ -1152,21 +1760,24 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_SET_M_TBL(klass, RCLASS_M_TBL(module));
+    RCLASS_SET_M_TBL(klass, RCLASS_WRITABLE_M_TBL(module));
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
         module = METACLASS_OF(module);
     }
     RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
-    if (!RCLASS_CONST_TBL(module)) {
-        RCLASS_CONST_TBL(module) = rb_id_table_create(0);
+    if (RCLASS_WRITABLE_CONST_TBL(module)) {
+        RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
+    }
+    else {
+        RCLASS_WRITE_CONST_TBL(module, rb_id_table_create(0), false);
+        RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
     }
 
-    RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
-    RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
+    RCLASS_SET_CVC_TBL(klass, RCLASS_WRITABLE_CVC_TBL(module));
 
-    RCLASS_SET_SUPER(klass, super);
+    class_associate_super(klass, super, true);
     RBASIC_SET_CLASS(klass, module);
 
     return (VALUE)klass;
@@ -1179,7 +1790,7 @@ ensure_includable(VALUE klass, VALUE module)
 {
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
-    rb_module_set_initialized(module);
+    rb_class_set_initialized(module);
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
         rb_raise(rb_eArgError, "refinement module is not allowed");
     }
@@ -1197,15 +1808,9 @@ rb_include_module(VALUE klass, VALUE module)
         rb_raise(rb_eArgError, "cyclic include detected");
 
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
-        // skip the placeholder subclass entry at the head of the list
-        if (iclass) {
-            RUBY_ASSERT(!iclass->klass);
-            iclass = iclass->next;
-        }
-
-        int do_include = 1;
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
         while (iclass) {
+            int do_include = 1;
             VALUE check_class = iclass->klass;
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
@@ -1334,7 +1939,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 
         // setup T_ICLASS for the include/prepend module
         iclass = rb_include_class_new(module, super_class);
-        c = RCLASS_SET_SUPER(c, iclass);
+        c = rb_class_set_super(c, iclass);
         RCLASS_SET_INCLUDER(iclass, klass);
         if (module != RCLASS_ORIGIN(module)) {
             if (!origin_stack) origin_stack = rb_ary_hidden_new(2);
@@ -1343,8 +1948,8 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         }
         else if (origin_stack && (origin_len = RARRAY_LEN(origin_stack)) > 1 &&
                  RARRAY_AREF(origin_stack, origin_len - 1) == module) {
-            RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), iclass);
-            RICLASS_SET_ORIGIN_SHARED_MTBL(iclass);
+            RCLASS_WRITE_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), iclass);
+            RICLASS_WRITE_ORIGIN_SHARED_MTBL(iclass);
             rb_ary_resize(origin_stack, origin_len);
         }
 
@@ -1383,7 +1988,7 @@ move_refined_method(ID key, VALUE value, void *data)
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
         VALUE klass = (VALUE)data;
-        struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+        struct rb_id_table *tbl = RCLASS_WRITABLE_M_TBL(klass);
 
         if (me->def->body.refined.orig_me) {
             const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
@@ -1425,10 +2030,15 @@ ensure_origin(VALUE klass)
     if (origin == klass) {
         origin = class_alloc(T_ICLASS, klass);
         RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
-        RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
-        RCLASS_SET_SUPER(klass, origin);
-        RCLASS_SET_ORIGIN(klass, origin);
-        RCLASS_M_TBL_INIT(klass);
+        rb_class_set_super(origin, RCLASS_SUPER(klass));
+        rb_class_set_super(klass, origin); // writes origin into RCLASS_SUPER(klass)
+        RCLASS_WRITE_ORIGIN(klass, origin);
+
+        // RCLASS_WRITE_ORIGIN marks origin as an origin, so this is the first
+        // point that it sees M_TBL and may mark it
+        rb_gc_writebarrier_remember(origin);
+
+        class_clear_method_table(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
         return true;
@@ -1453,13 +2063,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         rb_vm_check_redefinition_by_prepend(klass);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
-        // skip the placeholder subclass entry at the head of the list if it exists
-        if (iclass) {
-            RUBY_ASSERT(!iclass->klass);
-            iclass = iclass->next;
-        }
-
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
@@ -1471,11 +2075,11 @@ rb_prepend_module(VALUE klass, VALUE module)
                 if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
                     rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
-                    RCLASS_M_TBL(subclass) = klass_m_tbl;
+                    RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
                     VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
-                    RCLASS_SET_SUPER(subclass, origin);
+                    rb_class_set_super(subclass, origin);
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
-                    RCLASS_SET_ORIGIN(subclass, origin);
+                    RCLASS_WRITE_ORIGIN(subclass, origin);
                     RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
                 }
                 include_modules_at(subclass, subclass, module, FALSE);
@@ -1551,7 +2155,7 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 
     Check_Type(mod2, T_MODULE);
     for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
-        if (BUILTIN_TYPE(p) == T_ICLASS && !FL_TEST(p, RICLASS_IS_ORIGIN)) {
+        if (BUILTIN_TYPE(p) == T_ICLASS && !RICLASS_IS_ORIGIN_P(p)) {
             if (METACLASS_OF(p) == mod2) return Qtrue;
         }
     }
@@ -2222,7 +2826,7 @@ rb_special_singleton_class(VALUE obj)
  *       consistency of the metaclass hierarchy.
  */
 static VALUE
-singleton_class_of(VALUE obj)
+singleton_class_of(VALUE obj, bool ensure_eigenclass)
 {
     VALUE klass;
 
@@ -2250,13 +2854,26 @@ singleton_class_of(VALUE obj)
         }
     }
 
-    klass = METACLASS_OF(obj);
-    if (!(RCLASS_SINGLETON_P(klass) &&
-          RCLASS_ATTACHED_OBJECT(klass) == obj)) {
-        klass = rb_make_metaclass(obj, klass);
+    bool needs_lock = rb_multi_ractor_p() && rb_ractor_shareable_p(obj);
+    unsigned int lev;
+    if (needs_lock) {
+        RB_VM_LOCK_ENTER_LEV(&lev);
     }
-
-    RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+    {
+        klass = METACLASS_OF(obj);
+        if (!(RCLASS_SINGLETON_P(klass) &&
+            RCLASS_ATTACHED_OBJECT(klass) == obj)) {
+            klass = rb_make_metaclass(obj, klass);
+        }
+        RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+        if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
+            /* ensures an exposed class belongs to its own eigenclass */
+            (void)ENSURE_EIGENCLASS(klass);
+        }
+    }
+    if (needs_lock) {
+        RB_VM_LOCK_LEAVE_LEV(&lev);
+    }
 
     return klass;
 }
@@ -2268,7 +2885,8 @@ rb_freeze_singleton_class(VALUE x)
     if (!RCLASS_SINGLETON_P(x)) {
         VALUE klass = RBASIC_CLASS(x);
         if (klass && // no class when hidden from ObjectSpace
-            FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
+            FL_TEST_RAW(klass, FL_SINGLETON) &&
+            !OBJ_FROZEN_RAW(klass)) {
             OBJ_FREEZE(klass);
         }
     }
@@ -2298,12 +2916,7 @@ rb_singleton_class_get(VALUE obj)
 VALUE
 rb_singleton_class(VALUE obj)
 {
-    VALUE klass = singleton_class_of(obj);
-
-    /* ensures an exposed class belongs to its own eigenclass */
-    if (RB_TYPE_P(obj, T_CLASS)) (void)ENSURE_EIGENCLASS(klass);
-
-    return klass;
+    return singleton_class_of(obj, true);
 }
 
 /*!
@@ -2321,7 +2934,7 @@ rb_singleton_class(VALUE obj)
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_define_method(singleton_class_of(obj), name, func, argc);
+    rb_define_method(singleton_class_of(obj, false), name, func, argc);
 }
 
 #ifdef rb_define_module_function

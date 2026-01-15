@@ -103,4 +103,4 @@ You may also run some code when an exception is not raised:
     # It will not return implicitly.
   end
 
-NB : Without explicit +return+ in the +ensure+ block, +begin+/+end+ block will return the last evaluated statement before entering in the `ensure` block.
+NB : Without explicit +return+ in the +ensure+ block, +begin+/+end+ block will return the last evaluated statement before entering in the +ensure+ block.

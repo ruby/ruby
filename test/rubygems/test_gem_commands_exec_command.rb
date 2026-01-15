@@ -215,7 +215,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
   end
 
   def test_gem_with_platform_and_platform_dependencies
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     spec_fetcher do |fetcher|
@@ -370,8 +370,11 @@ class TestGemCommandsExecCommand < Gem::TestCase
     util_clear_gems
 
     use_ui @ui do
-      @cmd.invoke "a:2"
-      assert_equal "a-2 foo\n", @ui.output
+      e = assert_raise Gem::MockGemUi::TermError do
+        @cmd.invoke "a:2"
+      end
+      assert_equal 1, e.exit_code
+      assert_equal "ERROR:  Ambiguous which executable from gem `a` should be run: the options are [\"bar\", \"foo\"], specify one via COMMAND, and use `-g` and `-v` to specify gem and version\n", @ui.error
     end
   end
 
@@ -493,7 +496,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal 2, e.exit_code
       assert_equal <<~ERR, @ui.error
         ERROR:  Could not find a valid gem 'a' (= 2) in any repository
-        ERROR:  Possible alternatives: a
       ERR
     end
   end
@@ -574,7 +576,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_include @ui.output, "a (= 2) not available locally"
       assert_equal <<~ERROR, @ui.error
         ERROR:  Could not find a valid gem 'a' (= 2) in any repository
-        ERROR:  Possible alternatives: a
       ERROR
     end
   end
@@ -769,8 +770,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         invoke "a"
       end
-      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" \
-                   "ERROR:  Possible alternatives: a\n", @ui.error
+      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n", @ui.error
       assert_empty @ui.output
       assert_empty @installed_specs
     end

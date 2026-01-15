@@ -18,24 +18,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
-          # Skip overwriting MATZBOT_GITHUB_TOKEN
+          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
-      - name: Check if C-sources are US-ASCII
+      - name: Check for code styles
         run: |
-          grep -r -n --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
-
-      - name: Check for trailing spaces
-        run: |
-          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
-          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
+          set -x
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA"
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        # Skip 'push' events because post_push.yml fixes them on push
+        if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
       - name: Check for bash specific substitution in configure.ac
         run: |
@@ -52,64 +53,73 @@ jobs:
           exit $fail
         working-directory: include
 
-      - id: gems
-        run: true
-        if: ${{ github.ref == 'refs/heads/master' }}
-
-      - name: Download previous gems list
+      - id: now
         run: |
-          data=default_gems.json
-          mkdir -p .downloaded-cache
-          ln -s .downloaded-cache/$data .
-          curl -O -R -z ./$data https://stdgems.org/$data
-        if: ${{ steps.gems.outcome == 'success' }}
-
-      - name: Make default gems list
-        run: |
-          #!ruby
-          require 'rubygems'
-          $:.unshift "lib"
-          rgver = File.foreach("lib/rubygems.rb") do |line|
-            break $1 if /^\s*VERSION\s*=\s*"([^"]+)"/ =~ line
-          end
-          gems = Dir.glob("{ext,lib}/**/*.gemspec").map do |f|
-            spec = Gem::Specification.load(f)
-            "#{spec.name} #{spec.version}"
-          end.sort
-          File.open("gems/default_gems", "w") do |f|
-            f.puts "RubyGems #{rgver}"
-            f.puts gems
-          end
-        shell: ruby --disable=gems {0}
-        if: ${{ steps.gems.outcome == 'success' }}
-
-      - name: Maintain updated gems list in NEWS
-        run: |
-          ruby tool/update-NEWS-gemlist.rb default
-        if: ${{ steps.gems.outcome == 'success' }}
-
-      - name: Check diffs
-        id: diff
-        run: |
-          git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md ||
-          echo update=true >> $GITHUB_OUTPUT
-        if: ${{ steps.gems.outcome == 'success' }}
-
-      - name: Commit
-        run: |
-          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          git commit --message="Update default gems list at ${GITHUB_SHA:0:30} [ci skip]" NEWS.md
-          git push origin ${GITHUB_REF#refs/heads/}
+          date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
         env:
-          EMAIL: svn-admin@ruby-lang.org
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
+          TZ: Tokyo/Asia
+
+      - id: deprecation
+        run: |
+          eval $(sed -n 's/^#define RUBY_API_VERSION_\(MAJOR\|MINOR\) /\1=/p' include/ruby/version.h)
+          if git --no-pager grep --color -o 'rb_warn_deprecated_to_remove_at('$MAJOR'\.'$MINOR',.*' -- '*.c' >&2; then
+              false
+          else
+              true
+          fi
+        continue-on-error: ${{ steps.now.outputs.mon < 12 }}
+
+      - name: Check if to generate documents
+        id: rdoc
+        run: |
+          set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
+          { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
+          echo RDOC='ruby -W0 --disable-gems tool/rdoc-srcdir -q' >> $GITHUB_ENV
+
+      - name: Checkout rdoc
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: ruby/rdoc
+          ref: ${{ steps.rdoc.outputs.ref }}
+          path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Generate rdoc
+        run: |
+          set -x
+          gempath=$(ruby -e 'print Gem.user_dir, "/bin"')
+          PATH=$gempath:$PATH
+          gem install --user bundler
+          bundle config --local path vendor/bundle
+          bundle install --jobs 4
+          bundle exec rake generate
+        working-directory: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Core docs coverage
+        run: |
+          $RDOC -C -x ^ext -x ^lib .
+
+      - name: Generate docs
+        id: docs
+        run: |
+          $RDOC --op html .
+          echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+        # Generate only when document commit/PR
         if: >-
-          ${{
-          github.repository == 'ruby/ruby' &&
-          !startsWith(github.event_name, 'pull') &&
-          steps.diff.outputs.update
+          ${{false
+          || contains(github.event.head_commit.message, '[ruby/rdoc]')
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
           }}
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          path: html
+          name: ${{ steps.docs.outputs.htmlout }}
+        if: ${{ steps.docs.outcome == 'success' }}
 
       - uses: ./.github/actions/slack
         with:

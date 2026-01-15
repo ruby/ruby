@@ -128,6 +128,7 @@ fcntl.o: $(hdrdir)/ruby/internal/intern/re.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/ruby.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/select.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+fcntl.o: $(hdrdir)/ruby/internal/intern/set.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/signal.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/string.h

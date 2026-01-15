@@ -168,9 +168,7 @@ ruby_debug_breakpoint(void)
 }
 
 #if defined _WIN32
-# if RUBY_MSVCRT_VERSION >= 80
 extern int ruby_w32_rtc_error;
-# endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
@@ -233,9 +231,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     SET_WHEN("ci", ruby_on_ci, 1);
     SET_WHEN_UINT("rgengc", &ruby_rgengc_debug, 1, ruby_rgengc_debug = 1);
 #if defined _WIN32
-# if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
-# endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     SET_WHEN_UINT("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage),
@@ -712,4 +708,22 @@ ruby_debug_log_dump(const char *fname, unsigned int n)
         fclose(fp);
     }
 }
+
+#else
+
+#undef ruby_debug_log
+void
+ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
+{
+    va_list args;
+
+    fprintf(stderr, "[%s:%d] %s: ", file, line, func_name);
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+
+    fprintf(stderr, "\n");
+}
+
 #endif // #if USE_RUBY_DEBUG_LOG

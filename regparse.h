@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,8 +69,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define NTYPE(node)             ((node)->u.base.type)
 #define SET_NTYPE(node, ntype) \
     do { \
-	int value = ntype; \
-	memcpy(&((node)->u.base.type), &value, sizeof(int)); \
+        int value = ntype; \
+        memcpy(&((node)->u.base.type), &value, sizeof(int)); \
     } while (0)
 
 #define NSTR(node)         (&((node)->u.str))

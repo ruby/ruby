@@ -56,7 +56,9 @@ static VALUE sGroup;
 #endif
 RUBY_EXTERN char *getlogin(void);
 
-#define RUBY_ETC_VERSION "1.4.3"
+#define RUBY_ETC_VERSION "1.4.6"
+
+#define SYMBOL_LIT(str) ID2SYM(rb_intern_const(str ""))
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);
@@ -691,6 +693,16 @@ etc_getgrent(VALUE obj)
 VALUE rb_w32_special_folder(int type);
 UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+#elif defined(LOAD_RELATIVE)
+static inline VALUE
+rbconfig(void)
+{
+    VALUE config;
+    rb_require("rbconfig");
+    config = rb_const_get(rb_path2class("RbConfig"), rb_intern_const("CONFIG"));
+    Check_Type(config, T_HASH);
+    return config;
+}
 #endif
 
 /* call-seq:
@@ -710,6 +722,8 @@ etc_sysconfdir(VALUE obj)
 {
 #ifdef _WIN32
     return rb_w32_special_folder(CSIDL_COMMON_APPDATA);
+#elif defined(LOAD_RELATIVE)
+    return rb_hash_aref(rbconfig(), rb_str_new_lit("sysconfdir"));
 #else
     return rb_filesystem_str_new_cstr(SYSCONFDIR);
 #endif
@@ -811,18 +825,14 @@ etc_uname(VALUE obj)
 	sysname = "Windows";
 	break;
     }
-    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(sysname));
+    rb_hash_aset(result, SYMBOL_LIT("sysname"), rb_str_new_cstr(sysname));
     release = rb_sprintf("%lu.%lu.%lu", v.dwMajorVersion, v.dwMinorVersion, v.dwBuildNumber);
-    rb_hash_aset(result, ID2SYM(rb_intern("release")), release);
+    rb_hash_aset(result, SYMBOL_LIT("release"), release);
     version = rb_sprintf("%s Version %"PRIsVALUE": %"PRIsVALUE, sysname, release,
 			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
-    rb_hash_aset(result, ID2SYM(rb_intern("version")), version);
+    rb_hash_aset(result, SYMBOL_LIT("version"), version);
 
-# if defined _MSC_VER && _MSC_VER < 1300
-#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameW(ptr, plen)
-# else
 #   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, plen)
-# endif
     GET_COMPUTER_NAME(NULL, &len);
     buf = ALLOCV_N(WCHAR, vbuf, len);
     if (GET_COMPUTER_NAME(buf, &len)) {
@@ -830,7 +840,7 @@ etc_uname(VALUE obj)
     }
     ALLOCV_END(vbuf);
     if (NIL_P(nodename)) nodename = rb_str_new(0, 0);
-    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), nodename);
+    rb_hash_aset(result, SYMBOL_LIT("nodename"), nodename);
 
 # ifndef PROCESSOR_ARCHITECTURE_AMD64
 #   define PROCESSOR_ARCHITECTURE_AMD64 9
@@ -854,7 +864,7 @@ etc_uname(VALUE obj)
 	break;
     }
 
-    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(mach));
+    rb_hash_aset(result, SYMBOL_LIT("machine"), rb_str_new_cstr(mach));
 #else
     struct utsname u;
     int ret;
@@ -865,11 +875,11 @@ etc_uname(VALUE obj)
         rb_sys_fail("uname");
 
     result = rb_hash_new();
-    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(u.sysname));
-    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), rb_str_new_cstr(u.nodename));
-    rb_hash_aset(result, ID2SYM(rb_intern("release")), rb_str_new_cstr(u.release));
-    rb_hash_aset(result, ID2SYM(rb_intern("version")), rb_str_new_cstr(u.version));
-    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(u.machine));
+    rb_hash_aset(result, SYMBOL_LIT("sysname"), rb_str_new_cstr(u.sysname));
+    rb_hash_aset(result, SYMBOL_LIT("nodename"), rb_str_new_cstr(u.nodename));
+    rb_hash_aset(result, SYMBOL_LIT("release"), rb_str_new_cstr(u.release));
+    rb_hash_aset(result, SYMBOL_LIT("version"), rb_str_new_cstr(u.version));
+    rb_hash_aset(result, SYMBOL_LIT("machine"), rb_str_new_cstr(u.machine));
 #endif
 
     return result;
@@ -1149,14 +1159,26 @@ Init_etc(void)
 {
     VALUE mEtc;
 
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-    RB_EXT_RACTOR_SAFE(true);
-#endif
     mEtc = rb_define_module("Etc");
     /* The version */
     rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
 
+    /* Ractor-safe methods */
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
+    rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
+    rb_define_module_function(mEtc, "uname", etc_uname, 0);
+    rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
+    rb_define_module_function(mEtc, "confstr", etc_confstr, 1);
+    rb_define_method(rb_cIO, "pathconf", io_pathconf, 1);
+    rb_define_module_function(mEtc, "nprocessors", etc_nprocessors, 0);
+
+    /* Non-Ractor-safe methods, see https://bugs.ruby-lang.org/issues/21115 */
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(false);
+#endif
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
 
     rb_define_module_function(mEtc, "getpwuid", etc_getpwuid, -1);
@@ -1172,13 +1194,9 @@ Init_etc(void)
     rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);
     rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
+
+    /* Uses RbConfig::CONFIG so does not work in a Ractor */
     rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
-    rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
-    rb_define_module_function(mEtc, "uname", etc_uname, 0);
-    rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
-    rb_define_module_function(mEtc, "confstr", etc_confstr, 1);
-    rb_define_method(rb_cIO, "pathconf", io_pathconf, 1);
-    rb_define_module_function(mEtc, "nprocessors", etc_nprocessors, 0);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",
@@ -1288,5 +1306,9 @@ Init_etc(void)
 #endif
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
+#endif
+
+#if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
+    (void)safe_setup_str;
 #endif
 }

@@ -11,7 +11,6 @@
 #define _OSSL_BN_H_
 
 extern VALUE cBN;
-extern VALUE eBNError;
 
 BN_CTX *ossl_bn_ctx_get(void);
 #define ossl_bn_ctx ossl_bn_ctx_get()

@@ -193,6 +193,7 @@ fn test_mov() {
     check_bytes("48c7470801000000", |cb| mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)));
     //check_bytes("67c7400411000000", |cb| mov(cb, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
     check_bytes("c7400411000000", |cb| mov(cb, mem_opnd(32, RAX, 4), imm_opnd(17)));
+    check_bytes("c7400401000080", |cb| mov(cb, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
     check_bytes("41895814", |cb| mov(cb, mem_opnd(32, R8, 20), EBX));
     check_bytes("4d8913", |cb| mov(cb, mem_opnd(64, R11, 0), R10));
     check_bytes("48c742f8f4ffffff", |cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));

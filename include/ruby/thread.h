@@ -59,6 +59,19 @@
  */
 #define RB_NOGVL_UBF_ASYNC_SAFE  (0x2)
 
+/**
+ * Passing  this  flag   to  rb_nogvl()  indicates  that  the   passed function
+ * is safe to offload to a background thread or work pool. In other words, the
+ * function is safe to run using a fiber scheduler's `blocking_operation_wait`.
+ * hook.
+ *
+ * If your function depends on thread-local storage, or thread-specific data
+ * operations/data structures, you should not set this flag, as
+ * these operations may behave differently (or fail) when run in a different
+ * thread/context (e.g. unlocking a mutex).
+ */
+#define RB_NOGVL_OFFLOAD_SAFE  (0x4)
+
 /** @} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -319,6 +332,13 @@ void *rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_speci
  * This function is async signal safe and thread safe.
  */
 void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data);
+
+/**
+ * Whether the current thread is holding the GVL.
+ *
+ * @return true if the current thread is holding the GVL, false otherwise.
+ */
+int ruby_thread_has_gvl_p(void);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

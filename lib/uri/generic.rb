@@ -73,7 +73,7 @@ module URI
     #
     # At first, tries to create a new URI::Generic instance using
     # URI::Generic::build. But, if exception URI::InvalidComponentError is raised,
-    # then it does URI::Escape.escape all URI components and tries again.
+    # then it does URI::RFC2396_PARSER.escape all URI components and tries again.
     #
     def self.build2(args)
       begin
@@ -126,9 +126,9 @@ module URI
           end
         end
       else
-        component = self.class.component rescue ::URI::Generic::COMPONENT
+        component = self.component rescue ::URI::Generic::COMPONENT
         raise ArgumentError,
-        "expected Array of or Hash of components of #{self.class} (#{component.join(', ')})"
+              "expected Array of or Hash of components of #{self} (#{component.join(', ')})"
       end
 
       tmp << nil
@@ -186,18 +186,18 @@ module URI
 
       if arg_check
         self.scheme = scheme
-        self.userinfo = userinfo
         self.hostname = host
         self.port = port
+        self.userinfo = userinfo
         self.path = path
         self.query = query
         self.opaque = opaque
         self.fragment = fragment
       else
         self.set_scheme(scheme)
-        self.set_userinfo(userinfo)
         self.set_host(host)
         self.set_port(port)
+        self.set_userinfo(userinfo)
         self.set_path(path)
         self.query = query
         self.set_opaque(opaque)
@@ -284,7 +284,7 @@ module URI
 
     # Returns the parser to be used.
     #
-    # Unless a URI::Parser is defined, DEFAULT_PARSER is used.
+    # Unless the +parser+ is defined, DEFAULT_PARSER is used.
     #
     def parser
       if !defined?(@parser) || !@parser
@@ -315,7 +315,7 @@ module URI
     end
 
     #
-    # Checks the scheme +v+ component against the URI::Parser Regexp for :SCHEME.
+    # Checks the scheme +v+ component against the +parser+ Regexp for :SCHEME.
     #
     def check_scheme(v)
       if v && parser.regexp[:SCHEME] !~ v
@@ -385,7 +385,7 @@ module URI
 
     #
     # Checks the user +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -409,7 +409,7 @@ module URI
 
     #
     # Checks the password +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -466,7 +466,7 @@ module URI
     #
     #   uri = URI.parse("http://john:S3nsit1ve@my.example.com")
     #   uri.user = "sam"
-    #   uri.to_s  #=> "http://sam:V3ry_S3nsit1ve@my.example.com"
+    #   uri.to_s  #=> "http://sam@my.example.com"
     #
     def user=(user)
       check_user(user)
@@ -511,7 +511,7 @@ module URI
         user, password = split_userinfo(user)
       end
       @user     = user
-      @password = password if password
+      @password = password
 
       [@user, @password]
     end
@@ -522,7 +522,7 @@ module URI
     # See also URI::Generic.user=.
     #
     def set_user(v)
-      set_userinfo(v, @password)
+      set_userinfo(v, nil)
       v
     end
     protected :set_user
@@ -574,6 +574,12 @@ module URI
       @password
     end
 
+    # Returns the authority info (array of user, password, host and
+    # port), if any is set.  Or returns +nil+.
+    def authority
+      return @user, @password, @host, @port if @user || @password || @host || @port
+    end
+
     # Returns the user component after URI decoding.
     def decoded_user
       URI.decode_uri_component(@user) if @user
@@ -586,7 +592,7 @@ module URI
 
     #
     # Checks the host +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :HOST.
+    # and against the +parser+ Regexp for :HOST.
     #
     # Can not have a registry or opaque component defined,
     # with a host component defined.
@@ -615,6 +621,13 @@ module URI
     end
     protected :set_host
 
+    # Protected setter for the authority info (+user+, +password+, +host+
+    # and +port+).  If +port+ is +nil+, +default_port+ will be set.
+    #
+    protected def set_authority(user, password, host, port = nil)
+      @user, @password, @host, @port = user, password, host, port || self.default_port
+    end
+
     #
     # == Args
     #
@@ -639,6 +652,7 @@ module URI
     def host=(v)
       check_host(v)
       set_host(v)
+      set_userinfo(nil)
       v
     end
 
@@ -675,7 +689,7 @@ module URI
 
     #
     # Checks the port +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :PORT.
+    # and against the +parser+ Regexp for :PORT.
     #
     # Can not have a registry or opaque component defined,
     # with a port component defined.
@@ -729,6 +743,7 @@ module URI
     def port=(v)
       check_port(v)
       set_port(v)
+      set_userinfo(nil)
       port
     end
 
@@ -737,18 +752,18 @@ module URI
     end
     private :check_registry
 
-    def set_registry(v) #:nodoc:
+    def set_registry(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
     protected :set_registry
 
-    def registry=(v)
+    def registry=(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
 
     #
     # Checks the path +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp
+    # and against the +parser+ Regexp
     # for :ABS_PATH and :REL_PATH.
     #
     # Can not have a opaque component defined,
@@ -853,7 +868,7 @@ module URI
 
     #
     # Checks the opaque +v+ component for RFC2396 compliance and
-    # against the URI::Parser Regexp for :OPAQUE.
+    # against the +parser+ Regexp for :OPAQUE.
     #
     # Can not have a host, port, user, or path component defined,
     # with an opaque component defined.
@@ -905,7 +920,7 @@ module URI
     end
 
     #
-    # Checks the fragment +v+ component against the URI::Parser Regexp for :FRAGMENT.
+    # Checks the fragment +v+ component against the +parser+ Regexp for :FRAGMENT.
     #
     #
     # == Args
@@ -1121,7 +1136,7 @@ module URI
 
       base = self.dup
 
-      authority = rel.userinfo || rel.host || rel.port
+      authority = rel.authority
 
       # RFC2396, Section 5.2, 2)
       if (rel.path.nil? || rel.path.empty?) && !authority && !rel.query
@@ -1133,17 +1148,14 @@ module URI
       base.fragment=(nil)
 
       # RFC2396, Section 5.2, 4)
-      if !authority
-        base.set_path(merge_path(base.path, rel.path)) if base.path && rel.path
-      else
-        # RFC2396, Section 5.2, 4)
-        base.set_path(rel.path) if rel.path
+      if authority
+        base.set_authority(*authority)
+        base.set_path(rel.path)
+      elsif base.path && rel.path
+        base.set_path(merge_path(base.path, rel.path))
       end
 
       # RFC2396, Section 5.2, 7)
-      base.set_userinfo(rel.userinfo) if rel.userinfo
-      base.set_host(rel.host)         if rel.host
-      base.set_port(rel.port)         if rel.port
       base.query = rel.query       if rel.query
       base.fragment=(rel.fragment) if rel.fragment
 
@@ -1392,10 +1404,12 @@ module URI
       end
     end
 
+    # Returns the hash value.
     def hash
       self.component_ary.hash
     end
 
+    # Compares with _oth_ for Hash.
     def eql?(oth)
       self.class == oth.class &&
       parser == oth.parser &&
@@ -1438,7 +1452,7 @@ module URI
       end
     end
 
-    def inspect
+    def inspect # :nodoc:
       "#<#{self.class} #{self}>"
     end
 
@@ -1526,7 +1540,7 @@ module URI
         else
           unless proxy_uri = env[name]
             if proxy_uri = env[name.upcase]
-              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+              warn 'The environment variable HTTP_PROXY is discouraged.  Please use http_proxy instead.', uplevel: 1
             end
           end
         end

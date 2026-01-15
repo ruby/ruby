@@ -68,7 +68,7 @@ RSpec.describe "Bundler.load" do
       begin
         expect { Bundler.load }.to raise_error(Bundler::GemfileNotFound)
       ensure
-        bundler_gemfile.rmtree if @remove_bundler_gemfile
+        FileUtils.rm_rf bundler_gemfile if @remove_bundler_gemfile
       end
     end
   end

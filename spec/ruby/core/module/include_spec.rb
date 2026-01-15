@@ -44,35 +44,23 @@ describe "Module#include" do
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    -> { ModuleSpecs::SubclassSpec.include(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    class ModuleSpecs::SubclassSpec::AClass
+    end
+    -> { ModuleSpecs::SubclassSpec::AClass.include(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+  ensure
+    ModuleSpecs::SubclassSpec.send(:remove_const, :AClass)
   end
 
-  ruby_version_is ""..."3.2" do
-    it "raises ArgumentError when the argument is a refinement" do
-      refinement = nil
+  it "raises a TypeError when the argument is a refinement" do
+    refinement = nil
 
-      Module.new do
-        refine String do
-          refinement = self
-        end
+    Module.new do
+      refine String do
+        refinement = self
       end
-
-      -> { ModuleSpecs::Basic.include(refinement) }.should raise_error(ArgumentError, "refinement module is not allowed")
     end
-  end
 
-  ruby_version_is "3.2" do
-    it "raises a TypeError when the argument is a refinement" do
-      refinement = nil
-
-      Module.new do
-        refine String do
-          refinement = self
-        end
-      end
-
-      -> { ModuleSpecs::Basic.include(refinement) }.should raise_error(TypeError, "Cannot include refinement")
-    end
+    -> { ModuleSpecs::Basic.include(refinement) }.should raise_error(TypeError, "Cannot include refinement")
   end
 
   it "imports constants to modules and classes" do
@@ -427,6 +415,8 @@ describe "Module#include" do
       M.const_set(:FOO, 'm')
       B.foo.should == 'm'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdated)
   end
 
   it "updates the constant when a module included after a call is later updated" do
@@ -453,6 +443,8 @@ describe "Module#include" do
       M.const_set(:FOO, 'm')
       B.foo.should == 'm'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstLaterUpdated)
   end
 
   it "updates the constant when a module included in another module after a call is later updated" do
@@ -479,6 +471,8 @@ describe "Module#include" do
       M.const_set(:FOO, 'm')
       B.foo.should == 'm'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstModuleLaterUpdated)
   end
 
   it "updates the constant when a nested included module is updated" do
@@ -507,6 +501,8 @@ describe "Module#include" do
       N.const_set(:FOO, 'n')
       B.foo.should == 'n'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedNestedIncludeUpdated)
   end
 
   it "updates the constant when a new module is included" do
@@ -531,6 +527,8 @@ describe "Module#include" do
       B.include(M)
       B.foo.should == 'm'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedNewInclude)
   end
 
   it "updates the constant when a new module with nested module is included" do
@@ -559,6 +557,8 @@ describe "Module#include" do
       B.include M
       B.foo.should == 'n'
     end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedNestedIncluded)
   end
 
   it "overrides a previous super method call" do
@@ -580,6 +580,29 @@ describe "Module#include" do
     end
     c2.include(m)
     c2.new.foo.should == [:c2, :m1]
+  end
+
+  it "update a module when a nested module is updated and includes a module on its own" do
+    m1 = Module.new
+    m2 = Module.new do
+      def m2; [:m2]; end
+    end
+    m3 = Module.new do
+      def m3; [:m3]; end
+    end
+    m4 = Module.new do
+      def m4; [:m4]; end
+    end
+    c = Class.new
+
+    c.include(m1)
+    m1.include(m2)
+    m2.include(m3)
+    m3.include(m4)
+
+    c.new.m2.should == [:m2]
+    c.new.m3.should == [:m3]
+    c.new.m4.should == [:m4]
   end
 end
 

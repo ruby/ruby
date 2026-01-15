@@ -23,15 +23,12 @@ module Bundler
           if previous_source.nil?
             requirements[indirect_dependency_name] = source
           else
-            no_ambiguous_sources = Bundler.feature_flag.bundler_3_mode?
-
             msg = ["The gem '#{indirect_dependency_name}' was found in multiple relevant sources."]
             msg.concat [previous_source, source].map {|s| "  * #{s}" }.sort
-            msg << "You #{no_ambiguous_sources ? :must : :should} add this gem to the source block for the source you wish it to be installed from."
+            msg << "You must add this gem to the source block for the source you wish it to be installed from."
             msg = msg.join("\n")
 
-            raise SecurityError, msg if no_ambiguous_sources
-            Bundler.ui.warn "Warning: #{msg}"
+            raise SecurityError, msg
           end
         end
 

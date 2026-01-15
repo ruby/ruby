@@ -24,25 +24,21 @@ module OpenSSL::Buffering
 
   # A buffer which will retain binary encoding.
   class Buffer < String
-    BINARY = Encoding::BINARY
+    unless String.method_defined?(:append_as_bytes)
+      alias_method :_append, :<<
+      def append_as_bytes(string)
+        if string.encoding == Encoding::BINARY
+          _append(string)
+        else
+          _append(string.b)
+        end
 
-    def initialize
-      super
-
-      force_encoding(BINARY)
-    end
-
-    def << string
-      if string.encoding == BINARY
-        super(string)
-      else
-        super(string.b)
+        self
       end
-
-      return self
     end
 
-    alias concat <<
+    undef_method :concat
+    undef_method :<<
   end
 
   ##
@@ -77,7 +73,7 @@ module OpenSSL::Buffering
 
   def fill_rbuff
     begin
-      @rbuffer << self.sysread(BLOCK_SIZE)
+      @rbuffer.append_as_bytes(self.sysread(BLOCK_SIZE))
     rescue Errno::EAGAIN
       retry
     rescue EOFError
@@ -352,22 +348,32 @@ module OpenSSL::Buffering
 
   def do_write(s)
     @wbuffer = Buffer.new unless defined? @wbuffer
-    @wbuffer << s
-    @wbuffer.force_encoding(Encoding::BINARY)
+    @wbuffer.append_as_bytes(s)
+
     @sync ||= false
-    buffer_size = @wbuffer.size
+    buffer_size = @wbuffer.bytesize
     if @sync or buffer_size > BLOCK_SIZE
       nwrote = 0
       begin
         while nwrote < buffer_size do
           begin
-            nwrote += syswrite(@wbuffer[nwrote, buffer_size - nwrote])
+            chunk = if nwrote > 0
+              @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
+            else
+              @wbuffer
+            end
+
+            nwrote += syswrite(chunk)
           rescue Errno::EAGAIN
             retry
           end
         end
       ensure
-        @wbuffer[0, nwrote] = ""
+        if nwrote < @wbuffer.bytesize
+          @wbuffer[0, nwrote] = ""
+        else
+          @wbuffer.clear
+        end
       end
     end
   end
@@ -444,10 +450,10 @@ module OpenSSL::Buffering
   def puts(*args)
     s = Buffer.new
     if args.empty?
-      s << "\n"
+      s.append_as_bytes("\n")
     end
     args.each{|arg|
-      s << arg.to_s
+      s.append_as_bytes(arg.to_s)
       s.sub!(/(?<!\n)\z/, "\n")
     }
     do_write(s)
@@ -461,7 +467,7 @@ module OpenSSL::Buffering
 
   def print(*args)
     s = Buffer.new
-    args.each{ |arg| s << arg.to_s }
+    args.each{ |arg| s.append_as_bytes(arg.to_s) }
     do_write(s)
     nil
   end

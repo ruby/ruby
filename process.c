@@ -110,11 +110,11 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
-#include "rjit.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ruby/ractor.h"
@@ -875,109 +875,6 @@ pst_equal(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *    stat & mask -> integer
- *
- *  This method is deprecated as #to_i value is system-specific; use
- *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
- *  or #stopsig.
- *
- *  Returns the logical AND of the value of #to_i with +mask+:
- *
- *    `cat /nop`
- *    stat = $?                 # => #<Process::Status: pid 1155508 exit 1>
- *    sprintf('%x', stat.to_i)  # => "100"
- *    stat & 0x00               # => 0
- *
- *  ArgumentError is raised if +mask+ is negative.
- */
-
-static VALUE
-pst_bitand(VALUE st1, VALUE st2)
-{
-    int status = PST2INT(st1);
-    int mask = NUM2INT(st2);
-
-    if (mask < 0) {
-        rb_raise(rb_eArgError, "negative mask value: %d", mask);
-    }
-#define WARN_SUGGEST(suggest) \
-    rb_warn_deprecated_to_remove_at(3.5, "Process::Status#&", suggest)
-
-    switch (mask) {
-      case 0x80:
-        WARN_SUGGEST("Process::Status#coredump?");
-        break;
-      case 0x7f:
-        WARN_SUGGEST("Process::Status#signaled? or Process::Status#termsig");
-        break;
-      case 0xff:
-        WARN_SUGGEST("Process::Status#exited?, Process::Status#stopped? or Process::Status#coredump?");
-        break;
-      case 0xff00:
-        WARN_SUGGEST("Process::Status#exitstatus or Process::Status#stopsig");
-        break;
-      default:
-        WARN_SUGGEST("other Process::Status predicates");
-        break;
-    }
-#undef WARN_SUGGEST
-    status &= mask;
-
-    return INT2NUM(status);
-}
-
-
-/*
- *  call-seq:
- *    stat >> places -> integer
- *
- *  This method is deprecated as #to_i value is system-specific; use
- *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
- *  or #stopsig.
- *
- *  Returns the value of #to_i, shifted +places+ to the right:
- *
- *     `cat /nop`
- *     stat = $?                 # => #<Process::Status: pid 1155508 exit 1>
- *     stat.to_i                 # => 256
- *     stat >> 1                 # => 128
- *     stat >> 2                 # => 64
- *
- *  ArgumentError is raised if +places+ is negative.
- */
-
-static VALUE
-pst_rshift(VALUE st1, VALUE st2)
-{
-    int status = PST2INT(st1);
-    int places = NUM2INT(st2);
-
-    if (places < 0) {
-        rb_raise(rb_eArgError, "negative shift value: %d", places);
-    }
-#define WARN_SUGGEST(suggest) \
-    rb_warn_deprecated_to_remove_at(3.5, "Process::Status#>>", suggest)
-
-    switch (places) {
-      case 7:
-        WARN_SUGGEST("Process::Status#coredump?");
-        break;
-      case 8:
-        WARN_SUGGEST("Process::Status#exitstatus or Process::Status#stopsig");
-        break;
-      default:
-        WARN_SUGGEST("other Process::Status attributes");
-        break;
-    }
-#undef WARN_SUGGEST
-    status >>= places;
-
-    return INT2NUM(status);
-}
-
-
-/*
- *  call-seq:
  *    stopped? -> true or false
  *
  *  Returns +true+ if this process is stopped,
@@ -1200,8 +1097,10 @@ rb_process_status_wait(rb_pid_t pid, int flags)
     // We only enter the scheduler if we are "blocking":
     if (!(flags & WNOHANG)) {
         VALUE scheduler = rb_fiber_scheduler_current();
-        VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
-        if (!UNDEF_P(result)) return result;
+        if (scheduler != Qnil) {
+            VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
+            if (!UNDEF_P(result)) return result;
+        }
     }
 
     struct waitpid_state waitpid_state;
@@ -1677,11 +1576,14 @@ static void
 before_fork_ruby(void)
 {
     before_exec();
+    rb_gc_before_fork();
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
+    rb_gc_after_fork(pid);
+
     if (pid == 0) {
         // child
         clear_pid_cache();
@@ -2733,7 +2635,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         }
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
         eargp->invoke.cmd.argv_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(argv_str);
+            rb_imemo_tmpbuf_new_from_an_RString(argv_str);
     }
     RB_GC_GUARD(execarg_obj);
 }
@@ -2824,7 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
+    VALUE tmpbuf = rb_imemo_tmpbuf_new();
     rb_imemo_tmpbuf_set_ptr(tmpbuf, ruby_xmalloc(run_exec_dup2_tmpbuf_size(len)));
     eargp->dup2_tmpbuf = tmpbuf;
 }
@@ -2928,7 +2830,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         p = NULL;
         rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
         eargp->envp_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(envp_str);
+            rb_imemo_tmpbuf_new_from_an_RString(envp_str);
         eargp->envp_buf = envp_buf;
 
         /*
@@ -3055,7 +2957,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The new process is created using the
  *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
@@ -3363,6 +3265,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
             //   in #assert_close_on_exec because the FD_CLOEXEC is not dup'd by default
             if (fd_get_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen)) {
                 if (fd_set_cloexec(extra_fd, errmsg, errmsg_buflen)) {
+                    close(extra_fd);
                     goto fail;
                 }
             }
@@ -4108,7 +4011,10 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-#ifdef HAVE_WORKING_VFORK
+
+        // Older versions of ASAN does not work with vfork
+        // See https://github.com/google/sanitizers/issues/925
+#if defined(HAVE_WORKING_VFORK) && !defined(RUBY_ASAN_ENABLED)
         if (!has_privilege())
             pid = vfork();
         else
@@ -4196,7 +4102,7 @@ fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, si
  * The "async_signal_safe" name is a lie, but it is used by pty.c and
  * maybe other exts.  fork() is not async-signal-safe due to pthread_atfork
  * and future POSIX revisions will remove it from a list of signal-safe
- * functions.  rb_waitpid is not async-signal-safe since RJIT, either.
+ * functions.  rb_waitpid is not async-signal-safe.
  * For our purposes, we do not need async-signal-safety, here
  */
 rb_pid_t
@@ -4218,9 +4124,13 @@ rb_fork_async_signal_safe(int *status,
 rb_pid_t
 rb_fork_ruby(int *status)
 {
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorIsolationError, "can not fork from non-main Ractors");
+    }
+
     struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
-    int try_gc = 1, err;
+    int try_gc = 1, err = 0;
     struct child_handler_disabler_state old;
 
     do {
@@ -4230,8 +4140,10 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        child.pid = pid = rb_fork();
-        child.error = err = errno;
+        RB_VM_LOCKING() {
+            child.pid = pid = rb_fork();
+            child.error = err = errno;
+        }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (
@@ -4730,7 +4642,7 @@ rb_spawn(int argc, const VALUE *argv)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns:
  *
@@ -4910,7 +4822,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns the process ID (pid) of the new process,
  *  without waiting for it to complete.
@@ -6011,7 +5923,7 @@ rb_getpwdiruid(void)
  *  The Process::Sys module contains UID and GID
  *  functions which provide direct bindings to the system calls of the
  *  same names instead of the more-portable versions of the same
- *  functionality found in the Process,
+ *  functionality found in the +Process+,
  *  Process::UID, and Process::GID modules.
  */
 
@@ -8318,7 +8230,7 @@ ruby_real_ms_time(void)
  *  - +:microsecond+: Number of microseconds as an integer.
  *  - +:millisecond+: Number of milliseconds as an integer.
  *  - +:nanosecond+: Number of nanoseconds as an integer.
- *  - +::second+: Number of seconds as an integer.
+ *  - +:second+: Number of seconds as an integer.
  *
  *  Examples:
  *
@@ -8850,19 +8762,19 @@ static VALUE rb_mProcID_Syscall;
 static VALUE
 proc_warmup(VALUE _)
 {
-    RB_VM_LOCK_ENTER();
-    rb_gc_prepare_heap();
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        rb_gc_prepare_heap();
+    }
     return Qtrue;
 }
 
 /*
  * Document-module: Process
  *
- * \Module +Process+ represents a process in the underlying operating system.
+ * Module +Process+ represents a process in the underlying operating system.
  * Its methods support management of the current process and its child processes.
  *
- * == \Process Creation
+ * == Process Creation
  *
  * Each of the following methods executes a given command in a new process or subshell,
  * or multiple commands in new processes and/or subshells.
@@ -8875,11 +8787,11 @@ proc_warmup(VALUE _)
  *
  * In addition:
  *
- * - \Method Kernel#system executes a given command-line (string) in a subshell;
+ * - Method Kernel#system executes a given command-line (string) in a subshell;
  *   returns +true+, +false+, or +nil+.
- * - \Method Kernel#` executes a given command-line (string) in a subshell;
+ * - Method Kernel#` executes a given command-line (string) in a subshell;
  *   returns its $stdout string.
- * - \Module Open3 supports creating child processes
+ * - Module Open3 supports creating child processes
  *   with access to their $stdin, $stdout, and $stderr streams.
  *
  * === Execution Environment
@@ -9109,7 +9021,7 @@ proc_warmup(VALUE _)
  *
  *   0644
  *
- * ==== \Process Groups (+:pgroup+ and +:new_pgroup+)
+ * ==== Process Groups (+:pgroup+ and +:new_pgroup+)
  *
  * By default, the new process belongs to the same
  * {process group}[https://en.wikipedia.org/wiki/Process_group]
@@ -9243,7 +9155,7 @@ proc_warmup(VALUE _)
  * - ::waitall: Waits for all child processes to exit;
  *   returns their process IDs and statuses.
  *
- * === \Process Groups
+ * === Process Groups
  *
  * - ::getpgid: Returns the process group ID for a process.
  * - ::getpriority: Returns the scheduling priority
@@ -9340,8 +9252,6 @@ InitVM_process(void)
     rb_define_singleton_method(rb_cProcessStatus, "wait", rb_process_status_waitv, -1);
 
     rb_define_method(rb_cProcessStatus, "==", pst_equal, 1);
-    rb_define_method(rb_cProcessStatus, "&", pst_bitand, 1);
-    rb_define_method(rb_cProcessStatus, ">>", pst_rshift, 1);
     rb_define_method(rb_cProcessStatus, "to_i", pst_to_i, 0);
     rb_define_method(rb_cProcessStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcessStatus, "inspect", pst_inspect, 0);

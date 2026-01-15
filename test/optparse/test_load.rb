@@ -31,7 +31,13 @@ class TestOptionParserLoad < Test::Unit::TestCase
     assert_equal({test: result}, into)
   end
 
+  def assert_load_nothing
+    assert !new_parser.load
+    assert_nil @result
+  end
+
   def setup_options(env, dir, suffix = nil)
+    env.update({'HOME'=>@tmpdir})
     optdir = File.join(@tmpdir, dir)
     FileUtils.mkdir_p(optdir)
     file = File.join(optdir, [@basename, suffix].join(""))
@@ -41,7 +47,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
       begin
         yield dir, optdir
       ensure
-        File.unlink(file)
+        File.unlink(file) rescue nil
         Dir.rmdir(optdir) rescue nil
       end
     else
@@ -50,7 +56,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home(&block)
-    setup_options({'HOME'=>@tmpdir}, ".options", &block)
+    setup_options({}, ".options", &block)
   end
 
   def setup_options_xdg_config_home(&block)
@@ -58,7 +64,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home_config(&block)
-    setup_options({'HOME'=>@tmpdir}, ".config", ".options", &block)
+    setup_options({}, ".config", ".options", &block)
   end
 
   def setup_options_xdg_config_dirs(&block)
@@ -66,7 +72,11 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home_config_settings(&block)
-    setup_options({'HOME'=>@tmpdir}, "config/settings", ".options", &block)
+    setup_options({}, "config/settings", ".options", &block)
+  end
+
+  def setup_options_home_options(envname, &block)
+    setup_options({envname => '~/options'}, "options", ".options", &block)
   end
 
   def test_load_home_options
@@ -91,7 +101,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def test_load_xdg_config_home
-    result, = setup_options_xdg_config_home
+    result, dir = setup_options_xdg_config_home
     assert_load(result)
 
     setup_options_home_config do
@@ -105,6 +115,11 @@ class TestOptionParserLoad < Test::Unit::TestCase
     setup_options_home_config_settings do
       assert_load(result)
     end
+
+    File.unlink("#{dir}/#{@basename}.options")
+    setup_options_home_config do
+      assert_load_nothing
+    end
   end
 
   def test_load_home_config
@@ -117,6 +132,11 @@ class TestOptionParserLoad < Test::Unit::TestCase
 
     setup_options_home_config_settings do
       assert_load(result)
+    end
+
+    setup_options_xdg_config_home do |_, dir|
+      File.unlink("#{dir}/#{@basename}.options")
+      assert_load_nothing
     end
   end
 
@@ -135,7 +155,34 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def test_load_nothing
-    assert !new_parser.load
-    assert_nil @result
+    setup_options({}, "") do
+      assert_load_nothing
+    end
+  end
+
+  def test_not_expand_path_basename
+    basename = @basename
+    @basename = "~"
+    $test_optparse_basename = "/" + @basename
+    alias $test_optparse_prog $0
+    alias $0 $test_optparse_basename
+    setup_options({'HOME'=>@tmpdir+"/~options"}, "", "options") do
+      assert_load_nothing
+    end
+  ensure
+    alias $0 $test_optparse_prog
+    @basename = basename
+  end
+
+  def test_not_expand_path_xdg_config_home
+    setup_options_home_options('XDG_CONFIG_HOME') do
+      assert_load_nothing
+    end
+  end
+
+  def test_not_expand_path_xdg_config_dirs
+    setup_options_home_options('XDG_CONFIG_DIRS') do
+      assert_load_nothing
+    end
   end
 end

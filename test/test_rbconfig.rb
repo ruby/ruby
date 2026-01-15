@@ -51,4 +51,19 @@ class TestRbConfig < Test::Unit::TestCase
       assert_match(/\$\(sitearch|\$\(rubysitearchprefix\)/, val, "#{key} #{bug7823}")
     end
   end
+
+  def test_limits_and_sizeof_access_in_ractor
+    assert_separately(["-W0"], <<~'RUBY')
+      r = Ractor.new do
+        sizeof_int = RbConfig::SIZEOF["int"]
+        fixnum_max = RbConfig::LIMITS["FIXNUM_MAX"]
+        [sizeof_int, fixnum_max]
+      end
+
+      sizeof_int, fixnum_max = r.value
+
+      assert_kind_of Integer, sizeof_int, "RbConfig::SIZEOF['int'] should be an Integer"
+      assert_kind_of Integer, fixnum_max, "RbConfig::LIMITS['FIXNUM_MAX'] should be an Integer"
+    RUBY
+  end if defined?(Ractor)
 end

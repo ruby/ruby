@@ -58,7 +58,7 @@ enum ruby_rmodule_flags {
      * rb_mod_refine()  has this  flag set.   This  is the  bit which  controls
      * difference between normal inclusion versus refinements.
      */
-    RMODULE_IS_REFINEMENT            = RUBY_FL_USER3
+    RMODULE_IS_REFINEMENT            = RUBY_FL_USER1
 };
 
 struct RClass; /* Opaque, declared here for RCLASS() macro. */

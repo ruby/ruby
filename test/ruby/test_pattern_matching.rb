@@ -197,11 +197,49 @@ class TestPatternMatching < Test::Unit::TestCase
       end
     end
 
-    assert_syntax_error(%q{
+    assert_valid_syntax(%{
+      case 0
+      in [ :a | :b, x]
+        true
+      end
+    })
+
+    assert_in_out_err(['-c'], %q{
       case 0
       in a | 0
       end
-    }, /illegal variable in alternative pattern/)
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in 0 | a
+      end
+    }, [], /alternative pattern/,
+    success: false)
+  end
+
+  def test_alternative_pattern_nested
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [a] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in { a: b } | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [{ a: [{ b: [{ c: }] }] }] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
   end
 
   def test_var_pattern
@@ -1664,7 +1702,7 @@ END
       raise a # suppress "unused variable: a" warning
     end
 
-    assert_raise_with_message(NoMatchingPatternKeyError, "{:a=>0}: key not found: :aa") do
+    assert_raise_with_message(NoMatchingPatternKeyError, "{a: 0}: key not found: :aa") do
       {a: 0} => {aa:}
       raise aa # suppress "unused variable: aa" warning
     rescue NoMatchingPatternKeyError => e
@@ -1673,7 +1711,7 @@ END
       raise e
     end
 
-    assert_raise_with_message(NoMatchingPatternKeyError, "{:a=>{:b=>0}}: key not found: :bb") do
+    assert_raise_with_message(NoMatchingPatternKeyError, "{a: {b: 0}}: key not found: :bb") do
       {a: {b: 0}} => {a: {bb:}}
       raise bb # suppress "unused variable: bb" warning
     rescue NoMatchingPatternKeyError => e
@@ -1682,15 +1720,15 @@ END
       raise e
     end
 
-    assert_raise_with_message(NoMatchingPatternError, "{:a=>0}: 1 === 0 does not return true") do
+    assert_raise_with_message(NoMatchingPatternError, "{a: 0}: 1 === 0 does not return true") do
       {a: 0} => {a: 1}
     end
 
-    assert_raise_with_message(NoMatchingPatternError, "{:a=>0}: {:a=>0} is not empty") do
+    assert_raise_with_message(NoMatchingPatternError, "{a: 0}: {a: 0} is not empty") do
       {a: 0} => {}
     end
 
-    assert_raise_with_message(NoMatchingPatternError, "[{:a=>0}]: rest of {:a=>0} is not empty") do
+    assert_raise_with_message(NoMatchingPatternError, "[{a: 0}]: rest of {a: 0} is not empty") do
       [{a: 0}] => [{**nil}]
     end
   end

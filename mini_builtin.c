@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/eval.h"
 #include "iseq.h"
 #include "vm_core.h"
 #include "builtin.h"
@@ -58,15 +59,21 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         .debug_level = 0,
     };
 
-    if (*rb_ruby_prism_ptr()) {
+    if (rb_ruby_prism_p()) {
         pm_parse_result_t result = { 0 };
         pm_prelude_load(&result, name_str, code, start_line);
 
         vm->builtin_function_table = table;
-        iseq = pm_iseq_new_with_opt(&result.node, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
+        int error_state;
+        iseq = pm_iseq_new_with_opt(&result.node, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, &error_state);
 
         vm->builtin_function_table = NULL;
         pm_parse_result_free(&result);
+
+        if (error_state) {
+            RUBY_ASSERT(iseq == NULL);
+            rb_jump_tag(error_state);
+        }
     }
     else {
         VALUE ast_value = prelude_ast_value(name_str, code, start_line);
@@ -93,5 +100,5 @@ void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
-    rb_iseq_eval(iseq);
+    rb_iseq_eval(iseq, rb_root_box());
 }

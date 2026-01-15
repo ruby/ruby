@@ -69,15 +69,6 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_encoding(r)
   end
 
-  def assert_regexp_usascii_literal(r, enc, ex = nil)
-    code = "# -*- encoding: US-ASCII -*-\n#{r}.encoding"
-    if ex
-      assert_raise(ex) { eval(code) }
-    else
-      assert_equal(enc, eval(code))
-    end
-  end
-
   def encdump(str)
     d = str.dump
     if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
@@ -195,33 +186,35 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_string_inspect_encoding
-    EnvUtil.suppress_warning do
-      begin
-        orig_int = Encoding.default_internal
-        orig_ext = Encoding.default_external
-        Encoding.default_internal = nil
-        [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J, Encoding::GB18030].
-          each do |e|
-          Encoding.default_external = e
-          str = "\x81\x30\x81\x30".force_encoding('GB18030')
-          assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
-          str = e("\xa1\x8f\xa1\xa1")
-          expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
-          assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
-          str = s("\x81@")
-          assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
-          str = "\u3042\u{10FFFD}"
-          assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
-          end
-        Encoding.default_external = Encoding::UTF_8
-        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
-          Encoding::UTF8_SOFTBANK].each do |e|
-          str = "abc".encode(e)
-          assert_equal('"abc"', str.inspect)
-          end
-      ensure
-        Encoding.default_internal = orig_int
-        Encoding.default_external = orig_ext
+    [
+      Encoding::UTF_8,
+      Encoding::EUC_JP,
+      Encoding::Windows_31J,
+      Encoding::GB18030,
+    ].each do |e|
+      EnvUtil.with_default_external(e) do
+        str = "\x81\x30\x81\x30".force_encoding('GB18030')
+        assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
+        str = e("\xa1\x8f\xa1\xa1")
+        expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
+        assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
+        str = s("\x81@")
+        assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
+        str = "\u3042\u{10FFFD}"
+        assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
+      end
+    end
+
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      [
+        Encoding::UTF_16BE,
+        Encoding::UTF_16LE,
+        Encoding::UTF_32BE,
+        Encoding::UTF_32LE,
+        Encoding::UTF8_SOFTBANK
+      ].each do |e|
+        str = "abc".encode(e)
+        assert_equal('"abc"', str.inspect)
       end
     end
   end
@@ -255,59 +248,43 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_utf16_32_inspect
-    EnvUtil.suppress_warning do
-      begin
-        orig_int = Encoding.default_internal
-        orig_ext = Encoding.default_external
-        Encoding.default_internal = nil
-        Encoding.default_external = Encoding::UTF_8
-        o = Object.new
-        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
-          o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
-          assert_equal '[abc]', [o].inspect
-        end
-      ensure
-        Encoding.default_internal = orig_int
-        Encoding.default_external = orig_ext
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      o = Object.new
+      [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
+        o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
+        assert_equal '[abc]', [o].inspect
       end
     end
   end
 
   def test_object_inspect_external
-    orig_v, $VERBOSE = $VERBOSE, false
-    orig_int, Encoding.default_internal = Encoding.default_internal, nil
-    orig_ext = Encoding.default_external
-
     omit "https://bugs.ruby-lang.org/issues/18338"
 
     o = Object.new
 
-    Encoding.default_external = Encoding::UTF_16BE
-    def o.inspect
-      "abc"
-    end
-    assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
+    EnvUtil.with_default_external(Encoding::UTF_16BE) do
+      def o.inspect
+        "abc"
+      end
+      assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
 
-    def o.inspect
-      "abc".encode(Encoding.default_external)
+      def o.inspect
+        "abc".encode(Encoding.default_external)
+      end
+      assert_equal '[abc]', [o].inspect
     end
 
-    assert_equal '[abc]', [o].inspect
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
+      def o.inspect
+        "\u3042"
+      end
+      assert_equal '[\u3042]', [o].inspect
 
-    Encoding.default_external = Encoding::US_ASCII
-    def o.inspect
-      "\u3042"
+      def o.inspect
+        "\x82\xa0".force_encoding(Encoding::Windows_31J)
+      end
+      assert_equal '[\x{82A0}]', [o].inspect
     end
-    assert_equal '[\u3042]', [o].inspect
-
-    def o.inspect
-      "\x82\xa0".force_encoding(Encoding::Windows_31J)
-    end
-    assert_equal '[\x{82A0}]', [o].inspect
-  ensure
-    Encoding.default_internal = orig_int
-    Encoding.default_external = orig_ext
-    $VERBOSE = orig_v
   end
 
   def test_str_dump
@@ -1436,31 +1413,42 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_regexp_usascii
-    assert_regexp_usascii_literal('//', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{ }/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{"a"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{%q"\x80"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{"\x80"}/', Encoding::ASCII_8BIT)
+    tests = [
+      [__LINE__, '//', Encoding::US_ASCII],
+      [__LINE__, '/#{ }/', Encoding::US_ASCII],
+      [__LINE__, '/#{"a"}/', Encoding::US_ASCII],
+      [__LINE__, '/#{%q"\x80"}/', Encoding::US_ASCII],
+      [__LINE__, '/#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/a/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{ }/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{"a"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/a#{"\x80"}/', Encoding::ASCII_8BIT)
+      [__LINE__, '/a/', Encoding::US_ASCII],
+      [__LINE__, '/a#{ }/', Encoding::US_ASCII],
+      [__LINE__, '/a#{"a"}/', Encoding::US_ASCII],
+      [__LINE__, '/a#{%q"\x80"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/a#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/\x80/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{ }/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{"a"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{"\x80"}/', Encoding::ASCII_8BIT)
+      [__LINE__, '/\x80/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{ }/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{"a"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/\u1234/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{ }/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{"a"}/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{%q"\x80"}/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{"\x80"}/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234\x80/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{ }\x80/', nil, RegexpError)
+      [__LINE__, '/\u1234/', Encoding::UTF_8],
+      [__LINE__, '/\u1234#{ }/', Encoding::UTF_8],
+      [__LINE__, '/\u1234#{"a"}/', Encoding::UTF_8],
+
+      [__LINE__, '/\u1234#{%q"\x80"}/', nil, SyntaxError],
+      [__LINE__, '/\u1234#{"\x80"}/', nil, SyntaxError],
+      [__LINE__, '/\u1234\x80/', nil, SyntaxError],
+      [__LINE__, '/\u1234#{ }\x80/', nil, RegexpError],
+    ]
+    all_assertions_foreach(nil, *tests) do |line, r, enc, ex|
+      code = "# -*- encoding: US-ASCII -*-\n#{r}.encoding"
+      if ex
+        assert_raise(ex) {eval(code, nil, __FILE__, line-1)}
+      else
+        assert_equal(enc, eval(code, nil, __FILE__, line-1))
+      end
+    end
   end
 
   def test_gbk

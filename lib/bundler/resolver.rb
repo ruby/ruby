@@ -12,13 +12,13 @@ module Bundler
     require_relative "resolver/candidate"
     require_relative "resolver/incompatibility"
     require_relative "resolver/root"
+    require_relative "resolver/strategy"
 
-    include GemHelpers
-
-    def initialize(base, gem_version_promoter)
+    def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
       @gem_version_promoter = gem_version_promoter
+      @most_specific_locked_platform = most_specific_locked_platform
     end
 
     def start
@@ -77,10 +77,10 @@ module Bundler
     end
 
     def solve_versions(root:, logger:)
-      solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
+      solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
-      resolved_specs = result.map {|package, version| version.to_specs(package) }.flatten
-      resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
+      resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -165,16 +165,8 @@ module Bundler
       PubGrub::VersionConstraint.new(package, range: range)
     end
 
-    def versions_for(package, range=VersionRange.any)
-      versions = select_sorted_versions(package, range)
-
-      # Conditional avoids (among other things) calling
-      # sort_versions_by_preferred with the root package
-      if versions.size > 1
-        sort_versions_by_preferred(package, versions)
-      else
-        versions
-      end
+    def versions_for(package, range = VersionRange.any)
+      range.select_versions(@sorted_versions[package])
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
@@ -236,7 +228,7 @@ module Bundler
             sorted_versions[high]
           end
 
-        range = PubGrub::VersionRange.new(min: low, max: high, include_min: true)
+        range = PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
         self_constraint = PubGrub::VersionConstraint.new(package, range: range)
 
@@ -279,12 +271,12 @@ module Bundler
           next groups if platform_specs.all?(&:empty?)
         end
 
-        ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
+        ruby_specs = MatchPlatform.select_best_platform_match(specs, Gem::Platform::RUBY)
         ruby_group = Resolver::SpecGroup.new(ruby_specs)
 
         unless ruby_group.empty?
-          platform_specs.each do |specs|
-            ruby_group.merge(Resolver::SpecGroup.new(specs))
+          platform_specs.each do |s|
+            ruby_group.merge(Resolver::SpecGroup.new(s))
           end
 
           groups << Resolver::Candidate.new(version, group: ruby_group, priority: -1)
@@ -317,6 +309,16 @@ module Bundler
     rescue StandardError
       "Gemfile"
     end
+
+    def raise_incomplete!(incomplete_specs)
+      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    end
+
+    def sort_versions_by_preferred(package, versions)
+      @gem_version_promoter.sort_versions(package, versions)
+    end
+
+    private
 
     def raise_not_found!(package)
       name = package.name
@@ -354,8 +356,6 @@ module Bundler
       raise GemNotFound, message
     end
 
-    private
-
     def filtered_versions_for(package)
       @gem_version_promoter.filter_versions(package, @all_versions[package])
     end
@@ -388,9 +388,18 @@ module Bundler
     end
 
     def filter_remote_specs(specs, package)
-      return specs unless package.prefer_local?
+      if package.prefer_local?
+        local_specs = specs.select {|s| s.is_a?(StubSpecification) }
 
-      specs.select {|s| s.is_a?(StubSpecification) }
+        if local_specs.empty?
+          package.consider_remote_versions!
+          specs
+        else
+          local_specs
+        end
+      else
+        specs
+      end
     end
 
     # Ignore versions that depend on themselves incorrectly
@@ -404,10 +413,6 @@ module Bundler
       requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
     end
 
-    def sort_versions_by_preferred(package, versions)
-      @gem_version_promoter.sort_versions(package, versions)
-    end
-
     def repository_for(package)
       source_for(package.name)
     end
@@ -417,13 +422,13 @@ module Bundler
     end
 
     def prepare_dependencies(requirements, packages)
-      to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
+      to_dependency_hash(requirements, packages).filter_map do |dep_package, dep_constraint|
         name = dep_package.name
 
         next [dep_package, dep_constraint] if name == "bundler"
 
         dep_range = dep_constraint.range
-        versions = select_sorted_versions(dep_package, dep_range)
+        versions = versions_for(dep_package, dep_range)
         if versions.empty?
           if dep_package.ignores_prereleases? || dep_package.prefer_local?
             @all_versions.delete(dep_package)
@@ -431,7 +436,7 @@ module Bundler
           end
           dep_package.consider_prereleases! if dep_package.ignores_prereleases?
           dep_package.consider_remote_versions! if dep_package.prefer_local?
-          versions = select_sorted_versions(dep_package, dep_range)
+          versions = versions_for(dep_package, dep_range)
         end
 
         if versions.empty? && select_all_versions(dep_package, dep_range).any?
@@ -443,11 +448,7 @@ module Bundler
         next unless dep_package.current_platform?
 
         raise_not_found!(dep_package)
-      end.compact.to_h
-    end
-
-    def select_sorted_versions(package, range)
-      range.select_versions(@sorted_versions[package])
+      end.to_h
     end
 
     def select_all_versions(package, range)

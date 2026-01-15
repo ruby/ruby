@@ -6,23 +6,31 @@ if defined?(OpenSSL)
 class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
     super
-    @d1 = OpenSSL::Digest.new("MD5")
-    @d2 = OpenSSL::Digest::MD5.new
+    @d1 = OpenSSL::Digest.new("SHA256")
+    @d2 = OpenSSL::Digest::SHA256.new
+  end
+
+  def test_initialize
+    assert_raise(OpenSSL::Digest::DigestError) {
+      OpenSSL::Digest.new("no such algorithm")
+    }
   end
 
   def test_digest
-    null_hex = "d41d8cd98f00b204e9800998ecf8427e"
+    # SHA256 null value calculated by `echo -n "" | sha256sum`
+    null_hex = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     null_bin = [null_hex].pack("H*")
     data = "DATA"
-    hex = "e44f9e348e41cb272efa87387728571b"
+    # SHA256 DATA value calculated by `echo -n "DATA" | sha256sum`
+    hex = "c97c29c7a71b392b437ee03fd17f09bb10b75e879466fc0eb757b2c4a78ac938"
     bin = [hex].pack("H*")
     assert_equal(null_bin, @d1.digest)
     assert_equal(null_hex, @d1.hexdigest)
     @d1 << data
     assert_equal(bin, @d1.digest)
     assert_equal(hex, @d1.hexdigest)
-    assert_equal(bin, OpenSSL::Digest.digest('MD5', data))
-    assert_equal(hex, OpenSSL::Digest.hexdigest('MD5', data))
+    assert_equal(bin, OpenSSL::Digest.digest('SHA256', data))
+    assert_equal(hex, OpenSSL::Digest.hexdigest('SHA256', data))
   end
 
   def test_eql
@@ -32,9 +40,9 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_info
-    assert_equal("MD5", @d1.name, "name")
-    assert_equal("MD5", @d2.name, "name")
-    assert_equal(16, @d1.size, "size")
+    assert_equal("SHA256", @d1.name, "name")
+    assert_equal("SHA256", @d2.name, "name")
+    assert_equal(32, @d1.size, "size")
   end
 
   def test_dup
@@ -54,7 +62,10 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_constants
-    %w{MD5 SHA1 SHA224 SHA256 SHA384 SHA512}.each do |name|
+    non_fips_names = %w{MD5}
+    names = %w{SHA1 SHA224 SHA256 SHA384 SHA512}
+    names = non_fips_names + names unless OpenSSL.fips_mode
+    names.each do |name|
       assert_not_nil(OpenSSL::Digest.new(name))
       klass = OpenSSL::Digest.const_get(name.tr('-', '_'))
       assert_not_nil(klass.new)
@@ -62,8 +73,17 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_by_oid_and_name
-    check_digest(OpenSSL::ASN1::ObjectId.new("MD5"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA1"))
+    # SHA256
+    o1 = OpenSSL::Digest.digest("SHA256", "")
+    o2 = OpenSSL::Digest.digest("sha256", "")
+    assert_equal(o1, o2)
+    o3 = OpenSSL::Digest.digest("2.16.840.1.101.3.4.2.1", "")
+    assert_equal(o1, o3)
+
+    # An alias for SHA256 recognized by EVP_get_digestbyname(), but not by
+    # EVP_MD_fetch()
+    o4 = OpenSSL::Digest.digest("RSA-SHA256", "")
+    assert_equal(o1, o4)
   end
 
   def encode16(str)
@@ -88,7 +108,6 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_sha512_truncate
-    pend "SHA512_224 is not implemented" unless digest_available?('sha512-224')
     sha512_224_a = "d5cdb9ccc769a5121d4175f2bfdd13d6310e0d3d361ea75d82108327"
     sha512_256_a = "455e518824bc0601f9fb858ff5c37d417d67c2f8e0df2babe4808858aea830f8"
 
@@ -100,23 +119,25 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_sha3
-    pend "SHA3 is not implemented" unless digest_available?('sha3-224')
     s224 = '6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7'
     s256 = 'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a'
     s384 = '0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004'
     s512 = 'a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26'
-    assert_equal(OpenSSL::Digest.hexdigest('SHA3-224', ""), s224)
-    assert_equal(OpenSSL::Digest.hexdigest('SHA3-256', ""), s256)
-    assert_equal(OpenSSL::Digest.hexdigest('SHA3-384', ""), s384)
-    assert_equal(OpenSSL::Digest.hexdigest('SHA3-512', ""), s512)
+    assert_equal(s224, OpenSSL::Digest.hexdigest('SHA3-224', ""))
+    assert_equal(s256, OpenSSL::Digest.hexdigest('SHA3-256', ""))
+    assert_equal(s384, OpenSSL::Digest.hexdigest('SHA3-384', ""))
+    assert_equal(s512, OpenSSL::Digest.hexdigest('SHA3-512', ""))
   end
 
-  def test_digest_by_oid_and_name_sha2
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA224"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA256"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA384"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA512"))
-  end
+  def test_fetched_evp_md
+    # KECCAK-256 is not FIPS-approved.
+    omit_on_fips
+
+    # Pre-NIST Keccak is an example of a digest algorithm that doesn't have an
+    # NID and requires dynamic allocation of EVP_MD
+    hex = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+    assert_equal(hex, OpenSSL::Digest.hexdigest("KECCAK-256", ""))
+  end if openssl?(3, 2, 0)
 
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
@@ -133,22 +154,6 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_include digests, "sha1"
     assert_include digests, "sha256"
     assert_include digests, "sha512"
-  end
-
-  private
-
-  def check_digest(oid)
-    d = OpenSSL::Digest.new(oid.sn)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.ln)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.oid)
-    assert_not_nil(d)
-  end
-
-  def digest_available?(name)
-    @digests ||= OpenSSL::Digest.digests
-    @digests.include?(name)
   end
 end
 

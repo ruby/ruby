@@ -5,10 +5,11 @@ require_relative "package"
 module Bundler
   class Resolver
     class Base
-      attr_reader :packages, :requirements, :source_requirements
+      attr_reader :packages, :requirements, :source_requirements, :locked_specs
 
       def initialize(source_requirements, dependencies, base, platforms, options)
         @source_requirements = source_requirements
+        @locked_specs = options[:locked_specs]
 
         @base = base
 
@@ -16,7 +17,7 @@ module Bundler
           hash[name] = Package.new(name, platforms, **options)
         end
 
-        @requirements = dependencies.map do |dep|
+        @requirements = dependencies.filter_map do |dep|
           dep_platforms = dep.gem_platforms(platforms)
 
           # Dependencies scoped to external platforms are ignored
@@ -27,11 +28,7 @@ module Bundler
           @packages[name] = Package.new(name, dep_platforms, **options.merge(dependency: dep))
 
           dep
-        end.compact
-      end
-
-      def specs_compatible_with(result)
-        @base.specs_compatible_with(result)
+        end
       end
 
       def [](name)
@@ -107,6 +104,10 @@ module Bundler
       def build_base_requirements
         base_requirements = {}
         @base.each do |ls|
+          if ls.source_changed? && ls.source.specs.search(ls.name).empty?
+            raise GemNotFound, "Could not find gem '#{ls.name}' in #{ls.source}"
+          end
+
           req = Gem::Requirement.new(ls.version)
           base_requirements[ls.name] = req
         end

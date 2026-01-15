@@ -122,7 +122,7 @@ describe 'Socket#bind' do
 
             -> { @socket.bind(sockaddr1) }.should raise_error(Errno::EACCES)
           end
-       end
+        end
       end
     end
 

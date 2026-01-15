@@ -12,7 +12,7 @@ describe "Hash#[]" do
     h[[]].should == "baz"
   end
 
-  it "returns nil as default default value" do
+  it "returns nil as default value" do
     { 0 => 0 }[5].should == nil
   end
 

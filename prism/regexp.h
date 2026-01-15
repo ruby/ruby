@@ -17,12 +17,12 @@
 #include <string.h>
 
 /**
- * This callback is called when a named capture group is found.
+ * This callback is called by pm_regexp_parse() when a named capture group is found.
  */
 typedef void (*pm_regexp_name_callback_t)(const pm_string_t *name, void *data);
 
 /**
- * This callback is called when a parse error is found.
+ * This callback is called by pm_regexp_parse() when a parse error is found.
  */
 typedef void (*pm_regexp_error_callback_t)(const uint8_t *start, const uint8_t *end, const char *message, void *data);
 

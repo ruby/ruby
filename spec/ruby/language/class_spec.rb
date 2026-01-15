@@ -46,7 +46,14 @@ describe "A class definition" do
     -> {
       class ClassSpecsNumber
       end
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, /\AClassSpecsNumber is not a class/)
+  end
+
+  it "raises TypeError if constant given as class name exists and is a Module but not a Class" do
+    -> {
+      class ClassSpecs
+      end
+    }.should raise_error(TypeError, /\AClassSpecs is not a class/)
   end
 
   # test case known to be detecting bugs (JRuby, MRI)
@@ -271,6 +278,8 @@ describe "A class definition" do
 
       AnonWithConstant.name.should == 'AnonWithConstant'
       klass.get_class_name.should == 'AnonWithConstant'
+    ensure
+      Object.send(:remove_const, :AnonWithConstant)
     end
   end
 end
@@ -343,6 +352,39 @@ describe "Reopening a class" do
     end
     ClassSpecs::M.m.should == 1
     ClassSpecs::L.singleton_class.send(:remove_method, :m)
+  end
+
+  it "does not reopen a class included in Object" do
+    ruby_exe(<<~RUBY).should == "false"
+      module IncludedInObject
+        class IncludedClass
+        end
+      end
+      class Object
+        include IncludedInObject
+      end
+      class IncludedClass
+      end
+      print IncludedInObject::IncludedClass == Object::IncludedClass
+    RUBY
+  end
+
+  it "does not reopen a class included in non-Object modules" do
+    ruby_exe(<<~RUBY).should == "false/false"
+      module Included
+        module IncludedClass; end
+      end
+      module M
+        include Included
+        module IncludedClass; end
+      end
+      class C
+        include Included
+        module IncludedClass; end
+      end
+      print Included::IncludedClass == M::IncludedClass, "/",
+            Included::IncludedClass == C::IncludedClass
+    RUBY
   end
 end
 

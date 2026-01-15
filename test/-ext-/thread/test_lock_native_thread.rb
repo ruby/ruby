@@ -15,6 +15,8 @@ end
 
 class TestThreadLockNativeThread < Test::Unit::TestCase
   def test_lock_native_thread
+    omit "LSAN reports memory leak because NT is not freed for MN thread" if Test::Sanitizers.lsan_enabled?
+
     assert_separately([{'RUBY_MN_THREADS' => '1'}], <<-RUBY)
       require '-test-/thread/lock_native_thread'
 
@@ -28,6 +30,8 @@ class TestThreadLockNativeThread < Test::Unit::TestCase
   end
 
   def test_lock_native_thread_tls
+    omit "LSAN reports memory leak because NT is not freed for MN thread" if Test::Sanitizers.lsan_enabled?
+
     assert_separately([{'RUBY_MN_THREADS' => '1'}], <<-RUBY)
       require '-test-/thread/lock_native_thread'
       tn = 10

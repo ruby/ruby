@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-$:.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
-
 require 'mspec/version'
 require 'mspec/utils/options'
 require 'mspec/utils/script'
@@ -22,6 +18,7 @@ class MSpecCI < MSpecScript
     options.chdir
     options.prefix
     options.configure { |f| load f }
+    options.repeat
     options.pretend
     options.interrupt
     options.timeout

@@ -15,7 +15,7 @@ RSpec.describe Bundler::Definition do
       it "raises an PermissionError with explanation" do
         allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with(bundled_app_lock, "wb").
-          and_raise(Errno::EACCES)
+          and_raise(Errno::EACCES.new(bundled_app_lock.to_s))
         expect { subject.lock }.
           to raise_error(Bundler::PermissionError, /Gemfile\.lock/)
       end
@@ -33,7 +33,7 @@ RSpec.describe Bundler::Definition do
       before { Bundler::Definition.no_lock = true }
       after { Bundler::Definition.no_lock = false }
 
-      it "does not create a lock file" do
+      it "does not create a lockfile" do
         subject.lock
         expect(bundled_app_lock).not_to be_file
       end
@@ -80,7 +80,7 @@ RSpec.describe Bundler::Definition do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -137,7 +137,7 @@ RSpec.describe Bundler::Definition do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       expect(lockfile).to eq(expected_lockfile)
@@ -175,7 +175,7 @@ RSpec.describe Bundler::Definition do
           only_java
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -205,7 +205,7 @@ RSpec.describe Bundler::Definition do
           foo
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
   end
@@ -296,10 +296,6 @@ RSpec.describe Bundler::Definition do
       end
 
       def path_sources
-        []
-      end
-
-      def rubygems_remotes
         []
       end
 

@@ -36,8 +36,11 @@ if yaml_source
   libyaml = "libyaml.#$LIBEXT"
   $cleanfiles << libyaml
   $LOCAL_LIBS.prepend("$(LIBYAML) ")
-else # default to pre-installed libyaml
-  pkg_config('yaml-0.1')
+
+  # default to pre-installed libyaml
+elsif pkg_config('yaml-0.1')
+  # found with pkg-config
+else
   dir_config('libyaml')
   find_header('yaml.h') or abort "yaml.h not found"
   find_library('yaml', 'yaml_get_version') or abort "libyaml not found"

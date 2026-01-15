@@ -2,83 +2,74 @@
 require 'fiddle/import'
 
 module Win32
-
-=begin rdoc
-= Win32 Registry
-
-win32/registry is registry accessor library for Win32 platform.
-It uses importer to call Win32 Registry APIs.
-
-== example
-  Win32::Registry::HKEY_CURRENT_USER.open('SOFTWARE\foo') do |reg|
-    value = reg['foo']                               # read a value
-    value = reg['foo', Win32::Registry::REG_SZ]      # read a value with type
-    type, value = reg.read('foo')                    # read a value
-    reg['foo'] = 'bar'                               # write a value
-    reg['foo', Win32::Registry::REG_SZ] = 'bar'      # write a value with type
-    reg.write('foo', Win32::Registry::REG_SZ, 'bar') # write a value
-
-    reg.each_value { |name, type, data| ... }        # Enumerate values
-    reg.each_key { |key, wtime| ... }                # Enumerate subkeys
-
-    reg.delete_value(name)                         # Delete a value
-    reg.delete_key(name)                           # Delete a subkey
-    reg.delete_key(name, true)                     # Delete a subkey recursively
-  end
-
-= Reference
-
-== Win32::Registry class
-
---- info
-
---- num_keys
-
---- max_key_length
-
---- num_values
-
---- max_value_name_length
-
---- max_value_length
-
---- descriptor_length
-
---- wtime
-    Returns an item of key information.
-
-=== constants
---- HKEY_CLASSES_ROOT
-
---- HKEY_CURRENT_USER
-
---- HKEY_LOCAL_MACHINE
-
---- HKEY_PERFORMANCE_DATA
-
---- HKEY_CURRENT_CONFIG
-
---- HKEY_DYN_DATA
-
-    Win32::Registry object whose key is predefined key.
-For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/predefined_keys.asp] article.
-
-=end rdoc
-
+  # :stopdoc:
   WCHAR = Encoding::UTF_16LE
   WCHAR_NUL = "\0".encode(WCHAR).freeze
   WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
-  LOCALE = Encoding.find(Encoding.locale_charmap)
+  LOCALE = Encoding::UTF_8
 
+  # :startdoc:
+
+  # win32/registry is registry accessor library for Win32 platform.
+  # It uses importer to call Win32 Registry APIs.
+  #
+  # == example
+  #   Win32::Registry::HKEY_CURRENT_USER.open('SOFTWARE\foo') do |reg|
+  #     value = reg['foo']                               # read a value
+  #     value = reg['foo', Win32::Registry::REG_SZ]      # read a value with type
+  #     type, value = reg.read('foo')                    # read a value
+  #     reg['foo'] = 'bar'                               # write a value
+  #     reg['foo', Win32::Registry::REG_SZ] = 'bar'      # write a value with type
+  #     reg.write('foo', Win32::Registry::REG_SZ, 'bar') # write a value
+  #
+  #     reg.each_value { |name, type, data| ... }        # Enumerate values
+  #     reg.each_key { |key, wtime| ... }                # Enumerate subkeys
+  #
+  #     reg.delete_value(name)                           # Delete a value
+  #     reg.delete_key(name)                             # Delete a subkey
+  #     reg.delete_key(name, true)                       # Delete a subkey recursively
+  #   end
+  #
+  # == Predefined keys
+  #
+  # * +HKEY_CLASSES_ROOT+
+  # * +HKEY_CURRENT_USER+
+  # * +HKEY_LOCAL_MACHINE+
+  # * +HKEY_PERFORMANCE_DATA+
+  # * +HKEY_CURRENT_CONFIG+
+  # * +HKEY_DYN_DATA+
+  #
+  #   Win32::Registry object whose key is predefined key.
+  # For detail, see the article[https://learn.microsoft.com/en-us/windows/win32/sysinfo/predefined-keys].
+  #
+  # == Value types
+  #
+  # * +REG_NONE+
+  # * +REG_SZ+
+  # * +REG_EXPAND_SZ+
+  # * +REG_BINARY+
+  # * +REG_DWORD+
+  # * +REG_DWORD_BIG_ENDIAN+
+  # * +REG_LINK+
+  # * +REG_MULTI_SZ+
+  # * +REG_RESOURCE_LIST+
+  # * +REG_FULL_RESOURCE_DESCRIPTOR+
+  # * +REG_RESOURCE_REQUIREMENTS_LIST+
+  # * +REG_QWORD+
+  #
+  # For detail, see the article[https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types].
+  #
   class Registry
+
+    # :stopdoc:
 
     #
     # For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/registry.asp].
     #
     # --- HKEY_*
     #
-    #     Predefined key ((*handle*)).
+    #     Predefined key *handle*.
     #     These are Integer, not Win32::Registry.
     #
     # --- REG_*
@@ -100,6 +91,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #     If the key is created newly or opened existing key.
     #     See also Registry#disposition method.
     module Constants
+      # :stopdoc:
       HKEY_CLASSES_ROOT = 0x80000000
       HKEY_CURRENT_USER = 0x80000001
       HKEY_LOCAL_MACHINE = 0x80000002
@@ -115,7 +107,6 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       REG_EXPAND_SZ = 2
       REG_BINARY = 3
       REG_DWORD = 4
-      REG_DWORD_LITTLE_ENDIAN = 4
       REG_DWORD_BIG_ENDIAN = 5
       REG_LINK = 6
       REG_MULTI_SZ = 7
@@ -163,22 +154,29 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
     include Constants
     include Enumerable
+    # :startdoc:
 
     #
     # Error
     #
     class Error < ::StandardError
+      # :stopdoc:
       module Kernel32
         extend Fiddle::Importer
         dlload "kernel32.dll"
       end
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
+      # :startdoc:
+
+      # new(code) -> error object
+      #
+      # Initializes the message for Win32 API error +code+.
       def initialize(code)
         @code = code
         buff = WCHAR_NUL * 1024
         lang = 0
         begin
-          len = FormatMessageW.call(0x1200, 0, code, lang, buff, 1024, 0)
+          len = FormatMessageW.call(0x1200, nil, code, lang, buff, 1024, nil)
           msg = buff.byteslice(0, len * WCHAR_SIZE)
           msg.delete!(WCHAR_CR)
           msg.chomp!
@@ -190,6 +188,8 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         end
         super msg
       end
+
+      # Win32 API error code.
       attr_reader :code
     end
 
@@ -197,8 +197,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Predefined Keys
     #
     class PredefinedKey < Registry
+      # :stopdoc:
       def initialize(hkey, keyname)
-        @hkey = hkey
+        @hkey = Fiddle::Pointer.new(hkey)
         @parent = nil
         @keyname = keyname
         @disposition = REG_OPENED_EXISTING_KEY
@@ -224,6 +225,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Win32 APIs
     #
     module API
+      # :stopdoc:
       include Constants
       extend Fiddle::Importer
       dlload "advapi32.dll"
@@ -238,7 +240,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         "long RegDeleteKeyW(void *, void *)",
         "long RegFlushKey(void *)",
         "long RegCloseKey(void *)",
-        "long RegQueryInfoKey(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
+        "long RegQueryInfoKeyW(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
       ].each do |fn|
         cfunc = extern fn, :stdcall
         const_set cfunc.name.intern, cfunc
@@ -285,7 +287,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def make_wstr(str)
-        str.encode(WCHAR)
+        (str+"\0").encode(WCHAR)
       end
 
       def OpenKey(hkey, name, opt, desired)
@@ -298,14 +300,14 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         result = packhandle(0)
         disp = packdw(0)
         check RegCreateKeyExW.call(hkey, make_wstr(name), 0, 0, opt, desired,
-                                   0, result, disp)
+                                   nil, result, disp)
         [ unpackhandle(result), unpackdw(disp) ]
       end
 
       def EnumValue(hkey, index)
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
-        check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
+        check RegEnumValueW.call(hkey, index, name, size, nil, nil, nil, nil)
         name.byteslice(0, unpackdw(size) * WCHAR_SIZE)
       end
 
@@ -313,7 +315,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
-        check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
+        check RegEnumKeyExW.call(hkey, index, name, size, nil, nil, nil, wtime)
         [ name.byteslice(0, unpackdw(size) * WCHAR_SIZE), unpackqw(wtime) ]
       end
 
@@ -321,9 +323,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         type = packdw(0)
         size = packdw(0)
         name = make_wstr(name)
-        check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
+        check RegQueryValueExW.call(hkey, name, nil, type, nil, size)
         data = "\0".b * unpackdw(size)
-        check RegQueryValueExW.call(hkey, name, 0, type, data, size)
+        check RegQueryValueExW.call(hkey, name, nil, type, data, size)
         [ unpackdw(type), data[0, unpackdw(size)] ]
       end
 
@@ -360,19 +362,21 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         maxvaluelen = packdw(0)
         secdescs = packdw(0)
         wtime = ' ' * 8
-        check RegQueryInfoKey.call(hkey, 0, 0, 0, subkeys, maxsubkeylen, 0,
+        check RegQueryInfoKeyW.call(hkey, 0, 0, 0, subkeys, maxsubkeylen, 0,
           values, maxvaluenamelen, maxvaluelen, secdescs, wtime)
         [ unpackdw(subkeys), unpackdw(maxsubkeylen), unpackdw(values),
           unpackdw(maxvaluenamelen), unpackdw(maxvaluelen),
           unpackdw(secdescs), unpackqw(wtime) ]
       end
     end
+    # :startdoc:
 
     #
-    # Replace %\w+% into the environment value of what is contained between the %'s
+    # Replace <tt>%</tt>-enclosed substrings in +str+ into the
+    # environment value of what is contained between the <tt>%</tt>s.
     # This method is used for REG_EXPAND_SZ.
     #
-    # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
+    # For detail, see ExpandEnvironmentStrings[https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-expandenvironmentstringsw] \Win32 \API.
     #
     def self.expand_environ(str)
       str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) {
@@ -392,21 +396,21 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end.freeze
 
     #
-    # Convert registry type value to readable string.
+    # Convert registry type value +type+ to readable string.
     #
     def self.type2name(type)
       @@type2name[type] || type.to_s
     end
 
     #
-    # Convert 64-bit FILETIME integer into Time object.
+    # Convert 64-bit FILETIME integer +wtime+ into Time object.
     #
     def self.wtime2time(wtime)
       Time.at((wtime - 116444736000000000) / 10000000)
     end
 
     #
-    # Convert Time object or Integer object into 64-bit FILETIME.
+    # Convert Time object or Integer object +time+ into 64-bit FILETIME.
     #
     def self.time2wtime(time)
       time.to_i * 10000000 + 116444736000000000
@@ -418,19 +422,22 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     private_class_method :new
 
     #
-    # --- Registry.open(key, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED)
+    # call-seq:
+    #   open(key, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED)
+    #   open(key, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED) { |reg| ... }
     #
-    # --- Registry.open(key, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED) { |reg| ... }
+    # Open the registry key +subkey+ under +key+.
+    # +key+ is Win32::Registry object of parent key.
+    # You can use {predefined key}[rdoc-ref:Win32::Registry@Predefined+keys] +HKEY_+*.
+    # +desired+ and +opt+ is access mask and key option.
     #
-    # Open the registry key subkey under key.
-    # key is Win32::Registry object of parent key.
-    # You can use predefined key HKEY_* (see Constants)
-    # desired and opt is access mask and key option.
     # For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/regopenkeyex.asp].
-    # If block is given, the key is closed automatically.
+    #
+    # If block is given, the key +reg+ is yielded and closed
+    # automatically after the block exists.
     def self.open(hkey, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED)
       subkey = subkey.chomp('\\')
-      newkey = API.OpenKey(hkey.hkey, subkey, opt, desired)
+      newkey = API.OpenKey(hkey.instance_variable_get(:@hkey), subkey, opt, desired)
       obj = new(newkey, hkey, subkey, REG_OPENED_EXISTING_KEY)
       if block_given?
         begin
@@ -444,20 +451,22 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # --- Registry.create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
+    # call-seq:
+    #   create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
+    #   create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED) { |reg| ... }
     #
-    # --- Registry.create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED) { |reg| ... }
+    # Create or open the registry key +subkey+ under +key+.
+    # You can use {predefined key}[rdoc-ref:Win32::Registry@Predefined+keys] +HKEY_+*.
+    # +desired+ and +opt+ is access mask and key option.
     #
-    # Create or open the registry key subkey under key.
-    # You can use predefined key HKEY_* (see Constants)
-    #
-    # If subkey is already exists, key is opened and Registry#created?
+    # If +subkey+ is already exists, key is opened and Registry#created?
     # method will return false.
     #
-    # If block is given, the key is closed automatically.
+    # If block is given, the key +reg+ is yielded and closed
+    # automatically after the block exists.
     #
     def self.create(hkey, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
-      newkey, disp = API.CreateKey(hkey.hkey, subkey, opt, desired)
+      newkey, disp = API.CreateKey(hkey.instance_variable_get(:@hkey), subkey, opt, desired)
       obj = new(newkey, hkey, subkey, disp)
       if block_given?
         begin
@@ -476,10 +485,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     @@final = proc { |hkey| proc { API.CloseKey(hkey[0]) if hkey[0] } }
 
     #
-    # initialize
+    # :nodoc:
+    #
+    # Use self.open, self.create, #open and #create.
     #
     def initialize(hkey, parent, keyname, disposition)
-      @hkey = hkey
+      @hkey = Fiddle::Pointer.new(hkey)
       @parent = parent
       @keyname = keyname
       @disposition = disposition
@@ -487,9 +498,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       ObjectSpace.define_finalizer self, @@final.call(@hkeyfinal)
     end
 
-    #  Returns key handle value.
-    attr_reader :hkey
-    # Win32::Registry object of parent key, or nil if predefeined key.
+    # Win32::Registry object of parent key, or nil if predefined key.
     attr_reader :parent
     # Same as subkey value of Registry.open or
     # Registry.create method.
@@ -497,8 +506,13 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #  Disposition value (REG_CREATED_NEW_KEY or REG_OPENED_EXISTING_KEY).
     attr_reader :disposition
 
+    #  Returns key handle value.
+    def hkey
+      @hkey.to_i
+    end
+
     #
-    # Returns if key is created ((*newly*)).
+    # Returns +true+ if key is created *newly*.
     # (see Registry.create) -- basically you call create
     # then when you call created? on the instance returned
     # it will tell if it was successful or not
@@ -515,7 +529,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Full path of key such as 'HKEY_CURRENT_USER\SOFTWARE\foo\bar'.
+    # Full path of key such as <tt>'HKEY_CURRENT_USER\SOFTWARE\foo\bar'</tt>.
     #
     def name
       parent = self
@@ -526,6 +540,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       name
     end
 
+    #
+    # Retruns inspected string
+    #
     def inspect
       "\#<Win32::Registry key=#{name.inspect}>"
     end
@@ -538,14 +555,14 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Same as Win32::Registry.open (self, subkey, desired, opt)
+    # Same as Win32::Registry.open(self, subkey, desired, opt)
     #
     def open(subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED, &blk)
       self.class.open(self, subkey, desired, opt, &blk)
     end
 
     #
-    # Same as Win32::Registry.create (self, subkey, desired, opt)
+    # Same as Win32::Registry.create(self, subkey, desired, opt)
     #
     def create(subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED, &blk)
       self.class.create(self, subkey, desired, opt, &blk)
@@ -563,9 +580,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate values.
+    # Enumerate all values in this registry path.
+    #
+    # For each value it yields key, type and data.
+    #
+    # key is a String which contains name of key.
+    # type is a type constant kind of +Win32::Registry::REG_+*
+    # data is the value of this key.
     #
     def each_value
+      return enum_for(:each_value) unless block_given?
       index = 0
       while true
         begin
@@ -596,13 +620,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate subkeys.
+    # Enumerate all subkeys.
+    #
+    # For each subkey it yields subkey and wtime.
     #
     # subkey is String which contains name of subkey.
     # wtime is last write time as FILETIME (64-bit integer).
     # (see Registry.wtime2time)
     #
     def each_key
+      return enum_for(:each_key) unless block_given?
       index = 0
       while true
         begin
@@ -627,21 +654,23 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     # Read a registry value named name and return array of
-    # [ type, data ].
-    # When name is nil, the `default' value is read.
-    # type is value type. (see Win32::Registry::Constants module)
-    # data is value data, its class is:
-    # :REG_SZ, REG_EXPAND_SZ
+    # <tt>[ type, data ]</tt>.
+    # When name is +nil+, the `default' value is read.
+    #
+    # +type+ is {value type}[rdoc-ref:Win32::Registry@Value+types].
+    #
+    # +data+ is value data, its class is:
+    # REG_SZ, REG_EXPAND_SZ::
     #    String
-    # :REG_MULTI_SZ
+    # REG_MULTI_SZ::
     #    Array of String
-    # :REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD
+    # REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD::
     #    Integer
-    # :REG_BINARY, REG_NONE
+    # REG_BINARY, REG_NONE::
     #    String (contains binary data)
     #
-    # When rtype is specified, the value type must be included by
-    # rtype array, or TypeError is raised.
+    # When _rtype_ is specified, the value type must be included by
+    # _rtype_ array, or +TypeError+ is raised.
     def read(name, *rtype)
       type, data = API.QueryValue(@hkey, name)
       unless rtype.empty? or rtype.include?(type)
@@ -674,9 +703,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # If the value type is REG_EXPAND_SZ, returns value data whose environment
     # variables are replaced.
     # If the value type is neither REG_SZ, REG_MULTI_SZ, REG_DWORD,
-    # REG_DWORD_BIG_ENDIAN, nor REG_QWORD, TypeError is raised.
+    # REG_DWORD_BIG_ENDIAN, nor REG_QWORD, +TypeError+ is raised.
     #
-    # The meaning of rtype is the same as for the #read method.
+    # The meaning of _rtype_ is the same as for the #read method.
     #
     def [](name, *rtype)
       type, data = read(name, *rtype)
@@ -693,7 +722,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Read a REG_SZ(read_s), REG_DWORD(read_i), or REG_BINARY(read_bin)
     # registry value named name.
     #
-    # If the values type does not match, TypeError is raised.
+    # If the values type does not match, +TypeError+ is raised.
     def read_s(name)
       read(name, REG_SZ)[1]
     end
@@ -702,7 +731,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Read a REG_SZ or REG_EXPAND_SZ registry value named name.
     #
     # If the value type is REG_EXPAND_SZ, environment variables are replaced.
-    # Unless the value type is REG_SZ or REG_EXPAND_SZ, TypeError is raised.
+    # Unless the value type is REG_SZ or REG_EXPAND_SZ, +TypeError+ is raised.
     #
     def read_s_expand(name)
       type, data = read(name, REG_SZ, REG_EXPAND_SZ)
@@ -717,7 +746,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Read a REG_SZ(read_s), REG_DWORD(read_i), or REG_BINARY(read_bin)
     # registry value named name.
     #
-    # If the values type does not match, TypeError is raised.
+    # If the values type does not match, +TypeError+ is raised.
     #
     def read_i(name)
       read(name, REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD)[1]
@@ -727,7 +756,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Read a REG_SZ(read_s), REG_DWORD(read_i), or REG_BINARY(read_bin)
     # registry value named name.
     #
-    # If the values type does not match, TypeError is raised.
+    # If the values type does not match, +TypeError+ is raised.
     #
     def read_bin(name)
       read(name, REG_BINARY)[1]
@@ -737,7 +766,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Write data to a registry value named name.
     # When name is nil, write to the `default' value.
     #
-    # type is type value. (see Registry::Constants module)
+    # +type+ is {value type}[rdoc-ref:Win32::Registry@Value+types].
     # Class of data must be same as which #read
     # method returns.
     #
@@ -766,11 +795,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     # If wtype is specified, the value type is it.
     # Otherwise, the value type is depend on class of value:
-    # :Integer
+    #
+    # Integer::
     #   REG_DWORD
-    # :String
+    # String::
     #   REG_SZ
-    # :Array
+    # Array::
     #   REG_MULTI_SZ
     #
     def []=(name, rtype, value = nil)
@@ -867,19 +897,19 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
     #
     # Returns key information as Array of:
-    # :num_keys
+    # num_keys::
     #   The number of subkeys.
-    # :max_key_length
+    # max_key_length::
     #   Maximum length of name of subkeys.
-    # :num_values
+    # num_values::
     #   The number of values.
-    # :max_value_name_length
+    # max_value_name_length::
     #   Maximum length of name of values.
-    # :max_value_length
+    # max_value_length::
     #   Maximum length of value of values.
-    # :descriptor_length
+    # descriptor_length::
     #   Length of security descriptor.
-    # :wtime
+    # wtime::
     #   Last write time as FILETIME(64-bit integer)
     #
     # For detail, see RegQueryInfoKey[http://msdn.microsoft.com/library/en-us/sysinfo/base/regqueryinfokey.asp] Win32 API.

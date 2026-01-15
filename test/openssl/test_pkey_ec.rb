@@ -4,18 +4,8 @@ require_relative 'utils'
 if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
-  def test_ec_key
+  def test_ec_key_new
     key1 = OpenSSL::PKey::EC.generate("prime256v1")
-
-    # PKey is immutable in OpenSSL >= 3.0; constructing an empty EC object is
-    # deprecated
-    if !openssl?(3, 0, 0)
-      key2 = OpenSSL::PKey::EC.new
-      key2.group = key1.group
-      key2.private_key = key1.private_key
-      key2.public_key = key1.public_key
-      assert_equal key1.to_der, key2.to_der
-    end
 
     key3 = OpenSSL::PKey::EC.new(key1)
     assert_equal key1.to_der, key3.to_der
@@ -35,6 +25,23 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_ec_key_new_empty
+    # pkeys are immutable with OpenSSL >= 3.0; constructing an empty EC object is
+    # disallowed
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::EC.new }
+    else
+      key = OpenSSL::PKey::EC.new
+      assert_nil(key.group)
+
+      p256 = Fixtures.pkey("p256")
+      key.group = p256.group
+      key.private_key = p256.private_key
+      key.public_key = p256.public_key
+      assert_equal(p256.to_der, key.to_der)
+    end
+  end
+
   def test_builtin_curves
     builtin_curves = OpenSSL::PKey::EC.builtin_curves
     assert_not_empty builtin_curves
@@ -47,7 +54,9 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_generate
-    assert_raise(OpenSSL::PKey::ECError) { OpenSSL::PKey::EC.generate("non-existent") }
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey::EC.generate("non-existent")
+    }
     g = OpenSSL::PKey::EC::Group.new("prime256v1")
     ec = OpenSSL::PKey::EC.generate(g)
     assert_equal(true, ec.private?)
@@ -58,7 +67,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_generate_key
     ec = OpenSSL::PKey::EC.new("prime256v1")
     assert_equal false, ec.private?
-    assert_raise(OpenSSL::PKey::ECError) { ec.to_der }
+    assert_raise(OpenSSL::PKey::PKeyError) { ec.to_der }
     ec.generate_key!
     assert_equal true, ec.private?
     assert_nothing_raised { ec.to_der }
@@ -72,6 +81,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_check_key
+    omit_on_fips
+
     key0 = Fixtures.pkey("p256")
     assert_equal(true, key0.check_key)
     assert_equal(true, key0.private?)
@@ -88,16 +99,25 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal(true, key2.check_key)
 
     # Behavior of EVP_PKEY_public_check changes between OpenSSL 1.1.1 and 3.0
-    key4 = Fixtures.pkey("p256_too_large")
-    assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
-
-    key5 = Fixtures.pkey("p384_invalid")
-    assert_raise(OpenSSL::PKey::ECError) { key5.check_key }
+    # The public key does not match the private key
+    ec_key_data = <<~EOF
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIP+TT0V8Fndsnacji9tyf6hmhHywcOWTee9XkiBeJoVloAoGCCqGSM49
+    AwEHoUQDQgAEBkhhJIU/2/YdPSlY2I1k25xjK4trr5OXSgXvBC21PtY0HQ7lor7A
+    jzT0giJITqmcd81fwGw5+96zLcdxTF1hVQ==
+    -----END EC PRIVATE KEY-----
+    EOF
+    if aws_lc? # AWS-LC automatically does key checks on the parsed key.
+      assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(ec_key_data) }
+    else
+      key4 = OpenSSL::PKey.read(ec_key_data)
+      assert_raise(OpenSSL::PKey::PKeyError) { key4.check_key }
+    end
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)
       key2.private_key += 1
-      assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
+      assert_raise(OpenSSL::PKey::PKeyError) { key2.check_key }
     end
   end
 
@@ -143,19 +163,19 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, data1) }
 
     # Sign by #sign_raw
     sig = key.sign_raw(nil, data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error{ key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3
@@ -251,7 +271,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
     exported = p256.to_pem(cipher, "abcdef\0\1")
     assert_same_ec p256, OpenSSL::PKey::EC.new(exported, "abcdef\0\1")
-    assert_raise(OpenSSL::PKey::ECError) {
+    assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey::EC.new(exported, "abcdef")
     }
   end
@@ -300,7 +320,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.to_der, group2.to_der
     assert_equal group1, group2
     group2.asn1_flag ^=OpenSSL::PKey::EC::NAMED_CURVE
-    assert_not_equal group1.to_der, group2.to_der
+    # AWS-LC does not support serializing explicit curves.
+    unless aws_lc?
+      assert_not_equal group1.to_der, group2.to_der
+    end
     assert_equal group1, group2
 
     group3 = group1.dup
@@ -320,6 +343,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.cofactor, group4.cofactor
     assert_equal group1.seed, group4.seed
     assert_equal group1.degree, group4.degree
+  end
+
+  def test_ec_group_initialize_error_message
+    # Test that passing 2 arguments raises the helpful error
+    e = assert_raise(ArgumentError) do
+      OpenSSL::PKey::EC::Group.new(:GFp, 123)
+    end
+
+    assert_equal("wrong number of arguments (given 2, expected 1 or 4)", e.message)
   end
 
   def test_ec_point
@@ -346,18 +378,26 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       point2.to_octet_string(:uncompressed)
     assert_equal point2.to_octet_string(:uncompressed),
       point3.to_octet_string(:uncompressed)
+  end
 
+  def test_small_curve
     begin
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
       generator = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
       group.set_generator(generator, 19, 1)
-      point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     rescue OpenSSL::PKey::EC::Group::Error
       pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
       raise
     end
+    assert_equal 17.to_bn.num_bits, group.degree
+    assert_equal B(%w{ 04 05 01 }),
+      group.generator.to_octet_string(:uncompressed)
+    assert_equal 19.to_bn, group.order
+    assert_equal 1.to_bn, group.cofactor
+    assert_nil group.curve_name
 
+    point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     assert_equal 0x040603.to_bn, point.to_bn
     assert_equal 0x040603.to_bn, point.to_bn(:uncompressed)
     assert_equal 0x0306.to_bn, point.to_bn(:compressed)
@@ -421,28 +461,6 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
       result_a2 = point_a.mul(3, 3)
       assert_equal B(%w{ 04 07 06 }), result_a2.to_octet_string(:uncompressed)
-      EnvUtil.suppress_warning do # Point#mul(ary, ary [, bn]) is deprecated
-        begin
-          result_b1 = point_a.mul([3], [])
-        rescue NotImplementedError
-          # LibreSSL and OpenSSL 3.0 do no longer support this form of calling
-          next
-        end
-
-        # 3 * point_a = 3 * (6, 3) = (16, 13)
-        result_b1 = point_a.mul([3], [])
-        assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
-        # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-        result_b1 = point_a.mul([3, 2], [point_a])
-        assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
-        # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
-        result_b1 = point_a.mul([3], [], 5)
-        assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)
-
-        assert_raise(ArgumentError) { point_a.mul([1], [point_a]) }
-        assert_raise(TypeError) { point_a.mul([1], nil) }
-        assert_raise(TypeError) { point_a.mul([nil], []) }
-      end
     rescue OpenSSL::PKey::EC::Group::Error
       # CentOS patches OpenSSL to reject curves defined over Fp where p < 256 bits
       raise if $!.message !~ /unsupported field/
@@ -455,6 +473,9 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     # invalid argument
     point = p256_key.public_key
     assert_raise(TypeError) { point.mul(nil) }
+
+    # mul with arrays was removed in version 4.0.0
+    assert_raise(NotImplementedError) { point.mul([1], []) }
   end
 
 # test Group: asn1_flag, point_conversion

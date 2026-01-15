@@ -900,6 +900,10 @@ describe "The defined? keyword for a scoped constant" do
     defined?(DefinedSpecs::Undefined).should be_nil
   end
 
+  it "returns nil when the constant is not defined and the outer module implements .const_missing" do
+    defined?(DefinedSpecs::ModuleWithConstMissing::Undefined).should be_nil
+  end
+
   it "does not call .const_missing if the constant is not defined" do
     DefinedSpecs.should_not_receive(:const_missing)
     defined?(DefinedSpecs::UnknownChild).should be_nil

@@ -64,12 +64,6 @@ end
 # A test case for Gem::Installer.
 
 class Gem::InstallerTestCase < Gem::TestCase
-  def setup
-    super
-
-    Gem::Installer.path_warning = false
-  end
-
   ##
   # The path where installed executables live
 
@@ -221,10 +215,27 @@ class Gem::InstallerTestCase < Gem::TestCase
   ##
   # Creates an installer for +spec+ that will install into +gem_home+.
 
-  def util_installer(spec, gem_home, force=true)
+  def util_installer(spec, gem_home, force = true)
     Gem::Installer.at(spec.cache_file,
                        install_dir: gem_home,
                        force: force)
+  end
+
+  def test_ensure_writable_dir_creates_missing_parent_directories
+    installer = setup_base_installer(false)
+
+    non_existent_parent = File.join(@tempdir, "non_existent_parent")
+    target_dir = File.join(non_existent_parent, "target_dir")
+
+    refute_directory_exists non_existent_parent, "Parent directory should not exist yet"
+    refute_directory_exists target_dir, "Target directory should not exist yet"
+
+    assert_nothing_raised do
+      installer.send(:ensure_writable_dir, target_dir)
+    end
+
+    assert_directory_exists non_existent_parent, "Parent directory should exist now"
+    assert_directory_exists target_dir, "Target directory should exist now"
   end
 
   @@symlink_supported = nil

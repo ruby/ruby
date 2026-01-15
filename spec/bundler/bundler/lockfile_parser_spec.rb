@@ -111,11 +111,11 @@ RSpec.describe Bundler::LockfileParser do
     end
     let(:specs) do
       [
-        Bundler::LazySpecification.new("peiji-san", v("1.2.0"), rb),
-        Bundler::LazySpecification.new("rake", v("10.3.2"), rb),
+        Bundler::LazySpecification.new("peiji-san", v("1.2.0"), Gem::Platform::RUBY),
+        Bundler::LazySpecification.new("rake", v("10.3.2"), Gem::Platform::RUBY),
       ]
     end
-    let(:platforms) { [rb] }
+    let(:platforms) { [Gem::Platform::RUBY] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
     let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
@@ -138,7 +138,7 @@ RSpec.describe Bundler::LockfileParser do
         expect(subject.ruby_version).to eq ruby_version
         rake_spec = specs.last
         checksums = subject.sources.last.checksum_store.to_lock(specs.last)
-        expect(checksums).to eq("#{rake_spec.name_tuple.lock_name} #{rake_checksums.map(&:to_lock).sort.join(",")}")
+        expect(checksums).to eq("#{rake_spec.lock_name} #{rake_checksums.map(&:to_lock).sort.join(",")}")
       end
     end
 

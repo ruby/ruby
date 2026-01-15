@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 # typed: ignore
 
 # This file is responsible for mirroring the API provided by the C extension by
@@ -7,13 +8,26 @@
 require "rbconfig"
 require "ffi"
 
+# We want to eagerly load this file if there are Ractors so that it does not get
+# autoloaded from within a non-main Ractor.
+require "prism/serialize" if defined?(Ractor)
+
 module Prism
   module LibRubyParser # :nodoc:
     extend FFI::Library
 
     # Define the library that we will be pulling functions from. Note that this
     # must align with the build shared library from make/rake.
-    ffi_lib File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
+    libprism_in_build = File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
+    libprism_in_libdir = "#{RbConfig::CONFIG["libdir"]}/prism/libprism.#{RbConfig::CONFIG["SOEXT"]}"
+
+    if File.exist?(libprism_in_build)
+      INCLUDE_DIR = File.expand_path("../../include", __dir__)
+      ffi_lib libprism_in_build
+    else
+      INCLUDE_DIR = "#{RbConfig::CONFIG["libdir"]}/prism/include"
+      ffi_lib libprism_in_libdir
+    end
 
     # Convert a native C type declaration into a symbol that FFI understands.
     # For example:
@@ -38,7 +52,7 @@ module Prism
     # given functions. For each one, define a function with the same name and
     # signature as the C function.
     def self.load_exported_functions_from(header, *functions, callbacks)
-      File.foreach(File.expand_path("../../include/#{header}", __dir__)) do |line|
+      File.foreach("#{INCLUDE_DIR}/#{header}") do |line|
         # We only want to attempt to load exported functions.
         next unless line.start_with?("PRISM_EXPORTED_FUNCTION ")
 
@@ -72,7 +86,9 @@ module Prism
     end
 
     callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+    callback :pm_parse_stream_feof_t, [:pointer], :int
     enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
+    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
 
     load_exported_functions_from(
       "prism.h",
@@ -83,7 +99,10 @@ module Prism
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
       "pm_parse_success_p",
-      [:pm_parse_stream_fgets_t]
+      "pm_string_query_local",
+      "pm_string_query_constant",
+      "pm_string_query_method_name",
+      [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
     )
 
     load_exported_functions_from(
@@ -146,6 +165,9 @@ module Prism
     class PrismString # :nodoc:
       SIZEOF = LibRubyParser.pm_string_sizeof
 
+      PLATFORM_EXPECTS_UTF8 =
+        RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i)
+
       attr_reader :pointer, :length
 
       def initialize(pointer, length, from_string)
@@ -180,8 +202,7 @@ module Prism
         # On Windows and Mac, it's expected that filepaths will be encoded in
         # UTF-8. If they are not, we need to convert them to UTF-8 before
         # passing them into pm_string_mapped_init.
-        if RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i) &&
-           (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
+        if PLATFORM_EXPECTS_UTF8 && (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
           filepath = filepath.encode(Encoding::UTF_8)
         end
 
@@ -210,7 +231,7 @@ module Prism
   private_constant :LibRubyParser
 
   # The version constant is set by reading the result of calling pm_version.
-  VERSION = LibRubyParser.pm_version.read_string
+  VERSION = LibRubyParser.pm_version.read_string.freeze
 
   class << self
     # Mirror the Prism.dump API by using the serialization API.
@@ -261,13 +282,15 @@ module Prism
           end
         }
 
+        eof_callback = -> (_) { stream.eof?  }
+
         # In the pm_serialize_parse_stream function it accepts a pointer to the
         # IO object as a void* and then passes it through to the callback as the
         # third argument, but it never touches it itself. As such, since we have
         # access to the IO object already through the closure of the lambda, we
         # can pass a null pointer here and not worry.
-        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, dump_options(options))
-        Prism.load(source, buffer.read)
+        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, eof_callback, dump_options(options))
+        Prism.load(source, buffer.read, options.fetch(:freeze, false))
       end
     end
 
@@ -342,50 +365,37 @@ module Prism
     def dump_common(string, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+
+        dumped = buffer.read
+        dumped.freeze if options.fetch(:freeze, false)
+
+        dumped
       end
     end
 
     def lex_common(string, code, options) # :nodoc:
-      serialized = LibRubyParser::PrismBuffer.with do |buffer|
+      LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+        Serialize.load_lex(code, buffer.read, options.fetch(:freeze, false))
       end
-
-      Serialize.load_tokens(Source.for(code), serialized)
     end
 
     def parse_common(string, code, options) # :nodoc:
       serialized = dump_common(string, options)
-      Prism.load(code, serialized)
+      Serialize.load_parse(code, serialized, options.fetch(:freeze, false))
     end
 
     def parse_comments_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-
-        loader.load_header
-        loader.load_encoding
-        loader.load_start_line
-        loader.load_comments
+        Serialize.load_parse_comments(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
     def parse_lex_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-
-        tokens = loader.load_tokens
-        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
-        tokens.each { |token,| token.value.force_encoding(loader.encoding) }
-
-        ParseLexResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
+        Serialize.load_parse_lex(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
@@ -407,6 +417,30 @@ module Prism
         when "p" then value | 0b010000
         when "x" then value | 0b100000
         else raise ArgumentError, "invalid command_line option: #{char}"
+        end
+      end
+    end
+
+    # Return the value that should be dumped for the version option.
+    def dump_options_version(version)
+      current = version == "current"
+
+      case current ? RUBY_VERSION : version
+      when nil, "latest"
+        0 # Handled in pm_parser_init
+      when /\A3\.3(\.\d+)?\z/
+        1
+      when /\A3\.4(\.\d+)?\z/
+        2
+      when /\A3\.5(\.\d+)?\z/, /\A4\.0(\.\d+)?\z/
+        3
+      when /\A4\.1(\.\d+)?\z/
+        4
+      else
+        if current
+          raise CurrentVersionError, RUBY_VERSION
+        else
+          raise ArgumentError, "invalid version: #{version}"
         end
       end
     end
@@ -443,7 +477,7 @@ module Prism
       values << dump_options_command_line(options)
 
       template << "C"
-      values << { nil => 0, "3.3.0" => 1, "3.3.1" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
+      values << dump_options_version(options[:version])
 
       template << "C"
       values << (options[:encoding] == false ? 1 : 0)
@@ -451,15 +485,46 @@ module Prism
       template << "C"
       values << (options.fetch(:main_script, false) ? 1 : 0)
 
+      template << "C"
+      values << (options.fetch(:partial_script, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:freeze, false) ? 1 : 0)
+
       template << "L"
       if (scopes = options[:scopes])
         values << scopes.length
 
         scopes.each do |scope|
-          template << "L"
-          values << scope.length
+          locals = nil
+          forwarding = 0
 
-          scope.each do |local|
+          case scope
+          when Array
+            locals = scope
+          when Scope
+            locals = scope.locals
+
+            scope.forwarding.each do |forward|
+              case forward
+              when :*     then forwarding |= 0x1
+              when :**    then forwarding |= 0x2
+              when :&     then forwarding |= 0x4
+              when :"..." then forwarding |= 0x8
+              else raise ArgumentError, "invalid forwarding value: #{forward}"
+              end
+            end
+          else
+            raise TypeError, "wrong argument type #{scope.class.inspect} (expected Array or Prism::Scope)"
+          end
+
+          template << "L"
+          values << locals.length
+
+          template << "C"
+          values << forwarding
+
+          locals.each do |local|
             name = local.name
             template << "L"
             values << name.bytesize
@@ -473,6 +538,41 @@ module Prism
       end
 
       values.pack(template)
+    end
+  end
+
+  # Here we are going to patch StringQuery to put in the class-level methods so
+  # that it can maintain a consistent interface
+  class StringQuery
+    class << self
+      # Mirrors the C extension's StringQuery::local? method.
+      def local?(string)
+        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::constant? method.
+      def constant?(string)
+        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::method_name? method.
+      def method_name?(string)
+        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      end
+
+      private
+
+      # Parse the enum result and return an appropriate boolean.
+      def query(result)
+        case result
+        when :PM_STRING_QUERY_ERROR
+          raise ArgumentError, "Invalid or non ascii-compatible encoding"
+        when :PM_STRING_QUERY_FALSE
+          false
+        when :PM_STRING_QUERY_TRUE
+          true
+        end
+      end
     end
   end
 end

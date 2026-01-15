@@ -4,15 +4,20 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
 ## SYNOPSIS
 
 `bundle lock` [--update]
+              [--bundler[=BUNDLER]]
               [--local]
               [--print]
               [--lockfile=PATH]
               [--full-index]
+              [--gemfile=GEMFILE]
+              [--add-checksums]
               [--add-platform]
               [--remove-platform]
+              [--normalize-platforms]
               [--patch]
               [--minor]
               [--major]
+              [--pre]
               [--strict]
               [--conservative]
 
@@ -22,9 +27,13 @@ Lock the gems specified in Gemfile.
 
 ## OPTIONS
 
-* `--update=<*gems>`:
+* `--update[=<list>]`:
   Ignores the existing lockfile. Resolve then updates lockfile. Taking a list
   of gems or updating all gems if no list is given.
+
+* `--bundler[=BUNDLER]`:
+  Update the locked version of bundler to the given version or the latest
+  version if no version is given.
 
 * `--local`:
   Do not attempt to connect to `rubygems.org`. Instead, Bundler will use the
@@ -35,18 +44,27 @@ Lock the gems specified in Gemfile.
 * `--print`:
   Prints the lockfile to STDOUT instead of writing to the file system.
 
-* `--lockfile=<path>`:
+* `--lockfile=LOCKFILE`:
   The path where the lockfile should be written to.
 
 * `--full-index`:
   Fall back to using the single-file index of all gems.
 
-* `--add-platform`:
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
+
+* `--add-checksums`:
+  Add checksums to the lockfile.
+
+* `--add-platform=<list>`:
   Add a new platform to the lockfile, re-resolving for the addition of that
   platform.
 
-* `--remove-platform`:
+* `--remove-platform=<list>`:
   Remove a platform from the lockfile.
+
+* `--normalize-platforms`:
+  Normalize lockfile platforms.
 
 * `--patch`:
   If updating, prefer updating only to next patch version.
@@ -56,6 +74,9 @@ Lock the gems specified in Gemfile.
 
 * `--major`:
   If updating, prefer updating to next major version (default).
+
+* `--pre`:
+  If updating, always choose the highest allowed version, regardless of prerelease status.
 
 * `--strict`:
   If updating, do not allow any gem to be updated past latest --patch | --minor | --major.

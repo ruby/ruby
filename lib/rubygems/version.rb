@@ -171,9 +171,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    nil_versions_are_discouraged! if version.nil?
-
-    ANCHORED_VERSION_PATTERN.match?(version.to_s)
+    version.nil? || ANCHORED_VERSION_PATTERN.match?(version.to_s)
   end
 
   ##
@@ -182,15 +180,10 @@ class Gem::Version
   #
   #   ver1 = Version.create('1.3.17')   # -> (Version object)
   #   ver2 = Version.create(ver1)       # -> (ver1)
-  #   ver3 = Version.create(nil)        # -> nil
 
   def self.create(input)
     if self === input # check yourself before you wreck yourself
       input
-    elsif input.nil?
-      nil_versions_are_discouraged!
-
-      nil
     else
       new input
     end
@@ -206,14 +199,6 @@ class Gem::Version
     @@all[version] ||= super
   end
 
-  def self.nil_versions_are_discouraged!
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4"
-    end
-  end
-
-  private_class_method :nil_versions_are_discouraged!
-
   ##
   # Constructs a Version from the +version+ string.  A version string is a
   # series of digits or ASCII letters separated by dots.
@@ -224,7 +209,7 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version.is_a?(String) && /\A\s*\Z/.match?(version)
+    version = 0 if version.nil? || (version.is_a?(String) && /\A\s*\Z/.match?(version))
 
     @version = version.to_s
 
@@ -288,7 +273,10 @@ class Gem::Version
   # 1.3.5 and earlier) compatibility.
 
   def marshal_load(array)
-    initialize array[0]
+    string = array[0]
+    raise TypeError, "wrong version string" unless string.is_a?(String)
+
+    initialize string
   end
 
   def yaml_initialize(tag, map) # :nodoc:
@@ -351,11 +339,14 @@ class Gem::Version
   ##
   # Compares this version with +other+ returning -1, 0, or 1 if the
   # other version is larger, the same, or smaller than this
-  # one. Attempts to compare to something that's not a
-  # <tt>Gem::Version</tt> or a valid version String return +nil+.
+  # one. +other+ must be an instance of Gem::Version, comparing with
+  # other types may raise an exception.
 
   def <=>(other)
-    return self <=> self.class.new(other) if (String === other) && self.class.correct?(other)
+    if String === other
+      return unless self.class.correct?(other)
+      return self <=> self.class.new(other)
+    end
 
     return unless Gem::Version === other
     return 0 if @version == other.version || canonical_segments == other.canonical_segments
@@ -365,13 +356,13 @@ class Gem::Version
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
-    limit  = (lhsize > rhsize ? lhsize : rhsize) - 1
+    limit  = (lhsize > rhsize ? rhsize : lhsize)
 
     i = 0
 
-    while i <= limit
-      lhs = lhsegments[i] || 0
-      rhs = rhsegments[i] || 0
+    while i < limit
+      lhs = lhsegments[i]
+      rhs = rhsegments[i]
       i += 1
 
       next      if lhs == rhs
@@ -379,6 +370,24 @@ class Gem::Version
       return  1 if Numeric === lhs && String  === rhs
 
       return lhs <=> rhs
+    end
+
+    lhs = lhsegments[i]
+
+    if lhs.nil?
+      rhs = rhsegments[i]
+
+      while i < rhsize
+        return 1 if String === rhs
+        return -1 unless rhs.zero?
+        rhs = rhsegments[i += 1]
+      end
+    else
+      while i < lhsize
+        return -1 if String === lhs
+        return 1 unless lhs.zero?
+        lhs = lhsegments[i += 1]
+      end
     end
 
     0

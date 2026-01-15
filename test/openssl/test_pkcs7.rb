@@ -6,92 +6,125 @@ if defined?(OpenSSL)
 class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def setup
     super
-    @rsa1024 = Fixtures.pkey("rsa1024")
-    @rsa2048 = Fixtures.pkey("rsa2048")
-    ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
-    ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
-    ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
+    @ca_key = Fixtures.pkey("rsa-1")
+    @ee1_key = Fixtures.pkey("rsa-2")
+    @ee2_key = Fixtures.pkey("rsa-3")
+    ca = OpenSSL::X509::Name.new([["CN", "CA"]])
+    ee1 = OpenSSL::X509::Name.new([["CN", "EE1"]])
+    ee2 = OpenSSL::X509::Name.new([["CN", "EE2"]])
 
     ca_exts = [
-      ["basicConstraints","CA:TRUE",true],
-      ["keyUsage","keyCertSign, cRLSign",true],
-      ["subjectKeyIdentifier","hash",false],
-      ["authorityKeyIdentifier","keyid:always",false],
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "keyCertSign, cRLSign", true],
+      ["subjectKeyIdentifier", "hash", false],
+      ["authorityKeyIdentifier", "keyid:always", false],
     ]
-    @ca_cert = issue_cert(ca, @rsa2048, 1, ca_exts, nil, nil)
+    @ca_cert = issue_cert(ca, @ca_key, 1, ca_exts, nil, nil)
     ee_exts = [
-      ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
-      ["authorityKeyIdentifier","keyid:always",false],
-      ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
+      ["keyUsage", "nonRepudiation, digitalSignature, keyEncipherment", true],
+      ["authorityKeyIdentifier", "keyid:always", false],
+      ["extendedKeyUsage", "clientAuth, emailProtection, codeSigning", false],
     ]
-    @ee1_cert = issue_cert(ee1, @rsa1024, 2, ee_exts, @ca_cert, @rsa2048)
-    @ee2_cert = issue_cert(ee2, @rsa1024, 3, ee_exts, @ca_cert, @rsa2048)
+    @ee1_cert = issue_cert(ee1, @ee1_key, 2, ee_exts, @ca_cert, @ca_key)
+    @ee2_cert = issue_cert(ee2, @ee2_key, 3, ee_exts, @ca_cert, @ca_key)
   end
 
   def test_signed
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
-    ca_certs = [@ca_cert]
 
-    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
+    data = "aaaaa\nbbbbb\nccccc\n"
+    ca_certs = [@ca_cert]
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs)
+    # TODO: #data contains untranslated content
+    assert_equal("aaaaa\nbbbbb\nccccc\n", tmp.data)
+    assert_nil(tmp.error_string)
+
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
+    assert_nil(p7.data)
+    assert_nil(p7.error_string)
+
+    assert_true(p7.verify([], store))
+    # AWS-LC does not appear to convert to CRLF automatically
+    assert_equal("aaaaa\r\nbbbbb\r\nccccc\r\n", p7.data) unless aws_lc?
+    assert_nil(p7.error_string)
+
     certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
-    assert_equal(data, p7.data)
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
+    # AWS-LC does not generate authenticatedAttributes
+    assert_in_delta(Time.now, signers[0].signed_time, 10) unless aws_lc?
+
+    assert_false(p7.verify([@ca_cert], OpenSSL::X509::Store.new))
+  end
+
+  def test_signed_flags
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
 
     # Normally OpenSSL tries to translate the supplied content into canonical
     # MIME format (e.g. a newline character is converted into CR+LF).
     # If the content is a binary, PKCS7::BINARY flag should be used.
-
+    #
+    # PKCS7::NOATTR flag suppresses authenticatedAttributes.
     data = "aaaaa\nbbbbb\nccccc\n"
-    flag = OpenSSL::PKCS7::BINARY
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
+    flag = OpenSSL::PKCS7::BINARY | OpenSSL::PKCS7::NOATTR
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, [@ca_cert], flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
-    certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
+
+    assert_true(p7.verify([], store))
     assert_equal(data, p7.data)
+
+    certs = p7.certificates
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { signers[0].signed_time }
+  end
+
+  def test_signed_multiple_signers
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
 
     # A signed-data which have multiple signatures can be created
     # through the following steps.
     #   1. create two signed-data
     #   2. copy signerInfo and certificate from one to another
-
-    tmp1 = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, [], flag)
-    tmp2 = OpenSSL::PKCS7.sign(@ee2_cert, @rsa1024, data, [], flag)
+    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
+    tmp1 = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data)
+    tmp2 = OpenSSL::PKCS7.sign(@ee2_cert, @ee2_key, data)
     tmp1.add_signer(tmp2.signers[0])
     tmp1.add_certificate(@ee2_cert)
 
     p7 = OpenSSL::PKCS7.new(tmp1.to_der)
-    certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
+    assert_true(p7.verify([], store))
     assert_equal(data, p7.data)
+
+    certs = p7.certificates
     assert_equal(2, certs.size)
+
+    signers = p7.signers
     assert_equal(2, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
     assert_equal(@ee2_cert.serial, signers[1].serial)
-    assert_equal(@ee2_cert.issuer.to_s, signers[1].issuer.to_s)
+    assert_equal(@ee2_cert.issuer, signers[1].issuer)
   end
 
   def test_signed_add_signer
     data = "aaaaa\nbbbbb\nccccc\n"
-    psi = OpenSSL::PKCS7::SignerInfo.new(@ee1_cert, @rsa1024, "sha256")
+    psi = OpenSSL::PKCS7::SignerInfo.new(@ee1_cert, @ee1_key, "sha256")
     p7 = OpenSSL::PKCS7.new
     p7.type = :signed
     p7.add_signer(psi)
@@ -110,30 +143,82 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def test_detached_sign
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
-    ca_certs = [@ca_cert]
 
     data = "aaaaa\nbbbbb\nccccc\n"
+    ca_certs = [@ca_cert]
     flag = OpenSSL::PKCS7::BINARY|OpenSSL::PKCS7::DETACHED
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs, flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
-    assert_nothing_raised do
-      OpenSSL::ASN1.decode(p7)
-    end
+    assert_predicate(p7, :detached?)
+    assert_true(p7.detached)
+
+    assert_false(p7.verify([], store))
+    # FIXME: Should it be nil?
+    assert_equal("", p7.data)
+    assert_match(/no content|NO_CONTENT/, p7.error_string)
+
+    assert_true(p7.verify([], store, data))
+    assert_equal(data, p7.data)
+    assert_nil(p7.error_string)
 
     certs = p7.certificates
-    signers = p7.signers
-    assert(!p7.verify([], store))
-    assert(p7.verify([], store, data))
-    assert_equal(data, p7.data)
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
+  end
+
+  def test_signed_authenticated_attributes
+    # Using static PEM data because AWS-LC does not support generating one
+    # with authenticatedAttributes.
+    #
+    # p7 was generated with OpenSSL 3.4.1 with this program with commandline
+    # "faketime 2025-04-03Z ruby prog.rb":
+    #
+    #   require_relative "test/openssl/utils"
+    #   include OpenSSL::TestUtils
+    #   key = Fixtures.pkey("p256")
+    #   cert = issue_cert(OpenSSL::X509::Name.new([["CN", "cert"]]), key, 1, [], nil, nil)
+    #   p7 = OpenSSL::PKCS7.sign(cert, key, "content", [])
+    #   puts p7.to_pem
+    p7 = OpenSSL::PKCS7.new(<<~EOF)
+-----BEGIN PKCS7-----
+MIICvgYJKoZIhvcNAQcCoIICrzCCAqsCAQExDzANBglghkgBZQMEAgEFADAWBgkq
+hkiG9w0BBwGgCQQHY29udGVudKCCAQ4wggEKMIGxoAMCAQICAQEwCgYIKoZIzj0E
+AwIwDzENMAsGA1UEAwwEY2VydDAeFw0yNTA0MDIyMzAwMDFaFw0yNTA0MDMwMTAw
+MDFaMA8xDTALBgNVBAMMBGNlcnQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQW
+CWTZz6hVQgpDrh5kb1uEs09YHuVJn8CsrjV4bLnADNT/QbnVe20J4FSX4xqFm2f1
+87Ukp0XiomZLf11eekQ2MAoGCCqGSM49BAMCA0gAMEUCIEg1fDI8b3hZAArgniVk
+HeM6puwgcMh5NXwvJ9x0unVmAiEAppecVTSQ+yEPyBG415Og6sK+RC78pcByEC81
+C/QSwRYxggFpMIIBZQIBATAUMA8xDTALBgNVBAMMBGNlcnQCAQEwDQYJYIZIAWUD
+BAIBBQCggeQwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMjUwNDAzMDAwMDAxWjAvBgkqhkiG9w0BCQQxIgQg7XACtDnprIRfIjV9gius
+FERzD722AW0+yUMil7nsn3MweQYJKoZIhvcNAQkPMWwwajALBglghkgBZQMEASow
+CwYJYIZIAWUDBAEWMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0D
+AgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwCgYI
+KoZIzj0EAwIESDBGAiEAssymc28HySAhg+XeWIpSbtzkwycr2JG6dzHRZ+vn0ocC
+IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
+-----END PKCS7-----
+    EOF
+
+    cert = p7.certificates[0]
+    store = OpenSSL::X509::Store.new.tap { |store|
+      store.time = Time.utc(2025, 4, 3)
+      store.add_cert(cert)
+    }
+    assert_equal(true, p7.verify([], store))
+    assert_equal(1, p7.signers.size)
+    signer = p7.signers[0]
+    assert_in_delta(Time.utc(2025, 4, 3), signer.signed_time, 10)
   end
 
   def test_enveloped
+    omit_on_fips # PKCS #1 v1.5 padding
+
     certs = [@ee1_cert, @ee2_cert]
     cipher = OpenSSL::Cipher::AES.new("128-CBC")
     data = "aaaaa\nbbbbb\nccccc\n"
@@ -144,20 +229,82 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(:enveloped, p7.type)
     assert_equal(2, recip.size)
 
-    assert_equal(@ca_cert.subject.to_s, recip[0].issuer.to_s)
-    assert_equal(2, recip[0].serial)
-    assert_equal(data, p7.decrypt(@rsa1024, @ee1_cert))
+    assert_equal(@ca_cert.subject, recip[0].issuer)
+    assert_equal(@ee1_cert.serial, recip[0].serial)
+    assert_equal(16, @ee1_key.decrypt(recip[0].enc_key).size)
+    assert_equal(data, p7.decrypt(@ee1_key, @ee1_cert))
 
-    assert_equal(@ca_cert.subject.to_s, recip[1].issuer.to_s)
-    assert_equal(3, recip[1].serial)
-    assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
+    assert_equal(@ca_cert.subject, recip[1].issuer)
+    assert_equal(@ee2_cert.serial, recip[1].serial)
+    assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
 
-    assert_equal(data, p7.decrypt(@rsa1024))
+    assert_equal(data, p7.decrypt(@ee1_key))
+
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) {
+      p7.decrypt(@ca_key, @ca_cert)
+    }
+
+    # Default cipher has been removed in v3.3
+    assert_raise_with_message(ArgumentError, /RC2-40-CBC/) {
+      OpenSSL::PKCS7.encrypt(certs, data)
+    }
+  end
+
+  def test_enveloped_add_recipient
+    omit_on_fips # PKCS #1 v1.5 padding
+
+    data = "aaaaa\nbbbbb\nccccc\n"
+    ktri_ee1 = OpenSSL::PKCS7::RecipientInfo.new(@ee1_cert)
+    ktri_ee2 = OpenSSL::PKCS7::RecipientInfo.new(@ee2_cert)
+
+    tmp = OpenSSL::PKCS7.new
+    tmp.type = :enveloped
+    tmp.cipher = "AES-128-CBC"
+    tmp.add_recipient(ktri_ee1)
+    tmp.add_recipient(ktri_ee2)
+    tmp.add_data(data)
+
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
+    assert_equal(:enveloped, p7.type)
+    assert_equal(data, p7.decrypt(@ee1_key, @ee1_cert))
+    assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
+    assert_equal([@ee1_cert.serial, @ee2_cert.serial].sort,
+                 p7.recipients.map(&:serial).sort)
+  end
+
+  def test_data
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::ObjectId("pkcs7-data"),
+      OpenSSL::ASN1::OctetString("content", 0, :EXPLICIT),
+    ])
+    p7 = OpenSSL::PKCS7.new
+    p7.type = :data
+    p7.data = "content"
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.add_certificate(@ee1_cert) }
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.certificates = [@ee1_cert] }
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.cipher = "aes-128-cbc" }
+    assert_equal(asn1.to_der, p7.to_der)
+
+    p7 = OpenSSL::PKCS7.new(asn1)
+    assert_equal(:data, p7.type)
+    assert_equal(false, p7.detached)
+    assert_equal(false, p7.detached?)
+    # Not applicable
+    assert_nil(p7.certificates)
+    assert_nil(p7.crls)
+    # Not applicable. Should they return nil or raise an exception instead?
+    assert_equal([], p7.signers)
+    assert_equal([], p7.recipients)
+    # PKCS7#verify can't distinguish verification failure and other errors
+    store = OpenSSL::X509::Store.new
+    assert_equal(false, p7.verify([@ee1_cert], store))
+    assert_match(/wrong content type|WRONG_CONTENT_TYPE/, p7.error_string)
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.decrypt(@ee1_key) }
   end
 
   def test_empty_signed_data_ruby_bug_19974
     data = "-----BEGIN PKCS7-----\nMAsGCSqGSIb3DQEHAg==\n-----END PKCS7-----\n"
-    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(data) }
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { OpenSSL::PKCS7.new(data) }
 
     data = <<END
 MIME-Version: 1.0
@@ -171,8 +318,8 @@ END
   end
 
   def test_graceful_parsing_failure #[ruby-core:43250]
-    contents = File.read(__FILE__)
-    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }
+    contents = "not a valid PKCS #7 PEM block"
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { OpenSSL::PKCS7.new(contents) }
   end
 
   def test_set_type_signed
@@ -193,12 +340,6 @@ END
     assert_equal(:signedAndEnveloped, p7.type)
   end
 
-  def test_set_type_enveloped
-    p7 = OpenSSL::PKCS7.new
-    p7.type = "enveloped"
-    assert_equal(:enveloped, p7.type)
-  end
-
   def test_set_type_encrypted
     p7 = OpenSSL::PKCS7.new
     p7.type = "encrypted"
@@ -206,12 +347,14 @@ END
   end
 
   def test_smime
+    pend "AWS-LC has no current support for SMIME with PKCS7" if aws_lc?
+
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
     ca_certs = [@ca_cert]
 
     data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
     smime = OpenSSL::PKCS7.write_smime(p7)
     assert_equal(true, smime.start_with?(<<END))
@@ -228,6 +371,8 @@ END
   end
 
   def test_to_text
+    omit "AWS-LC does not support PKCS7.to_text" if aws_lc?
+
     p7 = OpenSSL::PKCS7.new
     p7.type = "signed"
     assert_match(/signed/, p7.to_text)
@@ -270,78 +415,34 @@ END
     end
   end
 
-  def test_split_content
-     pki_message_pem = <<END
------BEGIN PKCS7-----
-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
------END PKCS7-----
-END
-    pki_message_content_pem = <<END
------BEGIN PKCS7-----
-MIIDawYJKoZIhvcNAQcDoIIDXDCCA1gCAQAxggEQMIIBDAIBADB1MHAxEDAOBgNV
-BAoMB2V4YW1wbGUxFzAVBgNVBAMMDlRBUk1BQyBST09UIENBMSIwIAYJKoZIhvcN
-AQkBFhNzb21lb25lQGV4YW1wbGUub3JnMQswCQYDVQQGEwJVUzESMBAGA1UEBwwJ
-VG93biBIYWxsAgFmMA0GCSqGSIb3DQEBAQUABIGAbKV17HvGYRtRRBNz1QLpW763
-UedhVj5KXi70o4BJGM04lItAgt6aFC9SruZjpWr1gCYKCaRSAg273DeGTQwsDoZ8
-6CPXzBpptYLz0MteQXYYWUaPZT+xmvx4NgDyk9P9MoT7JifsPrtXuzqCRFXhGdu8
-d/ru+OWxhHLvKH+bYekwggI9BgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECBNs2U5m
-Msd/gIICGFOnLq/EAc9Nv+HjKR3ZVPSJMq0TImjGf5Mvc3nDgI572Hdo2aku0YXM
-6WjSWkpYtxpg7Cqxfl6hPSefLPUnBqlIoM2qbrE7MSKEVD6+2bW9GqYPFVg4qQLL
-sOxnxJIMfOvLFfd7guL+iLH424XfiUUxaf8EdZE4u2IEl4REvkS1FoEGwyA4BEGM
-SeVPedQCbZ0qY7Pc2tmZE3XfEUhIsyStG0Nb6i6AKcAFYGapbgE6kAB0gwsYcHlW
-MOvsvdAfcTq6jwtHlO1s68qtvkWquTQ9lpX+fzddUUNxEHSqv5eU3oo6fT3Vj5ZF
-IVlaA5ThZMrI5PgRPuwJM4GL8/VLwY5mbDLFqn/irGeEvP99J3S87ornLLunjpxS
-y1/AymcVep2H32Tj82WS/IRQXBOzz4EnQRJGszKxAV6tY+Zje3sWyTTgObhlsiTQ
-TDgnvtSW8RvVHqKrwgkxxEsRHg7u8UdzZ0jg+O5+3F8B6/NWMyts0OaFqT9wvI8y
-O7VIy3dUtGdz7Hde6Ggp/iTn1LbgdJ3N8Hzxf1j6NMWUKHVsadvwpRJbUeqq9c3+
-QuxsJi8wWemxxQCE+tPyc1dP+ej5/M7bERbSOHMGgX03758IvP7A/fy2DjGPv2+l
-AwlEke0Uze1367QKgxM0nc3SZDlptY7zPIJC5saWXb8Rt2bw2JxEBOTavrp+ZwJ8
-tcH961onq8Tme2ICaCzk
------END PKCS7-----
-END
-    pki_msg = OpenSSL::PKCS7.new(pki_message_pem)
-    store = OpenSSL::X509::Store.new
-    pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY)
-    p7enc = OpenSSL::PKCS7.new(pki_msg.data)
-    assert_equal(pki_message_content_pem, p7enc.to_pem)
+  def test_decode_ber_constructed_string
+    omit_on_fips # PKCS #1 v1.5 padding
+
+    p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], "content", "aes-128-cbc")
+
+    # Make an equivalent BER to p7.to_der. Here we convert the encryptedContent
+    # field of EncryptedContentInfo into a constructed encoding using the
+    # indefinite length form.
+    # See https://www.rfc-editor.org/rfc/rfc2315#section-10.1
+    asn1 = OpenSSL::ASN1.decode(p7.to_der)
+    asn1.indefinite_length = true
+    enveloped_data_explicit_tag = asn1.value[1]
+    enveloped_data_explicit_tag.indefinite_length = true
+    enveloped_data = enveloped_data_explicit_tag.value[0]
+    enveloped_data.indefinite_length = true
+    encrypted_content_info = enveloped_data.value[2]
+    encrypted_content_info.indefinite_length = true
+    orig = encrypted_content_info.value[2]
+    encrypted_content_info.value[2] = OpenSSL::ASN1::ASN1Data.new([
+      OpenSSL::ASN1::OctetString(orig.value[...5]),
+      OpenSSL::ASN1::OctetString(orig.value[5...]),
+    ], 0, :CONTEXT_SPECIFIC).tap { |x| x.indefinite_length = true }
+
+    assert_not_equal(p7.to_der, asn1.to_der)
+    assert_equal(p7.to_der, OpenSSL::PKCS7.new(asn1.to_der).to_der)
+
+    assert_equal("content", OpenSSL::PKCS7.new(p7.to_der).decrypt(@ee1_key))
+    assert_equal("content", OpenSSL::PKCS7.new(asn1.to_der).decrypt(@ee1_key))
   end
 end
 

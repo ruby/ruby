@@ -10,11 +10,15 @@ module Bundler
     method_option "source", type: :string, default: nil, banner: "URL of the RubyGems source to fetch the plugin from"
     method_option "version", type: :string, default: nil, banner: "The version of the plugin to fetch"
     method_option "git", type: :string, default: nil, banner: "URL of the git repo to fetch from"
-    method_option "local_git", type: :string, default: nil, banner: "Path of the local git repo to fetch from (deprecated)"
+    method_option "local_git", type: :string, default: nil, banner: "Path of the local git repo to fetch from (removed)"
     method_option "branch", type: :string, default: nil, banner: "The git branch to checkout"
     method_option "ref", type: :string, default: nil, banner: "The git revision to check out"
     method_option "path", type: :string, default: nil, banner: "Path of a local gem to directly use"
     def install(*plugins)
+      if options.key?(:local_git)
+        raise InvalidOption, "--local_git has been removed, use --git"
+      end
+
       Bundler::Plugin.install(plugins, options)
     end
 

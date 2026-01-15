@@ -34,102 +34,11 @@ struct weakmap_entry {
     VALUE val;
 };
 
-static bool
-wmap_live_p(VALUE obj)
-{
-    return !UNDEF_P(obj);
-}
-
-struct wmap_foreach_data {
-    int (*func)(struct weakmap_entry *, st_data_t);
-    st_data_t arg;
-
-    struct weakmap_entry *dead_entry;
-};
-
-static int
-wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct wmap_foreach_data *data = (struct wmap_foreach_data *)arg;
-
-    if (data->dead_entry != NULL) {
-        ruby_sized_xfree(data->dead_entry, sizeof(struct weakmap_entry));
-        data->dead_entry = NULL;
-    }
-
-    struct weakmap_entry *entry = (struct weakmap_entry *)key;
-    RUBY_ASSERT(&entry->val == (VALUE *)val);
-
-    if (wmap_live_p(entry->key) && wmap_live_p(entry->val)) {
-        VALUE k = entry->key;
-        VALUE v = entry->val;
-
-        int ret = data->func(entry, data->arg);
-
-        RB_GC_GUARD(k);
-        RB_GC_GUARD(v);
-
-        return ret;
-    }
-    else {
-        /* We cannot free the weakmap_entry here because the ST_DELETE could
-         * hash the key which would read the weakmap_entry and would cause a
-         * use-after-free. Instead, we store this entry and free it on the next
-         * iteration. */
-        data->dead_entry = entry;
-
-        return ST_DELETE;
-    }
-}
-
-static void
-wmap_foreach(struct weakmap *w, int (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
-{
-    struct wmap_foreach_data foreach_data = {
-        .func = func,
-        .arg = arg,
-        .dead_entry = NULL,
-    };
-
-    st_foreach(w->table, wmap_foreach_i, (st_data_t)&foreach_data);
-
-    ruby_sized_xfree(foreach_data.dead_entry, sizeof(struct weakmap_entry));
-}
-
-static int
-wmap_mark_weak_table_i(struct weakmap_entry *entry, st_data_t _)
-{
-    rb_gc_mark_weak(&entry->key);
-    rb_gc_mark_weak(&entry->val);
-
-    return ST_CONTINUE;
-}
-
-static void
-wmap_mark(void *ptr)
-{
-    struct weakmap *w = ptr;
-    if (w->table) {
-        wmap_foreach(w, wmap_mark_weak_table_i, (st_data_t)0);
-    }
-}
-
-static int
-wmap_free_table_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct weakmap_entry *entry = (struct weakmap_entry *)key;
-    RUBY_ASSERT(&entry->val == (VALUE *)val);
-    ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
-
-    return ST_CONTINUE;
-}
-
 static void
 wmap_free(void *ptr)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, wmap_free_table_i, 0);
     st_free_table(w->table);
 }
 
@@ -139,35 +48,52 @@ wmap_memsize(const void *ptr)
     const struct weakmap *w = ptr;
 
     size_t size = 0;
-    size += st_memsize(w->table);
-    /* The key and value of the table each take sizeof(VALUE) in size. */
-    size += st_table_size(w->table) * (2 * sizeof(VALUE));
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* The key and value of the table each take sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * (2 * sizeof(VALUE));
+    }
 
     return size;
 }
 
+struct wmap_compact_table_data {
+    st_table *table;
+    struct weakmap_entry *dead_entry;
+};
+
 static int
-wmap_compact_table_i(struct weakmap_entry *entry, st_data_t data)
+wmap_compact_table_each_i(st_data_t k, st_data_t v, st_data_t d, int error)
 {
-    st_table *table = (st_table *)data;
+    st_table *table = (st_table *)d;
 
-    VALUE new_key = rb_gc_location(entry->key);
+    VALUE key = (VALUE)k;
+    VALUE val = (VALUE)v;
 
-    entry->val = rb_gc_location(entry->val);
+    VALUE moved_key = rb_gc_location(key);
+    VALUE moved_val = rb_gc_location(val);
 
     /* If the key object moves, then we must reinsert because the hash is
-        * based on the pointer rather than the object itself. */
-    if (entry->key != new_key) {
-        entry->key = new_key;
-
-        DURING_GC_COULD_MALLOC_REGION_START();
-        {
-            st_insert(table, (st_data_t)&entry->key, (st_data_t)&entry->val);
-        }
-        DURING_GC_COULD_MALLOC_REGION_END();
+     * based on the pointer rather than the object itself. */
+    if (key != moved_key) {
+        st_insert(table, (st_data_t)moved_key, (st_data_t)moved_val);
 
         return ST_DELETE;
     }
+    else if (val != moved_val) {
+        return ST_REPLACE;
+    }
+    else {
+        return ST_CONTINUE;
+    }
+}
+
+static int
+wmap_compact_table_replace_i(st_data_t *k, st_data_t *v, st_data_t d, int existing)
+{
+    RUBY_ASSERT((VALUE)*k == rb_gc_location((VALUE)*k));
+
+    *v = (st_data_t)rb_gc_location((VALUE)*v);
 
     return ST_CONTINUE;
 }
@@ -178,17 +104,42 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
 
     if (w->table) {
-        wmap_foreach(w, wmap_compact_table_i, (st_data_t)w->table);
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            st_foreach_with_replace(w->table, wmap_compact_table_each_i, wmap_compact_table_replace_i, (st_data_t)w->table);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
     }
 }
 
-static const rb_data_type_t weakmap_type = {
+static int
+rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key) &&
+            rb_gc_handle_weak_references_alive_p(val)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wmap_handle_weak_references(void *ptr)
+{
+    struct weakmap *w = ptr;
+
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
+}
+
+const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
-        wmap_mark,
+        NULL,
         wmap_free,
         wmap_memsize,
         wmap_compact,
+        wmap_handle_weak_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -196,13 +147,13 @@ static const rb_data_type_t weakmap_type = {
 static int
 wmap_cmp(st_data_t x, st_data_t y)
 {
-    return *(VALUE *)x != *(VALUE *)y;
+    return x != y;
 }
 
 static st_index_t
 wmap_hash(st_data_t n)
 {
-    return st_numhash(*(VALUE *)n);
+    return st_numhash(n);
 }
 
 static const struct st_hash_type wmap_hash_type = {
@@ -214,8 +165,12 @@ static VALUE
 wmap_allocate(VALUE klass)
 {
     struct weakmap *w;
-    VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
+    VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &rb_weakmap_type, w);
+
     w->table = st_init_table(&wmap_hash_type);
+
+    rb_gc_declare_weak_references(obj);
+
     return obj;
 }
 
@@ -231,8 +186,10 @@ wmap_inspect_append(VALUE str, VALUE obj)
 }
 
 static int
-wmap_inspect_i(struct weakmap_entry *entry, st_data_t data)
+wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
 {
+    VALUE key = (VALUE)k;
+    VALUE val = (VALUE)v;
     VALUE str = (VALUE)data;
 
     if (RSTRING_PTR(str)[0] == '#') {
@@ -243,23 +200,34 @@ wmap_inspect_i(struct weakmap_entry *entry, st_data_t data)
         RSTRING_PTR(str)[0] = '#';
     }
 
-    wmap_inspect_append(str, entry->key);
+    wmap_inspect_append(str, key);
     rb_str_cat2(str, " => ");
-    wmap_inspect_append(str, entry->val);
+    wmap_inspect_append(str, val);
 
     return ST_CONTINUE;
 }
 
+/* call-seq:
+ *   inspect -> new_string
+ *
+ * Returns a new string containing the \WeakMap entries:
+ *
+ *   m = ObjectSpace::WeakMap.new
+ *   m["one"] = 1
+ *   m["two"] = 2
+ *   m.inspect
+ *   # => "#<ObjectSpace::WeakMap:0x00007c457b2523e8: #<String:0x00007c457b2674f0> => 1, #<String:0x00007c457b27b8d8> => 2>"
+ */
 static VALUE
 wmap_inspect(VALUE self)
 {
     VALUE c = rb_class_name(CLASS_OF(self));
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
     VALUE str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
 
-    wmap_foreach(w, wmap_inspect_i, (st_data_t)str);
+    st_foreach(w->table, wmap_inspect_i, (st_data_t)str);
 
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
@@ -268,9 +236,9 @@ wmap_inspect(VALUE self)
 }
 
 static int
-wmap_each_i(struct weakmap_entry *entry, st_data_t _)
+wmap_each_i(st_data_t k, st_data_t v, st_data_t _)
 {
-    rb_yield_values(2, entry->key, entry->val);
+    rb_yield_values(2, (VALUE)k, (VALUE)v);
 
     return ST_CONTINUE;
 }
@@ -287,17 +255,17 @@ static VALUE
 wmap_each(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    wmap_foreach(w, wmap_each_i, (st_data_t)0);
+    st_foreach(w->table, wmap_each_i, (st_data_t)0);
 
     return self;
 }
 
 static int
-wmap_each_key_i(struct weakmap_entry *entry, st_data_t _data)
+wmap_each_key_i(st_data_t k, st_data_t _v, st_data_t _data)
 {
-    rb_yield(entry->key);
+    rb_yield((VALUE)k);
 
     return ST_CONTINUE;
 }
@@ -314,17 +282,17 @@ static VALUE
 wmap_each_key(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    wmap_foreach(w, wmap_each_key_i, (st_data_t)0);
+    st_foreach(w->table, wmap_each_key_i, (st_data_t)0);
 
     return self;
 }
 
 static int
-wmap_each_value_i(struct weakmap_entry *entry, st_data_t _data)
+wmap_each_value_i(st_data_t k, st_data_t v, st_data_t _data)
 {
-    rb_yield(entry->val);
+    rb_yield((VALUE)v);
 
     return ST_CONTINUE;
 }
@@ -341,19 +309,19 @@ static VALUE
 wmap_each_value(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    wmap_foreach(w, wmap_each_value_i, (st_data_t)0);
+    st_foreach(w->table, wmap_each_value_i, (st_data_t)0);
 
     return self;
 }
 
 static int
-wmap_keys_i(struct weakmap_entry *entry, st_data_t arg)
+wmap_keys_i(st_data_t k, st_data_t v, st_data_t data)
 {
-    VALUE ary = (VALUE)arg;
+    VALUE ary = (VALUE)data;
 
-    rb_ary_push(ary, entry->key);
+    rb_ary_push(ary, (VALUE)k);
 
     return ST_CONTINUE;
 }
@@ -369,20 +337,20 @@ static VALUE
 wmap_keys(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
     VALUE ary = rb_ary_new();
-    wmap_foreach(w, wmap_keys_i, (st_data_t)ary);
+    st_foreach(w->table, wmap_keys_i, (st_data_t)ary);
 
     return ary;
 }
 
 static int
-wmap_values_i(struct weakmap_entry *entry, st_data_t arg)
+wmap_values_i(st_data_t k, st_data_t v, st_data_t data)
 {
-    VALUE ary = (VALUE)arg;
+    VALUE ary = (VALUE)data;
 
-    rb_ary_push(ary, entry->val);
+    rb_ary_push(ary, (VALUE)v);
 
     return ST_CONTINUE;
 }
@@ -398,46 +366,12 @@ static VALUE
 wmap_values(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
     VALUE ary = rb_ary_new();
-    wmap_foreach(w, wmap_values_i, (st_data_t)ary);
+    st_foreach(w->table, wmap_values_i, (st_data_t)ary);
 
     return ary;
-}
-
-static VALUE
-nonspecial_obj_id(VALUE obj)
-{
-#if SIZEOF_LONG == SIZEOF_VOIDP
-    return (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG);
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return LL2NUM((SIGNED_VALUE)(obj) / 2);
-#else
-# error not supported
-#endif
-}
-
-static int
-wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int existing)
-{
-    VALUE new_key = *(VALUE *)new_key_ptr;
-    VALUE new_val = *(((VALUE *)new_key_ptr) + 1);
-
-    if (existing) {
-        RUBY_ASSERT(*(VALUE *)*key == new_key);
-    }
-    else {
-        struct weakmap_entry *entry = xmalloc(sizeof(struct weakmap_entry));
-
-        *key = (st_data_t)&entry->key;;
-        *val = (st_data_t)&entry->val;
-    }
-
-    *(VALUE *)*key = new_key;
-    *(VALUE *)*val = new_val;
-
-    return ST_CONTINUE;
 }
 
 /*
@@ -453,33 +387,27 @@ static VALUE
 wmap_aset(VALUE self, VALUE key, VALUE val)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE pair[2] = { key, val };
-
-    st_update(w->table, (st_data_t)pair, wmap_aset_replace, (st_data_t)pair);
+    st_insert(w->table, (st_data_t)key, (st_data_t)val);
 
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
 
-    return nonspecial_obj_id(val);
+    return Qnil;
 }
 
 /* Retrieves a weakly referenced object with the given key */
 static VALUE
 wmap_lookup(VALUE self, VALUE key)
 {
-    RUBY_ASSERT(wmap_live_p(key));
-
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
     st_data_t data;
-    if (!st_lookup(w->table, (st_data_t)&key, &data)) return Qundef;
+    if (!st_lookup(w->table, (st_data_t)key, &data)) return Qundef;
 
-    if (!wmap_live_p(*(VALUE *)data)) return Qundef;
-
-    return *(VALUE *)data;
+    return (VALUE)data;
 }
 
 /*
@@ -529,23 +457,12 @@ static VALUE
 wmap_delete(VALUE self, VALUE key)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE orig_key = key;
-    st_data_t orig_key_data = (st_data_t)&orig_key;
-    st_data_t orig_val_data;
-    if (st_delete(w->table, &orig_key_data, &orig_val_data)) {
-        VALUE orig_val = *(VALUE *)orig_val_data;
-
-        rb_gc_remove_weak(self, (VALUE *)orig_key_data);
-        rb_gc_remove_weak(self, (VALUE *)orig_val_data);
-
-        struct weakmap_entry *entry = (struct weakmap_entry *)orig_key_data;
-        ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
-
-        if (wmap_live_p(orig_val)) {
-            return orig_val;
-        }
+    st_data_t orig_key = (st_data_t)key;
+    st_data_t orig_val;
+    if (st_delete(w->table, &orig_key, &orig_val)) {
+        return (VALUE)orig_val;
     }
 
     if (rb_block_given_p()) {
@@ -578,7 +495,7 @@ static VALUE
 wmap_size(VALUE self)
 {
     struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
     st_index_t n = st_table_size(w->table);
 
@@ -612,27 +529,11 @@ struct weakkeymap {
 };
 
 static int
-wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t data)
+wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t _data)
 {
-    VALUE **dead_entry = (VALUE **)data;
-    if (dead_entry != NULL) {
-        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
-        *dead_entry = NULL;
-    }
+    rb_gc_mark_movable((VALUE)val_obj);
 
-    VALUE *key_ptr = (VALUE *)key;
-
-    if (wmap_live_p(*key_ptr)) {
-        rb_gc_mark_weak(key_ptr);
-        rb_gc_mark_movable((VALUE)val_obj);
-
-        return ST_CONTINUE;
-    }
-    else {
-        *dead_entry = key_ptr;
-
-        return ST_DELETE;
-    }
+    return ST_CONTINUE;
 }
 
 static void
@@ -640,19 +541,8 @@ wkmap_mark(void *ptr)
 {
     struct weakkeymap *w = ptr;
     if (w->table) {
-        VALUE *dead_entry = NULL;
-        st_foreach(w->table, wkmap_mark_table_i, (st_data_t)&dead_entry);
-        if (dead_entry != NULL) {
-            ruby_sized_xfree(dead_entry, sizeof(VALUE));
-        }
+        st_foreach(w->table, wkmap_mark_table_i, (st_data_t)0);
     }
-}
-
-static int
-wkmap_free_table_i(st_data_t key, st_data_t _val, st_data_t _arg)
-{
-    ruby_sized_xfree((VALUE *)key, sizeof(VALUE));
-    return ST_CONTINUE;
 }
 
 static void
@@ -660,7 +550,6 @@ wkmap_free(void *ptr)
 {
     struct weakkeymap *w = ptr;
 
-    st_foreach(w->table, wkmap_free_table_i, 0);
     st_free_table(w->table);
 }
 
@@ -670,36 +559,23 @@ wkmap_memsize(const void *ptr)
     const struct weakkeymap *w = ptr;
 
     size_t size = 0;
-    size += st_memsize(w->table);
-    /* Each key of the table takes sizeof(VALUE) in size. */
-    size += st_table_size(w->table) * sizeof(VALUE);
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* Each key of the table takes sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * sizeof(VALUE);
+    }
 
     return size;
 }
 
 static int
-wkmap_compact_table_i(st_data_t key, st_data_t val_obj, st_data_t data, int _error)
+wkmap_compact_table_i(st_data_t key, st_data_t val, st_data_t _data, int _error)
 {
-    VALUE **dead_entry = (VALUE **)data;
-    if (dead_entry != NULL) {
-        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
-        *dead_entry = NULL;
+    if ((VALUE)key != rb_gc_location((VALUE)key) || (VALUE)val != rb_gc_location((VALUE)val)) {
+        return ST_REPLACE;
     }
 
-    VALUE *key_ptr = (VALUE *)key;
-
-    if (wmap_live_p(*key_ptr)) {
-        if (*key_ptr != rb_gc_location(*key_ptr) || val_obj != rb_gc_location(val_obj)) {
-            return ST_REPLACE;
-        }
-
-        return ST_CONTINUE;
-    }
-    else {
-        *dead_entry = key_ptr;
-
-        return ST_DELETE;
-    }
+    return ST_CONTINUE;
 }
 
 static int
@@ -707,7 +583,7 @@ wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _d
 {
     RUBY_ASSERT(existing);
 
-    *(VALUE *)*key_ptr = rb_gc_location(*(VALUE *)*key_ptr);
+    *key_ptr = (st_data_t)rb_gc_location((VALUE)*key_ptr);
     *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
 
     return ST_CONTINUE;
@@ -719,21 +595,37 @@ wkmap_compact(void *ptr)
     struct weakkeymap *w = ptr;
 
     if (w->table) {
-        VALUE *dead_entry = NULL;
-        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)&dead_entry);
-        if (dead_entry != NULL) {
-            ruby_sized_xfree(dead_entry, sizeof(VALUE));
-        }
+        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
     }
 }
 
-static const rb_data_type_t weakkeymap_type = {
+static int
+rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wkmap_handle_weak_references(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
+}
+
+static const rb_data_type_t rb_weakkeymap_type = {
     "weakkeymap",
     {
         wkmap_mark,
         wkmap_free,
         wkmap_memsize,
         wkmap_compact,
+        wkmap_handle_weak_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -741,23 +633,16 @@ static const rb_data_type_t weakkeymap_type = {
 static int
 wkmap_cmp(st_data_t x, st_data_t y)
 {
-    VALUE x_obj = *(VALUE *)x;
-    VALUE y_obj = *(VALUE *)y;
+    VALUE x_obj = (VALUE)x;
+    VALUE y_obj = (VALUE)y;
 
-    if (wmap_live_p(x_obj) && wmap_live_p(y_obj)) {
-        return rb_any_cmp(x_obj, y_obj);
-    }
-    else {
-        /* If one of the objects is dead, then they cannot be the same. */
-        return 1;
-    }
+    return rb_any_cmp(x_obj, y_obj);
 }
 
 static st_index_t
 wkmap_hash(st_data_t n)
 {
-    VALUE obj = *(VALUE *)n;
-    RUBY_ASSERT(wmap_live_p(obj));
+    VALUE obj = (VALUE)n;
 
     return rb_any_hash(obj);
 }
@@ -771,8 +656,13 @@ static VALUE
 wkmap_allocate(VALUE klass)
 {
     struct weakkeymap *w;
-    VALUE obj = TypedData_Make_Struct(klass, struct weakkeymap, &weakkeymap_type, w);
+
+    VALUE obj = TypedData_Make_Struct(klass, struct weakkeymap, &rb_weakkeymap_type, w);
+
     w->table = st_init_table(&wkmap_hash_type);
+
+    rb_gc_declare_weak_references(obj);
+
     return obj;
 }
 
@@ -780,10 +670,10 @@ static VALUE
 wkmap_lookup(VALUE self, VALUE key)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
     st_data_t data;
-    if (!st_lookup(w->table, (st_data_t)&key, &data)) return Qundef;
+    if (!st_lookup(w->table, (st_data_t)key, &data)) return Qundef;
 
     return (VALUE)data;
 }
@@ -808,21 +698,6 @@ struct wkmap_aset_args {
     VALUE new_val;
 };
 
-static int
-wkmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t data_args, int existing)
-{
-    struct wkmap_aset_args *args = (struct wkmap_aset_args *)data_args;
-
-    if (!existing) {
-        *key = (st_data_t)xmalloc(sizeof(VALUE));
-    }
-
-    *(VALUE *)*key = args->new_key;
-    *val = (st_data_t)args->new_val;
-
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *    map[key] = value -> value
@@ -839,19 +714,14 @@ static VALUE
 wkmap_aset(VALUE self, VALUE key, VALUE val)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
     if (!FL_ABLE(key) || SYMBOL_P(key) || RB_BIGNUM_TYPE_P(key) || RB_TYPE_P(key, T_FLOAT)) {
-        rb_raise(rb_eArgError, "WeakKeyMap must be garbage collectable");
+        rb_raise(rb_eArgError, "WeakKeyMap keys must be garbage collectable");
         UNREACHABLE_RETURN(Qnil);
     }
 
-    struct wkmap_aset_args args = {
-        .new_key = key,
-        .new_val = val,
-    };
-
-    st_update(w->table, (st_data_t)&key, wkmap_aset_replace, (st_data_t)&args);
+    st_insert(w->table, (st_data_t)key, (st_data_t)val);
 
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
@@ -892,19 +762,12 @@ static VALUE
 wkmap_delete(VALUE self, VALUE key)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
-    VALUE orig_key = key;
-    st_data_t orig_key_data = (st_data_t)&orig_key;
-    st_data_t orig_val_data;
-    if (st_delete(w->table, &orig_key_data, &orig_val_data)) {
-        VALUE orig_val = (VALUE)orig_val_data;
-
-        rb_gc_remove_weak(self, (VALUE *)orig_key_data);
-
-        ruby_sized_xfree((VALUE *)orig_key_data, sizeof(VALUE));
-
-        return orig_val;
+    st_data_t orig_key = (st_data_t)key;
+    st_data_t orig_val;
+    if (st_delete(w->table, &orig_key, &orig_val)) {
+        return (VALUE)orig_val;
     }
 
     if (rb_block_given_p()) {
@@ -938,12 +801,12 @@ static VALUE
 wkmap_getkey(VALUE self, VALUE key)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
     st_data_t orig_key;
-    if (!st_get_key(w->table, (st_data_t)&key, &orig_key)) return Qnil;
+    if (!st_get_key(w->table, (st_data_t)key, &orig_key)) return Qnil;
 
-    return *(VALUE *)orig_key;
+    return (VALUE)orig_key;
 }
 
 /*
@@ -958,17 +821,6 @@ wkmap_has_key(VALUE self, VALUE key)
     return RBOOL(!UNDEF_P(wkmap_lookup(self, key)));
 }
 
-static int
-wkmap_clear_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    VALUE self = (VALUE)data;
-
-    /* This WeakKeyMap may have already been marked, so we need to remove the
-     * keys to prevent a use-after-free. */
-    rb_gc_remove_weak(self, (VALUE *)key);
-    return wkmap_free_table_i(key, val, 0);
-}
-
 /*
  *  call-seq:
  *    map.clear -> self
@@ -979,9 +831,8 @@ static VALUE
 wkmap_clear(VALUE self)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
-    st_foreach(w->table, wkmap_clear_i, (st_data_t)self);
     st_clear(w->table);
 
     return self;
@@ -1002,7 +853,7 @@ static VALUE
 wkmap_inspect(VALUE self)
 {
     struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
 
     st_index_t n = st_table_size(w->table);
 
@@ -1113,7 +964,7 @@ wkmap_inspect(VALUE self)
  *    end
  *
  *  This will result in +make_value+ returning the same object for same set of attributes
- *  always, but the values that aren't needed anymore woudn't be sitting in the cache forever.
+ *  always, but the values that aren't needed anymore wouldn't be sitting in the cache forever.
  */
 
 void

@@ -1,5 +1,9 @@
-#!ruby
+#!ruby -W0
 
+%w[tsort rdoc].each do |lib|
+  path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/#{lib}-*").first
+  $LOAD_PATH.unshift("#{path}/lib")
+end
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.
@@ -9,7 +13,13 @@ invoked = Dir.pwd
 Dir.chdir(File.dirname(__dir__))
 
 options = RDoc::Options.load_options
-options.parse ARGV
+options.title = options.title.sub(/Ruby \K.*version/) {
+  File.read("include/ruby/version.h")
+    .scan(/^ *# *define +RUBY_API_VERSION_(MAJOR|MINOR) +(\d+)/)
+    .sort # "MAJOR" < "MINOR", fortunately
+    .to_h.values.join(".")
+}
+options.parse ARGV + ["#{invoked}/rbconfig.rb"]
 
 options.singleton_class.define_method(:finish) do
   super()

@@ -32,7 +32,7 @@ class TestObjSpace < Test::Unit::TestCase
     a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
     b = a.dup
     c = nil
-    ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
+    ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
     rv_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
     assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
@@ -75,16 +75,6 @@ class TestObjSpace < Test::Unit::TestCase
   def test_count_objects_size_with_wrong_type
     assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
-
-  def test_count_nodes
-    res = ObjectSpace.count_nodes
-    assert_not_empty(res)
-    arg = {}
-    ObjectSpace.count_nodes(arg)
-    assert_not_empty(arg)
-    bug8014 = '[ruby-core:53130] [Bug #8014]'
-    assert_empty(arg.select {|k, v| !(Symbol === k && Integer === v)}, bug8014)
-  end if false
 
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
@@ -143,7 +133,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_reachable_objects_during_iteration
     omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
-    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       ObjectSpace.each_object{|o|
         o.inspect
@@ -179,7 +169,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_stop_first
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
       # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]
@@ -203,8 +193,9 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(line1,    ObjectSpace.allocation_sourceline(o1))
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
       assert_equal(c1,       ObjectSpace.allocation_generation(o1))
-      assert_equal(Class.name, ObjectSpace.allocation_class_path(o1))
-      assert_equal(:new,       ObjectSpace.allocation_method_id(o1))
+      # These assertions fail under coverage measurement: https://bugs.ruby-lang.org/issues/21298
+      #assert_equal(self.class.name, ObjectSpace.allocation_class_path(o1))
+      #assert_equal(__method__,       ObjectSpace.allocation_method_id(o1))
 
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o2))
       assert_equal(line2,    ObjectSpace.allocation_sourceline(o2))
@@ -287,13 +278,95 @@ class TestObjSpace < Test::Unit::TestCase
     assert true # success
   end
 
+  def test_trace_object_allocations_with_other_tracepoint
+    # Test that ObjectSpace.trace_object_allocations isn't changed by changes
+    # to another tracepoint
+    line_tp = TracePoint.new(:line) { }
+
+    ObjectSpace.trace_object_allocations_start
+
+    obj1 = Object.new; line1 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj1)
+    assert_equal line1, ObjectSpace.allocation_sourceline(obj1)
+
+    line_tp.enable
+
+    obj2 = Object.new; line2 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj2)
+    assert_equal line2, ObjectSpace.allocation_sourceline(obj2)
+
+    line_tp.disable
+
+    obj3 = Object.new; line3 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj3)
+    assert_equal line3, ObjectSpace.allocation_sourceline(obj3)
+  ensure
+    ObjectSpace.trace_object_allocations_stop
+    ObjectSpace.trace_object_allocations_clear
+  end
+
+  def test_trace_object_allocations_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately(%w(-robjspace), <<~RUBY)
+      ObjectSpace.trace_object_allocations do
+        objs = 100.times.map do
+          Object.new
+        end
+
+        assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(objs[0]))
+
+        GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+        assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(objs[0]))
+      end
+    RUBY
+  end
+
+  def test_trace_object_allocations_compaction_freed_pages
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_normal_exit(<<~RUBY, timeout: 60)
+      require "objspace"
+
+      objs = []
+      ObjectSpace.trace_object_allocations do
+        1_000_000.times do
+          objs << Object.new
+        end
+      end
+
+      objs = nil
+
+      # Free pages that the objs were on
+      GC.start
+
+      # Run compaction and check that it doesn't crash
+      GC.compact
+    RUBY
+  end
+
   def test_dump_flags
     # Ensure that the fstring is promoted to old generation
     4.times { GC.start }
     info = ObjectSpace.dump("foo".freeze)
-    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_include(info, '"wb_protected":true')
+    assert_include(info, '"age":3')
+    assert_include(info, '"old":true')
     assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
+  end
+
+  def test_dump_flag_age
+    EnvUtil.without_gc do
+      o = Object.new
+
+      assert_include(ObjectSpace.dump(o), '"age":0')
+
+      GC.start
+
+      assert_include(ObjectSpace.dump(o), '"age":1')
+    end
   end
 
   if defined?(RubyVM::Shape)
@@ -443,6 +516,20 @@ class TestObjSpace < Test::Unit::TestCase
     dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
     assert_match(/"type":"SYMBOL"/, dump)
     assert_match(/"value":"foobar\h+"/, dump)
+  end
+
+  def test_dump_outputs_object_id
+    obj = Object.new
+
+    # Doesn't output object_id when it has not been seen
+    dump = ObjectSpace.dump(obj)
+    assert_not_include(dump, "\"object_id\"")
+
+    id = obj.object_id
+
+    # Outputs object_id when it has been seen
+    dump = ObjectSpace.dump(obj)
+    assert_include(dump, "\"object_id\":#{id}")
   end
 
   def test_dump_includes_imemo_type
@@ -730,6 +817,27 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_all_with_ractors
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      require "tempfile"
+      require "json"
+      rs = 4.times.map do
+        Ractor.new do
+          Tempfile.create do |f|
+            ObjectSpace.dump_all(output: f)
+            f.close
+            File.readlines(f.path).each do |line|
+              JSON.parse(line)
+            end
+          end
+        end
+      end
+      rs.each(&:join)
+    end;
+  end
+
   def test_dump_uninitialized_file
     assert_in_out_err(%[-robjspace], <<-RUBY) do |(output), (error)|
       puts ObjectSpace.dump(File.allocate)
@@ -900,6 +1008,19 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_load_allocation_path_load_from_binary
     # load_allocation_path_helper 'iseq = RubyVM::InstructionSequence.load_from_binary(File.binread(path))', to_binary: true
+  end
+
+  def test_escape_class_name
+    class_name = '" little boby table [Bug #20892]'
+    json = ObjectSpace.dump(Class.new.tap { |c| c.set_temporary_name(class_name) })
+    assert_equal class_name, JSON.parse(json)["name"]
+  end
+
+  def test_dump_include_shareable
+    omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+
+    assert_include(ObjectSpace.dump(ENV), '"shareable":true')
+    assert_not_include(ObjectSpace.dump([]), '"shareable":true')
   end
 
   def test_utf8_method_names

@@ -6,12 +6,11 @@
 ##
 
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .text
 
-.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+.globl PREFIXED_SYMBOL(coroutine_transfer)
+PREFIXED_SYMBOL(coroutine_transfer):
 
 	# Save caller registers
 	pushl %ebp

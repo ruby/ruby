@@ -54,9 +54,20 @@ module Net # :nodoc:
         s.connect
       end
     end
+
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
   end
 
 
+  # :stopdoc:
   class ProtocolError          < StandardError; end
   class ProtoSyntaxError       < ProtocolError; end
   class ProtoFatalError        < ProtocolError; end
@@ -66,6 +77,7 @@ module Net # :nodoc:
   class ProtoCommandError      < ProtocolError; end
   class ProtoRetriableError    < ProtocolError; end
   ProtocRetryError = ProtoRetriableError
+  # :startdoc:
 
   ##
   # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
@@ -78,6 +90,7 @@ module Net # :nodoc:
   # response cannot be read within the read_timeout.
 
   class ReadTimeout < Timeout::Error
+    # :stopdoc:
     def initialize(io = nil)
       @io = io
     end
@@ -97,6 +110,7 @@ module Net # :nodoc:
   # response cannot be written within the write_timeout.  Not raised on Windows.
 
   class WriteTimeout < Timeout::Error
+    # :stopdoc:
     def initialize(io = nil)
       @io = io
     end
@@ -484,6 +498,7 @@ module Net # :nodoc:
   # The writer adapter class
   #
   class WriteAdapter
+    # :stopdoc:
     def initialize(writer)
       @writer = writer
     end

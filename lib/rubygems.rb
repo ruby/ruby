@@ -9,16 +9,15 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.6.0.dev"
+  VERSION = "4.1.0.dev"
 end
-
-# Must be first since it unloads the prelude from 1.9.2
-require_relative "rubygems/compatibility"
 
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
 require_relative "rubygems/target_rbconfig"
+require_relative "rubygems/win_platform"
+require_relative "rubygems/util/atomic_file_writer"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -39,7 +38,7 @@ require_relative "rubygems/target_rbconfig"
 # Further RubyGems documentation can be found at:
 #
 # * {RubyGems Guides}[https://guides.rubygems.org]
-# * {RubyGems API}[https://www.rubydoc.info/github/rubygems/rubygems] (also available from
+# * {RubyGems API}[https://www.rubydoc.info/github/ruby/rubygems] (also available from
 #   <tt>gem server</tt>)
 #
 # == RubyGems Plugins
@@ -71,7 +70,7 @@ require_relative "rubygems/target_rbconfig"
 # == Bugs
 #
 # You can submit bugs to the
-# {RubyGems bug tracker}[https://github.com/rubygems/rubygems/issues]
+# {RubyGems bug tracker}[https://github.com/ruby/rubygems/issues]
 # on GitHub
 #
 # == Credits
@@ -107,7 +106,7 @@ require_relative "rubygems/target_rbconfig"
 #
 # == License
 #
-# See {LICENSE.txt}[rdoc-ref:lib/rubygems/LICENSE.txt] for permissions.
+# See {LICENSE.txt}[https://github.com/ruby/rubygems/blob/master/LICENSE.txt] for permissions.
 #
 # Thanks!
 #
@@ -115,18 +114,6 @@ require_relative "rubygems/target_rbconfig"
 
 module Gem
   RUBYGEMS_DIR = __dir__
-
-  ##
-  # An Array of Regexps that match windows Ruby platforms.
-
-  WIN_PATTERNS = [
-    /bccwin/i,
-    /cygwin/i,
-    /djgpp/i,
-    /mingw/i,
-    /mswin/i,
-    /wince/i,
-  ].freeze
 
   GEM_DEP_FILES = %w[
     gem.deps.rb
@@ -156,7 +143,12 @@ module Gem
     specifications/default
   ].freeze
 
-  @@win_platform = nil
+  ##
+  # The default value for SOURCE_DATE_EPOCH if not specified.
+  # We want a date after 1980-01-01, to prevent issues with Zip files.
+  # This particular timestamp is for 1980-01-02 00:00:00 GMT.
+
+  DEFAULT_SOURCE_DATE_EPOCH = 315_619_200
 
   @configuration = nil
   @gemdeps = nil
@@ -220,7 +212,7 @@ module Gem
     finish_resolve rs
   end
 
-  def self.finish_resolve(request_set=Gem::RequestSet.new)
+  def self.finish_resolve(request_set = Gem::RequestSet.new)
     request_set.import Gem::Specification.unresolved_deps.values
     request_set.import Gem.loaded_specs.values.map {|s| Gem::Dependency.new(s.name, s.version) }
 
@@ -241,6 +233,16 @@ module Gem
 
     find_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
+
+  def self.find_and_activate_spec_for_exe(name, exec_name, requirements)
+    spec = find_spec_for_exe name, exec_name, requirements
+    Gem::LOADED_SPECS_MUTEX.synchronize do
+      spec.activate
+      finish_resolve
+    end
+    spec
+  end
+  private_class_method :find_and_activate_spec_for_exe
 
   def self.find_spec_for_exe(name, exec_name, requirements)
     raise ArgumentError, "you must supply exec_name" unless exec_name
@@ -267,6 +269,42 @@ module Gem
   private_class_method :find_spec_for_exe
 
   ##
+  # Find and load the full path to the executable for gem +name+.  If the
+  # +exec_name+ is not given, an exception will be raised, otherwise the
+  # specified executable's path is returned.  +requirements+ allows
+  # you to specify specific gem versions.
+  #
+  # A side effect of this method is that it will activate the gem that
+  # contains the executable.
+  #
+  # This method should *only* be used in bin stub files.
+
+  def self.activate_and_load_bin_path(name, exec_name = nil, *requirements)
+    spec = find_and_activate_spec_for_exe name, exec_name, requirements
+
+    if spec.name == "bundler"
+      # Old versions of Bundler need a workaround to support nested `bundle
+      # exec` invocations by overriding `Gem.activate_bin_path`. However,
+      # RubyGems now uses this new `Gem.activate_and_load_bin_path` helper in
+      # binstubs, which is of course not overridden in Bundler since it didn't
+      # exist at the time. So, include the override here to workaround that.
+      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= Gem::Version.create("2.5.22")
+
+      # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
+      # from the version we just activated. If that was the case (it happens
+      # when testing Bundler from ruby/ruby), we would load Bundler extensions
+      # to RubyGems from the copy in `$LOAD_PATH` but then load the binstub from
+      # an installed copy, causing those copies to be mixed and yet more
+      # redefinition warnings.
+      #
+      require_path = $LOAD_PATH.resolve_feature_path("bundler").last.delete_suffix("/bundler.rb")
+      Gem.load_bundler_extensions(spec.version) if spec.full_require_paths.include?(require_path)
+    end
+
+    load spec.bin_file(exec_name)
+  end
+
+  ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, an exception will be raised, otherwise the
   # specified executable's path is returned.  +requirements+ allows
@@ -278,12 +316,7 @@ module Gem
   # This method should *only* be used in bin stub files.
 
   def self.activate_bin_path(name, exec_name = nil, *requirements) # :nodoc:
-    spec = find_spec_for_exe name, exec_name, requirements
-    Gem::LOADED_SPECS_MUTEX.synchronize do
-      spec.activate
-      finish_resolve
-    end
-    spec.bin_file exec_name
+    find_and_activate_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
 
   ##
@@ -296,7 +329,7 @@ module Gem
   ##
   # The path where gem executables are to be installed.
 
-  def self.bindir(install_dir=Gem.dir)
+  def self.bindir(install_dir = Gem.dir)
     return File.join install_dir, "bin" unless
       install_dir.to_s == Gem.default_dir.to_s
     Gem.default_bindir
@@ -305,7 +338,7 @@ module Gem
   ##
   # The path were rubygems plugins are to be installed.
 
-  def self.plugindir(install_dir=Gem.dir)
+  def self.plugindir(install_dir = Gem.dir)
     File.join install_dir, "plugins"
   end
 
@@ -489,16 +522,16 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Note that find_files will return all files even if they are from different
   # versions of the same gem.  See also find_latest_files
 
-  def self.find_files(glob, check_load_path=true)
+  def self.find_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
 
     gem_specifications = @gemdeps ? Gem.loaded_specs.values : Gem::Specification.stubs
 
-    files.concat gem_specifications.map {|spec|
+    files.concat gem_specifications.flat_map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
-    }.flatten
+    }
 
     # $LOAD_PATH might contain duplicate entries or reference
     # the spec dirs directly, so we prune.
@@ -509,9 +542,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.find_files_from_load_path(glob) # :nodoc:
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
-    $LOAD_PATH.map do |load_path|
+    $LOAD_PATH.flat_map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select {|file| File.file? file }
+    end.select {|file| File.file? file }
   end
 
   ##
@@ -526,14 +559,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Unlike find_files, find_latest_files will return only files from the
   # latest version of a gem.
 
-  def self.find_latest_files(glob, check_load_path=true)
+  def self.find_latest_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.latest_specs(true).map {|spec|
+    files.concat Gem::Specification.latest_specs(true).flat_map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
-    }.flatten
+    }
 
     # $LOAD_PATH might contain duplicate entries or reference
     # the spec dirs directly, so we prune.
@@ -627,6 +660,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require_relative "rubygems/safe_marshal"
 
     @safe_marshal_loaded = true
+  end
+
+  ##
+  # Load Bundler extensions to RubyGems, making sure to avoid redefinition
+  # warnings in platform constants
+
+  def self.load_bundler_extensions(version)
+    return unless version <= Gem::Version.create("2.6.9")
+
+    previous_platforms = {}
+
+    platform_const_list = ["JAVA", "MSWIN", "MSWIN64", "MINGW", "X64_MINGW_LEGACY", "X64_MINGW", "UNIVERSAL_MINGW", "WINDOWS", "X64_LINUX", "X64_LINUX_MUSL"]
+
+    platform_const_list.each do |platform|
+      previous_platforms[platform] = Gem::Platform.const_get(platform)
+      Gem::Platform.send(:remove_const, platform)
+    end
+
+    require "bundler/rubygems_ext"
+
+    platform_const_list.each do |platform|
+      Gem::Platform.send(:remove_const, platform) if Gem::Platform.const_defined?(platform)
+      Gem::Platform.const_set(platform, previous_platforms[platform])
+    end
   end
 
   ##
@@ -777,14 +834,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Safely write a file in binary mode on all platforms.
+  # Atomically write a file in binary mode on all platforms.
 
   def self.write_binary(path, data)
-    File.binwrite(path, data)
-  rescue Errno::ENOSPC
-    # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
-    File.delete(path) if File.exist?(path)
-    raise
+    Gem::AtomicFileWriter.open(path) do |file|
+      file.write(data)
+    end
   end
 
   ##
@@ -801,6 +856,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     file_lock = "#{path}.lock"
     open_file_with_flock(file_lock, &block)
   ensure
+    require "fileutils"
     FileUtils.rm_f file_lock
   end
 
@@ -808,15 +864,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)
-    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    # read-write mode is used rather than read-only in order to support NFS
+    mode = IO::RDWR | IO::APPEND | IO::CREAT | IO::BINARY
     mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
 
     File.open(path, mode) do |io|
       begin
-        io.flock(File::LOCK_EX)
+        # Try to get a lock without blocking.
+        # If we do, the file is locked.
+        # Otherwise, explain why we're waiting and get a lock, but block this time.
+        if io.flock(File::LOCK_EX | File::LOCK_NB) != 0
+          warn "Waiting for another process to let go of lock: #{path}"
+          io.flock(File::LOCK_EX)
+        end
+        io.puts(Process.pid)
       rescue Errno::ENOSYS, Errno::ENOTSUP
-      rescue Errno::ENOLCK # NFS
-        raise unless Thread.main == Thread.current
       end
       yield io
     end
@@ -1016,18 +1078,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Is this a windows platform?
-
-  def self.win_platform?
-    if @@win_platform.nil?
-      ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
-    end
-
-    @@win_platform
-  end
-
-  ##
   # Is this a java platform?
 
   def self.java_platform?
@@ -1148,8 +1198,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # If the SOURCE_DATE_EPOCH environment variable is set, returns it's value.
-  # Otherwise, returns the time that +Gem.source_date_epoch_string+ was
-  # first called in the same format as SOURCE_DATE_EPOCH.
+  # Otherwise, returns DEFAULT_SOURCE_DATE_EPOCH as a string.
   #
   # NOTE(@duckinator): The implementation is a tad weird because we want to:
   #   1. Make builds reproducible by default, by having this function always
@@ -1164,15 +1213,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # https://reproducible-builds.org/specs/source-date-epoch/
 
   def self.source_date_epoch_string
-    # The value used if $SOURCE_DATE_EPOCH is not set.
-    @default_source_date_epoch ||= Time.now.to_i.to_s
-
     specified_epoch = ENV["SOURCE_DATE_EPOCH"]
 
     # If it's empty or just whitespace, treat it like it wasn't set at all.
     specified_epoch = nil if !specified_epoch.nil? && specified_epoch.strip.empty?
 
-    epoch = specified_epoch || @default_source_date_epoch
+    epoch = specified_epoch || DEFAULT_SOURCE_DATE_EPOCH.to_s
 
     epoch.strip
   end
@@ -1385,17 +1431,6 @@ begin
 
   require "rubygems/defaults/#{RUBY_ENGINE}"
 rescue LoadError
-end
-
-# TruffleRuby >= 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY in defaults/truffleruby.
-# However, TruffleRuby < 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY directly in its copy
-# of lib/rubygems/platform.rb, so it is not defined if RubyGems is updated (gem update --system).
-# Instead, we define it here in that case, similar to bundler/lib/bundler/rubygems_ext.rb.
-# We must define it here and not in platform.rb because platform.rb is loaded before defaults/truffleruby.
-class Gem::Platform
-  if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
-    REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
-  end
 end
 
 ##

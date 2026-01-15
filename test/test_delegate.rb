@@ -23,7 +23,7 @@ class TestDelegateClass < Test::Unit::TestCase
 
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
-    assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
+    assert_equal((SimpleDelegator.new(e) == e), (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
   end
 
   class Myclass < DelegateClass(Array);end
@@ -93,15 +93,21 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   class Parent
-    def parent_public; end
+    def parent_public
+      :public
+    end
 
     protected
 
-    def parent_protected; end
+    def parent_protected
+      :protected
+    end
 
     private
 
-    def parent_private; end
+    def parent_private
+      :private
+    end
   end
 
   class Child < DelegateClass(Parent)
@@ -157,6 +163,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_instance_of UnboundMethod, Child.public_instance_method(:to_s)
   end
 
+  def test_call_visibiltiy
+    obj = Child.new(Parent.new)
+    assert_equal :public, obj.parent_public
+    assert_equal :protected, obj.__send__(:parent_protected)
+    assert_raise(NoMethodError) { obj.__send__(:parent_private) }
+  end
+
   class IV < DelegateClass(Integer)
     attr_accessor :var
 
@@ -181,8 +194,8 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
     assert_raise(FrozenError) {d.clone[0] += 1}
     d.freeze
-    assert(d.clone.frozen?)
-    assert(!d.dup.frozen?)
+    assert_predicate(d.clone, :frozen?)
+    assert_not_predicate(d.dup, :frozen?)
   end
 
   def test_frozen
@@ -389,5 +402,21 @@ class TestDelegateClass < Test::Unit::TestCase
     end
     a = DelegateClass(k).new(k.new)
     assert_equal([1, 0], a.test(1, k: 0))
+  end
+
+  def test_delegate_class_can_be_used_in_ractors
+    omit "no Ractor#value" unless defined?(Ractor) && Ractor.method_defined?(:value)
+    require_path = File.expand_path(File.join(__dir__, "..", "lib", "delegate.rb"))
+    raise "file doesn't exist: #{require_path}" unless File.exist?(require_path)
+    assert_ractor <<-RUBY
+      require "#{require_path}"
+      class MyClass < DelegateClass(Array);end
+      values = 2.times.map do
+        Ractor.new do
+          MyClass.new([1,2,3]).at(0)
+        end
+      end.map(&:value)
+      assert_equal [1,1], values
+    RUBY
   end
 end

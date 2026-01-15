@@ -104,6 +104,16 @@ struct iseq_compile_data {
     const VALUE err_info;
     const VALUE catch_table_ary;	/* Array */
 
+    /* Mirror fields from ISEQ_BODY so they are accessible during iseq setup */
+    unsigned int iseq_size;
+    VALUE *iseq_encoded; /* half-encoded iseq (insn addr and operands) */
+    bool is_single_mark_bit; /* identifies whether mark bits are single or a list */
+
+    union {
+        iseq_bits_t * list; /* Find references for GC */
+        iseq_bits_t single;
+    } mark_bits;
+
     /* GC is not needed */
     struct iseq_label_data *start_label;
     struct iseq_label_data *end_label;
@@ -164,7 +174,12 @@ ISEQ_COMPILE_DATA_CLEAR(rb_iseq_t *iseq)
 static inline rb_iseq_t *
 iseq_imemo_alloc(void)
 {
-    return IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+    rb_iseq_t *iseq = SHAREABLE_IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+
+    // Clear out the whole iseq except for the flags.
+    memset((char *)iseq + sizeof(VALUE), 0, sizeof(rb_iseq_t) - sizeof(VALUE));
+
+    return iseq;
 }
 
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
@@ -174,9 +189,12 @@ const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t);
 VALUE rb_iseq_ibf_load_extra_data(VALUE str);
 void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod);
-int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
+int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r);
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
+const rb_iseq_t *rb_iseq_compile_iseq(VALUE str, VALUE fname);
 int rb_iseq_opt_frozen_string_literal(void);
+rb_hook_list_t *rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create);
+
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
@@ -193,7 +211,7 @@ VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
                             VALUE locals, VALUE args,
                             VALUE exception, VALUE body);
-void rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *arena);
+void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);

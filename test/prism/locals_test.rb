@@ -13,11 +13,6 @@ return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 # in comparing the locals because they will be the same.
 return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
-# In Ruby 3.4.0, the local table for method forwarding changed. But 3.4.0 can
-# refer to the dev version, so while 3.4.0 still isn't released, we need to
-# check if we have a high enough revision.
-return if RubyVM::InstructionSequence.compile("def foo(...); end").to_a[13][2][2][10].length != 1
-
 # Omit tests if running on a 32-bit machine because there is a bug with how
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/
@@ -29,10 +24,13 @@ module Prism
     except = [
       # Skip this fixture because it has a different number of locals because
       # CRuby is eliminating dead code.
-      "whitequark/ruby_bug_10653.txt"
+      "whitequark/ruby_bug_10653.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
-    Fixture.each(except: except) do |fixture|
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_locals(fixture) }
     end
 
@@ -140,14 +138,17 @@ module Prism
         case node
         when BlockNode, DefNode, LambdaNode
           names = node.locals
-          params =
-            if node.is_a?(DefNode)
-              node.parameters
-            elsif node.parameters.is_a?(NumberedParametersNode)
-              nil
-            else
-              node.parameters&.parameters
-            end
+          params = nil
+
+          if node.is_a?(DefNode)
+            params = node.parameters
+          elsif node.parameters.is_a?(NumberedParametersNode)
+            # nothing
+          elsif node.parameters.is_a?(ItParametersNode)
+            names.unshift(AnonymousLocal)
+          else
+            params = node.parameters&.parameters
+          end
 
           # prism places parameters in the same order that they appear in the
           # source. CRuby places them in the order that they need to appear

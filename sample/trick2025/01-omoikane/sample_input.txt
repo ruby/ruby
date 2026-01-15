@@ -1,0 +1,35 @@
+                  T   U
+              S           V
+
+          R       T   U       W
+              S           V
+
+       Q   R                 W   X
+
+         Q                     X
+     P           i h g f           Y
+               j         e
+       P     k             d     Y
+
+    O       l               c       Z
+      O                           Z
+            m               b
+
+*   N N     n       +       a     A A   *
+
+            o               z
+      M                           B
+    M       p               y       B
+
+       L     q             x     C
+               r         w
+     L           s t u v           C
+         K                     D
+
+       K   J                 E   D
+
+              I           F
+          J       H   G       E
+
+              I           F
+                  H   G

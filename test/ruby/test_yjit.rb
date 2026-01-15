@@ -133,13 +133,43 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_monkey_patch
-    assert_separately(%w[--yjit-disable], <<~RUBY)
+    assert_ruby_status(%w[--yjit-disable], <<~RUBY)
       # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
       Kernel.prepend(Module.new)
 
       # This must not crash with "undefined optimized method!"
       RubyVM::YJIT.enable
     RUBY
+  end
+
+  def test_yjit_enable_with_valid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e',
+                       'RubyVM::YJIT.enable(call_threshold: 1); puts RubyVM::YJIT.enabled?']) do |stdout, stderr, _status|
+      assert_empty stderr
+      assert_include stdout.join, "true"
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_mem_size_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+  if JITSupport.zjit_supported?
+    def test_yjit_enable_with_zjit_enabled
+      assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
+    end
   end
 
   def test_yjit_stats_and_v_no_error
@@ -624,6 +654,26 @@ class TestYJIT < Test::Unit::TestCase
       Foo = Struct.new(:foo, :bar)
       foo(Foo.new(123))
       foo(Foo.new(123))
+    RUBY
+  end
+
+  def test_struct_aset_guards_recv_is_not_frozen
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_send_without_block: 1 })
+      def foo(obj)
+        obj.foo = 123
+      end
+
+      Foo = Struct.new(:foo)
+      obj = Foo.new(123)
+      100.times do
+        foo(obj)
+      end
+      obj.freeze
+      begin
+        foo(obj)
+      rescue FrozenError
+        :ok
+      end
     RUBY
   end
 
@@ -1150,6 +1200,8 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_code_gc_with_auto_compact
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     assert_compiles((code_gc_helpers + <<~'RUBY'), exits: :any, result: :ok, mem_size: 1, code_gc: true)
       # Test ISEQ moves in the middle of code GC
       GC.auto_compact = true
@@ -1278,6 +1330,8 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_gc_compact_cyclic_branch
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     assert_compiles(<<~'RUBY', result: 2)
       def foo
         i = 0
@@ -1312,7 +1366,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_tracing_str_uplus
-    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1, definemethod: 1 })
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1 })
       def str_uplus
         _ = 1
         _ = 2
@@ -1500,14 +1554,6 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_opt_aref_with
-    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar", frozen_string_literal: false)
-      h = {"foo" => "bar"}
-
-      h["foo"]
-    RUBY
-  end
-
   def test_proc_block_arg
     assert_compiles(<<~RUBY, result: [:proc, :no_block])
       def yield_if_given = block_given? ? yield : :no_block
@@ -1633,7 +1679,7 @@ class TestYJIT < Test::Unit::TestCase
 
       [
         stats[:object_shape_count].is_a?(Integer),
-        stats[:ratio_in_yjit].is_a?(Float),
+        stats[:ratio_in_yjit].nil? || stats[:ratio_in_yjit].is_a?(Float),
       ].all?
     RUBY
   end
@@ -1644,7 +1690,7 @@ class TestYJIT < Test::Unit::TestCase
       3.times { test }
 
       # Collect single stat.
-      stat = RubyVM::YJIT.runtime_stats(:ratio_in_yjit)
+      stat = RubyVM::YJIT.runtime_stats(:yjit_alloc_size)
 
       # Ensure this invocation had stats.
       return true unless RubyVM::YJIT.runtime_stats[:all_stats]
@@ -1671,6 +1717,103 @@ class TestYJIT < Test::Unit::TestCase
 
       RubyVM::YJIT.runtime_stats(:some_key_unlikely_to_exist).nil?
     RUBY
+  end
+
+  def test_yjit_option_uses_array_each_in_ruby
+    assert_separately(["--yjit"], <<~'RUBY')
+      # Array#each should be implemented in Ruby for YJIT
+      assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
+
+      # The backtrace, however, should not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:11:in 'Array#each'", e.backtrace[1]
+      end
+    RUBY
+  end
+
+  def test_yjit_enable_replaces_array_each
+    assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
+      # Array#each should be implemented in C for the interpreter
+      assert_nil Array.instance_method(:each).source_location
+
+      # The backtrace should not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:11:in 'Array#each'", e.backtrace[1]
+      end
+
+      RubyVM::YJIT.enable
+
+      # Array#each should be implemented in Ruby for YJIT
+      assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
+
+      # However, the backtrace should still not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:23:in 'Array#each'", e.backtrace[1]
+      end
+    RUBY
+  end
+
+  def test_yjit_enable_preserves_array_each_monkey_patch
+    assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
+      # Array#each should be implemented in C initially
+      assert_nil Array.instance_method(:each).source_location
+
+      # Override Array#each
+      $called = false
+      Array.prepend(Module.new {
+        def each
+          $called = true
+          super
+        end
+      })
+
+      RubyVM::YJIT.enable
+
+      # The monkey-patch should still be alive
+      [].each {}
+      assert_true $called
+
+      # YJIT should not replace Array#each with the "<internal:array>" one
+      assert_equal "-", Array.instance_method(:each).source_location.first
+    RUBY
+  end
+
+  def test_yield_kwargs
+    assert_compiles(<<~RUBY, result: 3, no_send_fallbacks: true)
+      def req2kws = yield a: 1, b: 2
+
+      req2kws { |a:, b:| a + b }
+    RUBY
+  end
+
+  def test_proc_block_with_kwrest
+    # When the bug was present this required --yjit-stats to trigger.
+    assert_compiles(<<~RUBY, result: {extra: 5})
+      def foo = bar(w: 1, x: 2, y: 3, z: 4, extra: 5, &proc { _1 })
+      def bar(w:, x:, y:, z:, **kwrest) = yield kwrest
+
+      GC.stress = true
+      foo
+      foo
+    RUBY
+  end
+
+  def test_yjit_dump_insns
+    # Testing that this undocumented debugging feature doesn't crash
+    args = [
+      '--yjit-call-threshold=1',
+      '--yjit-dump-insns',
+      '-e def foo(case:) = {case:}[:case]',
+      '-e foo(case:0)',
+    ]
+    _out, _err, status = invoke_ruby(args, '', true, true)
+    assert_not_predicate(status, :signaled?)
   end
 
   private

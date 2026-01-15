@@ -279,6 +279,7 @@ RSpec.describe Bundler::Plugin do
         s.write "plugins.rb", code
       end
 
+      @old_constants = Bundler::Plugin::Events.constants.map {|name| [name, Bundler::Plugin::Events.const_get(name)] }
       Bundler::Plugin::Events.send(:reset)
       Bundler::Plugin::Events.send(:define, :EVENT1, "event-1")
       Bundler::Plugin::Events.send(:define, :EVENT2, "event-2")
@@ -289,6 +290,13 @@ RSpec.describe Bundler::Plugin do
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
+    end
+
+    after do
+      Bundler::Plugin::Events.send(:reset)
+      Hash[@old_constants].each do |name, value|
+        Bundler::Plugin::Events.send(:define, name, value)
+      end
     end
 
     let(:code) { <<-RUBY }
@@ -331,6 +339,29 @@ RSpec.describe Bundler::Plugin do
         expect do
           Plugin.hook(Bundler::Plugin::Events::EVENT1) { puts "win" }
         end.to output("win\n").to_stdout
+      end
+    end
+
+    context "the plugin load_path is invalid" do
+      before do
+        allow(index).to receive(:load_paths).with("foo-plugin").
+          and_return(["invalid-file-name1", "invalid-file-name2"])
+      end
+
+      it "outputs a useful warning" do
+        msg =
+          "The following plugin paths don't exist: invalid-file-name1, invalid-file-name2.\n\n" \
+          "This can happen if the plugin was " \
+          "installed with a different version of Ruby that has since been uninstalled.\n\n" \
+          "If you would like to reinstall the plugin, run:\n\n" \
+          "bundler plugin uninstall foo-plugin && bundler plugin install foo-plugin\n\n" \
+          "Continuing without installing plugin foo-plugin.\n"
+
+        expect(Bundler.ui).to receive(:warn).with(msg)
+
+        Plugin.hook(Bundler::Plugin::Events::EVENT1)
+
+        expect(subject.loaded?("foo-plugin")).to be_falsey
       end
     end
   end

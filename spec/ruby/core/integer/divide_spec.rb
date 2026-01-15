@@ -12,6 +12,17 @@ describe "Integer#/" do
 
     it "supports dividing negative numbers" do
       (-1 / 10).should == -1
+      (-1 / 10**10).should == -1
+      (-1 / 10**20).should == -1
+    end
+
+    it "preservers sign correctly" do
+      (4 / 3).should == 1
+      (4 / -3).should == -2
+      (-4 / 3).should == -2
+      (-4 / -3).should == 1
+      (0 / -3).should == 0
+      (0 / 3).should == 0
     end
 
     it "returns result the same class as the argument" do
@@ -58,6 +69,15 @@ describe "Integer#/" do
       ((10**50) / -(10**40 + 1)).should == -10000000000
     end
 
+    it "preservers sign correctly" do
+      (4 / bignum_value).should == 0
+      (4 / -bignum_value).should == -1
+      (-4 / bignum_value).should == -1
+      (-4 / -bignum_value).should == 0
+      (0 / bignum_value).should == 0
+      (0 / -bignum_value).should == 0
+    end
+
     it "returns self divided by Float" do
       not_supported_on :opal do
         (bignum_value(88) / 4294967295.0).should be_close(4294967297.0, TOLERANCE)
@@ -85,5 +105,22 @@ describe "Integer#/" do
       -> { @bignum / "2" }.should raise_error(TypeError)
       -> { @bignum / :symbol }.should raise_error(TypeError)
     end
+  end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(6).and_return([6, 3])
+    (6 / obj).should == 2
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 3]
+      end
+    end
+
+    (6 / obj).should == 2
   end
 end

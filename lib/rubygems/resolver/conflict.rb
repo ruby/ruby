@@ -21,7 +21,7 @@ class Gem::Resolver::Conflict
   # Creates a new resolver conflict when +dependency+ is in conflict with an
   # already +activated+ specification.
 
-  def initialize(dependency, activated, failed_dep=dependency)
+  def initialize(dependency, activated, failed_dep = dependency)
     @dependency = dependency
     @activated = activated
     @failed_dep = failed_dep

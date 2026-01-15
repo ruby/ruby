@@ -243,6 +243,26 @@ class TestDefined < Test::Unit::TestCase
     assert_nil(defined?(p () + 1))
   end
 
+  def test_defined_paren_void_stmts
+    assert_equal("expression", defined? (;x))
+    assert_equal("expression", defined? (x;))
+    assert_nil(defined? (
+
+      x
+
+    ))
+
+    x = 1
+
+    assert_equal("expression", defined? (;x))
+    assert_equal("expression", defined? (x;))
+    assert_equal("local-variable", defined? (
+
+      x
+
+    ))
+  end
+
   def test_defined_impl_specific
     feature7035 = '[ruby-core:47558]' # not spec
     assert_predicate(defined?(Foo), :frozen?, feature7035)

@@ -1,23 +1,7 @@
-set startup-with-shell off
-
-define hook-run
-  set $color_type = 0
-  set $color_highlite = 0
-  set $color_end = 0
-end
-
 define ruby_gdb_init
-  if !$color_type
-    set $color_type = "\033[31m"
-  end
-  if !$color_highlite
-    set $color_highlite = "\033[36m"
-  end
-  if !$color_end
-    set $color_end = "\033[m"
-  end
-  if ruby_dummy_gdb_enums.special_consts
-  end
+  init-if-undefined $color_type = "\033[31m"
+  init-if-undefined $color_highlite = "\033[36m"
+  init-if-undefined $color_end = "\033[m"
 end
 
 # set prompt \033[36m(gdb)\033[m\040
@@ -67,7 +51,7 @@ define rp
     printf "%sT_OBJECT%s: ", $color_type, $color_end
     print ((struct RObject *)($arg0))->basic
     if ($flags & ROBJECT_EMBED)
-      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (rb_shape_get_shape($arg0)->capacity)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (RSHAPE_CAPACITY(rb_obj_shape_id($arg0)))
     else
       print (((struct RObject *)($arg0))->as.heap)
       if (((struct RObject*)($arg0))->as.heap.numiv) > 0
@@ -99,13 +83,11 @@ define rp
     set $regsrc = ((struct RRegexp*)($arg0))->src
     set $rsflags = ((struct RBasic*)$regsrc)->flags
     printf "%sT_REGEXP%s: ", $color_type, $color_end
-    set $len = ($rsflags & RUBY_FL_USER1) ? \
-            ((struct RString*)$regsrc)->as.heap.len : \
-            (($rsflags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+    set $len = ((struct RString*)($arg0))->len
     set print address off
     output *(char *)(($rsflags & RUBY_FL_USER1) ? \
             ((struct RString*)$regsrc)->as.heap.ptr : \
-            ((struct RString*)$regsrc)->as.ary) @ $len
+            ((struct RString*)$regsrc)->as.embed.ary) @ $len
     set print address on
     printf " len:%ld ", $len
     if $flags & RUBY_FL_USER6
@@ -157,13 +139,15 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
     if (((struct RHash *)($arg0))->basic.flags & RHASH_ST_TABLE_FLAG)
-      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+      set $st = (struct st_table *)((uintptr_t)($arg0) + sizeof(struct RHash))
+      printf "st len=%ld ", $st->num_entries
+      print $st
     else
       printf "li len=%ld bound=%ld ", \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
+	print (struct ar_table_struct *)((uintptr_t)($arg0) + sizeof(struct RHash))
     end
-    print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
     set $len = (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
@@ -201,8 +185,8 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    if ((struct RTypedData *)($arg0))->typed_flag == 1
-      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((struct RTypedData *)($arg0))->type->wrap_struct_name
+    if ((struct RTypedData *)($arg0))->type & 1
+      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((const rb_data_type_t *)(((struct RTypedData *)($arg0))->type & ~1))->wrap_struct_name
       print (struct RTypedData *)($arg0)
     else
       printf "%sT_DATA%s: ", $color_type, $color_end
@@ -440,13 +424,11 @@ end
 
 define output_string
   set $flags = ((struct RBasic*)($arg0))->flags
-  set $len = ($flags & RUBY_FL_USER1) ? \
-          ((struct RString*)($arg0))->as.heap.len : \
-          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  set $len = ((struct RString*)($arg0))->len
   if $len > 0
     output *(char *)(($flags & RUBY_FL_USER1) ? \
             ((struct RString*)($arg0))->as.heap.ptr : \
-            ((struct RString*)($arg0))->as.ary) @ $len
+            ((struct RString*)($arg0))->as.embed.ary) @ $len
   else
     output ""
   end
@@ -454,13 +436,11 @@ end
 
 define print_string
   set $flags = ((struct RBasic*)($arg0))->flags
-  set $len = ($flags & RUBY_FL_USER1) ? \
-          ((struct RString*)($arg0))->as.heap.len : \
-          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  set $len = ((struct RString*)($arg0))->len
   if $len > 0
     printf "%s", *(char *)(($flags & RUBY_FL_USER1) ? \
             ((struct RString*)($arg0))->as.heap.ptr : \
-            ((struct RString*)($arg0))->as.ary) @ $len
+            ((struct RString*)($arg0))->as.embed.ary) @ $len
   end
 end
 
@@ -543,14 +523,14 @@ document rp_bignum
 end
 
 define rp_class
+  set $class_and_classext = (struct RClass_and_rb_classext_t *)($arg0)
   printf "(struct RClass *) %p", (void*)$arg0
-  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
-    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
+  if $class_and_classext->classext->origin_ != (VALUE)$arg0
+    printf " -> %p", $class_and_classext->classext->origin_
   end
   printf "\n"
   rb_classname $arg0
-  print/x *(struct RClass *)($arg0)
-  print *RCLASS_EXT((struct RClass *)($arg0))
+  print/x *$class_and_classext
 end
 document rp_class
   Print the content of a Class/Module.
@@ -916,10 +896,10 @@ document rb_method_entry
 end
 
 define rb_classname
-  # up to 128bit int
-  set $rb_classname = rb_mod_name($arg0)
-  if $rb_classname != RUBY_Qnil
-    rp $rb_classname
+  set $rb_classname = ((struct RClass_and_rb_classext_t*)$arg0)->classext->classpath
+  if $rb_classname != RUBY_Qfalse
+    print_string $rb_classname
+    printf "\n"
   else
     echo anonymous class/module\n
   end
@@ -1126,7 +1106,7 @@ define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
-    $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
+    $ps_thread, $ps_thread_th, $ps_thread_th->nt
   set $cfp = $ps_thread_th->ec->cfp
   set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
@@ -1311,13 +1291,12 @@ define dump_node
   set $flags = ((struct RBasic*)($str))->flags
   printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
                         ((struct RString*)$str)->as.heap.ptr : \
-                        ((struct RString*)$str)->as.ary)
+                        ((struct RString*)$str)->as.embed.ary)
 end
 
 define print_flags
   printf "RUBY_FL_WB_PROTECTED: %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_WB_PROTECTED ? "1" : "0"
-  printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
-  printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
+  printf "RUBY_FL_PROMOTED    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED ? "1" : "0"
   printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
   printf "RUBY_FL_SHAREABLE   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_SHAREABLE ? "1" : "0"
   printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"
@@ -1345,3 +1324,6 @@ define print_flags
 end
 
 source -s misc/gdb.py
+
+# Moved from beginning, since it fails on older gdbs
+set startup-with-shell off

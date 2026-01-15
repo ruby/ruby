@@ -15,12 +15,14 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
+#include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
 #include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 #include "yjit.h"
 
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
@@ -296,10 +298,8 @@ rb_binding_alloc(VALUE klass)
     return obj;
 }
 
-
-/* :nodoc: */
 static VALUE
-binding_dup(VALUE self)
+binding_copy(VALUE self)
 {
     VALUE bindval = rb_binding_alloc(rb_cBinding);
     rb_binding_t *src, *dst;
@@ -308,15 +308,21 @@ binding_dup(VALUE self)
     rb_vm_block_copy(bindval, &dst->block, &src->block);
     RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
-    return rb_obj_dup_setup(self, bindval);
+    return bindval;
+}
+
+/* :nodoc: */
+static VALUE
+binding_dup(VALUE self)
+{
+    return rb_obj_dup_setup(self, binding_copy(self));
 }
 
 /* :nodoc: */
 static VALUE
 binding_clone(VALUE self)
 {
-    VALUE bindval = binding_dup(self);
-    return rb_obj_clone_setup(self, bindval, Qnil);
+    return rb_obj_clone_setup(self, binding_copy(self), Qnil);
 }
 
 VALUE
@@ -403,7 +409,7 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
-get_local_variable_ptr(const rb_env_t **envp, ID lid)
+get_local_variable_ptr(const rb_env_t **envp, ID lid, bool search_outer)
 {
     const rb_env_t *env = *envp;
     do {
@@ -413,11 +419,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             }
 
             const rb_iseq_t *iseq = env->iseq;
-            unsigned int i;
 
             VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
 
-            for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+            const unsigned int local_table_size = ISEQ_BODY(iseq)->local_table_size;
+            for (unsigned int i=0; i<local_table_size; i++) {
                 if (ISEQ_BODY(iseq)->local_table[i] == lid) {
                     if (ISEQ_BODY(iseq)->local_iseq == iseq &&
                             ISEQ_BODY(iseq)->param.flags.has_block &&
@@ -430,7 +436,9 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
                     }
 
                     *envp = env;
-                    return &env->env[i];
+                    unsigned int last_lvar = env->env_size+VM_ENV_INDEX_LAST_LVAR
+                        - 1 /* errinfo */;
+                    return &env->env[last_lvar - (local_table_size - i)];
                 }
             }
         }
@@ -438,7 +446,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             *envp = NULL;
             return NULL;
         }
-    } while ((env = rb_vm_env_prev_env(env)) != NULL);
+    } while (search_outer && (env = rb_vm_env_prev_env(env)) != NULL);
 
     *envp = NULL;
     return NULL;
@@ -500,6 +508,18 @@ bind_local_variables(VALUE bindval)
     return rb_vm_env_local_variables(env);
 }
 
+int
+rb_numparam_id_p(ID id)
+{
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 9) << ID_SCOPE_SHIFT);
+}
+
+int
+rb_implicit_param_p(ID id)
+{
+    return id == idItImplicit || rb_numparam_id_p(id);
+}
+
 /*
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
@@ -526,11 +546,15 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) goto undefined;
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+    if ((ptr = get_local_variable_ptr(&env, lid, TRUE)) != NULL) {
         return *ptr;
     }
 
@@ -575,10 +599,14 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     const rb_env_t *env;
 
     if (!lid) lid = rb_intern_str(sym);
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
+    if ((ptr = get_local_variable_ptr(&env, lid, TRUE)) == NULL) {
         /* not found. create new env */
         ptr = rb_binding_add_dynavars(bindval, bind, 1, &lid);
         env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -618,10 +646,140 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) return Qfalse;
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    return RBOOL(get_local_variable_ptr(&env, lid));
+    return RBOOL(get_local_variable_ptr(&env, lid, TRUE));
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameters -> Array
+ *
+ *  Returns the names of numbered parameters and "it" parameter
+ *  that are defined in the binding.
+ *
+ *	def foo
+ *	  [42].each do
+ *	    it
+ *  	    binding.implicit_parameters #=> [:it]
+ *	  end
+ *
+ *	  { k: 42 }.each do
+ *  	    _2
+ *  	    binding.implicit_parameters #=> [:_1, :_2]
+ *  	  end
+ *  	end
+ *
+ */
+static VALUE
+bind_implicit_parameters(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+
+    if (get_local_variable_ptr(&env, idItImplicit, FALSE)) {
+        return rb_ary_new_from_args(1, ID2SYM(idIt));
+    }
+
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return rb_vm_env_numbered_parameters(env);
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameter_get(symbol) -> obj
+ *
+ *  Returns the value of the numbered parameter or "it" parameter.
+ *
+ *	def foo
+ *  	  [42].each do
+ *  	    it
+ *  	    binding.implicit_parameter_get(:it) #=> 42
+ *  	  end
+ *
+ *  	  { k: 42 }.each do
+ *  	    _2
+ *  	    binding.implicit_parameter_get(:_1) #=> :k
+ *  	    binding.implicit_parameter_get(:_2) #=> 42
+ *  	  end
+ *  	end
+ *
+ */
+static VALUE
+bind_implicit_parameter_get(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const VALUE *ptr;
+    const rb_env_t *env;
+
+    if (lid == idIt) lid = idItImplicit;
+
+    if (!lid || !rb_implicit_param_p(lid)) {
+        rb_name_err_raise("'%1$s' is not an implicit parameter",
+                          bindval, sym);
+    }
+
+    GetBindingPtr(bindval, bind);
+
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    if ((ptr = get_local_variable_ptr(&env, lid, FALSE)) != NULL) {
+        return *ptr;
+    }
+
+    if (lid == idItImplicit) lid = idIt;
+    rb_name_err_raise("implicit parameter '%1$s' is not defined for %2$s", bindval, ID2SYM(lid));
+    UNREACHABLE_RETURN(Qundef);
+}
+
+/*
+ *  call-seq:
+ *     binding.implicit_parameter_defined?(symbol) -> obj
+ *
+ *  Returns +true+ if the numbered parameter or "it" parameter exists.
+ *
+ *	def foo
+ *  	  [42].each do
+ *  	    it
+ *  	    binding.implicit_parameter_defined?(:it) #=> true
+ *  	    binding.implicit_parameter_defined?(:_1) #=> false
+ *  	  end
+ *
+ *        { k: 42 }.each do
+ *          _2
+ *  	    binding.implicit_parameter_defined?(:_1) #=> true
+ *  	    binding.implicit_parameter_defined?(:_2) #=> true
+ *  	    binding.implicit_parameter_defined?(:_3) #=> false
+ *  	    binding.implicit_parameter_defined?(:it) #=> false
+ *  	  end
+ *  	end
+ *
+ */
+static VALUE
+bind_implicit_parameter_defined_p(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    if (lid == idIt) lid = idItImplicit;
+
+    if (!lid || !rb_implicit_param_p(lid)) {
+        rb_name_err_raise("'%1$s' is not an implicit parameter",
+                          bindval, sym);
+    }
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return RBOOL(get_local_variable_ptr(&env, lid, FALSE));
 }
 
 /*
@@ -679,6 +837,32 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
     return procval;
 }
 
+VALUE
+rb_func_proc_dup(VALUE src_obj)
+{
+    RUBY_ASSERT(rb_typeddata_is_instance_of(src_obj, &proc_data_type));
+
+    rb_proc_t *src_proc;
+    GetProcPtr(src_obj, src_proc);
+    RUBY_ASSERT(vm_block_type(&src_proc->block) == block_type_ifunc);
+
+    cfunc_proc_t *proc;
+    VALUE proc_obj = TypedData_Make_Struct(rb_obj_class(src_obj), cfunc_proc_t, &proc_data_type, proc);
+
+    memcpy(&proc->basic, src_proc, sizeof(rb_proc_t));
+    RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.self);
+    RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
+
+    const VALUE *src_ep = src_proc->block.as.captured.ep;
+    VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+
+    return proc_obj;
+}
+
 static VALUE
 sym_proc_new(VALUE klass, VALUE sym)
 {
@@ -695,11 +879,6 @@ sym_proc_new(VALUE klass, VALUE sym)
 struct vm_ifunc *
 rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc)
 {
-    union {
-        struct vm_ifunc_argc argc;
-        VALUE packed;
-    } arity;
-
     if (min_argc < UNLIMITED_ARGUMENTS ||
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
         min_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
@@ -716,23 +895,18 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
         rb_raise(rb_eRangeError, "maximum argument number out of range: %d",
                  max_argc);
     }
-    arity.argc.min = min_argc;
-    arity.argc.max = max_argc;
     rb_execution_context_t *ec = GET_EC();
 
     struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
+
+    rb_gc_register_pinning_obj((VALUE)ifunc);
+
     ifunc->func = func;
     ifunc->data = data;
-    ifunc->argc = arity.argc;
+    ifunc->argc.min = min_argc;
+    ifunc->argc.max = max_argc;
 
     return ifunc;
-}
-
-VALUE
-rb_func_proc_new(rb_block_call_func_t func, VALUE val)
-{
-    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
-    return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
 VALUE
@@ -840,7 +1014,7 @@ f_lambda_filter_non_literal(void)
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
-        // no block erorr raised else where
+        // no block error raised else where
         return;
     }
 
@@ -897,13 +1071,12 @@ f_lambda(VALUE _)
  *  Document-method: Proc#yield
  *
  *  call-seq:
- *     prc.call(params,...)   -> obj
- *     prc[params,...]        -> obj
- *     prc.(params,...)       -> obj
- *     prc.yield(params,...)  -> obj
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     yield(...) -> obj
  *
- *  Invokes the block, setting the block's parameters to the values in
- *  <i>params</i> using something close to method calling semantics.
+ *  Invokes the block, setting the block's parameters to the arguments
+ *  using something close to method calling semantics.
  *  Returns the value of the last expression evaluated in the block.
  *
  *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
@@ -1146,10 +1319,10 @@ rb_block_pair_yield_optimizable(void)
     min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return 0;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         {
             VALUE procval = block_handler;
             rb_proc_t *proc;
@@ -1159,7 +1332,7 @@ rb_block_pair_yield_optimizable(void)
             return min > 1;
         }
 
-      case block_handler_type_ifunc:
+      case block_type_ifunc:
         {
             const struct vm_ifunc *ifunc = block.as.captured.code.ifunc;
             if (ifunc->flags & IFUNC_YIELD_OPTIMIZABLE) return 1;
@@ -1186,10 +1359,10 @@ rb_block_arity(void)
     block_setup(&block, block_handler);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return -1;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         return rb_proc_arity(block_handler);
 
       default:
@@ -1250,10 +1423,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 /* call-seq:
- *   prc == other -> true or false
- *   prc.eql?(other) -> true or false
+ *   self == other -> true or false
+ *   eql?(other) -> true or false
  *
- * Two procs are the same if, and only if, they were created from the same code block.
+ * Returns whether +self+ and +other+ were created from the same code block:
  *
  *   def return_block(&block)
  *     block
@@ -1310,10 +1483,15 @@ proc_eq(VALUE self, VALUE other)
         }
         break;
       case block_type_ifunc:
-        if (self_block->as.captured.ep != \
-                other_block->as.captured.ep ||
-                self_block->as.captured.code.ifunc != \
+        if (self_block->as.captured.code.ifunc != \
                 other_block->as.captured.code.ifunc) {
+            return Qfalse;
+        }
+
+        if (memcmp(
+                ((cfunc_proc_t *)self_proc)->env,
+                ((cfunc_proc_t *)other_proc)->env,
+                sizeof(((cfunc_proc_t *)self_proc)->env))) {
             return Qfalse;
         }
         break;
@@ -1335,14 +1513,20 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[2];
+    VALUE loc[5];
+    int i = 0;
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[0] = rb_iseq_path(iseq);
-    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
+    loc[i++] = rb_iseq_path(iseq);
+    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
+    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
+    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->end_pos.column);
+    RUBY_ASSERT_ALWAYS(i == numberof(loc));
 
-    return rb_ary_new4(2, loc);
+    return rb_ary_new_from_values(i, loc);
 }
 
 VALUE
@@ -1353,10 +1537,17 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer]
+ *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
  *
- * Returns the Ruby source filename and line number containing this proc
- * or +nil+ if this proc was not defined in Ruby (i.e. native).
+ * Returns the location where the Proc was defined.
+ * The returned Array contains:
+ *   (1) the Ruby source filename
+ *   (2) the line number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
+ *   (4) the line number where the definition ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
+ *
+ * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -1437,11 +1628,36 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 {
     rb_proc_t *proc;
     GetProcPtr(prc, proc);
-    hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.code.val);
-    hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
-    return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
+
+    switch (vm_block_type(&proc->block)) {
+      case block_type_iseq:
+        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+        break;
+      case block_type_ifunc:
+        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.ifunc->func);
+        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.ifunc->data);
+        break;
+      case block_type_symbol:
+        hash = rb_st_hash_uint(hash, rb_any_hash(proc->block.as.symbol));
+        break;
+      case block_type_proc:
+        hash = rb_st_hash_uint(hash, rb_any_hash(proc->block.as.proc));
+        break;
+      default:
+        rb_bug("rb_hash_proc: unknown block type %d", vm_block_type(&proc->block));
+    }
+
+    /* ifunc procs have their own allocated ep. If an ifunc is duplicated, they
+     * will point to different ep but they should return the same hash code, so
+     * we cannot include the ep in the hash. */
+    if (vm_block_type(&proc->block) != block_type_ifunc) {
+        hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
+    }
+
+    return hash;
 }
 
+static VALUE sym_proc_cache = Qfalse;
 
 /*
  *  call-seq:
@@ -1460,29 +1676,33 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 VALUE
 rb_sym_to_proc(VALUE sym)
 {
-    static VALUE sym_proc_cache = Qfalse;
     enum {SYM_PROC_CACHE_SIZE = 67};
-    VALUE proc;
-    long index;
-    ID id;
 
-    if (!sym_proc_cache) {
-        sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_vm_register_global_object(sym_proc_cache);
-        rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
-    }
+    if (rb_ractor_main_p()) {
+        if (!sym_proc_cache) {
+            sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE);
+            rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE - 1, Qnil);
+        }
 
-    id = SYM2ID(sym);
-    index = (id % SYM_PROC_CACHE_SIZE) << 1;
+        ID id = SYM2ID(sym);
+        long index = (id % SYM_PROC_CACHE_SIZE);
+        VALUE procval = RARRAY_AREF(sym_proc_cache, index);
+        if (RTEST(procval)) {
+            rb_proc_t *proc;
+            GetProcPtr(procval, proc);
 
-    if (RARRAY_AREF(sym_proc_cache, index) == sym) {
-        return RARRAY_AREF(sym_proc_cache, index + 1);
+            if (proc->block.as.symbol == sym) {
+                return procval;
+            }
+        }
+
+        procval = sym_proc_new(rb_cProc, sym);
+        RARRAY_ASET(sym_proc_cache, index, procval);
+
+        return RB_GC_GUARD(procval);
     }
     else {
-        proc = sym_proc_new(rb_cProc, ID2SYM(id));
-        RARRAY_ASET(sym_proc_cache, index, sym);
-        RARRAY_ASET(sym_proc_cache, index + 1, proc);
-        return proc;
+        return sym_proc_new(rb_cProc, sym);
     }
 }
 
@@ -1586,7 +1806,7 @@ static const rb_data_type_t method_data_type = {
         NULL, // No external memory to report,
         bm_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE_NO_REC
 };
 
 VALUE
@@ -1734,7 +1954,7 @@ method_entry_defined_class(const rb_method_entry_t *me)
  *
  * Document-class: Method
  *
- *  Method objects are created by Object#method, and are associated
+ *  +Method+ objects are created by Object#method, and are associated
  *  with a particular object (not just with a class).  They may be
  *  used to invoke the method within the object, and as a block
  *  associated with an iterator.  They may also be unbound from one
@@ -1760,10 +1980,9 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *   meth.eql?(other_meth)  -> true or false
- *   meth == other_meth  -> true or false
+ *   self == other -> true or false
  *
- * Two method objects are equal if they are bound to the same
+ * Returns whether +self+ and +other+ are bound to the same
  * object and refer to the same method definition and the classes
  * defining the methods are the same class or module.
  */
@@ -1944,6 +2163,26 @@ method_owner(VALUE obj)
     return data->owner;
 }
 
+/*
+ *  call-seq:
+ *    meth.box   -> box or nil
+ *
+ *  Returns the Ruby::Box where +meth+ is defined in.
+ */
+static VALUE
+method_box(VALUE obj)
+{
+    struct METHOD *data;
+    const rb_box_t *box;
+
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
+    box = data->me->def->box;
+    if (!box) return Qnil;
+    if (box->box_object) return box->box_object;
+    rb_bug("Unexpected box on the method definition: %p", (void*) box);
+    UNREACHABLE_RETURN(Qnil);
+}
+
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
@@ -1993,7 +2232,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     obj.method(sym)    -> method
  *
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
- *  Method object (or raising NameError). The Method object acts as a
+ *  +Method+ object (or raising NameError). The +Method+ object acts as a
  *  closure in <i>obj</i>'s object instance, so instance variables and
  *  the value of <code>self</code> remain available.
  *
@@ -2014,7 +2253,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
  *
- *  Note that Method implements <code>to_proc</code> method, which
+ *  Note that +Method+ implements <code>to_proc</code> method, which
  *  means it can be used with iterators.
  *
  *     [ 1, 2, 3 ].each(&method(:puts)) # => prints 3 lines to stdout
@@ -2046,6 +2285,19 @@ rb_obj_public_method(VALUE obj, VALUE vid)
     return obj_method(obj, vid, TRUE);
 }
 
+static VALUE
+rb_obj_singleton_method_lookup(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    return rb_obj_method(args[0], args[1]);
+}
+
+static VALUE
+rb_obj_singleton_method_lookup_fail(VALUE arg1, VALUE arg2)
+{
+    return Qfalse;
+}
+
 /*
  *  call-seq:
  *     obj.singleton_method(sym)    -> method
@@ -2073,11 +2325,12 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    VALUE klass = rb_singleton_class_get(obj);
+    VALUE sc = rb_singleton_class_get(obj);
+    VALUE klass;
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass) ||
-        NIL_P(klass = RCLASS_ORIGIN(klass)) ||
+    if (NIL_P(sc) ||
+        NIL_P(klass = RCLASS_ORIGIN(sc)) ||
         !NIL_P(rb_special_singleton_class(obj))) {
         /* goto undef; */
     }
@@ -2087,21 +2340,26 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
         /* else goto undef; */
     }
     else {
-        const rb_method_entry_t *me = rb_method_entry_at(klass, id);
-        vid = ID2SYM(id);
+        VALUE args[2] = {obj, vid};
+        VALUE ruby_method = rb_rescue(rb_obj_singleton_method_lookup, (VALUE)args, rb_obj_singleton_method_lookup_fail, Qfalse);
+        if (ruby_method) {
+            struct METHOD *method = (struct METHOD *)RTYPEDDATA_GET_DATA(ruby_method);
+            VALUE lookup_class = RBASIC_CLASS(obj);
+            VALUE stop_class = rb_class_superclass(sc);
+            VALUE method_class = method->iclass;
 
-        if (UNDEFINED_METHOD_ENTRY_P(me)) {
-            /* goto undef; */
-        }
-        else if (UNDEFINED_REFINED_METHOD_P(me->def)) {
-            /* goto undef; */
-        }
-        else {
-            return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+            /* Determine if method is in singleton class, or module included in or prepended to it */
+            do {
+                if (lookup_class == method_class) {
+                    return ruby_method;
+                }
+                lookup_class = RCLASS_SUPER(lookup_class);
+            } while (lookup_class && lookup_class != stop_class);
         }
     }
 
   /* undef: */
+    vid = ID2SYM(id);
     rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
@@ -2392,13 +2650,20 @@ method_dup(VALUE self)
     return clone;
 }
 
-/*  Document-method: Method#===
- *
+/*
  *  call-seq:
- *     method === obj   -> result_of_method
+ *     call(...) -> obj
+ *     self[...] -> obj
+ *     self === obj -> result_of_method
  *
- *  Invokes the method with +obj+ as the parameter like #call.
- *  This allows a method object to be the target of a +when+ clause
+ *  Invokes +self+ with the specified arguments, returning the
+ *  method's return value.
+ *
+ *     m = 12.method("+")
+ *     m.call(3)    #=> 15
+ *     m.call(20)   #=> 32
+ *
+ *  Using Method#=== allows a method object to be the target of a +when+ clause
  *  in a case statement.
  *
  *      require 'prime'
@@ -2407,32 +2672,6 @@ method_dup(VALUE self)
  *      when Prime.method(:prime?)
  *        # ...
  *      end
- */
-
-
-/*  Document-method: Method#[]
- *
- *  call-seq:
- *     meth[args, ...]         -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value, like #call.
- *
- *     m = 12.method("+")
- *     m[3]         #=> 15
- *     m[20]        #=> 32
- */
-
-/*
- *  call-seq:
- *     meth.call(args, ...)    -> obj
- *
- *  Invokes the <i>meth</i> with the specified arguments, returning the
- *  method's return value.
- *
- *     m = 12.method("+")
- *     m.call(3)    #=> 15
- *     m.call(20)   #=> 32
  */
 
 static VALUE
@@ -2494,7 +2733,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  *
  * Document-class: UnboundMethod
  *
- *  Ruby supports two forms of objectified methods. Class Method is
+ *  Ruby supports two forms of objectified methods. Class +Method+ is
  *  used to represent methods that are associated with a particular
  *  object: these method objects are bound to that object. Bound
  *  method objects for an object can be created using Object#method.
@@ -2957,10 +3196,17 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer]
+ *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
  *
- * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native).
+ * Returns the location where the method was defined.
+ * The returned Array contains:
+ *   (1) the Ruby source filename
+ *   (2) the line number where the definition starts
+ *   (3) the position where the definition starts, in number of bytes from the start of the line
+ *   (4) the line number where the definition ends
+ *   (5) the position where the definitions ends, in number of bytes from the start of the line
+ *
+ * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -3200,9 +3446,10 @@ method_inspect(VALUE method)
         for (int i = 0; i < RARRAY_LEN(params); i++) {
             pair = RARRAY_AREF(params, i);
             kind = RARRAY_AREF(pair, 0);
-            name = RARRAY_AREF(pair, 1);
-            // FIXME: in tests it turns out that kind, name = [:req] produces name to be false. Why?..
-            if (NIL_P(name) || name == Qfalse) {
+            if (RARRAY_LEN(pair) > 1) {
+                name = RARRAY_AREF(pair, 1);
+            }
+            else {
                 // FIXME: can it be reduced to switch/case?
                 if (kind == req || kind == opt) {
                     name = rb_str_new2("_");
@@ -3215,6 +3462,9 @@ method_inspect(VALUE method)
                 }
                 else if (kind == nokey) {
                     name = rb_str_new2("nil");
+                }
+                else {
+                    name = Qnil;
                 }
             }
 
@@ -3335,7 +3585,7 @@ extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_ow
  * call-seq:
  *   meth.super_method  -> method
  *
- * Returns a Method of superclass which would be called when super is used
+ * Returns a +Method+ of superclass which would be called when super is used
  * or nil if there is no method on superclass.
  */
 
@@ -3786,19 +4036,18 @@ rb_proc_compose_to_right(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth << g -> a_proc
+ *     self << g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  Returns a proc that is the composition of the given +g+ and this method.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +g+
+ *  with the arguments, then calls +self+ with the return value of +g+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f << g).call(2) #=> 16
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f << g).call([]) # => ["in proc", "in f"]
  */
 static VALUE
 rb_method_compose_to_left(VALUE self, VALUE g)
@@ -3810,19 +4059,18 @@ rb_method_compose_to_left(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth >> g -> a_proc
+ *     self >> g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls this method
- *  with them then calls <i>g</i> with the result.
+ *  Returns a proc that is the composition of this method and the given +g+.
  *
- *     def f(x)
- *       x * x
- *     end
+ *  The returned proc takes a variable number of arguments. It first calls +self+
+ *  with the arguments, then calls +g+ with the return value of +self+.
+ *
+ *     def f(ary) = ary << 'in f'
  *
  *     f = self.method(:f)
- *     g = proc {|x| x + x }
- *     p (f >> g).call(2) #=> 8
+ *     g = proc { |ary| ary << 'in proc' }
+ *     (f >> g).call([]) # => ["in f", "in proc"]
  */
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)
@@ -3880,12 +4128,13 @@ proc_ruby2_keywords(VALUE procval)
     switch (proc->block.type) {
       case block_type_iseq:
         if (ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_rest &&
+                !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
             ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
         }
         else {
-            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or post arguments or proc does not accept argument splat)");
         }
         break;
       default:
@@ -4129,7 +4378,6 @@ proc_ruby2_keywords(VALUE procval)
  * a proc by the <code>&</code> operator, and therefore can be
  * consumed by iterators.
  *
-
  *      class Greeter
  *        def initialize(greeting)
  *          @greeting = greeting
@@ -4145,8 +4393,8 @@ proc_ruby2_keywords(VALUE procval)
  *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
  *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
  *
- * Of the Ruby core classes, this method is implemented by Symbol,
- * Method, and Hash.
+ * Of the Ruby core classes, this method is implemented by +Symbol+,
+ * +Method+, and +Hash+.
  *
  *      :to_s.to_proc.call(1)           #=> "1"
  *      [1, 2].map(&:to_s)              #=> ["1", "2"]
@@ -4180,18 +4428,85 @@ proc_ruby2_keywords(VALUE procval)
  * Since +return+ and +break+ exits the block itself in lambdas,
  * lambdas cannot be orphaned.
  *
- * == Numbered parameters
+ * == Anonymous block parameters
  *
- * Numbered parameters are implicitly defined block parameters intended to
- * simplify writing short blocks:
+ * To simplify writing short blocks, Ruby provides two different types of
+ * anonymous parameters: +it+ (single parameter) and numbered ones: <tt>_1</tt>,
+ * <tt>_2</tt> and so on.
  *
  *     # Explicit parameter:
  *     %w[test me please].each { |str| puts str.upcase } # prints TEST, ME, PLEASE
  *     (1..5).map { |i| i**2 } # => [1, 4, 9, 16, 25]
  *
- *     # Implicit parameter:
+ *     # it:
+ *     %w[test me please].each { puts it.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { it**2 } # => [1, 4, 9, 16, 25]
+ *
+ *     # Numbered parameter:
  *     %w[test me please].each { puts _1.upcase } # prints TEST, ME, PLEASE
  *     (1..5).map { _1**2 } # => [1, 4, 9, 16, 25]
+ *
+ * === +it+
+ *
+ * +it+ is a name that is available inside a block when no explicit parameters
+ * defined, as shown above.
+ *
+ *     %w[test me please].each { puts it.upcase } # prints TEST, ME, PLEASE
+ *     (1..5).map { it**2 } # => [1, 4, 9, 16, 25]
+ *
+ * +it+ is a "soft keyword": it is not a reserved name, and can be used as
+ * a name for methods and local variables:
+ *
+ *      it = 5 # no warnings
+ *      def it(&block) # RSpec-like API, no warnings
+ *         # ...
+ *      end
+ *
+ * +it+ can be used as a local variable even in blocks that use it as an
+ * implicit parameter (though this style is obviously confusing):
+ *
+ *      [1, 2, 3].each {
+ *        # takes a value of implicit parameter "it" and uses it to
+ *        # define a local variable with the same name
+ *        it = it**2
+ *        p it
+ *      }
+ *
+ * In a block with explicit parameters defined +it+ usage raises an exception:
+ *
+ *      [1, 2, 3].each { |x| p it }
+ *      # syntax error found (SyntaxError)
+ *      # [1, 2, 3].each { |x| p it }
+ *      #                        ^~ 'it' is not allowed when an ordinary parameter is defined
+ *
+ * But if a local name (variable or method) is available, it would be used:
+ *
+ *      it = 5
+ *      [1, 2, 3].each { |x| p it }
+ *      # Prints 5, 5, 5
+ *
+ * Blocks using +it+ can be nested:
+ *
+ *     %w[test me].each { it.each_char { p it } }
+ *     # Prints "t", "e", "s", "t", "m", "e"
+ *
+ * Blocks using +it+ are considered to have one parameter:
+ *
+ *     p = proc { it**2 }
+ *     l = lambda { it**2 }
+ *     p.parameters     # => [[:opt]]
+ *     p.arity          # => 1
+ *     l.parameters     # => [[:req]]
+ *     l.arity          # => 1
+ *
+ * === Numbered parameters
+ *
+ * Numbered parameters are another way to name block parameters implicitly.
+ * Unlike +it+, numbered parameters allow to refer to several parameters
+ * in one block.
+ *
+ *     %w[test me please].each { puts _1.upcase } # prints TEST, ME, PLEASE
+ *     {a: 100, b: 200}.map { "#{_1} = #{_2}" } # => "a = 100", "b = 200"
  *
  * Parameter names from +_1+ to +_9+ are supported:
  *
@@ -4207,11 +4522,16 @@ proc_ruby2_keywords(VALUE procval)
  *     [10, 20, 30].map { |x| _1**2 }
  *     # SyntaxError (ordinary parameter is defined)
  *
- * To avoid conflicts, naming local variables or method
- * arguments +_1+, +_2+ and so on, causes a warning.
+ * Numbered parameters can't be mixed with +it+ either:
  *
- *     _1 = 'test'
- *     # warning: `_1' is reserved as numbered parameter
+ *     [10, 20, 30].map { _1 + it }
+ *     # SyntaxError: 'it' is not allowed when a numbered parameter is already used
+ *
+ * To avoid conflicts, naming local variables or method
+ * arguments +_1+, +_2+ and so on, causes an error.
+ *
+ *       _1 = 'test'
+ *     # ^~ _1 is reserved for numbered parameters (SyntaxError)
  *
  * Using implicit numbered parameters affects block's arity:
  *
@@ -4225,13 +4545,11 @@ proc_ruby2_keywords(VALUE procval)
  * Blocks with numbered parameters can't be nested:
  *
  *     %w[test me].each { _1.each_char { p _1 } }
- *     # SyntaxError (numbered parameter is already used in outer block here)
+ *     # numbered parameter is already used in outer block (SyntaxError)
  *     # %w[test me].each { _1.each_char { p _1 } }
  *     #                    ^~
  *
- * Numbered parameters were introduced in Ruby 2.7.
  */
-
 
 void
 Init_Proc(void)
@@ -4316,6 +4634,8 @@ Init_Proc(void)
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
 
+    rb_define_method(rb_cMethod, "box", method_box, 0);
+
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);
     rb_undef_alloc_func(rb_cUnboundMethod);
@@ -4387,6 +4707,8 @@ Init_Proc(void)
 void
 Init_Binding(void)
 {
+    rb_gc_register_address(&sym_proc_cache);
+
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
@@ -4397,6 +4719,9 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
+    rb_define_method(rb_cBinding, "implicit_parameters", bind_implicit_parameters, 0);
+    rb_define_method(rb_cBinding, "implicit_parameter_get", bind_implicit_parameter_get, 1);
+    rb_define_method(rb_cBinding, "implicit_parameter_defined?", bind_implicit_parameter_defined_p, 1);
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

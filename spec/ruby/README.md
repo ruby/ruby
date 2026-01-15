@@ -26,12 +26,12 @@ ruby/spec is known to be tested in these implementations for every commit:
 
 * [MRI](https://rubyci.org/) on 30 platforms and 4 versions
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
-* [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
+* [TruffleRuby](https://github.com/truffleruby/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 * [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
-ruby/spec describes the behavior of Ruby 3.0 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (3.0.x, 3.1.x, 3.2.x, etc), and those are tested in CI.
+ruby/spec describes the behavior of Ruby 3.2 and more recent Ruby versions.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (3.2.x, 3.3.x, etc), and those are tested in CI.
 
 ### Synchronization with Ruby Implementations
 
@@ -44,7 +44,7 @@ For *testing* the development version of a Ruby implementation, one should alway
 Also, this repository doesn't always contain the latest spec changes from MRI (it's synchronized monthly), and does not contain tags (specs marked as failing on that Ruby implementation).
 Running specs on a Ruby implementation can be done with:
 
-```
+```console
 $ cd ruby_implementation/spec/ruby
 # Add ../ruby_implementation/bin in PATH, or pass -t /path/to/bin/ruby
 $ ../mspec/bin/mspec
@@ -62,6 +62,8 @@ For older specs try these commits:
 * Ruby 2.5.9 - [Suite](https://github.com/ruby/spec/commit/c503335d3d9f6ec6ef24de60a0716c34af69b64f) using [MSpec](https://github.com/ruby/mspec/commit/0091e8a62e954717cd54641f935eaf1403692041)
 * Ruby 2.6.10 - [Suite](https://github.com/ruby/spec/commit/aaf998fb8c92c4e63ad423a2e7ca6e6921818c6e) using [MSpec](https://github.com/ruby/mspec/commit/5e36c684e9e2b92b1187589bba1df22c640a8661)
 * Ruby 2.7.8 - [Suite](https://github.com/ruby/spec/commit/93787e6035c925b593a9c0c6fb0e7e07a6f1df1f) using [MSpec](https://github.com/ruby/mspec/commit/1d8cf64722d8a7529f7cd205be5f16a89b7a67fd)
+* Ruby 3.0.7 - [Suite](https://github.com/ruby/spec/commit/affef93d9940f615e4836f64b011da211f570913) using [MSpec](https://github.com/ruby/mspec/commit/0aabb3e548eb5ea6cad0125f8f46cee34542b6b7)
+* Ruby 3.1.6 - [Suite](https://github.com/ruby/spec/commit/ec960f2389d1c2265d32397fa8afa6d462014efc) using [MSpec](https://github.com/ruby/mspec/commit/484310dbed35b84c74484fd674602f88c42d063a)
 
 ### Running the specs
 

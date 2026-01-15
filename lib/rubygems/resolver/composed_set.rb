@@ -44,16 +44,16 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   end
 
   def errors
-    @errors + @sets.map(&:errors).flatten
+    @errors + @sets.flat_map(&:errors)
   end
 
   ##
   # Finds all specs matching +req+ in all sets.
 
   def find_all(req)
-    @sets.map do |s|
+    @sets.flat_map do |s|
       s.find_all req
-    end.flatten
+    end
   end
 
   ##

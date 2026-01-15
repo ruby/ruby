@@ -1,6 +1,12 @@
 # -*- encoding: utf-8 -*-
 require_relative '../../spec_helper'
-require 'cgi'
+
+ruby_version_is ""..."4.0" do
+  require 'cgi'
+end
+ruby_version_is "4.0" do
+  require 'cgi/escape'
+end
 
 describe "CGI.unescape" do
   it "url-decodes the passed argument" do

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   # This represents a source of Ruby code that has been parsed. It is used in
@@ -12,6 +13,21 @@ module Prism
     def self.for(source, start_line = 1, offsets = [])
       if source.ascii_only?
         ASCIISource.new(source, start_line, offsets)
+      elsif source.encoding == Encoding::BINARY
+        source.force_encoding(Encoding::UTF_8)
+
+        if source.valid_encoding?
+          new(source, start_line, offsets)
+        else
+          # This is an extremely niche use case where the file is marked as
+          # binary, contains multi-byte characters, and those characters are not
+          # valid UTF-8. In this case we'll mark it as binary and fall back to
+          # treating everything as a single-byte character. This _may_ cause
+          # problems when asking for code units, but it appears to be the
+          # cleanest solution at the moment.
+          source.force_encoding(Encoding::BINARY)
+          ASCIISource.new(source, start_line, offsets)
+        end
       else
         new(source, start_line, offsets)
       end
@@ -31,6 +47,16 @@ module Prism
       @source = source
       @start_line = start_line # set after parsing is done
       @offsets = offsets # set after parsing is done
+    end
+
+    # Replace the value of start_line with the given value.
+    def replace_start_line(start_line)
+      @start_line = start_line
+    end
+
+    # Replace the value of offsets with the given value.
+    def replace_offsets(offsets)
+      @offsets.replace(offsets)
     end
 
     # Returns the encoding of the source code, which is set by parameters to the
@@ -89,8 +115,14 @@ module Prism
     # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
     # concept of code units that differs from the number of characters in other
     # encodings, it is not captured here.
+    #
+    # We purposefully replace invalid and undefined characters with replacement
+    # characters in this conversion. This happens for two reasons. First, it's
+    # possible that the given byte offset will not occur on a character
+    # boundary. Second, it's possible that the source code will contain a
+    # character that has no equivalent in the given encoding.
     def code_units_offset(byte_offset, encoding)
-      byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding)
+      byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding, invalid: :replace, undef: :replace)
 
       if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
         byteslice.bytesize / 2
@@ -99,10 +131,23 @@ module Prism
       end
     end
 
+    # Generate a cache that targets a specific encoding for calculating code
+    # unit offsets.
+    def code_units_cache(encoding)
+      CodeUnitsCache.new(source, encoding)
+    end
+
     # Returns the column number in code units for the given encoding for the
     # given byte offset.
     def code_units_column(byte_offset, encoding)
       code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
+    end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      source.freeze
+      offsets.freeze
+      freeze
     end
 
     private
@@ -110,28 +155,89 @@ module Prism
     # Binary search through the offsets to find the line number for the given
     # byte offset.
     def find_line(byte_offset)
-      left = 0
-      right = offsets.length - 1
+      index = offsets.bsearch_index { |offset| offset > byte_offset } || offsets.length
+      index - 1
+    end
+  end
 
-      while left <= right
-        mid = left + (right - left) / 2
-        return mid if (offset = offsets[mid]) == byte_offset
-
-        if offset < byte_offset
-          left = mid + 1
-        else
-          right = mid - 1
-        end
+  # A cache that can be used to quickly compute code unit offsets from byte
+  # offsets. It purposefully provides only a single #[] method to access the
+  # cache in order to minimize surface area.
+  #
+  # Note that there are some known issues here that may or may not be addressed
+  # in the future:
+  #
+  # * The first is that there are issues when the cache computes values that are
+  #   not on character boundaries. This can result in subsequent computations
+  #   being off by one or more code units.
+  # * The second is that this cache is currently unbounded. In theory we could
+  #   introduce some kind of LRU cache to limit the number of entries, but this
+  #   has not yet been implemented.
+  #
+  class CodeUnitsCache
+    class UTF16Counter # :nodoc:
+      def initialize(source, encoding)
+        @source = source
+        @encoding = encoding
       end
 
-      left - 1
+      def count(byte_offset, byte_length)
+        @source.byteslice(byte_offset, byte_length).encode(@encoding, invalid: :replace, undef: :replace).bytesize / 2
+      end
+    end
+
+    class LengthCounter # :nodoc:
+      def initialize(source, encoding)
+        @source = source
+        @encoding = encoding
+      end
+
+      def count(byte_offset, byte_length)
+        @source.byteslice(byte_offset, byte_length).encode(@encoding, invalid: :replace, undef: :replace).length
+      end
+    end
+
+    private_constant :UTF16Counter, :LengthCounter
+
+    # Initialize a new cache with the given source and encoding.
+    def initialize(source, encoding)
+      @source = source
+      @counter =
+        if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+          UTF16Counter.new(source, encoding)
+        else
+          LengthCounter.new(source, encoding)
+        end
+
+      @cache = {} #: Hash[Integer, Integer]
+      @offsets = [] #: Array[Integer]
+    end
+
+    # Retrieve the code units offset from the given byte offset.
+    def [](byte_offset)
+      @cache[byte_offset] ||=
+        if (index = @offsets.bsearch_index { |offset| offset > byte_offset }).nil?
+          @offsets << byte_offset
+          @counter.count(0, byte_offset)
+        elsif index == 0
+          @offsets.unshift(byte_offset)
+          @counter.count(0, byte_offset)
+        else
+          @offsets.insert(index, byte_offset)
+          offset = @offsets[index - 1]
+          @cache[offset] + @counter.count(offset, byte_offset - offset)
+        end
     end
   end
 
   # Specialized version of Prism::Source for source code that includes ASCII
   # characters only. This class is used to apply performance optimizations that
-  # cannot be applied to sources that include multibyte characters. Sources that
-  # include multibyte characters are represented by the Prism::Source class.
+  # cannot be applied to sources that include multibyte characters.
+  #
+  # In the extremely rare case that a source includes multi-byte characters but
+  # is marked as binary because of a magic encoding comment and it cannot be
+  # eagerly converted to UTF-8, this class will be used as well. This is because
+  # at that point we will treat everything as single-byte characters.
   class ASCIISource < Source
     # Return the character offset for the given byte offset.
     def character_offset(byte_offset)
@@ -151,6 +257,13 @@ module Prism
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
       byte_offset
+    end
+
+    # Returns a cache that is the identity function in order to maintain the
+    # same interface. We can do this because code units are always equivalent to
+    # byte offsets for ASCII-only sources.
+    def code_units_cache(encoding)
+      ->(byte_offset) { byte_offset }
     end
 
     # Specialized version of `code_units_column` that does not depend on
@@ -262,6 +375,12 @@ module Prism
       source.code_units_offset(start_offset, encoding)
     end
 
+    # The start offset from the start of the file in code units using the given
+    # cache to fetch or calculate the value.
+    def cached_start_code_units_offset(cache)
+      cache[start_offset]
+    end
+
     # The byte offset from the beginning of the source where this location ends.
     def end_offset
       start_offset + length
@@ -276,6 +395,12 @@ module Prism
     # The offset from the start of the file in code units of the given encoding.
     def end_code_units_offset(encoding = Encoding::UTF_16LE)
       source.code_units_offset(end_offset, encoding)
+    end
+
+    # The end offset from the start of the file in code units using the given
+    # cache to fetch or calculate the value.
+    def cached_end_code_units_offset(cache)
+      cache[end_offset]
     end
 
     # The line number where this location starts.
@@ -312,6 +437,12 @@ module Prism
       source.code_units_column(start_offset, encoding)
     end
 
+    # The start column in code units using the given cache to fetch or calculate
+    # the value.
+    def cached_start_code_units_column(cache)
+      cache[start_offset] - cache[source.line_start(start_offset)]
+    end
+
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
@@ -328,6 +459,12 @@ module Prism
     # ends from the start of the line.
     def end_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(end_offset, encoding)
+    end
+
+    # The end column in code units using the given cache to fetch or calculate
+    # the value.
+    def cached_end_code_units_column(cache)
+      cache[end_offset] - cache[source.line_start(end_offset)]
     end
 
     # Implement the hash pattern matching interface for Location.
@@ -579,6 +716,11 @@ module Prism
     def failure?
       !success?
     end
+
+    # Create a code units cache for the given encoding.
+    def code_units_cache(encoding)
+      source.code_units_cache(encoding)
+    end
   end
 
   # This is a result specific to the `parse` and `parse_file` methods.
@@ -717,5 +859,40 @@ module Prism
       location
       super
     end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      value.freeze
+      location.freeze
+      freeze
+    end
+  end
+
+  # This object is passed to the various Prism.* methods that accept the
+  # `scopes` option as an element of the list. It defines both the local
+  # variables visible at that scope as well as the forwarding parameters
+  # available at that scope.
+  class Scope
+    # The list of local variables that are defined in this scope. This should be
+    # defined as an array of symbols.
+    attr_reader :locals
+
+    # The list of local variables that are forwarded to the next scope. This
+    # should by defined as an array of symbols containing the specific values of
+    # :*, :**, :&, or :"...".
+    attr_reader :forwarding
+
+    # Create a new scope object with the given locals and forwarding.
+    def initialize(locals, forwarding)
+      @locals = locals
+      @forwarding = forwarding
+    end
+  end
+
+  # Create a new scope with the given locals and forwarding options that is
+  # suitable for passing into one of the Prism.* methods that accepts the
+  # `scopes` option.
+  def self.scope(locals: [], forwarding: [])
+    Scope.new(locals, forwarding)
   end
 end

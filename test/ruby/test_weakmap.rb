@@ -203,7 +203,7 @@ class TestWeakMap < Test::Unit::TestCase
       @wm[i] = obj
     end
 
-    assert_separately([], <<-'end;')
+    assert_ruby_status([], <<-'end;')
       wm = ObjectSpace::WeakMap.new
       obj = Object.new
       100.times do
@@ -224,7 +224,7 @@ class TestWeakMap < Test::Unit::TestCase
       assert_equal(val, wm[key])
     end;
 
-    assert_separately(["-W0"], <<-'end;')
+    assert_ruby_status(["-W0"], <<-'end;')
       wm = ObjectSpace::WeakMap.new
 
       ary = 10_000.times.map do
@@ -264,5 +264,28 @@ class TestWeakMap < Test::Unit::TestCase
       weakmap = ObjectSpace::WeakMap.new
       10_000.times { weakmap[Object.new] = Object.new }
     RUBY
+  end
+
+  def test_generational_gc
+    EnvUtil.without_gc do
+      wmap = ObjectSpace::WeakMap.new
+
+      (GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE] - 1).times { GC.start }
+
+      retain = []
+      50.times do
+        k = Object.new
+        wmap[k] = true
+        retain << k
+      end
+
+      GC.start # WeakMap promoted, other objects still young
+
+      retain.clear
+
+      GC.start(full_mark: false)
+
+      wmap.keys.each(&:itself) # call method on keys to cause crash
+    end
   end
 end

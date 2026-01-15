@@ -144,7 +144,7 @@ class Bundler::Thor
     def check_exclusive!
       opts = @assigns.keys
       # When option A and B are exclusive, if A and B are given at the same time,
-      # the diffrence of argument array size will decrease.
+      # the difference of argument array size will decrease.
       found = @exclusives.find{ |ex| (ex - opts).size < ex.size - 1 }
       if found
         names = names_to_switch_names(found & opts).map{|n| "'#{n}'"}
@@ -250,7 +250,8 @@ class Bundler::Thor
       @parsing_options
     end
 
-    # Parse boolean values which can be given as --foo=true, --foo or --no-foo.
+    # Parse boolean values which can be given as --foo=true or --foo for true values, or
+    # --foo=false, --no-foo or --skip-foo for false values.
     #
     def parse_boolean(switch)
       if current_is_value?

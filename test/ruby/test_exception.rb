@@ -992,7 +992,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_equal 1, outs.size
       assert_equal 0, errs.size
       err = outs.first.force_encoding('utf-8')
-      assert err.valid_encoding?, 'must be valid encoding'
+      assert_predicate err, :valid_encoding?
       assert_match %r/\u3042/, err
     end
   end
@@ -1128,11 +1128,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(ArgumentError) {warn("test warning", uplevel: -1)}
     assert_in_out_err(["-e", "warn 'ok', uplevel: 1"], '', [], /warning:/)
     warning = capture_warning_warn {warn("test warning", {uplevel: 0})}
-    assert_match(/test warning.*{:uplevel=>0}/m, warning[0])
+    assert_match(/test warning.*{uplevel: 0}/m, warning[0])
     warning = capture_warning_warn {warn("test warning", **{uplevel: 0})}
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
     warning = capture_warning_warn {warn("test warning", {uplevel: 0}, **{})}
-    assert_equal("test warning\n{:uplevel=>0}\n", warning[0])
+    assert_equal("test warning\n{uplevel: 0}\n", warning[0])
     assert_raise(ArgumentError) {warn("test warning", foo: 1)}
   end
 
@@ -1523,6 +1523,33 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       main = File.join(dir, "syntax_error.rb")
       File.write(main, "1+\n")
       assert_in_out_err(%W[-r#{lib} #{main}], "", [], [:*, "\n""path=#{main}\n", :*])
+    end
+  end
+
+  class Ex; end
+
+  def test_exception_message_for_unexpected_implicit_conversion_type
+    a = Ex.new
+    def self.x(a) = nil
+
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Hash") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Proc") do
+      x(&a)
+    end
+
+    def a.to_a = 1
+    def a.to_hash = 1
+    def a.to_proc = 1
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Array (TestException::Ex#to_a gives Integer)") do
+      x(*a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Hash (TestException::Ex#to_hash gives Integer)") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Proc (TestException::Ex#to_proc gives Integer)") do
+      x(&a)
     end
   end
 end

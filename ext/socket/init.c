@@ -107,6 +107,7 @@ rsock_send_blocking(void *data)
 }
 
 struct recvfrom_arg {
+    rb_io_t *fptr;
     int fd, flags;
     VALUE str;
     size_t length;
@@ -151,7 +152,7 @@ recvfrom_locktmp(VALUE v)
 {
     struct recvfrom_arg *arg = (struct recvfrom_arg *)v;
 
-    return rb_thread_io_blocking_region(recvfrom_blocking, arg, arg->fd);
+    return rb_io_blocking_region(arg->fptr, recvfrom_blocking, arg);
 }
 
 int
@@ -192,6 +193,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         rb_raise(rb_eIOError, "recv for buffered IO");
     }
 
+    arg.fptr = fptr;
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
     arg.str = str;
@@ -471,10 +473,11 @@ rsock_socket(int domain, int type, int proto)
 
 /* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
-wait_connectable(int fd, struct timeval *timeout)
+wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int len)
 {
-    int sockerr, revents;
+    int sockerr;
     socklen_t sockerrlen;
+    int fd = rb_io_descriptor(self);
 
     sockerrlen = (socklen_t)sizeof(sockerr);
     if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
@@ -508,7 +511,16 @@ wait_connectable(int fd, struct timeval *timeout)
      *
      * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
      */
-    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, timeout);
+    VALUE result = rb_io_wait(self, RB_INT2NUM(RUBY_IO_READABLE|RUBY_IO_WRITABLE), timeout);
+
+    if (result == Qfalse) {
+        VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
+        VALUE addr_str = rsock_addrinfo_inspect_sockaddr(rai);
+        VALUE message = rb_sprintf("user specified timeout for %" PRIsVALUE, addr_str);
+        rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
+    }
+
+    int revents = RB_NUM2INT(result);
 
     if (revents < 0)
         return -1;
@@ -523,12 +535,6 @@ wait_connectable(int fd, struct timeval *timeout)
          * be defensive in case some platforms set SO_ERROR on the original,
          * interrupted connect()
          */
-
-        /* when the connection timed out, no errno is set and revents is 0. */
-        if (timeout && revents == 0) {
-            errno = ETIMEDOUT;
-            return -1;
-        }
       case EINTR:
 #ifdef ERESTART
       case ERESTART:
@@ -576,19 +582,19 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
+rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout)
 {
-    int status;
+    int descriptor = rb_io_descriptor(self);
     rb_blocking_function_t *func = connect_blocking;
-    struct connect_arg arg;
+    struct connect_arg arg = {.fd = descriptor, .sockaddr = sockaddr, .len = len};
 
-    arg.fd = fd;
-    arg.sockaddr = sockaddr;
-    arg.len = len;
+    rb_io_t *fptr;
+    RB_IO_POINTER(self, fptr);
+
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
-    status = (int)BLOCKING_REGION_FD(func, &arg);
+    int status = (int)rb_io_blocking_region(fptr, func, &arg);
 
     if (status < 0) {
         switch (errno) {
@@ -600,7 +606,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struc
 #ifdef EINPROGRESS
           case EINPROGRESS:
 #endif
-            return wait_connectable(fd, timeout);
+            return wait_connectable(self, timeout, sockaddr, len);
         }
     }
     return status;
@@ -719,7 +725,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
     rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 #endif
-    peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
+    peer = (int)rb_io_blocking_region(fptr, accept_blocking, &accept_arg);
     if (peer < 0) {
         int error = errno;
 
@@ -783,7 +789,17 @@ rsock_getfamily(rb_io_t *fptr)
  * call-seq:
  *   error_code     -> integer
  *
- * Returns the raw error code occurred at name resolution.
+ * Returns the raw error code indicating the cause of the hostname resolution failure.
+ *
+ *    begin
+ *      Addrinfo.getaddrinfo("ruby-lang.org", nil)
+ *    rescue Socket::ResolutionError => e
+ *      if e.error_code == Socket::EAI_AGAIN
+ *        puts "Temporary failure in name resolution."
+ *      end
+ *    end
+ *
+ * Note that error codes depend on the operating system.
  */
 static VALUE
 sock_resolv_error_code(VALUE self)
@@ -799,7 +815,7 @@ rsock_init_socket_init(void)
      */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
     /*
-     * ResolutionError is the error class for socket name resolution.
+     * Socket::ResolutionError is the error class for hostname resolution.
      */
     rb_eResolution = rb_define_class_under(rb_cSocket, "ResolutionError", rb_eSocket);
     rb_define_method(rb_eResolution, "error_code", sock_resolv_error_code, 0);

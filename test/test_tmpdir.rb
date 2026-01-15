@@ -108,6 +108,16 @@ class TestTmpdir < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       Dir.mktmpdir("foo", "")
     end
+
+    path = Struct.new(:to_path).new("")
+    assert_raise(ArgumentError) do
+      Dir.mktmpdir("foo", path)
+    end
+
+    Dir.mktmpdir do |d|
+      path = Struct.new(:to_path).new(d)
+      assert_operator(Dir.mktmpdir("prefix-", path), :start_with?, d + "/prefix-")
+    end
   end
 
   def assert_mktmpdir_traversal
@@ -124,17 +134,32 @@ class TestTmpdir < Test::Unit::TestCase
 
   def test_ractor
     assert_ractor(<<~'end;', require: "tmpdir")
-      r = Ractor.new do
-        Dir.mktmpdir() do |d|
-          Ractor.yield d
-          Ractor.receive
+      if defined?(Ractor::Port)
+        port = Ractor::Port.new
+        r = Ractor.new port do |port|
+          Dir.mktmpdir() do |d|
+            port << d
+            Ractor.receive
+          end
         end
+        dir = port.receive
+        assert_file.directory? dir
+        r.send true
+        r.join
+        assert_file.not_exist? dir
+      else
+        r = Ractor.new do
+          Dir.mktmpdir() do |d|
+            Ractor.yield d
+            Ractor.receive
+          end
+        end
+        dir = r.take
+        assert_file.directory? dir
+        r.send true
+        r.take
+        assert_file.not_exist? dir
       end
-      dir = r.take
-      assert_file.directory? dir
-      r.send true
-      r.take
-      assert_file.not_exist? dir
     end;
   end
 end

@@ -227,6 +227,10 @@ class TestSprintf < Test::Unit::TestCase
 
     bug11766 = '[ruby-core:71806] [Bug #11766]'
     assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r), bug11766)
+
+    require 'rbconfig/sizeof'
+    fmin, fmax = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_match(/\A-\d+\.\d+\z/, sprintf("%f", Rational(fmin, fmax)))
   end
 
   def test_rational_precision
@@ -235,7 +239,7 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_hash
     options = {:capture=>/\d+/}
-    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+    assert_equal("with options #{options.inspect}", sprintf("with options %p" % options))
   end
 
   def test_inspect
@@ -540,6 +544,14 @@ class TestSprintf < Test::Unit::TestCase
   def test_negative_width_overflow
     assert_raise_with_message(ArgumentError, /too big/) do
       sprintf("%*s", RbConfig::LIMITS["INT_MIN"], "")
+    end
+  end
+
+  def test_binary_format_coderange
+    1.upto(500) do |i|
+      str = sprintf("%*s".b, i, "\xe2".b)
+      refute_predicate str, :ascii_only?
+      assert_equal i, str.bytesize
     end
   end
 end

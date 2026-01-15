@@ -128,6 +128,7 @@ recursion.o: $(hdrdir)/ruby/internal/intern/re.h
 recursion.o: $(hdrdir)/ruby/internal/intern/ruby.h
 recursion.o: $(hdrdir)/ruby/internal/intern/select.h
 recursion.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+recursion.o: $(hdrdir)/ruby/internal/intern/set.h
 recursion.o: $(hdrdir)/ruby/internal/intern/signal.h
 recursion.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 recursion.o: $(hdrdir)/ruby/internal/intern/string.h

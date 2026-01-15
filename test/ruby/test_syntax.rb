@@ -139,6 +139,11 @@ class TestSyntax < Test::Unit::TestCase
         inner(&)
       end
       assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
+
+      def evaled(&)
+        eval("inner(&)")
+      end
+      assert_equal(1, evaled{1})
     end;
   end
 
@@ -156,8 +161,10 @@ class TestSyntax < Test::Unit::TestCase
       def b(*); c(*) end
       def c(*a); a end
       def d(*); b(*, *) end
+      def e(*); eval("b(*)") end
       assert_equal([1, 2], b(1, 2))
       assert_equal([1, 2, 1, 2], d(1, 2))
+      assert_equal([1, 2], e(1, 2))
     end;
   end
 
@@ -177,10 +184,12 @@ class TestSyntax < Test::Unit::TestCase
       def d(**); b(k: 1, **) end
       def e(**); b(**, k: 1) end
       def f(a: nil, **); b(**) end
+      def g(**); eval("b(**)") end
       assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
       assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
       assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
       assert_equal({k: 3}, f(a: 1, k: 3))
+      assert_equal({a: 1, k: 3}, g(a: 1, k: 3))
     end;
   end
 
@@ -1250,6 +1259,52 @@ eom
     assert_valid_syntax("a #\n#\n&.foo\n")
   end
 
+  def test_fluent_and
+    assert_valid_syntax("a\n" "&& foo")
+    assert_valid_syntax("a\n" "and foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      && (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      and (a = :ok; true)
+        a
+      end
+    end;
+  end
+
+  def test_fluent_or
+    assert_valid_syntax("a\n" "|| foo")
+    assert_valid_syntax("a\n" "or foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      || (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      or (a = :ok; true)
+        a
+      end
+    end;
+  end
+
   def test_safe_call_in_massign_lhs
     assert_syntax_error("*a&.x=0", /multiple assignment destination/)
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
@@ -1785,15 +1840,12 @@ eom
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
 
-    # Current technical limitation: cannot prepend "private" or something for command endless def
-    error = /(syntax error,|\^~*) unexpected string literal/
-    error2 = /(syntax error,|\^~*) unexpected local variable or method/
-    assert_syntax_error('private def foo = puts "Hello"', error)
-    assert_syntax_error('private def foo() = puts "Hello"', error)
-    assert_syntax_error('private def foo(x) = puts x', error2)
-    assert_syntax_error('private def obj.foo = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo() = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo(x) = puts x', error2)
+    assert_valid_syntax('private def foo = puts "Hello"')
+    assert_valid_syntax('private def foo() = puts "Hello"')
+    assert_valid_syntax('private def foo(x) = puts x')
+    assert_valid_syntax('private def obj.foo = puts "Hello"')
+    assert_valid_syntax('private def obj.foo() = puts "Hello"')
+    assert_valid_syntax('private def obj.foo(x) = puts x')
   end
 
   def test_methoddef_in_cond
@@ -1920,6 +1972,7 @@ eom
     assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
     assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
     assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
+    assert_equal([7, 8], eval('a=[]; [7].each { a << it; [8].each { a << it } }; a'))
     assert_raise_with_message(NameError, /undefined local variable or method 'it'/) do
       eval('it')
     end
@@ -1936,6 +1989,28 @@ eom
     end
     assert_valid_syntax('proc {def foo(_);end;it}')
     assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
+    assert_equal(1, eval('1.then { raise rescue it }'))
+    assert_equal(2, eval('1.then { 2.then { raise rescue it } }'))
+    assert_equal(3, eval('3.then { begin; raise; rescue; it; end }'))
+    assert_equal(4, eval('4.tap { begin; raise ; rescue; raise rescue it; end; }'))
+    assert_equal(5, eval('a = 0; 5.then { begin; nil; ensure; a = it; end }; a'))
+    assert_equal(6, eval('a = 0; 6.then { begin; nil; rescue; ensure; a = it; end }; a'))
+    assert_equal(7, eval('a = 0; 7.then { begin; raise; ensure; a = it; end } rescue a'))
+    assert_equal(8, eval('a = 0; 8.then { begin; raise; rescue; ensure; a = it; end }; a'))
+    assert_equal(/9/, eval('9.then { /#{it}/o }'))
+  end
+
+  def test_it_with_splat_super_method
+    bug21256 = '[ruby-core:121592] [Bug #21256]'
+
+    a = Class.new do
+      define_method(:foo) { it }
+    end
+    b = Class.new(a) do
+      def foo(*args) = super
+    end
+
+    assert_equal(1, b.new.foo(1), bug21256)
   end
 
   def test_value_expr_in_condition
@@ -1968,16 +2043,23 @@ eom
     assert_valid_syntax("def foo b = 1, ...; bar(...); end")
     assert_valid_syntax("(def foo ...\n  bar(...)\nend)")
     assert_valid_syntax("(def foo ...; bar(...); end)")
+    assert_valid_syntax("def (1...).foo ...; bar(...); end")
+    assert_valid_syntax("def (tap{1...}).foo ...; bar(...); end")
     assert_valid_syntax('def ==(...) end')
     assert_valid_syntax('def [](...) end')
     assert_valid_syntax('def nil(...) end')
     assert_valid_syntax('def true(...) end')
     assert_valid_syntax('def false(...) end')
+    assert_valid_syntax('->a=1...{}')
     unexpected = /unexpected \.{3}/
     assert_syntax_error('iter do |...| end', /unexpected/)
     assert_syntax_error('iter {|...|}', /unexpected/)
     assert_syntax_error('->... {}', unexpected)
     assert_syntax_error('->(...) {}', unexpected)
+    assert_syntax_error('->a,... {}', unexpected)
+    assert_syntax_error('->(a,...) {}', unexpected)
+    assert_syntax_error('->a=1,... {}', unexpected)
+    assert_syntax_error('->(a=1,...) {}', unexpected)
     assert_syntax_error('def foo(x, y, z) bar(...); end', /unexpected/)
     assert_syntax_error('def foo(x, y, z) super(...); end', /unexpected/)
     assert_syntax_error('def foo(...) yield(...); end', /unexpected/)
@@ -2001,9 +2083,11 @@ eom
     end
     obj4 = obj1.clone
     obj5 = obj1.clone
+    obj6 = obj1.clone
     obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
     obj4.instance_eval("def foo ...\n  bar(...)\n""end", __FILE__, __LINE__)
     obj5.instance_eval("def foo ...; bar(...); end", __FILE__, __LINE__)
+    obj6.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
 
     klass = Class.new {
       def foo(*args, **kws, &block)
@@ -2032,7 +2116,7 @@ eom
     end
     obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
-    [obj1, obj2, obj3, obj4, obj5].each do |obj|
+    [obj1, obj2, obj3, obj4, obj5, obj6].each do |obj|
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
       }
@@ -2197,14 +2281,28 @@ eom
     assert_syntax_error('def foo(...) super(1, ...) {}; end', /both block arg and actual block/)
   end
 
+  def test_argument_forwarding_with_super_memory_leak
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+      code = proc do
+        eval("def foo(...) super(...) {}; end")
+        raise "unreachable"
+      rescue SyntaxError
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_class_module_Object_ancestors
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m
       class Bug18832; end
     RUBY
-    assert_separately([], <<-RUBY)
+    assert_ruby_status([], <<-RUBY)
       m = Module.new
       m::Bug18832 = 1
       include m
@@ -2225,6 +2323,43 @@ eom
       n = case 1i when 1i then true else false end
       assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
     RUBY
+  end
+
+  def test_defined_in_short_circuit_if_condition
+    bug = '[ruby-core:20501]'
+    conds = [
+      "false && defined?(Some::CONSTANT)",
+      "true || defined?(Some::CONSTANT)",
+      "(false && defined?(Some::CONSTANT))", # parens exercise different code path
+      "(true || defined?(Some::CONSTANT))",
+      "@val && false && defined?(Some::CONSTANT)",
+      "@val || true || defined?(Some::CONSTANT)"
+    ]
+
+    conds.each do |cond|
+      code = %Q{
+        def my_method
+          var = "there"
+          if #{cond}
+            var = "here"
+          end
+          raise var
+        end
+        begin
+          my_method
+        rescue
+          print 'ok'
+        else
+          print 'ng'
+        end
+      }
+      # Invoke in a subprocess because the bug caused a segfault using the parse.y compiler.
+      # Don't use assert_separately because the bug was best reproducible in a clean slate,
+      # without test env loaded.
+      out, _err, status = EnvUtil.invoke_ruby(["--disable-gems"], code, true, false)
+      assert_predicate(status, :success?, bug)
+      assert_equal 'ok', out
+    end
   end
 
   private

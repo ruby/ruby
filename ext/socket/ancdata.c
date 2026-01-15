@@ -1643,14 +1643,14 @@ bsock_recvmsg_internal(VALUE sock,
         rb_obj_reveal(dat_str, rb_cString);
     }
 
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    VALUE msg_flags = INT2NUM(mh.msg_flags);
+#else
+    VALUE msg_flags = Qnil;
+#endif
     ret = rb_ary_new3(3, dat_str,
                          rsock_io_socket_addrinfo(sock, mh.msg_name, mh.msg_namelen),
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-                         INT2NUM(mh.msg_flags)
-#else
-                         Qnil
-#endif
-                         );
+                         msg_flags);
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     family = rsock_getfamily(fptr);

@@ -39,7 +39,7 @@ end
 # - :auto_reload_after_fork - automatically drop all connections after fork, defaults to true
 #
 class Bundler::ConnectionPool
-  DEFAULTS = {size: 5, timeout: 5, auto_reload_after_fork: true}
+  DEFAULTS = {size: 5, timeout: 5, auto_reload_after_fork: true}.freeze
 
   def self.wrap(options, &block)
     Wrapper.new(options, &block)
@@ -99,10 +99,14 @@ class Bundler::ConnectionPool
     @available = TimedStack.new(@size, &block)
     @key = :"pool-#{@available.object_id}"
     @key_count = :"pool-#{@available.object_id}-count"
-    INSTANCES[self] = self if INSTANCES
+    @discard_key = :"pool-#{@available.object_id}-discard"
+    INSTANCES[self] = self if @auto_reload_after_fork && INSTANCES
   end
 
   def with(options = {})
+    # We need to manage exception handling manually here in order
+    # to work correctly with `Gem::Timeout.timeout` and `Thread#raise`.
+    # Otherwise an interrupted Thread can leak connections.
     Thread.handle_interrupt(Exception => :never) do
       conn = checkout(options)
       begin
@@ -116,20 +120,65 @@ class Bundler::ConnectionPool
   end
   alias_method :then, :with
 
+  ##
+  # Marks the current thread's checked-out connection for discard.
+  #
+  # When a connection is marked for discard, it will not be returned to the pool
+  # when checked in. Instead, the connection will be discarded.
+  # This is useful when a connection has become invalid or corrupted
+  # and should not be reused.
+  #
+  # Takes an optional block that will be called with the connection to be discarded.
+  # The block should perform any necessary clean-up on the connection.
+  #
+  # @yield [conn]
+  # @yieldparam conn [Object] The connection to be discarded.
+  # @yieldreturn [void]
+  #
+  #
+  # Note: This only affects the connection currently checked out by the calling thread.
+  # The connection will be discarded when +checkin+ is called.
+  #
+  # @return [void]
+  #
+  # @example
+  #   pool.with do |conn|
+  #     begin
+  #       conn.execute("SELECT 1")
+  #     rescue SomeConnectionError
+  #       pool.discard_current_connection  # Mark connection as bad
+  #       raise
+  #     end
+  #   end
+  def discard_current_connection(&block)
+    ::Thread.current[@discard_key] = block || proc { |conn| conn }
+  end
+
   def checkout(options = {})
     if ::Thread.current[@key]
       ::Thread.current[@key_count] += 1
       ::Thread.current[@key]
     else
       ::Thread.current[@key_count] = 1
-      ::Thread.current[@key] = @available.pop(options[:timeout] || @timeout)
+      ::Thread.current[@key] = @available.pop(options[:timeout] || @timeout, options)
     end
   end
 
   def checkin(force: false)
     if ::Thread.current[@key]
       if ::Thread.current[@key_count] == 1 || force
-        @available.push(::Thread.current[@key])
+        if ::Thread.current[@discard_key]
+          begin
+            @available.decrement_created
+            ::Thread.current[@discard_key].call(::Thread.current[@key])
+          rescue
+            nil
+          ensure
+            ::Thread.current[@discard_key] = nil
+          end
+        else
+          @available.push(::Thread.current[@key])
+        end
         ::Thread.current[@key] = nil
         ::Thread.current[@key_count] = nil
       else
@@ -146,7 +195,6 @@ class Bundler::ConnectionPool
   # Shuts down the Bundler::ConnectionPool by passing each connection to +block+ and
   # then removing it from the pool. Attempting to checkout a connection after
   # shutdown will raise +Bundler::ConnectionPool::PoolShuttingDownError+.
-
   def shutdown(&block)
     @available.shutdown(&block)
   end
@@ -155,9 +203,14 @@ class Bundler::ConnectionPool
   # Reloads the Bundler::ConnectionPool by passing each connection to +block+ and then
   # removing it the pool. Subsequent checkouts will create new connections as
   # needed.
-
   def reload(&block)
     @available.shutdown(reload: true, &block)
+  end
+
+  ## Reaps idle connections that have been idle for over +idle_seconds+.
+  # +idle_seconds+ defaults to 60.
+  def reap(idle_seconds = 60, &block)
+    @available.reap(idle_seconds, &block)
   end
 
   # Size of this connection pool
@@ -168,6 +221,11 @@ class Bundler::ConnectionPool
   # Number of pool entries available for checkout at this instant.
   def available
     @available.length
+  end
+
+  # Number of pool entries created and idle in the pool.
+  def idle
+    @available.idle
   end
 end
 

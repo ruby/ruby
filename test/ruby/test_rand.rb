@@ -434,4 +434,9 @@ class TestRand < Test::Unit::TestCase
     # probability of failure <= 1/256**8
     assert_operator(size.fdiv(n), :>, 15)
   end
+
+  def test_broken_marshal
+    assert_raise(ArgumentError) { Marshal.load("\x04\bU:\vRandom" + Marshal.dump([1,0,1])[2..]) }
+    assert_raise(ArgumentError) { Marshal.load("\x04\bU:\vRandom" + Marshal.dump([1,-1,1])[2..]) }
+  end
 end

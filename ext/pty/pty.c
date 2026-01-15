@@ -94,7 +94,7 @@ static void getDevice(int*, int*, char [DEVICELEN], int);
 
 static int start_new_session(char *errbuf, size_t errbuf_len);
 static int obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len);
-static int drop_privilige(char *errbuf, size_t errbuf_len);
+static int drop_privilege(char *errbuf, size_t errbuf_len);
 
 struct child_info {
     int master, slave;
@@ -117,7 +117,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     if (obtain_ctty(master, slave, slavename, errbuf, errbuf_len))
         return -1;
 
-    if (drop_privilige(errbuf, errbuf_len))
+    if (drop_privilege(errbuf, errbuf_len))
         return -1;
 
     return rb_exec_async_signal_safe(carg->eargp, errbuf, errbuf_len);
@@ -180,12 +180,12 @@ obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t e
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
-    if (slave < 0 || slave > 2) (void)!close(slave);
+    if (slave > 2) (void)!close(slave);
     return 0;
 }
 
 static int
-drop_privilige(char *errbuf, size_t errbuf_len)
+drop_privilege(char *errbuf, size_t errbuf_len)
 {
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
@@ -610,9 +610,17 @@ pty_detach_process(VALUE v)
  * +env+ is an optional hash that provides additional environment variables to the spawned pty.
  *
  *   # sets FOO to "bar"
- *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") { |r,w,pid| p r.read } #=> "bar\r\n"
+ *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") do |r, w, pid|
+ *     p r.read #=> "bar\r\n"
+ *   ensure
+ *     r.close; w.close; Process.wait(pid)
+ *   end
  *   # unsets FOO
- *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") { |r,w,pid| p r.read } #=> ""
+ *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") do |r, w, pid|
+ *     p r.read #=> ""
+ *   ensure
+ *     r.close; w.close; Process.wait(pid)
+ *   end
  *
  * +command+ and +command_line+ are the full commands to run, given a String.
  * Any additional +arguments+ will be passed to the command.
@@ -628,6 +636,15 @@ pty_detach_process(VALUE v)
  *       standard output and standard error
  * +w+:: A writable IO that is the command's standard input
  * +pid+:: The process identifier for the command.
+ *
+ * === Clean up
+ *
+ * This method does not clean up like closing IOs or waiting for child
+ * process, except that the process is detached in the block form to
+ * prevent it from becoming a zombie (see Process.detach).  Any other
+ * cleanup is the responsibility of the caller.  If waiting for +pid+,
+ * be sure to close both +r+ and +w+ before doing so; doing it in the
+ * reverse order may cause deadlock on some OSes.
  */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)

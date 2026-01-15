@@ -439,6 +439,17 @@ class Bundler::Thor
       command && disable_required_check.include?(command.name.to_sym)
     end
 
+    # Checks if a specified command exists.
+    #
+    # ==== Parameters
+    # command_name<String>:: The name of the command to check for existence.
+    #
+    # ==== Returns
+    # Boolean:: +true+ if the command exists, +false+ otherwise.
+    def command_exists?(command_name) #:nodoc:
+      commands.keys.include?(normalize_command_name(command_name))
+    end
+
   protected
 
     # Returns this class exclusive options array set.
@@ -614,7 +625,7 @@ class Bundler::Thor
     # alias name.
     def find_command_possibilities(meth)
       len = meth.to_s.length
-      possibilities = all_commands.merge(map).keys.select { |n| meth == n[0, len] }.sort
+      possibilities = all_commands.reject { |_k, c| c.hidden? }.merge(map).keys.select { |n| meth == n[0, len] }.sort
       unique_possibilities = possibilities.map { |k| map[k] || k }.uniq
 
       if possibilities.include?(meth)

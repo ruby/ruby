@@ -96,7 +96,6 @@ RSpec.describe "compact index api" do
     bundle :install, artifice: "compact_index"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -173,7 +172,7 @@ RSpec.describe "compact index api" do
     bundle :install, verbose: true, artifice: "compact_index_checksum_mismatch"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(out).to include("The checksum of /versions does not match the checksum provided by the server!")
-    expect(out).to include('Calculated checksums {"sha-256"=>"8KfZiM/fszVkqhP/m5s9lvE6M9xKu4I1bU4Izddp5Ms="} did not match expected {"sha-256"=>"ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0="}')
+    expect(out).to include("Calculated checksums #{{ "sha-256" => "8KfZiM/fszVkqhP/m5s9lvE6M9xKu4I1bU4Izddp5Ms=" }.inspect} did not match expected #{{ "sha-256" => "ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=" }.inspect}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
@@ -183,8 +182,7 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -315,33 +313,15 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    expect(last_command.stdboth).not_to include "Double checking"
+    expect(stdboth).not_to include "Double checking"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "compact_index_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0", "foo 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources with source blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra", verbose: true
@@ -377,11 +357,13 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "myrack 1.2"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources", bundler: "< 3" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
+  it "resolves indirect dependencies to the most scoped source that includes them" do
+    # In this scenario, the gem "somegem" only exists in repo4.  It depends on
+    # specific version of activesupport that exists only in repo1.  There
+    # happens also be a version of activesupport in repo4, but not the one that
+    # version 1.0.0 of somegem wants. This test makes sure that bundler tries to
+    # use the version in the most scoped source, even if not compatible, and
+    # gives a resolution error
     build_repo4 do
       build_gem "activesupport", "1.2.0"
       build_gem "somegem", "1.0.0" do |s|
@@ -391,14 +373,14 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem 'somegem', '1.0.0'
+      source "#{source_uri}/extra" do
+        gem 'somegem', '1.0.0'
+      end
     G
 
-    bundle :install, artifice: "compact_index_extra_api"
+    bundle :install, artifice: "compact_index_extra_api", raise_on_error: false
 
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
+    expect(err).to include("Could not find compatible versions")
   end
 
   it "prints API output properly with back deps" do
@@ -406,7 +388,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -429,7 +411,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_missing"
@@ -449,7 +431,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo4("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo4("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_api_missing"
@@ -473,32 +455,12 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "compact_index_extra"
-    bundle "config --set local deployment true"
-    bundle :install, artifice: "compact_index_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode with blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -529,40 +491,6 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-  end
-
-  it "installs the binstubs", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --binstubs", artifice: "compact_index"
-
-    gembin "myrackup"
-    expect(out).to eq("1.0.0")
-  end
-
-  it "installs the bins when using --path and uses autoclean", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle", artifice: "compact_index"
-
-    expect(vendored_gems("bin/myrackup")).to exist
-  end
-
-  it "installs the bins when using --path and uses bundle clean", bundler: "< 3" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle --no-clean", artifice: "compact_index"
-
-    expect(vendored_gems("bin/myrackup")).to exist
   end
 
   it "prints post_install_messages" do
@@ -616,19 +544,6 @@ RSpec.describe "compact index api" do
 
       bundle :install, verbose: true, artifice: "compact_index_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "myrack 1.0.0"
-    end
-
-    it "strips http basic auth creds when warning about ambiguous sources", bundler: "< 3" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        source "#{file_uri_for(gem_repo1)}"
-        gem "myrack"
-      G
-
-      bundle :install, artifice: "compact_index_basic_authentication"
-      expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
-      expect(err).not_to include("#{user}:#{password}")
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
@@ -738,14 +653,14 @@ RSpec.describe "compact index api" do
       end
     end
 
-    it "explains what to do to get it" do
+    it "explains what to do to get it, and includes original error" do
       gemfile <<-G
         source "#{source_uri.gsub(/http/, "https")}"
         gem "myrack"
       G
 
-      bundle :install, env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false, artifice: nil
-      expect(err).to include("OpenSSL")
+      bundle :install, env: { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }, raise_on_error: false, artifice: nil
+      expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end
 
@@ -783,14 +698,13 @@ RSpec.describe "compact index api" do
 
         bundle :install, artifice: "compact_index_forbidden"
       ensure
-        home(".gemrc").rmtree
+        FileUtils.rm_rf home(".gemrc")
       end
     end
   end
 
   it "performs update with etag not-modified" do
-    versions_etag = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions_etag = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions.etag"
     )
     expect(versions_etag.file?).to eq(false)
@@ -833,8 +747,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '1.0.0'
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     # Modify the cached file. The ranged request will be based on this but,
@@ -857,7 +770,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -876,8 +789,7 @@ RSpec.describe "compact index api" do
     G
 
     # Create a partial cache versions file
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -899,7 +811,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -921,7 +833,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '0.9.1'
     G
 
-    update_repo4 do
+    build_repo4 do
       build_gem "myrack", "1.0.0"
     end
 
@@ -941,7 +853,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index"
 
-    cache_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
+    cache_path = compact_index_cache_path.join("localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
 
     # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
     myrack_info_etag_path = File.join(cache_path, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
@@ -993,7 +905,7 @@ RSpec.describe "compact index api" do
         DEPENDENCIES
         #{checksums_section}
         BUNDLED WITH
-            #{Bundler::VERSION}
+           #{Bundler::VERSION}
       L
     end
 
@@ -1015,11 +927,7 @@ RSpec.describe "compact index api" do
         gem "myrack"
       G
 
-      gem_path = if Bundler.feature_flag.global_gem_cache?
-        default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "myrack-1.0.0.gem")
-      else
-        default_cache_path.dirname.join("myrack-1.0.0.gem")
-      end
+      gem_path = default_cache_path.dirname.join("myrack-1.0.0.gem")
 
       expect(exitstatus).to eq(37)
       expect(err).to eq <<~E.strip
@@ -1074,9 +982,9 @@ RSpec.describe "compact index api" do
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),
             Gem::Dependency.new("activeresource", "= 2.3.2")]
-    expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has either corrupted API or lockfile dependencies")
+    expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has corrupted API dependencies")
     expect(err).to include(<<-E.strip)
-Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API or the lockfile (#{deps.map(&:to_s).join(", ")}).
+Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API (#{deps.map(&:to_s).join(", ")}).
 Running `bundle update rails` should fix the problem.
     E
   end
@@ -1093,5 +1001,12 @@ Running `bundle update rails` should fix the problem.
     bundle "update rails", artifice: "compact_index"
     count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
     expect(lockfile.scan(/activemerchant \(/).size).to eq(count)
+  end
+
+  it "handles an API that does not provide checksums info (undocumented, support may get removed)" do
+    install_gemfile <<-G, artifice: "compact_index_no_checksums"
+      source "https://gem.repo1"
+      gem "rake"
+    G
   end
 end

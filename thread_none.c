@@ -19,10 +19,6 @@
 # include "wasm/machine.h"
 #endif
 
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
-
 // Do nothing for GVL
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -139,6 +135,12 @@ Init_native_thread(rb_thread_t *main_th)
 void
 ruby_mn_threads_params(void)
 {
+}
+
+static void
+native_thread_destroy_atfork(struct rb_native_thread *nt)
+{
+    /* no-op */
 }
 
 static int
@@ -280,7 +282,8 @@ th_has_dedicated_nt(const rb_thread_t *th)
 }
 
 void
-rb_add_running_thread(rb_thread_t *th){
+rb_add_running_thread(rb_thread_t *th)
+{
     // do nothing
 }
 
@@ -330,6 +333,12 @@ void *
 rb_thread_prevent_fork(void *(*func)(void *), void *data)
 {
     return func(data);
+}
+
+void
+rb_thread_malloc_stack_set(rb_thread_t *th, void *stack)
+{
+    // no-op
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

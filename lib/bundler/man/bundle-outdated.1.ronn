@@ -6,7 +6,8 @@ bundle-outdated(1) -- List installed gems with newer versions available
 `bundle outdated` [GEM] [--local]
                         [--pre]
                         [--source]
-                        [--strict]
+                        [--filter-strict | --strict]
+                        [--update-strict]
                         [--parseable | --porcelain]
                         [--group=GROUP]
                         [--groups]
@@ -31,16 +32,19 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 * `--pre`:
   Check for newer pre-release gems.
 
-* `--source`:
+* `--source=<list>`:
   Check against a specific source.
 
-* `--strict`:
+* `--filter-strict`, `--strict`:
   Only list newer versions allowed by your Gemfile requirements, also respecting conservative update flags (--patch, --minor, --major).
+
+* `--update-strict`:
+  Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor | --major.
 
 * `--parseable`, `--porcelain`:
    Use minimal formatting for more parseable output.
 
-* `--group`:
+* `--group=GROUP`:
   List gems from a specific group.
 
 * `--groups`:

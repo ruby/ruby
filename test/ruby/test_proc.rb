@@ -159,13 +159,65 @@ class TestProc < Test::Unit::TestCase
     assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
   end
 
-  def test_hash
+  def test_hash_equal
+    # iseq backed proc
+    p1 = proc {}
+    p2 = p1.dup
+
+    assert_equal p1.hash, p2.hash
+
+    # ifunc backed proc
+    p1 = {}.to_proc
+    p2 = p1.dup
+
+    assert_equal p1.hash, p2.hash
+
+    # symbol backed proc
+    p1 = :hello.to_proc
+    p2 = :hello.to_proc
+
+    assert_equal p1.hash, p2.hash
+  end
+
+  def test_hash_uniqueness
     def self.capture(&block)
       block
     end
 
-   procs = Array.new(1000){capture{:foo }}
-   assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
+    procs = Array.new(1000){capture{:foo }}
+    assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
+
+    # iseq backed proc
+    unique_hashes = 1000.times.map { proc {}.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
+
+    # ifunc backed proc
+    unique_hashes = 1000.times.map { {}.to_proc.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
+
+    # symbol backed proc
+    unique_hashes = 1000.times.map { |i| :"test#{i}".to_proc.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
+  end
+
+  def test_hash_does_not_change_after_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    # [Bug #20853]
+    [
+      "proc {}", # iseq backed proc
+      "{}.to_proc", # ifunc backed proc
+      ":hello.to_proc", # symbol backed proc
+    ].each do |proc|
+      assert_separately([], <<~RUBY)
+        p1 = #{proc}
+        hash = p1.hash
+
+        GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+        assert_equal(hash, p1.hash, "proc is `#{proc}`")
+      RUBY
+    end
   end
 
   def test_block_par
@@ -377,6 +429,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_dup_clone
+    # iseq backed proc
     b = proc {|x| x + "bar" }
     class << b; attr_accessor :foo; end
 
@@ -389,6 +442,24 @@ class TestProc < Test::Unit::TestCase
     assert_equal("foobar", bc.call("foo"))
     bc.foo = :foo
     assert_equal(:foo, bc.foo)
+
+    # ifunc backed proc
+    b = {foo: "bar"}.to_proc
+
+    bd = b.dup
+    assert_equal("bar", bd.call(:foo))
+
+    bc = b.clone
+    assert_equal("bar", bc.call(:foo))
+
+    # symbol backed proc
+    b = :to_s.to_proc
+
+    bd = b.dup
+    assert_equal("testing", bd.call(:testing))
+
+    bc = b.clone
+    assert_equal("testing", bc.call(:testing))
   end
 
   def test_dup_subclass
@@ -396,6 +467,18 @@ class TestProc < Test::Unit::TestCase
     assert_equal c1, c1.new{}.dup.class, '[Bug #17545]'
     c1 = Class.new(Proc) {def initialize_dup(*) throw :initialize_dup; end}
     assert_throw(:initialize_dup) {c1.new{}.dup}
+  end
+
+  def test_dup_ifunc_proc_bug_20950
+    assert_normal_exit(<<~RUBY, "[Bug #20950]")
+      p = { a: 1 }.to_proc
+      100.times do
+        p = p.dup
+        GC.start
+        p.call
+      rescue ArgumentError
+      end
+    RUBY
   end
 
   def test_clone_subclass
@@ -430,7 +513,7 @@ class TestProc < Test::Unit::TestCase
 
     file, lineno = method(:source_location_test).to_proc.binding.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test[0], lineno, 'Bug #2427')
   end
 
   def test_binding_error_unless_ruby_frame
@@ -1299,7 +1382,8 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c]], proc {|a, *b, c|}.parameters)
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
-    assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:rest, :_], [:opt]], proc {|(a_), *_, (b_)|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
 
     assert_equal([[:req]], method(:putc).parameters)
@@ -1307,6 +1391,8 @@ class TestProc < Test::Unit::TestCase
 
     pr = eval("proc{|"+"(_),"*30+"|}")
     assert_empty(pr.parameters.map{|_,n|n}.compact)
+
+    assert_equal([[:opt]], proc { it }.parameters)
   end
 
   def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
@@ -1355,6 +1441,9 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal([[:opt, :a]], lambda {|a|}.parameters(lambda: false))
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], lambda {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters(lambda: false))
+
+    assert_equal([[:req]], proc { it }.parameters(lambda: true))
+    assert_equal([[:opt]], lambda { it }.parameters(lambda: false))
   end
 
   def pm0() end
@@ -1410,15 +1499,19 @@ class TestProc < Test::Unit::TestCase
     assert_include(EnvUtil.labeled_class(name, Proc).new {}.to_s, name)
   end
 
-  @@line_of_source_location_test = __LINE__ + 1
+  @@line_of_source_location_test = [__LINE__ + 1, 2, __LINE__ + 3, 5]
   def source_location_test a=1,
     b=2
   end
 
   def test_source_location
-    file, lineno = method(:source_location_test).source_location
+    file, *loc = method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
+
+    file, *loc = self.class.instance_method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
   end
 
   @@line_of_attr_reader_source_location_test   = __LINE__ + 3
@@ -1451,13 +1544,13 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_source_location
-    exp_lineno = __LINE__ + 3
-    file, lineno = block_source_location_test(1,
+    exp_loc = [__LINE__ + 3, 49, __LINE__ + 4, 49]
+    file, *loc = block_source_location_test(1,
                                               2,
                                               3) do
                                               end
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno)
+    assert_equal(exp_loc, loc)
   end
 
   def test_splat_without_respond_to
@@ -1544,6 +1637,10 @@ class TestProc < Test::Unit::TestCase
     assert_equal(3, b.local_variable_get(:when))
     assert_equal(4, b.local_variable_get(:begin))
     assert_equal(5, b.local_variable_get(:end))
+
+    assert_raise_with_message(NameError, /local variable \Wdefault\W/) {
+      binding.local_variable_get(:default)
+    }
   end
 
   def test_local_variable_set
@@ -1554,6 +1651,274 @@ class TestProc < Test::Unit::TestCase
     assert_equal(20, b.local_variable_get(:b))
     assert_equal(10, b.eval("a"))
     assert_equal(20, b.eval("b"))
+  end
+
+  def test_numparam_is_not_local_variables
+    "foo".tap do
+      _9 and flunk
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+        assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+      "bar".tap do
+        _9 and flunk
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+        assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      assert_raise(NameError) { binding.local_variable_defined?(:_9) }
+    end
+  end
+
+  def test_implicit_parameters_for_numparams
+    x = x = 1
+    assert_raise(NameError) { binding.implicit_parameter_get(:x) }
+    assert_raise(NameError) { binding.implicit_parameter_defined?(:x) }
+
+    "foo".tap do
+      _5 and flunk
+      assert_equal([:_1, :_2, :_3, :_4, :_5], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:_1))
+      assert_equal(nil, binding.implicit_parameter_get(:_5))
+      assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+      assert_equal(true, binding.implicit_parameter_defined?(:_1))
+      assert_equal(true, binding.implicit_parameter_defined?(:_5))
+      assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+      "bar".tap do
+        assert_equal([], binding.implicit_parameters)
+        assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+        assert_equal(false, binding.implicit_parameter_defined?(:_1))
+        assert_equal(false, binding.implicit_parameter_defined?(:_6))
+        assert_equal(false, binding.implicit_parameter_defined?(:it))
+      end
+      assert_equal([:_1, :_2, :_3, :_4, :_5], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:_1))
+      assert_equal(nil, binding.implicit_parameter_get(:_5))
+      assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+      assert_equal(true, binding.implicit_parameter_defined?(:_1))
+      assert_equal(true, binding.implicit_parameter_defined?(:_5))
+      assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+    end
+
+    "foo".tap do
+      assert_equal([], binding.implicit_parameters)
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+      "bar".tap do
+        _5 and flunk
+        assert_equal([:_1, :_2, :_3, :_4, :_5], binding.implicit_parameters)
+        assert_equal("bar", binding.implicit_parameter_get(:_1))
+        assert_equal(nil, binding.implicit_parameter_get(:_5))
+        assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+        assert_equal(true, binding.implicit_parameter_defined?(:_1))
+        assert_equal(true, binding.implicit_parameter_defined?(:_5))
+        assert_equal(false, binding.implicit_parameter_defined?(:_6))
+        assert_equal(false, binding.implicit_parameter_defined?(:it))
+      end
+      assert_equal([], binding.implicit_parameters)
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+    end
+  end
+
+  def test_it_is_not_local_variable
+    "foo".tap do
+      it
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+        assert_equal(false, binding.local_variable_defined?(:it))
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+        assert_equal(false, binding.local_variable_defined?(:it))
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+        assert_equal(false, binding.local_variable_defined?(:it))
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+    end
+  end
+
+  def test_implicit_parameters_for_it
+    "foo".tap do
+      it or flunk
+      assert_equal([:it], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:it))
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_equal(true, binding.implicit_parameter_defined?(:it))
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      "bar".tap do
+        assert_equal([], binding.implicit_parameters)
+        assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+        assert_equal(false, binding.implicit_parameter_defined?(:it))
+        assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      end
+      assert_equal([:it], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:it))
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_equal(true, binding.implicit_parameter_defined?(:it))
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+    end
+
+    "foo".tap do
+      assert_equal([], binding.implicit_parameters)
+      assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      "bar".tap do
+        it or flunk
+        assert_equal([:it], binding.implicit_parameters)
+        assert_equal("bar", binding.implicit_parameter_get(:it))
+        assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+        assert_equal(true, binding.implicit_parameter_defined?(:it))
+        assert_equal(false, binding.implicit_parameter_defined?(:_1))
+      end
+      assert_equal([], binding.implicit_parameters)
+      assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+      assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+      assert_equal(false, binding.implicit_parameter_defined?(:_1))
+    end
+  end
+
+  def test_implicit_parameters_for_it_complex
+    "foo".tap do
+      it = it = "bar"
+
+      assert_equal([], binding.implicit_parameters)
+      assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+      assert_equal(false, binding.implicit_parameter_defined?(:it))
+
+      assert_equal([:it], binding.local_variables)
+      assert_equal("bar", binding.local_variable_get(:it))
+      assert_equal(true, binding.local_variable_defined?(:it))
+    end
+
+    "foo".tap do
+      it or flunk
+
+      assert_equal([:it], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:it))
+      assert_equal(true, binding.implicit_parameter_defined?(:it))
+
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      assert_equal(false, binding.local_variable_defined?(:it))
+    end
+
+    "foo".tap do
+      it or flunk
+      it = it = "bar"
+
+      assert_equal([:it], binding.implicit_parameters)
+      assert_equal("foo", binding.implicit_parameter_get(:it))
+      assert_equal(true, binding.implicit_parameter_defined?(:it))
+
+      assert_equal([:it], binding.local_variables)
+      assert_equal("bar", binding.local_variable_get(:it))
+      assert_equal(true, binding.local_variable_defined?(:it))
+    end
+  end
+
+  def test_implicit_parameters_for_it_and_numparams
+    "foo".tap do
+      it or flunk
+      "bar".tap do
+        _5 and flunk
+        assert_equal([:_1, :_2, :_3, :_4, :_5], binding.implicit_parameters)
+        assert_raise(NameError) { binding.implicit_parameter_get(:it) }
+        assert_equal("bar", binding.implicit_parameter_get(:_1))
+        assert_equal(nil, binding.implicit_parameter_get(:_5))
+        assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+        assert_equal(false, binding.implicit_parameter_defined?(:it))
+        assert_equal(true, binding.implicit_parameter_defined?(:_1))
+        assert_equal(true, binding.implicit_parameter_defined?(:_5))
+        assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      end
+    end
+
+    "foo".tap do
+      _5 and flunk
+      "bar".tap do
+        it or flunk
+        assert_equal([:it], binding.implicit_parameters)
+        assert_equal("bar", binding.implicit_parameter_get(:it))
+        assert_raise(NameError) { binding.implicit_parameter_get(:_1) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:_5) }
+        assert_raise(NameError) { binding.implicit_parameter_get(:_6) }
+        assert_equal(true, binding.implicit_parameter_defined?(:it))
+        assert_equal(false, binding.implicit_parameter_defined?(:_1))
+        assert_equal(false, binding.implicit_parameter_defined?(:_5))
+        assert_equal(false, binding.implicit_parameter_defined?(:_6))
+      end
+    end
+  end
+
+  def test_implicit_parameter_invalid_name
+    message_pattern = /is not an implicit parameter/
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_defined?(:foo) }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_get(:foo) }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_defined?("wrong_implicit_parameter_name_#{rand(10000)}") }
+    assert_raise_with_message(NameError, message_pattern) { binding.implicit_parameter_get("wrong_implicit_parameter_name_#{rand(10000)}") }
   end
 
   def test_local_variable_set_wb

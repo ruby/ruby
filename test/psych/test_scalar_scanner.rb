@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require_relative 'helper'
-require 'date'
 
 module Psych
   class TestScalarScanner < TestCase
@@ -137,6 +136,11 @@ module Psych
       assert_equal '0x___', scanner.tokenize('0x___')
       assert_equal '+0____', scanner.tokenize('+0____')
       assert_equal '-0b___', scanner.tokenize('-0b___')
+    end
+
+    def test_scan_without_parse_symbols
+      scanner = Psych::ScalarScanner.new ClassLoader.new, parse_symbols: false
+      assert_equal ':foo', scanner.tokenize(':foo')
     end
 
     def test_scan_int_commas_and_underscores

@@ -20,13 +20,13 @@ RSpec.describe Bundler::GemVersionPromoter do
       end
     end
 
-    def build_package(name, version, locked = [])
-      Bundler::Resolver::Package.new(name, [], locked_specs: Bundler::SpecSet.new(build_spec(name, version)), unlock: locked)
+    def build_package(name, version, unlock)
+      Bundler::Resolver::Package.new(name, [], locked_specs: Bundler::SpecSet.new(build_spec(name, version)), unlock: unlock)
     end
 
-    def sorted_versions(candidates:, current:, name: "foo", locked: [])
+    def sorted_versions(candidates:, current:, unlock: true)
       gvp.sort_versions(
-        build_package(name, current, locked),
+        build_package("foo", current, unlock),
         build_candidates(candidates)
       ).flatten.map(&:version).map(&:to_s)
     end
@@ -127,7 +127,7 @@ RSpec.describe Bundler::GemVersionPromoter do
       before { gvp.level = :minor }
 
       it "keeps the current version first" do
-        versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.1.0 2.0.1], current: "0.3.0", locked: ["bar"])
+        versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.1.0 2.0.1], current: "0.3.0", unlock: [])
         expect(versions.first).to eq("0.3.0")
       end
     end

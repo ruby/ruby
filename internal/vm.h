@@ -56,7 +56,6 @@ void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
-PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
 
@@ -70,6 +69,7 @@ const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);
+VALUE rb_ec_yield(struct rb_execution_context_struct *ec, VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
@@ -77,10 +77,13 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 void rb_check_stack_overflow(void);
 #define RB_BLOCK_NO_USE_PACKED_ARGS 2
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
+struct vm_ifunc *rb_current_ifunc(void);
+VALUE rb_gccct_clear_table(VALUE);
+VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 /* vm_exec.c */
-extern uint64_t rb_vm_insns_count;
+extern uint64_t rb_vm_insn_count;
 #endif
 
 extern bool rb_free_at_exit;
@@ -96,10 +99,7 @@ struct rb_iseq_struct;
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 
 /* vm_method.c */
-struct rb_execution_context_struct;
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
-
-void rb_clear_constant_cache(void);
 
 /* vm_dump.c */
 void rb_print_backtrace(FILE *);
@@ -121,7 +121,6 @@ int rb_get_node_id_from_frame_info(VALUE obj);
 const struct rb_iseq_struct *rb_get_iseq_from_frame_info(VALUE obj);
 
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);
-void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self);
 
 #define RUBY_DTRACE_CREATE_HOOK(name, arg) \
     RUBY_DTRACE_HOOK(name##_CREATE, arg)

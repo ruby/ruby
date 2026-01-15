@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "test_helper"
+require "ripper"
 
 module Prism
   class MagicCommentTest < TestCase
@@ -87,7 +88,14 @@ module Prism
 
       # Compare against Ruby's expectation.
       if defined?(RubyVM::InstructionSequence)
-        expected = RubyVM::InstructionSequence.compile(source).eval.encoding
+        previous = $VERBOSE
+        expected =
+          begin
+            $VERBOSE = nil
+            RubyVM::InstructionSequence.compile(source).eval.encoding
+          ensure
+            $VERBOSE = previous
+          end
         assert_equal expected, actual
       end
     end

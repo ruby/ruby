@@ -29,7 +29,7 @@ require 'tmpdir'
 #   require 'tempfile'
 #
 #   # Tempfile.create with a block
-#   # The filename are choosen automatically.
+#   # The filename are chosen automatically.
 #   # (You can specify the prefix and suffix of the filename by an optional argument.)
 #   Tempfile.create {|f|
 #     f.puts "foo"
@@ -157,7 +157,7 @@ require 'tmpdir'
 class Tempfile < DelegateClass(File)
 
   # The version
-  VERSION = "0.2.1"
+  VERSION = "0.3.1"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
@@ -550,8 +550,8 @@ end
 #
 # Implementation note:
 #
-# The keyword argument +anonymous=true+ is implemented using FILE_SHARE_DELETE on Windows.
-# O_TMPFILE is used on Linux.
+# The keyword argument <tt>anonymous=true</tt> is implemented using +FILE_SHARE_DELETE+ on Windows.
+# +O_TMPFILE+ is used on Linux.
 #
 # Related: Tempfile.new.
 #
@@ -564,6 +564,8 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **option
 end
 
 class << Tempfile
+# :stopdoc:
+
 private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
@@ -593,9 +595,7 @@ private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
-File.open(IO::NULL) do |f|
-  File.new(f.fileno, autoclose: false, path: "").path
-rescue IOError
+if RUBY_VERSION < "3.2"
   module PathAttr               # :nodoc:
     attr_reader :path
 

@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -10,13 +9,15 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the file  for
 # details.
 
-require_relative 'bare_instructions'
-require_relative 'operands_unifications'
-require_relative 'instructions_unifications'
+require_relative 'bare_instruction'
+require_relative 'operands_unification'
+require_relative 'instructions_unification'
+require_relative 'trace_instruction'
+require_relative 'zjit_instruction'
 
-RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
-                       RubyVM::OperandsUnifications.to_a + \
-                       RubyVM::InstructionsUnifications.to_a
-
-require_relative 'trace_instructions'
+RubyVM::Instructions = RubyVM::BareInstruction.all +
+                       RubyVM::OperandsUnification.all +
+                       RubyVM::InstructionsUnification.all +
+                       RubyVM::TraceInstruction.all +
+                       RubyVM::ZJITInstruction.all
 RubyVM::Instructions.freeze

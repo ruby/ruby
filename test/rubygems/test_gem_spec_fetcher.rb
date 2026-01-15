@@ -169,19 +169,24 @@ class TestGemSpecFetcher < Gem::TestCase
     spec_fetcher do|fetcher|
       fetcher.spec "example", 1
       fetcher.spec "other-example", 1
+      fetcher.spec "an-example", 1
       fetcher.spec "examp", 1
     end
 
     suggestions = @sf.suggest_gems_from_name("examplw", :latest, 1)
     assert_equal ["example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name("other")
-    assert_equal ["other-example"], suggestions
+    suggestions = @sf.suggest_gems_from_name("anexample")
+    assert_equal ["an-example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name("exam")
-    assert suggestions.any? { ["examp"] }
-    assert suggestions.any? { ["example"] }
-    assert suggestions.any? { ["other-example"] }
+    suggestions = @sf.suggest_gems_from_name("xample")
+    assert_equal ["example"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("amp")
+    assert_equal [], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("other-apple")
+    assert_equal ["other-example"], suggestions
   end
 
   def test_suggest_gems_from_name_prerelease
@@ -192,6 +197,33 @@ class TestGemSpecFetcher < Gem::TestCase
 
     suggestions = @sf.suggest_gems_from_name("examplw")
     assert_equal ["example"], suggestions
+  end
+
+  def test_suggest_gems_from_name_prefix_or_suffix
+    spec_fetcher do|fetcher|
+      fetcher.spec "example-one-ruby", 1
+      fetcher.spec "example-one-rrrr", 1
+      fetcher.spec "ruby-example-two", 1
+      fetcher.spec "rrrr-example-two", 1
+    end
+
+    suggestions = @sf.suggest_gems_from_name("example-one")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example-two")
+    assert_equal ["ruby-example-two"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("exampleone")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("exampletwo")
+    assert_equal ["ruby-example-two"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example---one")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example---two")
+    assert_equal ["ruby-example-two"], suggestions
   end
 
   def test_available_specs_latest

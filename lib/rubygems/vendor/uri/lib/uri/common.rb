@@ -13,24 +13,54 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module Gem::URI
-  include RFC2396_REGEXP
+  # The default parser instance for RFC 2396.
+  RFC2396_PARSER = RFC2396_Parser.new
+  Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
-  REGEXP = RFC2396_REGEXP
-  Parser = RFC2396_Parser
+  # The default parser instance for RFC 3986.
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
-  # Gem::URI::Parser.new
-  DEFAULT_PARSER = Parser.new
-  DEFAULT_PARSER.pattern.each_pair do |sym, str|
-    unless REGEXP::PATTERN.const_defined?(sym)
-      REGEXP::PATTERN.const_set(sym, str)
+  # The default parser instance.
+  DEFAULT_PARSER = RFC3986_PARSER
+  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
+
+  # Set the default parser instance.
+  def self.parser=(parser = RFC3986_PARSER)
+    remove_const(:Parser) if defined?(::Gem::URI::Parser)
+    const_set("Parser", parser.class)
+
+    remove_const(:PARSER) if defined?(::Gem::URI::PARSER)
+    const_set("PARSER", parser)
+
+    remove_const(:REGEXP) if defined?(::Gem::URI::REGEXP)
+    remove_const(:PATTERN) if defined?(::Gem::URI::PATTERN)
+    if Parser == RFC2396_Parser
+      const_set("REGEXP", Gem::URI::RFC2396_REGEXP)
+      const_set("PATTERN", Gem::URI::RFC2396_REGEXP::PATTERN)
+    end
+
+    Parser.new.regexp.each_pair do |sym, str|
+      remove_const(sym) if const_defined?(sym, false)
+      const_set(sym, str)
     end
   end
-  DEFAULT_PARSER.regexp.each_pair do |sym, str|
-    const_set(sym, str)
+  self.parser = RFC3986_PARSER
+
+  def self.const_missing(const) # :nodoc:
+    if const == :REGEXP
+      warn "Gem::URI::REGEXP is obsolete. Use Gem::URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
+      Gem::URI::RFC2396_REGEXP
+    elsif value = RFC2396_PARSER.regexp[const]
+      warn "Gem::URI::#{const} is obsolete. Use Gem::URI::RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      value
+    elsif value = RFC2396_Parser.const_get(const)
+      warn "Gem::URI::#{const} is obsolete. Use Gem::URI::RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
+      value
+    else
+      super
+    end
   end
-  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -64,7 +94,41 @@ module Gem::URI
     module_function :make_components_hash
   end
 
-  module Schemes
+  module Schemes # :nodoc:
+    class << self
+      ReservedChars = ".+-"
+      EscapedChars = "\u01C0\u01C1\u01C2"
+      # Use Lo category chars as escaped chars for TruffleRuby, which
+      # does not allow Symbol categories as identifiers.
+
+      def escape(name)
+        unless name and name.ascii_only?
+          return nil
+        end
+        name.upcase.tr(ReservedChars, EscapedChars)
+      end
+
+      def unescape(name)
+        name.tr(EscapedChars, ReservedChars).encode(Encoding::US_ASCII).upcase
+      end
+
+      def find(name)
+        const_get(name, false) if name and const_defined?(name, false)
+      end
+
+      def register(name, klass)
+        unless scheme = escape(name)
+          raise ArgumentError, "invalid character as scheme - #{name}"
+        end
+        const_set(scheme, klass)
+      end
+
+      def list
+        constants.map { |name|
+          [unescape(name.to_s), const_get(name)]
+        }.to_h
+      end
+    end
   end
   private_constant :Schemes
 
@@ -77,7 +141,7 @@ module Gem::URI
   # Note that after calling String#upcase on +scheme+, it must be a valid
   # constant name.
   def self.register_scheme(scheme, klass)
-    Schemes.const_set(scheme.to_s.upcase, klass)
+    Schemes.register(scheme, klass)
   end
 
   # Returns a hash of the defined schemes:
@@ -95,14 +159,14 @@ module Gem::URI
   #
   # Related: Gem::URI.register_scheme.
   def self.scheme_list
-    Schemes.constants.map { |name|
-      [name.to_s.upcase, Schemes.const_get(name)]
-    }.to_h
+    Schemes.list
   end
 
+  # :stopdoc:
   INITIAL_SCHEMES = scheme_list
   private_constant :INITIAL_SCHEMES
   Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
+  # :startdoc:
 
   # Returns a new object constructed from the given +scheme+, +arguments+,
   # and +default+:
@@ -121,12 +185,10 @@ module Gem::URI
   #   # => #<Gem::URI::HTTP foo://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
   def self.for(scheme, *arguments, default: Generic)
-    const_name = scheme.to_s.upcase
+    const_name = Schemes.escape(scheme)
 
     uri_class = INITIAL_SCHEMES[const_name]
-    uri_class ||= if /\A[A-Z]\w*\z/.match?(const_name) && Schemes.const_defined?(const_name, false)
-      Schemes.const_get(const_name, false)
-    end
+    uri_class ||= Schemes.find(const_name)
     uri_class ||= default
 
     return uri_class.new(scheme, *arguments)
@@ -168,7 +230,7 @@ module Gem::URI
   #    ["fragment", "top"]]
   #
   def self.split(uri)
-    RFC3986_PARSER.split(uri)
+    PARSER.split(uri)
   end
 
   # Returns a new \Gem::URI object constructed from the given string +uri+:
@@ -178,11 +240,11 @@ module Gem::URI
   #   Gem::URI.parse('http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
   #   # => #<Gem::URI::HTTP http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
-  # It's recommended to first ::escape string +uri+
+  # It's recommended to first Gem::URI::RFC2396_PARSER.escape string +uri+
   # if it may contain invalid Gem::URI characters.
   #
   def self.parse(uri)
-    RFC3986_PARSER.parse(uri)
+    PARSER.parse(uri)
   end
 
   # Merges the given Gem::URI strings +str+
@@ -209,7 +271,7 @@ module Gem::URI
   #   # => #<Gem::URI::HTTP http://example.com/foo/bar>
   #
   def self.join(*str)
-    RFC3986_PARSER.join(*str)
+    DEFAULT_PARSER.join(*str)
   end
 
   #
@@ -238,7 +300,7 @@ module Gem::URI
   #
   def self.extract(str, schemes = nil, &block) # :nodoc:
     warn "Gem::URI.extract is obsolete", uplevel: 1 if $VERBOSE
-    DEFAULT_PARSER.extract(str, schemes, &block)
+    PARSER.extract(str, schemes, &block)
   end
 
   #
@@ -275,14 +337,14 @@ module Gem::URI
   #
   def self.regexp(schemes = nil)# :nodoc:
     warn "Gem::URI.regexp is obsolete", uplevel: 1 if $VERBOSE
-    DEFAULT_PARSER.make_regexp(schemes)
+    PARSER.make_regexp(schemes)
   end
 
   TBLENCWWWCOMP_ = {} # :nodoc:
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
-  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze # :nodoc:
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:
@@ -380,6 +442,8 @@ module Gem::URI
     _decode_uri_component(/%\h\h/, str, enc)
   end
 
+  # Returns a string derived from the given string +str+ with
+  # Gem::URI-encoded characters matching +regexp+ according to +table+.
   def self._encode_uri_component(regexp, table, str, enc)
     str = str.to_s.dup
     if str.encoding != Encoding::ASCII_8BIT
@@ -394,6 +458,8 @@ module Gem::URI
   end
   private_class_method :_encode_uri_component
 
+  # Returns a string decoding characters matching +regexp+ from the
+  # given \URL-encoded string +str+.
   def self._decode_uri_component(regexp, str, enc)
     raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(regexp, TBLDECWWWCOMP_).force_encoding(enc)
@@ -401,7 +467,7 @@ module Gem::URI
   private_class_method :_decode_uri_component
 
   # Returns a URL-encoded string derived from the given
-  # {Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-Enumerable+in+Ruby+Classes]
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
   # +enum+.
   #
   # The result is suitable for use as form data
@@ -470,7 +536,7 @@ module Gem::URI
   # each +key+/+value+ pair is converted to one or more fields:
   #
   # - If +value+ is
-  #   {Array-convertible}[https://docs.ruby-lang.org/en/master/implicit_conversion_rdoc.html#label-Array-Convertible+Objects],
+  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
   #   each element +ele+ in +value+ is paired with +key+ to form a field:
   #
   #     name = Gem::URI.encode_www_form_component(key, enc)
@@ -528,7 +594,7 @@ module Gem::URI
   # each subarray is a name/value pair (both are strings).
   # Each returned string has encoding +enc+,
   # and has had invalid characters removed via
-  # {String#scrub}[https://docs.ruby-lang.org/en/master/String.html#method-i-scrub].
+  # {String#scrub}[rdoc-ref:String#scrub].
   #
   # A simple example:
   #
@@ -832,12 +898,15 @@ module Gem
   # Returns a \Gem::URI object derived from the given +uri+,
   # which may be a \Gem::URI string or an existing \Gem::URI object:
   #
+  #   require 'rubygems/vendor/uri/lib/uri'
   #   # Returns a new Gem::URI.
   #   uri = Gem::URI('http://github.com/ruby/ruby')
   #   # => #<Gem::URI::HTTP http://github.com/ruby/ruby>
   #   # Returns the given Gem::URI.
   #   Gem::URI(uri)
   #   # => #<Gem::URI::HTTP http://github.com/ruby/ruby>
+  #
+  # You must require 'rubygems/vendor/uri/lib/uri' to use this method.
   #
   def URI(uri)
     if uri.is_a?(Gem::URI::Generic)

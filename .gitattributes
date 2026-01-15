@@ -1,5 +1,6 @@
 *.gemspec diff=ruby
 *.rb diff=ruby
+*.inc.rs linguist-generated=true
 bin svn-properties=svn:ignore=ruby
 bin/* diff=ruby
 tool/update-deps diff=ruby

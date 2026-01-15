@@ -18,18 +18,24 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /can't be coerced into /) {1|:foo}
     assert_raise_with_message(TypeError, /can't be coerced into /) {1^:foo}
 
-    assert_raise_with_message(TypeError, /:\u{3042}/) {1+:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:\u{3042}/) {1&:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:\u{3042}/) {1|:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:\u{3042}/) {1^:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:"\\u3042"/) {1+:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:"\\u3042"/) {1&:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:"\\u3042"/) {1|:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:"\\u3042"/) {1^:"\u{3042}"}
-    assert_raise_with_message(TypeError, /:\u{3044}/) {1+"\u{3044}".to_sym}
-    assert_raise_with_message(TypeError, /:\u{3044}/) {1&"\u{3044}".to_sym}
-    assert_raise_with_message(TypeError, /:\u{3044}/) {1|"\u{3044}".to_sym}
-    assert_raise_with_message(TypeError, /:\u{3044}/) {1^"\u{3044}".to_sym}
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1^:"\u{3042}"}
+
+      assert_raise_with_message(TypeError, /:\u{3044}/) {1+"\u{3044}".to_sym}
+      assert_raise_with_message(TypeError, /:\u{3044}/) {1&"\u{3044}".to_sym}
+      assert_raise_with_message(TypeError, /:\u{3044}/) {1|"\u{3044}".to_sym}
+      assert_raise_with_message(TypeError, /:\u{3044}/) {1^"\u{3044}".to_sym}
+    end
+
+    EnvUtil.with_default_internal(Encoding::US_ASCII) do
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1^:"\u{3042}"}
+    end
 
     bug10711 = '[ruby-core:67405] [Bug #10711]'
     exp = "1.2 can't be coerced into Integer"
@@ -483,6 +489,10 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(0,  0.pow(3, 1))
     assert_equal(0,  2.pow(3, 1))
     assert_equal(0, -2.pow(3, 1))
+
+    min, max = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_equal(0, 0.pow(2, min))
+    assert_equal(0, Integer.sqrt(max+1).pow(2, min))
   end
 
 end

@@ -38,22 +38,11 @@ describe "Module#module_function with specific method names" do
     m.respond_to?(:test3).should == false
   end
 
-  ruby_version_is ""..."3.1" do
-    it "returns self" do
-      Module.new do
-        def foo; end
-        module_function(:foo).should equal(self)
-      end
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "returns argument or arguments if given" do
-      Module.new do
-        def foo; end
-        module_function(:foo).should equal(:foo)
-        module_function(:foo, :foo).should == [:foo, :foo]
-      end
+  it "returns argument or arguments if given" do
+    Module.new do
+      def foo; end
+      module_function(:foo).should equal(:foo)
+      module_function(:foo, :foo).should == [:foo, :foo]
     end
   end
 
@@ -216,19 +205,9 @@ describe "Module#module_function as a toggle (no arguments) in a Module body" do
     m.respond_to?(:test2).should == true
   end
 
-  ruby_version_is ""..."3.1" do
-    it "returns self" do
-      Module.new do
-        module_function.should equal(self)
-      end
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "returns nil" do
-      Module.new do
-        module_function.should equal(nil)
-      end
+  it "returns nil" do
+    Module.new do
+      module_function.should equal(nil)
     end
   end
 

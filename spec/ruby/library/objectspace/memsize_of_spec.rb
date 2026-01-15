@@ -13,7 +13,7 @@ describe "ObjectSpace.memsize_of" do
   end
 
   it "returns 0 for literal Symbols" do
-    ObjectSpace.memsize_of(:abc).should == 0
+    ObjectSpace.memsize_of(:object_space_memsize_spec_static_sym).should == 0
   end
 
   it "returns a positive Integer for an Object" do

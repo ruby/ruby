@@ -25,6 +25,7 @@ module Bundler
 
   class GemNotFound < BundlerError; status_code(7); end
   class InstallHookError < BundlerError; status_code(8); end
+  class RemovedError < BundlerError; status_code(9); end
   class GemfileNotFound < BundlerError; status_code(10); end
   class GitError < BundlerError; status_code(11); end
   class DeprecatedError < BundlerError; status_code(12); end
@@ -76,11 +77,6 @@ module Bundler
     def mismatch_resolution_instructions
       removable, remote = [@existing, @checksum].partition(&:removable?)
       case removable.size
-      when 0
-        msg = +"Mismatched checksums each have an authoritative source:\n"
-        msg << "  1. #{@existing.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "  2. #{@checksum.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "You may need to alter your Gemfile sources to resolve this issue.\n"
       when 1
         msg = +"If you trust #{remote.first.sources.first}, to resolve this issue you can:\n"
         msg << removable.first.removal_instructions
@@ -135,7 +131,8 @@ module Bundler
     attr_reader :orig_exception
 
     def initialize(orig_exception, msg)
-      full_message = msg + "\nGem Load Error is: #{orig_exception.message}\n"\
+      full_message = msg + "\nGem Load Error is:
+                      #{orig_exception.full_message(highlight: false)}\n"\
                       "Backtrace for gem load error is:\n"\
                       "#{orig_exception.backtrace.join("\n")}\n"\
                       "Bundler Error Backtrace:\n"
@@ -193,6 +190,24 @@ module Bundler
     status_code(31)
   end
 
+  class ReadOnlyFileSystemError < PermissionError
+    def message
+      "There was an error while trying to #{action} `#{@path}`. " \
+      "File system is read-only."
+    end
+
+    status_code(42)
+  end
+
+  class OperationNotPermittedError < PermissionError
+    def message
+      "There was an error while trying to #{action} `#{@path}`. " \
+      "Underlying OS system call raised an EPERM error."
+    end
+
+    status_code(43)
+  end
+
   class GenericSystemCallError < BundlerError
     attr_reader :underlying_error
 
@@ -207,7 +222,9 @@ module Bundler
   class DirectoryRemovalError < BundlerError
     def initialize(orig_exception, msg)
       full_message = "#{msg}.\n" \
-                     "The underlying error was #{orig_exception.class}: #{orig_exception.message}, with backtrace:\n" \
+                     "The underlying error was #{orig_exception.class}:
+                     #{orig_exception.full_message(highlight: false)},
+                     with backtrace:\n" \
                      "  #{orig_exception.backtrace.join("\n  ")}\n\n" \
                      "Bundler Error Backtrace:"
       super(full_message)
@@ -246,4 +263,18 @@ module Bundler
   end
 
   class InvalidArgumentError < BundlerError; status_code(40); end
+
+  class IncorrectLockfileDependencies < BundlerError
+    attr_reader :spec
+
+    def initialize(spec)
+      @spec = spec
+    end
+
+    def message
+      "Bundler found incorrect dependencies in the lockfile for #{spec.full_name}"
+    end
+
+    status_code(41)
+  end
 end

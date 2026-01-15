@@ -112,7 +112,7 @@ class LeakChecker
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          @@try_lsof |= system(*%W[lsof -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
+          @@try_lsof |= system(*%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
         end
       end
       h.each {|fd, list|

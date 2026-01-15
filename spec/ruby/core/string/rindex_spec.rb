@@ -371,8 +371,8 @@ describe "String#rindex with Regexp" do
   end
 
   it "returns the character index before the finish" do
-     "ありがりがとう".rindex("が", 3).should == 2
-     "ありがりがとう".rindex(/が/, 3).should == 2
+    "ありがりがとう".rindex("が", 3).should == 2
+    "ありがりがとう".rindex(/が/, 3).should == 2
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do

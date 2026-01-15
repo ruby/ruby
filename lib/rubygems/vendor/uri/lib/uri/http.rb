@@ -61,6 +61,18 @@ module Gem::URI
       super(tmp)
     end
 
+    # Do not allow empty host names, as they are not allowed by RFC 3986.
+    def check_host(v)
+      ret = super
+
+      if ret && v.empty?
+        raise InvalidComponentError,
+          "bad component(expected host component): #{v}"
+      end
+
+      ret
+    end
+
     #
     # == Description
     #
@@ -85,7 +97,7 @@ module Gem::URI
     # == Description
     #
     # Returns the authority for an HTTP uri, as defined in
-    # https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.
+    # https://www.rfc-editor.org/rfc/rfc3986#section-3.2.
     #
     #
     # Example:
@@ -106,7 +118,7 @@ module Gem::URI
     # == Description
     #
     # Returns the origin for an HTTP uri, as defined in
-    # https://datatracker.ietf.org/doc/html/rfc6454.
+    # https://www.rfc-editor.org/rfc/rfc6454.
     #
     #
     # Example:

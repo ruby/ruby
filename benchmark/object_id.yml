@@ -1,0 +1,4 @@
+benchmark:
+  baseline: "Object.new"
+  object_id: "Object.new.object_id"
+# loop_count: 100000

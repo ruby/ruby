@@ -184,16 +184,16 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_version_nonexistent
     spec_fetcher do |fetcher|
-      fetcher.spec "foo", 1
+      fetcher.spec "foobar", 1
     end
 
-    @cmd.options[:args] = %w[foo:2]
+    @cmd.options[:args] = %w[foobar:2]
 
     execute_with_term_error
 
     expected = <<-EXPECTED
-ERROR:  Could not find a valid gem 'foo' (2) in any repository
-ERROR:  Possible alternatives: foo
+ERROR:  Could not find a valid gem 'foobar' (2) in any repository
+ERROR:  Possible alternatives: foobar
     EXPECTED
 
     assert_equal expected, @ui.error
@@ -201,16 +201,16 @@ ERROR:  Possible alternatives: foo
 
   def test_execute_nonexistent_hint_disabled
     spec_fetcher do |fetcher|
-      fetcher.spec "foo", 1
+      fetcher.spec "foobar", 1
     end
 
-    @cmd.options[:args] = %w[foo:2]
+    @cmd.options[:args] = %w[foobar:2]
     @cmd.options[:suggest_alternate] = false
 
     execute_with_term_error
 
     expected = <<-EXPECTED
-ERROR:  Could not find a valid gem 'foo' (2) in any repository
+ERROR:  Could not find a valid gem 'foobar' (2) in any repository
     EXPECTED
 
     assert_equal expected, @ui.error

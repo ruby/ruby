@@ -7,7 +7,7 @@ describe :symbol_slice, shared: true do
     end
 
     it "returns nil if the index starts from the end and is greater than the length" do
-        :symbol.send(@method, -10).should be_nil
+      :symbol.send(@method, -10).should be_nil
     end
 
     it "returns nil if the index is greater than the length" do

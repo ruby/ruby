@@ -25,10 +25,11 @@ module Bundler
         @source ||= exemplary_spec.source
       end
 
-      def to_specs(force_ruby_platform)
+      def to_specs(force_ruby_platform, most_specific_locked_platform)
         @specs.map do |s|
           lazy_spec = LazySpecification.from_spec(s)
           lazy_spec.force_ruby_platform = force_ruby_platform
+          lazy_spec.most_specific_locked_platform = most_specific_locked_platform
           lazy_spec
         end
       end
@@ -38,9 +39,7 @@ module Bundler
       end
 
       def dependencies
-        @dependencies ||= @specs.map do |spec|
-          __dependencies(spec) + metadata_dependencies(spec)
-        end.flatten.uniq.sort
+        @dependencies ||= @specs.flat_map(&:expanded_dependencies).uniq.sort
       end
 
       def ==(other)
@@ -69,28 +68,6 @@ module Bundler
 
       def exemplary_spec
         @specs.first
-      end
-
-      def __dependencies(spec)
-        dependencies = []
-        spec.dependencies.each do |dep|
-          next if dep.type == :development
-          dependencies << Dependency.new(dep.name, dep.requirement)
-        end
-        dependencies
-      end
-
-      def metadata_dependencies(spec)
-        [
-          metadata_dependency("Ruby", spec.required_ruby_version),
-          metadata_dependency("RubyGems", spec.required_rubygems_version),
-        ].compact
-      end
-
-      def metadata_dependency(name, requirement)
-        return if requirement.nil? || requirement.none?
-
-        Dependency.new("#{name}\0", requirement)
       end
     end
   end

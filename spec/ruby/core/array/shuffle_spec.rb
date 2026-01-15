@@ -69,9 +69,18 @@ describe "Array#shuffle" do
     -> { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
   end
 
-  it "raises a RangeError if the value is equal to one" do
+  it "raises a RangeError if the value is equal to the Array size" do
     value = mock("array_shuffle_random_value")
-    value.should_receive(:to_int).at_least(1).times.and_return(1)
+    value.should_receive(:to_int).at_least(1).times.and_return(2)
+    random = mock("array_shuffle_random")
+    random.should_receive(:rand).at_least(1).times.and_return(value)
+
+    -> { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
+  end
+
+  it "raises a RangeError if the value is greater than the Array size" do
+    value = mock("array_shuffle_random_value")
+    value.should_receive(:to_int).at_least(1).times.and_return(3)
     random = mock("array_shuffle_random")
     random.should_receive(:rand).at_least(1).times.and_return(value)
 

@@ -14,20 +14,21 @@
 #define GetPKeyDH(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) { /* PARANOIA? */ \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
+        ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
     } \
 } while (0)
 #define GetDH(obj, dh) do { \
     EVP_PKEY *_pkey; \
     GetPKeyDH((obj), _pkey); \
     (dh) = EVP_PKEY_get0_DH(_pkey); \
+    if ((dh) == NULL) \
+        ossl_raise(ePKeyError, "failed to get DH from EVP_PKEY"); \
 } while (0)
 
 /*
  * Classes
  */
 VALUE cDH;
-VALUE eDHError;
 
 /*
  * Private
@@ -43,6 +44,7 @@ VALUE eDHError;
  * If called without arguments, an empty instance without any parameter or key
  * components is created. Use #set_pqg to manually set the parameters afterwards
  * (and optionally #set_key to set private and public key components).
+ * This form is not compatible with OpenSSL 3.0 or later.
  *
  * If a String is given, tries to parse it as a DER- or PEM- encoded parameters.
  * See also OpenSSL::PKey.read which can parse keys of any kinds.
@@ -58,14 +60,15 @@ VALUE eDHError;
  *
  * Examples:
  *   # Creating an instance from scratch
- *   # Note that this is deprecated and will not work on OpenSSL 3.0 or later.
+ *   # Note that this is deprecated and will result in ArgumentError when
+ *   # using OpenSSL 3.0 or later.
  *   dh = OpenSSL::PKey::DH.new
  *   dh.set_pqg(bn_p, nil, bn_g)
  *
  *   # Generating a parameters and a key pair
  *   dh = OpenSSL::PKey::DH.new(2048) # An alias of OpenSSL::PKey::DH.generate(2048)
  *
- *   # Reading DH parameters
+ *   # Reading DH parameters from a PEM-encoded string
  *   dh_params = OpenSSL::PKey::DH.new(File.read('parameters.pem')) # loads parameters only
  *   dh = OpenSSL::PKey.generate_key(dh_params) # generates a key pair
  */
@@ -84,10 +87,15 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 
     /* The DH.new(size, generator) form is handled by lib/openssl/pkey.rb */
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::DH.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         dh = DH_new();
         if (!dh)
-            ossl_raise(eDHError, "DH_new");
+            ossl_raise(ePKeyError, "DH_new");
         goto legacy;
+#endif
     }
 
     arg = ossl_to_der_if_possible(arg);
@@ -105,12 +113,12 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     pkey = ossl_pkey_read_generic(in, Qnil);
     BIO_free(in);
     if (!pkey)
-        ossl_raise(eDHError, "could not parse pkey");
+        ossl_raise(ePKeyError, "could not parse pkey");
 
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_DH) {
         EVP_PKEY_free(pkey);
-        rb_raise(eDHError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(ePKeyError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -121,13 +129,14 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     if (!pkey || EVP_PKEY_assign_DH(pkey, dh) != 1) {
         EVP_PKEY_free(pkey);
         DH_free(dh);
-        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DH");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
 #ifndef HAVE_EVP_PKEY_DUP
+/* :nodoc: */
 static VALUE
 ossl_dh_initialize_copy(VALUE self, VALUE other)
 {
@@ -142,26 +151,26 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 
     dh = DHparams_dup(dh_other);
     if (!dh)
-	ossl_raise(eDHError, "DHparams_dup");
+        ossl_raise(ePKeyError, "DHparams_dup");
 
     DH_get0_key(dh_other, &pub, &priv);
     if (pub) {
-	BIGNUM *pub2 = BN_dup(pub);
-	BIGNUM *priv2 = BN_dup(priv);
+        BIGNUM *pub2 = BN_dup(pub);
+        BIGNUM *priv2 = BN_dup(priv);
 
         if (!pub2 || (priv && !priv2)) {
-	    BN_clear_free(pub2);
-	    BN_clear_free(priv2);
-	    ossl_raise(eDHError, "BN_dup");
-	}
-	DH_set0_key(dh, pub2, priv2);
+            BN_clear_free(pub2);
+            BN_clear_free(priv2);
+            ossl_raise(ePKeyError, "BN_dup");
+        }
+        DH_set0_key(dh, pub2, priv2);
     }
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DH(pkey, dh) != 1) {
         EVP_PKEY_free(pkey);
         DH_free(dh);
-        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_DH");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -240,11 +249,11 @@ ossl_dh_export(VALUE self)
 
     GetDH(self, dh);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDHError, NULL);
+        ossl_raise(ePKeyError, NULL);
     }
     if (!PEM_write_bio_DHparams(out, dh)) {
-	BIO_free(out);
-	ossl_raise(eDHError, NULL);
+        BIO_free(out);
+        ossl_raise(ePKeyError, NULL);
     }
     str = ossl_membio2str(out);
 
@@ -274,43 +283,14 @@ ossl_dh_to_der(VALUE self)
 
     GetDH(self, dh);
     if((len = i2d_DHparams(dh, NULL)) <= 0)
-	ossl_raise(eDHError, NULL);
+        ossl_raise(ePKeyError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_DHparams(dh, &p) < 0)
-	ossl_raise(eDHError, NULL);
+        ossl_raise(ePKeyError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
-}
-
-/*
- *  call-seq:
- *     dh.params -> hash
- *
- * Stores all parameters of key to the hash
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
- */
-static VALUE
-ossl_dh_get_params(VALUE self)
-{
-    OSSL_3_const DH *dh;
-    VALUE hash;
-    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
-
-    GetDH(self, dh);
-    DH_get0_pqg(dh, &p, &q, &g);
-    DH_get0_key(dh, &pub_key, &priv_key);
-
-    hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
-    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
-    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(g));
-    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pub_key));
-    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(priv_key));
-
-    return hash;
 }
 
 /*
@@ -334,7 +314,7 @@ ossl_dh_check_params(VALUE self)
     GetPKey(self, pkey);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
     ret = EVP_PKEY_param_check(pctx);
     EVP_PKEY_CTX_free(pctx);
 #else
@@ -377,19 +357,6 @@ OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 void
 Init_ossl_dh(void)
 {
-#if 0
-    mPKey = rb_define_module_under(mOSSL, "PKey");
-    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
-
-    /* Document-class: OpenSSL::PKey::DHError
-     *
-     * Generic exception that is raised if an operation on a DH PKey
-     * fails unexpectedly or in case an instantiation of an instance of DH
-     * fails due to non-conformant input data.
-     */
-    eDHError = rb_define_class_under(mPKey, "DHError", ePKeyError);
     /* Document-class: OpenSSL::PKey::DH
      *
      * An implementation of the Diffie-Hellman key exchange protocol based on
@@ -443,8 +410,6 @@ Init_ossl_dh(void)
     DEF_OSSL_PKEY_BN(cDH, dh, priv_key);
     rb_define_method(cDH, "set_pqg", ossl_dh_set_pqg, 3);
     rb_define_method(cDH, "set_key", ossl_dh_set_key, 2);
-
-    rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }
 
 #else /* defined NO_DH */

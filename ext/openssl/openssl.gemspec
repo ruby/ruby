@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "openssl"
-  spec.version       = "3.2.0"
+  spec.version       = "4.0.0"
   spec.authors       = ["Martin Bosslet", "SHIBATA Hiroshi", "Zachary Scott", "Kazuki Yamaguchi"]
   spec.email         = ["ruby-core@ruby-lang.org"]
   spec.summary       = %q{SSL/TLS and general-purpose cryptography for Ruby}
@@ -13,7 +13,8 @@ Gem::Specification.new do |spec|
     spec.files       = []
     spec.add_runtime_dependency('jruby-openssl', '~> 0.14')
   else
-    spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "COPYING"]
+    spec.files         = Dir.glob(["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md"], base: File.expand_path("..", __FILE__)) +
+                         ["BSDL", "COPYING"]
     spec.require_paths = ["lib"]
     spec.extensions    = ["ext/openssl/extconf.rb"]
   end

@@ -6,31 +6,43 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest        5.25.1  https://github.com/minitest/minitest
-power_assert    2.0.3   https://github.com/ruby/power_assert 84e85124c5014a139af39161d484156cfe87a9ed
-rake            13.2.1  https://github.com/ruby/rake
-test-unit       3.6.2   https://github.com/test-unit/test-unit
-rexml           3.3.7   https://github.com/ruby/rexml
-rss             0.3.1   https://github.com/ruby/rss
-net-ftp         0.3.7   https://github.com/ruby/net-ftp
-net-imap        0.4.16  https://github.com/ruby/net-imap
-net-pop         0.1.2   https://github.com/ruby/net-pop
-net-smtp        0.5.0   https://github.com/ruby/net-smtp
-matrix          0.4.2   https://github.com/ruby/matrix
-prime           0.1.2   https://github.com/ruby/prime
-rbs             3.5.3   https://github.com/ruby/rbs
-typeprof        0.21.11  https://github.com/ruby/typeprof 167263ca3a634b61df0445f1a6b3e259a5d47f94
-debug           1.9.2   https://github.com/ruby/debug
-racc            1.8.1   https://github.com/ruby/racc
-mutex_m         0.2.0   https://github.com/ruby/mutex_m
-getoptlong      0.2.1   https://github.com/ruby/getoptlong
-base64          0.2.0   https://github.com/ruby/base64
-bigdecimal      3.1.8   https://github.com/ruby/bigdecimal
-observer        0.1.2   https://github.com/ruby/observer
-abbrev          0.1.2   https://github.com/ruby/abbrev
-resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
-rinda           0.2.0   https://github.com/ruby/rinda
-drb             2.2.1   https://github.com/ruby/drb
-nkf             0.2.0   https://github.com/ruby/nkf
-syslog          0.1.2   https://github.com/ruby/syslog
-csv             3.3.0   https://github.com/ruby/csv
+minitest            6.0.1  https://github.com/minitest/minitest
+power_assert        3.0.1   https://github.com/ruby/power_assert
+rake                13.3.1  https://github.com/ruby/rake
+test-unit           3.7.7   https://github.com/test-unit/test-unit
+rexml               3.4.4   https://github.com/ruby/rexml
+rss                 0.3.2   https://github.com/ruby/rss
+net-ftp             0.3.9   https://github.com/ruby/net-ftp
+net-imap            0.6.2   https://github.com/ruby/net-imap            d9ae35ef913a45f83387b8444cdce4fb1cbf01af
+net-pop             0.1.2   https://github.com/ruby/net-pop
+net-smtp            0.5.1   https://github.com/ruby/net-smtp
+matrix              0.4.3   https://github.com/ruby/matrix
+prime               0.1.4   https://github.com/ruby/prime
+rbs                 3.10.2  https://github.com/ruby/rbs
+typeprof            0.31.1  https://github.com/ruby/typeprof
+debug               1.11.1  https://github.com/ruby/debug
+racc                1.8.1   https://github.com/ruby/racc
+mutex_m             0.3.0   https://github.com/ruby/mutex_m
+getoptlong          0.2.1   https://github.com/ruby/getoptlong
+base64              0.3.0   https://github.com/ruby/base64
+bigdecimal          4.0.1   https://github.com/ruby/bigdecimal
+observer            0.1.2   https://github.com/ruby/observer
+abbrev              0.1.2   https://github.com/ruby/abbrev
+resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
+rinda               0.2.0   https://github.com/ruby/rinda
+drb                 2.2.3   https://github.com/ruby/drb
+nkf                 0.2.0   https://github.com/ruby/nkf
+syslog              0.3.0   https://github.com/ruby/syslog
+csv                 3.3.5   https://github.com/ruby/csv
+repl_type_completor 0.1.12  https://github.com/ruby/repl_type_completor
+ostruct             0.6.3   https://github.com/ruby/ostruct
+pstore              0.2.0   https://github.com/ruby/pstore
+benchmark           0.5.0   https://github.com/ruby/benchmark
+logger              1.7.0   https://github.com/ruby/logger
+rdoc                7.1.0   https://github.com/ruby/rdoc
+win32ole            1.9.2   https://github.com/ruby/win32ole
+irb                 1.16.0  https://github.com/ruby/irb
+reline              0.6.3   https://github.com/ruby/reline
+readline            0.0.4   https://github.com/ruby/readline
+fiddle              1.1.8   https://github.com/ruby/fiddle
+tsort               0.2.0   https://github.com/ruby/tsort

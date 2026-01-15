@@ -8,6 +8,8 @@ class TestAssertion < Test::Unit::TestCase
   end
 
   def test_timeout_separately
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
+
     assert_raise(Timeout::Error) do
       assert_separately([], <<~"end;", timeout: 0.1)
         sleep
@@ -24,6 +26,38 @@ class TestAssertion < Test::Unit::TestCase
   def test_assert_raise
     assert_raise(Test::Unit::AssertionFailedError) do
       return_in_assert_raise
+    end
+  end
+
+  def test_assert_raise_with_message
+    my_error = Class.new(StandardError)
+
+    assert_raise_with_message(my_error, "with message") do
+      raise my_error, "with message"
+    end
+
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_raise_with_message(RuntimeError, "with message") do
+        raise my_error, "with message"
+      end
+    end
+
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_raise_with_message(my_error, "without message") do
+        raise my_error, "with message"
+      end
+    end
+  end
+
+  def test_assert_raise_kind_of
+    my_error = Class.new(StandardError)
+
+    assert_raise_kind_of(my_error) do
+      raise my_error
+    end
+
+    assert_raise_kind_of(StandardError) do
+      raise my_error
     end
   end
 

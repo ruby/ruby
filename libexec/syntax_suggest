@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require_relative "../lib/syntax_suggest/api"
+require "syntax_suggest/api"
 
 SyntaxSuggest::Cli.new(
   argv: ARGV

@@ -25,9 +25,12 @@ module Prism
     end
 
     def test_dispatching_events
-      listener = TestListener.new
+      listener_manual = TestListener.new
+      listener_public = TestListener.new
+
       dispatcher = Dispatcher.new
-      dispatcher.register(listener, :on_call_node_enter, :on_call_node_leave, :on_integer_node_enter)
+      dispatcher.register(listener_manual, :on_call_node_enter, :on_call_node_leave, :on_integer_node_enter)
+      dispatcher.register_public_methods(listener_public)
 
       root = Prism.parse(<<~RUBY).value
         def foo
@@ -36,11 +39,17 @@ module Prism
       RUBY
 
       dispatcher.dispatch(root)
-      assert_equal([:on_call_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_call_node_leave], listener.events_received)
 
-      listener.events_received.clear
+      [listener_manual, listener_public].each do |listener|
+        assert_equal([:on_call_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_integer_node_enter, :on_call_node_leave], listener.events_received)
+        listener.events_received.clear
+      end
+
       dispatcher.dispatch_once(root.statements.body.first.body.body.first)
-      assert_equal([:on_call_node_enter, :on_call_node_leave], listener.events_received)
+
+      [listener_manual, listener_public].each do |listener|
+        assert_equal([:on_call_node_enter, :on_call_node_leave], listener.events_received)
+      end
     end
   end
 end

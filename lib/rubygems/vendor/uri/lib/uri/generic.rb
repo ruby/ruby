@@ -73,7 +73,7 @@ module Gem::URI
     #
     # At first, tries to create a new Gem::URI::Generic instance using
     # Gem::URI::Generic::build. But, if exception Gem::URI::InvalidComponentError is raised,
-    # then it does Gem::URI::Escape.escape all Gem::URI components and tries again.
+    # then it does Gem::URI::RFC2396_PARSER.escape all Gem::URI components and tries again.
     #
     def self.build2(args)
       begin
@@ -82,7 +82,7 @@ module Gem::URI
         if args.kind_of?(Array)
           return self.build(args.collect{|x|
             if x.is_a?(String)
-              DEFAULT_PARSER.escape(x)
+              Gem::URI::RFC2396_PARSER.escape(x)
             else
               x
             end
@@ -91,7 +91,7 @@ module Gem::URI
           tmp = {}
           args.each do |key, value|
             tmp[key] = if value
-                DEFAULT_PARSER.escape(value)
+                Gem::URI::RFC2396_PARSER.escape(value)
               else
                 value
               end
@@ -126,9 +126,9 @@ module Gem::URI
           end
         end
       else
-        component = self.class.component rescue ::Gem::URI::Generic::COMPONENT
+        component = self.component rescue ::Gem::URI::Generic::COMPONENT
         raise ArgumentError,
-        "expected Array of or Hash of components of #{self.class} (#{component.join(', ')})"
+              "expected Array of or Hash of components of #{self} (#{component.join(', ')})"
       end
 
       tmp << nil
@@ -186,18 +186,18 @@ module Gem::URI
 
       if arg_check
         self.scheme = scheme
-        self.userinfo = userinfo
         self.hostname = host
         self.port = port
+        self.userinfo = userinfo
         self.path = path
         self.query = query
         self.opaque = opaque
         self.fragment = fragment
       else
         self.set_scheme(scheme)
-        self.set_userinfo(userinfo)
         self.set_host(host)
         self.set_port(port)
+        self.set_userinfo(userinfo)
         self.set_path(path)
         self.query = query
         self.set_opaque(opaque)
@@ -284,7 +284,7 @@ module Gem::URI
 
     # Returns the parser to be used.
     #
-    # Unless a Gem::URI::Parser is defined, DEFAULT_PARSER is used.
+    # Unless the +parser+ is defined, DEFAULT_PARSER is used.
     #
     def parser
       if !defined?(@parser) || !@parser
@@ -315,7 +315,7 @@ module Gem::URI
     end
 
     #
-    # Checks the scheme +v+ component against the Gem::URI::Parser Regexp for :SCHEME.
+    # Checks the scheme +v+ component against the +parser+ Regexp for :SCHEME.
     #
     def check_scheme(v)
       if v && parser.regexp[:SCHEME] !~ v
@@ -385,7 +385,7 @@ module Gem::URI
 
     #
     # Checks the user +v+ component for RFC2396 compliance
-    # and against the Gem::URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -393,7 +393,7 @@ module Gem::URI
     def check_user(v)
       if @opaque
         raise InvalidURIError,
-          "can not set user with opaque"
+          "cannot set user with opaque"
       end
 
       return v unless v
@@ -409,7 +409,7 @@ module Gem::URI
 
     #
     # Checks the password +v+ component for RFC2396 compliance
-    # and against the Gem::URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -417,7 +417,7 @@ module Gem::URI
     def check_password(v, user = @user)
       if @opaque
         raise InvalidURIError,
-          "can not set password with opaque"
+          "cannot set password with opaque"
       end
       return v unless v
 
@@ -511,7 +511,7 @@ module Gem::URI
         user, password = split_userinfo(user)
       end
       @user     = user
-      @password = password if password
+      @password = password
 
       [@user, @password]
     end
@@ -522,7 +522,7 @@ module Gem::URI
     # See also Gem::URI::Generic.user=.
     #
     def set_user(v)
-      set_userinfo(v, @password)
+      set_userinfo(v, nil)
       v
     end
     protected :set_user
@@ -574,6 +574,12 @@ module Gem::URI
       @password
     end
 
+    # Returns the authority info (array of user, password, host and
+    # port), if any is set.  Or returns +nil+.
+    def authority
+      return @user, @password, @host, @port if @user || @password || @host || @port
+    end
+
     # Returns the user component after Gem::URI decoding.
     def decoded_user
       Gem::URI.decode_uri_component(@user) if @user
@@ -586,7 +592,7 @@ module Gem::URI
 
     #
     # Checks the host +v+ component for RFC2396 compliance
-    # and against the Gem::URI::Parser Regexp for :HOST.
+    # and against the +parser+ Regexp for :HOST.
     #
     # Can not have a registry or opaque component defined,
     # with a host component defined.
@@ -596,7 +602,7 @@ module Gem::URI
 
       if @opaque
         raise InvalidURIError,
-          "can not set host with registry or opaque"
+          "cannot set host with registry or opaque"
       elsif parser.regexp[:HOST] !~ v
         raise InvalidComponentError,
           "bad component(expected host component): #{v}"
@@ -614,6 +620,13 @@ module Gem::URI
       @host = v
     end
     protected :set_host
+
+    # Protected setter for the authority info (+user+, +password+, +host+
+    # and +port+).  If +port+ is +nil+, +default_port+ will be set.
+    #
+    protected def set_authority(user, password, host, port = nil)
+      @user, @password, @host, @port = user, password, host, port || self.default_port
+    end
 
     #
     # == Args
@@ -639,6 +652,7 @@ module Gem::URI
     def host=(v)
       check_host(v)
       set_host(v)
+      set_userinfo(nil)
       v
     end
 
@@ -675,7 +689,7 @@ module Gem::URI
 
     #
     # Checks the port +v+ component for RFC2396 compliance
-    # and against the Gem::URI::Parser Regexp for :PORT.
+    # and against the +parser+ Regexp for :PORT.
     #
     # Can not have a registry or opaque component defined,
     # with a port component defined.
@@ -685,7 +699,7 @@ module Gem::URI
 
       if @opaque
         raise InvalidURIError,
-          "can not set port with registry or opaque"
+          "cannot set port with registry or opaque"
       elsif !v.kind_of?(Integer) && parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
           "bad component(expected port component): #{v.inspect}"
@@ -729,26 +743,27 @@ module Gem::URI
     def port=(v)
       check_port(v)
       set_port(v)
+      set_userinfo(nil)
       port
     end
 
     def check_registry(v) # :nodoc:
-      raise InvalidURIError, "can not set registry"
+      raise InvalidURIError, "cannot set registry"
     end
     private :check_registry
 
-    def set_registry(v) #:nodoc:
-      raise InvalidURIError, "can not set registry"
+    def set_registry(v) # :nodoc:
+      raise InvalidURIError, "cannot set registry"
     end
     protected :set_registry
 
-    def registry=(v)
-      raise InvalidURIError, "can not set registry"
+    def registry=(v) # :nodoc:
+      raise InvalidURIError, "cannot set registry"
     end
 
     #
     # Checks the path +v+ component for RFC2396 compliance
-    # and against the Gem::URI::Parser Regexp
+    # and against the +parser+ Regexp
     # for :ABS_PATH and :REL_PATH.
     #
     # Can not have a opaque component defined,
@@ -853,7 +868,7 @@ module Gem::URI
 
     #
     # Checks the opaque +v+ component for RFC2396 compliance and
-    # against the Gem::URI::Parser Regexp for :OPAQUE.
+    # against the +parser+ Regexp for :OPAQUE.
     #
     # Can not have a host, port, user, or path component defined,
     # with an opaque component defined.
@@ -866,7 +881,7 @@ module Gem::URI
       # hier_part     = ( net_path | abs_path ) [ "?" query ]
       if @host || @port || @user || @path  # userinfo = @user + ':' + @password
         raise InvalidURIError,
-          "can not set opaque with host, port, userinfo or path"
+          "cannot set opaque with host, port, userinfo or path"
       elsif v && parser.regexp[:OPAQUE] !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
@@ -905,7 +920,7 @@ module Gem::URI
     end
 
     #
-    # Checks the fragment +v+ component against the Gem::URI::Parser Regexp for :FRAGMENT.
+    # Checks the fragment +v+ component against the +parser+ Regexp for :FRAGMENT.
     #
     #
     # == Args
@@ -945,7 +960,7 @@ module Gem::URI
     # == Description
     #
     # Gem::URI has components listed in order of decreasing significance from left to right,
-    # see RFC3986 https://tools.ietf.org/html/rfc3986 1.2.3.
+    # see RFC3986 https://www.rfc-editor.org/rfc/rfc3986 1.2.3.
     #
     # == Usage
     #
@@ -1121,7 +1136,7 @@ module Gem::URI
 
       base = self.dup
 
-      authority = rel.userinfo || rel.host || rel.port
+      authority = rel.authority
 
       # RFC2396, Section 5.2, 2)
       if (rel.path.nil? || rel.path.empty?) && !authority && !rel.query
@@ -1133,17 +1148,14 @@ module Gem::URI
       base.fragment=(nil)
 
       # RFC2396, Section 5.2, 4)
-      if !authority
-        base.set_path(merge_path(base.path, rel.path)) if base.path && rel.path
-      else
-        # RFC2396, Section 5.2, 4)
-        base.set_path(rel.path) if rel.path
+      if authority
+        base.set_authority(*authority)
+        base.set_path(rel.path)
+      elsif base.path && rel.path
+        base.set_path(merge_path(base.path, rel.path))
       end
 
       # RFC2396, Section 5.2, 7)
-      base.set_userinfo(rel.userinfo) if rel.userinfo
-      base.set_host(rel.host)         if rel.host
-      base.set_port(rel.port)         if rel.port
       base.query = rel.query       if rel.query
       base.fragment=(rel.fragment) if rel.fragment
 
@@ -1235,7 +1247,7 @@ module Gem::URI
         return rel, rel
       end
 
-      # you can modify `rel', but can not `oth'.
+      # you can modify `rel', but cannot `oth'.
       return oth, rel
     end
     private :route_from0
@@ -1260,7 +1272,7 @@ module Gem::URI
     #   #=> #<Gem::URI::Generic /main.rbx?page=1>
     #
     def route_from(oth)
-      # you can modify `rel', but can not `oth'.
+      # you can modify `rel', but cannot `oth'.
       begin
         oth, rel = route_from0(oth)
       rescue
@@ -1364,6 +1376,9 @@ module Gem::URI
           str << ':'
           str << @port.to_s
         end
+        if (@host || @port) && !@path.empty? && !@path.start_with?('/')
+          str << '/'
+        end
         str << @path
         if @query
           str << '?'
@@ -1389,28 +1404,17 @@ module Gem::URI
       end
     end
 
+    # Returns the hash value.
     def hash
       self.component_ary.hash
     end
 
+    # Compares with _oth_ for Hash.
     def eql?(oth)
       self.class == oth.class &&
       parser == oth.parser &&
       self.component_ary.eql?(oth.component_ary)
     end
-
-=begin
-
---- Gem::URI::Generic#===(oth)
-
-=end
-#    def ===(oth)
-#      raise NotImplementedError
-#    end
-
-=begin
-=end
-
 
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
@@ -1448,7 +1452,7 @@ module Gem::URI
       end
     end
 
-    def inspect
+    def inspect # :nodoc:
       "#<#{self.class} #{self}>"
     end
 
@@ -1536,7 +1540,7 @@ module Gem::URI
         else
           unless proxy_uri = env[name]
             if proxy_uri = env[name.upcase]
-              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+              warn 'The environment variable HTTP_PROXY is discouraged.  Please use http_proxy instead.', uplevel: 1
             end
           end
         end

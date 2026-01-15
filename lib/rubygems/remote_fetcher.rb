@@ -72,7 +72,7 @@ class Gem::RemoteFetcher
   # +headers+: A set of additional HTTP headers to be sent to the server when
   #            fetching the gem.
 
-  def initialize(proxy=nil, dns=nil, headers={})
+  def initialize(proxy = nil, dns = nil, headers = {})
     require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
     require_relative "vendored_net_http"
     require_relative "vendor/uri/lib/uri"
@@ -82,6 +82,7 @@ class Gem::RemoteFetcher
     @proxy = proxy
     @pools = {}
     @pool_lock = Thread::Mutex.new
+    @pool_size = 1
     @cert_files = Gem::Request.get_cert_files
 
     @headers = headers
@@ -245,11 +246,14 @@ class Gem::RemoteFetcher
   def fetch_path(uri, mtime = nil, head = false)
     uri = Gem::Uri.new uri
 
-    unless uri.scheme
-      raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
-    end
+    method = {
+      "http" => "fetch_http",
+      "https" => "fetch_http",
+      "s3" => "fetch_s3",
+      "file" => "fetch_file",
+    }.fetch(uri.scheme) { raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}" }
 
-    data = send "fetch_#{uri.scheme}", uri, mtime, head
+    data = send method, uri, mtime, head
 
     if data && !head && uri.to_s.end_with?(".gz")
       begin
@@ -267,7 +271,7 @@ class Gem::RemoteFetcher
 
   def fetch_s3(uri, mtime = nil, head = false)
     begin
-      public_uri = s3_uri_signer(uri).sign
+      public_uri = s3_uri_signer(uri, head ? "HEAD" : "GET").sign
     rescue Gem::S3URISigner::ConfigurationError, Gem::S3URISigner::InstanceProfileError => e
       raise FetchError.new(e.message, "s3://#{uri.host}")
     end
@@ -275,8 +279,8 @@ class Gem::RemoteFetcher
   end
 
   # we have our own signing code here to avoid a dependency on the aws-sdk gem
-  def s3_uri_signer(uri)
-    Gem::S3URISigner.new(uri)
+  def s3_uri_signer(uri, method)
+    Gem::S3URISigner.new(uri, method)
   end
 
   ##
@@ -335,7 +339,7 @@ class Gem::RemoteFetcher
 
   def pools_for(proxy)
     @pool_lock.synchronize do
-      @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
+      @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files, @pool_size
     end
   end
 end

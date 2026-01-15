@@ -21,7 +21,7 @@ RSpec.describe Bundler::Source do
   end
 
   describe "#version_message" do
-    let(:spec) { double(:spec, name: "nokogiri", version: ">= 1.6", platform: rb) }
+    let(:spec) { double(:spec, name: "nokogiri", version: ">= 1.6", platform: Gem::Platform::RUBY) }
 
     shared_examples_for "the lockfile specs are not relevant" do
       it "should return a string with the spec name and version" do
@@ -70,7 +70,7 @@ RSpec.describe Bundler::Source do
         end
 
         context "with a more recent version" do
-          let(:spec) { double(:spec, name: "nokogiri", version: "1.6.1", platform: rb) }
+          let(:spec) { double(:spec, name: "nokogiri", version: "1.6.1", platform: Gem::Platform::RUBY) }
           let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: "1.7.0") }
 
           context "with color", :no_color_tty do
@@ -97,7 +97,7 @@ RSpec.describe Bundler::Source do
         end
 
         context "with an older version" do
-          let(:spec) { double(:spec, name: "nokogiri", version: "1.7.1", platform: rb) }
+          let(:spec) { double(:spec, name: "nokogiri", version: "1.7.1", platform: Gem::Platform::RUBY) }
           let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: "1.7.0") }
 
           context "with color", :no_color_tty do

@@ -130,8 +130,8 @@ ruby_value_type {
     RUBY_T_RATIONAL = 0x0f, /**< @see struct ::RRational */
 
     RUBY_T_NIL      = 0x11, /**< @see ::RUBY_Qnil */
-    RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qfalse */
-    RUBY_T_FALSE    = 0x13, /**< @see ::RUBY_Qtrue */
+    RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qtrue */
+    RUBY_T_FALSE    = 0x13, /**< @see ::RUBY_Qfalse */
     RUBY_T_SYMBOL   = 0x14, /**< @see struct ::RSymbol */
     RUBY_T_FIXNUM   = 0x15, /**< Integers formerly known as Fixnums. */
     RUBY_T_UNDEF    = 0x16, /**< @see ::RUBY_Qundef */

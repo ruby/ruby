@@ -7,10 +7,12 @@
 #++
 
 require_relative "../user_interaction"
-require_relative "../shellwords"
 
 class Gem::Ext::Builder
   include Gem::UserInteraction
+
+  class NoMakefileError < Gem::InstallError
+  end
 
   attr_accessor :build_args # :nodoc:
 
@@ -20,19 +22,30 @@ class Gem::Ext::Builder
   end
 
   def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil, targets = ["clean", "", "install"],
-    target_rbconfig: Gem.target_rbconfig)
+    target_rbconfig: Gem.target_rbconfig, n_jobs: nil)
     unless File.exist? File.join(make_dir, "Makefile")
-      raise Gem::InstallError, "Makefile not found"
+      # No makefile exists, nothing to do.
+      raise NoMakefileError, "No Makefile found in #{make_dir}"
     end
 
     # try to find make program from Ruby configure arguments first
     target_rbconfig["configure_args"] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV["MAKE"] || ENV["make"] || $1
     make_program_name ||= RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
-    make_program = Shellwords.split(make_program_name)
+    make_program = shellsplit(make_program_name)
 
+    is_nmake = /\bnmake/i.match?(make_program_name)
     # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+    destdir = !is_nmake || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+
+    # nmake doesn't support parallel build
+    unless is_nmake
+      have_make_arguments = make_program.size > 1
+
+      if !have_make_arguments && !ENV["MAKEFLAGS"] && n_jobs
+        make_program << "-j#{n_jobs}"
+      end
+    end
 
     env = [destdir]
 
@@ -58,7 +71,7 @@ class Gem::Ext::Builder
 
   def self.ruby
     # Gem.ruby is quoted if it contains whitespace
-    cmd = Shellwords.split(Gem.ruby)
+    cmd = shellsplit(Gem.ruby)
 
     # This load_path is only needed when running rubygems test without a proper installation.
     # Prepending it in a normal installation will cause problem with order of $LOAD_PATH.
@@ -83,7 +96,7 @@ class Gem::Ext::Builder
         p(command)
       end
       results << "current directory: #{dir}"
-      results << Shellwords.join(command)
+      results << shelljoin(command)
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
@@ -127,16 +140,29 @@ class Gem::Ext::Builder
     end
   end
 
+  def self.shellsplit(command)
+    require "shellwords"
+
+    Shellwords.split(command)
+  end
+
+  def self.shelljoin(command)
+    require "shellwords"
+
+    Shellwords.join(command)
+  end
+
   ##
   # Creates a new extension builder for +spec+.  If the +spec+ does not yet
   # have build arguments, saved, set +build_args+ which is an ARGV-style
   # array.
 
-  def initialize(spec, build_args = spec.build_args, target_rbconfig = Gem.target_rbconfig)
+  def initialize(spec, build_args = spec.build_args, target_rbconfig = Gem.target_rbconfig, build_jobs = nil)
     @spec       = spec
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
     @target_rbconfig = target_rbconfig
+    @build_jobs = build_jobs
 
     @ran_rake = false
   end
@@ -154,7 +180,7 @@ class Gem::Ext::Builder
       @ran_rake = true
       Gem::Ext::RakeBuilder
     when /CMakeLists.txt/ then
-      Gem::Ext::CmakeBuilder
+      Gem::Ext::CmakeBuilder.new
     when /Cargo.toml/ then
       Gem::Ext::CargoBuilder.new
     else
@@ -193,7 +219,7 @@ EOF
       FileUtils.mkdir_p dest_path
 
       results = builder.build(extension, dest_path,
-                              results, @build_args, lib_dir, extension_dir, @target_rbconfig)
+                              results, @build_args, lib_dir, extension_dir, @target_rbconfig, n_jobs: @build_jobs)
 
       verbose { results.join("\n") }
 

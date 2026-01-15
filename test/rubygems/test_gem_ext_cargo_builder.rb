@@ -3,6 +3,10 @@
 require_relative "helper"
 require "rubygems/ext"
 require "open3"
+begin
+  require "fiddle"
+rescue LoadError
+end
 
 class TestGemExtCargoBuilder < Gem::TestCase
   def setup
@@ -137,6 +141,58 @@ class TestGemExtCargoBuilder < Gem::TestCase
     end
   end
 
+  def test_linker_args
+    orig_cc = RbConfig::MAKEFILE_CONFIG["CC"]
+    RbConfig::MAKEFILE_CONFIG["CC"] = "clang"
+
+    builder = Gem::Ext::CargoBuilder.new
+    args = builder.send(:linker_args)
+
+    assert args[1], "linker=clang"
+    assert_nil args[2]
+  ensure
+    RbConfig::MAKEFILE_CONFIG["CC"] = orig_cc
+  end
+
+  def test_linker_args_with_options
+    orig_cc = RbConfig::MAKEFILE_CONFIG["CC"]
+    RbConfig::MAKEFILE_CONFIG["CC"] = "gcc -Wl,--no-undefined"
+
+    builder = Gem::Ext::CargoBuilder.new
+    args = builder.send(:linker_args)
+
+    assert args[1], "linker=clang"
+    assert args[3], "link-args=-Wl,--no-undefined"
+  ensure
+    RbConfig::MAKEFILE_CONFIG["CC"] = orig_cc
+  end
+
+  def test_linker_args_with_cachetools
+    orig_cc = RbConfig::MAKEFILE_CONFIG["CC"]
+    RbConfig::MAKEFILE_CONFIG["CC"] = "sccache clang"
+
+    builder = Gem::Ext::CargoBuilder.new
+    args = builder.send(:linker_args)
+
+    assert args[1], "linker=clang"
+    assert_nil args[2]
+  ensure
+    RbConfig::MAKEFILE_CONFIG["CC"] = orig_cc
+  end
+
+  def test_linker_args_with_cachetools_and_options
+    orig_cc = RbConfig::MAKEFILE_CONFIG["CC"]
+    RbConfig::MAKEFILE_CONFIG["CC"] = "ccache gcc -Wl,--no-undefined"
+
+    builder = Gem::Ext::CargoBuilder.new
+    args = builder.send(:linker_args)
+
+    assert args[1], "linker=clang"
+    assert args[3], "link-args=-Wl,--no-undefined"
+  ensure
+    RbConfig::MAKEFILE_CONFIG["CC"] = orig_cc
+  end
+
   private
 
   def skip_unsupported_platforms!
@@ -149,7 +205,8 @@ class TestGemExtCargoBuilder < Gem::TestCase
   end
 
   def assert_ffi_handle(bundle, name)
-    require "fiddle"
+    return unless defined?(Fiddle)
+
     dylib_handle = Fiddle.dlopen bundle
     assert_nothing_raised { dylib_handle[name] }
   ensure
@@ -157,7 +214,8 @@ class TestGemExtCargoBuilder < Gem::TestCase
   end
 
   def refute_ffi_handle(bundle, name)
-    require "fiddle"
+    return unless defined?(Fiddle)
+
     dylib_handle = Fiddle.dlopen bundle
     assert_raise { dylib_handle[name] }
   ensure

@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef HAVE_UCONTEXT_H
 # include <ucontext.h>
@@ -60,22 +61,28 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
-    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry_unchecked(cfp);
+    const rb_box_t *box = NULL;
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
         ep = (ptrdiff_t)cfp->ep;
         ep_in_heap = 'p';
     }
 
-    switch (VM_FRAME_TYPE(cfp)) {
+    switch (VM_FRAME_TYPE_UNCHECKED(cfp)) {
       case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
+        box = VM_ENV_BOX_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_METHOD:
         magic = "METHOD";
+        if (me) {
+            box = me->def->box;
+        }
         break;
       case VM_FRAME_MAGIC_CLASS:
         magic = "CLASS";
+        box = VM_ENV_BOX_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_BLOCK:
         magic = "BLOCK";
@@ -127,7 +134,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                line = rb_vm_get_sourceline(cfp);
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
+                    line = rb_vm_get_sourceline(cfp);
+                }
                 if (line) {
                     snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
                 }
@@ -137,7 +146,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             }
         }
     }
-    else if (me != NULL) {
+    else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
         iseq_name = rb_id2name(me->def->original_id);
         snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
         line = -1;
@@ -153,11 +162,18 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    kprintf("l:%s ", VM_ENV_LOCAL_P(cfp->ep) ? "y" : "n");
+    if (box) {
+        kprintf("b:%04ld ", box->box_id % 10000);
+    }
+    else {
+        kprintf("b:---- ");
+    }
     kprintf("%-6s", magic);
     if (line) {
         kprintf(" %s", posbuf);
     }
-    if (VM_FRAME_FINISHED_P(cfp)) {
+    if (VM_FRAME_FINISHED_P_UNCHECKED(cfp)) {
         kprintf(" [FINISH]");
     }
     if (0) {
@@ -201,6 +217,250 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         }
     }
     return true;
+  error:
+    return false;
+}
+
+static inline const rb_control_frame_t *
+vmdebug_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE * const ep)
+{
+    if (!ep) {
+        return NULL;
+    }
+    else {
+        const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
+
+        while (cfp < eocfp) {
+            if (cfp->ep == ep) {
+                return cfp;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+
+        return NULL;
+    }
+}
+
+static rb_callable_method_entry_t *
+vmdebug_env_method_entry_unchecked(VALUE obj, int can_be_svar)
+{
+    if (obj == Qfalse) return NULL;
+
+    switch (imemo_type(obj)) {
+      case imemo_ment:
+        return (rb_callable_method_entry_t *)obj;
+      case imemo_cref:
+        return NULL;
+      case imemo_svar:
+        if (can_be_svar) {
+            return vmdebug_env_method_entry_unchecked(((struct vm_svar *)obj)->cref_or_me, FALSE);
+        }
+      default:
+        return NULL;
+    }
+}
+
+static const rb_callable_method_entry_t *
+vmdebug_frame_method_entry_unchecked(const VALUE *ep)
+{
+    rb_callable_method_entry_t *me;
+
+    while (!VM_ENV_LOCAL_P_UNCHECKED(ep)) {
+        if ((me = vmdebug_env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
+        ep = VM_ENV_PREV_EP_UNCHECKED(ep);
+    }
+
+    return vmdebug_env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
+}
+
+static bool
+box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+{
+    ptrdiff_t pc = -1;
+    ptrdiff_t ep = env - ec->vm_stack;
+    char ep_in_heap = ' ';
+    char posbuf[MAX_POSBUF+1];
+    int line = 0;
+    const char *magic, *iseq_name = "-";
+    VALUE tmp;
+    const rb_iseq_t *iseq = NULL;
+    const rb_box_t *box = NULL;
+    const rb_control_frame_t *cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, env);
+    const rb_callable_method_entry_t *me = vmdebug_frame_method_entry_unchecked(env);
+
+    if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
+        if (cfp) {
+            ep = (ptrdiff_t)cfp->ep;
+            ep_in_heap = 'p';
+        }
+    }
+
+    switch (VM_ENV_FLAGS_UNCHECKED(env, VM_FRAME_MAGIC_MASK)) {
+    case VM_FRAME_MAGIC_TOP:
+        magic = "TOP";
+        box = VM_ENV_BOX_UNCHECKED(env);
+        break;
+    case VM_FRAME_MAGIC_METHOD:
+        magic = "METHOD";
+        if (me) {
+            box = me->def->box;
+        }
+        break;
+    case VM_FRAME_MAGIC_CLASS:
+        magic = "CLASS";
+        box = VM_ENV_BOX_UNCHECKED(env);
+        break;
+    case VM_FRAME_MAGIC_BLOCK:
+        magic = "BLOCK";
+        break;
+    case VM_FRAME_MAGIC_CFUNC:
+        magic = "CFUNC";
+        if (me) {
+            box = me->def->box;
+        }
+        break;
+    case VM_FRAME_MAGIC_IFUNC:
+        magic = "IFUNC";
+        break;
+    case VM_FRAME_MAGIC_EVAL:
+        magic = "EVAL";
+        break;
+    case VM_FRAME_MAGIC_RESCUE:
+        magic = "RESCUE";
+        break;
+    case VM_FRAME_MAGIC_DUMMY:
+        magic = "DUMMY";
+        break;
+    case 0:
+        magic = "------";
+        break;
+    default:
+        magic = "(none)";
+        break;
+    }
+
+    if (cfp && cfp->iseq != 0) {
+#define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
+        if (RUBY_VM_IFUNC_P(cfp->iseq)) {
+            iseq_name = "<ifunc>";
+        }
+        else if (SYMBOL_P((VALUE)cfp->iseq)) {
+            tmp = rb_sym2str((VALUE)cfp->iseq);
+            iseq_name = RSTRING_PTR(tmp);
+            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+            line = -1;
+        }
+        else {
+            if (cfp->pc) {
+                iseq = cfp->iseq;
+                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
+                    line = rb_vm_get_sourceline(cfp);
+                }
+                if (line) {
+                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+                }
+            }
+            else {
+                iseq_name = "<dummy_frame>";
+            }
+        }
+    }
+    else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
+        iseq_name = rb_id2name(me->def->original_id);
+        snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+        line = -1;
+    }
+
+    if (cfp) {
+        kprintf("c:%04"PRIdPTRDIFF" ",
+                ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp));
+    }
+    else {
+        kprintf("c:---- ");
+    }
+    kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    kprintf("l:%s ", VM_ENV_LOCAL_P(env) ? "y" : "n");
+    if (box) {
+        kprintf("b:%04ld ", box->box_id % 10000);
+    }
+    else {
+        kprintf("b:---- ");
+    }
+    kprintf("%-6s", magic);
+    if (line) {
+        kprintf(" %s", posbuf);
+    }
+    if (VM_ENV_FLAGS_UNCHECKED(env, VM_FRAME_FLAG_FINISH) != 0) {
+        kprintf(" [FINISH]");
+    }
+    kprintf("\n");
+    return true;
+  error:
+    return false;
+}
+
+static bool
+box_env_dump_unchecked(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+{
+    if (env == NULL) {
+        kprintf("c:---- e:000000 l:- b:---- (none)\n");
+        return true;
+    }
+    else {
+        return box_env_dump(ec, env, checkpoint_cfp, errout);
+    }
+  error:
+    return false;
+}
+
+bool
+rb_vmdebug_box_env_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp, FILE *errout)
+{
+    // See VM_EP_RUBY_LEP for the original logic
+    const VALUE *ep = current_cfp->ep;
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
+    const rb_control_frame_t *cfp = current_cfp, *checkpoint_cfp = current_cfp;
+
+    kprintf("-- Ruby Box detection information "
+            "-----------------------------------------\n");
+
+    box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+
+    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
+        while (!VM_ENV_LOCAL_P(ep)) {
+            ep = VM_ENV_PREV_EP(ep);
+            box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+        }
+        goto stop;
+    }
+
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        if (!cfp) {
+            goto stop;
+        }
+        if (cfp >= eocfp) {
+            kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
+            goto stop;
+        }
+        ep = cfp->ep;
+        box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+        if (!ep) {
+            goto stop;
+        }
+    }
+
+    while (!VM_ENV_LOCAL_P(ep)) {
+        ep = VM_ENV_PREV_EP(ep);
+        box_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+    }
+
+  stop:
+    kprintf("\n");
+    return true;
+
   error:
     return false;
 }
@@ -490,7 +750,8 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 }
 
 #if defined __APPLE__
-# if __DARWIN_UNIX03
+# include <AvailabilityMacros.h>
+# if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 #   define MCTX_SS_REG(reg) __ss.__##reg
 # else
 #   define MCTX_SS_REG(reg) ss.reg
@@ -502,11 +763,27 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(HAVE_LIBUNWIND_H)
+# elif defined(__APPLE__) && defined(HAVE_LIBUNWIND_H) \
+    && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  include <sys/mman.h>
 #  undef backtrace
+
+#  if defined(__arm64__) || defined(__POWERPC__)
+static bool
+is_coroutine_start(unw_word_t ip)
+{
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    struct coroutine_context;
+    extern void ruby_coroutine_start(struct coroutine_context *, struct coroutine_context *);
+    return ((void *)(ip) == (void *)ruby_coroutine_start);
+#else
+    return false;
+#endif
+}
+#  endif
+
 int
 backtrace(void **trace, int size)
 {
@@ -602,20 +879,28 @@ darwin_sigtramp:
     }
     return n;
 
-#  else /* defined(__arm64__) */
+#  elif defined(__arm64__) || defined(__POWERPC__)
     /* Since Darwin arm64's _sigtramp is implemented as normal function,
      * unwind can unwind frames without special code.
      * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
      */
     while (unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
+#   if defined(__arm64__)
         // Strip Arm64's pointer authentication.
         // https://developer.apple.com/documentation/security/preparing_your_app_to_work_with_pointer_authentication
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
+#   else
+        trace[n++] = (void *)ip;
+#   endif
+        // Apple's libunwind can't handle our coroutine switching code
+        if (is_coroutine_start(ip)) break;
     }
     return n;
+#  else
+#    error unsupported architecture
 #  endif
 }
 # elif defined(BROKEN_BACKTRACE)
@@ -753,7 +1038,7 @@ dump_thread(void *arg)
                     frame.AddrFrame.Offset = context.Rbp;
                     frame.AddrStack.Mode = AddrModeFlat;
                     frame.AddrStack.Offset = context.Rsp;
-#elif defined(__aarch64__)
+#elif defined(_M_ARM64) || defined(__aarch64__)
                     mac = IMAGE_FILE_MACHINE_ARM64;
                     frame.AddrPC.Mode = AddrModeFlat;
                     frame.AddrPC.Offset = context.Pc;
@@ -997,8 +1282,6 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
 #   elif defined __loongarch64
         dump_machine_register(mctx->__gregs[LARCH_REG_SP], "sp");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0], "a0");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+1], "a1");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+2], "a2");
@@ -1007,10 +1290,10 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+5], "a5");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+6], "a6");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+8], "fp");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+1], "s1");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+2], "s2");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S2], "s2");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+3], "s3");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+4], "s4");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+5], "s5");
@@ -1097,6 +1380,7 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 bool
 rb_vm_bugreport(const void *ctx, FILE *errout)
 {
+    const char *box_env = getenv("RUBY_BUGREPORT_BOX_ENV");
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
         char buf[0x100];
@@ -1127,10 +1411,22 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
+    const rb_box_t *current_box = rb_current_box_in_crash_report();
     const rb_execution_context_t *ec = rb_current_execution_context(false);
+    VALUE loaded_features;
+
+    if (current_box) {
+        loaded_features = current_box->loaded_features;
+    }
+    else {
+        loaded_features = rb_root_box()->loaded_features;
+    }
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
+        if (box_env) {
+            rb_vmdebug_box_env_dump_raw(ec, ec->cfp, errout);
+        }
         rb_backtrace_print_as_bugreport(errout);
         kputs("\n");
         // If we get here, hopefully things are intact enough that
@@ -1140,6 +1436,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 "---------------------------------------------------\n");
         kprintf("Total ractor count: %u\n", vm->ractor.cnt);
         kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
+        if (ec->thread_ptr->scheduler != Qnil) {
+            kprintf("Note that the Fiber scheduler is enabled\n");
+        }
         kputs("\n");
     }
 
@@ -1172,10 +1471,24 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                     LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
             kprintf("\n");
         }
-        if (vm->loaded_features) {
+        if (rb_box_available()) {
+            kprintf("* Ruby Box: enabled\n");
+            if (current_box) {
+                kprintf("* Current box id: %ld, type: %s\n",
+                        current_box->box_id,
+                        BOX_USER_P(current_box) ? (BOX_MAIN_P(current_box) ? "main" : "user") : "root");
+            }
+            else {
+                kprintf("* Current box: NULL (crashed)\n");
+            }
+        }
+        else {
+            kprintf("* Ruby Box: disabled\n");
+        }
+        if (loaded_features) {
             kprintf("* Loaded features:\n\n");
-            for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-                name = RARRAY_AREF(vm->loaded_features, i);
+            for (i=0; i<RARRAY_LEN(loaded_features); i++) {
+                name = RARRAY_AREF(loaded_features, i);
                 if (RB_TYPE_P(name, T_STRING)) {
                     kprintf(" %4d %.*s\n", i,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
@@ -1208,7 +1521,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifdef PROC_MAPS_NAME
+#ifndef RUBY_ASAN_ENABLED
+# ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
             if (fp) {
@@ -1225,9 +1539,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 kprintf("\n\n");
             }
         }
-#endif /* __linux__ */
-#ifdef HAVE_LIBPROCSTAT
-# define MIB_KERN_PROC_PID_LEN 4
+# endif /* __linux__ */
+# ifdef HAVE_LIBPROCSTAT
+#  define MIB_KERN_PROC_PID_LEN 4
         int mib[MIB_KERN_PROC_PID_LEN];
         struct kinfo_proc kp;
         size_t len = sizeof(struct kinfo_proc);
@@ -1245,8 +1559,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
             procstat_close(prstat);
             kprintf("\n");
         }
-#endif /* __FreeBSD__ */
-#ifdef __APPLE__
+# endif /* __FreeBSD__ */
+# ifdef __APPLE__
         vm_address_t addr = 0;
         vm_size_t size = 0;
         struct vm_region_submap_info map;
@@ -1269,18 +1583,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
                     ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
-#ifdef HAVE_LIBPROC_H
+#  ifdef HAVE_LIBPROC_H
                 char buff[PATH_MAX];
                 if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
                     kprintf(" %s", buff);
                 }
-#endif
+#  endif
                 kprintf("\n");
             }
 
             addr += size;
             size = 0;
         }
+# endif
 #endif
     }
     return true;

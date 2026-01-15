@@ -11,8 +11,10 @@ describe "BasicObject#equal?" do
   it "is unaffected by overriding __id__" do
     o1 = mock("object")
     o2 = mock("object")
-    def o1.__id__; 10; end
-    def o2.__id__; 10; end
+    suppress_warning {
+      def o1.__id__; 10; end
+      def o2.__id__; 10; end
+    }
     o1.equal?(o2).should be_false
   end
 

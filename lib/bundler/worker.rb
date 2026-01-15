@@ -88,7 +88,7 @@ module Bundler
 
       @threads = Array.new(@size) do |i|
         Thread.start { process_queue(i) }.tap do |thread|
-          thread.name = "#{name} Worker ##{i}" if thread.respond_to?(:name=)
+          thread.name = "#{name} Worker ##{i}"
         end
       rescue ThreadError => e
         creation_errors << e

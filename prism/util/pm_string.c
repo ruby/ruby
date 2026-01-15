@@ -1,5 +1,7 @@
 #include "prism/util/pm_string.h"
 
+static const uint8_t empty_source[] = "";
+
 /**
  * Returns the size of the pm_string_t struct. This is necessary to allocate the
  * correct amount of memory in the FFI backend.
@@ -133,8 +135,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         pm_string_file_handle_close(&handle);
-        const uint8_t source[] = "";
-        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = empty_source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }
 
@@ -182,13 +183,13 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        const uint8_t source[] = "";
-        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = empty_source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
+        close(fd);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
@@ -224,8 +225,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         pm_string_file_handle_close(&handle);
-        const uint8_t source[] = "";
-        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = empty_source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }
 
@@ -277,8 +277,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     size_t size = (size_t) sb.st_size;
     if (size == 0) {
         close(fd);
-        const uint8_t source[] = "";
-        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = empty_source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }
 

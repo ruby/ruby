@@ -46,14 +46,14 @@
 # The stream has a _position_, which is the index of an entry in the directory:
 #
 # - The initial position is zero (before the first entry).
-# - \Method #tell (aliased as #pos) returns the position.
-# - \Method #pos= sets the position (but ignores a value outside the stream),
+# - Method #tell (aliased as #pos) returns the position.
+# - Method #pos= sets the position (but ignores a value outside the stream),
 #   and returns the position.
-# - \Method #seek is like #pos=, but returns +self+ (convenient for chaining).
-# - \Method #read, if not at end-of-stream, reads the next entry and increments
+# - Method #seek is like #pos=, but returns +self+ (convenient for chaining).
+# - Method #read, if not at end-of-stream, reads the next entry and increments
 #   the position;
 #   if at end-of-stream, does not increment the position.
-# - \Method #rewind sets the position to zero.
+# - Method #rewind sets the position to zero.
 #
 # Examples (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
 #
@@ -83,7 +83,7 @@
 #
 # == What's Here
 #
-# First, what's elsewhere. \Class \Dir:
+# First, what's elsewhere. Class \Dir:
 #
 # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 # - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
@@ -178,7 +178,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.open('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.open('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.open('.', encoding: Encoding::US_ASCII).read.encoding # => #<Encoding:US-ASCII>
   #
   def self.open(name, encoding: nil, &block)
     dir = Primitive.dir_s_open(name, encoding)
@@ -206,7 +206,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.new('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.new('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.new('.', encoding: Encoding::US_ASCI).read.encoding # => #<Encoding:US-ASCII>
   #
   def initialize(name, encoding: nil)
     Primitive.dir_initialize(name, encoding)
@@ -224,8 +224,8 @@ class Dir
   end
 
   # call-seq:
-  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) -> array
-  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) {|entry_name| ... } -> nil
+  #   Dir.glob(patterns, flags: 0, base: nil, sort: true) -> array
+  #   Dir.glob(patterns, flags: 0, base: nil, sort: true) {|entry_name| ... } -> nil
   #
   # Forms an array _entry_names_ of the entry names selected by the arguments.
   #

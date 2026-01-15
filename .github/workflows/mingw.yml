@@ -30,16 +30,30 @@ permissions:
 #
 jobs:
   make:
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.os }}
 
     name: ${{ github.workflow }} (${{ matrix.msystem }})
 
     env:
       MSYSTEM: ${{ matrix.msystem }}
-      MSYS2_ARCH: x86_64
-      CHOST: 'x86_64-w64-mingw32'
-      CFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
-      CXXFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      MSYS2_ARCH: >-
+        ${{
+        contains(matrix.msystem, 'arm64') && 'aarch64' ||
+        contains(matrix.msystem, '64') && 'x86_64' || 'i686'
+        }}
+      MINGW_PACKAGE_PREFIX: >-
+        mingw-w${{
+        endsWith(matrix.msystem, '64') && '64' || '32'
+        }}-${{
+        startsWith(matrix.msystem, 'clang') && 'clang' ||
+        startsWith(matrix.msystem, 'ucrt') && 'ucrt' ||
+        'mingw'
+        }}-${{
+        contains(matrix.msystem, 'arm64') && 'aarch64' ||
+        endsWith(matrix.msystem, '64') && 'x86_64' || 'i686'
+        }}
+      CFLAGS: '-mtune=generic -O3 -pipe'
+      CXXFLAGS: '-mtune=generic -O3 -pipe'
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -48,56 +62,111 @@ jobs:
       matrix:
         include:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
+          # Ruby 3.2 is the first Windows Ruby to use OpenSSL 3.x
           - msystem: 'UCRT64'
-            baseruby: '3.0'
+            os: 2022
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
+          - msystem: 'CLANGARM64'
+            os: 11-arm
+            test_task: 'check'
       fail-fast: false
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
+        id: msys2
         with:
-          ruby-version: ${{ matrix.baseruby }}
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git
+            make
+            ruby
+            autoconf
+            ${{ env.MINGW_PACKAGE_PREFIX }}-gcc
+            ${{ env.MINGW_PACKAGE_PREFIX }}-ragel
+            ${{ env.MINGW_PACKAGE_PREFIX }}-openssl
+            ${{ env.MINGW_PACKAGE_PREFIX }}-libyaml
+            ${{ env.MINGW_PACKAGE_PREFIX }}-libffi
 
-      - name: where check
-        run: |
-          # show where
-          mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
-          mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
-          result=true
-          for e in gcc.exe ragel.exe make.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
-            echo ::group::$'\033[93m'$e$'\033[m'
-            where $e || result=false
-            echo ::endgroup::
-          done
-          $result
+      - name: Set up env
+        id: setup-env
         working-directory:
-
-      - name: version check
         run: |
-          # show version
-          result=true
-          for e in gcc ragel make "openssl version"; do
-            case "$e" in *" "*) ;; *) e="$e --version";; esac
-            echo ::group::$'\033[93m'$e$'\033[m'
-            $e || result=false
-            echo ::endgroup::
-          done
-          $result
-        working-directory:
+          $msys2 = ${env:MSYS2_LOCATION}
+          $msystem = ${env:MSYSTEM}.ToLower()
+          echo $msys2\usr\bin $msys2\$msystem\bin |
+            Tee-Object ${env:GITHUB_PATH} -Append -Encoding utf-8
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+          # Use the fast device for the temporary directory.
+          # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+          # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+          $tmp = ${env:RUNNER_TEMP}
+          echo HOME=$home TMP=$tmp TEMP=$tmp TMPDIR=$tmp |
+            Tee-Object ${env:GITHUB_ENV} -Append -Encoding utf-8
+        shell: pwsh             # cmd.exe does not strip spaces before `|`.
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          MSYSTEM: ${{ matrix.msystem }}
+
+      - name: Remove Strawberry Perl pkg-config
+        working-directory:
+        # `pkg-config.bat` included in Strawberry Perl is written in
+        # Perl and doesn't work when another msys2 `perl` precede its
+        # own `perl`.
+        #
+        # ```
+        # Can't find C:\Strawberry\perl\bin\pkg-config.bat on PATH, '.' not in PATH.
+        # ```
+        run: |
+          Get-Command pkg-config.bat | % { ren $_.path ($_.path + "~") }
+        shell: pwsh
+
+      - name: Misc system & package info
+        working-directory:
+        run: |
+          group() { echo ::group::$'\e[94;1m'"$*"$'\e[m'; }
+          endgroup() { echo ::endgroup::; }
+
+          group Path
+          cygpath -wa / . $(type -p cygpath bash sh)
+          endgroup
+
+          I() {
+              group $1
+              run Where type -pa $1 && { [ $# -eq 1 ] || run Version "$@"; } ||
+                  failed+=($1)
+              endgroup
+          }
+          run() { local w m=$1; shift; w="$("$@")" && show "$m" && indent "$w"; }
+          indent() { [ -z "$1" ] || echo "$1" | /bin/sed '/^$/!s/^/  /'; }
+          show() { echo $'\e[96m'"$*"$'\e[m'; }
+
+          failed=()
+
+          I gcc.exe --version
+          I ragel.exe --version
+          I make.exe --version
+          I openssl.exe version
+          I libcrypto-3-x64.dll
+          I libssl-3-x64.dll
+
+          group Packages
+          pacman -Qs $MINGW_PACKAGE_PREFIX-* | /bin/sed -n "s,local/$MINGW_PACKAGE_PREFIX-,,p"
+          endgroup
+
+          [ ${#failed[@]} -eq 0 ]
+        shell: sh
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -114,10 +183,13 @@ jobs:
         run: >
           ../src/configure --disable-install-doc --prefix=/.
           --build=$CHOST --host=$CHOST --target=$CHOST
+        shell: sh
+        env:
+          CHOST: ${{ env.MSYS2_ARCH }}-w64-mingw32
 
       - name: make all
         timeout-minutes: 30
-        run: make
+        run: make -j4
 
       - name: make install
         run: make DESTDIR=../install install-nodoc
@@ -126,18 +198,16 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           os: windows-2022
-          # If we support new test task, we need to change this test-opts.
-          test-opts: --retry --job-status=normal --show-skip --timeout-scale=1.5
-            ${{ matrix.test-all-opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          test-tasks: '["test", "test-all", "test-spec"]'
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: test
         timeout-minutes: 30
-        run: make test
-        shell: cmd
+        run: make test test-tool
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
@@ -145,12 +215,11 @@ jobs:
 
       - name: test-all
         timeout-minutes: 45
-        shell: cmd
         run: |
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
-            --retry --job-status=normal --show-skip --timeout-scale=1.5
+            --retry --job-status=normal --show-skip --timeout-scale=1.5 -j4
             ${{ matrix.test-all-opts }}
             ${{ env.TESTS }}
           BUNDLER_VERSION:
@@ -160,7 +229,6 @@ jobs:
         timeout-minutes: 10
         run: |
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
-        shell: cmd
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
       - uses: ./src/.github/actions/slack
@@ -172,4 +240,4 @@ jobs:
 defaults:
   run:
     working-directory: build
-    shell: sh
+    shell: cmd

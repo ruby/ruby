@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-
-require "ripper"
+# :markup: markdown
 
 module Prism
   module Translation
@@ -70,7 +69,7 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(src, filepath: filename, line: lineno)
+        result = Prism.lex_compat(src, filepath: filename, line: lineno, version: "current")
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
@@ -425,8 +424,33 @@ module Prism
         end
       end
 
+      autoload :Lexer, "prism/translation/ripper/lexer"
       autoload :SexpBuilder, "prism/translation/ripper/sexp"
       autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
+
+      # :stopdoc:
+      # This is not part of the public API but used by some gems.
+
+      # Ripper-internal bitflags.
+      LEX_STATE_NAMES = %i[
+        BEG END ENDARG ENDFN ARG CMDARG MID FNAME DOT CLASS LABEL LABELED FITEM
+      ].map.with_index.to_h { |name, i| [2 ** i, name] }.freeze
+      private_constant :LEX_STATE_NAMES
+
+      LEX_STATE_NAMES.each do |value, key|
+        const_set("EXPR_#{key}", value)
+      end
+      EXPR_NONE = 0
+      EXPR_VALUE = EXPR_BEG
+      EXPR_BEG_ANY = EXPR_BEG | EXPR_MID | EXPR_CLASS
+      EXPR_ARG_ANY = EXPR_ARG | EXPR_CMDARG
+      EXPR_END_ANY = EXPR_END | EXPR_ENDARG | EXPR_ENDFN
+
+      def self.lex_state_name(state)
+        LEX_STATE_NAMES.filter_map { |flag, name| name if state & flag != 0  }.join("|")
+      end
+
+      # :startdoc:
 
       # The source that is being parsed.
       attr_reader :source
@@ -1045,10 +1069,20 @@ module Prism
             bounds(node.location)
             on_unary(node.name, receiver)
           when :!
-            receiver = visit(node.receiver)
+            if node.message == "not"
+              receiver =
+                if !node.receiver.is_a?(ParenthesesNode) || !node.receiver.body.nil?
+                  visit(node.receiver)
+                end
 
-            bounds(node.location)
-            on_unary(node.message == "not" ? :not : :!, receiver)
+              bounds(node.location)
+              on_unary(:not, receiver)
+            else
+              receiver = visit(node.receiver)
+
+              bounds(node.location)
+              on_unary(:!, receiver)
+            end
           when *BINARY_OPERATORS
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
@@ -1605,8 +1639,23 @@ module Prism
       # defined?(a)
       # ^^^^^^^^^^^
       def visit_defined_node(node)
+        expression = visit(node.value)
+
+        # Very weird circumstances here where something like:
+        #
+        #     defined?
+        #     (1)
+        #
+        # gets parsed in Ruby as having only the `1` expression but in Ripper it
+        # gets parsed as having a parentheses node. In this case we need to
+        # synthesize that node to match Ripper's behavior.
+        if node.lparen_loc && node.keyword_loc.join(node.lparen_loc).slice.include?("\n")
+          bounds(node.lparen_loc.join(node.rparen_loc))
+          expression = on_paren(on_stmts_add(on_stmts_new, expression))
+        end
+
         bounds(node.location)
-        on_defined(visit(node.value))
+        on_defined(expression)
       end
 
       # if foo then bar else baz end
@@ -3269,11 +3318,7 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||=
-          begin
-            scopes = RUBY_VERSION >= "3.3.0" ? [] : [[]]
-            Prism.parse(source, scopes: scopes)
-          end
+        @result ||= Prism.parse(source, partial_script: true, version: "current")
       end
 
       ##########################################################################

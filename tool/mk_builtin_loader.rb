@@ -6,7 +6,23 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[leaf inline_block use_block]
+BUILTIN_ATTRS = %w[leaf inline_block use_block c_trace]
+
+module CompileWarning
+  @@warnings = 0
+
+  def warn(message)
+    @@warnings += 1
+    super
+  end
+
+  def self.reset
+    w, @@warnings = @@warnings, 0
+    w.nonzero?
+  end
+end
+
+Warning.extend CompileWarning
 
 def string_literal(lit, str = [])
   while lit
@@ -266,17 +282,22 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 
   # Avoid generating fetches of lvars we don't need. This is imperfect as it
   # will match text inside strings or other false positives.
-  local_candidates = text.scan(/[a-zA-Z_][a-zA-Z0-9_]*/)
+  local_ptrs = []
+  local_candidates = text.gsub(/\bLOCAL_PTR\(\K[a-zA-Z_][a-zA-Z0-9_]*(?=\))/) {
+    local_ptrs << $&; ''
+  }.scan(/[a-zA-Z_][a-zA-Z0-9_]*/)
 
   f.puts '{'
   lineno += 1
   # locals is nil outside methods
   locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
-    next unless local_candidates.include?(param.to_s)
+    param = param.to_s
+    lvar = local_candidates.include?(param)
+    next unless lvar or local_ptrs.include?(param)
     f.puts "VALUE *const #{param}__ptr = (VALUE *)&ec->cfp->ep[#{-3 - i}];"
-    f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;"
-    lineno += 1
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;" if lvar
+    lineno += lvar ? 2 : 1
   }
   f.puts "#line #{body_lineno} \"#{line_file}\""
   lineno += 1
@@ -300,7 +321,15 @@ def mk_builtin_header file
 
   # bs = { func_name => argc }
   code = File.read(file)
-  collect_iseq RubyVM::InstructionSequence.compile(code).to_a
+  begin
+    verbose, $VERBOSE = $VERBOSE, true
+    collect_iseq RubyVM::InstructionSequence.compile(code, base).to_a
+  ensure
+    $VERBOSE = verbose
+  end
+  if warnings = CompileWarning.reset
+    raise "#{warnings} warnings in #{file}"
+  end
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   StringIO.open do |f|

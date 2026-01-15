@@ -7,12 +7,6 @@ require_relative "installer/gem_installer"
 
 module Bundler
   class Installer
-    class << self
-      attr_accessor :ambiguous_gems
-
-      Installer.ambiguous_gems = []
-    end
-
     attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
@@ -77,12 +71,9 @@ module Bundler
           return
         end
 
-        if resolve_if_needed(options)
+        if @definition.setup_domain!(options)
           ensure_specs_are_compatible!
-          Bundler.load_plugins(@definition)
-          options.delete(:jobs)
-        else
-          options[:jobs] = 1 # to avoid the overhead of Bundler::Worker
+          load_plugins
         end
         install(options)
 
@@ -94,6 +85,11 @@ module Bundler
     end
 
     def generate_bundler_executable_stubs(spec, options = {})
+      if spec.name == "bundler"
+        Bundler.ui.warn "Bundler itself does not use binstubs because its version is selected by RubyGems"
+        return
+      end
+
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
         spec.runtime_dependencies.each do |dep|
@@ -118,10 +114,6 @@ module Bundler
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
       template_path = File.expand_path("templates/Executable", __dir__)
-      if spec.name == "bundler"
-        template_path += ".bundler"
-        spec.executables = %(bundle)
-      end
       template = File.read(template_path)
 
       exists = []
@@ -196,24 +188,34 @@ module Bundler
     def install(options)
       standalone = options[:standalone]
       force = options[:force]
-      local = options[:local]
-      jobs = installation_parallelization(options)
+      local = options[:local] || options[:"prefer-local"]
+      jobs = installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
     end
 
-    def installation_parallelization(options)
-      if jobs = options.delete(:jobs)
-        return jobs
-      end
-
+    def installation_parallelization
       if jobs = Bundler.settings[:jobs]
         return jobs
       end
 
       Bundler.settings.processor_count
+    end
+
+    def load_plugins
+      Gem.load_plugins
+
+      requested_path_gems = @definition.specs.select {|s| s.source.is_a?(Source::Path) }
+      path_plugin_files = requested_path_gems.flat_map do |spec|
+        spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
+      end
+      Gem.load_plugin_files(path_plugin_files)
+      Gem.load_env_plugins
     end
 
     def ensure_specs_are_compatible!
@@ -226,19 +228,6 @@ module Bundler
           raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
             "which is incompatible with the current version, #{Gem.rubygems_version}"
         end
-      end
-    end
-
-    # returns whether or not a re-resolve was needed
-    def resolve_if_needed(options)
-      @definition.prefer_local! if options[:"prefer-local"]
-
-      if options[:local] || (@definition.no_resolve_needed? && !@definition.missing_specs?)
-        @definition.resolve_with_cache!
-        false
-      else
-        @definition.resolve_remotely!
-        true
       end
     end
 

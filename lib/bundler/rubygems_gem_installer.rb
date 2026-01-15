@@ -23,7 +23,9 @@ module Bundler
         FileUtils.mkdir_p gem_dir, mode: 0o755
       end
 
-      extract_files
+      SharedHelpers.filesystem_access(gem_dir, :write) do
+        extract_files
+      end
 
       build_extensions if spec.extensions.any?
       write_build_info_file
@@ -67,7 +69,7 @@ module Bundler
     end
 
     def generate_plugins
-      return unless Gem::Installer.instance_methods(false).include?(:generate_plugins)
+      return unless Gem::Installer.method_defined?(:generate_plugins, false)
 
       latest = Gem::Specification.stubs_for(spec.name).first
       return if latest && latest.version > spec.version
@@ -99,6 +101,10 @@ module Bundler
 
         generate_windows_script filename, bindir
       end
+    end
+
+    def build_jobs
+      Bundler.settings[:jobs] || super
     end
 
     def build_extensions
@@ -145,7 +151,6 @@ module Bundler
       SharedHelpers.filesystem_access(extension_dir, :create) do
         FileUtils.mkdir_p extension_dir
       end
-      require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
     end
 
     def strict_rm_rf(dir)

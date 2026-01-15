@@ -77,7 +77,7 @@ describe "C-API Regexp function" do
     end
 
     it "returns MatchData when used with rb_reg_match" do
-       @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
+      @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
     end
   end
 
@@ -110,7 +110,7 @@ describe "C-API Regexp function" do
     end
   end
 
-  describe "rb_memicmp" do
+  describe "rb_memcicmp" do
     it "returns 0 for identical strings" do
       @p.rb_memcicmp('Hello', 'Hello').should == 0
     end

@@ -60,6 +60,20 @@ describe "StringScanner#scan" do
     -> { @s.scan(:test)     }.should raise_error(TypeError)
     -> { @s.scan(mock('x')) }.should raise_error(TypeError)
   end
+
+  describe "#[] successive call with a capture group name" do
+    it "returns matched substring when matching succeeded" do
+      @s.scan(/(?<a>This)/)
+      @s.should.matched?
+      @s[:a].should == "This"
+    end
+
+    it "returns nil when matching failed" do
+      @s.scan(/(?<a>2008)/)
+      @s.should_not.matched?
+      @s[:a].should be_nil
+    end
+  end
 end
 
 describe "StringScanner#scan with fixed_anchor: true" do

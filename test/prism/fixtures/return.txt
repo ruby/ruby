@@ -22,3 +22,6 @@ return()
 
 return(1)
 
+(return 1)
+
+foo && (return 1)

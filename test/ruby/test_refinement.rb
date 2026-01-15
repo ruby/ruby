@@ -1824,13 +1824,7 @@ class TestRefinement < Test::Unit::TestCase
       end
     }.refinements
     assert_equal(Integer, refinements[0].target)
-    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
-      assert_equal(Integer, refinements[0].refined_class)
-    end
     assert_equal(String, refinements[1].target)
-    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
-      assert_equal(String, refinements[1].refined_class)
-    end
   end
 
   def test_warn_setconst_in_refinmenet
@@ -1936,6 +1930,29 @@ class TestRefinement < Test::Unit::TestCase
 
       using PublicCows
       assert_equal("Moo", Cow.new.moo, bug12729)
+    end;
+  end
+
+  def test_public_in_refine_for_method_in_superclass
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug21446 = '[ruby-core:122558] [Bug #21446]'
+
+      class CowSuper
+        private
+        def moo() "Moo"; end
+      end
+      class Cow < CowSuper
+      end
+
+      module PublicCows
+        refine(Cow) {
+          public :moo
+        }
+      end
+
+      using PublicCows
+      assert_equal("Moo", Cow.new.moo, bug21446)
     end;
   end
 
@@ -2716,6 +2733,30 @@ class TestRefinement < Test::Unit::TestCase
 
       Foo.new.test
     INPUT
+  end
+
+  def test_refined_module_method
+    m = Module.new {
+      x = Module.new {def qux;end}
+      refine(x) {def qux;end}
+      break x
+    }
+    extend m
+    meth = method(:qux)
+    assert_equal m, meth.owner
+    assert_equal :qux, meth.name
+  end
+
+  def test_symbol_proc_from_using_scope
+    # assert_separately to contain the side effects of refining Kernel
+    assert_separately([], <<~RUBY)
+      class RefinedScope
+        using(Module.new { refine(Kernel) { def itself = 0 } })
+        ITSELF = :itself.to_proc
+      end
+
+      assert_equal(1, RefinedScope::ITSELF[1], "[Bug #21265]")
+    RUBY
   end
 
   private

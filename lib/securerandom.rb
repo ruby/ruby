@@ -41,7 +41,7 @@ require 'random/formatter'
 module SecureRandom
 
   # The version
-  VERSION = "0.3.1"
+  VERSION = "0.4.1"
 
   class << self
     # Returns a random binary string containing +size+ bytes.
@@ -50,6 +50,12 @@ module SecureRandom
     def bytes(n)
       return gen_random(n)
     end
+
+    # Compatibility methods for Ruby 3.2, we can remove this after dropping to support Ruby 3.2
+    def alphanumeric(n = nil, chars: ALPHANUMERIC)
+      n = 16 if n.nil?
+      choose(chars, n)
+    end if RUBY_VERSION < '3.3'
 
     private
 

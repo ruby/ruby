@@ -24,7 +24,7 @@ RSpec.describe "process lock spec" do
     context "when creating a lock raises Errno::ENOTSUP" do
       before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
 
-      it "skips creating the lock file and yields" do
+      it "skips creating the lockfile and yields" do
         processed = false
         Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
 
@@ -35,7 +35,7 @@ RSpec.describe "process lock spec" do
     context "when creating a lock raises Errno::EPERM" do
       before { allow(File).to receive(:open).and_raise(Errno::EPERM) }
 
-      it "skips creating the lock file and yields" do
+      it "skips creating the lockfile and yields" do
         processed = false
         Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
 
@@ -46,7 +46,7 @@ RSpec.describe "process lock spec" do
     context "when creating a lock raises Errno::EROFS" do
       before { allow(File).to receive(:open).and_raise(Errno::EROFS) }
 
-      it "skips creating the lock file and yields" do
+      it "skips creating the lockfile and yields" do
         processed = false
         Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
 

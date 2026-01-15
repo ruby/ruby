@@ -367,10 +367,10 @@ Outstanding ones only.
     * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
 
+* Thread
+
     * Thread#join invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]
-
-* Thread
 
     * Thread.ignore_deadlock accessor has been added for disabling the
       default deadlock detection, allowing the use of signal handlers to
@@ -741,7 +741,7 @@ end
 foo(42)
 ```
 
-```
+```console
 $ typeprof test.rb
 # Classes
 class Object

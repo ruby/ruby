@@ -55,4 +55,24 @@ RSpec.describe Bundler::StubSpecification do
       expect(stub.missing_extensions?).to be true
     end
   end
+
+  describe "#activated?" do
+    it "returns true after activation" do
+      stub = described_class.from_stub(with_bundler_stub_spec)
+
+      expect(stub.activated?).to be_falsey
+      stub.activated = true
+      expect(stub.activated?).to be true
+    end
+
+    it "returns true after activation if the underlying stub is a `Gem::StubSpecification`" do
+      spec_path = File.join(File.dirname(__FILE__), "specifications", "foo.gemspec")
+      gem_stub = Gem::StubSpecification.new(spec_path, File.dirname(__FILE__),"","")
+      stub = described_class.from_stub(gem_stub)
+
+      expect(stub.activated?).to be_falsey
+      stub.activated = true
+      expect(stub.activated?).to be true
+    end
+  end
 end

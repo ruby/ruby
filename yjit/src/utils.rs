@@ -3,6 +3,7 @@
 use crate::backend::ir::*;
 use crate::cruby::*;
 use std::slice;
+use std::os::raw::c_int;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
 /// Implementation conditional on the cast preserving the numeric value on
@@ -91,10 +92,7 @@ pub fn ruby_str_to_rust(v: VALUE) -> String {
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { slice::from_raw_parts(str_ptr, str_len) };
-    match String::from_utf8(str_slice.to_vec()) {
-        Ok(utf8) => utf8,
-        Err(_) => String::new(),
-    }
+    String::from_utf8(str_slice.to_vec()).unwrap_or_default()
 }
 
 // Location is the file defining the method, colon, method name.
@@ -162,8 +160,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
         }
     }
 
-    asm.cpush_all();
-
     let argument = match opnd {
         Opnd::Mem(_) | Opnd::Reg(_) | Opnd::InsnOut { .. } => {
             // Sign-extend the value if necessary
@@ -178,7 +174,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
     };
 
     asm.ccall(print_int_fn as *const u8, vec![argument]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a pointer
@@ -191,9 +186,7 @@ pub fn print_ptr(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(opnd.rm_num_bits() == 64);
 
-    asm.cpush_all();
     asm.ccall(print_ptr_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a value
@@ -206,9 +199,7 @@ pub fn print_value(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(matches!(opnd, Opnd::Value(_)));
 
-    asm.cpush_all();
     asm.ccall(print_value_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print constant string to stdout
@@ -223,7 +214,6 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
         }
     }
 
-    asm.cpush_all();
 
     let string_data = asm.new_label("string_data");
     let after_string = asm.new_label("after_string");
@@ -235,8 +225,14 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
 
     let opnd = asm.lea_jump_target(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
+}
 
-    asm.cpop_all();
+pub fn stdout_supports_colors() -> bool {
+    // TODO(max): Use std::io::IsTerminal after upgrading Rust to 1.70
+    extern "C" { fn isatty(fd: c_int) -> c_int; }
+    let stdout = 1;
+    let is_terminal = unsafe { isatty(stdout) } == 1;
+    is_terminal
 }
 
 #[cfg(test)]

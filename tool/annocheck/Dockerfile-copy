@@ -1,4 +1,4 @@
-FROM docker.io/fedora:latest
+FROM ghcr.io/ruby/fedora:latest
 ARG IN_DIR
 
 RUN dnf -y install annobin-annocheck

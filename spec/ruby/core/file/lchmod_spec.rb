@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "File.lchmod" do
-  platform_is_not :linux, :windows, :openbsd, :solaris, :aix do
+  platform_is_not :linux, :windows, :openbsd, :aix do
     before :each do
       @fname = tmp('file_chmod_test')
       @lname = @fname + '.lnk'

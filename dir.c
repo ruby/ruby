@@ -22,10 +22,6 @@
 #include <unistd.h>
 #endif
 
-#ifndef O_CLOEXEC
-#  define O_CLOEXEC 0
-#endif
-
 #ifndef USE_OPENDIR_AT
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD) && \
     defined(HAVE_OPENAT) && defined(HAVE_FSTATAT)
@@ -35,8 +31,12 @@
 # endif
 #endif
 
-#if USE_OPENDIR_AT
-# include <fcntl.h>
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
+
+#ifndef O_CLOEXEC
+#  define O_CLOEXEC 0
 #endif
 
 #undef HAVE_DIRENT_NAMLEN
@@ -1480,7 +1480,7 @@ rb_dir_getwd_ospath(void)
     VALUE cwd;
     VALUE path_guard;
 
-    path_guard = rb_imemo_tmpbuf_auto_free_pointer();
+    path_guard = rb_imemo_tmpbuf_new();
     path = ruby_getcwd();
     rb_imemo_tmpbuf_set_ptr(path_guard, path);
 #ifdef __APPLE__
@@ -3851,26 +3851,19 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
 
-    /* Document-const: FNM_NOESCAPE
-     * {File::FNM_NOESCAPE}[rdoc-ref:File::Constants@File-3A-3AFNM_NOESCAPE] */
+    /* {File::FNM_NOESCAPE}[rdoc-ref:File::Constants@File-3A-3AFNM_NOESCAPE] */
     rb_file_const("FNM_NOESCAPE", INT2FIX(FNM_NOESCAPE));
-    /* Document-const: FNM_PATHNAME
-     * {File::FNM_PATHNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_PATHNAME] */
+    /* {File::FNM_PATHNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_PATHNAME] */
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
-    /* Document-const: FNM_DOTMATCH
-     * {File::FNM_DOTMATCH}[rdoc-ref:File::Constants@File-3A-3AFNM_DOTMATCH] */
+    /* {File::FNM_DOTMATCH}[rdoc-ref:File::Constants@File-3A-3AFNM_DOTMATCH] */
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
-    /* Document-const: FNM_CASEFOLD
-     * {File::FNM_CASEFOLD}[rdoc-ref:File::Constants@File-3A-3AFNM_CASEFOLD] */
+    /* {File::FNM_CASEFOLD}[rdoc-ref:File::Constants@File-3A-3AFNM_CASEFOLD] */
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
-    /* Document-const: FNM_EXTGLOB
-     * {File::FNM_EXTGLOB}[rdoc-ref:File::Constants@File-3A-3AFNM_EXTGLOB] */
+    /* {File::FNM_EXTGLOB}[rdoc-ref:File::Constants@File-3A-3AFNM_EXTGLOB] */
     rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
-    /* Document-const: FNM_SYSCASE
-     * {File::FNM_SYSCASE}[rdoc-ref:File::Constants@File-3A-3AFNM_SYSCASE] */
+    /* {File::FNM_SYSCASE}[rdoc-ref:File::Constants@File-3A-3AFNM_SYSCASE] */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
-    /* Document-const: FNM_SHORTNAME
-     * {File::FNM_SHORTNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_SHORTNAME] */
+    /* {File::FNM_SHORTNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_SHORTNAME] */
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
 

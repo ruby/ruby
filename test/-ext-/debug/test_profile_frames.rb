@@ -209,8 +209,9 @@ class TestProfileFrames < Test::Unit::TestCase
     profile_frames.shift
 
     # The rest of the stack is expected to look the same...
-    backtrace_locations.zip(profile_frames).each.with_index do |(location, (path, absolute_path, _, base_label, _, _, _, _, _, _, lineno)), i|
+    backtrace_locations.zip(profile_frames).each.with_index do |(location, (path, absolute_path, _, base_label, label, _, _, _, _, _, lineno)), i|
       next if absolute_path == "<cfunc>" # ...except for cfunc frames
+      next if label in "Array#each" | "Array#map" # ...except for :c_trace method frames
 
       err_msg = "#{i}th frame"
       assert_equal(location.absolute_path, absolute_path, err_msg)

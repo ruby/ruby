@@ -243,8 +243,8 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE ncoverages = *(VALUE*)data, v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *poisoned = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
             const rb_method_entry_t *me = (rb_method_entry_t *) v;
@@ -287,7 +287,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
         }
 
         if (poisoned) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0;
@@ -337,7 +337,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
  *     Coverage.peek_result  => hash
  *
  * Returns a hash that contains filename as key and coverage array as value.
- * This is the same as `Coverage.result(stop: false, clear: false)`.
+ * This is the same as <tt>Coverage.result(stop: false, clear: false)</tt>.
  *
  *   {
  *     "file.rb" => [1, 2, nil],
@@ -352,7 +352,6 @@ rb_coverage_peek_result(VALUE klass)
     if (!RTEST(coverages)) {
         rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
-    OBJ_WB_UNPROTECT(coverages);
 
     rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 

@@ -259,6 +259,46 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { BasicObject.dup }
   end
 
+  def test_class_hierarchy_inside_initialize_dup_bug_21538
+    ancestors = sc_ancestors = nil
+    b = Class.new
+    b.define_singleton_method(:initialize_dup) do |x|
+      ancestors = self.ancestors
+      sc_ancestors = singleton_class.ancestors
+      super(x)
+    end
+
+    a = Class.new(b)
+
+    c = a.dup
+
+    expected_ancestors = [c, b, *Object.ancestors]
+    expected_sc_ancestors = [c.singleton_class, b.singleton_class, *Object.singleton_class.ancestors]
+    assert_equal expected_ancestors, ancestors
+    assert_equal expected_sc_ancestors, sc_ancestors
+    assert_equal expected_ancestors, c.ancestors
+    assert_equal expected_sc_ancestors, c.singleton_class.ancestors
+  end
+
+  def test_class_hierarchy_inside_initialize_clone_bug_21538
+    ancestors = sc_ancestors = nil
+    a = Class.new
+    a.define_singleton_method(:initialize_clone) do |x|
+      ancestors = self.ancestors
+      sc_ancestors = singleton_class.ancestors
+      super(x)
+    end
+
+    c = a.clone
+
+    expected_ancestors = [c,  *Object.ancestors]
+    expected_sc_ancestors = [c.singleton_class, *Object.singleton_class.ancestors]
+    assert_equal expected_ancestors, ancestors
+    assert_equal expected_sc_ancestors, sc_ancestors
+    assert_equal expected_ancestors, c.ancestors
+    assert_equal expected_sc_ancestors, c.singleton_class.ancestors
+  end
+
   def test_singleton_class
     assert_raise(TypeError) { 1.extend(Module.new) }
     assert_raise(TypeError) { 1.0.extend(Module.new) }
@@ -283,12 +323,8 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
 
     allocator = Class.instance_method(:allocate)
-    assert_raise_with_message(TypeError, /prohibited/) {
-      allocator.bind(Rational).call
-    }
-    assert_raise_with_message(TypeError, /prohibited/) {
-      allocator.bind_call(Rational)
-    }
+    assert_nothing_raised { allocator.bind(Rational).call }
+    assert_nothing_raised { allocator.bind_call(Rational) }
   end
 
   def test_nonascii_name
@@ -565,7 +601,7 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(FrozenError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen Object/) {
       c.class_eval {def f; end}
     }
   end
@@ -700,9 +736,11 @@ class TestClass < Test::Unit::TestCase
   def test_namescope_error_message
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"
-    assert_raise_with_message(TypeError, /A\u{3042}/) {
-      o::Foo
-    }
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /A\u{3042}/) {
+        o::Foo
+      }
+    end
   end
 
   def test_redefinition_mismatch
@@ -840,5 +878,71 @@ CODE
     klass.new.freeze
     klass.define_method(:bar) {}
     assert_equal klass, klass.remove_method(:bar), '[Bug #19164]'
+  end
+
+  def test_method_table_assignment_just_after_class_init
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", 'm_tbl assignment should be done only when Class object is not promoted'
+    begin;
+      GC.stress = true
+      class C; end
+    end;
+  end
+
+  def test_singleton_cc_invalidation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class T
+        def hi
+          "hi"
+        end
+      end
+
+      t = T.new
+      t.singleton_class
+
+      def hello(t)
+        t.hi
+      end
+
+      5.times do
+        hello(t) # populate inline cache on `t.singleton_class`.
+      end
+
+      class T
+        remove_method :hi # invalidate `t.singleton_class` ccs for `hi`
+      end
+
+      assert_raise NoMethodError do
+        hello(t)
+      end
+    end;
+  end
+
+  def test_safe_multi_ractor_subclasses_list_mutation
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      4.times.map do
+        Ractor.new do
+          20_000.times do
+            Object.new.singleton_class
+          end
+        end
+      end.each(&:join)
+    end;
+  end
+
+  def test_safe_multi_ractor_singleton_class_access
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class A; end
+      4.times.map do
+        Ractor.new do
+          a = A
+          100.times do
+            a = a.singleton_class
+          end
+        end
+      end.each(&:join)
+    end;
   end
 end

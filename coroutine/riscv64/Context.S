@@ -1,11 +1,10 @@
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .text
 .align 2
 
-.global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+.global PREFIXED_SYMBOL(coroutine_transfer)
+PREFIXED_SYMBOL(coroutine_transfer):
 
 	# Make space on the stack for caller registers
 	addi sp, sp, -0xd0

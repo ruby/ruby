@@ -12,7 +12,5 @@ describe "SizedQueue#push" do
 end
 
 describe "SizedQueue operations with timeout" do
-  ruby_version_is "3.2" do
-    it_behaves_like :rb_num2dbl_fails, nil, -> v { q = SizedQueue.new(1); q.push(1, timeout: v) }
-  end
+  it_behaves_like :rb_num2dbl_fails, nil, -> v { q = SizedQueue.new(1); q.push(1, timeout: v) }
 end

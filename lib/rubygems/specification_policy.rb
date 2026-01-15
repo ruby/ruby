@@ -190,9 +190,6 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
   ##
   # Checks that the gem does not depend on itself.
-  # Checks that dependencies use requirements as we recommend.  Warnings are
-  # issued when dependencies are open-ended or overly strict for semantic
-  # versioning.
 
   def validate_dependencies # :nodoc:
     warning_messages = []
@@ -200,39 +197,6 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       if dep.name == @specification.name # warn on self reference
         warning_messages << "Self referencing dependency is unnecessary and strongly discouraged."
       end
-
-      prerelease_dep = dep.requirements_list.any? do |req|
-        Gem::Requirement.new(req).prerelease?
-      end
-
-      warning_messages << "prerelease dependency on #{dep} is not recommended" if
-          prerelease_dep && !@specification.version.prerelease?
-
-      open_ended = dep.requirement.requirements.all? do |op, version|
-        !version.prerelease? && [">", ">="].include?(op)
-      end
-
-      next unless open_ended
-      op, dep_version = dep.requirement.requirements.first
-
-      segments = dep_version.segments
-
-      base = segments.first 2
-
-      recommendation = if [">", ">="].include?(op) && segments == [0]
-        "  use a bounded requirement, such as \"~> x.y\""
-      else
-        bugfix = if op == ">"
-          ", \"> #{dep_version}\""
-        elsif op == ">=" && base != segments
-          ", \">= #{dep_version}\""
-        end
-
-        "  if #{dep.name} is semantically versioned, use:\n" \
-        "    add_#{dep.type}_dependency \"#{dep.name}\", \"~> #{base.join "."}\"#{bugfix}"
-      end
-
-      warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }

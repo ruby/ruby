@@ -159,8 +159,14 @@ class MSpecScript
     end
 
     if config[:formatter]
-      config[:formatter].new(config[:output])
+      config[:formatter] = config[:formatter].new(config[:output])
     end
+
+    if config[:launchable]
+      config[:formatter].extend config[:launchable]
+    end
+
+    config[:formatter]
   end
 
   # Callback for enabling custom actions, etc. This version is a

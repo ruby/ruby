@@ -65,66 +65,64 @@ describe :queue_deq, shared: true do
   end
 
   describe "with a timeout" do
-    ruby_version_is "3.2" do
-      it "returns an item if one is available in time" do
-        q = @object.call
+    it "returns an item if one is available in time" do
+      q = @object.call
 
-        t = Thread.new {
-          q.send(@method, timeout: TIME_TOLERANCE).should == 1
-        }
-        Thread.pass until t.status == "sleep" && q.num_waiting == 1
-        q << 1
-        t.join
-      end
+      t = Thread.new {
+        q.send(@method, timeout: TIME_TOLERANCE).should == 1
+      }
+      Thread.pass until t.status == "sleep" && q.num_waiting == 1
+      q << 1
+      t.join
+    end
 
-      it "returns nil if no item is available in time" do
-        q = @object.call
+    it "returns nil if no item is available in time" do
+      q = @object.call
 
-        Thread.new {
-          q.send(@method, timeout: 0.001).should == nil
-        }.join
-      end
+      Thread.new {
+        q.send(@method, timeout: 0.001).should == nil
+      }.join
+    end
 
-      it "does nothing if the timeout is nil" do
-        q = @object.call
-        t = Thread.new {
-          q.send(@method, timeout: nil).should == 1
-        }
-        Thread.pass until t.status == "sleep" && q.num_waiting == 1
-        q << 1
-        t.join
-      end
+    it "does nothing if the timeout is nil" do
+      q = @object.call
+      t = Thread.new {
+        q.send(@method, timeout: nil).should == 1
+      }
+      Thread.pass until t.status == "sleep" && q.num_waiting == 1
+      q << 1
+      t.join
+    end
 
-      it "immediately returns nil if no item is available and the timeout is 0" do
-        q = @object.call
-        q << 1
-        q.send(@method, timeout: 0).should == 1
-        q.send(@method, timeout: 0).should == nil
-      end
+    it "immediately returns nil if no item is available and the timeout is 0" do
+      q = @object.call
+      q << 1
+      q.send(@method, timeout: 0).should == 1
+      q.send(@method, timeout: 0).should == nil
+    end
 
-      it "raise TypeError if timeout is not a valid numeric" do
-        q = @object.call
-        -> {
-          q.send(@method, timeout: "1")
-        }.should raise_error(TypeError, "no implicit conversion to float from string")
+    it "raise TypeError if timeout is not a valid numeric" do
+      q = @object.call
+      -> {
+        q.send(@method, timeout: "1")
+      }.should raise_error(TypeError, "no implicit conversion to float from string")
 
-        -> {
-          q.send(@method, timeout: false)
-        }.should raise_error(TypeError, "no implicit conversion to float from false")
-      end
+      -> {
+        q.send(@method, timeout: false)
+      }.should raise_error(TypeError, "no implicit conversion to float from false")
+    end
 
-      it "raise ArgumentError if non_block = true is passed too" do
-        q = @object.call
-        -> {
-          q.send(@method, true, timeout: 1)
-        }.should raise_error(ArgumentError, "can't set a timeout if non_block is enabled")
-      end
+    it "raise ArgumentError if non_block = true is passed too" do
+      q = @object.call
+      -> {
+        q.send(@method, true, timeout: 1)
+      }.should raise_error(ArgumentError, "can't set a timeout if non_block is enabled")
+    end
 
-      it "returns nil for a closed empty queue" do
-        q = @object.call
-        q.close
-        q.send(@method, timeout: 0).should == nil
-      end
+    it "returns nil for a closed empty queue" do
+      q = @object.call
+      q.close
+      q.send(@method, timeout: 0).should == nil
     end
   end
 

@@ -332,7 +332,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
         if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
             free(wpath);
-            xfree(whome);
+            free(whome);
             rb_raise(rb_eArgError, "non-absolute home");
         }
 
@@ -411,7 +411,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
                 free(wpath);
                 free(wdir);
-                xfree(whome);
+                free(whome);
                 rb_raise(rb_eArgError, "non-absolute home");
             }
 
@@ -572,7 +572,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     xfree(buffer);
     free(wpath);
     free(wdir);
-    xfree(whome);
+    free(whome);
 
     if (wfullpath != wfullpath_buffer)
         xfree(wfullpath);
@@ -629,14 +629,10 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);
     wname[len] = L'\0';
     RB_GC_GUARD(fname);
-#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__WFREOPEN_S)
-    e = _wfreopen(wname, wmode, file) ? 0 : errno;
-#else
     {
         FILE *newfp = 0;
         e = _wfreopen_s(&newfp, wname, wmode, file);
     }
-#endif
     ALLOCV_END(wtmp);
     return e;
 }

@@ -1374,3 +1374,63 @@ assert_equal 'ok', %q{
   foo(:foo, b: :ok)
   foo(*["foo"], b: :ok)
 }
+
+assert_equal 'ok', %q{
+  Thing = Struct.new(:value)
+
+  Obj = Thing.new("ok")
+
+  def delegate(...)
+    Obj.value(...)
+  end
+
+  def no_args
+    delegate
+  end
+
+  def splat_args(*args)
+    delegate(*args)
+  end
+
+  no_args
+  splat_args
+}
+
+assert_equal 'ok', %q{
+  class A
+    private
+    def foo = "ng"
+  end
+
+  class B
+    def initialize(o)
+      @o = o
+    end
+
+    def foo(...) = @o.foo(...)
+    def internal_foo = foo
+  end
+
+  b = B.new(A.new)
+
+  begin
+    b.internal_foo
+  rescue NoMethodError
+    "ok"
+  end
+}
+
+assert_equal 'ok', <<~RUBY
+  def test(*, kw: false)
+    "ok"
+  end
+
+  test
+RUBY
+
+assert_equal '[1, 2, 3]', %q{
+  def target(*args) = args
+  def x = [1]
+  def forwarder(...) = target(*x, 2, ...)
+  forwarder(3).inspect
+}, '[Bug #21832] post-splat args before forwarding'

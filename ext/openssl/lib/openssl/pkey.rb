@@ -7,6 +7,9 @@
 require_relative 'marshal'
 
 module OpenSSL::PKey
+  # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
+  DHError = PKeyError
+
   class DH
     include OpenSSL::Marshal
 
@@ -32,6 +35,18 @@ module OpenSSL::PKey
     #   p dhcopy.priv_key #=> nil
     def public_key
       DH.new(to_der)
+    end
+
+    # :call-seq:
+    #    dh.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
+    def params
+      %w{p q g pub_key priv_key}.map { |name|
+        [name, send(name)]
+      }.to_h
     end
 
     # :call-seq:
@@ -90,7 +105,7 @@ module OpenSSL::PKey
     #   puts dh0.pub_key == dh.pub_key #=> false
     def generate_key!
       if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x30000000
-        raise DHError, "OpenSSL::PKey::DH is immutable on OpenSSL 3.0; " \
+        raise PKeyError, "OpenSSL::PKey::DH is immutable on OpenSSL 3.0; " \
         "use OpenSSL::PKey.generate_key instead"
       end
 
@@ -135,6 +150,9 @@ module OpenSSL::PKey
     end
   end
 
+  # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
+  DSAError = PKeyError
+
   class DSA
     include OpenSSL::Marshal
 
@@ -152,6 +170,18 @@ module OpenSSL::PKey
     # PKey#public_to_der.
     def public_key
       OpenSSL::PKey.read(public_to_der)
+    end
+
+    # :call-seq:
+    #    dsa.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
+    def params
+      %w{p q g pub_key priv_key}.map { |name|
+        [name, send(name)]
+      }.to_h
     end
 
     class << self
@@ -218,13 +248,9 @@ module OpenSSL::PKey
     #   sig = dsa.sign_raw(nil, digest)
     #   p dsa.verify_raw(nil, sig, digest) #=> true
     def syssign(string)
-      q or raise OpenSSL::PKey::DSAError, "incomplete DSA"
-      private? or raise OpenSSL::PKey::DSAError, "Private DSA key needed!"
-      begin
-        sign_raw(nil, string)
-      rescue OpenSSL::PKey::PKeyError
-        raise OpenSSL::PKey::DSAError, $!.message
-      end
+      q or raise PKeyError, "incomplete DSA"
+      private? or raise PKeyError, "Private DSA key needed!"
+      sign_raw(nil, string)
     end
 
     # :call-seq:
@@ -242,12 +268,13 @@ module OpenSSL::PKey
     #   A \DSA signature value.
     def sysverify(digest, sig)
       verify_raw(nil, sig, digest)
-    rescue OpenSSL::PKey::PKeyError
-      raise OpenSSL::PKey::DSAError, $!.message
     end
   end
 
   if defined?(EC)
+  # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
+  ECError = PKeyError
+
   class EC
     include OpenSSL::Marshal
 
@@ -258,8 +285,6 @@ module OpenSSL::PKey
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
     def dsa_sign_asn1(data)
       sign_raw(nil, data)
-    rescue OpenSSL::PKey::PKeyError
-      raise OpenSSL::PKey::ECError, $!.message
     end
 
     # :call-seq:
@@ -269,8 +294,6 @@ module OpenSSL::PKey
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw instead.
     def dsa_verify_asn1(data, sig)
       verify_raw(nil, sig, data)
-    rescue OpenSSL::PKey::PKeyError
-      raise OpenSSL::PKey::ECError, $!.message
     end
 
     # :call-seq:
@@ -310,6 +333,9 @@ module OpenSSL::PKey
   end
   end
 
+  # Alias of PKeyError. Before version 4.0.0, this was a subclass of PKeyError.
+  RSAError = PKeyError
+
   class RSA
     include OpenSSL::Marshal
 
@@ -326,6 +352,18 @@ module OpenSSL::PKey
     # PKey#public_to_der.
     def public_key
       OpenSSL::PKey.read(public_to_der)
+    end
+
+    # :call-seq:
+    #    rsa.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'n', 'e', 'd', 'p', 'q', 'dmp1', 'dmq1', and 'iqmp'.
+    def params
+      %w{n e d p q dmp1 dmq1 iqmp}.map { |name|
+        [name, send(name)]
+      }.to_h
     end
 
     class << self
@@ -371,15 +409,11 @@ module OpenSSL::PKey
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw, and
     # PKey::PKey#verify_recover instead.
     def private_encrypt(string, padding = PKCS1_PADDING)
-      n or raise OpenSSL::PKey::RSAError, "incomplete RSA"
-      private? or raise OpenSSL::PKey::RSAError, "private key needed."
-      begin
-        sign_raw(nil, string, {
-          "rsa_padding_mode" => translate_padding_mode(padding),
-        })
-      rescue OpenSSL::PKey::PKeyError
-        raise OpenSSL::PKey::RSAError, $!.message
-      end
+      n or raise PKeyError, "incomplete RSA"
+      private? or raise PKeyError, "private key needed."
+      sign_raw(nil, string, {
+        "rsa_padding_mode" => translate_padding_mode(padding),
+      })
     end
 
     # :call-seq:
@@ -394,14 +428,10 @@ module OpenSSL::PKey
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw, and
     # PKey::PKey#verify_recover instead.
     def public_decrypt(string, padding = PKCS1_PADDING)
-      n or raise OpenSSL::PKey::RSAError, "incomplete RSA"
-      begin
-        verify_recover(nil, string, {
-          "rsa_padding_mode" => translate_padding_mode(padding),
-        })
-      rescue OpenSSL::PKey::PKeyError
-        raise OpenSSL::PKey::RSAError, $!.message
-      end
+      n or raise PKeyError, "incomplete RSA"
+      verify_recover(nil, string, {
+        "rsa_padding_mode" => translate_padding_mode(padding),
+      })
     end
 
     # :call-seq:
@@ -416,14 +446,10 @@ module OpenSSL::PKey
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#encrypt and PKey::PKey#decrypt instead.
     def public_encrypt(data, padding = PKCS1_PADDING)
-      n or raise OpenSSL::PKey::RSAError, "incomplete RSA"
-      begin
-        encrypt(data, {
-          "rsa_padding_mode" => translate_padding_mode(padding),
-        })
-      rescue OpenSSL::PKey::PKeyError
-        raise OpenSSL::PKey::RSAError, $!.message
-      end
+      n or raise PKeyError, "incomplete RSA"
+      encrypt(data, {
+        "rsa_padding_mode" => translate_padding_mode(padding),
+      })
     end
 
     # :call-seq:
@@ -437,15 +463,11 @@ module OpenSSL::PKey
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#encrypt and PKey::PKey#decrypt instead.
     def private_decrypt(data, padding = PKCS1_PADDING)
-      n or raise OpenSSL::PKey::RSAError, "incomplete RSA"
-      private? or raise OpenSSL::PKey::RSAError, "private key needed."
-      begin
-        decrypt(data, {
-          "rsa_padding_mode" => translate_padding_mode(padding),
-        })
-      rescue OpenSSL::PKey::PKeyError
-        raise OpenSSL::PKey::RSAError, $!.message
-      end
+      n or raise PKeyError, "incomplete RSA"
+      private? or raise PKeyError, "private key needed."
+      decrypt(data, {
+        "rsa_padding_mode" => translate_padding_mode(padding),
+      })
     end
 
     PKCS1_PADDING = 1
@@ -464,7 +486,7 @@ module OpenSSL::PKey
       when PKCS1_OAEP_PADDING
         "oaep"
       else
-        raise OpenSSL::PKey::PKeyError, "unsupported padding mode"
+        raise PKeyError, "unsupported padding mode"
       end
     end
   end

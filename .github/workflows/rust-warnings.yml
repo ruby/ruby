@@ -1,0 +1,60 @@
+# Surface Rust warnings on PRs that touch any Rust code.
+# Not a required check so we never block people over new warnings
+# that might come from a new Rust version being released.
+name: Rust warnings
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - '**.rs'
+      - '!**.inc.rs'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  rust-warnings:
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install Rust
+        run: rustup default beta
+
+      - name: Rust warnings
+        shell: bash
+        run: |
+          set -eu
+          cargo check --quiet --all-features --message-format=json \
+            | jq -r 'select(.message.level | IN("warning", "error")) | .message.rendered' \
+            | tee messages.txt
+          (exit "${PIPESTATUS[0]}") && ! grep --quiet '[^[:space:]]' messages.txt
+
+      - name: "📜 `rustdoc` warnings"
+        shell: bash
+        run: |
+          set -eu
+          cargo doc --document-private-items --all --no-deps --message-format=json \
+            | jq -r 'select(.message.level | IN("warning", "error")) | .message.rendered' \
+            | tee messages.txt
+          (exit "${PIPESTATUS[0]}") && ! grep --quiet '[^[:space:]]' messages.txt

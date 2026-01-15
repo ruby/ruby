@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 describe :string_codepoints, shared: true do
   it "returns self" do
     s = "foo"

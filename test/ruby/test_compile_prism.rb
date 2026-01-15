@@ -3,6 +3,12 @@
 # This file is organized to match itemization in https://github.com/ruby/prism/issues/1335
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
+    def test_iseq_has_node_id
+      code = "proc { <<END }\n hello\nEND"
+      iseq = RubyVM::InstructionSequence.compile_prism(code)
+      assert_operator iseq.to_a[4][:node_id], :>, -1
+    end
+
     # Subclass is used for tests which need it
     class Subclass; end
     ############################################################################
@@ -206,6 +212,12 @@ module Prism
 
       assert_prism_eval("defined?(a(itself))")
       assert_prism_eval("defined?(itself(itself))")
+
+      # method chain with a block on the inside
+      assert_prism_eval("defined?(itself { 1 }.itself)")
+
+      # method chain with parenthesized receiver
+      assert_prism_eval("defined?((itself).itself)")
 
       # Method chain on a constant
       assert_prism_eval(<<~RUBY)
@@ -768,6 +780,9 @@ module Prism
       assert_prism_eval("a = [1,2]; [0, *a, 3, 4, *5..6, 7, 8, *9..11]")
       assert_prism_eval("[[*1..2], 3, *4..5]")
 
+      elements = Array.new(64) { ":foo" }
+      assert_prism_eval("[#{elements.join(", ")}, bar: 1, baz: 2]")
+
       # Test keyword splat inside of array
       assert_prism_eval("[**{x: 'hello'}]")
 
@@ -842,6 +857,24 @@ module Prism
       assert_prism_eval("...2")
       assert_prism_eval("1..")
       assert_prism_eval("1...")
+      assert_prism_eval("a1 = 1; a2 = 2; a1..a2")
+      assert_prism_eval("a1 = 1; a2 = 2; a1...a2")
+      assert_prism_eval("a2 = 2; ..a2")
+      assert_prism_eval("a2 = 2; ...a2")
+      assert_prism_eval("a1 = 1; a1..")
+      assert_prism_eval("a1 = 1; a1...")
+      assert_prism_eval("1..2; nil")
+      assert_prism_eval("1...2; nil")
+      assert_prism_eval("..2; nil")
+      assert_prism_eval("...2; nil")
+      assert_prism_eval("1..; nil")
+      assert_prism_eval("1...; nil")
+      assert_prism_eval("a1 = 1; a2 = 2; a1..a2; nil")
+      assert_prism_eval("a1 = 1; a2 = 2; a1...a2; nil")
+      assert_prism_eval("a2 = 2; ..a2; nil")
+      assert_prism_eval("a2 = 2; ...a2; nil")
+      assert_prism_eval("a1 = 1; a1..; nil")
+      assert_prism_eval("a1 = 1; a1...; nil")
     end
 
     def test_SplatNode
@@ -1013,13 +1046,19 @@ module Prism
     end
 
     def test_ForNode
-      assert_prism_eval("for i in [1,2] do; i; end")
-      assert_prism_eval("for @i in [1,2] do; @i; end")
-      assert_prism_eval("for $i in [1,2] do; $i; end")
+      assert_prism_eval("r = []; for i in [1,2] do; r << i; end; r")
+      assert_prism_eval("r = []; for @i in [1,2] do; r << @i; end; r")
+      assert_prism_eval("r = []; for $i in [1,2] do; r << $i; end; r")
 
-      assert_prism_eval("for foo, in  [1,2,3] do end")
+      assert_prism_eval("r = []; for foo, in  [1,2,3] do r << foo end; r")
 
-      assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+      assert_prism_eval("r = []; for i, j in {a: 'b'} do; r << [i, j]; end; r")
+
+      # Test splat node as index in for loop
+      assert_prism_eval("r = []; for *x in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for * in [[1,2], [3,4]] do; r << 'ok'; end; r")
+      assert_prism_eval("r = []; for x, * in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for x, *y in [[1,2], [3,4]] do; r << [x, y]; end; r")
     end
 
     ############################################################################
@@ -1167,6 +1206,27 @@ a
         end
 
         res
+      RUBY
+
+      # Bug #21001
+      assert_prism_eval(<<~RUBY)
+        RUN_ARRAY = [1,2]
+
+        MAP_PROC = Proc.new do |&blk|
+          block_results = []
+          RUN_ARRAY.each do |value|
+            block_value = blk.call(value)
+            block_results.push block_value
+          end
+          block_results
+        ensure
+          next block_results
+        end
+
+        MAP_PROC.call do |value|
+          break if value > 1
+          next value
+        end
       RUBY
     end
 
@@ -1972,6 +2032,10 @@ end
         end
         test_prism_call_node
       CODE
+
+      # Specialized instructions
+      assert_prism_eval(%{-"literal"})
+      assert_prism_eval(%{"literal".freeze})
     end
 
     def test_CallAndWriteNode
@@ -2121,6 +2185,56 @@ end
         o.foo(1, 2, 3)
       RUBY
     end
+
+    def test_ForwardingArgumentsNode_instruction_sequence_consistency
+      # Test that both parsers generate identical instruction sequences for forwarding arguments
+      # This prevents regressions like the one fixed in prism_compile.c for PM_FORWARDING_ARGUMENTS_NODE
+
+      # Test case from the bug report: def bar(buz, ...) = foo(buz, ...)
+      source = <<~RUBY
+        def foo(*, &block) = block
+        def bar(buz, ...) = foo(buz, ...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test simple forwarding
+      source = <<~RUBY
+        def target(...) = nil
+        def forwarder(...) = target(...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test mixed forwarding with regular arguments
+      source = <<~RUBY
+        def target(a, b, c) = [a, b, c]
+        def forwarder(x, ...) = target(x, ...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test forwarding with splat
+      source = <<~RUBY
+        def target(a, b, c) = [a, b, c]
+        def forwarder(x, ...); target(*x, ...); end
+      RUBY
+
+      compare_instruction_sequences(source)
+    end
+
+    private
+
+    def compare_instruction_sequences(source)
+      # Get instruction sequences from both parsers
+      parsey_iseq = RubyVM::InstructionSequence.compile_parsey(source)
+      prism_iseq = RubyVM::InstructionSequence.compile_prism(source)
+
+      # Compare instruction sequences
+      assert_equal parsey_iseq.disasm, prism_iseq.disasm
+    end
+
+    public
 
     def test_ForwardingSuperNode
       assert_prism_eval("class Forwarding; def to_s; super; end; end")
@@ -2464,6 +2578,9 @@ end
       assert_prism_eval("5 in foo")
 
       assert_prism_eval("1 in 2")
+
+      # Bug: https://bugs.ruby-lang.org/issues/20956
+      assert_prism_eval("1 in [1 | [1]]")
     end
 
     def test_MatchRequiredNode
@@ -2502,6 +2619,7 @@ end
       assert_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
       assert_prism_eval("$prism = 1; 1 in ^$prism")
       assert_prism_eval("prism = 1; 1 in ^prism")
+      assert_prism_eval("[1].each { 1 => ^it }")
     end
 
     ############################################################################
@@ -2610,7 +2728,7 @@ end
     def compare_eval(source, raw:, location:)
       source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
-      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      ruby_eval = RubyVM::InstructionSequence.compile_parsey(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
 
       if ruby_eval.is_a? Proc

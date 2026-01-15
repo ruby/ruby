@@ -47,7 +47,7 @@ module Bundler::URI
     #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
     #
-    #     uri3 = Bundler::URI::File.build({:path => Bundler::URI::escape('/path/my file.txt')})
+    #     uri3 = Bundler::URI::File.build({:path => Bundler::URI::RFC2396_PARSER.escape('/path/my file.txt')})
     #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
     def self.build(args)
@@ -70,17 +70,17 @@ module Bundler::URI
 
     # raise InvalidURIError
     def check_userinfo(user)
-      raise Bundler::URI::InvalidURIError, "can not set userinfo for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set userinfo for file Bundler::URI"
     end
 
     # raise InvalidURIError
     def check_user(user)
-      raise Bundler::URI::InvalidURIError, "can not set user for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set user for file Bundler::URI"
     end
 
     # raise InvalidURIError
     def check_password(user)
-      raise Bundler::URI::InvalidURIError, "can not set password for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set password for file Bundler::URI"
     end
 
     # do nothing

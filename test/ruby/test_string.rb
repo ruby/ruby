@@ -164,6 +164,15 @@ CODE
     assert_raise(ArgumentError) { "foo"[] }
   end
 
+  def test_AREF_underflow
+    require "rbconfig/sizeof"
+    assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
+  end
+
+  def test_AREF_invalid_encoding
+    assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
+  end
+
   def test_ASET # '[]='
     s = S("FooBar")
     s[0] = S('A')
@@ -662,8 +671,8 @@ CODE
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
-  def test_string_interpolations_across_size_pools_get_embedded
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+  def test_string_interpolations_across_heaps_get_embedded
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
     base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
@@ -862,6 +871,10 @@ CODE
 
     assert_equal('\#', S('"\\\\#"').undump)
     assert_equal('\#{', S('"\\\\\#{"').undump)
+
+    assert_undump("\0\u{ABCD}")
+    assert_undump(S('"\x00\u3042"'.force_encoding("SJIS")))
+    assert_undump(S('"\u3042\x7E"'.force_encoding("SJIS")))
 
     assert_raise(RuntimeError) { S('\u3042').undump }
     assert_raise(RuntimeError) { S('"\x82\xA0\u3042"'.force_encoding("SJIS")).undump }
@@ -1860,6 +1873,13 @@ CODE
 
     result = []; S("aaa,bbb,ccc,ddd").split(/,/) {|s| result << s.gsub(/./, "A")}
     assert_equal(["AAA"]*4, result)
+
+    s = S("abc ") * 20
+    assert_raise(RuntimeError) {
+      10.times do
+        s.split {s.prepend("xxx" * 100)}
+      end
+    }
   ensure
     EnvUtil.suppress_warning {$; = fs}
   end
@@ -1867,9 +1887,24 @@ CODE
   def test_fs
     return unless @cls == String
 
-    assert_raise_with_message(TypeError, /\$;/) {
-      $; = []
-    }
+    begin
+      fs = $;
+      assert_deprecated_warning(/non-nil '\$;'/) {$; = "x"}
+      assert_raise_with_message(TypeError, /\$;/) {$; = []}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
+    name = "\u{5206 5217}"
+    assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
+    do;
+      alias $#{name} $;
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
+      assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
+    end;
+  end
+
+  def test_fs_gc
+    return unless @cls == String
 
     assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
@@ -2016,6 +2051,117 @@ CODE
     a = S("x")
     assert_nil(a.strip!)
     assert_equal(S("x") ,a)
+  end
+
+  def test_strip_with_selectors
+    assert_equal(S("abc"), S("---abc+++").strip("-+"))
+    assert_equal(S("abc"), S("+++abc---").strip("-+"))
+    assert_equal(S("abc"), S("+-+abc-+-").strip("-+"))
+    assert_equal(S(""), S("---+++").strip("-+"))
+    assert_equal(S("abc   "), S("---abc   ").strip("-"))
+    assert_equal(S("   abc"), S("   abc+++").strip("+"))
+
+    # Test with multibyte characters
+    assert_equal(S("abc"), S("あああabcいいい").strip("あい"))
+    assert_equal(S("abc"), S("いいいabcあああ").strip("あい"))
+
+    # Test with NUL characters
+    assert_equal(S("abc\0"), S("---abc\0--").strip("-"))
+    assert_equal(S("\0abc"), S("--\0abc---").strip("-"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").strip("-+"))
+    assert_equal(S("abc"), S("abc").strip(""))
+
+    # Test with range
+    assert_equal(S("abc"), S("012abc345").strip("0-9"))
+    assert_equal(S("abc"), S("012abc345").strip("^a-z"))
+
+    # Test with multiple selectors
+    assert_equal(S("4abc56"), S("01234abc56789").strip("0-9", "^4-6"))
+  end
+
+  def test_strip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("abc"), a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    a = S("+++abc---")
+    assert_equal(S("abc"), a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    a = S("abc")
+    assert_nil(a.strip!("-+"))
+    assert_equal(S("abc"), a)
+
+    # Test with multibyte characters
+    a = S("あああabcいいい")
+    assert_equal(S("abc"), a.strip!("あい"))
+    assert_equal(S("abc"), a)
+  end
+
+  def test_lstrip_with_selectors
+    assert_equal(S("abc+++"), S("---abc+++").lstrip("-"))
+    assert_equal(S("abc---"), S("+++abc---").lstrip("+"))
+    assert_equal(S("abc"), S("---abc").lstrip("-"))
+    assert_equal(S(""), S("---").lstrip("-"))
+
+    # Test with multibyte characters
+    assert_equal(S("abcいいい"), S("あああabcいいい").lstrip("あ"))
+
+    # Test with NUL characters
+    assert_equal(S("\0abc+++"), S("--\0abc+++").lstrip("-"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").lstrip("-"))
+
+    # Test with range
+    assert_equal(S("abc345"), S("012abc345").lstrip("0-9"))
+
+    # Test with multiple selectors
+    assert_equal(S("4abc56789"), S("01234abc56789").lstrip("0-9", "^4-6"))
+  end
+
+  def test_lstrip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("abc+++"), a.lstrip!("-"))
+    assert_equal(S("abc+++"), a)
+
+    a = S("abc")
+    assert_nil(a.lstrip!("-"))
+    assert_equal(S("abc"), a)
+  end
+
+  def test_rstrip_with_selectors
+    assert_equal(S("---abc"), S("---abc+++").rstrip("+"))
+    assert_equal(S("+++abc"), S("+++abc---").rstrip("-"))
+    assert_equal(S("abc"), S("abc+++").rstrip("+"))
+    assert_equal(S(""), S("+++").rstrip("+"))
+
+    # Test with multibyte characters
+    assert_equal(S("あああabc"), S("あああabcいいい").rstrip("い"))
+
+    # Test with NUL characters
+    assert_equal(S("---abc\0"), S("---abc\0++").rstrip("+"))
+
+    # Test without modification
+    assert_equal(S("abc"), S("abc").rstrip("-"))
+
+    # Test with range
+    assert_equal(S("012abc"), S("012abc345").rstrip("0-9"))
+
+    # Test with multiple selectors
+    assert_equal(S("01234abc56"), S("01234abc56789").rstrip("0-9", "^4-6"))
+  end
+
+  def test_rstrip_bang_with_chars
+    a = S("---abc+++")
+    assert_equal(S("---abc"), a.rstrip!("+"))
+    assert_equal(S("---abc"), a)
+
+    a = S("abc")
+    assert_nil(a.rstrip!("+"))
+    assert_equal(S("abc"), a)
   end
 
   def test_sub
@@ -2453,33 +2599,7 @@ CODE
 
     assert_equal([0xa9, 0x42, 0x2260], S("\xc2\xa9B\xe2\x89\xa0").unpack(S("U*")))
 
-=begin
-    skipping "Not tested:
-        D,d & double-precision float, native format\\
-        E & double-precision float, little-endian byte order\\
-        e & single-precision float, little-endian byte order\\
-        F,f & single-precision float, native format\\
-        G & double-precision float, network (big-endian) byte order\\
-        g & single-precision float, network (big-endian) byte order\\
-        I & unsigned integer\\
-        i & integer\\
-        L & unsigned long\\
-        l & long\\
-
-        m & string encoded in base64 (uuencoded)\\
-        N & long, network (big-endian) byte order\\
-        n & short, network (big-endian) byte-order\\
-        P & pointer to a structure (fixed-length string)\\
-        p & pointer to a null-terminated string\\
-        S & unsigned short\\
-        s & short\\
-        V & long, little-endian byte order\\
-        v & short, little-endian byte order\\
-        X & back up a byte\\
-        x & null byte\\
-        Z & ASCII string (null padded, count is width)\\
-"
-=end
+    # more comprehensive tests are in test_pack.rb
   end
 
   def test_upcase
@@ -2771,14 +2891,21 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
-  def test_fs_setter
+  def test_rs
     return unless @cls == String
 
-    assert_raise(TypeError) { $/ = 1 }
+    begin
+      rs = $/
+      assert_deprecated_warning(/non-nil '\$\/'/) { $/ = "" }
+      assert_raise(TypeError) { $/ = 1 }
+    ensure
+      EnvUtil.suppress_warning { $/ = rs }
+    end
     name = "\u{5206 884c}"
     assert_separately([], "#{<<~"do;"}\n#{<<~"end;"}")
     do;
       alias $#{name} $/
+      assert_deprecated_warning(/\\$#{name}/) { $#{name} = "" }
       assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
     end;
   end
@@ -2829,27 +2956,45 @@ CODE
     assert_equal("\u3042", ("\u3042" * 100)[-1])
   end
 
-=begin
   def test_compare_different_encoding_string
     s1 = S("\xff".force_encoding("UTF-8"))
     s2 = S("\xff".force_encoding("ISO-2022-JP"))
     assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+
+    s3 = S("あ".force_encoding("UTF-16LE"))
+    s4 = S("a".force_encoding("IBM437"))
+    assert_equal([-1, 1], [s3 <=> s4, s4 <=> s3].sort)
   end
-=end
 
   def test_casecmp
     assert_equal(0, S("FoO").casecmp("fOO"))
     assert_equal(1, S("FoO").casecmp("BaR"))
+    assert_equal(-1, S("foo").casecmp("FOOBAR"))
     assert_equal(-1, S("baR").casecmp("FoO"))
     assert_equal(1, S("\u3042B").casecmp("\u3042a"))
     assert_equal(-1, S("foo").casecmp("foo\0"))
+    assert_equal(1,  S("FOOBAR").casecmp("foo"))
+    assert_equal(0, S("foo\0bar").casecmp("FOO\0BAR"))
 
     assert_nil(S("foo").casecmp(:foo))
     assert_nil(S("foo").casecmp(Object.new))
 
+    assert_nil(S("foo").casecmp(0))
+    assert_nil(S("foo").casecmp(5.00))
+
     o = Object.new
     def o.to_str; "fOO"; end
     assert_equal(0, S("FoO").casecmp(o))
+
+    assert_equal(0, S("#" * 128 + "A" * 256 + "b").casecmp("#" * 128 + "a" * 256 + "B"))
+    assert_equal(0, S("a" * 256 + "B").casecmp("A" * 256 + "b"))
+
+    assert_equal(-1, S("@").casecmp("`"))
+    assert_equal(0, S("hello\u00E9X").casecmp("HELLO\u00E9x"))
+
+    s1 = S("\xff".force_encoding("UTF-8"))
+    s2 = S("\xff".force_encoding("ISO-2022-JP"))
+    assert_nil(s1.casecmp(s2))
   end
 
   def test_casecmp?
@@ -2862,9 +3007,16 @@ CODE
     assert_nil(S("foo").casecmp?(:foo))
     assert_nil(S("foo").casecmp?(Object.new))
 
+    assert_nil(S("foo").casecmp(0))
+    assert_nil(S("foo").casecmp(5.00))
+
     o = Object.new
     def o.to_str; "fOO"; end
     assert_equal(true, S("FoO").casecmp?(o))
+
+    s1 = S("\xff".force_encoding("UTF-8"))
+    s2 = S("\xff".force_encoding("ISO-2022-JP"))
+    assert_nil(s1.casecmp?(s2))
   end
 
   def test_upcase2
@@ -2937,7 +3089,6 @@ CODE
     s5 = S("\u0000\u3042")
     assert_equal("\u3042", s5.lstrip!)
     assert_equal("\u3042", s5)
-
   end
 
   def test_delete_prefix_type_error
@@ -3237,18 +3388,12 @@ CODE
       assert_equal('"\\u3042\\u3044\\u3046"', S("\u3042\u3044\u3046".encode(e)).inspect)
       assert_equal('"ab\\"c"', S("ab\"c".encode(e)).inspect, bug4081)
     end
-    begin
-      verbose, $VERBOSE = $VERBOSE, nil
-      ext = Encoding.default_external
-      Encoding.default_external = "us-ascii"
-      $VERBOSE = verbose
+
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
       i = S("abc\"\\".force_encoding("utf-8")).inspect
-    ensure
-      $VERBOSE = nil
-      Encoding.default_external = ext
-      $VERBOSE = verbose
+
+      assert_equal('"abc\\"\\\\"', i, bug4081)
     end
-    assert_equal('"abc\\"\\\\"', i, bug4081)
   end
 
   def test_dummy_inspect
@@ -3304,6 +3449,11 @@ CODE
     assert_equal(u("\x81\x82"), S("\u3042").byteslice(1..2))
 
     assert_equal(u("\x82")+("\u3042"*9), S("\u3042"*10).byteslice(2, 28))
+
+    assert_equal("\xE3", S("こんにちは").byteslice(0))
+    assert_equal("こんにちは", S("こんにちは").byteslice(0, 15))
+    assert_equal("こ", S("こんにちは").byteslice(0, 3))
+    assert_equal("は", S("こんにちは").byteslice(12, 15))
 
     bug7954 = '[ruby-dev:47108]'
     assert_equal(false, S("\u3042").byteslice(0, 2).valid_encoding?, bug7954)
@@ -3388,6 +3538,12 @@ CODE
     assert_same(str, bar, "uminus deduplicates [Feature #13077] str: #{ObjectSpace.dump(str)} bar: #{ObjectSpace.dump(bar)}")
   end
 
+  def test_uminus_dedup_in_place
+    dynamic = "this string is unique and frozen #{rand}".freeze
+    assert_same dynamic, -dynamic
+    assert_same dynamic, -dynamic.dup
+  end
+
   def test_uminus_frozen
     return unless @cls == String
 
@@ -3420,6 +3576,17 @@ CODE
     str = S("foo")
     assert_instance_of(@cls, -str)
     assert_equal(false, str.frozen?)
+  end
+
+  def test_uminus_no_embed_gc
+    pad = "a"*2048
+    File.open(IO::NULL, "w") do |dev_null|
+      ("aa".."zz").each do |c|
+        fstr = -(c + pad).freeze
+        dev_null.write(fstr)
+      end
+    end
+    GC.start
   end
 
   def test_ord
@@ -3728,6 +3895,96 @@ CODE
     Warning[:deprecated] = deprecated
   end
 
+  def test_encode_fallback_raise_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { raise MyError }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { raise MyError }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method(_str) = raise MyError
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[](_str) = raise MyError
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        class MyError < StandardError; end
+
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue MyError
+        end
+      RUBY
+    end
+  end
+
+  def test_encode_fallback_too_big_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { "\\uffee" }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { "\\uffee" }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method(_str) = "\\uffee"
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[](_str) = "\\uffee"
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        class MyError < StandardError; end
+
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue ArgumentError
+        end
+      RUBY
+    end
+  end
+
+  def test_encode_fallback_not_string_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { Object.new }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { Object.new }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method(_str) = Object.new
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[](_str) = Object.new
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        class MyError < StandardError; end
+
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue TypeError
+        end
+      RUBY
+    end
+  end
+
   private
 
   def assert_bytesplice_result(expected, s, *args)
@@ -3773,6 +4030,10 @@ CODE
 
   def assert_byterindex(expected, string, match, *rest)
     assert_index_like(:byterindex, expected, string, match, *rest)
+  end
+
+  def assert_undump(str, *rest)
+    assert_equal(str, str.dump.undump, *rest)
   end
 end
 

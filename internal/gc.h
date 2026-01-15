@@ -16,8 +16,8 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
-#ifndef USE_SHARED_GC
-# define USE_SHARED_GC 0
+#ifndef USE_MODULAR_GC
+# define USE_MODULAR_GC 0
 #endif
 
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
@@ -122,12 +122,20 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#define NEWOBJ_OF(var, T, c, f, s, ec) \
+#define NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
     T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, shape_id, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), shape_id, s))
 
-#define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
+#define NEWOBJ_OF(var, T, c, f, s, ec) NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
+
+#ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+# define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+struct rb_gc_object_metadata_entry {
+    ID name;
+    VALUE val;
+};
+#endif
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
 # define UNALIGNED_MEMBER_ACCESS(expr) (expr)
@@ -175,7 +183,6 @@ struct rb_objspace; /* in vm_core.h */
     if (_already_disabled == Qfalse) rb_gc_enable()
 
 /* gc.c */
-extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
@@ -196,22 +203,27 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
+void rb_gc_obj_id_moved(VALUE obj);
+void rb_gc_register_pinning_obj(VALUE obj);
 
-void *rb_gc_ractor_cache_alloc(void);
+void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 
 bool rb_gc_size_allocatable_p(size_t size);
-size_t *rb_gc_size_pool_sizes(void);
-size_t rb_gc_size_pool_id_for_size(size_t size);
+size_t *rb_gc_heap_sizes(void);
+size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
-void rb_gc_mark_weak(VALUE *ptr);
-void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
 void rb_gc_initial_stress_set(VALUE flag);
+
+void rb_gc_before_fork(void);
+void rb_gc_after_fork(rb_pid_t pid);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
@@ -225,6 +237,7 @@ void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), v
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_pointer_to_heap_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
@@ -234,13 +247,14 @@ size_t rb_gc_obj_slot_size(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
 
+#define RB_GC_MAX_NAME_LEN 20
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
 size_t rb_obj_memsize_of(VALUE);
-size_t rb_obj_gc_flags(VALUE, ID[], size_t);
+struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
@@ -248,14 +262,35 @@ void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 
-#if USE_SHARED_GC
-void ruby_load_external_gc_from_argv(int argc, char **argv);
-#endif
+const char *rb_gc_active_gc_name(void);
+int rb_gc_modular_gc_loaded_p(void);
+
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_obj_atomic_write(
+    VALUE a, VALUE *slot, VALUE b,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    const char *filename,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    int line)
+{
+#ifdef RGENGC_LOGGING_WRITE
+    RGENGC_LOGGING_WRITE(a, slot, b, filename, line);
+#endif
+
+    RUBY_ATOMIC_VALUE_SET(*slot, b);
+
+    rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
+    return a;
+}
+#define RB_OBJ_ATOMIC_WRITE(old, slot, young) \
+    RBIMPL_CAST(rb_obj_atomic_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young), __FILE__, __LINE__))
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
+void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 
@@ -319,4 +354,8 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
 #define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
 #define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
 #define ruby_sized_xfree ruby_sized_xfree_inlined
+
+void rb_gc_verify_shareable(VALUE);
+bool rb_gc_checking_shareable(void);
+
 #endif /* INTERNAL_GC_H */

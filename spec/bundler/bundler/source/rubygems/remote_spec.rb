@@ -106,8 +106,8 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
 
   context "when a mirror with inline credentials is configured for the URI" do
     let(:uri) { Gem::URI("https://rubygems.org/") }
-    let(:mirror_uri_with_auth) { Gem::URI("https://username:password@rubygems-mirror.org/") }
-    let(:mirror_uri_no_auth) { Gem::URI("https://rubygems-mirror.org/") }
+    let(:mirror_uri_with_auth) { Gem::URI("https://username:password@example-mirror.rubygems.org/") }
+    let(:mirror_uri_no_auth) { Gem::URI("https://example-mirror.rubygems.org/") }
 
     before { Bundler.settings.temporary("mirror.https://rubygems.org/" => mirror_uri_with_auth.to_s) }
 
@@ -132,8 +132,8 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
 
   context "when a mirror with configured credentials is configured for the URI" do
     let(:uri) { Gem::URI("https://rubygems.org/") }
-    let(:mirror_uri_with_auth) { Gem::URI("https://#{credentials}@rubygems-mirror.org/") }
-    let(:mirror_uri_no_auth) { Gem::URI("https://rubygems-mirror.org/") }
+    let(:mirror_uri_with_auth) { Gem::URI("https://#{credentials}@example-mirror.rubygems.org/") }
+    let(:mirror_uri_no_auth) { Gem::URI("https://example-mirror.rubygems.org/") }
 
     before do
       Bundler.settings.temporary("mirror.https://rubygems.org/" => mirror_uri_no_auth.to_s)

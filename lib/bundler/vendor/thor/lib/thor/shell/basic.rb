@@ -67,15 +67,15 @@ class Bundler::Thor
       # Readline.
       #
       # ==== Example
-      # ask("What is your name?")
+      #   ask("What is your name?")
       #
-      # ask("What is the planet furthest from the sun?", :default => "Pluto")
+      #   ask("What is the planet furthest from the sun?", :default => "Neptune")
       #
-      # ask("What is your favorite Neopolitan flavor?", :limited_to => ["strawberry", "chocolate", "vanilla"])
+      #   ask("What is your favorite Neopolitan flavor?", :limited_to => ["strawberry", "chocolate", "vanilla"])
       #
-      # ask("What is your password?", :echo => false)
+      #   ask("What is your password?", :echo => false)
       #
-      # ask("Where should the file be saved?", :path => true)
+      #   ask("Where should the file be saved?", :path => true)
       #
       def ask(statement, *args)
         options = args.last.is_a?(Hash) ? args.pop : {}
@@ -93,7 +93,7 @@ class Bundler::Thor
       # are passed straight to puts (behavior got from Highline).
       #
       # ==== Example
-      # say("I know you knew that.")
+      #   say("I know you knew that.")
       #
       def say(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
         return if quiet?
@@ -110,7 +110,7 @@ class Bundler::Thor
       # are passed straight to puts (behavior got from Highline).
       #
       # ==== Example
-      # say_error("error: something went wrong")
+      #   say_error("error: something went wrong")
       #
       def say_error(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
         return if quiet?
@@ -143,14 +143,14 @@ class Bundler::Thor
         stdout.flush
       end
 
-      # Make a question the to user and returns true if the user replies "y" or
+      # Asks the user a question and returns true if the user replies "y" or
       # "yes".
       #
       def yes?(statement, color = nil)
         !!(ask(statement, color, add_to_history: false) =~ is?(:yes))
       end
 
-      # Make a question the to user and returns true if the user replies "n" or
+      # Asks the user a question and returns true if the user replies "n" or
       # "no".
       #
       def no?(statement, color = nil)
@@ -314,7 +314,7 @@ class Bundler::Thor
         diff_cmd = ENV["THOR_DIFF"] || ENV["RAILS_DIFF"] || "diff -u"
 
         require "tempfile"
-        Tempfile.open(File.basename(destination), File.dirname(destination)) do |temp|
+        Tempfile.open(File.basename(destination), File.dirname(destination), binmode: true) do |temp|
           temp.write content
           temp.rewind
           system %(#{diff_cmd} "#{destination}" "#{temp.path}")
@@ -372,16 +372,12 @@ class Bundler::Thor
         Tempfile.open([File.basename(destination), File.extname(destination)], File.dirname(destination)) do |temp|
           temp.write content
           temp.rewind
-          system %(#{merge_tool} "#{temp.path}" "#{destination}")
+          system(merge_tool, temp.path, destination)
         end
       end
 
       def merge_tool #:nodoc:
-        @merge_tool ||= ENV["THOR_MERGE"] || git_merge_tool
-      end
-
-      def git_merge_tool #:nodoc:
-        `git config merge.tool`.rstrip rescue ""
+        @merge_tool ||= ENV["THOR_MERGE"] || "git difftool --no-index"
       end
     end
   end

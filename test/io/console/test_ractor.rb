@@ -8,6 +8,10 @@ class TestIOConsoleInRactor < Test::Unit::TestCase
     path = $".find {|path| path.end_with?(ext)}
     assert_in_out_err(%W[-r#{path}], "#{<<~"begin;"}\n#{<<~'end;'}", ["true"], [])
     begin;
+      class Ractor
+        alias value take
+      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
+
       $VERBOSE = nil
       r = Ractor.new do
         $stdout.console_mode
@@ -18,17 +22,21 @@ class TestIOConsoleInRactor < Test::Unit::TestCase
       else
         true                    # should not success
       end
-      puts r.take
+      puts r.value
     end;
 
     assert_in_out_err(%W[-r#{path}], "#{<<~"begin;"}\n#{<<~'end;'}", ["true"], [])
     begin;
+      class Ractor
+        alias value take
+      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
+
       console = IO.console
       $VERBOSE = nil
       r = Ractor.new do
         IO.console
       end
-      puts console.class == r.take.class
+      puts console.class == r.value.class
     end;
   end
 end if defined? Ractor

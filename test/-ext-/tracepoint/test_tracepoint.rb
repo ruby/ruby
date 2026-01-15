@@ -66,15 +66,15 @@ class TestTracepointObj < Test::Unit::TestCase
         count = 0
         hook = proc {count += 1}
         def run(hook)
-        stress, GC.stress = GC.stress, false
-        Bug.after_gc_start_hook = hook
-        begin
-          GC.stress = true
-          3.times {Object.new}
-        ensure
-          GC.stress = stress
-          Bug.after_gc_start_hook = nil
-        end
+          stress, GC.stress = GC.stress, false
+          Bug.after_gc_start_hook = hook
+          begin
+            GC.stress = true
+            3.times {Object.new}
+          ensure
+            GC.stress = stress
+            Bug.after_gc_start_hook = nil
+          end
         end
         run(hook)
         puts count
@@ -83,7 +83,7 @@ class TestTracepointObj < Test::Unit::TestCase
   end
 
   def test_teardown_with_active_GC_end_hook
-    assert_separately([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}')
+    assert_ruby_status([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}; GC.start')
   end
 
 end

@@ -83,12 +83,12 @@ RSpec.describe Bundler::Fetcher::Downloader do
           /Authentication is required for www.uri-to-fetch.com/)
       end
 
-      it "should raise a Bundler::Fetcher::AuthenticationRequiredError with advices" do
+      it "should raise a Bundler::Fetcher::AuthenticationRequiredError with advice" do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
           /`bundle config set --global www\.uri-to-fetch\.com username:password`.*`BUNDLE_WWW__URI___TO___FETCH__COM`/m)
       end
 
-      context "when the there are credentials provided in the request" do
+      context "when there are credentials provided in the request" do
         let(:uri) { Gem::URI("http://user:password@www.uri-to-fetch.com") }
 
         it "should raise a Bundler::Fetcher::BadAuthenticationError that doesn't contain the password" do
@@ -116,7 +116,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
           to raise_error(Bundler::Fetcher::FallbackError, "Gem::Net::HTTPNotFound: http://www.uri-to-fetch.com/api/v2/endpoint")
       end
 
-      context "when the there are credentials provided in the request" do
+      context "when there are credentials provided in the request" do
         let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
 
         it "should raise a Bundler::Fetcher::FallbackError that doesn't contain the password" do
@@ -154,35 +154,39 @@ RSpec.describe Bundler::Fetcher::Downloader do
         context "that contains cgi escaped characters" do
           let(:uri) { Gem::URI("http://username:password%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
-          it "should request basic authentication with the username and password" do
+          it "should request basic authentication with the username and password, and log the HTTP GET request to debug, without the password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password$")
+            expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://username@www.uri-to-fetch.com/api/v2/endpoint")
             subject.request(uri, options)
           end
         end
 
         context "that is all unescaped characters" do
           let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
-          it "should request basic authentication with the username and proper cgi compliant password" do
+          it "should request basic authentication with the username and proper cgi compliant password, and log the HTTP GET request to debug, without the password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password")
+            expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://username@www.uri-to-fetch.com/api/v2/endpoint")
             subject.request(uri, options)
           end
         end
       end
 
-      context "and there is no password provided" do
+      context "and it's used as the authentication token" do
         let(:uri) { Gem::URI("http://username@www.uri-to-fetch.com/api/v2/endpoint") }
 
-        it "should request basic authentication with just the user" do
+        it "should request basic authentication with just the user, and log the HTTP GET request to debug, without the token" do
           expect(net_http_get).to receive(:basic_auth).with("username", nil)
+          expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://www.uri-to-fetch.com/api/v2/endpoint")
           subject.request(uri, options)
         end
       end
 
-      context "that contains cgi escaped characters" do
+      context "and it's used as the authentication token, and contains cgi escaped characters" do
         let(:uri) { Gem::URI("http://username%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
-        it "should request basic authentication with the proper cgi compliant password user" do
+        it "should request basic authentication with the proper cgi compliant password user, and log the HTTP GET request to debug, without the token" do
           expect(net_http_get).to receive(:basic_auth).with("username$", nil)
+          expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://www.uri-to-fetch.com/api/v2/endpoint")
           subject.request(uri, options)
         end
       end
@@ -197,22 +201,43 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response causes an error included in HTTP_ERRORS" do
-      let(:message) { nil }
-      let(:error)   { RuntimeError.new(message) }
+    context "when the request response causes an HTTP error" do
+      let(:message) { "error about network" }
+      let(:error) { error_class.new(message) }
 
       before do
-        stub_const("Bundler::Fetcher::HTTP_ERRORS", [RuntimeError])
         allow(connection).to receive(:request).with(uri, net_http_get) { raise error }
       end
 
-      it "should trace log the error" do
-        allow(Bundler).to receive_message_chain(:ui, :debug)
-        expect(Bundler).to receive_message_chain(:ui, :trace).with(error)
-        expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError)
+      context "that it's retryable" do
+        let(:error_class) { Gem::Timeout::Error }
+
+        it "should trace log the error" do
+          allow(Bundler).to receive_message_chain(:ui, :debug)
+          expect(Bundler).to receive_message_chain(:ui, :trace).with(error)
+          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError)
+        end
+
+        it "should raise a Bundler::HTTPError" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
+            "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (error about network)")
+        end
+
+        context "when there are credentials provided in the request" do
+          let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+          before do
+            allow(net_http_get).to receive(:basic_auth).with("username", "password")
+          end
+
+          it "should raise a Bundler::HTTPError that doesn't contain the password" do
+            expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
+              "Network error while fetching http://username@www.uri-to-fetch.com/api/v2/endpoint (error about network)")
+          end
+        end
       end
 
-      context "when error message is about the host being down" do
+      context "when error is about the host being down" do
+        let(:error_class) { Gem::Net::HTTP::Persistent::Error }
         let(:message) { "host down: http://www.uri-to-fetch.com" }
 
         it "should raise a Bundler::Fetcher::NetworkDownError" do
@@ -221,33 +246,23 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
-      context "when error message is not about host down" do
-        let(:message) { "other error about network" }
+      context "when error is about connection refused" do
+        let(:error_class) { Gem::Net::HTTP::Persistent::Error }
+        let(:message) { "connection refused down: http://www.uri-to-fetch.com" }
 
-        it "should raise a Bundler::HTTPError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-            "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (other error about network)")
-        end
-
-        context "when the there are credentials provided in the request" do
-          let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
-          before do
-            allow(net_http_get).to receive(:basic_auth).with("username", "password")
-          end
-
-          it "should raise a Bundler::HTTPError that doesn't contain the password" do
-            expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-              "Network error while fetching http://username@www.uri-to-fetch.com/api/v2/endpoint (other error about network)")
-          end
+        it "should raise a Bundler::Fetcher::NetworkDownError" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
+            /Could not reach host www.uri-to-fetch.com/)
         end
       end
 
-      context "when error message is about no route to host" do
+      context "when error is about no route to host" do
+        let(:error_class) { SocketError }
         let(:message) { "Failed to open TCP connection to www.uri-to-fetch.com:443 " }
 
-        it "should raise a Bundler::Fetcher::HTTPError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-            "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (#{message})")
+        it "should raise a Bundler::Fetcher::NetworkDownError" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
+            /Could not reach host www.uri-to-fetch.com/)
         end
       end
     end

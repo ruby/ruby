@@ -8,36 +8,6 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
   end
 
-  let(:x64_mingw_archs) do
-    if RUBY_PLATFORM == "x64-mingw-ucrt"
-      if Gem.rubygems_version >= Gem::Version.new("3.2.28")
-        ["x64-mingw-ucrt", "x64-mingw32"]
-      else
-        ["x64-mingw32", "x64-unknown"]
-      end
-    else
-      ["x64-mingw32"]
-    end
-  end
-
-  let(:x64_mingw_gems) do
-    x64_mingw_archs.map {|p| "platform_specific (1.0-#{p})" }.join("\n    ")
-  end
-
-  let(:x64_mingw_platforms) do
-    x64_mingw_archs.join("\n  ")
-  end
-
-  def x64_mingw_checksums(checksums)
-    x64_mingw_archs.each do |arch|
-      if arch == "x64-mingw-ucrt"
-        checksums.no_checksum "platform_specific", "1.0", arch
-      else
-        checksums.checksum gem_repo2, "platform_specific", "1.0", arch
-      end
-    end
-  end
-
   it "should install runtime and development dependencies" do
     build_lib("foo", path: tmp("foo")) do |s|
       s.write("Gemfile", "source :rubygems\ngemspec")
@@ -180,7 +150,7 @@ RSpec.describe "bundle install from an existing gemspec" do
   end
 
   it "should match a lockfile without needing to re-resolve with development dependencies" do
-    simulate_platform java do
+    simulate_platform "java" do
       build_lib("foo", path: tmp("foo")) do |s|
         s.add_dependency "myrack"
         s.add_development_dependency "thin"
@@ -222,7 +192,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     install_gemfile <<-G, raise_on_error: false
       gemspec :path => '#{tmp("foo")}'
     G
-    expect(last_command.stdboth).not_to include("ahh")
+    expect(stdboth).not_to include("ahh")
   end
 
   it "allows the gemspec to activate other gems" do
@@ -288,6 +258,25 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     run "Gem.finish_resolve; puts 'WIN'"
     expect(out).to eq("WIN")
+  end
+
+  it "does not make Gem.try_activate warn when local gem has extensions" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.version = "1.0.0"
+      s.add_c_extension
+    end
+    build_repo2
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      gemspec :path => '#{tmp("foo")}'
+    G
+
+    expect(the_bundle).to include_gems "foo 1.0.0"
+
+    run "Gem.try_activate('irb/lc/es/error.rb'); puts 'WIN'"
+    expect(out).to eq("WIN")
+    expect(err).to be_empty
   end
 
   it "handles downgrades" do
@@ -385,13 +374,13 @@ RSpec.describe "bundle install from an existing gemspec" do
             myrack (1.0.0)
 
         PLATFORMS
-          #{generic_local_platform}
+          ruby
 
         DEPENDENCIES
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -431,12 +420,13 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
 
         build_lib "foo", path: bundled_app do |s|
-          if platform_specific_type == :runtime
+          case platform_specific_type
+          when :runtime
             s.add_runtime_dependency dependency
-          elsif platform_specific_type == :development
+          when :development
             s.add_development_dependency dependency
           else
-            raise "wrong dependency type #{platform_specific_type}, can only be :development or :runtime"
+            raise ArgumentError, "wrong dependency type #{platform_specific_type}, can only be :development or :runtime"
           end
         end
 
@@ -450,7 +440,8 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         simulate_new_machine
         simulate_platform("jruby") { bundle "install" }
-        simulate_platform(x64_mingw32) { bundle "install" }
+        expect(lockfile).to include("platform_specific (1.0-java)")
+        simulate_platform("x64-mingw-ucrt") { bundle "install" }
       end
 
       context "on ruby" do
@@ -467,7 +458,7 @@ RSpec.describe "bundle install from an existing gemspec" do
               c.no_checksum "foo", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0", "java"
-              x64_mingw_checksums(c)
+              c.checksum gem_repo2, "platform_specific", "1.0", "x64-mingw-ucrt"
             end
 
             expect(lockfile).to eq <<~L
@@ -482,18 +473,18 @@ RSpec.describe "bundle install from an existing gemspec" do
                 specs:
                   platform_specific (1.0)
                   platform_specific (1.0-java)
-                  #{x64_mingw_gems}
+                  platform_specific (1.0-x64-mingw-ucrt)
 
               PLATFORMS
                 java
                 ruby
-                #{x64_mingw_platforms}
+                x64-mingw-ucrt
 
               DEPENDENCIES
                 foo!
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -508,7 +499,7 @@ RSpec.describe "bundle install from an existing gemspec" do
               c.no_checksum "foo", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0", "java"
-              x64_mingw_checksums(c)
+              c.checksum gem_repo2, "platform_specific", "1.0", "x64-mingw-ucrt"
             end
 
             expect(lockfile).to eq <<~L
@@ -522,19 +513,19 @@ RSpec.describe "bundle install from an existing gemspec" do
                 specs:
                   platform_specific (1.0)
                   platform_specific (1.0-java)
-                  #{x64_mingw_gems}
+                  platform_specific (1.0-x64-mingw-ucrt)
 
               PLATFORMS
                 java
                 ruby
-                #{x64_mingw_platforms}
+                x64-mingw-ucrt
 
               DEPENDENCIES
                 foo!
                 platform_specific
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -551,7 +542,7 @@ RSpec.describe "bundle install from an existing gemspec" do
               c.checksum gem_repo2, "indirect_platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0"
               c.checksum gem_repo2, "platform_specific", "1.0", "java"
-              x64_mingw_checksums(c)
+              c.checksum gem_repo2, "platform_specific", "1.0", "x64-mingw-ucrt"
             end
 
             expect(lockfile).to eq <<~L
@@ -567,19 +558,19 @@ RSpec.describe "bundle install from an existing gemspec" do
                     platform_specific
                   platform_specific (1.0)
                   platform_specific (1.0-java)
-                  #{x64_mingw_gems}
+                  platform_specific (1.0-x64-mingw-ucrt)
 
               PLATFORMS
                 java
                 ruby
-                #{x64_mingw_platforms}
+                x64-mingw-ucrt
 
               DEPENDENCIES
                 foo!
                 indirect_platform_specific
               #{checksums}
               BUNDLED WITH
-                 #{Bundler::VERSION}
+                #{Bundler::VERSION}
             L
           end
         end
@@ -625,14 +616,14 @@ RSpec.describe "bundle install from an existing gemspec" do
     before do
       build_lib("chef", path: tmp("chef")) do |s|
         s.version = "17.1.17"
-        s.write "chef-universal-mingw32.gemspec", build_spec("chef", "17.1.17", "universal-mingw32") {|sw| sw.runtime "win32-api", "~> 1.5.3" }.first.to_ruby
+        s.write "chef-universal-mingw-ucrt.gemspec", build_spec("chef", "17.1.17", "universal-mingw-ucrt") {|sw| sw.runtime "win32-api", "~> 1.5.3" }.first.to_ruby
       end
     end
 
     it "does not remove the platform specific specs from the lockfile when updating" do
       build_repo4 do
         build_gem "win32-api", "1.5.3" do |s|
-          s.platform = "universal-mingw32"
+          s.platform = "universal-mingw-ucrt"
         end
       end
 
@@ -643,8 +634,8 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       checksums = checksums_section_when_enabled do |c|
         c.no_checksum "chef", "17.1.17"
-        c.no_checksum "chef", "17.1.17", "universal-mingw32"
-        c.checksum gem_repo4, "win32-api", "1.5.3", "universal-mingw32"
+        c.no_checksum "chef", "17.1.17", "universal-mingw-ucrt"
+        c.checksum gem_repo4, "win32-api", "1.5.3", "universal-mingw-ucrt"
       end
 
       initial_lockfile = <<~L
@@ -652,24 +643,22 @@ RSpec.describe "bundle install from an existing gemspec" do
           remote: ../chef
           specs:
             chef (17.1.17)
-            chef (17.1.17-universal-mingw32)
+            chef (17.1.17-universal-mingw-ucrt)
               win32-api (~> 1.5.3)
 
         GEM
           remote: https://gem.repo4/
           specs:
-            win32-api (1.5.3-universal-mingw32)
+            win32-api (1.5.3-universal-mingw-ucrt)
 
         PLATFORMS
-          ruby
-          #{x64_mingw_platforms}
-          x86-mingw32
+          #{lockfile_platforms("ruby", "x64-mingw-ucrt", "x86-mingw32")}
 
         DEPENDENCIES
           chef!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       lockfile initial_lockfile
@@ -732,7 +721,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           jruby-openssl
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       gemspec = tmp("activeadmin/activeadmin.gemspec")

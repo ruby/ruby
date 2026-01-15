@@ -91,7 +91,7 @@ Executions:
   Usage: short_required [options]
       -xXXX                            Short name with required argument
   $ ruby short_required.rb -x
-  short_required.rb:6:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  short_required.rb:6:in '<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby short_required.rb -x FOO
   ["-x", "FOO"]
 
@@ -181,7 +181,7 @@ Executions:
   Usage: long_required [options]
           --xxx XXX                    Long name with required argument
   $ ruby long_required.rb --xxx
-  long_required.rb:6:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  long_required.rb:6:in '<main>': missing argument: --xxx (OptionParser::MissingArgument)
   $ ruby long_required.rb --xxx FOO
   ["--xxx", "FOO"]
 
@@ -243,11 +243,11 @@ Usage: mixed_names [options]
   $ ruby mixed_names.rb --xxx
   ["--xxx", true]
   $ ruby mixed_names.rb -y
-  mixed_names.rb:12:in `<main>': missing argument: -y (OptionParser::MissingArgument)
+  mixed_names.rb:12:in '<main>': missing argument: -y (OptionParser::MissingArgument)
   $ ruby mixed_names.rb -y FOO
   ["--yyy", "FOO"]
   $ ruby mixed_names.rb --yyy
-  mixed_names.rb:12:in `<main>': missing argument: --yyy (OptionParser::MissingArgument)
+  mixed_names.rb:12:in '<main>': missing argument: --yyy (OptionParser::MissingArgument)
   $ ruby mixed_names.rb --yyy BAR
   ["--yyy", "BAR"]
   $ ruby mixed_names.rb -z
@@ -279,7 +279,7 @@ Executions:
   Usage: argument_keywords [options]
       -x, --xxx                        Required argument
   $ ruby argument_styles.rb --xxx
-  argument_styles.rb:6:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  argument_styles.rb:6:in '<main>': missing argument: --xxx (OptionParser::MissingArgument)
   $ ruby argument_styles.rb --xxx FOO
   ["--xxx", "FOO"]
 
@@ -298,7 +298,7 @@ Executions:
   Usage: argument_strings [options]
       -x, --xxx=XXX                    Required argument
   $ ruby argument_strings.rb --xxx
-  argument_strings.rb:9:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  argument_strings.rb:9:in '<main>': missing argument: --xxx (OptionParser::MissingArgument)
   $ ruby argument_strings.rb --xxx FOO
   ["--xxx", "FOO"]
 
@@ -331,7 +331,7 @@ Executions:
       -xXXX                            Values for required argument
       -y [YYY]                         Values for optional argument
   $ ruby explicit_array_values.rb -x
-  explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  explicit_array_values.rb:9:in '<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_array_values.rb -x foo
   ["-x", "foo"]
   $ ruby explicit_array_values.rb -x f
@@ -339,9 +339,9 @@ Executions:
   $ ruby explicit_array_values.rb -x bar
   ["-x", "bar"]
   $ ruby explicit_array_values.rb -y ba
-  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  explicit_array_values.rb:9:in '<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_array_values.rb -x baz
-  explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  explicit_array_values.rb:9:in '<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
 
 
 ===== Explicit Values in Hash
@@ -361,7 +361,7 @@ Executions:
       -xXXX                            Values for required argument
       -y [YYY]                         Values for optional argument
   $ ruby explicit_hash_values.rb -x
-  explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  explicit_hash_values.rb:9:in '<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_hash_values.rb -x foo
   ["-x", 0]
   $ ruby explicit_hash_values.rb -x f
@@ -369,7 +369,7 @@ Executions:
   $ ruby explicit_hash_values.rb -x bar
   ["-x", 1]
   $ ruby explicit_hash_values.rb -x baz
-  explicit_hash_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  explicit_hash_values.rb:9:in '<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
   $ ruby explicit_hash_values.rb -y
   ["-y", nil]
   $ ruby explicit_hash_values.rb -y baz
@@ -377,14 +377,15 @@ Executions:
   $ ruby explicit_hash_values.rb -y bat
   ["-y", 3]
   $ ruby explicit_hash_values.rb -y ba
-  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  explicit_hash_values.rb:9:in '<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_hash_values.rb -y bam
   ["-y", nil]
 
 ==== Argument Value Patterns
 
 You can restrict permissible argument values
-by specifying a Regexp that the given argument must match.
+by specifying a +Regexp+ that the given argument must match,
+or a +Range+ or +Array+ that the converted value must be included in.
 
 File +matched_values.rb+ defines options with matched argument values.
 
@@ -395,12 +396,22 @@ Executions:
   $ ruby matched_values.rb --help
   Usage: matched_values [options]
           --xxx XXX                    Matched values
+          --yyy YYY                    Check by range
+          --zzz ZZZ                    Check by list
   $ ruby matched_values.rb --xxx foo
   ["--xxx", "foo"]
   $ ruby matched_values.rb --xxx FOO
   ["--xxx", "FOO"]
   $ ruby matched_values.rb --xxx bar
-  matched_values.rb:6:in `<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+  matched_values.rb:12:in '<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+  $ ruby matched_values.rb --yyy 1
+  ["--yyy", 1]
+  $ ruby matched_values.rb --yyy 4
+  matched_values.rb:12:in '<main>': invalid argument: --yyy 4 (OptionParser::InvalidArgument)
+  $ ruby matched_values.rb --zzz 1
+  ["--zzz", 1]
+  $ ruby matched_values.rb --zzz 2
+  matched_values.rb:12:in '<main>': invalid argument: --zzz 2 (OptionParser::InvalidArgument)
 
 === Argument Converters
 

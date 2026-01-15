@@ -13,9 +13,8 @@
 # access children nodes by name, etc.
 #
 # If you are looking for a stable API or an API working under multiple Ruby
-# implementations, consider using the _parser_ gem or Ripper. If you would
-# like to make RubyVM::AbstractSyntaxTree stable, please join the discussion
-# at https://bugs.ruby-lang.org/issues/14844.
+# implementations, consider using the _prism_ gem, which is the official
+# Ruby API to parse Ruby code.
 #
 module RubyVM::AbstractSyntaxTree
 
@@ -284,7 +283,7 @@ module RubyVM::AbstractSyntaxTree
   end
 
   # RubyVM::AbstractSyntaxTree::Location instances are created by
-  # RubyVM::AbstractSyntaxTree#locations.
+  # RubyVM::AbstractSyntaxTree::Node#locations.
   #
   # This class is MRI specific.
   #

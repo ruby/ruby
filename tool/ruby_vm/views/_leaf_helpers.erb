@@ -10,10 +10,6 @@
 
 #include "iseq.h"
 
-// This is used to tell RJIT that this insn would be leaf if CHECK_INTS didn't exist.
-// It should be used only when RUBY_VM_CHECK_INTS is directly written in insns.def.
-static bool leafness_of_check_ints = false;
-
 static bool
 leafness_of_defined(rb_num_t op_type)
 {
@@ -25,7 +21,7 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_YIELD:
       case DEFINED_REF:
       case DEFINED_ZSUPER:
-        return false;
+        return true;
       case DEFINED_CONST:
       case DEFINED_CONST_FROM:
         /* has rb_autoload_load(); */

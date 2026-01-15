@@ -43,7 +43,7 @@ class ExtLibs
   end
 
   def do_download(url, cache_dir)
-    Downloader.download(url, nil, nil, nil, :cache_dir => cache_dir)
+    Downloader.download(url, nil, nil, nil, cache_dir: cache_dir)
   end
 
   def do_checksum(cache, chksums)

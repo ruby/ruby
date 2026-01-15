@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::fmt;
 use std::mem;
 use std::rc::Rc;
@@ -44,7 +43,7 @@ pub struct LabelRef {
 /// Block of memory into which instructions can be assembled
 pub struct CodeBlock {
     // Memory for storing the encoded instructions
-    mem_block: Rc<RefCell<VirtualMem>>,
+    mem_block: Rc<VirtualMem>,
 
     // Size of a code page in bytes. Each code page is split into an inlined and an outlined portion.
     // Code GC collects code memory at this granularity.
@@ -107,16 +106,16 @@ impl CodeBlock {
     const PREFERRED_CODE_PAGE_SIZE: usize = 16 * 1024;
 
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, keep_comments: bool) -> Self {
+    pub fn new(mem_block: Rc<VirtualMem>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, keep_comments: bool) -> Self {
         // Pick the code page size
-        let system_page_size = mem_block.borrow().system_page_size();
+        let system_page_size = mem_block.system_page_size();
         let page_size = if 0 == Self::PREFERRED_CODE_PAGE_SIZE % system_page_size {
             Self::PREFERRED_CODE_PAGE_SIZE
         } else {
             system_page_size
         };
 
-        let mem_size = mem_block.borrow().virtual_region_size();
+        let mem_size = mem_block.virtual_region_size();
         let mut cb = Self {
             mem_block,
             mem_size,
@@ -145,6 +144,7 @@ impl CodeBlock {
 
     /// Move the CodeBlock to the next page. If it's on the furthest page,
     /// move the other CodeBlock to the next page as well.
+    #[must_use]
     pub fn next_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, base_ptr: CodePtr, jmp_ptr: F) -> bool {
         let old_write_ptr = self.get_write_ptr();
         self.set_write_ptr(base_ptr);
@@ -237,9 +237,9 @@ impl CodeBlock {
             }
 
             // Free the grouped pages at once
-            let start_ptr = self.mem_block.borrow().start_ptr().add_bytes(page_idx * self.page_size);
+            let start_ptr = self.mem_block.start_ptr().add_bytes(page_idx * self.page_size);
             let batch_size = self.page_size * batch_idxs.len();
-            self.mem_block.borrow_mut().free_bytes(start_ptr, batch_size as u32);
+            self.mem_block.free_bytes(start_ptr, batch_size as u32);
         }
     }
 
@@ -248,13 +248,13 @@ impl CodeBlock {
     }
 
     pub fn mapped_region_size(&self) -> usize {
-        self.mem_block.borrow().mapped_region_size()
+        self.mem_block.mapped_region_size()
     }
 
     /// Size of the region in bytes where writes could be attempted.
     #[cfg(target_arch = "aarch64")]
     pub fn virtual_region_size(&self) -> usize {
-        self.mem_block.borrow().virtual_region_size()
+        self.mem_block.virtual_region_size()
     }
 
     /// Return the number of code pages that have been mapped by the VirtualMemory.
@@ -266,7 +266,7 @@ impl CodeBlock {
 
     /// Return the number of code pages that have been reserved by the VirtualMemory.
     pub fn num_virtual_pages(&self) -> usize {
-        let virtual_region_size = self.mem_block.borrow().virtual_region_size();
+        let virtual_region_size = self.mem_block.virtual_region_size();
         // CodeBlock's page size != VirtualMem's page size on Linux,
         // so mapped_region_size % self.page_size may not be 0
         ((virtual_region_size - 1) / self.page_size) + 1
@@ -408,7 +408,7 @@ impl CodeBlock {
     }
 
     pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
-        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
+        self.mem_block.write_byte(write_ptr, byte)
     }
 
     // Set the current write position
@@ -422,31 +422,31 @@ impl CodeBlock {
 
     // Set the current write position from a pointer
     pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
-        let pos = code_ptr.as_offset() - self.mem_block.borrow().start_ptr().as_offset();
+        let pos = code_ptr.as_offset() - self.mem_block.start_ptr().as_offset();
         self.set_pos(pos.try_into().unwrap());
     }
 
     /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
-        self.mem_block.borrow().start_ptr().add_bytes(offset)
+        self.mem_block.start_ptr().add_bytes(offset)
     }
 
     /// Convert an address range to memory page indexes against a num_pages()-sized array.
-    pub fn addrs_to_pages(&self, start_addr: CodePtr, end_addr: CodePtr) -> Vec<usize> {
-        let mem_start = self.mem_block.borrow().start_ptr().raw_addr(self);
-        let mem_end = self.mem_block.borrow().mapped_end_ptr().raw_addr(self);
+    pub fn addrs_to_pages(&self, start_addr: CodePtr, end_addr: CodePtr) -> impl Iterator<Item = usize> {
+        let mem_start = self.mem_block.start_ptr().raw_addr(self);
+        let mem_end = self.mem_block.mapped_end_ptr().raw_addr(self);
         assert!(mem_start <= start_addr.raw_addr(self));
         assert!(start_addr.raw_addr(self) <= end_addr.raw_addr(self));
         assert!(end_addr.raw_addr(self) <= mem_end);
 
         // Ignore empty code ranges
         if start_addr == end_addr {
-            return vec![];
+            return 0..0;
         }
 
         let start_page = (start_addr.raw_addr(self) - mem_start) / self.page_size;
         let end_page = (end_addr.raw_addr(self) - mem_start - 1) / self.page_size;
-        (start_page..=end_page).collect() // TODO: consider returning an iterator
+        start_page..end_page + 1
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position
@@ -457,7 +457,7 @@ impl CodeBlock {
     /// Write a single byte at the current position.
     pub fn write_byte(&mut self, byte: u8) {
         let write_ptr = self.get_write_ptr();
-        if self.has_capacity(1) && self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_ok() {
+        if self.has_capacity(1) && self.mem_block.write_byte(write_ptr, byte).is_ok() {
             self.write_pos += 1;
         } else {
             self.dropped_bytes = true;
@@ -589,8 +589,12 @@ impl CodeBlock {
         self.label_refs = state.label_refs;
     }
 
+    pub fn mark_all_writeable(&mut self) {
+        self.mem_block.mark_all_writeable();
+    }
+
     pub fn mark_all_executable(&mut self) {
-        self.mem_block.borrow_mut().mark_all_executable();
+        self.mem_block.mark_all_executable();
     }
 
     /// Code GC. Free code pages that are not on stack and reuse them.
@@ -686,9 +690,9 @@ impl CodeBlock {
 
         let alloc = TestingAllocator::new(mem_size);
         let mem_start: *const u8 = alloc.mem_start();
-        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(None), true)
+        Self::new(Rc::new(virt_mem), false, Rc::new(None), true)
     }
 
     /// Stubbed CodeBlock for testing conditions that can arise due to code GC. Can't execute generated code.
@@ -704,9 +708,9 @@ impl CodeBlock {
 
         let alloc = TestingAllocator::new(mem_size);
         let mem_start: *const u8 = alloc.mem_start();
-        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(Some(freed_pages)), true)
+        Self::new(Rc::new(virt_mem), false, Rc::new(Some(freed_pages)), true)
     }
 }
 
@@ -714,7 +718,7 @@ impl CodeBlock {
 impl fmt::LowerHex for CodeBlock {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         for pos in 0..self.write_pos {
-            let mem_block = &*self.mem_block.borrow();
+            let mem_block = &*self.mem_block;
             let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
             fmtr.write_fmt(format_args!("{:02x}", byte))?;
         }
@@ -724,7 +728,7 @@ impl fmt::LowerHex for CodeBlock {
 
 impl crate::virtualmem::CodePtrBase for CodeBlock {
     fn base_ptr(&self) -> std::ptr::NonNull<u8> {
-        self.mem_block.borrow().base_ptr()
+        self.mem_block.base_ptr()
     }
 }
 
@@ -823,7 +827,7 @@ mod tests
         assert_eq!(cb.code_size(), 4);
 
         // Moving to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        assert!(cb.next_page(cb.get_write_ptr(), |_, _| {}));
         assert_eq!(cb.code_size(), 4);
 
         // Write 4 bytes in the second page
@@ -836,7 +840,7 @@ mod tests
         cb.write_bytes(&[1, 1, 1, 1]);
 
         // Moving from an old page to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        assert!(cb.next_page(cb.get_write_ptr(), |_, _| {}));
         cb.set_pos(old_write_pos);
         assert_eq!(cb.code_size(), 8);
     }

@@ -476,6 +476,9 @@ describe "Module#define_method" do
       ChildClass = Class.new(ParentClass) { define_method(:foo) { :baz } }
       ParentClass.send :define_method, :foo, ChildClass.instance_method(:foo)
     }.should raise_error(TypeError, /bind argument must be a subclass of ChildClass/)
+  ensure
+    Object.send(:remove_const, :ParentClass)
+    Object.send(:remove_const, :ChildClass)
   end
 
   it "raises a TypeError when an UnboundMethod from one class is defined on an unrelated class" do

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 require "stringio"
 
@@ -17,7 +18,7 @@ module Prism
 
       # Formats the errors in a human-readable way and return them as a string.
       def format
-        error_lines = {}
+        error_lines = {} #: Hash[Integer, Array[ParseError]]
         parse_result.errors.each do |error|
           location = error.location
           (location.start_line..location.end_line).each do |line|

@@ -8,13 +8,25 @@ module Prism
   class FixturesTest < TestCase
     except = []
 
-    # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace
-    # characters in the heredoc start.
-    # Example: <<~'   EOF' or <<-'  EOF'
-    # https://bugs.ruby-lang.org/issues/19539
-    except << "heredocs_leading_whitespace.txt" if RUBY_VERSION < "3.3.0"
+    if RUBY_VERSION < "3.3.0"
+      # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace
+      # characters in the heredoc start.
+      # Example: <<~'   EOF' or <<-'  EOF'
+      # https://bugs.ruby-lang.org/issues/19539
+      except << "heredocs_leading_whitespace.txt"
+      except << "whitequark/ruby_bug_19539.txt"
 
-    Fixture.each(except: except) do |fixture|
+      # https://bugs.ruby-lang.org/issues/19025
+      except << "whitequark/numparam_ruby_bug_19025.txt"
+      # https://bugs.ruby-lang.org/issues/18878
+      except << "whitequark/ruby_bug_18878.txt"
+      # https://bugs.ruby-lang.org/issues/19281
+      except << "whitequark/ruby_bug_19281.txt"
+    end
+
+    except << "command_method_call_2.txt"
+
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }
     end
   end

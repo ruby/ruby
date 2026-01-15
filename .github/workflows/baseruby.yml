@@ -30,33 +30,30 @@ jobs:
   baseruby:
     name: BASERUBY
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     strategy:
       matrix:
         ruby:
-          - ruby-3.0
           - ruby-3.1
           - ruby-3.2
           - ruby-3.3
 
     steps:
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - uses: ./.github/actions/setup/ubuntu
 

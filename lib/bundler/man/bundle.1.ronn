@@ -76,9 +76,6 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle lock(1)`](bundle-lock.1.html):
   Generate a lockfile for your dependencies
 
-* [`bundle viz(1)`](bundle-viz.1.html) (deprecated):
-  Generate a visual representation of your dependencies
-
 * [`bundle init(1)`](bundle-init.1.html):
   Generate a simple `Gemfile`, placed in the current directory
 
@@ -108,9 +105,3 @@ We divide `bundle` subcommands into primary commands and utilities:
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES,
 Bundler will try to find an executable on your path named `bundler-<command>`
 and execute it, passing down any extra arguments to it.
-
-## OBSOLETE
-
-These commands are obsolete and should no longer be used:
-
-* `bundle inject(1)`

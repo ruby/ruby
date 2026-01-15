@@ -111,7 +111,7 @@ Executions:
   ["x", true]
   ["input_file.txt", "output_file.txt"]
   $ ruby basic.rb -a
-  basic.rb:16:in `<main>': invalid option: -a (OptionParser::InvalidOption)
+  basic.rb:16:in '<main>': invalid option: -a (OptionParser::InvalidOption)
 
 === Defining Options
 
@@ -232,11 +232,11 @@ Executions:
   $ ruby mixed_names.rb --xxx
   ["--xxx", true]
   $ ruby mixed_names.rb -y
-  mixed_names.rb:12:in `<main>': missing argument: -y (OptionParser::MissingArgument)
+  mixed_names.rb:12:in '<main>': missing argument: -y (OptionParser::MissingArgument)
   $ ruby mixed_names.rb -y FOO
   ["--yyy", "FOO"]
   $ ruby mixed_names.rb --yyy
-  mixed_names.rb:12:in `<main>': missing argument: --yyy (OptionParser::MissingArgument)
+  mixed_names.rb:12:in '<main>': missing argument: --yyy (OptionParser::MissingArgument)
   $ ruby mixed_names.rb --yyy BAR
   ["--yyy", "BAR"]
   $ ruby mixed_names.rb -z
@@ -270,9 +270,9 @@ Executions:
   $ ruby name_abbrev.rb --draft
   ["--draft", true]
   $ ruby name_abbrev.rb --d
-  name_abbrev.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
+  name_abbrev.rb:9:in '<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
   $ ruby name_abbrev.rb --dr
-  name_abbrev.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
+  name_abbrev.rb:9:in '<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
   $ ruby name_abbrev.rb --dry
   ["--dry-run", true]
   $ ruby name_abbrev.rb --dra
@@ -285,7 +285,7 @@ You can disable abbreviation using method +require_exact+.
 Executions:
 
   $ ruby no_abbreviation.rb --dry-ru
-  no_abbreviation.rb:10:in `<main>': invalid option: --dry-ru (OptionParser::InvalidOption)
+  no_abbreviation.rb:10:in '<main>': invalid option: --dry-ru (OptionParser::InvalidOption)
   $ ruby no_abbreviation.rb --dry-run
   ["--dry-run", true]
 
@@ -323,7 +323,7 @@ Executions:
 Omitting a required argument raises an error:
 
   $ ruby required_argument.rb -x
-  required_argument.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  required_argument.rb:9:in '<main>': missing argument: -x (OptionParser::MissingArgument)
 
 ==== Option with Optional Argument
 
@@ -369,7 +369,7 @@ Executions:
   $ ruby argument_abbreviation.rb --xxx A
   ["--xxx", "ABC"]
   $ ruby argument_abbreviation.rb --xxx c
-  argument_abbreviation.rb:9:in `<main>': invalid argument: --xxx c (OptionParser::InvalidArgument)
+  argument_abbreviation.rb:9:in '<main>': invalid argument: --xxx c (OptionParser::InvalidArgument)
   $ ruby argument_abbreviation.rb --yyy a --yyy d
   ["--yyy", "XYZ"]
   ["--yyy", "FOO"]
@@ -403,7 +403,7 @@ Executions:
       -xXXX                            Values for required argument
       -y [YYY]                         Values for optional argument
   $ ruby explicit_array_values.rb -x
-  explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  explicit_array_values.rb:9:in '<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_array_values.rb -x foo
   ["-x", "foo"]
   $ ruby explicit_array_values.rb -x f
@@ -411,9 +411,9 @@ Executions:
   $ ruby explicit_array_values.rb -x bar
   ["-x", "bar"]
   $ ruby explicit_array_values.rb -y ba
-  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  explicit_array_values.rb:9:in '<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_array_values.rb -x baz
-  explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  explicit_array_values.rb:9:in '<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
 
 
 ===== Explicit Values in Hash
@@ -433,7 +433,7 @@ Executions:
       -xXXX                            Values for required argument
       -y [YYY]                         Values for optional argument
   $ ruby explicit_hash_values.rb -x
-  explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  explicit_hash_values.rb:9:in '<main>': missing argument: -x (OptionParser::MissingArgument)
   $ ruby explicit_hash_values.rb -x foo
   ["-x", 0]
   $ ruby explicit_hash_values.rb -x f
@@ -441,7 +441,7 @@ Executions:
   $ ruby explicit_hash_values.rb -x bar
   ["-x", 1]
   $ ruby explicit_hash_values.rb -x baz
-  explicit_hash_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  explicit_hash_values.rb:9:in '<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
   $ ruby explicit_hash_values.rb -y
   ["-y", nil]
   $ ruby explicit_hash_values.rb -y baz
@@ -449,7 +449,7 @@ Executions:
   $ ruby explicit_hash_values.rb -y bat
   ["-y", 3]
   $ ruby explicit_hash_values.rb -y ba
-  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  explicit_hash_values.rb:9:in '<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
   $ ruby explicit_hash_values.rb -y bam
   ["-y", nil]
 
@@ -472,7 +472,7 @@ Executions:
   $ ruby matched_values.rb --xxx FOO
   ["--xxx", "FOO"]
   $ ruby matched_values.rb --xxx bar
-  matched_values.rb:6:in `<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+  matched_values.rb:6:in '<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
 
 === Keyword Argument +into+
 
@@ -524,7 +524,7 @@ Executions:
       -y, --yyyYYY                     Short and long, required argument
       -z, --zzz [ZZZ]                  Short and long, optional argument
   $ ruby missing_options.rb --yyy FOO
-  missing_options.rb:11:in `<main>': Missing required options: [:xxx, :zzz] (RuntimeError)
+  missing_options.rb:11:in '<main>': Missing required options: [:xxx, :zzz] (RuntimeError)
 
 ==== Default Values for Options
 

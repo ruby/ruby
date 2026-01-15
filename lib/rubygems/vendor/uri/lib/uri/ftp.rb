@@ -17,7 +17,7 @@ module Gem::URI
   # This class will be redesigned because of difference of implementations;
   # the structure of its path. draft-hoffman-ftp-uri-04 is a draft but it
   # is a good summary about the de facto spec.
-  # http://tools.ietf.org/html/draft-hoffman-ftp-uri-04
+  # https://datatracker.ietf.org/doc/html/draft-hoffman-ftp-uri-04
   #
   class FTP < Generic
     # A Default port of 21 for Gem::URI::FTP.

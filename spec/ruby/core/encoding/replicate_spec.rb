@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 
 describe "Encoding#replicate" do
@@ -67,7 +67,7 @@ describe "Encoding#replicate" do
     end
   end
 
-  ruby_version_is "3.2"..."3.3" do
+  ruby_version_is ""..."3.3" do
     it "warns about deprecation" do
       -> {
         Encoding::US_ASCII.replicate('MY-US-ASCII')

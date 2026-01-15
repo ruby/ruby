@@ -32,30 +32,26 @@ VALUE asn1integer_to_num(const ASN1_INTEGER *);
 ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
 
 /*
+ * ASN1_OBJECT conversions
+ */
+ASN1_OBJECT *ossl_to_asn1obj(VALUE obj);
+/*
+ * Returns the short name if available, the dotted decimal notation otherwise.
+ * This is the most common way to return ASN1_OBJECT to Ruby.
+ */
+VALUE ossl_asn1obj_to_string(const ASN1_OBJECT *a1obj);
+/*
+ * However, some places use long names instead. This is likely unintentional,
+ * but we keep the current behavior in existing methods.
+ */
+VALUE ossl_asn1obj_to_string_long_name(const ASN1_OBJECT *a1obj);
+
+/*
  * ASN1 module
  */
 extern VALUE mASN1;
-extern VALUE eASN1Error;
 
 extern VALUE cASN1Data;
-extern VALUE cASN1Primitive;
-extern VALUE cASN1Constructive;
-
-extern VALUE cASN1Boolean;                           /* BOOLEAN           */
-extern VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
-extern VALUE cASN1BitString;                         /* BIT STRING        */
-extern VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
-extern VALUE cASN1NumericString, cASN1PrintableString;
-extern VALUE cASN1T61String, cASN1VideotexString;
-extern VALUE cASN1IA5String, cASN1GraphicString;
-extern VALUE cASN1ISO64String, cASN1GeneralString;
-extern VALUE cASN1UniversalString, cASN1BMPString;
-extern VALUE cASN1Null;                              /* NULL              */
-extern VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
-extern VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
-extern VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
-
-extern VALUE cASN1EndOfContent;                      /* END OF CONTENT      */
 
 void Init_ossl_asn1(void);
 

@@ -886,6 +886,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
+    assert_raise(ArgumentError) { Enumerator.produce(a: 1, b: 1) {} }
 
     # Without initial object
     passed_args = []
@@ -902,14 +903,6 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal Float::INFINITY, enum.size
     assert_equal [1, 2, 3], enum.take(3)
     assert_equal [1, 2], passed_args
-
-    # With initial keyword arguments
-    passed_args = []
-    enum = Enumerator.produce(a: 1, b: 1) { |obj| passed_args << obj; obj.shift if obj.respond_to?(:shift)}
-    assert_instance_of(Enumerator, enum)
-    assert_equal Float::INFINITY, enum.size
-    assert_equal [{b: 1}, [1], :a, nil], enum.take(4)
-    assert_equal [{b: 1}, [1], :a], passed_args
 
     # Raising StopIteration
     words = "The quick brown fox jumps over the lazy dog.".scan(/\w+/)
@@ -935,6 +928,25 @@ class TestEnumerator < Test::Unit::TestCase
         "abc",
       ], enum.to_a
     }
+
+    # With size keyword argument
+    enum = Enumerator.produce(1, size: 10) { |obj| obj.succ }
+    assert_equal 10, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
+
+    enum = Enumerator.produce(1, size: -> { 5 }) { |obj| obj.succ }
+    assert_equal 5, enum.size
+
+    enum = Enumerator.produce(1, size: nil) { |obj| obj.succ }
+    assert_equal nil, enum.size
+
+    enum = Enumerator.produce(1, size: Float::INFINITY) { |obj| obj.succ }
+    assert_equal Float::INFINITY, enum.size
+
+    # Without initial value but with size
+    enum = Enumerator.produce(size: 3) { |obj| (obj || 0).succ }
+    assert_equal 3, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
   end
 
   def test_chain_each_lambda
@@ -1042,5 +1054,20 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(FrozenError) { e.peek_values }
     assert_raise(FrozenError) { e.feed 1 }
     assert_raise(FrozenError) { e.rewind }
+  end
+
+  def test_sum_of_numeric
+    num = Class.new(Numeric) do
+      attr_reader :to_f
+      def initialize(val)
+        @to_f = Float(val)
+      end
+    end
+
+    ary = [5, 10, 20].map {|i| num.new(i)}
+
+    assert_equal(35.0, ary.sum)
+    enum = ary.each
+    assert_equal(35.0, enum.sum)
   end
 end

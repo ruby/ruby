@@ -42,8 +42,28 @@ describe "With neither --enable-frozen-string-literal nor --disable-frozen-strin
     ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb")).chomp.should == "false"
   end
 
-  it "if file has no frozen_string_literal comment produce different mutable strings each time" do
-    ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
+  context "if file has no frozen_string_literal comment" do
+    it "produce different mutable strings each time" do
+      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
+    end
+
+    guard -> { ruby_version_is "3.4" and !"test".frozen? } do
+      it "complain about modification of produced mutable strings" do
+        -> { eval(<<~RUBY) }.should complain(/warning: literal string will be frozen in the future \(run with --debug-frozen-string-literal for more information\)/)
+          "test" << "!"
+        RUBY
+      end
+
+      it "does not complain about modification if Warning[:deprecated] is false" do
+        deprecated = Warning[:deprecated]
+        Warning[:deprecated] = false
+        -> { eval(<<~RUBY) }.should_not complain
+          "test" << "!"
+        RUBY
+      ensure
+        Warning[:deprecated] = deprecated
+      end
+    end
   end
 
   it "if file has frozen_string_literal:true comment produce same frozen strings each time" do
@@ -57,9 +77,18 @@ end
 
 describe "The --debug flag produces" do
   it "debugging info on attempted frozen string modification" do
-    error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '--debug',  args: "2>&1")
+    error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '--enable-frozen-string-literal --debug',  args: "2>&1")
     error_str.should include("can't modify frozen String")
     error_str.should include("created at")
-    error_str.should include("command_line/fixtures/debug_info.rb:2")
+    error_str.should include("command_line/fixtures/debug_info.rb:1")
+  end
+
+  guard -> { ruby_version_is "3.4" and !"test".frozen? } do
+    it "debugging info on mutating chilled string" do
+      error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '-w --debug',  args: "2>&1")
+      error_str.should include("literal string will be frozen in the future")
+      error_str.should include("the string was created here")
+      error_str.should include("command_line/fixtures/debug_info.rb:1")
+    end
   end
 end

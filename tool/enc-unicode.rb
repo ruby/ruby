@@ -12,6 +12,9 @@
 # You can get source file for gperf.  After this, simply make ruby.
 # Or directly run:
 # tool/enc-unicode.rb --header data_dir emoji_data_dir > enc/unicode/<VERSION>/name2ctype.h
+#
+# There are Makefile rules that automate steps above: `make update-unicode` and
+# `make enc/unicode/<VERSION>/name2ctype.h`.
 
 while arg = ARGV.shift
   case arg
@@ -143,7 +146,8 @@ def define_posix_props(data)
   data['Space'] = data['White_Space']
   data['Blank'] = data['Space_Separator'] + [0x0009]
   data['Cntrl'] = data['Cc']
-  data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] + data['Connector_Punctuation']
+  data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] +
+    data['Connector_Punctuation'] + data['Join_Control']
   data['Graph'] = data['Any'] - data['Space'] - data['Cntrl'] -
     data['Surrogate'] - data['Unassigned']
   data['Print'] = data['Graph'] + data['Space_Separator']
@@ -161,14 +165,24 @@ def parse_scripts(data, categories)
   names = {}
   files.each do |file|
     data_foreach(file[:fn]) do |line|
+      # Parse Unicode data files and store code points and properties.
       if /^# Total (?:code points|elements): / =~ line
         data[current] = cps
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
-        current = $3
+      elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w(?:[\w\s;]*\w)?)/ =~ line
+        # $1: The first hexadecimal code point or the start of a range.
+        # $2: The end code point of the range, if present.
+        #     If there's no range (just a single code point), $2 is nil.
+        # $3: The property or other info.
+        # Example:
+        #   line = "0915..0939    ; InCB; Consonant # Lo  [37] DEVANAGARI LETTER KA..DEVANAGARI LETTER HA"
+        #   $1 = "0915"
+        #   $2 = "0939"
+        #   $3 = "InCB; Consonant"
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
+        current = $3.gsub(/\W+/, '_')
       end
     end
   end
@@ -486,7 +500,11 @@ end
 output.ifdef :USE_UNICODE_PROPERTIES do
   props.each do |name|
     i += 1
-    name = normalize_propname(name)
+    name = if name.start_with?('InCB')
+             name.downcase.gsub(/_/, '=')
+           else
+             normalize_propname(name)
+           end
     name_to_index[name] = i
     puts "%-40s %3d" % [name + ',', i]
   end

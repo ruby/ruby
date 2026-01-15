@@ -23,14 +23,18 @@ module Psych
 
   class YAMLStoreTest < TestCase
     def setup
-      @dir = Dir.mktmpdir("rubytest-file")
-      File.chown(-1, Process.gid, @dir)
-      @yamlstore_file = make_tmp_filename("yamlstore")
-      @yamlstore = YAML::Store.new(@yamlstore_file)
+      if defined?(::PStore)
+        @dir = Dir.mktmpdir("rubytest-file")
+        File.chown(-1, Process.gid, @dir)
+        @yamlstore_file = make_tmp_filename("yamlstore")
+        @yamlstore = YAML::Store.new(@yamlstore_file)
+      else
+        omit "PStore is not available"
+      end
     end
 
     def teardown
-      FileUtils.remove_entry_secure @dir
+      FileUtils.remove_entry_secure(@dir) if @dir
     end
 
     def make_tmp_filename(prefix)
@@ -97,5 +101,5 @@ module Psych
         end
       end
     end
-  end
+  end if defined?(::PStore)
 end if defined?(Psych)

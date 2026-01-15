@@ -1,10 +1,16 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Lexer
     class Location
-      attr_reader :grammar_file, :first_line, :first_column, :last_line, :last_column
+      attr_reader :grammar_file #: GrammarFile
+      attr_reader :first_line #: Integer
+      attr_reader :first_column #: Integer
+      attr_reader :last_line #: Integer
+      attr_reader :last_column #: Integer
 
+      # @rbs (grammar_file: GrammarFile, first_line: Integer, first_column: Integer, last_line: Integer, last_column: Integer) -> void
       def initialize(grammar_file:, first_line:, first_column:, last_line:, last_column:)
         @grammar_file = grammar_file
         @first_line = first_line
@@ -13,6 +19,7 @@ module Lrama
         @last_column = last_column
       end
 
+      # @rbs (Location other) -> bool
       def ==(other)
         self.class == other.class &&
         self.grammar_file == other.grammar_file &&
@@ -22,6 +29,7 @@ module Lrama
         self.last_column == other.last_column
       end
 
+      # @rbs (Integer left, Integer right) -> Location
       def partial_location(left, right)
         offset = -first_column
         new_first_line = -1
@@ -52,42 +60,67 @@ module Lrama
         )
       end
 
+      # @rbs () -> String
       def to_s
         "#{path} (#{first_line},#{first_column})-(#{last_line},#{last_column})"
       end
 
+      # @rbs (String error_message) -> String
       def generate_error_message(error_message)
         <<~ERROR.chomp
           #{path}:#{first_line}:#{first_column}: #{error_message}
-          #{line_with_carets}
+          #{error_with_carets}
         ERROR
       end
 
-      def line_with_carets
+      # @rbs () -> String
+      def error_with_carets
         <<~TEXT
-          #{text}
-          #{carets}
+          #{formatted_first_lineno} | #{text}
+          #{line_number_padding} | #{carets_line}
         TEXT
       end
 
       private
 
+      # @rbs () -> String
       def path
         grammar_file.path
       end
 
-      def blanks
-        (text[0...first_column] or raise "#{first_column} is invalid").gsub(/[^\t]/, ' ')
+      # @rbs () -> String
+      def carets_line
+        leading_whitespace + highlight_marker
       end
 
-      def carets
-        blanks + '^' * (last_column - first_column)
+      # @rbs () -> String
+      def leading_whitespace
+        (text[0...first_column] or raise "Invalid first_column: #{first_column}")
+          .gsub(/[^\t]/, ' ')
       end
 
+      # @rbs () -> String
+      def highlight_marker
+        length = last_column - first_column
+        '^' + '~' * [0, length - 1].max
+      end
+
+      # @rbs () -> String
+      def formatted_first_lineno
+        first_line.to_s.rjust(4)
+      end
+
+      # @rbs () -> String
+      def line_number_padding
+        ' ' * formatted_first_lineno.length
+      end
+
+      # @rbs () -> String
       def text
         @text ||= _text.join("\n")
       end
 
+      # @rbs () -> Array[String]
       def _text
         @_text ||=begin
           range = (first_line - 1)...last_line

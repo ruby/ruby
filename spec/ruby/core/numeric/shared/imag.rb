@@ -19,8 +19,8 @@ describe :numeric_imag, shared: true do
   end
 
   it "raises an ArgumentError if given any arguments" do
-   @numbers.each do |number|
-     -> { number.send(@method, number) }.should raise_error(ArgumentError)
-   end
+    @numbers.each do |number|
+      -> { number.send(@method, number) }.should raise_error(ArgumentError)
+    end
   end
 end

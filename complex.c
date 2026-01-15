@@ -799,9 +799,9 @@ rb_complex_imag(VALUE self)
 
 /*
  * call-seq:
- *   -complex -> new_complex
+ *   -self -> complex
  *
- * Returns the negation of +self+, which is the negation of each of its parts:
+ * Returns +self+, negated, which is the negation of each of its parts:
  *
  *   -Complex.rect(1, 2)   # => (-1-2i)
  *   -Complex.rect(-1, -2) # => (1+2i)
@@ -816,17 +816,26 @@ rb_complex_uminus(VALUE self)
 }
 
 /*
- * call-seq:
- *   complex + numeric -> new_complex
+ *  call-seq:
+ *    self + other -> numeric
  *
- * Returns the sum of +self+ and +numeric+:
+ *  Returns the sum of +self+ and +other+:
  *
- *   Complex.rect(2, 3)  + Complex.rect(2, 3)  # => (4+6i)
- *   Complex.rect(900)   + Complex.rect(1)     # => (901+0i)
- *   Complex.rect(-2, 9) + Complex.rect(-9, 2) # => (-11+11i)
- *   Complex.rect(9, 8)  + 4                   # => (13+8i)
- *   Complex.rect(20, 9) + 9.8                 # => (29.8+9i)
+ *    Complex(1, 2) + 0  # => (1+2i)
+ *    Complex(1, 2) + 1  # => (2+2i)
+ *    Complex(1, 2) + -1 # => (0+2i)
  *
+ *    Complex(1, 2) + 1.0  # => (2.0+2i)
+ *
+ *    Complex(1, 2) + Complex(2, 1)     # => (3+3i)
+ *    Complex(1, 2) + Complex(2.0, 1.0) # => (3.0+3.0i)
+ *
+ *    Complex(1, 2) + Rational(1, 1) # => ((2/1)+2i)
+ *    Complex(1, 2) + Rational(1, 2) # => ((3/2)+2i)
+ *
+ *  For a computation involving Floats, the result may be inexact (see Float#+):
+ *
+ *    Complex(1, 2) + 3.14 # => (4.140000000000001+2i)
  */
 VALUE
 rb_complex_plus(VALUE self, VALUE other)
@@ -852,9 +861,9 @@ rb_complex_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex - numeric -> new_complex
+ *   self - other -> complex
  *
- * Returns the difference of +self+ and +numeric+:
+ * Returns the difference of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  - Complex.rect(2, 3)  # => (0+0i)
  *   Complex.rect(900)   - Complex.rect(1)     # => (899+0i)
@@ -913,15 +922,16 @@ comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE 
 
 /*
  * call-seq:
- *   complex * numeric -> new_complex
+ *   self * other -> numeric
  *
- * Returns the product of +self+ and +numeric+:
+ * Returns the numeric product of +self+ and +other+:
  *
+ *   Complex.rect(9, 8)  * 4                   # => (36+32i)
+ *   Complex.rect(20, 9) * 9.8                 # => (196.0+88.2i)
  *   Complex.rect(2, 3)  * Complex.rect(2, 3)  # => (-5+12i)
  *   Complex.rect(900)   * Complex.rect(1)     # => (900+0i)
  *   Complex.rect(-2, 9) * Complex.rect(-9, 2) # => (0-85i)
- *   Complex.rect(9, 8)  * 4                   # => (36+32i)
- *   Complex.rect(20, 9) * 9.8                 # => (196.0+88.2i)
+ *   Complex.rect(9, 8)  * Rational(2, 3)      # => ((6/1)+(16/3)*i)
  *
  */
 VALUE
@@ -989,9 +999,9 @@ f_divide(VALUE self, VALUE other,
 
 /*
  * call-seq:
- *   complex / numeric -> new_complex
+ *   self / other -> complex
  *
- * Returns the quotient of +self+ and +numeric+:
+ * Returns the quotient of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  / Complex.rect(2, 3)  # => (1+0i)
  *   Complex.rect(900)   / Complex.rect(1)     # => (900+0i)
@@ -1065,7 +1075,8 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
     else if (f_eqeq_p(dat->real, f_negate(dat->imag))) {
         x = dat->imag;
         dir = 3;
-    } else {
+    }
+    else {
         dir = 0;
     }
 
@@ -1111,9 +1122,9 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex ** numeric -> new_complex
+ *   self ** exponent -> complex
  *
- * Returns +self+ raised to power +numeric+:
+ * Returns +self+ raised to the power +exponent+:
  *
  *   Complex.rect(0, 1) ** 2            # => (-1+0i)
  *   Complex.rect(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
@@ -1215,10 +1226,10 @@ rb_complex_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex == object -> true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if <tt>self.real == object.real</tt>
- * and <tt>self.imag == object.imag</tt>:
+ * Returns whether both <tt>self.real == other.real</tt>
+ * and <tt>self.imag == other.imag</tt>:
  *
  *   Complex.rect(2, 3)  == Complex.rect(2.0, 3.0) # => true
  *
@@ -1249,14 +1260,16 @@ nucomp_real_p(VALUE self)
 
 /*
  * call-seq:
- *   complex <=> object -> -1, 0, 1, or nil
+ *   self <=> other -> -1, 0, 1, or nil
+ *
+ * Compares +self+ and +other+.
  *
  * Returns:
  *
- * - <tt>self.real <=> object.real</tt> if both of the following are true:
+ * - <tt>self.real <=> other.real</tt> if both of the following are true:
  *
  *   - <tt>self.imag == 0</tt>.
- *   - <tt>object.imag == 0</tt>. # Always true if object is numeric but not complex.
+ *   - <tt>other.imag == 0</tt> (always true if +other+ is numeric but not complex).
  *
  * - +nil+ otherwise.
  *
@@ -1269,6 +1282,8 @@ nucomp_real_p(VALUE self)
  *   Complex.rect(1) <=> Complex.rect(1, 1) # => nil # object.imag not zero.
  *   Complex.rect(1) <=> 'Foo'              # => nil # object.imag not defined.
  *
+ * \Class \Complex includes module Comparable,
+ * each of whose methods uses Complex#<=> for comparison.
  */
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
@@ -1593,16 +1608,15 @@ f_tpositive_p(VALUE x)
 }
 
 static VALUE
-f_format(VALUE self, VALUE (*func)(VALUE))
+f_format(VALUE self, VALUE s, VALUE (*func)(VALUE))
 {
-    VALUE s;
     int impos;
 
     get_dat1(self);
 
     impos = f_tpositive_p(dat->imag);
 
-    s = (*func)(dat->real);
+    rb_str_concat(s, (*func)(dat->real));
     rb_str_cat2(s, !impos ? "-" : "+");
 
     rb_str_concat(s, (*func)(f_abs(dat->imag)));
@@ -1629,7 +1643,7 @@ f_format(VALUE self, VALUE (*func)(VALUE))
 static VALUE
 nucomp_to_s(VALUE self)
 {
-    return f_format(self, rb_String);
+    return f_format(self, rb_usascii_str_new2(""), rb_String);
 }
 
 /*
@@ -1651,7 +1665,7 @@ nucomp_inspect(VALUE self)
     VALUE s;
 
     s = rb_usascii_str_new2("(");
-    rb_str_concat(s, f_format(self, rb_inspect));
+    f_format(self, s, rb_inspect);
     rb_str_cat2(s, ")");
 
     return s;
@@ -1762,12 +1776,6 @@ VALUE
 rb_complex_new_polar(VALUE x, VALUE y)
 {
     return f_complex_polar(rb_cComplex, x, y);
-}
-
-VALUE
-rb_complex_polar(VALUE x, VALUE y)
-{
-    return rb_complex_new_polar(x, y);
 }
 
 VALUE
@@ -1923,21 +1931,6 @@ static VALUE
 nucomp_to_c(VALUE self)
 {
     return self;
-}
-
-/*
- * call-seq:
- *   to_c -> (0+0i)
- *
- * Returns zero as a Complex:
- *
- *   nil.to_c # => (0+0i)
- *
- */
-static VALUE
-nilclass_to_c(VALUE self)
-{
-    return rb_complex_new1(INT2FIX(0));
 }
 
 /*
@@ -2244,28 +2237,156 @@ string_to_c_strict(VALUE self, int raise)
  * call-seq:
  *   to_c -> complex
  *
- * Returns +self+ interpreted as a Complex object;
- * leading whitespace and trailing garbage are ignored:
+ * Returns a Complex object:
+ * parses the leading substring of +self+
+ * to extract two numeric values that become the coordinates of the complex object.
  *
- *   '9'.to_c                 # => (9+0i)
- *   '2.5'.to_c               # => (2.5+0i)
- *   '2.5/1'.to_c             # => ((5/2)+0i)
- *   '-3/2'.to_c              # => ((-3/2)+0i)
- *   '-i'.to_c                # => (0-1i)
- *   '45i'.to_c               # => (0+45i)
- *   '3-4i'.to_c              # => (3-4i)
- *   '-4e2-4e-2i'.to_c        # => (-400.0-0.04i)
- *   '-0.0-0.0i'.to_c         # => (-0.0-0.0i)
- *   '1/2+3/4i'.to_c          # => ((1/2)+(3/4)*i)
- *   '1.0@0'.to_c             # => (1+0.0i)
+ * The substring is interpreted as containing
+ * either rectangular coordinates (real and imaginary parts)
+ * or polar coordinates (magnitude and angle parts),
+ * depending on an included or implied "separator" character:
+ *
+ * - <tt>'+'</tt>, <tt>'-'</tt>, or no separator: rectangular coordinates.
+ * - <tt>'@'</tt>: polar coordinates.
+ *
+ * <b>In Brief</b>
+ *
+ * In these examples, we use method Complex#rect to display rectangular coordinates,
+ * and method Complex#polar to display polar coordinates.
+ *
+ *   # Rectangular coordinates.
+ *
+ *   # Real-only: no separator; imaginary part is zero.
+ *   '9'.to_c.rect         # => [9, 0]         # Integer.
+ *   '-9'.to_c.rect        # => [-9, 0]        # Integer (negative).
+ *   '2.5'.to_c.rect       # => [2.5, 0]       # Float.
+ *   '1.23e-14'.to_c.rect  # => [1.23e-14, 0]  # Float with exponent.
+ *   '2.5/1'.to_c.rect     # => [(5/2), 0]     # Rational.
+ *
+ *   # Some things are ignored.
+ *   'foo1'.to_c.rect      # => [0, 0]         # Unparsed entire substring.
+ *   '1foo'.to_c.rect      # => [1, 0]         # Unparsed trailing substring.
+ *   ' 1 '.to_c.rect       # => [1, 0]         # Leading and trailing whitespace.
+ *   *
+ *   # Imaginary only: trailing 'i' required; real part is zero.
+ *   '9i'.to_c.rect        # => [0, 9]
+ *   '-9i'.to_c.rect       # => [0, -9]
+ *   '2.5i'.to_c.rect      # => [0, 2.5]
+ *   '1.23e-14i'.to_c.rect # => [0, 1.23e-14]
+ *   '2.5/1i'.to_c.rect    # => [0, (5/2)]
+ *
+ *   # Real and imaginary; '+' or '-' separator; trailing 'i' required.
+ *   '2+3i'.to_c.rect      # => [2, 3]
+ *   '-2-3i'.to_c.rect     # => [-2, -3]
+ *   '2.5+3i'.to_c.rect    # => [2.5, 3]
+ *   '2.5+3/2i'.to_c.rect  # => [2.5, (3/2)]
+ *
+ *   # Polar coordinates; '@' separator; magnitude required.
+ *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
+ *   '1.0@'.to_c.polar              # => [1.0, 0.0]
+ *   "1.0@#{Math::PI}".to_c.polar   # => [1.0, 3.141592653589793]
+ *   "1.0@#{Math::PI/2}".to_c.polar # => [1.0, 1.5707963267948966]
+ *
+ * <b>Parsed Values</b>
+ *
+ * The parsing may be thought of as searching for numeric literals
+ * embedded in the substring.
+ *
+ * This section shows how the method parses numeric values from leading substrings.
+ * The examples show real-only or imaginary-only parsing;
+ * the parsing is the same for each part.
+ *
+ *   '1foo'.to_c # => (1+0i)      # Ignores trailing unparsed characters.
+ *   ' 1 '.to_c  # => (1+0i)      # Ignores leading and trailing whitespace.
+ *   'x1'.to_c   # => (0+0i)      # Finds no leading numeric.
+ *
+ *   # Integer literal embedded in the substring.
+ *   '1'.to_c       # => (1+0i)
+ *   '-1'.to_c      # => (-1+0i)
+ *   '1i'.to_c      # => (0+1i)
+ *
+ *   # Integer literals that don't work.
+ *   '0b100'.to_c   # => (0+0i)   # Not parsed as binary.
+ *   '0o100'.to_c   # => (0+0i)   # Not parsed as octal.
+ *   '0d100'.to_c   # => (0+0i)   # Not parsed as decimal.
+ *   '0x100'.to_c   # => (0+0i)   # Not parsed as hexadecimal.
+ *   '010'.to_c     # => (10+0i)  # Not parsed as octal.
+ *
+ *   # Float literals:
+ *   '3.14'.to_c    # => (3.14+0i)
+ *   '3.14i'.to_c   # => (0+3.14i)
+ *   '1.23e4'.to_c  # => (12300.0+0i)
+ *   '1.23e+4'.to_c # => (12300.0+0i)
+ *   '1.23e-4'.to_c # => (0.000123+0i)
+ *
+ *   # Rational literals:
+ *   '1/2'.to_c     # => ((1/2)+0i)
+ *   '-1/2'.to_c    # => ((-1/2)+0i)
+ *   '1/2r'.to_c    # => ((1/2)+0i)
+ *   '-1/2r'.to_c   # => ((-1/2)+0i)
+ *
+ * <b>Rectangular Coordinates</b>
+ *
+ * With separator <tt>'+'</tt> or <tt>'-'</tt>,
+ * or with no separator,
+ * interprets the values as rectangular coordinates: real and imaginary.
+ *
+ * With no separator, assigns a single value to either the real or the imaginary part:
+ *
+ *   ''.to_c  # => (0+0i)  # Defaults to zero.
+ *  '1'.to_c  # => (1+0i)  # Real (no trailing 'i').
+ *  '1i'.to_c # => (0+1i)  # Imaginary (trailing 'i').
+ *  'i'.to_c  # => (0+1i)  # Special case (imaginary 1).
+ *
+ * With separator <tt>'+'</tt>, both parts positive (or zero):
+ *
+ *   # Without trailing 'i'.
+ *   '+'.to_c    # => (0+0i)  # No values: defaults to zero.
+ *   '+1'.to_c   # => (1+0i)  # Value after '+': real only.
+ *   '1+'.to_c   # => (1+0i)  # Value before '+': real only.
+ *   '2+1'.to_c  # => (2+0i)  # Values before and after '+': real and imaginary.
+ *   # With trailing 'i'.
+ *   '+1i'.to_c  # => (0+1i)  # Value after '+': imaginary only.
+ *   '2+i'.to_c  # => (2+1i)  # Value before '+': real and imaginary 1.
+ *   '2+1i'.to_c # => (2+1i)  # Values before and after '+': real and imaginary.
+ *
+ * With separator <tt>'-'</tt>, negative imaginary part:
+ *
+ *   # Without trailing 'i'.
+ *   '-'.to_c    # => (0+0i)   # No values: defaults to zero.
+ *   '-1'.to_c   # => (-1+0i)  # Value after '-': negative real, zero imaginary.
+ *   '1-'.to_c   # => (1+0i)   # Value before '-': positive real, zero imaginary.
+ *   '2-1'.to_c  # => (2+0i)   # Values before and after '-': positive real, zero imaginary.
+ *   # With trailing 'i'.
+ *   '-1i'.to_c  # => (0-1i)   # Value after '-': negative real, zero imaginary.
+ *   '2-i'.to_c  # => (2-1i)   # Value before '-': positive real, negative imaginary.
+ *   '2-1i'.to_c # => (2-1i)   # Values before and after '-': positive real, negative imaginary.
+ *
+ * Note that the suffixed character <tt>'i'</tt>
+ * may instead be one of <tt>'I'</tt>, <tt>'j'</tt>, or <tt>'J'</tt>,
+ * with the same effect.
+ *
+ * <b>Polar Coordinates</b>
+ *
+ * With separator <tt>'@'</tt>)
+ * interprets the values as polar coordinates: magnitude and angle.
+ *
+ *   '2@'.to_c.polar  # => [2, 0.0]    # Value before '@': magnitude only.
+ *    # Values before and after '@': magnitude and angle.
+ *   '2@1'.to_c.polar # => [2.0, 1.0]
  *   "1.0@#{Math::PI/2}".to_c # => (0.0+1i)
  *   "1.0@#{Math::PI}".to_c   # => (-1+0.0i)
+ *   # Magnitude not given: defaults to zero.
+ *   '@'.to_c.polar   # => [0, 0.0]
+ *   '@1'.to_c.polar  # => [0, 0.0]
  *
- * Returns \Complex zero if the string cannot be converted:
+ *   '1.0@0'.to_c             # => (1+0.0i)
  *
- *   'ruby'.to_c        # => (0+0i)
+ * Note that in all cases, the suffixed character <tt>'i'</tt>
+ * may instead be one of <tt>'I'</tt>, <tt>'j'</tt>, <tt>'J'</tt>,
+ * with the same effect.
  *
- * See Kernel#Complex.
+ * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 static VALUE
 string_to_c(VALUE self)
@@ -2474,10 +2595,10 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object from rectangular coordinates with:
  *
- * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
- * - \Method Complex.rect.
- * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
- * - \Method String#to_c, for certain strings.
+ * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
+ * - Method Complex.rect.
+ * - Method Kernel#Complex, either with numeric arguments or with certain string arguments.
+ * - Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
  * Complex, Float, Integer, or Rational;
@@ -2503,9 +2624,9 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object from polar coordinates with:
  *
- * - \Method Complex.polar.
- * - \Method Kernel#Complex, with certain string arguments.
- * - \Method String#to_c, for certain strings.
+ * - Method Complex.polar.
+ * - Method Kernel#Complex, with certain string arguments.
+ * - Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
  * Complex, Float, Integer, or Rational;
@@ -2523,7 +2644,7 @@ float_arg(VALUE self)
  *
  * First, what's elsewhere:
  *
- * - \Class \Complex inherits (directly or indirectly)
+ * - Class \Complex inherits (directly or indirectly)
  *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
  *   and {Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@What-27s+Here].
@@ -2589,7 +2710,7 @@ float_arg(VALUE self)
  * - #as_json: Returns a serialized hash constructed from +self+.
  * - #to_json: Returns a JSON string representing +self+.
  *
- * These methods are provided by the {JSON gem}[https://github.com/flori/json]. To make these methods available:
+ * These methods are provided by the {JSON gem}[https://github.com/ruby/json]. To make these methods available:
  *
  *   require 'json/add/complex'
  *
@@ -2693,7 +2814,6 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);
     rb_define_method(rb_cComplex, "rationalize", nucomp_rationalize, -1);
     rb_define_method(rb_cComplex, "to_c", nucomp_to_c, 0);
-    rb_define_method(rb_cNilClass, "to_c", nilclass_to_c, 0);
     rb_define_method(rb_cNumeric, "to_c", numeric_to_c, 0);
 
     rb_define_method(rb_cString, "to_c", string_to_c, 0);

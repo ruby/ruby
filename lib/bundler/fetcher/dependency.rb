@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "base"
-require "cgi"
+require "cgi/escape"
+require "cgi/util" unless defined?(CGI::EscapeExt)
 
 module Bundler
   class Fetcher

@@ -1,0 +1,3 @@
+for a in b end
+           ^~~ unexpected 'end'; expected a 'do', newline, or ';' after the 'for' loop collection
+

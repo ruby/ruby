@@ -46,14 +46,9 @@
 
 /* Flags of RObject
  *
- * 1:    ROBJECT_EMBED
- *           The object has its instance variables embedded (the array of
- *           instance variables directly follow the object, rather than being
- *           on a separately allocated buffer).
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the object.
- * endif
+ * 4:    ROBJECT_HEAP
+ *           The object has its instance variables in a separately allocated buffer.
+ *           This can be either a flat buffer of reference, or an st_table for complex objects.
  */
 
 /*!
@@ -87,6 +82,7 @@ static VALUE rb_cFalseClass_to_s;
 #define id_init_dup         idInitialize_dup
 #define id_const_missing    idConst_missing
 #define id_to_f             idTo_f
+static ID id_instance_variables_to_inspect;
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -95,9 +91,9 @@ static VALUE rb_cFalseClass_to_s;
 /*! \endcond */
 
 size_t
-rb_obj_embedded_size(uint32_t numiv)
+rb_obj_embedded_size(uint32_t fields_count)
 {
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 
 VALUE
@@ -121,27 +117,28 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
 
     size_t size = rb_obj_embedded_size(index_tbl_num_entries);
     if (!rb_gc_size_allocatable_p(size)) {
         size = sizeof(struct RObject);
     }
 
-    NEWOBJ_OF(o, struct RObject, klass,
-              T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+    // There might be a NEWOBJ tracepoint callback, and it may set fields.
+    // So the shape must be passed to `NEWOBJ_OF`.
+    VALUE flags = T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
     VALUE obj = (VALUE)o;
 
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
-
-    // Set the shape to the specific T_OBJECT shape.
-    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_size_pool_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
-
 #if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    VALUE *ptr = ROBJECT_FIELDS(obj);
+    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
+    }
+    if (rb_obj_class(obj) != rb_class_real(klass)) {
+        rb_bug("Expected rb_class_allocate_instance to set the class correctly");
     }
 #endif
 
@@ -151,7 +148,7 @@ rb_class_allocate_instance(VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
+    VALUE ignored_flags = RUBY_FL_PROMOTED;
     RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
@@ -165,7 +162,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *
  * Returns +true+ or +false+.
  *
- * Like Object#==, if +object+ is an instance of Object
+ * Like Object#==, if +other+ is an instance of \Object
  * (and not an instance of one of its many subclasses).
  *
  * This method is commonly overridden by those subclasses,
@@ -203,14 +200,18 @@ rb_eql(VALUE obj1, VALUE obj2)
 
 /**
  *  call-seq:
- *     obj == other        -> true or false
- *     obj.equal?(other)   -> true or false
- *     obj.eql?(other)     -> true or false
+ *     self == other -> true or false
+ *     equal?(other) -> true or false
+ *     eql?(other) -> true or false
  *
- *  Equality --- At the Object level, #== returns <code>true</code>
- *  only if +obj+ and +other+ are the same object.  Typically, this
- *  method is overridden in descendant classes to provide
- *  class-specific meaning.
+ *  Returns whether +self+ and +other+ are the same object:
+ *
+ *    object = Object.new
+ *    object == object     # => true
+ *    object == Object.new # => false
+ *
+ *  Here in class \Object, #==, #equal?, and #eql? are the same method.
+ *  A subclass may override #== to provide class-specific meaning.
  *
  *  Unlike #==, the #equal? method should never be overridden by
  *  subclasses as it is used to determine object identity (that is,
@@ -283,12 +284,32 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
     return rb_obj_not(result);
 }
 
+static inline VALUE
+fake_class_p(VALUE klass)
+{
+    RUBY_ASSERT(klass);
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_class, !(T_CLASS & T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_module, !(T_MODULE & T_ICLASS));
+
+    return FL_TEST_RAW(klass, T_ICLASS | FL_SINGLETON);
+}
+
+static inline VALUE
+class_real(VALUE cl)
+{
+    RUBY_ASSERT(cl);
+    while (RB_UNLIKELY(fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
+}
+
 VALUE
 rb_class_real(VALUE cl)
 {
-    while (cl &&
-        (RCLASS_SINGLETON_P(cl) || BUILTIN_TYPE(cl) == T_ICLASS)) {
-        cl = RCLASS_SUPER(cl);
+    if (cl) {
+        cl = class_real(cl);
     }
     return cl;
 }
@@ -296,7 +317,17 @@ rb_class_real(VALUE cl)
 VALUE
 rb_obj_class(VALUE obj)
 {
-    return rb_class_real(CLASS_OF(obj));
+    VALUE cl = CLASS_OF(obj);
+    if (cl) {
+        cl = class_real(cl);
+    }
+    return cl;
+}
+
+static inline VALUE
+rb_obj_class_must(VALUE obj)
+{
+    return class_real(CLASS_OF(obj));
 }
 
 /*
@@ -327,64 +358,46 @@ void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
-    rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
-    if (rb_shape_obj_too_complex(obj)) {
-        // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table *table = st_copy(ROBJECT_IV_HASH(obj));
-        rb_obj_convert_to_too_complex(dest, table);
-
-        return;
-    }
-
-    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
-    rb_shape_t * shape_to_set_on_dest = src_shape;
-    VALUE * src_buf;
-    VALUE * dest_buf;
-
+    unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
         return;
     }
 
-    // The copy should be mutable, so we don't want the frozen shape
-    if (rb_shape_frozen_shape_p(src_shape)) {
-        shape_to_set_on_dest = rb_shape_get_parent(src_shape);
+    shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
+
+    if (rb_shape_too_complex_p(src_shape_id)) {
+        rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
+        return;
     }
 
-    src_buf = ROBJECT_IVPTR(obj);
-    dest_buf = ROBJECT_IVPTR(dest);
+    shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-    rb_shape_t * initial_shape = rb_shape_get_shape(dest);
+    shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+        st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
+        rb_obj_copy_ivs_to_hash_table(obj, table);
+        rb_obj_init_too_complex(dest, table);
 
-    if (initial_shape->size_pool_index != src_shape->size_pool_index) {
-        RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
-
-        shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
-        if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
-            st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
-            rb_obj_copy_ivs_to_hash_table(obj, table);
-            rb_obj_convert_to_too_complex(dest, table);
-
-            return;
-        }
+        return;
     }
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID);
-    if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
-        rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
-        dest_buf = ROBJECT_IVPTR(dest);
+    VALUE *src_buf = ROBJECT_FIELDS(obj);
+    VALUE *dest_buf = ROBJECT_FIELDS(dest);
+
+    attr_index_t initial_capa = RSHAPE_CAPACITY(initial_shape_id);
+    attr_index_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
+
+    RUBY_ASSERT(src_num_ivs <= dest_capa);
+    if (initial_capa < dest_capa) {
+        rb_ensure_iv_list_size(dest, 0, dest_capa);
+        dest_buf = ROBJECT_FIELDS(dest);
     }
 
-    MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
-
-    // Fire write barriers
-    for (uint32_t i = 0; i < src_num_ivs; i++) {
-        RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
-    }
-
-    rb_shape_set_shape(dest, shape_to_set_on_dest);
+    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
 }
 
 static void
@@ -393,14 +406,25 @@ init_copy(VALUE dest, VALUE obj)
     if (OBJ_FROZEN(dest)) {
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
-    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
+    RBASIC(dest)->flags &= ~T_MASK;
     // Copies the shape id from obj to dest
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
-    rb_gc_copy_attributes(dest, obj);
-    rb_copy_generic_ivar(dest, obj);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        rb_bug("Unreachable");
+        break;
+      case T_CLASS:
+      case T_MODULE:
+        rb_mod_init_copy(dest, obj);
+        break;
+      case T_OBJECT:
         rb_obj_copy_ivar(dest, obj);
+        break;
+      default:
+        rb_copy_generic_ivar(dest, obj);
+        break;
     }
+    rb_gc_copy_attributes(dest, obj);
 }
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
@@ -500,17 +524,14 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
       case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
-        if (CHILLED_STRING_P(obj)) {
-            STR_CHILL_RAW(clone);
+
+        if (RB_TYPE_P(obj, T_STRING)) {
+            FL_SET_RAW(clone, FL_TEST_RAW(obj, STR_CHILLED));
         }
-        else if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
-            if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(clone);
-            }
-            else {
-                rb_shape_set_shape(clone, next_shape);
-            }
+
+        if (RB_OBJ_FROZEN(obj)) {
+            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
       case Qtrue: {
@@ -525,16 +546,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         argv[0] = obj;
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
-        RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
-        // If we're out of shapes, but we want to freeze, then we need to
-        // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(clone);
-        }
-        else {
-            rb_shape_set_shape(clone, next_shape);
-        }
+        OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {
@@ -753,11 +765,17 @@ rb_inspect(VALUE obj)
 static int
 inspect_i(ID id, VALUE value, st_data_t a)
 {
-    VALUE str = (VALUE)a;
+    VALUE *args = (VALUE *)a, str = args[0], ivars = args[1];
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
+    if (!NIL_P(ivars)) {
+        VALUE name = ID2SYM(id);
+        for (long i = 0; RARRAY_AREF(ivars, i) != name; ) {
+            if (++i >= RARRAY_LEN(ivars)) return ST_CONTINUE;
+        }
+    }
     if (RSTRING_PTR(str)[0] == '-') { /* first element */
         RSTRING_PTR(str)[0] = '#';
         rb_str_cat2(str, " ");
@@ -772,13 +790,15 @@ inspect_i(ID id, VALUE value, st_data_t a)
 }
 
 static VALUE
-inspect_obj(VALUE obj, VALUE str, int recur)
+inspect_obj(VALUE obj, VALUE a, int recur)
 {
+    VALUE *args = (VALUE *)a, str = args[0];
+
     if (recur) {
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, str);
+        rb_ivar_foreach(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -811,21 +831,65 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *       end
  *     end
  *     Bar.new.inspect                  #=> "#<Bar:0x0300c868 @bar=1>"
+ *
+ * If _obj_ responds to +instance_variables_to_inspect+, then only
+ * the instance variables listed in the returned array will be included
+ * in the inspect string.
+ *
+ *
+ *     class DatabaseConfig
+ *       def initialize(host, user, password)
+ *         @host = host
+ *         @user = user
+ *         @password = password
+ *       end
+ *
+ *     private
+ *       def instance_variables_to_inspect = [:@host, :@user]
+ *     end
+ *
+ *     conf = DatabaseConfig.new("localhost", "root", "hunter2")
+ *     conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
  */
 
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (rb_ivar_count(obj) > 0) {
-        VALUE str;
-        VALUE c = rb_class_name(CLASS_OF(obj));
+    VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
+    st_index_t n = 0;
+    if (UNDEF_P(ivars) || NIL_P(ivars)) {
+        n = rb_ivar_count(obj);
+        ivars = Qnil;
+    }
+    else if (RB_TYPE_P(ivars, T_ARRAY)) {
+        n = RARRAY_LEN(ivars);
+    }
+    else {
+        rb_raise(
+            rb_eTypeError,
+            "Expected #instance_variables_to_inspect to return an Array or nil, but it returned %"PRIsVALUE,
+            rb_obj_class(ivars)
+        );
+    }
 
-        str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
-        return rb_exec_recursive(inspect_obj, obj, str);
+    if (n > 0) {
+        VALUE c = rb_class_name(CLASS_OF(obj));
+        VALUE args[2] = {
+            rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj),
+            ivars
+        };
+        return rb_exec_recursive(inspect_obj, obj, (VALUE)args);
     }
     else {
         return rb_any_to_s(obj);
     }
+}
+
+/* :nodoc: */
+static VALUE
+rb_obj_instance_variables_to_inspect(VALUE obj)
+{
+    return Qnil;
 }
 
 static VALUE
@@ -1191,6 +1255,30 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *
  *   Added :FOO
  *
+ * If we define a class using the <tt>class</tt> keyword, <tt>const_added</tt>
+ * runs before <tt>inherited</tt>:
+ *
+ *   module M
+ *     def self.const_added(const_name)
+ *       super
+ *       p :const_added
+ *     end
+ *
+ *     parent = Class.new do
+ *       def self.inherited(subclass)
+ *         super
+ *         p :inherited
+ *       end
+ *     end
+ *
+ *     class Child < parent
+ *     end
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   :const_added
+ *   :inherited
  */
 #define rb_obj_mod_const_added rb_obj_dummy1
 
@@ -1354,6 +1442,10 @@ rb_obj_frozen_p(VALUE obj)
  * - #to_h
  * - #to_r
  * - #to_s
+ *
+ * While +nil+ doesn't have an explicitly defined #to_hash method,
+ * it can be used in <code>**</code> unpacking, not adding any
+ * keyword arguments.
  *
  * Another method provides inspection:
  *
@@ -1678,21 +1770,33 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj <=> other -> 0 or nil
+ *     self <=> other -> 0 or nil
  *
- *  Returns 0 if +obj+ and +other+ are the same object
- *  or <code>obj == other</code>, otherwise nil.
+ *  Compares +self+ and +other+.
  *
- *  The #<=> is used by various methods to compare objects, for example
- *  Enumerable#sort, Enumerable#max etc.
+ *  Returns:
  *
- *  Your implementation of #<=> should return one of the following values: -1, 0,
- *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
- *  1 means self is bigger than other. Nil means the two values could not be
- *  compared.
+ *  - +0+, if +self+ and +other+ are the same object,
+ *    or if <tt>self == other</tt>.
+ *  - +nil+, otherwise.
  *
- *  When you define #<=>, you can include Comparable to gain the
- *  methods #<=, #<, #==, #>=, #> and #between?.
+ *  Examples:
+ *
+ *    o = Object.new
+ *    o <=> o     # => 0
+ *    o <=> o.dup # => nil
+ *
+ *  A class that includes module Comparable
+ *  should override this method by defining an instance method that:
+ *
+ *  - Take one argument, +other+.
+ *  - Returns:
+ *
+ *    - +-1+, if +self+ is less than +other+.
+ *    - +0+, if +self+ is equal to +other+.
+ *    - +1+, if +self+ is greater than +other+.
+ *    - +nil+, if the two values are incommensurate.
+ *
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
@@ -1792,11 +1896,12 @@ rb_mod_freeze(VALUE mod)
 
 /*
  *  call-seq:
- *     mod === obj    -> true or false
+ *     self === other -> true or false
  *
- *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
- *  instance of <i>mod</i> or an instance of one of <i>mod</i>'s descendants.
- *  Of limited use for modules, but can be used in <code>case</code> statements
+ *  Returns whether +other+ is an instance of +self+,
+ *  or is an instance of a subclass of +self+.
+ *
+ *  Of limited use for modules, but can be used in +case+ statements
  *  to classify objects by class.
  */
 
@@ -1810,11 +1915,24 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * call-seq:
  *   mod <= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i> or
- * is the same as <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float <= Numeric    # => true
+ *   Array <= Enumerable # => true
+ *   Float <= Float      # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric <= Float    # => false
+ *   Enumerable <= Array # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float <= Hash        # => nil
+ *   Enumerable <= String # => nil
  */
 
 VALUE
@@ -1860,14 +1978,26 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod < other   ->  true, false, or nil
+ *   self < other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is an ancestor of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
+ *
+ *   Float < Numeric    # => true
+ *   Array < Enumerable # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric < Float    # => false
+ *   Enumerable < Array # => false
+ *   Float < Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float < Hash        # => nil
+ *   Enumerable < String # => nil
  *
  */
 
@@ -1883,11 +2013,24 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * call-seq:
  *   mod >= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>, or the
- * two modules are the same. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric >= Float    # => true
+ *   Enumerable >= Array # => true
+ *   Float >= Float      # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
+ *
+ *   Float >= Numeric    # => false
+ *   Array >= Enumerable # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float >= Hash        # => nil
+ *   Enumerable >= String # => nil
  *
  */
 
@@ -1903,14 +2046,26 @@ rb_mod_ge(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod > other   ->  true, false, or nil
+ *   self > other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is a descendant of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric > Float    # => true
+ *   Enumerable > Array # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float > Numeric    # => false
+ *   Array > Enumerable # => false
+ *   Float > Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float > Hash        # => nil
+ *   Enumerable > String # => nil
  *
  */
 
@@ -1923,14 +2078,30 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     module <=> other_module   -> -1, 0, +1, or nil
+ *     self <=> other -> -1, 0, 1, or nil
  *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
- *  includes +other_module+, they are the same, or if +module+ is included by
- *  +other_module+.
+ *  Compares +self+ and +other+.
  *
- *  Returns +nil+ if +module+ has no relationship with +other_module+, if
- *  +other_module+ is not a module, or if the two values are incomparable.
+ *  Returns:
+ *
+ *  - +-1+, if +self+ includes +other+, if or +self+ is a subclass of +other+.
+ *  - +0+, if +self+ and +other+ are the same.
+ *  - +1+, if +other+ includes +self+, or if +other+ is a subclass of +self+.
+ *  - +nil+, if none of the above is true.
+ *
+ *  Examples:
+ *
+ *    # Class Array includes module Enumerable.
+ *             Array <=> Enumerable # => -1
+ *        Enumerable <=> Enumerable # =>  0
+ *        Enumerable <=> Array      # =>  1
+ *    # Class File is a subclass of class IO.
+ *              File <=> IO         # => -1
+ *              File <=> File       # =>  0
+ *                IO <=> File       # =>  1
+ *    # Class File has no relationship to class String.
+ *              File <=> String     # => nil
+ *
  */
 
 static VALUE
@@ -2050,11 +2221,11 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
         super = argv[0];
         rb_check_inheritable(super);
-        if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
+        if (!RCLASS_INITIALIZED_P(super)) {
             rb_raise(rb_eTypeError, "can't inherit uninitialized class");
         }
     }
-    RCLASS_SET_SUPER(klass, super);
+    rb_class_set_super(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2096,17 +2267,6 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
  */
 
 static VALUE
-rb_class_alloc_m(VALUE klass)
-{
-    rb_alloc_func_t allocator = class_get_alloc_func(klass);
-    if (!rb_obj_respond_to(klass, rb_intern("allocate"), 1)) {
-        rb_raise(rb_eTypeError, "calling %"PRIsVALUE".allocate is prohibited",
-                 klass);
-    }
-    return class_call_alloc_func(allocator, klass);
-}
-
-static VALUE
 rb_class_alloc(VALUE klass)
 {
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
@@ -2118,7 +2278,7 @@ class_get_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
-    if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
+    if (!RCLASS_INITIALIZED_P(klass)) {
         rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
     if (RCLASS_SINGLETON_P(klass)) {
@@ -2131,6 +2291,15 @@ class_get_alloc_func(VALUE klass)
     return allocator;
 }
 
+// Might return NULL.
+rb_alloc_func_t
+rb_zjit_class_get_alloc_func(VALUE klass)
+{
+    assert(RCLASS_INITIALIZED_P(klass));
+    assert(!RCLASS_SINGLETON_P(klass));
+    return rb_get_alloc_func(klass);
+}
+
 static VALUE
 class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 {
@@ -2140,8 +2309,10 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     obj = (*allocator)(klass);
 
-    if (rb_obj_class(obj) != rb_class_real(klass)) {
-        rb_raise(rb_eTypeError, "wrong instance allocation");
+    if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
+        if (rb_obj_class(obj) != rb_class_real(klass)) {
+            rb_raise(rb_eTypeError, "wrong instance allocation");
+        }
     }
     return obj;
 }
@@ -2225,19 +2396,22 @@ rb_class_superclass(VALUE klass)
 {
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
 
-    VALUE super = RCLASS_SUPER(klass);
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t superclasses_depth = RCLASS_SUPERCLASS_DEPTH(klass);
 
-    if (!super) {
-        if (klass == rb_cBasicObject) return Qnil;
+    if (klass == rb_cBasicObject) return Qnil;
+
+    if (!superclasses) {
+        RUBY_ASSERT(!RCLASS_SUPER(klass));
         rb_raise(rb_eTypeError, "uninitialized class");
     }
 
-    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+    if (!superclasses_depth) {
         return Qnil;
     }
     else {
-        super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
-        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE super = superclasses[superclasses_depth - 1];
+        RUBY_ASSERT(RB_TYPE_P(super, T_CLASS));
         return super;
     }
 }
@@ -2245,7 +2419,7 @@ rb_class_superclass(VALUE klass)
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
-    return RCLASS(klass)->super;
+    return RCLASS_SUPER(klass);
 }
 
 static const char bad_instance_name[] = "'%1$s' is not allowed as an instance variable name";
@@ -3399,6 +3573,13 @@ rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE base, VALUE
     return rb_convert_to_integer(arg, NUM2INT(base), exc);
 }
 
+static bool
+is_digit_char(unsigned char c, int base)
+{
+    int i = ruby_digit36_to_number_table[c];
+    return (i >= 0 && i < base);
+}
+
 static double
 rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, int *error)
 {
@@ -3440,23 +3621,37 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
         char *e = init_e;
         char prev = 0;
         int dot_seen = FALSE;
+        int base = 10;
+        char exp_letter = 'e';
 
         switch (*p) {case '+': case '-': prev = *n++ = *p++;}
         if (*p == '0') {
             prev = *n++ = '0';
-            while (*++p == '0');
+            switch (*++p) {
+              case 'x': case 'X':
+                prev = *n++ = 'x';
+                base = 16;
+                exp_letter = 'p';
+                if (*++p != '0') break;
+                /* fallthrough */
+              case '0': /* squeeze successive zeros */
+                while (*++p == '0');
+                break;
+            }
         }
         while (p < end && n < e) prev = *n++ = *p++;
         while (*p) {
             if (*p == '_') {
                 /* remove an underscore between digits */
-                if (n == buf || !ISDIGIT(prev) || (++p, !ISDIGIT(*p))) {
+                if (n == buf ||
+                    !is_digit_char(prev, base) ||
+                    !is_digit_char(*++p, base)) {
                     if (badcheck) goto bad;
                     break;
                 }
             }
             prev = *p++;
-            if (e == init_e && (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P')) {
+            if (e == init_e && (rb_tolower(prev) == exp_letter)) {
                 e = buf + sizeof(buf) - 1;
                 *n++ = prev;
                 switch (*p) {case '+': case '-': prev = *n++ = *p++;}
@@ -3464,6 +3659,10 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     prev = *n++ = '0';
                     while (*++p == '0');
                 }
+
+                /* reset base to decimal for underscore check of
+                 * binary exponent part */
+                base = 10;
                 continue;
             }
             else if (ISSPACE(prev)) {
@@ -3473,7 +3672,7 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     break;
                 }
             }
-            else if (prev == '.' ? dot_seen++ : !ISDIGIT(prev)) {
+            else if (prev == '.' ? dot_seen++ : !is_digit_char(prev, base)) {
                 if (badcheck) goto bad;
                 break;
             }
@@ -3821,7 +4020,7 @@ rb_String(VALUE val)
  *
  *    String([0, 1, 2])        # => "[0, 1, 2]"
  *    String(0..5)             # => "0..5"
- *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *    String({foo: 0, bar: 1}) # => "{foo: 0, bar: 1}"
  *
  *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */
@@ -3993,7 +4192,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *  into +format_string+.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:language/format_specifications.rdoc].
  */
 
 static VALUE
@@ -4085,7 +4284,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *    BasicObject.superclass # => nil
  *
- *  \Class +BasicObject+ can be used to create an object hierarchy
+ *  Class +BasicObject+ can be used to create an object hierarchy
  *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
  *  Such objects:
  *
@@ -4156,7 +4355,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Object:
+ *  First, what's elsewhere. Class \Object:
  *
  *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
  *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
@@ -4180,7 +4379,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *  - #instance_of?: Returns whether +self+ is an instance of the given class.
  *  - #instance_variable_defined?: Returns whether the given instance variable
  *    is defined in +self+.
- *  - #method: Returns the Method object for the given method in +self+.
+ *  - #method: Returns the +Method+ object for the given method in +self+.
  *  - #methods: Returns an array of symbol names of public and protected methods
  *    in +self+.
  *  - #nil?: Returns +false+. (Only +nil+ responds +true+ to method <tt>nil?</tt>.)
@@ -4190,12 +4389,12 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *    of the private methods in +self+.
  *  - #protected_methods: Returns an array of the symbol names
  *    of the protected methods in +self+.
- *  - #public_method: Returns the Method object for the given public method in +self+.
+ *  - #public_method: Returns the +Method+ object for the given public method in +self+.
  *  - #public_methods: Returns an array of the symbol names
  *    of the public methods in +self+.
  *  - #respond_to?: Returns whether +self+ responds to the given method.
  *  - #singleton_class: Returns the singleton class of +self+.
- *  - #singleton_method: Returns the Method object for the given singleton method
+ *  - #singleton_method: Returns the +Method+ object for the given singleton method
  *    in +self+.
  *  - #singleton_methods: Returns an array of the symbol names
  *    of the singleton methods in +self+.
@@ -4276,7 +4475,7 @@ InitVM_Object(void)
      *
      * == What's Here
      *
-     * \Module \Kernel provides methods that are useful for:
+     * Module \Kernel provides methods that are useful for:
      *
      * - {Converting}[rdoc-ref:Kernel@Converting]
      * - {Querying}[rdoc-ref:Kernel@Querying]
@@ -4344,7 +4543,7 @@ InitVM_Object(void)
      * - #print: Prints the given objects to standard output without a newline.
      * - #printf: Prints the string resulting from applying the given format string
      *   to any additional arguments.
-     * - #putc: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
+     * - #putc: Equivalent to <tt>$stdout.putc(object)</tt> for the given object.
      * - #puts: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
      * - #readline: Similar to #gets, but raises an exception at the end of file.
      * - #readlines: Returns an array of the remaining lines from the current input.
@@ -4434,6 +4633,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
+    rb_define_private_method(rb_mKernel, "instance_variables_to_inspect", rb_obj_instance_variables_to_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1); /* in class.c */
@@ -4482,7 +4682,6 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "<=", rb_class_inherited_p, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
-    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_alias(rb_cModule, "inspect", "to_s");
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
@@ -4531,8 +4730,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
-    rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
+    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc, 0);
+    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
@@ -4575,6 +4774,7 @@ void
 Init_Object(void)
 {
     id_dig = rb_intern_const("dig");
+    id_instance_variables_to_inspect = rb_intern_const("instance_variables_to_inspect");
     InitVM(Object);
 }
 

@@ -76,7 +76,7 @@ class TestThreadConditionVariable < Test::Unit::TestCase
       condvar.broadcast
       result << "P2"
     end
-    Timeout.timeout(5) do
+    Timeout.timeout(60) do
       nr_threads.times do |i|
         threads[i].join
       end

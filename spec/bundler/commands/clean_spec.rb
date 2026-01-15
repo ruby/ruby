@@ -151,7 +151,7 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     digest = Digest(:SHA1).hexdigest(git_path.to_s)
-    cache_path = Bundler::VERSION.start_with?("2.") ? vendored_gems("cache/bundler/git/foo-1.0-#{digest}") : home(".bundle/cache/git/foo-1.0-#{digest}")
+    cache_path = vendored_gems("cache/bundler/git/foo-1.0-#{digest}")
     expect(cache_path).to exist
   end
 
@@ -220,7 +220,7 @@ RSpec.describe "bundle clean" do
     expect(bundled_app("symlink-path/#{Bundler.ruby_scope}/bundler/gems/foo-#{revision[0..11]}")).to exist
   end
 
-  it "removes old git gems" do
+  it "removes old git gems on bundle update" do
     build_git "foo-bar", path: lib_path("foo-bar")
     revision = revision_for(lib_path("foo-bar"))
 
@@ -352,8 +352,8 @@ RSpec.describe "bundle clean" do
     bundle "install"
 
     FileUtils.rm(vendored_gems("bin/myrackup"))
-    FileUtils.rm_rf(vendored_gems("gems/thin-1.0"))
-    FileUtils.rm_rf(vendored_gems("gems/myrack-1.0.0"))
+    FileUtils.rm_r(vendored_gems("gems/thin-1.0"))
+    FileUtils.rm_r(vendored_gems("gems/myrack-1.0.0"))
 
     bundle :clean
 
@@ -383,51 +383,7 @@ RSpec.describe "bundle clean" do
     expect(out).to include("myrack (1.0.0)").and include("thin (1.0)")
   end
 
-  it "--clean should override the bundle setting on install", bundler: "< 3" do
-    gemfile <<-G
-      source "https://gem.repo1"
-
-      gem "thin"
-      gem "myrack"
-    G
-    bundle "config set path vendor/bundle"
-    bundle "config set clean false"
-    bundle "install --clean true"
-
-    gemfile <<-G
-      source "https://gem.repo1"
-
-      gem "myrack"
-    G
-    bundle "install"
-
-    should_have_gems "myrack-1.0.0"
-    should_not_have_gems "thin-1.0"
-  end
-
-  it "--clean should override the bundle setting on update", bundler: "< 3" do
-    build_repo2
-
-    gemfile <<-G
-      source "https://gem.repo2"
-
-      gem "foo"
-    G
-    bundle "config set path vendor/bundle"
-    bundle "config set clean false"
-    bundle "install --clean true"
-
-    update_repo2 do
-      build_gem "foo", "1.0.1"
-    end
-
-    bundle "update", all: true
-
-    should_have_gems "foo-1.0.1"
-    should_not_have_gems "foo-1.0"
-  end
-
-  it "automatically cleans when path has not been set", bundler: "3" do
+  it "does not clean on bundle update when path has not been set" do
     build_repo2
 
     install_gemfile <<-G
@@ -442,8 +398,43 @@ RSpec.describe "bundle clean" do
 
     bundle "update", all: true
 
-    files = Pathname.glob(bundled_app(".bundle", Bundler.ruby_scope, "*", "*"))
-    files.map! {|f| f.to_s.sub(bundled_app(".bundle", Bundler.ruby_scope).to_s, "") }
+    files = Pathname.glob(default_bundle_path("*", "*"))
+    files.map! {|f| f.to_s.sub(default_bundle_path.to_s, "") }
+    expected_files = %W[
+      /bin/bundle
+      /bin/bundler
+      /cache/bundler-#{Bundler::VERSION}.gem
+      /cache/foo-1.0.1.gem
+      /cache/foo-1.0.gem
+      /gems/bundler-#{Bundler::VERSION}
+      /gems/foo-1.0
+      /gems/foo-1.0.1
+      /specifications/bundler-#{Bundler::VERSION}.gemspec
+      /specifications/foo-1.0.1.gemspec
+      /specifications/foo-1.0.gemspec
+    ]
+    expected_files += ["/bin/bundle.bat", "/bin/bundler.bat"] if Gem.win_platform?
+
+    expect(files.sort).to eq(expected_files.sort)
+  end
+
+  it "will automatically clean on bundle update when path has not been set", bundler: "5" do
+    build_repo2
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+
+      gem "foo"
+    G
+
+    update_repo2 do
+      build_gem "foo", "1.0.1"
+    end
+
+    bundle "update", all: true
+
+    files = Pathname.glob(local_gem_path("*", "*"))
+    files.map! {|f| f.to_s.sub(local_gem_path.to_s, "") }
     expect(files.sort).to eq %w[
       /cache/foo-1.0.1.gem
       /gems/foo-1.0.1
@@ -451,7 +442,7 @@ RSpec.describe "bundle clean" do
     ]
   end
 
-  it "does not clean automatically on --path" do
+  it "does not clean automatically when path configured" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -471,7 +462,7 @@ RSpec.describe "bundle clean" do
     should_have_gems "myrack-1.0.0", "thin-1.0"
   end
 
-  it "does not clean on bundle update with --path" do
+  it "does not clean on bundle update when path configured" do
     build_repo2
 
     gemfile <<-G
@@ -490,7 +481,7 @@ RSpec.describe "bundle clean" do
     should_have_gems "foo-1.0", "foo-1.0.1"
   end
 
-  it "does not clean on bundle update when using --system" do
+  it "does not clean on bundle update when installing to system gems" do
     bundle "config set path.system true"
 
     build_repo2
@@ -625,7 +616,7 @@ RSpec.describe "bundle clean" do
     expect(out).to eq("1.0")
   end
 
-  it "when using --force, it doesn't remove default gem binaries", :realworld do
+  it "when using --force, it doesn't remove default gem binaries" do
     default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false
     skip "irb isn't a default gem" if default_irb_version.empty?
 
@@ -633,8 +624,6 @@ RSpec.describe "bundle clean" do
     build_gem "irb", default_irb_version, to_system: true, default: true do |s|
       s.executables = "irb"
     end
-
-    realworld_system_gems "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "https://gem.repo2"
@@ -908,5 +897,42 @@ RSpec.describe "bundle clean" do
       Pathname.glob("#{vendored_gems}/bundler/gems/extensions/*/*/very_simple_git_binary-1.0-#{short_revision}").first
 
     expect(very_simple_binary_extensions_dir).to be_nil
+  end
+
+  it "does not remove the bundler version currently running" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+
+    bundle "config set path vendor/bundle"
+    bundle "install"
+
+    version = Bundler.gem_version.to_s
+    # Simulate that the locked bundler version is installed in the bundle path
+    # by creating the gem directory and gemspec (as would happen after bundle install with that version)
+    Pathname(vendored_gems("cache/bundler-#{version}.gem")).tap do |path|
+      path.basename.mkpath
+      FileUtils.touch(path)
+    end
+    FileUtils.touch(vendored_gems("gems/bundler-#{version}"))
+    Pathname(vendored_gems("specifications/bundler-#{version}.gemspec")).tap do |path|
+      path.basename.mkpath
+      path.write(<<~GEMSPEC)
+        Gem::Specification.new do |s|
+          s.name = "bundler"
+          s.version = "#{version}"
+          s.authors = ["bundler team"]
+          s.summary = "The best way to manage your application's dependencies"
+        end
+      GEMSPEC
+    end
+
+    should_have_gems "bundler-#{version}"
+
+    bundle :clean
+
+    should_have_gems "bundler-#{version}"
   end
 end

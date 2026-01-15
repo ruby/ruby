@@ -107,6 +107,6 @@ class TestGemSourceLocal < Gem::TestCase
 
   def test_pretty_print
     local = Gem::Source::Local.new
-    assert_equal "#<Gem::Source::Local[Local gems: ]>\n", local.pretty_inspect
+    assert_equal "#<Gem::Source::Local[Local gems: ]>", local.pretty_inspect.gsub(/\s+/, " ").strip
   end
 end

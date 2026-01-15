@@ -161,15 +161,14 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
     end
   end
 
-  def self.generate_case_mapping_tests(encoding)
+  def self.generate_single_byte_case_mapping_tests(encoding)
     all_tests
-    # preselect codepoints to speed up testing for small encodings
-    codepoints = @@codepoints.select do |code|
+    # precalculate codepoints to speed up testing for small encodings
+    codepoints = []
+    (0..255).each do |cp|
       begin
-        code.encode(encoding)
-        true
-      rescue Encoding::UndefinedConversionError
-        false
+        codepoints << cp.chr(encoding).encode('UTF-8')
+      rescue Encoding::UndefinedConversionError, RangeError
       end
     end
     all_tests.each do |test|
@@ -264,23 +263,23 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
     end
   end
 
-  generate_case_mapping_tests 'US-ASCII'
-  generate_case_mapping_tests 'ASCII-8BIT'
-  generate_case_mapping_tests 'ISO-8859-1'
-  generate_case_mapping_tests 'ISO-8859-2'
-  generate_case_mapping_tests 'ISO-8859-3'
-  generate_case_mapping_tests 'ISO-8859-4'
-  generate_case_mapping_tests 'ISO-8859-5'
-  generate_case_mapping_tests 'ISO-8859-6'
-  generate_case_mapping_tests 'ISO-8859-7'
-  generate_case_mapping_tests 'ISO-8859-8'
-  generate_case_mapping_tests 'ISO-8859-9'
-  generate_case_mapping_tests 'ISO-8859-10'
-  generate_case_mapping_tests 'ISO-8859-11'
-  generate_case_mapping_tests 'ISO-8859-13'
-  generate_case_mapping_tests 'ISO-8859-14'
-  generate_case_mapping_tests 'ISO-8859-15'
-  generate_case_mapping_tests 'ISO-8859-16'
+  generate_single_byte_case_mapping_tests 'US-ASCII'
+  generate_single_byte_case_mapping_tests 'ASCII-8BIT'
+  generate_single_byte_case_mapping_tests 'ISO-8859-1'
+  generate_single_byte_case_mapping_tests 'ISO-8859-2'
+  generate_single_byte_case_mapping_tests 'ISO-8859-3'
+  generate_single_byte_case_mapping_tests 'ISO-8859-4'
+  generate_single_byte_case_mapping_tests 'ISO-8859-5'
+  generate_single_byte_case_mapping_tests 'ISO-8859-6'
+  generate_single_byte_case_mapping_tests 'ISO-8859-7'
+  generate_single_byte_case_mapping_tests 'ISO-8859-8'
+  generate_single_byte_case_mapping_tests 'ISO-8859-9'
+  generate_single_byte_case_mapping_tests 'ISO-8859-10'
+  generate_single_byte_case_mapping_tests 'ISO-8859-11'
+  generate_single_byte_case_mapping_tests 'ISO-8859-13'
+  generate_single_byte_case_mapping_tests 'ISO-8859-14'
+  generate_single_byte_case_mapping_tests 'ISO-8859-15'
+  generate_single_byte_case_mapping_tests 'ISO-8859-16'
   generate_ascii_only_case_mapping_tests 'KOI8-R'
   generate_ascii_only_case_mapping_tests 'KOI8-U'
   generate_ascii_only_case_mapping_tests 'Big5'
@@ -291,14 +290,14 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
   generate_ascii_only_case_mapping_tests 'GBK'
   generate_ascii_only_case_mapping_tests 'Shift_JIS'
   generate_ascii_only_case_mapping_tests 'Windows-31J'
-  generate_case_mapping_tests 'Windows-1250'
-  generate_case_mapping_tests 'Windows-1251'
-  generate_case_mapping_tests 'Windows-1252'
-  generate_case_mapping_tests 'Windows-1253'
-  generate_case_mapping_tests 'Windows-1254'
-  generate_case_mapping_tests 'Windows-1255'
+  generate_single_byte_case_mapping_tests 'Windows-1250'
+  generate_single_byte_case_mapping_tests 'Windows-1251'
+  generate_single_byte_case_mapping_tests 'Windows-1252'
+  generate_single_byte_case_mapping_tests 'Windows-1253'
+  generate_single_byte_case_mapping_tests 'Windows-1254'
+  generate_single_byte_case_mapping_tests 'Windows-1255'
   generate_ascii_only_case_mapping_tests 'Windows-1256'
-  generate_case_mapping_tests 'Windows-1257'
+  generate_single_byte_case_mapping_tests 'Windows-1257'
   generate_unicode_case_mapping_tests 'UTF-8'
   generate_unicode_case_mapping_tests 'UTF-16BE'
   generate_unicode_case_mapping_tests 'UTF-16LE'

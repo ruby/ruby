@@ -171,7 +171,7 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_mbc_to_codepoint" do
     it "returns the correct codepoint for the given character and size" do
-       @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
+      @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
     end
 
     it "returns 0 if p == e" do
@@ -724,25 +724,25 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_define_dummy_encoding" do
+    run = 0
+
     it "defines the dummy encoding" do
-      @s.rb_define_dummy_encoding("FOO")
-      enc = Encoding.find("FOO")
+      @s.rb_define_dummy_encoding("FOO#{run += 1}")
+      enc = Encoding.find("FOO#{run}")
       enc.should.dummy?
     end
 
     it "returns the index of the dummy encoding" do
-      index = @s.rb_define_dummy_encoding("BAR")
+      index = @s.rb_define_dummy_encoding("BAR#{run += 1}")
       index.should == Encoding.list.size - 1
     end
 
-    ruby_version_is "3.2" do
-      it "raises EncodingError if too many encodings" do
-        code = <<-RUBY
-          require #{extension_path.dump}
-          1_000.times {|i| CApiEncodingSpecs.new.rb_define_dummy_encoding("R_\#{i}") }
-        RUBY
-        ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
-      end
+    it "raises EncodingError if too many encodings" do
+      code = <<-RUBY
+        require #{extension_path.dump}
+        1_000.times {|i| CApiEncodingSpecs.new.rb_define_dummy_encoding("R_\#{i}") }
+      RUBY
+      ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
     end
   end
 end

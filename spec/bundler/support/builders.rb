@@ -2,6 +2,10 @@
 
 require "bundler/shared_helpers"
 require "shellwords"
+require "fileutils"
+require "rubygems/package"
+
+require_relative "build_metadata"
 
 module Spec
   module Builders
@@ -20,10 +24,6 @@ module Spec
 
     def pl(platform)
       Gem::Platform.new(platform)
-    end
-
-    def rake_version
-      "13.2.1"
     end
 
     def build_repo1
@@ -109,11 +109,11 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw32"
+          s.platform = "x64-mingw-ucrt"
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw-ucrt"
+          s.platform = "aarch64-mingw-ucrt"
         end
 
         build_gem "platform_specific" do |s|
@@ -153,7 +153,7 @@ module Spec
 
         build_gem "bundler", "0.9" do |s|
           s.executables = "bundle"
-          s.write "bin/bundle", "puts 'FAIL'"
+          s.write "bin/bundle", "#!/usr/bin/env ruby\nputs 'FAIL'"
         end
 
         # The bundler 0.8 gem has a rubygems plugin that always loads :(
@@ -181,30 +181,39 @@ module Spec
     end
 
     def build_repo2(**kwargs, &blk)
-      FileUtils.rm_rf gem_repo2
-      FileUtils.cp_r gem_repo1, gem_repo2
+      FileUtils.cp_r gem_repo1, gem_repo2, remove_destination: true
       update_repo2(**kwargs, &blk) if block_given?
     end
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
+    #
+    # If the repo already exists, `#update_repo` will be called.
     def build_repo3(**kwargs, &blk)
-      build_empty_repo gem_repo3, **kwargs, &blk
+      if File.exist?(gem_repo3)
+        update_repo(gem_repo3, &blk)
+      else
+        build_repo gem_repo3, **kwargs, &blk
+      end
     end
 
     # Like build_repo3, this is a repo that has no pre-installed gems included.
-    # We have two different methods for situations where two different empty
-    # sources are needed.
+    #
+    # If the repo already exists, `#udpate_repo` will be called
     def build_repo4(**kwargs, &blk)
-      build_empty_repo gem_repo4, **kwargs, &blk
-    end
-
-    def update_repo4(&blk)
-      update_repo(gem_repo4, &blk)
+      if File.exist?(gem_repo4)
+        update_repo gem_repo4, &blk
+      else
+        build_repo gem_repo4, **kwargs, &blk
+      end
     end
 
     def update_repo2(**kwargs, &blk)
       update_repo(gem_repo2, **kwargs, &blk)
+    end
+
+    def update_repo3(&blk)
+      update_repo(gem_repo3, &blk)
     end
 
     def build_security_repo
@@ -222,6 +231,41 @@ module Spec
       end
     end
 
+    # A minimal fake irb console
+    def build_dummy_irb(version = "9.9.9")
+      build_gem "irb", version do |s|
+        s.write "lib/irb.rb", <<-RUBY
+          class IRB
+            class << self
+              def toplevel_binding
+                unless defined?(@toplevel_binding) && @toplevel_binding
+                  TOPLEVEL_BINDING.eval %{
+                    def self.__irb__; binding; end
+                    IRB.instance_variable_set(:@toplevel_binding, __irb__)
+                    class << self; undef __irb__; end
+                  }
+                end
+                @toplevel_binding.eval('private')
+                @toplevel_binding
+              end
+
+              def __irb__
+                while line = gets
+                  begin
+                    puts eval(line, toplevel_binding).inspect.sub(/^"(.*)"$/, '=> \\1')
+                  rescue Exception => e
+                    puts "\#{e.class}: \#{e.message}"
+                    puts e.backtrace.first
+                  end
+                end
+              end
+              alias start __irb__
+            end
+          end
+        RUBY
+      end
+    end
+
     def build_repo(path, **kwargs, &blk)
       return if File.directory?(path)
 
@@ -230,19 +274,8 @@ module Spec
       update_repo(path,**kwargs, &blk)
     end
 
-    def check_test_gems!
-      if rake_path.nil?
-        FileUtils.rm_rf(base_system_gems)
-        Spec::Rubygems.install_test_deps
-      end
-
-      if rake_path.nil?
-        abort "Your test gems are missing! Run `rm -rf #{tmp}` and try again."
-      end
-    end
-
     def update_repo(path, build_compact_index: true)
-      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") && RUBY_ENGINE != "jruby" ? "#{Module.nesting.first}#build_repo" : "build_repo"
       if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
@@ -250,14 +283,8 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as base_system_gem_path do
-        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
-
-        command = "generate_index"
-        command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")
-        gem_command command, dir: path
-      end
+      options = { build_compact: build_compact_index }
+      Gem::Indexer.new(path, options).generate_index
     ensure
       @_build_path = nil
       @_build_repo = nil
@@ -312,11 +339,6 @@ module Spec
     end
 
     private
-
-    def build_empty_repo(gem_repo, **kwargs, &blk)
-      FileUtils.rm_rf gem_repo
-      build_repo(gem_repo, **kwargs, &blk)
-    end
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -401,18 +423,23 @@ module Spec
     end
 
     class BundlerBuilder
-      attr_writer :required_ruby_version
-
       def initialize(context, name, version)
-        raise "can only build bundler" unless name == "bundler"
-
         @context = context
-        @version = version || Bundler::VERSION
+        @spec = Spec::Path.loaded_gemspec.dup
+        @spec.version = version || Bundler::VERSION
+      end
+
+      def required_ruby_version
+        @spec.required_ruby_version
+      end
+
+      def required_ruby_version=(x)
+        @spec.required_ruby_version = x
       end
 
       def _build(options = {})
-        full_name = "bundler-#{@version}"
-        build_path = @context.tmp + full_name
+        full_name = "bundler-#{@spec.version}"
+        build_path = (options[:build_path] || @context.tmp) + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
         FileUtils.mkdir_p build_path
@@ -423,15 +450,19 @@ module Spec
           target_shipped_file = build_path + target_shipped_file
           target_shipped_dir = File.dirname(target_shipped_file)
           FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
-          FileUtils.cp shipped_file, target_shipped_file, preserve: true
+          FileUtils.cp File.expand_path(shipped_file, @context.source_root), target_shipped_file, preserve: true
         end
 
-        @context.replace_version_file(@version, dir: build_path)
-        @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
+        @context.replace_version_file(@spec.version, dir: build_path)
+        @context.replace_changelog(@spec.version, dir: build_path) if options[:released]
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path)
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @spec.version.to_s)
 
-        @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
+        Dir.chdir build_path do
+          Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+            Gem::Package.build(@spec)
+          end
+        end
 
         if block_given?
           yield(bundler_path)
@@ -439,7 +470,7 @@ module Spec
           FileUtils.mv bundler_path, options[:path]
         end
       ensure
-        build_path.rmtree
+        FileUtils.rm_rf build_path
       end
     end
 
@@ -456,6 +487,7 @@ module Spec
           s.email       = "foo@bar.baz"
           s.homepage    = "http://example.com"
           s.license     = "MIT"
+          s.required_ruby_version = ">= 3.0"
         end
         @files = {}
       end
@@ -472,11 +504,7 @@ module Spec
         @spec.executables = Array(val)
         @spec.executables.each do |file|
           executable = "#{@spec.bindir}/#{file}"
-          shebang = if Bundler.current_ruby.jruby?
-            "#!/usr/bin/env jruby\n"
-          else
-            "#!/usr/bin/env ruby\n"
-          end
+          shebang = "#!/usr/bin/env ruby\n"
           @spec.files << executable
           write executable, "#{shebang}require_relative '../lib/#{@name}' ; puts #{Builders.constantize(@name)}"
         end
@@ -500,7 +528,7 @@ module Spec
         write "ext/#{name}.c", <<-C
           #include "ruby.h"
 
-          void Init_#{name}_c() {
+          void Init_#{name}_c(void) {
             rb_define_module("#{Builders.constantize(name)}_IN_C");
           }
         C
@@ -529,18 +557,16 @@ module Spec
         when false
           # do nothing
         when :yaml
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_yaml
         else
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_ruby
         end
 
         @files.each do |file, source|
-          file = Pathname.new(path).join(file)
-          FileUtils.mkdir_p(file.dirname)
-          File.open(file, "w") {|f| f.puts source }
-          File.chmod("+x", file) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
+          full_path = Pathname.new(path).join(file)
+          FileUtils.mkdir_p(full_path.dirname)
+          File.open(full_path, "w") {|f| f.puts source }
+          FileUtils.chmod("+x", full_path) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
         end
         path
       end
@@ -633,14 +659,14 @@ module Spec
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
-        if opts[:gemspec] == :yaml || opts[:gemspec] == false
+        if [:yaml, false].include?(opts[:gemspec])
           Dir.chdir(lib_path) do
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
         elsif opts[:skip_validation]
           @context.gem_command "build --force #{@spec.name}", dir: lib_path
         else
-          @context.gem_command "build #{@spec.name}", dir: lib_path
+          Dir.chdir(lib_path) { Gem::Package.build(@spec) }
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)

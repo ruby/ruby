@@ -72,11 +72,25 @@ describe "Time#localtime" do
     t.utc_offset.should == 3600
   end
 
+  it "returns a Time with a UTC offset specified as +HH:MM:SS" do
+    t = Time.gm(2007, 1, 9, 12, 0, 0)
+    t.localtime("+01:00:01")
+    t.should == Time.new(2007, 1, 9, 13, 0, 1, 3601)
+    t.utc_offset.should == 3601
+  end
+
   it "returns a Time with a UTC offset specified as -HH:MM" do
     t = Time.gm(2007, 1, 9, 12, 0, 0)
     t.localtime("-01:00")
     t.should == Time.new(2007, 1, 9, 11, 0, 0, -3600)
     t.utc_offset.should == -3600
+  end
+
+  it "returns a Time with a UTC offset specified as -HH:MM:SS" do
+    t = Time.gm(2007, 1, 9, 12, 0, 0)
+    t.localtime("-01:00:01")
+    t.should == Time.new(2007, 1, 9, 10, 59, 59, -3601)
+    t.utc_offset.should == -3601
   end
 
   it "returns a Time with a UTC offset specified as UTC" do
@@ -89,6 +103,32 @@ describe "Time#localtime" do
     t = Time.new(2007, 1, 9, 12, 0, 0, 3600)
     t.localtime("B")
     t.utc_offset.should == 3600 * 2
+  end
+
+  it "raises ArgumentError if String argument and hours greater than 23" do
+    -> { Time.now.localtime("+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+    -> { Time.now.localtime("+2400") }.should raise_error(ArgumentError, "utc_offset out of range")
+
+    -> { Time.now.localtime("+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+    -> { Time.now.localtime("+9900") }.should raise_error(ArgumentError, "utc_offset out of range")
+  end
+
+  it "raises ArgumentError if String argument and minutes greater than 59" do
+    -> { Time.now.localtime("+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
+    -> { Time.now.localtime("+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
+
+    -> { Time.now.localtime("+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
+    -> { Time.now.localtime("+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
+  end
+
+  ruby_bug '#20797', ''...'3.4' do
+    it "raises ArgumentError if String argument and seconds greater than 59" do
+      -> { Time.now.localtime("+00:00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:60')
+      -> { Time.now.localtime("+000060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000060')
+
+      -> { Time.now.localtime("+00:00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:99')
+      -> { Time.now.localtime("+000099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000099')
+    end
   end
 
   platform_is_not :windows do
@@ -121,6 +161,17 @@ describe "Time#localtime" do
     it "coerces using #to_str" do
       o = mock('string')
       o.should_receive(:to_str).and_return("+01:00")
+      t = Time.gm(2007, 1, 9, 12, 0, 0)
+      t.localtime(o)
+      t.should == Time.new(2007, 1, 9, 13, 0, 0, 3600)
+      t.utc_offset.should == 3600
+    end
+  end
+
+  describe "with an argument that responds to #utc_to_local" do
+    it "coerces using #utc_to_local" do
+      o = mock('string')
+      o.should_receive(:utc_to_local).and_return(Time.new(2007, 1, 9, 13, 0, 0, 3600))
       t = Time.gm(2007, 1, 9, 12, 0, 0)
       t.localtime(o)
       t.should == Time.new(2007, 1, 9, 13, 0, 0, 3600)

@@ -29,7 +29,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
     end
   end
 
-  # https://github.com/rubygems/rubygems/pull/1819
+  # https://github.com/ruby/rubygems/pull/1819
   #
   # It should not fail with a non-empty args list either
   def test_class_build_with_args

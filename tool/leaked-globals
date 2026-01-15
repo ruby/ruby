@@ -90,6 +90,7 @@ Pipe.new(NM + ARGV).each do |line|
   next if !so and n.start_with?("___asan_")
   next if !so and n.start_with?("__odr_asan_")
   next if !so and n.start_with?("__retguard_")
+  next if !so and n.start_with?("__dtrace")
   case n
   when /\A(?:Init_|InitVM_|pm_|[Oo]nig|dln_|coroutine_)/
     next

@@ -209,4 +209,32 @@ class TestUnicodeNormalize
     assert_equal true, ascii_string.unicode_normalized?(:nfkc)
     assert_equal true, ascii_string.unicode_normalized?(:nfkd)
   end
+
+  def test_bug_21559
+    str = "s\u{1611e}\u{323}\u{1611e}\u{307}\u{1611f}"
+    assert_equal str.unicode_normalize(:nfd), str.unicode_normalize(:nfc).unicode_normalize(:nfd)
+  end
+
+  def test_gurung_khema
+    assert_equal "\u{16121 16121 16121 16121 16121 1611E}", "\u{1611E 16121 16121 16121 16121 16121}".unicode_normalize
+  end
+
+  def test_canonical_ordering
+    a = "\u03B1\u0313\u0300\u0345"
+    a_unordered1 = "\u03B1\u0345\u0313\u0300"
+    a_unordered2 = "\u03B1\u0313\u0345\u0300"
+    u1 = "U\u0308\u0304"
+    u2 = "U\u0304\u0308"
+    s = "s\u0323\u0307"
+    s_unordered = "s\u0307\u0323"
+    o = "\u{1611e}\u{1611e}\u{1611f}"
+    # Actual cases called through String#unicode_normalize
+    assert_equal(s + o, UnicodeNormalize.canonical_ordering_one(s_unordered + o))
+    assert_equal(a[1..], UnicodeNormalize.canonical_ordering_one(a_unordered1[1..]))
+    assert_equal(a[1..] + o, UnicodeNormalize.canonical_ordering_one(a_unordered2[1..] + o))
+    # Artificial cases
+    assert_equal(a + u1 + o + u2 + s, UnicodeNormalize.canonical_ordering_one(a + u1 + o + u2 + s))
+    assert_equal(s[1..] + a + a, UnicodeNormalize.canonical_ordering_one(s_unordered[1..] + a_unordered1 + a_unordered2))
+    assert_equal(o + s + u1 + a + o + a + u2 + o, UnicodeNormalize.canonical_ordering_one(o + s_unordered + u1 + a_unordered1 + o + a_unordered2 + u2 + o))
+  end
 end

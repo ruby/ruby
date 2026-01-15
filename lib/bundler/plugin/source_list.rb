@@ -23,7 +23,7 @@ module Bundler
 
       private
 
-      def rubygems_aggregate_class
+      def source_class
         Plugin::Installer::Rubygems
       end
     end

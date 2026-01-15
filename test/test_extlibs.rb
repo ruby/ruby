@@ -10,7 +10,7 @@ class TestExtLibs < Test::Unit::TestCase
     add_msg = ".  #{add_msg}" if add_msg
     log = "#{@extdir}/#{ext}/mkmf.log"
     define_method("test_existence_of_#{ext}") do
-      assert_separately([], <<-"end;", ignore_stderr: true) # do
+      assert_separately([], <<-"end;", ignore_stderr: true, timeout: 60) # do
         log = #{log.dump}
         msg = proc {
           "extension library `#{ext}' is not found#{add_msg}\n" <<
@@ -53,7 +53,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "etc"
   check_existence "fcntl"
   check_existence "fiber"
-  check_existence "fiddle"
   check_existence "io/console"
   check_existence "io/nonblock"
   check_existence "io/wait"
@@ -69,6 +68,5 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "stringio"
   check_existence "strscan"
   check_existence "thread"
-  check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"
 end

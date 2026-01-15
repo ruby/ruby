@@ -506,7 +506,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     a2 = @specs["a-2"]
 
     assert_path_exist File.join(a2.doc_dir, "rdoc")
-  end if defined?(Gem::RDoc)
+  end if defined?(Gem::RDoc) && !Gem.rdoc_hooks_defined_via_plugin?
 
   def test_execute_named
     spec_fetcher do |fetcher|
@@ -694,6 +694,38 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs["a-1"])
+  end
+
+  def test_pass_down_the_job_option_to_make
+    gemspec = nil
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 3 do |spec|
+        gemspec = spec
+
+        extconf_path = "#{spec.gem_dir}/extconf.rb"
+
+        write_file(extconf_path) do |io|
+          io.puts "require 'mkmf'"
+          io.puts "create_makefile '#{spec.name}'"
+        end
+
+        spec.extensions = "extconf.rb"
+      end
+
+      fetcher.gem "a", 2
+    end
+
+    use_ui @ui do
+      @cmd.invoke("a", "-j2")
+    end
+
+    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    if vc_windows? && nmake_found?
+      refute_includes(gem_make_out, " -j2")
+    else
+      assert_includes(gem_make_out, "make -j2")
+    end
   end
 
   def test_handle_options_system

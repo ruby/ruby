@@ -12,7 +12,7 @@ yjit-static-lib:
 	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 
 # Assume GNU flavor LD and OBJCOPY. Works on FreeBSD 13, at least.
-$(YJIT_LIBOBJ): $(YJIT_LIBS)
+$(RUST_LIBOBJ): $(YJIT_LIBS)
 	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
 	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
 	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)

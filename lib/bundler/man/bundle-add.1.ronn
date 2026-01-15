@@ -5,7 +5,7 @@ bundle-add(1) -- Add gem to the Gemfile and run bundle install
 
 `bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE]
            [--path=PATH] [--git=GIT|--github=GITHUB] [--branch=BRANCH] [--ref=REF]
-           [--skip-install] [--strict|--optimistic]
+           [--quiet] [--skip-install] [--strict|--optimistic]
 
 ## DESCRIPTION
 
@@ -14,32 +14,38 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 
 ## OPTIONS
 
-* `--version`, `-v`:
+* `--version=VERSION`, `-v=VERSION`:
   Specify version requirements(s) for the added gem.
 
-* `--group`, `-g`:
+* `--group=GROUP`, `-g=GROUP`:
   Specify the group(s) for the added gem. Multiple groups should be separated by commas.
 
-* `--source`, `-s`:
+* `--source=SOURCE`, `-s=SOURCE`:
   Specify the source for the added gem.
 
-* `--require`, `-r`:
+* `--require=REQUIRE`, `-r=REQUIRE`:
   Adds require path to gem. Provide false, or a path as a string.
 
-* `--path`:
+* `--path=PATH`:
   Specify the file system path for the added gem.
 
-* `--git`:
+* `--git=GIT`:
   Specify the git source for the added gem.
 
-* `--github`:
+* `--github=GITHUB`:
   Specify the github source for the added gem.
 
-* `--branch`:
+* `--branch=BRANCH`:
   Specify the git branch for the added gem.
 
-* `--ref`:
+* `--ref=REF`:
   Specify the git ref for the added gem.
+
+* `--glob=GLOB`:
+  Specify the location of a dependency's .gemspec, expanded within Ruby (single quotes recommended).
+
+* `--quiet`:
+  Do not print progress information to the standard output.
 
 * `--skip-install`:
   Adds the gem to the Gemfile but does not install it.

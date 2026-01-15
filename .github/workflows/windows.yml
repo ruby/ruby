@@ -25,84 +25,48 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2015
-            vs: 2019
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
-          - vs: 2019
-          - vs: 2022
+          - os: 2022
+            vc: 2022
+            test_task: check
+          - os: 2025
+            vc: 2022
+            test_task: check
+          - os: 11-arm
+            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+            target: arm64
+          - os: 2025
+            vc: 2022
+            test_task: test-bundled-gems
       fail-fast: false
 
-    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    runs-on: windows-${{ matrix.os }}
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }}
+    name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
       - run: md build
         working-directory:
 
-      - name: find tools
-        id: find-tools
-        run: |
-          ::- find needed tools
-          set NEEDS=
-          for %%I in (%NEEDED_TOOLS%) do if "%%~$PATH:I" == "" (
-            call set NEEDS=%%NEEDS%% %%~nI
-          ) else (
-            echo %%I: %%~$PATH:I
-          )
-          echo.needs=%NEEDS%>>%GITHUB_OUTPUT%
-          if "%NEEDS%" == "" (
-            echo [debug] All needed tools found
-          ) else (
-            echo [warning^]Needs%NEEDS%
-          )
-        env:
-          NEEDED_TOOLS: >-
-            patch.exe
-
-      - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
-        id: setup-msys2
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
-          update: true
-          install: >-
-            ${{ steps.find-tools.outputs.needs }}
-        if: ${{ steps.find-tools.outputs.needs != '' }}
-
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
-        with:
-          ruby-version: '3.0'
+          # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
+          ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
           bundler: none
           windows-toolchain: none
 
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
-      - name: Install libraries with scoop
-        run: |
-          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
-          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-        shell: pwsh
-
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -111,27 +75,55 @@ jobs:
         with:
           srcdir: src
           builddir: build
+          make-command: nmake
+          clean: true
+
+      - name: Install tools with scoop
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          iwr -useb get.scoop.sh | iex
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install vcpkg uutils-coreutils
+        shell: pwsh
+
+      - name: Restore vcpkg artifact
+        id: restore-vcpkg
+        uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        with:
+          path: src\vcpkg_installed
+          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
+        working-directory: src
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
+
+      - name: Save vcpkg artifact
+        uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        with:
+          path: src\vcpkg_installed
+          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          ::- Set up VC ${{ matrix.vc || matrix.vs }}
-          set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-          for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
-            set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
-          )
-          set VCVARS
-          set | C:\msys64\usr\bin\sort > old.env
-          call %VCVARS% ${{ matrix.vcvars || '' }}
+          ::- Set up VC ${{ matrix.vc }}
+          set | sort > old.env
+          call ..\src\win32\vssetup.cmd ^
+            -arch=${{ matrix.target || 'amd64' }} ^
+            ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
           nmake -f nul
-          set TMP=%USERPROFILE%\AppData\Local\Temp
-          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set TMP=%RUNNER_TEMP%
+          set TEMP=%RUNNER_TEMP%
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set | C:\msys64\usr\bin\sort > new.env
-          C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          set | sort > new.env
+          comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
 
       - name: baseruby version
@@ -140,18 +132,16 @@ jobs:
       - name: compiler version
         run: cl
 
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg install
-        working-directory: src
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      - name: volume info
+        run: Get-Volume
+        shell: pwsh
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          --with-opt-dir=%RUBY_OPT_DIR%
+          --with-gmp
 
       - run: nmake prepare-vcpkg
 
@@ -163,36 +153,35 @@ jobs:
       # But not for this Visual Studio workflow. So here we extract gems before building.
       - run: nmake extract-gems
 
+      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
+      - name: make revision.h
+        run: |
+          win32\lastrev.bat | win32\ifchange.bat --timestamp=.revision.time revision.h -
+          type revision.h
+        working-directory: src
+
       - run: nmake
-
-      - run: nmake test
-        timeout-minutes: 5
-
-      - run: nmake test-spec
-        timeout-minutes: 10
 
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-          test-task: test-all
-          # If we support a new test task, we need to change this test-opts.
-          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          os: windows-${{ matrix.os }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          test-task: ${{ matrix.test_task || 'check' }}
         continue-on-error: true
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
+        timeout-minutes: 3
 
-      - run: nmake test-all
+      - run: nmake ${{ matrix.test_task || 'check' }}
         env:
-          RUBY_TESTOPTS: >-
-            -j${{ env.TEST_JOBS || 4 }}
-            --job-status=normal
-        timeout-minutes: 60
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+        timeout-minutes: 70
 
       - uses: ./.github/actions/slack
         with:
-          label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 

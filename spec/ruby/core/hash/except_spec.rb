@@ -19,14 +19,24 @@ describe "Hash#except" do
     @hash.except(:a, :chunky_bacon).should == { b: 2, c: 3 }
   end
 
-  it "always returns a Hash without a default" do
-    klass = Class.new(Hash)
-    h = klass.new(:default)
-    h[:bar] = 12
-    h[:foo] = 42
-    r = h.except(:foo)
-    r.should == {bar: 12}
-    r.class.should == Hash
-    r.default.should == nil
+  it "does not retain the default value" do
+    h = Hash.new(1)
+    h.except(:a).default.should be_nil
+    h[:a] = 1
+    h.except(:a).default.should be_nil
+  end
+
+  it "does not retain the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.except(:a).default_proc.should be_nil
+    h[:a] = 1
+    h.except(:a).default_proc.should be_nil
+  end
+
+  it "retains compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.except(:a)
+    h2.compare_by_identity?.should == true
   end
 end

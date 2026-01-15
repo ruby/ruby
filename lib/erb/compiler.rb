@@ -80,10 +80,16 @@ class ERB::Compiler # :nodoc:
   end
 
   class Scanner # :nodoc:
-    @scanner_map = {}
+    @scanner_map = defined?(Ractor) ? Ractor.make_shareable({}) : {}
     class << self
-      def register_scanner(klass, trim_mode, percent)
-        @scanner_map[[trim_mode, percent]] = klass
+      if defined?(Ractor)
+        def register_scanner(klass, trim_mode, percent)
+          @scanner_map = Ractor.make_shareable({ **@scanner_map, [trim_mode, percent] => klass })
+        end
+      else
+        def register_scanner(klass, trim_mode, percent)
+          @scanner_map[[trim_mode, percent]] = klass
+        end
       end
       alias :regist_scanner :register_scanner
     end
@@ -219,7 +225,7 @@ class ERB::Compiler # :nodoc:
       end
     end
 
-    ERB_STAG = %w(<%= <%# <%)
+    ERB_STAG = %w(<%= <%# <%).freeze
     def is_erb_stag?(s)
       ERB_STAG.member?(s)
     end
@@ -466,7 +472,16 @@ class ERB::Compiler # :nodoc:
     return enc, frozen
   end
 
+  # :stopdoc:
+  WARNING_UPLEVEL = Class.new {
+    attr_reader :c
+    def initialize from
+      @c = caller.length - from.length
+    end
+  }.new(caller(0)).c
+  private_constant :WARNING_UPLEVEL
+
   def warn_invalid_trim_mode(mode, uplevel:)
-    warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
+    warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + WARNING_UPLEVEL
   end
 end

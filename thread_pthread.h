@@ -17,6 +17,11 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
+// TLS can not be accessed across .so on arm64 and perhaps ppc64le too.
+#if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
+# define RB_THREAD_CURRENT_EC_NOINLINE
+#endif
+
 // this data should be protected by timer_th.waiting_lock
 struct rb_thread_sched_waiting {
     enum thread_sched_waiting_flag {
@@ -34,6 +39,7 @@ struct rb_thread_sched_waiting {
 #else
         uint64_t timeout;
 #endif
+        uint32_t event_serial;
         int fd; // -1 for timeout only
         int result;
     } data;
@@ -42,7 +48,7 @@ struct rb_thread_sched_waiting {
     struct ccan_list_node node;
 };
 
-// per-Thead scheduler helper data
+// per-Thread scheduler helper data
 struct rb_thread_sched_item {
     struct {
         struct ccan_list_node ubf;
@@ -64,6 +70,7 @@ struct rb_thread_sched_item {
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
+    uint32_t event_serial;
 
     bool finished;
     bool malloc_stack;
@@ -132,10 +139,8 @@ struct rb_thread_sched {
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
-  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 
-  # ifdef __APPLE__
-    // on Darwin, TLS can not be accessed across .so
+  # ifdef RB_THREAD_CURRENT_EC_NOINLINE
     NOINLINE(struct rb_execution_context_struct *rb_current_ec(void));
   # else
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
@@ -164,5 +169,9 @@ native_tls_set(native_tls_key_t key, void *ptr)
 
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 #endif
+
+struct rb_ractor_struct;
+void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ubf, void *ptr);
+void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
 
 #endif /* RUBY_THREAD_PTHREAD_H */

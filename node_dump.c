@@ -239,8 +239,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: if x == 1 then foo else bar end");
         F_NODE(nd_cond, RNODE_IF, "condition expr");
         F_NODE(nd_body, RNODE_IF, "then clause");
-        LAST_NODE;
         F_NODE(nd_else, RNODE_IF, "else clause");
+        F_LOC(if_keyword_loc, RNODE_IF);
+        F_LOC(then_keyword_loc, RNODE_IF);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_IF);
         return;
 
       case NODE_UNLESS:
@@ -261,24 +264,30 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: case [nd_head]; [nd_body]; end");
         ANN("example: case x; when 1; foo; when 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_CASE, "case expr");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_CASE, "when clauses");
+        F_LOC(case_keyword_loc, RNODE_CASE);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_CASE);
         return;
       case NODE_CASE2:
         ANN("case statement with no head");
         ANN("format: case; [nd_body]; end");
         ANN("example: case; when 1; foo; when 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_CASE2, "case expr");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_CASE2, "when clauses");
+        F_LOC(case_keyword_loc, RNODE_CASE2);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_CASE2);
         return;
       case NODE_CASE3:
         ANN("case statement (pattern matching)");
         ANN("format: case [nd_head]; [nd_body]; end");
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_CASE3, "case expr");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_CASE3, "in clauses");
+        F_LOC(case_keyword_loc, RNODE_CASE3);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_CASE3);
         return;
 
       case NODE_WHEN:
@@ -300,8 +309,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_IN, "in pattern");
         F_NODE(nd_body, RNODE_IN, "in body");
-        LAST_NODE;
         F_NODE(nd_next, RNODE_IN, "next in clause");
+        F_LOC(in_keyword_loc, RNODE_IN);
+        F_LOC(then_keyword_loc, RNODE_IN);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_IN);
         return;
 
       case NODE_WHILE:
@@ -329,15 +341,22 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("method call with block");
         ANN("format: [nd_iter] { [nd_body] }");
         ANN("example: 3.times { foo }");
-        goto iter;
+        F_NODE(nd_iter, RNODE_ITER, "iteration receiver");
+        LAST_NODE;
+        F_NODE(nd_body, RNODE_ITER, "body");
+        return;
+
       case NODE_FOR:
         ANN("for statement");
         ANN("format: for * in [nd_iter] do [nd_body] end");
         ANN("example: for i in 1..3 do foo end");
-      iter:
-        F_NODE(nd_iter, RNODE_ITER, "iteration receiver");
+        F_NODE(nd_iter, RNODE_FOR, "iteration receiver");
+        F_NODE(nd_body, RNODE_FOR, "body");
+        F_LOC(for_keyword_loc, RNODE_FOR);
+        F_LOC(in_keyword_loc, RNODE_FOR);
+        F_LOC(do_keyword_loc, RNODE_FOR);
         LAST_NODE;
-        F_NODE(nd_body, RNODE_ITER, "body");
+        F_LOC(end_keyword_loc, RNODE_FOR);
         return;
 
       case NODE_FOR_MASGN:
@@ -368,8 +387,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("return statement");
         ANN("format: return [nd_stts]");
         ANN("example: return 1");
-        LAST_NODE;
         F_NODE(nd_stts, RNODE_RETURN, "value");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_RETURN);
         return;
 
       case NODE_REDO:
@@ -535,8 +555,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_recv, RNODE_OP_ASGN1, "receiver");
         F_ID(nd_mid, RNODE_OP_ASGN1, "operator");
         F_NODE(nd_index, RNODE_OP_ASGN1, "index");
-        LAST_NODE;
         F_NODE(nd_rvalue, RNODE_OP_ASGN1, "rvalue");
+        F_LOC(call_operator_loc, RNODE_OP_ASGN1);
+        F_LOC(opening_loc, RNODE_OP_ASGN1);
+        F_LOC(closing_loc, RNODE_OP_ASGN1);
+        LAST_NODE;
+        F_LOC(binary_operator_loc, RNODE_OP_ASGN1);
         return;
 
       case NODE_OP_ASGN2:
@@ -549,8 +573,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             A_ID(RNODE_OP_ASGN2(node)->nd_vid);
         }
         F_ID(nd_mid, RNODE_OP_ASGN2, "operator");
-        LAST_NODE;
         F_NODE(nd_value, RNODE_OP_ASGN2, "rvalue");
+        F_LOC(call_operator_loc, RNODE_OP_ASGN2);
+        F_LOC(message_loc, RNODE_OP_ASGN2);
+        LAST_NODE;
+        F_LOC(binary_operator_loc, RNODE_OP_ASGN2);
         return;
 
       case NODE_OP_ASGN_AND:
@@ -629,8 +656,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("super invocation");
         ANN("format: super [nd_args]");
         ANN("example: super 1");
-        LAST_NODE;
         F_NODE(nd_args, RNODE_SUPER, "arguments");
+        F_LOC(keyword_loc, RNODE_SUPER);
+        F_LOC(lparen_loc, RNODE_SUPER);
+        LAST_NODE;
+        F_LOC(rparen_loc, RNODE_SUPER);
         return;
 
       case NODE_ZSUPER:
@@ -677,8 +707,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("yield invocation");
         ANN("format: yield [nd_head]");
         ANN("example: yield 1");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_YIELD, "arguments");
+        F_LOC(keyword_loc, RNODE_YIELD);
+        F_LOC(lparen_loc, RNODE_YIELD);
+        LAST_NODE;
+        F_LOC(rparen_loc, RNODE_YIELD);
         return;
 
       case NODE_LVAR:
@@ -812,8 +845,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("regexp literal");
         ANN("format: [string]");
         ANN("example: /foo/");
-        LAST_NODE;
         F_VALUE(string, rb_node_regx_string_val(node), "string");
+        F_LOC(opening_loc, RNODE_REGX);
+        F_LOC(content_loc, RNODE_REGX);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_REGX);
         return;
 
       case NODE_ONCE:
@@ -862,8 +898,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("interpolation expression");
         ANN("format: \"..#{ [nd_body] }..\"");
         ANN("example: \"foo#{ bar }baz\"");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_EVSTR, "body");
+        F_LOC(opening_loc, RNODE_EVSTR);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_EVSTR);
         return;
 
       case NODE_ARGSCAT:
@@ -888,8 +926,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("splat argument");
         ANN("format: *[nd_head]");
         ANN("example: foo(*ary)");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_SPLAT, "splat'ed array");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_SPLAT);
         return;
 
       case NODE_BLOCK_PASS:
@@ -903,8 +942,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             }
         }
         F_NODE(nd_head, RNODE_BLOCK_PASS, "other arguments");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_BLOCK_PASS, "block argument");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_BLOCK_PASS);
         return;
 
       case NODE_DEFN:
@@ -960,8 +1000,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: class C2 < C; ..; end");
         F_NODE(nd_cpath, RNODE_CLASS, "class path");
         F_NODE(nd_super, RNODE_CLASS, "superclass");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_CLASS, "class definition");
+        F_LOC(class_keyword_loc, RNODE_CLASS);
+        F_LOC(inheritance_operator_loc, RNODE_CLASS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_CLASS);
         return;
 
       case NODE_MODULE:
@@ -969,8 +1012,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: module [nd_cpath]; [nd_body]; end");
         ANN("example: module M; ..; end");
         F_NODE(nd_cpath, RNODE_MODULE, "module path");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_MODULE, "module definition");
+        F_LOC(module_keyword_loc, RNODE_MODULE);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_MODULE);
         return;
 
       case NODE_SCLASS:
@@ -978,8 +1023,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: class << [nd_recv]; [nd_body]; end");
         ANN("example: class << obj; ..; end");
         F_NODE(nd_recv, RNODE_SCLASS, "receiver");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_SCLASS, "singleton class definition");
+        F_LOC(class_keyword_loc, RNODE_SCLASS);
+        F_LOC(operator_loc, RNODE_SCLASS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_SCLASS);
         return;
 
       case NODE_COLON2:
@@ -987,8 +1035,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_head]::[nd_mid]");
         ANN("example: M::C");
         F_ID(nd_mid, RNODE_COLON2, "constant name");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_COLON2, "receiver");
+        F_LOC(delimiter_loc, RNODE_COLON2);
+        LAST_NODE;
+        F_LOC(name_loc, RNODE_COLON2);
         return;
 
       case NODE_COLON3:
@@ -996,6 +1046,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: ::[nd_mid]");
         ANN("example: ::Object");
         F_ID(nd_mid, RNODE_COLON3, "constant name");
+        F_LOC(delimiter_loc, RNODE_COLON3);
+        F_LOC(name_loc, RNODE_COLON3);
         return;
 
       case NODE_DOT2:
@@ -1019,8 +1071,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: if (x==1)...(x==5); foo; end");
       dot:
         F_NODE(nd_beg, RNODE_DOT2, "begin");
-        LAST_NODE;
         F_NODE(nd_end, RNODE_DOT2, "end");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_DOT2);
         return;
 
       case NODE_SELF:
@@ -1060,16 +1113,20 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("defined? expression");
         ANN("format: defined?([nd_head])");
         ANN("example: defined?(foo)");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_DEFINED, "expr");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_DEFINED);
         return;
 
       case NODE_POSTEXE:
         ANN("post-execution");
         ANN("format: END { [nd_body] }");
         ANN("example: END { foo }");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_POSTEXE, "END clause");
+        F_LOC(keyword_loc, RNODE_POSTEXE);
+        F_LOC(opening_loc, RNODE_POSTEXE);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_POSTEXE);
         return;
 
       case NODE_ATTRASGN:
@@ -1086,8 +1143,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("lambda expression");
         ANN("format: -> [nd_body]");
         ANN("example: -> { foo }");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_LAMBDA, "lambda clause");
+        F_LOC(operator_loc, RNODE_LAMBDA);
+        F_LOC(opening_loc, RNODE_LAMBDA);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_LAMBDA);
         return;
 
       case NODE_OPT_ARG:

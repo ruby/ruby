@@ -206,7 +206,7 @@ rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
  * property  we heavily  touch  the  internals of  MSVCRT.   We `CreateFile`  a
  * `"NUL"` alongside of  a socket and directly manipulate  its `struct ioinfo`.
  * This is of  course a very dirty hack.   If we could design the  API today we
- * could use `CancellIoEx`.  But we are older than that Win32 API.
+ * could use `CancelIoEx`.  But we are older than that Win32 API.
  */
 static inline int
 rb_fd_select(int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
@@ -253,7 +253,7 @@ rb_fd_max(const rb_fdset_t *f)
     const fd_set *p = f->fdset;
 
     RBIMPL_ASSERT_OR_ASSUME(p);
-    return p->fd_count;
+    return RBIMPL_CAST((int)p->fd_count);
 }
 
 #endif /* RBIMPL_INTERN_SELECT_WIN32_H */

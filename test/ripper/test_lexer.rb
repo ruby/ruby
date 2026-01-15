@@ -344,6 +344,47 @@ world"
     ]
 
     assert_lexer(expected, code)
+
+    code = <<~'HEREDOC'
+      <<H1
+      #{<<H2}a
+      H2
+      b
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<H1", state(:EXPR_BEG)],
+      [[1, 4], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[2, 2], :on_heredoc_beg, "<<H2", state(:EXPR_BEG)],
+      [[2, 6], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[2, 7], :on_tstring_content, "a\n", state(:EXPR_BEG)],
+      [[3, 0], :on_heredoc_end, "H2\n", state(:EXPR_BEG)],
+      [[4, 0], :on_tstring_content, "b\n", state(:EXPR_BEG)]
+    ]
+
+    assert_lexer(expected, code)
+
+    code = <<~'HEREDOC'
+      <<H1
+      #{<<H2}a
+      H2
+      b
+      c
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<H1", state(:EXPR_BEG)],
+      [[1, 4], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[2, 2], :on_heredoc_beg, "<<H2", state(:EXPR_BEG)],
+      [[2, 6], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[2, 7], :on_tstring_content, "a\n", state(:EXPR_BEG)],
+      [[3, 0], :on_heredoc_end, "H2\n", state(:EXPR_BEG)],
+      [[4, 0], :on_tstring_content, "b\nc\n", state(:EXPR_BEG)]
+    ]
+
+    assert_lexer(expected, code)
   end
 
   def test_invalid_escape_ctrl_mbchar
@@ -352,6 +393,15 @@ world"
       [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
       [[1, 1], :on_tstring_content, "\\C-\u{3042}", state(:EXPR_BEG)],
       [[1, 7], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+
+    code = %["\\C-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\C-\\\u{3042}", state(:EXPR_BEG)],
+      [[1, 8], :on_tstring_end, '"', state(:EXPR_END)],
     ]
 
     assert_lexer(expected, code)
@@ -366,6 +416,15 @@ world"
     ]
 
     assert_lexer(expected, code)
+
+    code = %["\\M-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\M-\\\u{3042}", state(:EXPR_BEG)],
+      [[1, 8], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
   end
 
   def test_invalid_escape_meta_ctrl_mbchar
@@ -377,6 +436,15 @@ world"
     ]
 
     assert_lexer(expected, code)
+
+    code = %["\\M-\\C-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\M-\\C-\\\u{3042}", state(:EXPR_BEG)],
+      [[1, 11], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
   end
 
   def test_invalid_escape_ctrl_meta_mbchar
@@ -385,6 +453,15 @@ world"
       [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
       [[1, 1], :on_tstring_content, "\\C-\\M-\u{3042}", state(:EXPR_BEG)],
       [[1, 10], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+
+    code = %["\\C-\\M-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\C-\\M-\\\u{3042}", state(:EXPR_BEG)],
+      [[1, 11], :on_tstring_end, '"', state(:EXPR_END)],
     ]
 
     assert_lexer(expected, code)

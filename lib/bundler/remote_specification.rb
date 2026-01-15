@@ -12,7 +12,7 @@ module Bundler
 
     attr_reader :name, :version, :platform
     attr_writer :dependencies
-    attr_accessor :source, :remote
+    attr_accessor :source, :remote, :locked_platform
 
     def initialize(name, version, platform, spec_fetcher)
       @name         = name
@@ -21,6 +21,11 @@ module Bundler
       @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
       @dependencies = nil
+      @locked_platform = nil
+    end
+
+    def insecurely_materialized?
+      @locked_platform.to_s != @platform.to_s
     end
 
     # Needed before installs, since the arch matters then and quick

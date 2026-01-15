@@ -1,6 +1,8 @@
 #include "ruby/ruby.h"
 #include "ruby/debug.h"
 
+VALUE tp_mBug;
+
 struct tracepoint_track {
     size_t newobj_count;
     size_t free_count;
@@ -89,8 +91,8 @@ void Init_gc_hook(VALUE);
 void
 Init_tracepoint(void)
 {
-    VALUE mBug = rb_define_module("Bug");
-    Init_gc_hook(mBug);
-    rb_define_module_function(mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
-    rb_define_module_function(mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
+    tp_mBug = rb_define_module("Bug"); // GC root
+    Init_gc_hook(tp_mBug);
+    rb_define_module_function(tp_mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
+    rb_define_module_function(tp_mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
 }

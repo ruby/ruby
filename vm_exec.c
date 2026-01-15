@@ -11,9 +11,9 @@
 
 #include <math.h>
 
-#if USE_YJIT || USE_RJIT
-// The number of instructions executed on vm_exec_core. --yjit-stats uses this.
-uint64_t rb_vm_insns_count = 0;
+#if USE_YJIT || USE_ZJIT
+// The number of instructions executed on vm_exec_core. --yjit-stats and --zjit-stats use this.
+uint64_t rb_vm_insn_count = 0;
 #endif
 
 #if VM_COLLECT_USAGE_DETAILS
