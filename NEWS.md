@@ -60,6 +60,7 @@ releases.
 * typeprof 0.31.1
 * debug 1.11.1
 * mutex_m 0.3.0
+* resolv-replace 0.2.0
 * rdoc 7.1.0
 
 ### RubyGems and Bundler
