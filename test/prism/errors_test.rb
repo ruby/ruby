@@ -82,6 +82,11 @@ module Prism
       assert_empty result.errors
     end
 
+    def test_incomplete_def_closing_loc
+      statement = Prism.parse_statement("def f; 123")
+      assert_empty(statement.end_keyword)
+    end
+
     private
 
     def assert_errors(filepath, version)
