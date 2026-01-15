@@ -18,7 +18,7 @@
 PREFIXED_SYMBOL(coroutine_transfer):
 	; Make space on the stack for caller registers
 	; (Should we rather use red zone? See libphobos example.)
-	subi r1,r1,160
+	subi r1,r1,168
 
 	; Get LR
 	mflr r0
@@ -45,8 +45,11 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	std r13,144(r1)
 
 	; Save return address
-	; Possibly should rather be saved into linkage area, see libphobos and IBM docs
 	std r0,152(r1)
+
+	; Save caller CR register
+	mfcr r0
+	std r0,160(r1)
 
 	; Save stack pointer to first argument
 	std r1,0(r3)
@@ -81,8 +84,14 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	; Set LR
 	mtlr r0
 
+	; Load CR register
+	ld r0,160(r1)
+	; While it is feasible to deal with select fields of CR,
+	; it is easier and potentially faster to use the whole of it.
+	mtcr r0
+
 	; Pop stack frame
-	addi r1,r1,160
+	addi r1,r1,168
 
 	; Jump to return address
 	blr
