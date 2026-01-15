@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -16,10 +15,11 @@ require_relative '../models/typemap'
 require_relative '../loaders/vm_opts_h'
 
 class ApplicationController
-  def generate i, destdir
+  def generate i, destdir, basedir
     path = Pathname.new i
     dst = destdir ? Pathname.new(destdir).join(i) : Pathname.new(i)
-    dumper = RubyVM::Dumper.new dst
+    base = basedir ? Pathname.new(basedir) : Pathname.pwd
+    dumper = RubyVM::Dumper.new dst, base.expand_path
     return [path, dumper]
   end
 end

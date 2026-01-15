@@ -10,7 +10,7 @@ module Bundler
       # So that we don't have to override all there methods to dummy ones
       # explicitly.
       # They will be handled by method_missing
-      [:gemspec, :gem, :path, :install_if, :platforms, :env].each {|m| undef_method m }
+      [:gemspec, :gem, :install_if, :platforms, :env].each {|m| undef_method m }
 
       # This lists the plugins that was added automatically and not specified by
       # the user.

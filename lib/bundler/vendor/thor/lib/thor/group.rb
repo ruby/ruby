@@ -169,7 +169,7 @@ class Bundler::Thor::Group
     # options are added to group_options hash. Options that already exists
     # in base_options are not added twice.
     #
-    def get_options_from_invocations(group_options, base_options) #:nodoc: # rubocop:disable MethodLength
+    def get_options_from_invocations(group_options, base_options) #:nodoc:
       invocations.each do |name, from_option|
         value = if from_option
           option = class_options[name]
@@ -209,6 +209,17 @@ class Bundler::Thor::Group
       msg << "s" if arity > 1
       msg << ", but it should not."
       raise error, msg
+    end
+
+    # Checks if a specified command exists.
+    #
+    # ==== Parameters
+    # command_name<String>:: The name of the command to check for existence.
+    #
+    # ==== Returns
+    # Boolean:: +true+ if the command exists, +false+ otherwise.
+    def command_exists?(command_name) #:nodoc:
+      commands.keys.include?(command_name)
     end
 
   protected

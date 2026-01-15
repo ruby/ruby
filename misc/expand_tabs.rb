@@ -60,43 +60,52 @@ end
 
 DEFAULT_GEM_LIBS = %w[
   bundler
-  cmath
-  csv
-  e2mmap
+  delegate
+  did_you_mean
+  english
+  erb
+  error_highlight
   fileutils
+  find
   forwardable
   ipaddr
-  irb
-  logger
-  matrix
-  mutex_m
+  net-http
+  net-protocol
+  open3
+  open-uri
+  optparse
   ostruct
-  prime
-  racc
-  rdoc
-  rexml
-  rss
-  scanf
-  shell
-  sync
-  thwait
-  tracer
-  webrick
+  pp
+  prettyprint
+  prism
+  resolv
+  rubygems
+  securerandom
+  shellwords
+  singleton
+  tempfile
+  time
+  timeout
+  tmpdir
+  un
+  tsort
+  uri
+  weakref
+  yaml
 ]
 
 DEFAULT_GEM_EXTS = %w[
-  bigdecimal
   date
-  dbm
+  digest
   etc
   fcntl
-  fiddle
-  gdbm
-  io/console
+  io-console
+  io-nonblock
+  io-wait
   json
   openssl
+  pathname
   psych
-  sdbm
   stringio
   strscan
   zlib

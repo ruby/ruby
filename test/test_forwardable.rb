@@ -306,7 +306,7 @@ class TestForwardable < Test::Unit::TestCase
 
   def test_basicobject_subclass
     bug11616 = '[ruby-core:71176] [Bug #11616]'
-    assert_raise_with_message(NameError, /`bar'/, bug11616) {
+    assert_raise_with_message(NameError, /[`']bar'/, bug11616) {
       Foo2.new.baz
     }
   end

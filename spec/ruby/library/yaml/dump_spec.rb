@@ -1,17 +1,21 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/common'
 
-# TODO: WTF is this using a global?
+require 'yaml'
+
 describe "YAML.dump" do
+  before :each do
+    @test_file = tmp("yaml_test_file")
+  end
+
   after :each do
-    rm_r $test_file
+    rm_r @test_file
   end
 
   it "converts an object to YAML and write result to io when io provided" do
-    File.open($test_file, 'w' ) do |io|
+    File.open(@test_file, 'w' ) do |io|
       YAML.dump( ['badger', 'elephant', 'tiger'], io )
     end
-    YAML.load_file($test_file).should == ['badger', 'elephant', 'tiger']
+    YAML.load_file(@test_file).should == ['badger', 'elephant', 'tiger']
   end
 
   it "returns a string containing dumped YAML when no io provided" do
@@ -35,9 +39,18 @@ describe "YAML.dump" do
   end
 
   it "dumps an OpenStruct" do
-    require "ostruct"
+    begin
+      require "ostruct"
+    rescue LoadError
+      skip "OpenStruct is not available"
+    end
     os = OpenStruct.new("age" => 20, "name" => "John")
-    YAML.dump(os).should match_yaml("--- !ruby/object:OpenStruct\ntable:\n  :age: 20\n  :name: John\n")
+    yaml_dump = YAML.dump(os)
+
+    [
+      "--- !ruby/object:OpenStruct\nage: 20\nname: John\n",
+      "--- !ruby/object:OpenStruct\ntable:\n  :age: 20\n  :name: John\n",
+    ].should.include?(yaml_dump)
   end
 
   it "dumps a File without any state" do

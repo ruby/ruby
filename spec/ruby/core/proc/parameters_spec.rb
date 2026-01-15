@@ -20,6 +20,29 @@ describe "Proc#parameters" do
     proc {|x| }.parameters.first.first.should == :opt
   end
 
+  it "sets the first element of each sub-Array to :req for required argument if lambda keyword used" do
+    proc {|x| }.parameters(lambda: true).first.first.should == :req
+    proc {|y,*x| }.parameters(lambda: true).first.first.should == :req
+  end
+
+  it "regards named parameters in procs as required if lambda keyword used" do
+    proc {|x| }.parameters(lambda: true).first.first.should == :req
+  end
+
+  it "regards named parameters in lambda as optional if lambda: false keyword used" do
+    -> x { }.parameters(lambda: false).first.first.should == :opt
+  end
+
+  it "regards named parameters in procs and lambdas as required if lambda keyword is truthy" do
+    proc {|x| }.parameters(lambda: 123).first.first.should == :req
+    -> x { }.parameters(lambda: 123).first.first.should == :req
+  end
+
+  it "ignores the lambda keyword if it is nil" do
+    proc {|x|}.parameters(lambda: nil).first.first.should == :opt
+    -> x { }.parameters(lambda: nil).first.first.should == :req
+  end
+
   it "regards optional keyword parameters in procs as optional" do
     proc {|x: :y| }.parameters.first.first.should == :key
   end
@@ -39,7 +62,7 @@ describe "Proc#parameters" do
   end
 
   it "regards keyword parameters in lambdas as required" do
-    eval("lambda {|x:| }").parameters.first.first.should == :keyreq
+    -> x: { }.parameters.first.first.should == :keyreq
   end
 
   it "sets the first element of each sub-Array to :rest for parameters prefixed with asterisks" do
@@ -57,7 +80,7 @@ describe "Proc#parameters" do
   end
 
   it "sets the first element of each sub-Array to :block for parameters prefixed with ampersands" do
-    ->&x { }.parameters.first.first.should == :block
+    -> &x { }.parameters.first.first.should == :block
     -> x, &y { }.parameters.last.first.should == :block
     proc {|&x| }.parameters.first.first.should == :block
     proc {|x,&y| }.parameters.last.first.should == :block
@@ -68,7 +91,7 @@ describe "Proc#parameters" do
     -> x=Math::PI { }.parameters.first.last.should == :x
     -> an_argument, glark, &foo { }.parameters[1].last.should == :glark
     -> *rest { }.parameters.first.last.should == :rest
-    ->&block { }.parameters.first.last.should == :block
+    -> &block { }.parameters.first.last.should == :block
     proc {|x| }.parameters.first.last.should == :x
     proc {|x=Math::PI| }.parameters.first.last.should == :x
     proc {|an_argument, glark, &foo| }.parameters[1].last.should == :glark
@@ -76,12 +99,25 @@ describe "Proc#parameters" do
     proc {|&block| }.parameters.first.last.should == :block
   end
 
-  it "ignores unnamed rest args" do
+  it "ignores unnamed rest arguments" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
-  it "adds nameless rest arg for \"star\" argument" do
-    -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+  it "ignores implicit rest arguments" do
+    proc { |x, | }.parameters.should == [[:opt, :x]]
+    -> x { }.parameters.should == [[:req, :x]]
+  end
+
+  it "adds rest arg with name * for \"star\" argument" do
+    -> * {}.parameters.should == [[:rest, :*]]
+  end
+
+  it "adds keyrest arg with ** as a name for \"double star\" argument" do
+    -> ** {}.parameters.should == [[:keyrest, :**]]
+  end
+
+  it "adds block arg with name & for anonymous block argument" do
+    -> & {}.parameters.should == [[:block, :&]]
   end
 
   it "does not add locals as block options with a block and splat" do
@@ -91,5 +127,49 @@ describe "Proc#parameters" do
     proc do |*args, &blk|
       local_is_not_parameter = {}
     end.parameters.should == [[:rest, :args], [:block, :blk]]
+  end
+
+  it "returns all parameters defined with the name _ as _" do
+    proc = proc {|_, _, _ = 1, *_, _:, _: 2, **_, &_| }
+    proc.parameters.should == [
+      [:opt, :_],
+      [:opt, :_],
+      [:opt, :_],
+      [:rest, :_],
+      [:keyreq, :_],
+      [:key, :_],
+      [:keyrest, :_],
+      [:block, :_]
+    ]
+
+    lambda = -> _, _, _ = 1, *_, _:, _: 2, **_, &_ {}
+    lambda.parameters.should == [
+      [:req, :_],
+      [:req, :_],
+      [:opt, :_],
+      [:rest, :_],
+      [:keyreq, :_],
+      [:key, :_],
+      [:keyrest, :_],
+      [:block, :_]
+    ]
+  end
+
+  it "returns :nokey for **nil parameter" do
+    proc { |**nil| }.parameters.should == [[:nokey]]
+  end
+
+  ruby_version_is "3.4"..."4.0" do
+    it "handles the usage of `it` as a parameter" do
+      eval("proc { it }").parameters.should == [[:opt, nil]]
+      eval("lambda { it }").parameters.should == [[:req]]
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "handles the usage of `it` as a parameter" do
+      eval("proc { it }").parameters.should == [[:opt]]
+      eval("lambda { it }").parameters.should == [[:req]]
+    end
   end
 end

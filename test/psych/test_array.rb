@@ -24,7 +24,7 @@ module Psych
     def test_another_subclass_with_attributes
       y = Y.new.tap {|o| o.val = 1}
       y << "foo" << "bar"
-      y = Psych.load Psych.dump y
+      y = Psych.unsafe_load Psych.dump y
 
       assert_equal %w{foo bar}, y
       assert_equal Y, y.class
@@ -42,19 +42,35 @@ module Psych
     end
 
     def test_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new.tap {|o| o.val = 1}
+      y = Psych.unsafe_load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
     end
 
     def test_backwards_with_syck
-      x = Psych.load "--- !seq:#{X.name} []\n\n"
+      x = Psych.unsafe_load "--- !seq:#{X.name} []\n\n"
       assert_equal X, x.class
     end
 
     def test_self_referential
       @list << @list
       assert_cycle(@list)
+    end
+
+    def test_recursive_array
+      @list << @list
+
+      loaded = Psych.load(Psych.dump(@list), aliases: true)
+
+      assert_same loaded, loaded.last
+    end
+
+    def test_recursive_array_uses_alias
+      @list << @list
+
+      assert_raise(AliasesNotEnabled) do
+        Psych.load(Psych.dump(@list), aliases: false)
+      end
     end
 
     def test_cycle

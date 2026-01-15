@@ -1,0 +1,10 @@
+Returns a copy of +self+ with trailing substring <tt>suffix</tt> removed:
+
+  'foo'.delete_suffix('o')           # => "fo"
+  'foo'.delete_suffix('oo')          # => "f"
+  'foo'.delete_suffix('foo')         # => ""
+  'foo'.delete_suffix('f')           # => "foo"
+  'foo'.delete_suffix('x')           # => "foo"
+  'こんにちは'.delete_suffix('ちは')  # => "こんに"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

@@ -1,49 +1,49 @@
-require 'base64'
-require 'digest'
-require 'openssl'
+# frozen_string_literal: true
+
+require_relative "openssl"
+require_relative "user_interaction"
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
 # More on AWS SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 class Gem::S3URISigner
+  include Gem::UserInteraction
 
   class ConfigurationError < Gem::Exception
-
     def initialize(message)
       super message
     end
 
     def to_s # :nodoc:
-      "#{super}"
+      super.to_s
     end
-
   end
 
   class InstanceProfileError < Gem::Exception
-
     def initialize(message)
       super message
     end
 
     def to_s # :nodoc:
-      "#{super}"
+      super.to_s
     end
-
   end
 
   attr_accessor :uri
+  attr_accessor :method
 
-  def initialize(uri)
+  def initialize(uri, method)
     @uri = uri
+    @method = method
   end
 
   ##
   # Signs S3 URI using query-params according to the reference: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
-  def sign(expiration = 86400)
+  def sign(expiration = 86_400)
     s3_config = fetch_s3_config
 
     current_time = Time.now.utc
-    date_time = current_time.strftime("%Y%m%dT%H%m%SZ")
+    date_time = current_time.strftime("%Y%m%dT%H%M%SZ")
     date = date_time[0,8]
 
     credential_info = "#{date}/#{s3_config.region}/s3/aws4_request"
@@ -54,7 +54,7 @@ class Gem::S3URISigner
     string_to_sign = generate_string_to_sign(date_time, credential_info, canonical_request)
     signature = generate_signature(s3_config, date, string_to_sign)
 
-    URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
+    Gem::URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
   end
 
   private
@@ -78,7 +78,7 @@ class Gem::S3URISigner
 
   def generate_canonical_request(canonical_host, query_params)
     [
-      "GET",
+      method.upcase,
       uri.path,
       query_params,
       "host:#{canonical_host}",
@@ -93,7 +93,7 @@ class Gem::S3URISigner
       "AWS4-HMAC-SHA256",
       date_time,
       credential_info,
-      Digest::SHA256.hexdigest(canonical_request)
+      OpenSSL::Digest::SHA256.hexdigest(canonical_request),
     ].join("\n")
   end
 
@@ -141,33 +141,76 @@ class Gem::S3URISigner
   end
 
   def base64_uri_escape(str)
-    str.gsub(/[\+\/=\n]/, BASE64_URI_TRANSLATE)
+    str.gsub(%r{[\+/=\n]}, BASE64_URI_TRANSLATE)
   end
 
   def ec2_metadata_credentials_json
-    require 'net/http'
-    require 'rubygems/request'
-    require 'rubygems/request/connection_pools'
-    require 'json'
+    require_relative "vendored_net_http"
+    require_relative "request"
+    require_relative "request/connection_pools"
+    require "json"
 
-    iam_info = ec2_metadata_request(EC2_IAM_INFO)
-    # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
-    role_name = iam_info['InstanceProfileArn'].split('/').last
-    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name)
+    # First try V2 fallback to V1
+    res = nil
+    begin
+      res = ec2_metadata_credentials_imds_v2
+    rescue InstanceProfileError
+      alert_warning "Unable to access ec2 credentials via IMDSv2, falling back to IMDSv1"
+      res = ec2_metadata_credentials_imds_v1
+    end
+    res
   end
 
-  def ec2_metadata_request(url)
-    uri = URI(url)
-    @request_pool ||= create_request_pool(uri)
-    request = Gem::Request.new(uri, Net::HTTP::Get, nil, @request_pool)
-    response = request.fetch
+  def ec2_metadata_credentials_imds_v2
+    token = ec2_metadata_token
+    iam_info = ec2_metadata_request(EC2_IAM_INFO, token:)
+    # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
+    role_name = iam_info["InstanceProfileArn"].split("/").last
+    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name, token:)
+  end
+
+  def ec2_metadata_credentials_imds_v1
+    iam_info = ec2_metadata_request(EC2_IAM_INFO, token: nil)
+    # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
+    role_name = iam_info["InstanceProfileArn"].split("/").last
+    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name, token: nil)
+  end
+
+  def ec2_metadata_request(url, token:)
+    request = ec2_iam_request(Gem::URI(url), Gem::Net::HTTP::Get)
+
+    response = request.fetch do |req|
+      if token
+        req.add_field "X-aws-ec2-metadata-token", token
+      end
+    end
 
     case response
-    when Net::HTTPOK then
+    when Gem::Net::HTTPOK then
       JSON.parse(response.body)
     else
       raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
     end
+  end
+
+  def ec2_metadata_token
+    request = ec2_iam_request(Gem::URI(EC2_IAM_TOKEN), Gem::Net::HTTP::Put)
+
+    response = request.fetch do |req|
+      req.add_field "X-aws-ec2-metadata-token-ttl-seconds", 60
+    end
+
+    case response
+    when Gem::Net::HTTPOK then
+      response.body
+    else
+      raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
+    end
+  end
+
+  def ec2_iam_request(uri, verb)
+    @request_pool ||= create_request_pool(uri)
+    Gem::Request.new(uri, verb, nil, @request_pool)
   end
 
   def create_request_pool(uri)
@@ -177,7 +220,7 @@ class Gem::S3URISigner
   end
 
   BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
-  EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info".freeze
-  EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/".freeze
-
+  EC2_IAM_TOKEN = "http://169.254.169.254/latest/api/token"
+  EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info"
+  EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
 end

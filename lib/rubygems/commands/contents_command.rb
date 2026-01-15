@@ -1,40 +1,40 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
+
+require_relative "../command"
+require_relative "../version_option"
 
 class Gem::Commands::ContentsCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
-    super 'contents', 'Display the contents of the installed gems',
-          :specdirs => [], :lib_only => false, :prefix => true,
-          :show_install_dir => false
+    super "contents", "Display the contents of the installed gems",
+          specdirs: [], lib_only: false, prefix: true,
+          show_install_dir: false
 
     add_version_option
 
-    add_option('--all',
+    add_option("--all",
                "Contents for all gems") do |all, options|
       options[:all] = all
     end
 
-    add_option('-s', '--spec-dir a,b,c', Array,
+    add_option("-s", "--spec-dir a,b,c", Array,
                "Search for gems under specific paths") do |spec_dirs, options|
       options[:specdirs] = spec_dirs
     end
 
-    add_option('-l', '--[no-]lib-only',
+    add_option("-l", "--[no-]lib-only",
                "Only return files in the Gem's lib_dirs") do |lib_only, options|
       options[:lib_only] = lib_only
     end
 
-    add_option('--[no-]prefix',
+    add_option("--[no-]prefix",
                "Don't include installed path prefix") do |prefix, options|
       options[:prefix] = prefix
     end
 
-    add_option('--[no-]show-install-dir',
-               'Show only the gem install dir') do |show, options|
+    add_option("--[no-]show-install-dir",
+               "Show only the gem install dir") do |show, options|
       options[:show_install_dir] = show
     end
 
@@ -78,7 +78,7 @@ prefix or only the files that are requireable.
           gem_contents name
         end
 
-      terminate_interaction 1 unless found or names.length > 1
+      terminate_interaction 1 unless found || names.length > 1
     end
   end
 
@@ -92,9 +92,9 @@ prefix or only the files that are requireable.
 
   def files_in_gem(spec)
     gem_path  = spec.full_gem_path
-    extra     = "/{#{spec.require_paths.join ','}}" if options[:lib_only]
+    extra     = "/{#{spec.require_paths.join ","}}" if options[:lib_only]
     glob      = "#{gem_path}#{extra}/**/*"
-    prefix_re = /#{Regexp.escape(gem_path)}\//
+    prefix_re = %r{#{Regexp.escape(gem_path)}/}
 
     Dir[glob].map do |file|
       [gem_path, file.sub(prefix_re, "")]
@@ -102,15 +102,22 @@ prefix or only the files that are requireable.
   end
 
   def files_in_default_gem(spec)
-    spec.files.map do |file|
-      case file
-      when /\A#{spec.bindir}\//
-        # $' is POSTMATCH
-        [RbConfig::CONFIG['bindir'], $']
-      when /\.so\z/
-        [RbConfig::CONFIG['archdir'], file]
+    spec.files.filter_map do |file|
+      if file.start_with?("#{spec.bindir}/")
+        [RbConfig::CONFIG["bindir"], file.delete_prefix("#{spec.bindir}/")]
       else
-        [RbConfig::CONFIG['rubylibdir'], file]
+        gem spec.name, spec.version
+
+        require_path = spec.require_paths.find do |path|
+          file.start_with?("#{path}/")
+        end
+
+        requirable_part = file.delete_prefix("#{require_path}/")
+
+        resolve = $LOAD_PATH.resolve_feature_path(requirable_part)&.last
+        next unless resolve
+
+        [resolve.delete_suffix(requirable_part), requirable_part]
       end
     end
   end
@@ -175,16 +182,15 @@ prefix or only the files that are requireable.
 
     if Gem.configuration.verbose
       say "\nDirectories searched:"
-      @spec_dirs.sort.each { |dir| say dir }
+      @spec_dirs.sort.each {|dir| say dir }
     end
 
-    return nil
+    nil
   end
 
   def specification_directories # :nodoc:
-    options[:specdirs].map do |i|
+    options[:specdirs].flat_map do |i|
       [i, File.join(i, "specifications")]
-    end.flatten
+    end
   end
-
 end

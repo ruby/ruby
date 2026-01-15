@@ -1,0 +1,6 @@
+a(**b c)
+      ^ unexpected local variable or method; expected a `)` to close the arguments
+      ^ unexpected local variable or method, expecting end-of-input
+       ^ unexpected ')', expecting end-of-input
+       ^ unexpected ')', ignoring it
+

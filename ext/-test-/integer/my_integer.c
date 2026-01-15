@@ -1,9 +1,13 @@
 #include "ruby.h"
 
+static const rb_data_type_t my_integer_type = {
+    "MyInteger", {0}, 0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE
 my_integer_s_new(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, 0, 0);
+    return TypedData_Wrap_Struct(klass, &my_integer_type, 0);
 }
 
 void

@@ -1,6 +1,6 @@
 describe :strscan_concat, shared: true do
   it "concatenates the given argument to self and returns self" do
-    s = StringScanner.new("hello ")
+    s = StringScanner.new(+"hello ")
     s.send(@method, 'world').should == s
     s.string.should == "hello world"
     s.eos?.should be_false

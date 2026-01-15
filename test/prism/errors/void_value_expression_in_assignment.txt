@@ -1,0 +1,9 @@
+a = return
+    ^~~~~~ unexpected void value expression
+a = 1, return
+       ^~~~~~ unexpected void value expression
+a, b = return, 1
+       ^~~~~~ unexpected void value expression
+a, b = 1, *return
+           ^~~~~~ unexpected void value expression
+

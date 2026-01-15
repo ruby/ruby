@@ -6,19 +6,26 @@ module Bundler
   # be seeded with what we're given from the source's abbreviated index - the
   # full specification will only be fetched when necessary.
   class RemoteSpecification
+    include MatchRemoteMetadata
     include MatchPlatform
     include Comparable
 
     attr_reader :name, :version, :platform
     attr_writer :dependencies
-    attr_accessor :source, :remote
+    attr_accessor :source, :remote, :locked_platform
 
     def initialize(name, version, platform, spec_fetcher)
       @name         = name
       @version      = Gem::Version.create version
-      @platform     = platform
+      @original_platform = platform || Gem::Platform::RUBY
+      @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
       @dependencies = nil
+      @locked_platform = nil
+    end
+
+    def insecurely_materialized?
+      @locked_platform.to_s != @platform.to_s
     end
 
     # Needed before installs, since the arch matters then and quick
@@ -28,10 +35,10 @@ module Bundler
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY || platform.nil?
+      @full_name ||= if @platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
-        "#{@name}-#{@version}-#{platform}"
+        "#{@name}-#{@version}-#{@platform}"
       end
     end
 
@@ -50,6 +57,8 @@ module Bundler
     # once the remote gem is downloaded, the backend specification will
     # be swapped out.
     def __swap__(spec)
+      raise APIResponseInvalidDependenciesError unless spec.dependencies.all? {|d| d.is_a?(Gem::Dependency) }
+
       SharedHelpers.ensure_same_dependencies(self, dependencies, spec.dependencies)
       @_remote_specification = spec
     end
@@ -76,11 +85,16 @@ module Bundler
         deps = method_missing(:dependencies)
 
         # allow us to handle when the specs dependencies are an array of array of string
-        # see https://github.com/bundler/bundler/issues/5797
+        # in order to delay the crash to `#__swap__` where it results in a friendlier error
+        # see https://github.com/rubygems/bundler/issues/5797
         deps = deps.map {|d| d.is_a?(Gem::Dependency) ? d : Gem::Dependency.new(*d) }
 
         deps
       end
+    end
+
+    def runtime_dependencies
+      dependencies.select(&:runtime?)
     end
 
     def git_version
@@ -88,16 +102,16 @@ module Bundler
       " #{source.revision[0..6]}"
     end
 
-  private
+    private
 
     def to_ary
       nil
     end
 
     def _remote_specification
-      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @platform])
+      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @original_platform])
       @_remote_specification || raise(GemspecError, "Gemspec data for #{full_name} was" \
-        " missing from the server! Try installing with `--full-index` as a workaround.")
+        " missing from the server!")
     end
 
     def method_missing(method, *args, &blk)

@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 require_relative 'shared/pos'
 
 describe "IO#sysseek" do
-  it_behaves_like :io_set_pos, :seek
+  it_behaves_like :io_set_pos, :sysseek
 end
 
 describe "IO#sysseek" do
@@ -24,6 +24,11 @@ describe "IO#sysseek" do
   it "raises an error when called after buffered reads" do
     @io.readline
     -> { @io.sysseek(-5, IO::SEEK_CUR) }.should raise_error(IOError)
+  end
+
+  it "seeks normally even when called immediately after a buffered IO#read" do
+    @io.read(15)
+    @io.sysseek(-5, IO::SEEK_CUR).should == 10
   end
 
   it "moves the read position relative to the start with SEEK_SET" do

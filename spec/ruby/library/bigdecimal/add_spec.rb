@@ -24,7 +24,7 @@ describe "BigDecimal#add" do
   end
 
   it "returns a + b with given precision" do
-    # documentation states, that precision ist optional, but it ain't,
+    # documentation states that precision is optional, but it ain't,
     @two.add(@one, 1).should == @three
     @one .add(@two, 1).should == @three
     @one.add(@one_minus, 1).should == @zero
@@ -60,7 +60,7 @@ describe "BigDecimal#add" do
   end
 
 #  TODO:
-#  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17374
+#  https://blade.ruby-lang.org/ruby-core/17374
 #
 #  This doesn't work on MRI and looks like a bug to me:
 #  one can use BigDecimal + Float, but not Bigdecimal.add(Float)
@@ -72,14 +72,6 @@ describe "BigDecimal#add" do
 #
 #    BigDecimal("0.88").add(0.0, 1).should == BigDecimal("0.9")
 #  end
-
-  describe "with Object" do
-    it "tries to coerce the other operand to self" do
-      object = mock("Object")
-      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
-      @frac_3.add(object, 1).should == BigDecimal("0.1E16")
-    end
-  end
 
   describe "with Rational" do
     it "produces a BigDecimal" do

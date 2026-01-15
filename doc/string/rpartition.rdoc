@@ -1,0 +1,47 @@
+Returns a 3-element array of substrings of +self+.
+
+Searches +self+ for a match of +pattern+, seeking the _last_ match.
+
+If +pattern+ is not matched, returns the array:
+
+  ["", "", self.dup]
+
+If +pattern+ is matched, returns the array:
+
+  [pre_match, last_match, post_match]
+
+where:
+
+- +last_match+ is the last-found matching substring.
+- +pre_match+ and +post_match+ are the preceding and following substrings.
+
+The pattern used is:
+
+- +pattern+ itself, if it is a Regexp.
+- <tt>Regexp.quote(pattern)</tt>, if +pattern+ is a string.
+
+Note that in the examples below, a returned string <tt>'hello'</tt> is a copy of +self+, not +self+.
+
+If +pattern+ is a Regexp, searches for the last matching substring
+(also setting {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+
+  'hello'.rpartition(/l/)     # => ["hel", "l", "o"]
+  'hello'.rpartition(/ll/)    # => ["he", "ll", "o"]
+  'hello'.rpartition(/h/)     # => ["", "h", "ello"]
+  'hello'.rpartition(/o/)     # => ["hell", "o", ""]
+  'hello'.rpartition(//)      # => ["hello", "", ""]
+  'hello'.rpartition(/x/)     # => ["", "", "hello"]
+  'こんにちは'.rpartition(/に/) # => ["こん", "に", "ちは"]
+
+If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
+then searches for the last matching substring
+(and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+
+  'hello'.rpartition('l')     # => ["hel", "l", "o"]
+  'hello'.rpartition('ll')    # => ["he", "ll", "o"]
+  'hello'.rpartition('h')     # => ["", "h", "ello"]
+  'hello'.rpartition('o')     # => ["hell", "o", ""]
+  'hello'.rpartition('')      # => ["hello", "", ""]
+  'こんにちは'.rpartition('に') # => ["こん", "に", "ちは"]
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

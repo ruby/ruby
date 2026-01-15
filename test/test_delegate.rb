@@ -3,14 +3,6 @@ require 'test/unit'
 require 'delegate'
 
 class TestDelegateClass < Test::Unit::TestCase
-  module PP
-    def mu_pp(obj)
-      str = super
-      str = "#<#{obj.class}: #{str}>" if Delegator === obj
-      str
-    end
-  end
-
   module M
     attr_reader :m
   end
@@ -31,7 +23,7 @@ class TestDelegateClass < Test::Unit::TestCase
 
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
-    assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
+    assert_equal((SimpleDelegator.new(e) == e), (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
   end
 
   class Myclass < DelegateClass(Array);end
@@ -101,11 +93,21 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   class Parent
-    def parent_public; end
+    def parent_public
+      :public
+    end
 
     protected
 
-    def parent_protected; end
+    def parent_protected
+      :protected
+    end
+
+    private
+
+    def parent_private
+      :private
+    end
   end
 
   class Child < DelegateClass(Parent)
@@ -117,6 +119,10 @@ class TestDelegateClass < Test::Unit::TestCase
     protected
 
     def parent_protected_added; end
+
+    private
+
+    def parent_private_added; end
   end
 
   def test_public_instance_methods
@@ -129,6 +135,39 @@ class TestDelegateClass < Test::Unit::TestCase
     ignores = Object.protected_instance_methods | Delegator.protected_instance_methods
     assert_equal([:parent_protected, :parent_protected_added], (Child.protected_instance_methods - ignores).sort)
     assert_equal([:parent_protected, :parent_protected_added], (Child.new(Parent.new).protected_methods - ignores).sort)
+  end
+
+  def test_instance_methods
+    ignores = Object.instance_methods | Delegator.instance_methods
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.instance_methods - ignores).sort)
+    assert_equal([:parent_protected, :parent_protected_added, :parent_public, :parent_public_added], (Child.new(Parent.new).methods - ignores).sort)
+  end
+
+  def test_DelegateClass_instance_method
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_public)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_public_added)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_protected)
+    assert_instance_of UnboundMethod, Child.instance_method(:parent_protected_added)
+    assert_raise(NameError) { Child.instance_method(:parent_private) }
+    assert_raise(NameError) { Child.instance_method(:parent_private_added) }
+    assert_instance_of UnboundMethod, Child.instance_method(:to_s)
+  end
+
+  def test_DelegateClass_public_instance_method
+    assert_instance_of UnboundMethod, Child.public_instance_method(:parent_public)
+    assert_instance_of UnboundMethod, Child.public_instance_method(:parent_public_added)
+    assert_raise(NameError) { Child.public_instance_method(:parent_protected) }
+    assert_raise(NameError) { Child.public_instance_method(:parent_protected_added) }
+    assert_raise(NameError) { Child.instance_method(:parent_private) }
+    assert_raise(NameError) { Child.instance_method(:parent_private_added) }
+    assert_instance_of UnboundMethod, Child.public_instance_method(:to_s)
+  end
+
+  def test_call_visibiltiy
+    obj = Child.new(Parent.new)
+    assert_equal :public, obj.parent_public
+    assert_equal :protected, obj.__send__(:parent_protected)
+    assert_raise(NoMethodError) { obj.__send__(:parent_private) }
   end
 
   class IV < DelegateClass(Integer)
@@ -155,8 +194,8 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
     assert_raise(FrozenError) {d.clone[0] += 1}
     d.freeze
-    assert(d.clone.frozen?)
-    assert(!d.dup.frozen?)
+    assert_predicate(d.clone, :frozen?)
+    assert_not_predicate(d.dup, :frozen?)
   end
 
   def test_frozen
@@ -181,7 +220,6 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   def test_eql?
-    extend PP
     s0 = SimpleDelegator.new("foo")
     s1 = SimpleDelegator.new("bar")
     s2 = SimpleDelegator.new("foo")
@@ -364,5 +402,21 @@ class TestDelegateClass < Test::Unit::TestCase
     end
     a = DelegateClass(k).new(k.new)
     assert_equal([1, 0], a.test(1, k: 0))
+  end
+
+  def test_delegate_class_can_be_used_in_ractors
+    omit "no Ractor#value" unless defined?(Ractor) && Ractor.method_defined?(:value)
+    require_path = File.expand_path(File.join(__dir__, "..", "lib", "delegate.rb"))
+    raise "file doesn't exist: #{require_path}" unless File.exist?(require_path)
+    assert_ractor <<-RUBY
+      require "#{require_path}"
+      class MyClass < DelegateClass(Array);end
+      values = 2.times.map do
+        Ractor.new do
+          MyClass.new([1,2,3]).at(0)
+        end
+      end.map(&:value)
+      assert_equal [1,1], values
+    RUBY
   end
 end

@@ -1,59 +1,30 @@
 # frozen_string_literal: true
 
-require "rubygems/util"
-
 module Gem::BundlerVersionFinder
   def self.bundler_version
-    version, _ = bundler_version_with_reason
+    return if bundle_config_version == "system"
 
-    return unless version
+    v = ENV["BUNDLER_VERSION"]
+    v = nil if v&.empty?
 
-    Gem::Version.new(version)
+    v ||= bundle_update_bundler_version
+    return if v == true
+
+    v ||= lockfile_version
+    return unless v
+
+    Gem::Version.new(v)
   end
 
-  def self.bundler_version_with_reason
-    if v = ENV["BUNDLER_VERSION"]
-      return [v, "`$BUNDLER_VERSION`"]
-    end
-    if v = bundle_update_bundler_version
-      return if v == true
-      return [v, "`bundle update --bundler`"]
-    end
-    v, lockfile = lockfile_version
-    if v
-      return [v, "your #{lockfile}"]
-    end
-  end
-
-  def self.missing_version_message
-    return unless vr = bundler_version_with_reason
-    <<-EOS
-Could not find 'bundler' (#{vr.first}) required by #{vr.last}.
-To update to the latest version installed on your system, run `bundle update --bundler`.
-To install the missing version, run `gem install bundler:#{vr.first}`
-    EOS
-  end
-
-  def self.compatible?(spec)
-    return true unless spec.name == "bundler".freeze
-    return true unless bundler_version = self.bundler_version
-
-    spec.version.segments.first == bundler_version.segments.first
-  end
-
-  def self.filter!(specs)
-    return unless bundler_version = self.bundler_version
-
-    specs.reject! { |spec| spec.version.segments.first != bundler_version.segments.first }
-
-    exact_match_index = specs.find_index { |spec| spec.version == bundler_version }
+  def self.prioritize!(specs)
+    exact_match_index = specs.find_index {|spec| spec.version == bundler_version }
     return unless exact_match_index
 
     specs.unshift(specs.delete_at(exact_match_index))
   end
 
   def self.bundle_update_bundler_version
-    return unless File.basename($0) == "bundle".freeze
+    return unless ["bundle", "bundler"].include? File.basename($0)
     return unless "update".start_with?(ARGV.first || " ")
     bundler_version = nil
     update_index = nil
@@ -70,23 +41,21 @@ To install the missing version, run `gem install bundler:#{vr.first}`
   private_class_method :bundle_update_bundler_version
 
   def self.lockfile_version
-    return unless lockfile = lockfile_contents
-    lockfile, contents = lockfile
-    lockfile ||= "lockfile"
+    return unless contents = lockfile_contents
     regexp = /\n\nBUNDLED WITH\n\s{2,}(#{Gem::Version::VERSION_PATTERN})\n/
     return unless contents =~ regexp
-    [$1, lockfile]
+    $1
   end
   private_class_method :lockfile_version
 
   def self.lockfile_contents
     gemfile = ENV["BUNDLE_GEMFILE"]
-    gemfile = nil if gemfile && gemfile.empty?
+    gemfile = nil if gemfile&.empty?
 
     unless gemfile
       begin
         Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find { |f| File.file?(f.tap(&Gem::UNTAINT)) }
+          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
 
           gemfile = File.join directory, gemfile
           break
@@ -98,14 +67,46 @@ To install the missing version, run `gem install bundler:#{vr.first}`
 
     return unless gemfile
 
-    lockfile = case gemfile
-               when "gems.rb" then "gems.locked"
-               else "#{gemfile}.lock"
-               end.dup.tap(&Gem::UNTAINT)
+    lockfile = ENV["BUNDLE_LOCKFILE"]
+    lockfile = nil if lockfile&.empty?
+
+    lockfile ||= case gemfile
+                 when "gems.rb" then "gems.locked"
+                 else "#{gemfile}.lock"
+    end
 
     return unless File.file?(lockfile)
 
-    [lockfile, File.read(lockfile)]
+    File.read(lockfile)
   end
   private_class_method :lockfile_contents
+
+  def self.bundle_config_version
+    config_file = bundler_config_file
+    return unless config_file && File.file?(config_file)
+
+    contents = File.read(config_file)
+    contents =~ /^BUNDLE_VERSION:\s*["']?([^"'\s]+)["']?\s*$/
+
+    $1
+  end
+  private_class_method :bundle_config_version
+
+  def self.bundler_config_file
+    # see Bundler::Settings#global_config_file and local_config_file
+    # global
+    if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
+      ENV["BUNDLE_CONFIG"]
+    elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
+      ENV["BUNDLE_USER_CONFIG"]
+    elsif ENV["BUNDLE_USER_HOME"] && !ENV["BUNDLE_USER_HOME"].empty?
+      ENV["BUNDLE_USER_HOME"] + "config"
+    elsif Gem.user_home && !Gem.user_home.empty?
+      Gem.user_home + ".bundle/config"
+    else
+      # local
+      "config"
+    end
+  end
+  private_class_method :bundler_config_file
 end

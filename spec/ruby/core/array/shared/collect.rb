@@ -1,4 +1,5 @@
 require_relative '../../enumerable/shared/enumeratorized'
+require_relative '../shared/iterable_and_tolerating_size_increasing'
 
 describe :array_collect, shared: true do
   it "returns a copy of array with each element replaced by the value returned by block" do
@@ -42,24 +43,12 @@ describe :array_collect, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "does not copy tainted status" do
-      a = [1, 2, 3]
-      a.taint
-      a.send(@method){|x| x}.tainted?.should be_false
-    end
-
-    it "does not copy untrusted status" do
-      a = [1, 2, 3]
-      a.untrust
-      a.send(@method){|x| x}.untrusted?.should be_false
-    end
-  end
-
   before :all do
     @object = [1, 2, 3, 4]
   end
   it_should_behave_like :enumeratorized_with_origin_size
+
+  it_should_behave_like :array_iterable_and_tolerating_size_increasing
 end
 
 describe :array_collect_b, shared: true do
@@ -96,23 +85,6 @@ describe :array_collect_b, shared: true do
     a.should == ["1!", "2!", "3!"]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "keeps tainted status" do
-      a = [1, 2, 3]
-      a.taint
-      a.tainted?.should be_true
-      a.send(@method){|x| x}
-      a.tainted?.should be_true
-    end
-
-    it "keeps untrusted status" do
-      a = [1, 2, 3]
-      a.untrust
-      a.send(@method){|x| x}
-      a.untrusted?.should be_true
-    end
-  end
-
   describe "when frozen" do
     it "raises a FrozenError" do
       -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(FrozenError)
@@ -133,8 +105,37 @@ describe :array_collect_b, shared: true do
     end
   end
 
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.send(@method) { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only changes elements before error is raised, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.send(@method) do |e|
+        case e
+        when 1 then -1
+        when 2 then -2
+        when 3 then raise StandardError, 'Oops'
+        else 0
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [-1, -2, 3, 4]
+  end
+
   before :all do
     @object = [1, 2, 3, 4]
   end
   it_should_behave_like :enumeratorized_with_origin_size
+
+  it_should_behave_like :array_iterable_and_tolerating_size_increasing
 end

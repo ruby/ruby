@@ -228,7 +228,7 @@ describe "BigDecimal#round" do
     -> { BigDecimal('-Infinity').round(2) }.should_not raise_error(FloatDomainError)
   end
 
-  it "raise for a non-existent round mode" do
-    -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode")
+  it 'raise for a non-existent round mode' do
+    -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode (nonsense)")
   end
 end

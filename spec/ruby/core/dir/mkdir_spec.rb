@@ -46,12 +46,28 @@ describe "Dir.mkdir" do
     end
   end
 
-  it "calls #to_path on non-String arguments" do
+  it "calls #to_path on non-String path arguments" do
     DirSpecs.clear_dirs
     p = mock('path')
     p.should_receive(:to_path).and_return(DirSpecs.mock_dir('nonexisting'))
     Dir.mkdir(p)
     DirSpecs.clear_dirs
+  end
+
+  it "calls #to_int on non-Integer permissions argument" do
+    DirSpecs.clear_dirs
+    path = DirSpecs.mock_dir('nonexisting')
+    permissions = mock('permissions')
+    permissions.should_receive(:to_int).and_return(0666)
+    Dir.mkdir(path, permissions)
+    DirSpecs.clear_dirs
+  end
+
+  it "raises TypeError if non-Integer permissions argument does not have #to_int method" do
+    path = DirSpecs.mock_dir('nonexisting')
+    permissions = Object.new
+
+    -> { Dir.mkdir(path, permissions) }.should raise_error(TypeError, 'no implicit conversion of Object into Integer')
   end
 
   it "raises a SystemCallError if any of the directories in the path before the last does not exist" do

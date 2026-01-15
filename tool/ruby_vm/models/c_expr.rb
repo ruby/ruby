@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -36,6 +35,10 @@ class RubyVM::CExpr
   end
 
   def inspect
-    sprintf "#<%s:%d %s>", @__FILE__, @__LINE__, @expr
+    if @__LINE__
+      sprintf "#<%s:%d %s>", @__FILE__, @__LINE__, @expr
+    else
+      sprintf "#<%s %s>", @__FILE__, @expr
+    end
   end
 end

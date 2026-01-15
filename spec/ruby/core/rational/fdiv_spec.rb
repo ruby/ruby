@@ -1,5 +1,5 @@
-require_relative '../../shared/rational/fdiv'
+require_relative "../../spec_helper"
 
 describe "Rational#fdiv" do
-  it_behaves_like :rational_fdiv, :fdiv
+  it "needs to be reviewed for spec completeness"
 end

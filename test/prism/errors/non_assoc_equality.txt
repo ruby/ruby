@@ -1,0 +1,25 @@
+1 == 2 == 3
+       ^~ unexpected '=='; '==' is a non-associative operator
+       ^~ unexpected '==', expecting end-of-input
+       ^~ unexpected '==', ignoring it
+1 != 2 != 3
+       ^~ unexpected '!='; '!=' is a non-associative operator
+       ^~ unexpected '!=', expecting end-of-input
+       ^~ unexpected '!=', ignoring it
+1 === 2 === 3
+        ^~~ unexpected '==='; '===' is a non-associative operator
+        ^~~ unexpected '===', expecting end-of-input
+        ^~~ unexpected '===', ignoring it
+1 =~ 2 =~ 3
+       ^~ unexpected '=~'; '=~' is a non-associative operator
+       ^~ unexpected '=~', expecting end-of-input
+       ^~ unexpected '=~', ignoring it
+1 !~ 2 !~ 3
+       ^~ unexpected '!~'; '!~' is a non-associative operator
+       ^~ unexpected '!~', expecting end-of-input
+       ^~ unexpected '!~', ignoring it
+1 <=> 2 <=> 3
+        ^~~ unexpected '<=>'; '<=>' is a non-associative operator
+        ^~~ unexpected '<=>', expecting end-of-input
+        ^~~ unexpected '<=>', ignoring it
+

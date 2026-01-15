@@ -17,12 +17,12 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
   end
 
   def test_build_data
-    key1 = Fixtures.pkey("rsa1024")
-    key2 = Fixtures.pkey("rsa2048")
+    key1 = Fixtures.pkey("rsa-1")
+    key2 = Fixtures.pkey("rsa-2")
     spki = OpenSSL::Netscape::SPKI.new
     spki.challenge = "RandomString"
     spki.public_key = key1.public_key
-    spki.sign(key1, OpenSSL::Digest::SHA1.new)
+    spki.sign(key1, OpenSSL::Digest.new('SHA256'))
     assert(spki.verify(spki.public_key))
     assert(spki.verify(key1.public_key))
     assert(!spki.verify(key2.public_key))
@@ -38,13 +38,13 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
   def test_decode_data
     spki = OpenSSL::Netscape::SPKI.new(@b64)
     assert_equal(@b64, spki.to_pem)
-    assert_equal(@b64.unpack("m").first, spki.to_der)
+    assert_equal(@b64.unpack1("m"), spki.to_der)
     assert_equal("MozillaIsMyFriend", spki.challenge)
     assert_equal(OpenSSL::PKey::RSA, spki.public_key.class)
 
-    spki = OpenSSL::Netscape::SPKI.new(@b64.unpack("m").first)
+    spki = OpenSSL::Netscape::SPKI.new(@b64.unpack1("m"))
     assert_equal(@b64, spki.to_pem)
-    assert_equal(@b64.unpack("m").first, spki.to_der)
+    assert_equal(@b64.unpack1("m"), spki.to_der)
     assert_equal("MozillaIsMyFriend", spki.challenge)
     assert_equal(OpenSSL::PKey::RSA, spki.public_key.class)
   end

@@ -227,6 +227,10 @@ class TestSprintf < Test::Unit::TestCase
 
     bug11766 = '[ruby-core:71806] [Bug #11766]'
     assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r), bug11766)
+
+    require 'rbconfig/sizeof'
+    fmin, fmax = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_match(/\A-\d+\.\d+\z/, sprintf("%f", Rational(fmin, fmax)))
   end
 
   def test_rational_precision
@@ -235,7 +239,7 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_hash
     options = {:capture=>/\d+/}
-    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+    assert_equal("with options #{options.inspect}", sprintf("with options %p" % options))
   end
 
   def test_inspect
@@ -266,8 +270,8 @@ class TestSprintf < Test::Unit::TestCase
     # Specifying the precision multiple times with negative star arguments:
     assert_raise(ArgumentError, "[ruby-core:11570]") {sprintf("%.*.*.*.*f", -1, -1, -1, 5, 1)}
 
-    # Null bytes after percent signs are removed:
-    assert_equal("%\0x hello", sprintf("%\0x hello"), "[ruby-core:11571]")
+    assert_raise(ArgumentError) {sprintf("%\0x hello")}
+    assert_raise(ArgumentError) {sprintf("%\nx hello")}
 
     assert_raise(ArgumentError, "[ruby-core:11573]") {sprintf("%.25555555555555555555555555555555555555s", "hello")}
 
@@ -279,10 +283,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
 
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_nothing_raised { sprintf("", 1) }
-  ensure
-    $VERBOSE = verbose
+    assert_warning(/too many arguments/) do
+      sprintf("", 1)
+    end
   end
 
   def test_float
@@ -362,11 +365,16 @@ class TestSprintf < Test::Unit::TestCase
   def test_char
     assert_equal("a", sprintf("%c", 97))
     assert_equal("a", sprintf("%c", ?a))
-    assert_raise(ArgumentError) { sprintf("%c", sprintf("%c%c", ?a, ?a)) }
+    assert_equal("a", sprintf("%c", "a"))
+    assert_equal("a", sprintf("%c", sprintf("%c%c", ?a, ?a)))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%c", ?a))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%-1c", ?a))
     assert_equal(" " * BSIZ + "a", sprintf("%#{ BSIZ + 1 }c", ?a))
     assert_equal("a" + " " * BSIZ, sprintf("%-#{ BSIZ + 1 }c", ?a))
+    assert_raise(ArgumentError) { sprintf("%c", -1) }
+    s = sprintf("%c".encode(Encoding::US_ASCII), 0x80)
+    assert_equal("\x80".b, s)
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_string
@@ -507,6 +515,16 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_coderange
+    format_str = "wrong constant name %s"
+    interpolated_str = "\u3042"
+    assert_predicate format_str, :ascii_only?
+    refute_predicate interpolated_str, :ascii_only?
+
+    str = format_str % interpolated_str
+    refute_predicate str, :ascii_only?
+  end
+
   def test_named_default
     h = Hash.new('world')
     assert_equal("hello world", "hello %{location}" % h)
@@ -529,18 +547,11 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
-  def test_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = [4, 2, 2].map { |x| "%0#{x}d" }.join('-') # defeats optimization
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = sprintf(fmt, 1970, 1, 1)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
+  def test_binary_format_coderange
+    1.upto(500) do |i|
+      str = sprintf("%*s".b, i, "\xe2".b)
+      refute_predicate str, :ascii_only?
+      assert_equal i, str.bytesize
+    end
   end
 end

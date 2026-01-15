@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr_accessor" do
   it "creates a getter and setter for each given attribute name" do
@@ -33,10 +34,23 @@ describe "Module#attr_accessor" do
       attr_accessor :spec_attr_accessor
     end
 
-    -> { true.spec_attr_accessor = "a" }.should raise_error(RuntimeError)
+    -> { true.spec_attr_accessor = "a" }.should raise_error(FrozenError)
   end
 
-  it "converts non string/symbol/fixnum names to strings using to_str" do
+  it "raises FrozenError if the receiver if frozen" do
+    c = Class.new do
+      attr_accessor :foo
+    end
+    obj = c.new
+    obj.foo = 1
+    obj.foo.should == 1
+
+    obj.freeze
+    -> { obj.foo = 42 }.should raise_error(FrozenError)
+    obj.foo.should == 1
+  end
+
+  it "converts non string/symbol names to strings using to_str" do
     (o = mock('test')).should_receive(:to_str).any_number_of_times.and_return("test")
     c = Class.new do
       attr_accessor o
@@ -67,19 +81,25 @@ describe "Module#attr_accessor" do
     Module.should have_public_instance_method(:attr_accessor, false)
   end
 
+  it "returns an array of defined method names as symbols" do
+    Class.new do
+      (attr_accessor :foo, 'bar').should == [:foo, :foo=, :bar, :bar=]
+    end
+  end
+
   describe "on immediates" do
     before :each do
-      class Fixnum
+      class Integer
         attr_accessor :foobar
       end
     end
 
     after :each do
-      if Fixnum.method_defined?(:foobar)
-        Fixnum.send(:remove_method, :foobar)
+      if Integer.method_defined?(:foobar)
+        Integer.send(:remove_method, :foobar)
       end
-      if Fixnum.method_defined?(:foobar=)
-        Fixnum.send(:remove_method, :foobar=)
+      if Integer.method_defined?(:foobar=)
+        Integer.send(:remove_method, :foobar=)
       end
     end
 
@@ -87,4 +107,6 @@ describe "Module#attr_accessor" do
       1.foobar.should be_nil
     end
   end
+
+  it_behaves_like :module_attr_added, :attr_accessor
 end

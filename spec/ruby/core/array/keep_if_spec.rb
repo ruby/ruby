@@ -1,3 +1,4 @@
+require_relative '../../spec_helper'
 require_relative 'shared/keep_if'
 
 describe "Array#keep_if" do

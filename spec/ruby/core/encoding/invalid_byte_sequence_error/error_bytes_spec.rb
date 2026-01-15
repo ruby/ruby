@@ -1,4 +1,5 @@
-# -*- encoding: binary -*-
+# encoding: binary
+require_relative "../../../spec_helper"
 require_relative '../fixtures/classes'
 
 describe "Encoding::InvalidByteSequenceError#error_bytes" do

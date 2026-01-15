@@ -31,12 +31,12 @@ describe "Kernel#BigDecimal" do
   end
 
   it "accepts significant digits >= given precision" do
-    BigDecimal("3.1415923", 10).precs[1].should >= 10
+    BigDecimal("3.1415923", 10).should == BigDecimal("3.1415923")
   end
 
   it "determines precision from initial value" do
     pi_string = "3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196442881097566593014782083152134043"
-    BigDecimal(pi_string).precs[1].should >= pi_string.size-1
+    BigDecimal(pi_string).precision.should == pi_string.size-1
   end
 
   it "ignores leading and trailing whitespace" do
@@ -52,22 +52,11 @@ describe "Kernel#BigDecimal" do
     BigDecimal(initial).should == BigDecimal("123")
   end
 
-  ruby_version_is ""..."2.6" do
-    it "ignores trailing garbage" do
-      BigDecimal("123E45ruby").should == BigDecimal("123E45")
-      BigDecimal("123x45").should == BigDecimal("123")
-      BigDecimal("123.4%E5").should == BigDecimal("123.4")
-      BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
-    end
-  end
-
-  ruby_version_is "2.6" do
-    it "does not ignores trailing garbage" do
-      -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
-      -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
-      -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
-      -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
-    end
+  it "does not ignores trailing garbage" do
+    -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
+    -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
+    -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
+    -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError for invalid strings" do
@@ -79,24 +68,12 @@ describe "Kernel#BigDecimal" do
     BigDecimal(".123").should == BigDecimal("0.123")
   end
 
-  ruby_version_is ""..."2.6" do
-    it "allows for underscores in all parts" do
-      reference = BigDecimal("12345.67E89")
+  it "process underscores as Float()" do
+    reference = BigDecimal("12345.67E89")
 
-      BigDecimal("12_345.67E89").should == reference
-      BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
-      BigDecimal("12345_.67E_8__9_").should == reference
-    end
-  end
-
-  ruby_version_is "2.6" do
-    it "process underscores as Float()" do
-      reference = BigDecimal("12345.67E89")
-
-      BigDecimal("12_345.67E89").should == reference
-      -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
-      -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
-    end
+    BigDecimal("12_345.67E89").should == reference
+    -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
+    -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
   end
 
   it "accepts NaN and [+-]Infinity" do
@@ -110,6 +87,19 @@ describe "Kernel#BigDecimal" do
     neg_inf = BigDecimal("-Infinity")
     neg_inf.should_not.finite?
     neg_inf.should < 0
+  end
+
+  describe "with exception: false" do
+    it "returns nil for invalid strings" do
+      BigDecimal("invalid", exception: false).should be_nil
+      BigDecimal("0invalid", exception: false).should be_nil
+      BigDecimal("invalid0", exception: false).should be_nil
+      if BigDecimal::VERSION >= "3.1.9"
+        BigDecimal("0.", exception: false).to_i.should == 0
+      else
+        BigDecimal("0.", exception: false).should be_nil
+      end
+    end
   end
 
   describe "accepts NaN and [+-]Infinity as Float values" do
@@ -162,8 +152,10 @@ describe "Kernel#BigDecimal" do
     BigDecimal("-12345.6E-1").should == -reference
   end
 
-  it "raises ArgumentError when Float is used without precision" do
-    -> { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  version_is BigDecimal::VERSION, "3.3.0" do
+    it "allows Float without precision" do
+      BigDecimal(1.2).should == BigDecimal("1.2")
+    end
   end
 
   it "returns appropriate BigDecimal zero for signed zero" do
@@ -212,14 +204,6 @@ describe "Kernel#BigDecimal" do
       Float(@b).to_s.should == "166.66666666666666"
     end
 
-    it "has the expected precision on the LHS" do
-      @a.precs[0].should == 18
-    end
-
-    it "has the expected maximum precision on the LHS" do
-      @a.precs[1].should == 27
-    end
-
     it "produces the expected result when done via Float" do
       (Float(@a) - Float(@b)).to_s.should == "-6.666596163995564e-10"
     end
@@ -230,32 +214,8 @@ describe "Kernel#BigDecimal" do
 
     # Check underlying methods work as we understand
 
-    it "BigDecimal precision is the number of digits rounded up to a multiple of nine" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, _ = b.precs
-        (precs >= 9).should be_true
-        (precs >= n).should be_true
-        (precs % 9).should == 0
-      end
-      BigDecimal('NaN').precs[0].should == 9
-    end
-
-    it "BigDecimal maximum precision is nine more than precision except for abnormals" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, max = b.precs
-        max.should == precs + 9
-      end
-      BigDecimal('NaN').precs[1].should == 9
-    end
-
     it "BigDecimal(Rational, 18) produces the result we expect" do
       BigDecimal(@b, 18).to_s.should == "0.166666666666666667e3"
-    end
-
-    it "BigDecimal(Rational, BigDecimal.precs[0]) produces the result we expect" do
-      BigDecimal(@b, @a.precs[0]).to_s.should == "0.166666666666666667e3"
     end
 
     # Check the top-level expression works as we expect
@@ -265,8 +225,8 @@ describe "Kernel#BigDecimal" do
     end
 
     it "produces the expected result" do
-      @c.should == BigDecimal("-0.666667e-9")
-      @c.to_s.should == "-0.666667e-9"
+      @c.round(15).should == BigDecimal("-0.666667e-9")
+      @c.round(15).to_s.should == "-0.666667e-9"
     end
 
     it "produces the correct class for other arithmetic operators" do

@@ -5,7 +5,7 @@ module Kernel
   module_function
 
   # call-seq:
-  #    warn(*msgs, uplevel: nil)   -> nil
+  #    warn(*msgs, uplevel: nil, category: nil)   -> nil
   #
   # If warnings have been disabled (for example with the
   # <code>-W0</code> flag), does nothing.  Otherwise,
@@ -15,7 +15,7 @@ module Kernel
   #
   #    warn("warning 1", "warning 2")
   #
-  #  <em>produces:</em>
+  # <em>produces:</em>
   #
   #    warning 1
   #    warning 2
@@ -35,11 +35,25 @@ module Kernel
   #
   #    bar
   #
-  #  <em>produces:</em>
+  # <em>produces:</em>
   #
   #    baz.rb:6: warning: invalid call to foo
   #
-  def warn(*msgs, uplevel: nil)
-    __builtin_rb_warn_m(msgs, uplevel)
+  # If <code>category</code> keyword argument is given, passes the category
+  # to <code>Warning.warn</code>.  The category given must be one of the
+  # following categories:
+  #
+  # :deprecated :: Used for warning for deprecated functionality that may
+  #                be removed in the future.
+  # :experimental :: Used for experimental features that may change in
+  #                  future releases.
+  # :performance  :: Used for warning about APIs or pattern that have
+  #                  negative performance impact
+  def warn(*msgs, uplevel: nil, category: nil)
+    if Primitive.cexpr!("NIL_P(category)")
+      Primitive.rb_warn_m(msgs, uplevel, nil)
+    elsif Warning[category = Primitive.cexpr!("rb_to_symbol_type(category)")]
+      Primitive.rb_warn_m(msgs, uplevel, category)
+    end
   end
 end

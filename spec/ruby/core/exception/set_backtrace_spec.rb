@@ -1,56 +1,23 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
+require_relative 'shared/set_backtrace'
 
 describe "Exception#set_backtrace" do
-  it "accepts an Array of Strings" do
-    err = RuntimeError.new
-    err.set_backtrace ["unhappy"]
-    err.backtrace.should == ["unhappy"]
-  end
-
   it "allows the user to set the backtrace from a rescued exception" do
     bt  = ExceptionSpecs::Backtrace.backtrace
     err = RuntimeError.new
+    err.backtrace.should == nil
+    err.backtrace_locations.should == nil
 
     err.set_backtrace bt
+
     err.backtrace.should == bt
+    err.backtrace_locations.should == nil
   end
 
-  it "accepts an empty Array" do
+  it_behaves_like :exception_set_backtrace, -> backtrace {
     err = RuntimeError.new
-    err.set_backtrace []
-    err.backtrace.should == []
-  end
-
-  it "accepts a String" do
-    err = RuntimeError.new
-    err.set_backtrace "unhappy"
-    err.backtrace.should == ["unhappy"]
-  end
-
-  it "accepts nil" do
-    err = RuntimeError.new
-    err.set_backtrace nil
-    err.backtrace.should be_nil
-  end
-
-  it "raises a TypeError when passed a Symbol" do
-    err = RuntimeError.new
-    -> { err.set_backtrace :unhappy }.should raise_error(TypeError)
-  end
-
-  it "raises a TypeError when the Array contains a Symbol" do
-    err = RuntimeError.new
-    -> { err.set_backtrace ["String", :unhappy] }.should raise_error(TypeError)
-  end
-
-  it "raises a TypeError when the array contains nil" do
-    err = Exception.new
-    -> { err.set_backtrace ["String", nil] }.should raise_error(TypeError)
-  end
-
-  it "raises a TypeError when the argument is a nested array" do
-    err = Exception.new
-    -> { err.set_backtrace ["String", ["String"]] }.should raise_error(TypeError)
-  end
+    err.set_backtrace(backtrace)
+    err
+  }
 end

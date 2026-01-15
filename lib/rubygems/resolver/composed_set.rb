@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A ComposedSet allows multiple sets to be queried like a single set.
 #
@@ -9,7 +10,6 @@
 # This method will eliminate nesting of composed sets.
 
 class Gem::Resolver::ComposedSet < Gem::Resolver::Set
-
   attr_reader :sets # :nodoc:
 
   ##
@@ -40,27 +40,26 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   def remote=(remote)
     super
 
-    @sets.each { |set| set.remote = remote }
+    @sets.each {|set| set.remote = remote }
   end
 
   def errors
-    @errors + @sets.map { |set| set.errors }.flatten
+    @errors + @sets.flat_map(&:errors)
   end
 
   ##
   # Finds all specs matching +req+ in all sets.
 
   def find_all(req)
-    @sets.map do |s|
+    @sets.flat_map do |s|
       s.find_all req
-    end.flatten
+    end
   end
 
   ##
   # Prefetches +reqs+ in all sets.
 
   def prefetch(reqs)
-    @sets.each { |s| s.prefetch(reqs) }
+    @sets.each {|s| s.prefetch(reqs) }
   end
-
 end

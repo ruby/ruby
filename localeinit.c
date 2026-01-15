@@ -46,11 +46,11 @@ locale_charmap(VALUE (*conv)(const char *))
     codeset = nl_langinfo_codeset();
 # endif
     if (!codeset) {
-	UINT codepage = ruby_w32_codepage[0];
-	if (!codepage) codepage = GetConsoleCP();
-	if (!codepage) codepage = GetACP();
-	CP_FORMAT(cp, codepage);
-	codeset = cp;
+        UINT codepage = ruby_w32_codepage[0];
+        if (!codepage) codepage = GetConsoleCP();
+        if (!codepage) codepage = GetACP();
+        CP_FORMAT(cp, codepage);
+        codeset = cp;
     }
 #elif defined HAVE_LANGINFO_H
     codeset = nl_langinfo(CODESET);
@@ -123,11 +123,12 @@ Init_enc_set_filesystem_encoding(void)
     idx = ENCINDEX_US_ASCII;
 #elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
-    const UINT codepage = ruby_w32_codepage[1] ? ruby_w32_codepage[1] :
-	AreFileApisANSI() ? GetACP() : GetOEMCP();
+    const UINT codepage = ruby_w32_codepage[1];
+    if (!codepage) return ENCINDEX_UTF_8;
+    /* for debugging */
     CP_FORMAT(cp, codepage);
     idx = rb_enc_find_index(cp);
-    if (idx < 0) idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_ASCII_8BIT;
 #elif defined __CYGWIN__
     idx = ENCINDEX_UTF_8;
 #else

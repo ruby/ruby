@@ -25,6 +25,17 @@ describe "IO.pipe" do
     @r.should be_an_instance_of(IOSpecs::SubIO)
     @w.should be_an_instance_of(IOSpecs::SubIO)
   end
+
+  it "does not use IO.new method to create pipes and allows its overriding" do
+    ScratchPad.record []
+
+    # so redefined .new is not called, but original #initialize is
+    @r, @w = IOSpecs::SubIOWithRedefinedNew.pipe
+    ScratchPad.recorded.should == [:call_original_initialize, :call_original_initialize] # called 2 times - for each pipe (r and w)
+
+    @r.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
+    @w.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
+  end
 end
 
 describe "IO.pipe" do

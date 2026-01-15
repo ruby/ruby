@@ -31,42 +31,51 @@ module Psych
       assert_reference_trip Struct.new(:foo).new(1)
     end
 
+    def test_data_has_references
+      omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+      assert_reference_trip Data.define(:foo).new(1)
+    end
+
     def assert_reference_trip obj
       yml = Psych.dump([obj, obj])
       assert_match(/\*-?\d+/, yml)
-      data = Psych.load yml
-      assert_equal data.first.object_id, data.last.object_id
+      begin
+        data = Psych.load yml
+      rescue Psych::DisallowedClass
+        data = Psych.unsafe_load yml
+      end
+      assert_same data.first, data.last
     end
 
     def test_float_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---\s
 - &name 1.2
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
 
     def test_binary_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---
 - &name !binary |-
   aGVsbG8gd29ybGQh
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
 
     def test_regexp_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---\s
 - &name !ruby/regexp /pattern/i
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
   end
 end

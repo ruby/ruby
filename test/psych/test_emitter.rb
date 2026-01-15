@@ -40,7 +40,7 @@ module Psych
     end
 
     def test_start_stream_arg_error
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         @emitter.start_stream 'asdfasdf'
       end
     end
@@ -56,7 +56,7 @@ module Psych
         [[], [nil,nil], false],
         [[1,1], [[nil, "tag:TALOS"]], 0],
       ].each do |args|
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           @emitter.start_document(*args)
         end
       end
@@ -73,7 +73,7 @@ module Psych
         ['foo', nil, nil, false, true, :foo],
         [nil, nil, nil, false, true, 1],
       ].each do |args|
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           @emitter.scalar(*args)
         end
       end
@@ -83,11 +83,11 @@ module Psych
       @emitter.start_stream Psych::Nodes::Stream::UTF8
       @emitter.start_document [], [], false
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         @emitter.start_sequence(nil, Object.new, true, 1)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         @emitter.start_sequence(nil, nil, true, :foo)
       end
     end

@@ -30,6 +30,11 @@ describe "Float#round" do
     12.345678.round(3.999).should == 12.346
   end
 
+  it "correctly rounds exact floats with a numerous digits in a fraction part" do
+    0.8241000000000004.round(10).should == 0.8241
+    0.8241000000000002.round(10).should == 0.8241
+  end
+
   it "returns zero when passed a negative argument with magnitude greater than magnitude of the whole number portion of the Float" do
     0.8346268.round(-1).should eql(0)
   end
@@ -68,6 +73,10 @@ describe "Float#round" do
     0.42.round(2.0**30).should == 0.42
   end
 
+  it "returns rounded values for not so big argument" do
+    0.42.round(2.0**23).should == 0.42
+  end
+
   it "returns big values rounded to nearest" do
     +2.5e20.round(-20).should   eql( +3 * 10 ** 20  )
     -2.5e20.round(-20).should   eql( -3 * 10 ** 20  )
@@ -103,6 +112,70 @@ describe "Float#round" do
     5.55.round(1, half: :up).should eql(5.6)
     5.55.round(1, half: :down).should eql(5.5)
     5.55.round(1, half: :even).should eql(5.6)
+    -5.55.round(1, half: nil).should eql(-5.6)
+    -5.55.round(1, half: :up).should eql(-5.6)
+    -5.55.round(1, half: :down).should eql(-5.5)
+    -5.55.round(1, half: :even).should eql(-5.6)
+  end
+
+  it "preserves cases where neighbouring floating pointer number increase the decimal places" do
+    4.8100000000000005.round(5, half: nil).should eql(4.81)
+    4.8100000000000005.round(5, half: :up).should eql(4.81)
+    4.8100000000000005.round(5, half: :down).should eql(4.81)
+    4.8100000000000005.round(5, half: :even).should eql(4.81)
+    -4.8100000000000005.round(5, half: nil).should eql(-4.81)
+    -4.8100000000000005.round(5, half: :up).should eql(-4.81)
+    -4.8100000000000005.round(5, half: :down).should eql(-4.81)
+    -4.8100000000000005.round(5, half: :even).should eql(-4.81)
+    4.81.round(5, half: nil).should eql(4.81)
+    4.81.round(5, half: :up).should eql(4.81)
+    4.81.round(5, half: :down).should eql(4.81)
+    4.81.round(5, half: :even).should eql(4.81)
+    -4.81.round(5, half: nil).should eql(-4.81)
+    -4.81.round(5, half: :up).should eql(-4.81)
+    -4.81.round(5, half: :down).should eql(-4.81)
+    -4.81.round(5, half: :even).should eql(-4.81)
+    4.809999999999999.round(5, half: nil).should eql(4.81)
+    4.809999999999999.round(5, half: :up).should eql(4.81)
+    4.809999999999999.round(5, half: :down).should eql(4.81)
+    4.809999999999999.round(5, half: :even).should eql(4.81)
+    -4.809999999999999.round(5, half: nil).should eql(-4.81)
+    -4.809999999999999.round(5, half: :up).should eql(-4.81)
+    -4.809999999999999.round(5, half: :down).should eql(-4.81)
+    -4.809999999999999.round(5, half: :even).should eql(-4.81)
+  end
+
+  ruby_bug "#19318", ""..."3.3" do
+    # These numbers are neighbouring floating point numbers round a
+    # precise value. They test that the rounding modes work correctly
+    # round that value and precision is not lost which might cause
+    # incorrect results.
+    it "does not lose precision during the rounding process" do
+      767573.1875850001.round(5, half: nil).should eql(767573.18759)
+      767573.1875850001.round(5, half: :up).should eql(767573.18759)
+      767573.1875850001.round(5, half: :down).should eql(767573.18759)
+      767573.1875850001.round(5, half: :even).should eql(767573.18759)
+      -767573.1875850001.round(5, half: nil).should eql(-767573.18759)
+      -767573.1875850001.round(5, half: :up).should eql(-767573.18759)
+      -767573.1875850001.round(5, half: :down).should eql(-767573.18759)
+      -767573.1875850001.round(5, half: :even).should eql(-767573.18759)
+      767573.187585.round(5, half: nil).should eql(767573.18759)
+      767573.187585.round(5, half: :up).should eql(767573.18759)
+      767573.187585.round(5, half: :down).should eql(767573.18758)
+      767573.187585.round(5, half: :even).should eql(767573.18758)
+      -767573.187585.round(5, half: nil).should eql(-767573.18759)
+      -767573.187585.round(5, half: :up).should eql(-767573.18759)
+      -767573.187585.round(5, half: :down).should eql(-767573.18758)
+      -767573.187585.round(5, half: :even).should eql(-767573.18758)
+      767573.1875849998.round(5, half: nil).should eql(767573.18758)
+      767573.1875849998.round(5, half: :up).should eql(767573.18758)
+      767573.1875849998.round(5, half: :down).should eql(767573.18758)
+      767573.1875849998.round(5, half: :even).should eql(767573.18758)
+      -767573.1875849998.round(5, half: nil).should eql(-767573.18758)
+      -767573.1875849998.round(5, half: :up).should eql(-767573.18758)
+      -767573.1875849998.round(5, half: :down).should eql(-767573.18758)
+      -767573.1875849998.round(5, half: :even).should eql(-767573.18758)
+    end
   end
 
   it "raises FloatDomainError for exceptional values with a half option" do
@@ -113,5 +186,18 @@ describe "Float#round" do
 
   it "raise for a non-existent round mode" do
     -> { 14.2.round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
+  end
+
+  describe "when 0.0 is given" do
+    it "returns self for positive ndigits" do
+      (0.0).round(5).inspect.should == "0.0"
+      (-0.0).round(1).inspect.should == "-0.0"
+    end
+
+    it "returns 0 for 0 or undefined ndigits" do
+      (0.0).round.should == 0
+      (-0.0).round(0).should == 0
+      (0.0).round(half: :up) == 0
+    end
   end
 end

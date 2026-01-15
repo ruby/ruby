@@ -16,12 +16,15 @@ describe "File.ctime" do
 
   platform_is :linux, :windows do
     it "returns the change time for the named file (the time at which directory information about the file was changed, not the file itself) with microseconds." do
-      supports_subseconds = Integer(`stat -c%z '#{__FILE__}'`[/\.(\d+)/, 1], 10)
+      supports_subseconds = Integer(`stat -c%z '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
       if supports_subseconds != 0
         File.ctime(__FILE__).usec.should > 0
       else
         File.ctime(__FILE__).usec.should == 0
       end
+    rescue Errno::ENOENT => e
+      # Windows don't have stat command.
+      skip e.message
     end
   end
 

@@ -1,0 +1,37 @@
+bundle-issue(1) -- Get help reporting Bundler issues
+====================================================
+
+## SYNOPSIS
+
+`bundle issue`
+
+## DESCRIPTION
+
+Provides guidance on reporting Bundler issues and outputs detailed system information that should be included when filing a bug report. This command:
+
+1. Displays links to troubleshooting resources
+2. Shows instructions for reporting issues
+3. Outputs comprehensive environment information needed for debugging
+
+The command helps ensure that bug reports include all necessary system details for effective troubleshooting.
+
+## OUTPUT
+
+The command outputs several sections:
+
+* Troubleshooting links and resources
+* Link to the GitHub issue template
+* Environment information including: Bundler version and platforms, Ruby version and configuration, RubyGems version and paths, Development tool versions (Git, RVM, rbenv, chruby)
+* Bundler build metadata
+* Current Bundler settings
+* Bundle Doctor output
+
+## EXAMPLES
+
+Get issue reporting information:
+
+    $ bundle issue
+
+## SEE ALSO
+
+* bundle-doctor(1)

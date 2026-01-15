@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "pathname"
-require_relative "helpers"
-require_relative "path"
+require_relative "options"
+require_relative "env"
+require_relative "subprocess"
 
 class RubygemsVersionManager
-  include Spec::Helpers
-  include Spec::Path
+  include Spec::Options
+  include Spec::Env
+  include Spec::Subprocess
 
   def initialize(source)
     @source = source
@@ -15,12 +16,36 @@ class RubygemsVersionManager
   def switch
     return if use_system?
 
+    assert_system_features_not_loaded!
+
     switch_local_copy_if_needed
 
     reexec_if_needed
   end
 
-private
+  def assert_system_features_not_loaded!
+    at_exit do
+      rubylibdir = RbConfig::CONFIG["rubylibdir"]
+
+      rubygems_path = rubylibdir + "/rubygems"
+      rubygems_default_path = rubygems_path + "/defaults"
+
+      bundler_path = rubylibdir + "/bundler"
+
+      bad_loaded_features = $LOADED_FEATURES.select do |loaded_feature|
+        (loaded_feature.start_with?(rubygems_path) && !loaded_feature.start_with?(rubygems_default_path)) ||
+          loaded_feature.start_with?(bundler_path)
+      end
+
+      errors = if bad_loaded_features.any?
+        all_commands_output + "the following features were incorrectly loaded:\n#{bad_loaded_features.join("\n")}"
+      end
+
+      raise errors if errors
+    end
+  end
+
+  private
 
   def use_system?
     @source.nil?
@@ -31,12 +56,9 @@ private
 
     require "rbconfig"
 
-    ruby = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["ruby_install_name"])
-    ruby << RbConfig::CONFIG["EXEEXT"]
+    cmd = [RbConfig.ruby, $0, *ARGV].compact
 
-    cmd = [ruby, $0, *ARGV].compact
-
-    ENV["RUBYOPT"] = "-I#{local_copy_path.join("lib")} #{ENV["RUBYOPT"]}"
+    ENV["RUBYOPT"] = opt_add("-I#{File.join(local_copy_path, "lib")}", opt_remove("--disable-gems", ENV["RUBYOPT"]))
 
     exec(ENV, *cmd)
   end
@@ -44,16 +66,14 @@ private
   def switch_local_copy_if_needed
     return unless local_copy_switch_needed?
 
-    Dir.chdir(local_copy_path) do
-      sys_exec!("git remote update")
-      sys_exec!("git checkout #{target_tag} --quiet")
-    end
+    git("checkout #{target_tag}", local_copy_path)
 
-    ENV["RGV"] = local_copy_path.to_s
+    ENV["RGV"] = local_copy_path
   end
 
   def rubygems_unrequire_needed?
-    !$LOADED_FEATURES.include?(local_copy_path.join("lib/rubygems.rb").to_s)
+    require "rubygems"
+    !$LOADED_FEATURES.include?(File.join(local_copy_path, "lib/rubygems.rb"))
   end
 
   def local_copy_switch_needed?
@@ -65,9 +85,7 @@ private
   end
 
   def local_copy_tag
-    Dir.chdir(local_copy_path) do
-      sys_exec!("git rev-parse --abbrev-ref HEAD")
-    end
+    git("rev-parse --abbrev-ref HEAD", local_copy_path)
   end
 
   def local_copy_path
@@ -77,26 +95,29 @@ private
   def resolve_local_copy_path
     return expanded_source if source_is_path?
 
-    rubygems_path = root.join("tmp/rubygems")
+    rubygems_path = File.join(source_root, "tmp/rubygems")
 
-    unless rubygems_path.directory?
-      rubygems_path.parent.mkpath
-      sys_exec!("git clone https://github.com/rubygems/rubygems.git #{rubygems_path}")
+    unless File.directory?(rubygems_path)
+      git("clone .. #{rubygems_path}", source_root)
     end
 
     rubygems_path
   end
 
   def source_is_path?
-    expanded_source.directory?
+    File.directory?(expanded_source)
   end
 
   def expanded_source
-    @expanded_source ||= Pathname.new(@source).expand_path(root)
+    @expanded_source ||= File.expand_path(@source, source_root)
+  end
+
+  def source_root
+    @source_root ||= File.expand_path(ruby_core? ? "../../.." : "../..", __dir__)
   end
 
   def resolve_target_tag
-    return "v#{@source}" if @source.match(/^\d/)
+    return "v#{@source}" if @source.match?(/^\d/)
 
     @source
   end

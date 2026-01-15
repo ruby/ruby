@@ -44,14 +44,14 @@ RSpec.describe Bundler::Settings::Validator do
         validate!("without", "b:c", "BUNDLE_WITH" => "a")
       end.not_to raise_error
 
-      expect { validate!("with", "b:c", "BUNDLE_WITHOUT" => "c:d") }.to raise_error Bundler::InvalidOption, strip_whitespace(<<-EOS).strip
+      expect { validate!("with", "b:c", "BUNDLE_WITHOUT" => "c:d") }.to raise_error Bundler::InvalidOption, <<~EOS.strip
         Setting `with` to "b:c" failed:
          - a group cannot be in both `with` & `without` simultaneously
          - `without` is current set to [:c, :d]
          - the `c` groups conflict
       EOS
 
-      expect { validate!("without", "b:c", "BUNDLE_WITH" => "c:d") }.to raise_error Bundler::InvalidOption, strip_whitespace(<<-EOS).strip
+      expect { validate!("without", "b:c", "BUNDLE_WITH" => "c:d") }.to raise_error Bundler::InvalidOption, <<~EOS.strip
         Setting `without` to "b:c" failed:
          - a group cannot be in both `with` & `without` simultaneously
          - `with` is current set to [:c, :d]
@@ -74,7 +74,7 @@ RSpec.describe Bundler::Settings::Validator do
 
     describe "#fail!" do
       it "raises with a helpful message" do
-        expect { subject.fail!("key", "value", "reason1", "reason2") }.to raise_error Bundler::InvalidOption, strip_whitespace(<<-EOS).strip
+        expect { subject.fail!("key", "value", "reason1", "reason2") }.to raise_error Bundler::InvalidOption, <<~EOS.strip
           Setting `key` to "value" failed:
            - rule description
            - reason1

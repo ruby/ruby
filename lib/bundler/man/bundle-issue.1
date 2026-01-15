@@ -1,0 +1,45 @@
+.\" generated with Ronn-NG/v0.10.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.10.1
+.TH "BUNDLE\-ISSUE" "1" "September 2025" ""
+.SH "NAME"
+\fBbundle\-issue\fR \- Get help reporting Bundler issues
+.SH "SYNOPSIS"
+\fBbundle issue\fR
+.SH "DESCRIPTION"
+Provides guidance on reporting Bundler issues and outputs detailed system information that should be included when filing a bug report\. This command:
+.IP "1." 4
+Displays links to troubleshooting resources
+.IP "2." 4
+Shows instructions for reporting issues
+.IP "3." 4
+Outputs comprehensive environment information needed for debugging
+.IP "" 0
+.P
+The command helps ensure that bug reports include all necessary system details for effective troubleshooting\.
+.SH "OUTPUT"
+The command outputs several sections:
+.IP "\(bu" 4
+Troubleshooting links and resources
+.IP "\(bu" 4
+Link to the GitHub issue template
+.IP "\(bu" 4
+Environment information including: Bundler version and platforms, Ruby version and configuration, RubyGems version and paths, Development tool versions (Git, RVM, rbenv, chruby)
+.IP "\(bu" 4
+Bundler build metadata
+.IP "\(bu" 4
+Current Bundler settings
+.IP "\(bu" 4
+Bundle Doctor output
+.IP "" 0
+.SH "EXAMPLES"
+Get issue reporting information:
+.IP "" 4
+.nf
+$ bundle issue
+.fi
+.IP "" 0
+.SH "SEE ALSO"
+.IP "\(bu" 4
+bundle\-doctor(1)
+.IP "" 0
+

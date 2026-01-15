@@ -93,16 +93,16 @@ module Test_Symbol
       assert_symtype("@foo=", :attrset?)
       assert_symtype("@@foo=", :attrset?)
       assert_symtype("$foo=", :attrset?)
-      assert_symtype("0=", :attrset?)
-      assert_symtype("@=", :attrset?)
-      assert_symtype("@@=", :attrset?)
+      assert_not_symtype("0=", :attrset?)
+      assert_not_symtype("@=", :attrset?)
+      assert_not_symtype("@@=", :attrset?)
       assert_not_symtype("foo", :attrset?)
       assert_not_symtype("Foo", :attrset?)
       assert_not_symtype("@foo", :attrset?)
       assert_not_symtype("@@foo", :attrset?)
       assert_not_symtype("$foo", :attrset?)
       assert_not_symtype("[foo]", :attrset?)
-      assert_symtype("[foo]=", :attrset?)
+      assert_not_symtype("[foo]=", :attrset?)
       assert_equal(:"foo=", Bug::Symbol.attrset("foo"))
       assert_symtype(Bug::Symbol.attrset("foo"), :attrset?)
       assert_equal(:"Foo=", Bug::Symbol.attrset("Foo"))
@@ -114,7 +114,6 @@ module Test_Symbol
       assert_equal(:"$foo=", Bug::Symbol.attrset("$foo"))
       assert_symtype(Bug::Symbol.attrset("$foo"), :attrset?)
       assert_equal(:"[foo]=", Bug::Symbol.attrset("[foo]"))
-      assert_symtype(Bug::Symbol.attrset("[foo]"), :attrset?)
       assert_equal(:[]=, Bug::Symbol.attrset(:[]))
       assert_symtype(Bug::Symbol.attrset("foo?="), :attrset?)
       assert_equal(:"foo?=", Bug::Symbol.attrset(:foo?))
@@ -124,16 +123,25 @@ module Test_Symbol
 
     def test_check_id_invalid_type
       cx = EnvUtil.labeled_class("X\u{1f431}")
-      assert_raise_with_message(TypeError, /X\u{1F431}/) {
-        Bug::Symbol.pinneddown?(cx)
-      }
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        assert_raise_with_message(TypeError, /X\u{1F431}/) {
+          Bug::Symbol.pinneddown?(cx)
+        }
+      end
     end
 
     def test_check_symbol_invalid_type
       cx = EnvUtil.labeled_class("X\u{1f431}")
-      assert_raise_with_message(TypeError, /X\u{1F431}/) {
-        Bug::Symbol.find(cx)
-      }
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        assert_raise_with_message(TypeError, /X\u{1F431}/) {
+          Bug::Symbol.find(cx)
+        }
+      end
+    end
+
+    def test_const_name_type
+      sym = "\xb5".force_encoding(Encoding::Windows_1253)
+      assert_not_operator Bug::Symbol, :const?, sym, sym.encode(Encoding::UTF_8)
     end
   end
 end

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../support/streams"
-
 RSpec.describe Bundler::Plugin do
   Plugin = Bundler::Plugin
 
@@ -11,11 +9,11 @@ RSpec.describe Bundler::Plugin do
   let(:spec2) { double(:spec2) }
 
   before do
-    build_lib "new-plugin", :path => lib_path("new-plugin") do |s|
+    build_lib "new-plugin", path: lib_path("new-plugin") do |s|
       s.write "plugins.rb"
     end
 
-    build_lib "another-plugin", :path => lib_path("another-plugin") do |s|
+    build_lib "another-plugin", path: lib_path("another-plugin") do |s|
       s.write "plugins.rb"
     end
 
@@ -67,6 +65,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "passes the name and options to installer" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(installer).to receive(:install).with(["new-plugin"], opts) do
         { "new-plugin" => spec }
       end.once
@@ -75,6 +75,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "validates the installed plugin" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(subject).
         to receive(:validate_plugin!).with(lib_path("new-plugin")).once
 
@@ -82,6 +84,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "registers the plugin with index" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(index).to receive(:register_plugin).
         with("new-plugin", lib_path("new-plugin").to_s, [lib_path("new-plugin").join("lib").to_s], []).once
       subject.install ["new-plugin"], opts
@@ -98,6 +102,7 @@ RSpec.describe Bundler::Plugin do
         end.once
 
         allow(subject).to receive(:validate_plugin!).twice
+        allow(index).to receive(:installed?).twice
         allow(index).to receive(:register_plugin).twice
         subject.install ["new-plugin", "another-plugin"], opts
       end
@@ -107,11 +112,12 @@ RSpec.describe Bundler::Plugin do
   describe "evaluate gemfile for plugins" do
     let(:definition) { double("definition") }
     let(:builder) { double("builder") }
-    let(:gemfile) { bundled_app("Gemfile") }
+    let(:gemfile) { bundled_app_gemfile }
 
     before do
       allow(Plugin::DSL).to receive(:new) { builder }
       allow(builder).to receive(:eval_gemfile).with(gemfile)
+      allow(builder).to receive(:check_primary_source_safety)
       allow(builder).to receive(:to_definition) { definition }
       allow(builder).to receive(:inferred_plugins) { [] }
     end
@@ -219,7 +225,7 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
-  describe "#source_from_lock" do
+  describe "#from_lock" do
     it "returns instance of registered class initialized with locked opts" do
       opts = { "type" => "l_source", "remote" => "xyz", "other" => "random" }
       allow(index).to receive(:source_plugin).with("l_source") { "plugin_name" }
@@ -230,25 +236,28 @@ RSpec.describe Bundler::Plugin do
 
       expect(SClass).to receive(:new).
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
-      expect(subject.source_from_lock(opts)).to be(s_instance)
+      expect(subject.from_lock(opts)).to be(s_instance)
     end
   end
 
   describe "#root" do
     context "in app dir" do
       before do
-        gemfile ""
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       end
 
       it "returns plugin dir in app .bundle path" do
-        expect(subject.root).to eq(bundled_app.join(".bundle/plugin"))
+        expect(subject.root).to eq(bundled_app(".bundle/plugin"))
       end
     end
 
     context "outside app dir" do
+      before do
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(nil)
+      end
+
       it "returns plugin dir in global bundle path" do
-        Dir.chdir tmp
-        expect(subject.root).to eq(home.join(".bundle/plugin"))
+        expect(subject.root).to eq(home(".bundle/plugin"))
       end
     end
   end
@@ -266,20 +275,28 @@ RSpec.describe Bundler::Plugin do
   describe "#hook" do
     before do
       path = lib_path("foo-plugin")
-      build_lib "foo-plugin", :path => path do |s|
+      build_lib "foo-plugin", path: path do |s|
         s.write "plugins.rb", code
       end
 
+      @old_constants = Bundler::Plugin::Events.constants.map {|name| [name, Bundler::Plugin::Events.const_get(name)] }
       Bundler::Plugin::Events.send(:reset)
-      Bundler::Plugin::Events.send(:define, :EVENT_1, "event-1")
-      Bundler::Plugin::Events.send(:define, :EVENT_2, "event-2")
+      Bundler::Plugin::Events.send(:define, :EVENT1, "event-1")
+      Bundler::Plugin::Events.send(:define, :EVENT2, "event-2")
 
-      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_1).
-        and_return(["foo-plugin"])
-      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_2).
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT1).
+        and_return(["foo-plugin", "", nil])
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT2).
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
+    end
+
+    after do
+      Bundler::Plugin::Events.send(:reset)
+      Hash[@old_constants].each do |name, value|
+        Bundler::Plugin::Events.send(:define, name, value)
+      end
     end
 
     let(:code) { <<-RUBY }
@@ -293,41 +310,58 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "executes the hook" do
-      out = capture(:stdout) do
-        Plugin.hook(Bundler::Plugin::Events::EVENT_1)
-      end.strip
-
-      expect(out).to eq("hook for event 1")
+      expect do
+        Plugin.hook(Bundler::Plugin::Events::EVENT1)
+      end.to output("hook for event 1\n").to_stdout
     end
 
     context "single plugin declaring more than one hook" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) {}
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_2) {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT1) {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT2) {}
         puts "loaded"
       RUBY
 
       it "evals plugins.rb once" do
-        out = capture(:stdout) do
-          Plugin.hook(Bundler::Plugin::Events::EVENT_1)
-          Plugin.hook(Bundler::Plugin::Events::EVENT_2)
-        end.strip
-
-        expect(out).to eq("loaded")
+        expect do
+          Plugin.hook(Bundler::Plugin::Events::EVENT1)
+          Plugin.hook(Bundler::Plugin::Events::EVENT2)
+        end.to output("loaded\n").to_stdout
       end
     end
 
     context "a block is passed" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) { |&blk| blk.call }
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT1) { |&blk| blk.call }
       RUBY
 
       it "is passed to the hook" do
-        out = capture(:stdout) do
-          Plugin.hook(Bundler::Plugin::Events::EVENT_1) { puts "win" }
-        end.strip
+        expect do
+          Plugin.hook(Bundler::Plugin::Events::EVENT1) { puts "win" }
+        end.to output("win\n").to_stdout
+      end
+    end
 
-        expect(out).to eq("win")
+    context "the plugin load_path is invalid" do
+      before do
+        allow(index).to receive(:load_paths).with("foo-plugin").
+          and_return(["invalid-file-name1", "invalid-file-name2"])
+      end
+
+      it "outputs a useful warning" do
+        msg =
+          "The following plugin paths don't exist: invalid-file-name1, invalid-file-name2.\n\n" \
+          "This can happen if the plugin was " \
+          "installed with a different version of Ruby that has since been uninstalled.\n\n" \
+          "If you would like to reinstall the plugin, run:\n\n" \
+          "bundler plugin uninstall foo-plugin && bundler plugin install foo-plugin\n\n" \
+          "Continuing without installing plugin foo-plugin.\n"
+
+        expect(Bundler.ui).to receive(:warn).with(msg)
+
+        Plugin.hook(Bundler::Plugin::Events::EVENT1)
+
+        expect(subject.loaded?("foo-plugin")).to be_falsey
       end
     end
   end

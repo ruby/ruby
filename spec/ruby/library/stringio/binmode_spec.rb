@@ -3,13 +3,13 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#binmode" do
   it "returns self" do
-    io = StringIO.new("example")
+    io = StringIO.new(+"example")
     io.binmode.should equal(io)
   end
 
   it "changes external encoding to BINARY" do
     io = StringIO.new
-    io.external_encoding.should == Encoding.find('locale')
+    io.external_encoding.should == Encoding.find('external')
     io.binmode
     io.external_encoding.should == Encoding::BINARY
   end

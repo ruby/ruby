@@ -93,7 +93,11 @@ OnigEncodingDefine(iso_8859_11, ISO_8859_11) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_single_byte_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -102,7 +106,7 @@ ENC_ALIAS("ISO8859-11", "ISO-8859-11")
 /*
  * Name: TIS-620
  * MIBenum: 2259
- * Link: http://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533
+ * Link: https://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533
  */
 ENC_REPLICATE("TIS-620", "ISO-8859-11")
 

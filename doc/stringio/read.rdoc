@@ -1,0 +1,83 @@
+Reads and returns a string containing bytes read from the stream,
+beginning at the current position;
+advances the position by the count of bytes read.
+
+With no arguments given,
+reads all remaining bytes in the stream;
+returns a new string containing bytes read:
+
+  strio = StringIO.new('Hello') # Five 1-byte characters.
+  strio.read                    # => "Hello"
+  strio.pos                     # => 5
+  strio.read                    # => ""
+  StringIO.new('').read         # => ""
+
+With non-negative argument +maxlen+ given,
+reads +maxlen+ bytes as available;
+returns a new string containing the bytes read, or +nil+ if none:
+
+  strio.rewind
+  strio.read(3) # => "Hel"
+  strio.read(3) # => "lo"
+  strio.read(3) # => nil
+
+  russian = 'Привет' # Six 2-byte characters.
+  russian.b
+  # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+  strio = StringIO.new(russian)
+  strio.read(6) # => "\xD0\x9F\xD1\x80\xD0\xB8"
+  strio.read(6) # => "\xD0\xB2\xD0\xB5\xD1\x82"
+  strio.read(6) # => nil
+
+  japanese = 'こんにちは'
+  japanese.b
+  # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+  strio = StringIO.new(japanese)
+  strio.read(9) # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB"
+  strio.read(9) # => "\xE3\x81\xA1\xE3\x81\xAF"
+  strio.read(9) # => nil
+
+With argument +max_len+ as +nil+ and string argument +out_string+ given,
+reads the remaining bytes in the stream;
+clears +out_string+ and writes the bytes into it;
+returns +out_string+:
+
+  out_string = 'Will be overwritten'
+  strio = StringIO.new('Hello')
+  strio.read(nil, out_string) # => "Hello"
+  strio.read(nil, out_string) # => ""
+
+With non-negative argument +maxlen+ and string argument +out_string+ given,
+reads the +maxlen bytes from the stream, as availble;
+clears +out_string+ and writes the bytes into it;
+returns +out_string+ if any bytes were read, or +nil+ if none:
+
+  out_string = 'Will be overwritten'
+  strio = StringIO.new('Hello')
+  strio.read(3, out_string) # => "Hel"
+  strio.read(3, out_string) # => "lo"
+  strio.read(3, out_string) # => nil
+
+  out_string = 'Will be overwritten'
+  strio = StringIO.new(russian)
+  strio.read(6, out_string) # => "При"
+  strio.read(6, out_string) # => "вет"
+  strio.read(6, out_string) # => nil
+  strio.rewind
+  russian.b
+  # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+  strio.read(3)             # => "\xD0\x9F\xD1"
+  strio.read(3)             # => "\x80\xD0\xB8"
+
+  out_string = 'Will be overwritten'
+  strio = StringIO.new(japanese)
+  strio.read(9, out_string) # => "こんに"
+  strio.read(9, out_string) # => "ちは"
+  strio.read(9, out_string) # => nil
+  strio.rewind
+  japanese.b
+  # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+  strio.read(4)             # => "\xE3\x81\x93\xE3"
+  strio.read(4)             # => "\x82\x93\xE3\x81"
+
+Related: #gets, #readlines.

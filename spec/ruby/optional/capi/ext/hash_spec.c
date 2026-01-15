@@ -105,6 +105,16 @@ VALUE hash_spec_rb_hash_new(VALUE self) {
   return rb_hash_new();
 }
 
+VALUE hash_spec_rb_hash_new_capa(VALUE self, VALUE capacity) {
+  return rb_hash_new_capa(NUM2LONG(capacity));
+}
+
+VALUE rb_ident_hash_new(void); /* internal.h, used in ripper */
+
+VALUE hash_spec_rb_ident_hash_new(VALUE self) {
+  return rb_ident_hash_new();
+}
+
 VALUE hash_spec_rb_hash_size(VALUE self, VALUE hash) {
   return rb_hash_size(hash);
 }
@@ -120,6 +130,20 @@ VALUE hash_spec_compute_a_hash_code(VALUE self, VALUE seed) {
   h = rb_hash_uint32(h, 340u);
   h = rb_hash_end(h);
   return ULONG2NUM(h);
+}
+
+VALUE hash_spec_rb_hash_bulk_insert(VALUE self, VALUE array_len, VALUE array, VALUE hash) {
+  VALUE* ptr;
+
+  if (array == Qnil) {
+    ptr = NULL;
+  } else {
+    ptr = RARRAY_PTR(array);
+  }
+
+  long len = FIX2LONG(array_len);
+  rb_hash_bulk_insert(len, ptr, hash);
+  return Qnil;
 }
 
 void Init_hash_spec(void) {
@@ -143,9 +167,12 @@ void Init_hash_spec(void) {
   rb_define_method(cls, "rb_hash_lookup2", hash_spec_rb_hash_lookup2, 3);
   rb_define_method(cls, "rb_hash_lookup2_default_undef", hash_spec_rb_hash_lookup2_default_undef, 2);
   rb_define_method(cls, "rb_hash_new", hash_spec_rb_hash_new, 0);
+  rb_define_method(cls, "rb_hash_new_capa", hash_spec_rb_hash_new_capa, 1);
+  rb_define_method(cls, "rb_ident_hash_new", hash_spec_rb_ident_hash_new, 0);
   rb_define_method(cls, "rb_hash_size", hash_spec_rb_hash_size, 1);
   rb_define_method(cls, "rb_hash_set_ifnone", hash_spec_rb_hash_set_ifnone, 2);
   rb_define_method(cls, "compute_a_hash_code", hash_spec_compute_a_hash_code, 1);
+  rb_define_method(cls, "rb_hash_bulk_insert", hash_spec_rb_hash_bulk_insert, 3);
 }
 
 #ifdef __cplusplus

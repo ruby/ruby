@@ -52,12 +52,18 @@ class TestRbConfig < Test::Unit::TestCase
     end
   end
 
-  if /darwin/ =~ RUBY_PLATFORM
-    def test_sdkroot
-      assert_separately([{"SDKROOT" => "$(prefix)/SDKRoot"}], "#{<<~"begin;"}\n#{<<~'end;'}")
-      begin;
-        assert_equal RbConfig::CONFIG["prefix"]+"/SDKRoot", RbConfig::CONFIG["SDKROOT"]
-      end;
-    end
-  end
+  def test_limits_and_sizeof_access_in_ractor
+    assert_separately(["-W0"], <<~'RUBY')
+      r = Ractor.new do
+        sizeof_int = RbConfig::SIZEOF["int"]
+        fixnum_max = RbConfig::LIMITS["FIXNUM_MAX"]
+        [sizeof_int, fixnum_max]
+      end
+
+      sizeof_int, fixnum_max = r.value
+
+      assert_kind_of Integer, sizeof_int, "RbConfig::SIZEOF['int'] should be an Integer"
+      assert_kind_of Integer, fixnum_max, "RbConfig::LIMITS['FIXNUM_MAX'] should be an Integer"
+    RUBY
+  end if defined?(Ractor)
 end

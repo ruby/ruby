@@ -24,7 +24,19 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     assert_equal "file:///foo", URI("file:///foo").to_s
     assert_equal "postgres:///foo", URI("postgres:///foo").to_s
-    assert_equal "http:/foo", URI("http:///foo").to_s
+    assert_equal "http:///foo", URI("http:///foo").to_s
+    assert_equal "http:/foo", URI("http:/foo").to_s
+
+    uri = URI('rel_path')
+    assert_equal "rel_path", uri.to_s
+    uri.scheme = 'http'
+    assert_equal "http:rel_path", uri.to_s
+    uri.host = 'h'
+    assert_equal "http://h/rel_path", uri.to_s
+    uri.port = 8080
+    assert_equal "http://h:8080/rel_path", uri.to_s
+    uri.host = nil
+    assert_equal "http::8080/rel_path", uri.to_s
   end
 
   def test_parse
@@ -157,6 +169,30 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+
+    # sec-156615
+    url = URI.parse('http:////example.com')
+    # must be empty string to identify as path-abempty, not path-absolute
+    assert_equal('', url.host)
+    assert_equal('http:////example.com', url.to_s)
+
+    # sec-2957667
+    url = URI.parse('http://user:pass@example.com').merge('//example.net')
+    assert_equal('http://example.net', url.to_s)
+    assert_nil(url.userinfo)
+    url = URI.join('http://user:pass@example.com', '//example.net')
+    assert_equal('http://example.net', url.to_s)
+    assert_nil(url.userinfo)
+    url = URI.parse('http://user:pass@example.com') + '//example.net'
+    assert_equal('http://example.net', url.to_s)
+    assert_nil(url.userinfo)
+  end
+
+  def test_parse_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    assert_equal 'ms-search', URI.parse('ms-search://localhost').scheme
+    assert_equal 'microsoft.windows.camera', URI.parse('microsoft.windows.camera://localhost').scheme
+    assert_equal 'coaps+ws', URI.parse('coaps+ws:localhost').scheme
   end
 
   def test_merge
@@ -204,9 +240,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     u = URI.parse('http://foo/bar/baz')
     assert_equal(nil, u.merge!(""))
     assert_equal(nil, u.merge!(u))
-    assert(nil != u.merge!("."))
+    refute_nil(u.merge!("."))
     assert_equal('http://foo/bar/', u.to_s)
-    assert(nil != u.merge!("../baz"))
+    refute_nil(u.merge!("../baz"))
     assert_equal('http://foo/baz', u.to_s)
 
     url = URI.parse('http://a/b//c') + 'd//e'
@@ -239,6 +275,16 @@ class URI::TestGeneric < Test::Unit::TestCase
     u = URI.parse('http://www.example.com/')
     u0 = u + './'
     u1 = u + './foo/bar/../..'
+    assert_equal(u0, u1)
+  end
+
+  def test_merge_authority
+    u = URI.parse('http://user:pass@example.com:8080')
+    u0 = URI.parse('http://new.example.org/path')
+    u1 = u.merge('//new.example.org/path')
+    assert_equal(u0, u1)
+    u0 = URI.parse('http://other@example.net')
+    u1 = u.merge('//other@example.net')
     assert_equal(u0, u1)
   end
 
@@ -313,7 +359,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/g', url.to_s)
     url = @base_url.route_to('http://a/b/c/g')
     assert_kind_of(URI::Generic, url)
-    assert('./g' != url.to_s) # ok
+    refute_equal('./g', url.to_s) # ok
     assert_equal('g', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -332,7 +378,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/g', url.to_s)
     url = @base_url.route_to('http://a/g')
     assert_kind_of(URI::Generic, url)
-    assert('/g' != url.to_s) # ok
+    refute_equal('/g', url.to_s) # ok
     assert_equal('../../g', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -423,7 +469,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/', url.to_s)
     url = @base_url.route_to('http://a/b/c/')
     assert_kind_of(URI::Generic, url)
-    assert('.' != url.to_s) # ok
+    refute_equal('.', url.to_s) # ok
     assert_equal('./', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -442,7 +488,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/', url.to_s)
     url = @base_url.route_to('http://a/b/')
     assert_kind_of(URI::Generic, url)
-    assert('..' != url.to_s) # ok
+    refute_equal('..', url.to_s) # ok
     assert_equal('../', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -470,7 +516,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/', url.to_s)
     url = @base_url.route_to('http://a/')
     assert_kind_of(URI::Generic, url)
-    assert('../..' != url.to_s) # ok
+    refute_equal('../..', url.to_s) # ok
     assert_equal('../../', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -561,7 +607,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/g', url.to_s)
     url = @base_url.route_to('http://a/g')
     assert_kind_of(URI::Generic, url)
-    assert('../../../g' != url.to_s)  # ok? yes, it confuses you
+    refute_equal('../../../g', url.to_s)  # ok? yes, it confuses you
     assert_equal('../../g', url.to_s) # and it is clearly
 
 #  http://a/b/c/d;p?q
@@ -571,7 +617,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/g', url.to_s)
     url = @base_url.route_to('http://a/g')
     assert_kind_of(URI::Generic, url)
-    assert('../../../../g' != url.to_s) # ok? yes, it confuses you
+    refute_equal('../../../../g', url.to_s) # ok? yes, it confuses you
     assert_equal('../../g', url.to_s)   # and it is clearly
 
 #  http://a/b/c/d;p?q
@@ -581,7 +627,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/g', url.to_s)
     url = @base_url.route_to('http://a/b/g')
     assert_kind_of(URI::Generic, url)
-    assert('./../g' != url.to_s) # ok
+    refute_equal('./../g', url.to_s) # ok
     assert_equal('../g', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -591,7 +637,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/g/', url.to_s)
     url = @base_url.route_to('http://a/b/c/g/')
     assert_kind_of(URI::Generic, url)
-    assert('./g/.' != url.to_s) # ok
+    refute_equal('./g/.', url.to_s) # ok
     assert_equal('g/', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -601,7 +647,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/g/h', url.to_s)
     url = @base_url.route_to('http://a/b/c/g/h')
     assert_kind_of(URI::Generic, url)
-    assert('g/./h' != url.to_s) # ok
+    refute_equal('g/./h', url.to_s) # ok
     assert_equal('g/h', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -611,7 +657,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/h', url.to_s)
     url = @base_url.route_to('http://a/b/c/h')
     assert_kind_of(URI::Generic, url)
-    assert('g/../h' != url.to_s) # ok
+    refute_equal('g/../h', url.to_s) # ok
     assert_equal('h', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -621,7 +667,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/g;x=1/y', url.to_s)
     url = @base_url.route_to('http://a/b/c/g;x=1/y')
     assert_kind_of(URI::Generic, url)
-    assert('g;x=1/./y' != url.to_s) # ok
+    refute_equal('g;x=1/./y', url.to_s) # ok
     assert_equal('g;x=1/y', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -631,7 +677,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://a/b/c/y', url.to_s)
     url = @base_url.route_to('http://a/b/c/y')
     assert_kind_of(URI::Generic, url)
-    assert('g;x=1/../y' != url.to_s) # ok
+    refute_equal('g;x=1/../y', url.to_s) # ok
     assert_equal('y', url.to_s)
 
 #  http://a/b/c/d;p?q
@@ -705,17 +751,18 @@ class URI::TestGeneric < Test::Unit::TestCase
   def test_set_component
     uri = URI.parse('http://foo:bar@baz')
     assert_equal('oof', uri.user = 'oof')
-    assert_equal('http://oof:bar@baz', uri.to_s)
+    assert_equal('http://oof@baz', uri.to_s)
     assert_equal('rab', uri.password = 'rab')
     assert_equal('http://oof:rab@baz', uri.to_s)
     assert_equal('foo', uri.userinfo = 'foo')
-    assert_equal('http://foo:rab@baz', uri.to_s)
+    assert_equal('http://foo@baz', uri.to_s)
     assert_equal(['foo', 'bar'], uri.userinfo = ['foo', 'bar'])
     assert_equal('http://foo:bar@baz', uri.to_s)
     assert_equal(['foo'], uri.userinfo = ['foo'])
-    assert_equal('http://foo:bar@baz', uri.to_s)
+    assert_equal('http://foo@baz', uri.to_s)
     assert_equal('zab', uri.host = 'zab')
-    assert_equal('http://foo:bar@zab', uri.to_s)
+    assert_equal('http://zab', uri.to_s)
+    uri.userinfo = ['foo', 'bar']
     uri.port = ""
     assert_nil(uri.port)
     uri.port = "80"
@@ -725,7 +772,8 @@ class URI::TestGeneric < Test::Unit::TestCase
     uri.port = " 080 "
     assert_equal(80, uri.port)
     assert_equal(8080, uri.port = 8080)
-    assert_equal('http://foo:bar@zab:8080', uri.to_s)
+    assert_equal('http://zab:8080', uri.to_s)
+    uri = URI.parse('http://foo:bar@zab:8080')
     assert_equal('/', uri.path = '/')
     assert_equal('http://foo:bar@zab:8080/', uri.to_s)
     assert_equal('a=1', uri.query = 'a=1')
@@ -779,18 +827,18 @@ class URI::TestGeneric < Test::Unit::TestCase
     hierarchical = URI.parse('http://a.b.c/example')
     opaque = URI.parse('mailto:mduerst@ifi.unizh.ch')
 
-    assert hierarchical.hierarchical?
-    refute opaque.hierarchical?
+    assert_predicate hierarchical, :hierarchical?
+    refute_predicate opaque, :hierarchical?
   end
 
   def test_absolute
     abs_uri = URI.parse('http://a.b.c/')
     not_abs = URI.parse('a.b.c')
 
-    refute not_abs.absolute?
+    refute_predicate not_abs, :absolute?
 
-    assert abs_uri.absolute
-    assert abs_uri.absolute?
+    assert_predicate abs_uri, :absolute
+    assert_predicate abs_uri, :absolute?
   end
 
   def test_ipv6
@@ -799,8 +847,14 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     u = URI("http://foo/bar")
     assert_equal("http://foo/bar", u.to_s)
+    u.hostname = "[::1]"
+    assert_equal("http://[::1]/bar", u.to_s)
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
+
+    u = URI("file://foo/bar")
+    u.hostname = ''
+    assert_equal("file:///bar", u.to_s)
   end
 
   def test_build
@@ -821,6 +875,19 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal("http://[::1]/bar/baz", u.to_s)
     assert_equal("[::1]", u.host)
     assert_equal("::1", u.hostname)
+
+    assert_raise_with_message(ArgumentError, /URI::Generic/) {
+      URI::Generic.build(nil)
+    }
+
+    c = Class.new(URI::Generic) do
+      def self.component; raise; end
+    end
+    expected = /\(#{URI::Generic::COMPONENT.join(', ')}\)/
+    message = "fallback to URI::Generic::COMPONENT if component raised"
+    assert_raise_with_message(ArgumentError, expected, message) {
+      c.build(nil)
+    }
   end
 
   def test_build2
@@ -957,6 +1024,10 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_equal expected, URI::Generic.use_proxy?(hostname, addr, port, no_proxy),
         "use_proxy?('#{hostname}', '#{addr}', #{port}, '#{no_proxy}')"
     end
+  end
+
+  def test_split
+    assert_equal [nil, nil, nil, nil, nil, "", nil, nil, nil], URI.split("//")
   end
 
   class CaseInsensitiveEnv

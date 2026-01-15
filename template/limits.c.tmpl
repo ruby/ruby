@@ -51,11 +51,26 @@
 # include <float.h>
 #endif
 
+/*
+ * Document-const: LIMITS
+ *
+ * A Hash with the bounds of numeric types available to the \C compiler
+ * used to build Ruby. To access this constant, first run
+ * <code>require 'rbconfig/sizeof'</code>.
+ *
+ *    require 'rbconfig/sizeof'
+ *    RUBY_PLATFORM # => "x64-mingw-ucrt"
+ *    RbConfig::LIMITS.fetch_values('FIXNUM_MAX', 'LONG_MAX')
+ *    # => [1073741823, 2147483647]
+ *
+ */
+
 void
 Init_limits(void)
 {
     VALUE h = rb_hash_new();
-    rb_define_const(rb_define_module("RbConfig"), "LIMITS", h);
+    VALUE mRbConfig = rb_define_module("RbConfig");
+    rb_define_const(mRbConfig, "LIMITS", h);
 
 #ifdef HAVE_LONG_LONG
 #ifndef ULLONG_MAX
@@ -67,7 +82,7 @@ Init_limits(void)
 #define MAX2NUM(name) ULONG2NUM(name ## _MAX)
 #define MIN2NUM(name)  LONG2NUM(name ## _MIN)
 #endif
-#define DEFINE(k, v) rb_hash_aset(h, rb_str_new_cstr(#k), v)
+#define DEFINE(k, v) rb_hash_aset(h, rb_usascii_str_new_lit(#k), v)
 
 % limits.each do |type|
 #ifdef <%= type %>_MAX

@@ -1,3 +1,5 @@
+require_relative '../shared/iterable_and_tolerating_size_increasing'
+
 describe :array_index, shared: true do
   it "returns the index of the first element == to object" do
     x = mock('3')
@@ -34,4 +36,6 @@ describe :array_index, shared: true do
       [].send(@method).should be_an_instance_of(Enumerator)
     end
   end
+
+  it_should_behave_like :array_iterable_and_tolerating_size_increasing
 end

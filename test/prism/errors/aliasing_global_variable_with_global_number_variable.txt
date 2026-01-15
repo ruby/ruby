@@ -1,0 +1,3 @@
+alias $a $1
+         ^~ invalid argument being passed to `alias`; can't make alias for the number variables
+

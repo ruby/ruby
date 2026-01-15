@@ -5,96 +5,92 @@ RSpec.describe "major deprecations" do
 
   describe "Bundler" do
     before do
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
     describe ".clean_env" do
       before do
         source = "Bundler.clean_env"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env", :bundler => "2" do
-        expect(deprecations).to include \
-          "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include \
+          "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`" \
       end
-
-      pending "is removed and shows a helpful error message about it", :bundler => "3"
     end
 
     describe ".with_clean_env" do
       before do
         source = "Bundler.with_clean_env {}"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env", :bundler => "2" do
-        expect(deprecations).to include(
-          "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
         )
       end
-
-      pending "is removed and shows a helpful error message about it", :bundler => "3"
     end
 
     describe ".clean_system" do
       before do
         source = "Bundler.clean_system('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_system", :bundler => "2" do
-        expect(deprecations).to include(
-          "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_system and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
+          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", :bundler => "3"
     end
 
     describe ".clean_exec" do
       before do
         source = "Bundler.clean_exec('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_exec", :bundler => "2" do
-        expect(deprecations).to include(
-          "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_exec and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
+          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", :bundler => "3"
     end
 
     describe ".environment" do
       before do
         source = "Bundler.environment"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .load", :bundler => "2" do
-        expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
+      it "is removed in favor of .load and shows a helpful error message about it" do
+        expect(err).to include "Bundler.environment has been removed in favor of Bundler.load"
       end
+    end
+  end
 
-      pending "is removed and shows a helpful error message about it", :bundler => "3"
+  describe "bundle exec --no-keep-file-descriptors" do
+    before do
+      bundle "exec --no-keep-file-descriptors -e 1", raise_on_error: false
+    end
+
+    it "is removed and shows a helpful error message about it" do
+      expect(err).to include "The `--no-keep-file-descriptors` has been removed. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
     end
   end
 
   describe "bundle update --quiet" do
     it "does not print any deprecations" do
-      bundle :update, :quiet => true
+      bundle :update, quiet: true, raise_on_error: false
       expect(deprecations).to be_empty
     end
   end
@@ -102,164 +98,320 @@ RSpec.describe "major deprecations" do
   context "bundle check --path" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
-      bundle "check --path vendor/bundle"
+      bundle "check --path vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning", :bundler => "2" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "path 'vendor/bundle'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
       )
     end
+  end
 
-    pending "should fail with a helpful error", :bundler => "3"
+  context "bundle check --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "check --path=vendor/bundle", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle binstubs --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "binstubs myrack --path=binpath", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set bin 'binpath'`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --all" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --all --verbose", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all true`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --no-all" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --no-all", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all false`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --path" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --path foo", raise_on_error: false
+    end
+
+    it "should print a removal error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --path=foo", raise_on_error: false
+    end
+
+    it "should print a deprecation warning" do
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --frozen" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --frozen", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--frozen` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set frozen true`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --no-prune" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --no-prune", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-prune` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set no_prune true`, " \
+        "and stop using this flag"
+      )
+    end
   end
 
   describe "bundle config" do
     describe "old list interface" do
       before do
-        bundle! "config"
+        bundle "config"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old get interface" do
       before do
-        bundle! "config waka"
+        bundle "config waka"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface" do
       before do
-        bundle! "config waka wakapun"
+        bundle "config waka wakapun"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --local" do
       before do
-        bundle! "config --local waka wakapun"
+        bundle "config --local waka wakapun"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --global" do
       before do
-        bundle! "config --global waka wakapun"
+        bundle "config --global waka wakapun"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface" do
       before do
-        bundle! "config --delete waka"
+        bundle "config --delete waka"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --local" do
       before do
-        bundle! "config --delete --local waka"
+        bundle "config --delete --local waka"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --global" do
       before do
-        bundle! "config --delete --global waka"
+        bundle "config --delete --global waka"
       end
 
-      it "warns", :bundler => "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
-      pending "fails with a helpful error", :bundler => "3"
+      pending "fails with a helpful error", bundler: "5"
     end
   end
 
   describe "bundle update" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
-    it "warns when no options are given", :bundler => "3" do
-      bundle! "update"
+    it "warns when no options are given", bundler: "4" do
+      bundle "update"
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end
 
-    pending "fails with a helpful error when no options are given", :bundler => "3"
+    pending "fails with a helpful error when no options are given", bundler: "5"
 
     it "does not warn when --all is passed" do
-      bundle! "update --all"
+      bundle "update --all"
       expect(deprecations).to be_empty
     end
   end
 
   describe "bundle install --binstubs" do
     before do
-      install_gemfile <<-G, :binstubs => true
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      install_gemfile <<-G, binstubs: true, raise_on_error: false
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
-    it "should output a deprecation warning", :bundler => "2" do
-      expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs`")
+    it "fails with a helpful error" do
+      expect(err).to include("The --binstubs option has been removed in favor of `bundle binstubs --all`")
     end
-
-    pending "fails with a helpful error", :bundler => "3"
   end
 
   context "bundle install with both gems.rb and Gemfile present" do
     it "should not warn about gems.rb" do
-      create_file "gems.rb", <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      gemfile "gems.rb", <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle :install
@@ -267,17 +419,17 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      gemfile "gems.rb", "source 'https://gem.repo1'"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
 
-      expect(the_bundle).not_to include_gem "rack 1.0"
+      expect(the_bundle).not_to include_gem "myrack 1.0"
     end
   end
 
@@ -286,77 +438,198 @@ RSpec.describe "major deprecations" do
       bundle "config set --local path vendor/bundle"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
     end
 
     {
-      :clean => true,
-      :deployment => true,
-      :frozen => true,
-      :"no-cache" => true,
-      :"no-prune" => true,
-      :path => "vendor/bundle",
-      :shebang => "ruby27",
-      :system => true,
-      :without => "development",
-      :with => "development",
-    }.each do |name, value|
+      "clean" => ["clean", "true"],
+      "deployment" => ["deployment", "true"],
+      "frozen" => ["frozen", "true"],
+      "no-deployment" => ["deployment", "false"],
+      "no-prune" => ["no_prune", "true"],
+      "path" => ["path", "'vendor/bundle'"],
+      "shebang" => ["shebang", "'ruby27'"],
+      "system" => ["path.system", "true"],
+      "without" => ["without", "'development'"],
+      "with" => ["with", "'development'"],
+    }.each do |name, expectations|
+      option_name, value = *expectations
       flag_name = "--#{name}"
+      args = %w[true false].include?(value) ? flag_name : "#{flag_name} #{value}"
 
       context "with the #{flag_name} flag" do
         before do
           bundle "install" # to create a lockfile, which deployment or frozen need
-          bundle "install #{flag_name} #{value}"
+
+          bundle "install #{args}", raise_on_error: false
         end
 
-        it "should print a deprecation warning", :bundler => "2" do
-          expect(deprecations).to include(
-            "The `#{flag_name}` flag is deprecated because it relies on " \
-            "being remembered across bundler invocations, which bundler " \
-            "will no longer do in future versions. Instead please use " \
-            "`bundle config set #{name} '#{value}'`, and stop using this flag"
+        it "fails with a helpful error" do
+          expect(err).to include(
+            "The `#{flag_name}` flag has been removed because it relied on " \
+            "being remembered across bundler invocations, which bundler no " \
+            "longer does. Instead please use `bundle config set " \
+            "#{option_name} #{value}`, and stop using this flag"
           )
         end
-
-        pending "should fail with a helpful error", :bundler => "3"
       end
     end
   end
 
   context "bundle install with multiple sources" do
     before do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo3)}"
-        source "#{file_uri_for(gem_repo1)}"
+      install_gemfile <<-G, raise_on_error: false
+        source "https://gem.repo3"
+        source "https://gem.repo1"
       G
     end
 
-    it "shows a deprecation", :bundler => "2" do
-      expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
-        "Using `source` more than once without a block is a security risk, and " \
-        "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source. " \
-        "To upgrade this warning to an error, run `bundle config set " \
-        "disable_multisource true`."
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
       )
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    it "doesn't show lockfile deprecations if there's a lockfile" do
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo3/
+          remote: https://gem.repo1/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+      bundle "install", raise_on_error: false
+
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
+      )
+      expect(err).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+      bundle "config set --local frozen true"
+      bundle "install", raise_on_error: false
+
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
+      )
+      expect(err).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+    end
+  end
+
+  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+    before do
+      build_repo3 do
+        build_gem "myrack", "0.9.1"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        source "https://gem.repo3" do
+          gem 'myrack'
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo1/
+          remote: https://gem.repo3/
+          specs:
+            myrack (0.9.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          myrack!
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+    end
+
+    it "shows an error" do
+      bundle "install", raise_on_error: false
+
+      expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
+    end
+  end
+
+  context "bundle install with a lockfile including X64_MINGW_LEGACY platform" do
+    before do
+      gemfile <<~G
+        source "https://gem.repo1"
+        gem "rake"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            rake (10.3.2)
+
+        PLATFORMS
+          ruby
+          x64-mingw32
+
+        DEPENDENCIES
+          rake
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+    end
+
+    it "warns a helpful error" do
+      bundle "install", raise_on_error: false
+
+      expect(err).to include("Found x64-mingw32 in lockfile, which is deprecated and will be removed in the future.")
+    end
+  end
+
+  context "with a global path source" do
+    before do
+      build_lib "foo"
+
+      install_gemfile <<-G, raise_on_error: false
+        path "#{lib_path("foo-1.0")}"
+        gem 'foo'
+      G
+    end
+
+    it "shows an error" do
+      expect(err).to include("You can no longer specify a path source by itself")
+    end
   end
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :group => :test
+      create_file "gems.rb", "source 'https://gem.repo1'"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", :group => :test
       G
 
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require 'bundler'
 
         Bundler.setup
         Bundler.setup
@@ -365,198 +638,158 @@ RSpec.describe "major deprecations" do
 
     it "should print a single deprecation warning" do
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
     end
   end
 
   context "when `bundler/deployment` is required in a ruby script" do
     before do
-      ruby(<<-RUBY)
+      ruby <<-RUBY, raise_on_error: false
         require 'bundler/deployment'
       RUBY
     end
 
-    it "should print a capistrano deprecation warning", :bundler => "2" do
-      expect(deprecations).to include("Bundler no longer integrates " \
+    it "should print a capistrano deprecation warning" do
+      expect(err).to include("Bundler no longer integrates " \
                              "with Capistrano, but Capistrano provides " \
                              "its own integration with Bundler via the " \
                              "capistrano-bundler gem. Use it instead.")
     end
-
-    pending "should fail with a helpful error", :bundler => "3"
   end
 
-  describe Bundler::Dsl do
+  context "when `bundler/capistrano` is required in a ruby script" do
     before do
-      @rubygems = double("rubygems")
-      allow(Bundler::Source::Rubygems).to receive(:new) { @rubygems }
+      ruby <<-RUBY, raise_on_error: false
+        require 'bundler/capistrano'
+      RUBY
     end
 
-    context "with github gems" do
-      it "warns about removal", :bundler => "2" do
-        msg = <<-EOS
-The :github git source is deprecated, and will be removed in the future. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
+    it "fails with a helpful error" do
+      expect(err).to include("[REMOVED] The Bundler task for Capistrano. Please use https://github.com/capistrano/bundler")
+    end
+  end
 
-    git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
-
-        EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
-        subject.gem("sparks", :github => "indirect/sparks")
-        github_uri = "https://github.com/indirect/sparks.git"
-        expect(subject.dependencies.first.source.uri).to eq(github_uri)
-      end
-
-      pending "should fail with a helpful error", :bundler => "3"
+  context "when `bundler/vlad` is required in a ruby script" do
+    before do
+      ruby <<-RUBY, raise_on_error: false
+        require 'bundler/vlad'
+      RUBY
     end
 
-    context "with bitbucket gems" do
-      it "warns about removal", :bundler => "2" do
-        allow(Bundler.ui).to receive(:deprecate)
-        msg = <<-EOS
-The :bitbucket git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:bitbucket) do |repo_name|
-      user_name, repo_name = repo_name.split("/")
-      repo_name ||= user_name
-      "https://\#{user_name}@bitbucket.org/\#{user_name}/\#{repo_name}.git"
-    end
-
-        EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
-        subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
-      end
-
-      pending "should fail with a helpful error", :bundler => "3"
-    end
-
-    context "with gist gems" do
-      it "warns about removal", :bundler => "2" do
-        allow(Bundler.ui).to receive(:deprecate)
-        msg = <<-EOS
-The :gist git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:gist) {|repo_name| "https://gist.github.com/\#{repo_name}.git" }
-
-        EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
-        subject.gem("not-really-a-gem", :gist => "1234")
-      end
-
-      pending "should fail with a helpful error", :bundler => "3"
+    it "fails with a helpful error" do
+      expect(err).to include("[REMOVED] The Bundler task for Vlad")
     end
   end
 
   context "bundle show" do
     before do
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
-    end
-
-    context "without flags" do
-      before do
-        bundle! :show
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "2" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
     end
 
     context "with --outdated flag" do
       before do
-        bundle! "show --outdated"
+        bundle "show --outdated", raise_on_error: false
       end
 
-      it "prints a deprecation warning informing about its removal", :bundler => "2" do
-        expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
+      it "fails with a helpful message" do
+        expect(err).to include("the `--outdated` flag to `bundle show` has been removed in favor of `bundle show --verbose`")
       end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with --verbose flag" do
-      before do
-        bundle! "show --verbose"
-      end
-
-      it "prints a deprecation warning informing about its removal", :bundler => "2" do
-        expect(deprecations).to include("the `--verbose` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument" do
-      before do
-        bundle! "show rack"
-      end
-
-      it "prints a deprecation warning recommending `bundle info`", :bundler => "2" do
-        expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with the --paths option" do
-      before do
-        bundle "show --paths"
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "2" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument and the --paths option" do
-      before do
-        bundle "show rack --paths"
-      end
-
-      it "prints deprecation warning recommending `bundle info`", :bundler => "2" do
-        expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
     end
   end
 
-  context "bundle console" do
+  context "bundle remove" do
     before do
-      bundle "console"
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
     end
 
-    it "prints a deprecation warning", :bundler => "2" do
-      expect(deprecations).to include \
-        "bundle console will be replaced by `bin/console` generated by `bundle gem <name>`"
-    end
+    context "with --install" do
+      it "fails with a helpful message" do
+        bundle "remove myrack --install", raise_on_error: false
 
-    pending "fails with a helpful message", :bundler => "3"
+        expect(err).to include "The `--install` flag has been removed. `bundle install` is triggered by default."
+      end
+    end
   end
 
   context "bundle viz" do
-    let(:ruby_graphviz) do
-      graphviz_glob = base_system_gems.join("cache/ruby-graphviz*")
-      Pathname.glob(graphviz_glob).first
-    end
-
     before do
-      system_gems ruby_graphviz
-      create_file "gems.rb"
-      bundle "viz"
+      bundle "viz", raise_on_error: false
     end
 
-    it "prints a deprecation warning", :bundler => "2" do
-      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+    it "fails with a helpful message" do
+      expect(err).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
+    end
+  end
+
+  context "bundle inject" do
+    before do
+      bundle "inject", raise_on_error: false
     end
 
-    pending "fails with a helpful message", :bundler => "3"
+    it "fails with a helpful message" do
+      expect(err).to include "The `inject` command has been replaced by the `add` command"
+    end
+  end
+
+  context "bundle plugin install --local_git" do
+    before do
+      build_git "foo" do |s|
+        s.write "plugins.rb"
+      end
+    end
+
+    it "fails with a helpful message" do
+      bundle "plugin install foo --local_git #{lib_path("foo-1.0")}", raise_on_error: false
+
+      expect(err).to include "--local_git has been removed, use --git"
+    end
+  end
+
+  describe "removing rubocop" do
+    before do
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false",
+                    "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+    end
+
+    context "bundle gem --rubocop" do
+      before do
+        bundle "gem my_new_gem --rubocop", raise_on_error: false
+      end
+
+      it "prints an error" do
+        expect(err).to include \
+          "--rubocop has been removed, use --linter=rubocop"
+      end
+    end
+
+    context "bundle gem --no-rubocop" do
+      before do
+        bundle "gem my_new_gem --no-rubocop", raise_on_error: false
+      end
+
+      it "prints an error" do
+        expect(err).to include \
+          "--no-rubocop has been removed, use --no-linter"
+      end
+    end
+  end
+
+  context " bundle gem --ext parameter with no value" do
+    it "prints error when used before gem name" do
+      bundle "gem --ext foo", raise_on_error: false
+      expect(err).to include "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
+    end
+
+    it "prints error when used after gem name" do
+      bundle "gem foo --ext", raise_on_error: false
+      expect(err).to include "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
+    end
   end
 end

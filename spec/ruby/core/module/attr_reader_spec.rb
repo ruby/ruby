@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr_reader" do
   it "creates a getter for each given attribute name" do
@@ -32,7 +33,7 @@ describe "Module#attr_reader" do
     -> { true.instance_variable_set("@spec_attr_reader", "a") }.should raise_error(RuntimeError)
   end
 
-  it "converts non string/symbol/fixnum names to strings using to_str" do
+  it "converts non string/symbol names to strings using to_str" do
     (o = mock('test')).should_receive(:to_str).any_number_of_times.and_return("test")
     c = Class.new do
       attr_reader o
@@ -61,4 +62,12 @@ describe "Module#attr_reader" do
   it "is a public method" do
     Module.should have_public_instance_method(:attr_reader, false)
   end
+
+  it "returns an array of defined method names as symbols" do
+    Class.new do
+      (attr_reader :foo, 'bar').should == [:foo, :bar]
+    end
+  end
+
+  it_behaves_like :module_attr_added, :attr_reader
 end

@@ -14,46 +14,44 @@ require_relative 'fixtures/precedence'
 # the level below (as well as showing associativity within
 # the precedence level).
 
-=begin
-Excerpted from 'Programming Ruby: The Pragmatic Programmer's Guide'
-Second Edition by Dave Thomas, Chad Fowler, and Andy Hunt, page 324
-
-Table 22.4. Ruby operators (high to low precedence)
-Method   Operator                  Description
------------------------------------------------------------------------
-         :: .
- x*      [ ] [ ]=                  Element reference, element set
- x       **                        Exponentiation
- x       ! ~ + -                   Not, complement, unary plus and minus
-                                   (method names for the last two are +@ and -@)
- x       * / %                     Multiply, divide, and modulo
- x       + -                       Plus and minus
- x       >> <<                     Right and left shift
- x       &                         “And” (bitwise for integers)
- x       ^ |                       Exclusive “or” and regular “or” (bitwise for integers)
- x       <= < > >=                 Comparison operators
- x       <=> == === != =~ !~       Equality and pattern match operators (!=
-                                   and !~ may not be defined as methods)
-         &&                        Logical “and”
-         ||                        Logical “or”
-         .. ...                    Range (inclusive and exclusive)
-         ? :                       Ternary if-then-else
-         = %= /= -= += |= &=       Assignment
-         >>= <<= *= &&= ||= **=
-         defined?                  Check if symbol defined
-         not                       Logical negation
-         or and                    Logical composition
-         if unless while until     Expression modifiers
-         begin/end                 Block expression
------------------------------------------------------------------------
-
-* Operators marked with 'x' in the Method column are implemented as methods
-and can be overridden (except != and !~ as noted). (But see the specs
-below for implementations that define != and !~ as methods.)
-
-** These are not included in the excerpted table but are shown here for
-completeness.
-=end
+# Excerpted from 'Programming Ruby: The Pragmatic Programmer's Guide'
+# Second Edition by Dave Thomas, Chad Fowler, and Andy Hunt, page 324
+#
+# Table 22.4. Ruby operators (high to low precedence)
+# Method   Operator                  Description
+# -----------------------------------------------------------------------
+#          :: .
+#  x*      [ ] [ ]=                  Element reference, element set
+#  x       **                        Exponentiation
+#  x       ! ~ + -                   Not, complement, unary plus and minus
+#                                    (method names for the last two are +@ and -@)
+#  x       * / %                     Multiply, divide, and modulo
+#  x       + -                       Plus and minus
+#  x       >> <<                     Right and left shift
+#  x       &                         “And” (bitwise for integers)
+#  x       ^ |                       Exclusive “or” and regular “or” (bitwise for integers)
+#  x       <= < > >=                 Comparison operators
+#  x       <=> == === != =~ !~       Equality and pattern match operators (!=
+#                                    and !~ may not be defined as methods)
+#          &&                        Logical “and”
+#          ||                        Logical “or”
+#          .. ...                    Range (inclusive and exclusive)
+#          ? :                       Ternary if-then-else
+#          = %= /= -= += |= &=       Assignment
+#          >>= <<= *= &&= ||= **=
+#          defined?                  Check if symbol defined
+#          not                       Logical negation
+#          or and                    Logical composition
+#          if unless while until     Expression modifiers
+#          begin/end                 Block expression
+# -----------------------------------------------------------------------
+#
+# * Operators marked with 'x' in the Method column are implemented as methods
+# and can be overridden (except != and !~ as noted). (But see the specs
+# below for implementations that define != and !~ as methods.)
+#
+# ** These are not included in the excerpted table but are shown here for
+# completeness.
 
 # -----------------------------------------------------------------------
 # It seems that this table is not correct anymore
@@ -296,14 +294,14 @@ describe "Operators" do
     -> { eval("1...2...3")  }.should raise_error(SyntaxError)
   end
 
- it ".. ... have higher precedence than ? :" do
-   # Use variables to avoid warnings
-   from = 1
-   to = 2
-   # These are flip-flop, not Range instances
-   (from..to ? 3 : 4).should == 3
-   (from...to ? 3 : 4).should == 3
- end
+  it ".. ... have higher precedence than ? :" do
+    # Use variables to avoid warnings
+    from = 1
+    to = 2
+    # These are flip-flop, not Range instances
+    (from..to ? 3 : 4).should == 3
+    (from...to ? 3 : 4).should == 3
+  end
 
   it "? : is right-associative" do
     (true ? 2 : 3 ? 4 : 5).should == 2

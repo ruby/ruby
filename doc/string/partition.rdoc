@@ -1,0 +1,43 @@
+Returns a 3-element array of substrings of +self+.
+
+If +pattern+ is matched, returns the array:
+
+  [pre_match, first_match, post_match]
+
+where:
+
+- +first_match+ is the first-found matching substring.
+- +pre_match+ and +post_match+ are the preceding and following substrings.
+
+If +pattern+ is not matched, returns the array:
+
+  [self.dup, "", ""]
+
+Note that in the examples below, a returned string <tt>'hello'</tt>
+is a copy of +self+, not +self+.
+
+If +pattern+ is a Regexp, performs the equivalent of <tt>self.match(pattern)</tt>
+(also setting {matched-data variables}[rdoc-ref:language/globals.md@Matched+Data]):
+
+  'hello'.partition(/h/)  # => ["", "h", "ello"]
+  'hello'.partition(/l/)  # => ["he", "l", "lo"]
+  'hello'.partition(/l+/) # => ["he", "ll", "o"]
+  'hello'.partition(/o/)  # => ["hell", "o", ""]
+  'hello'.partition(/^/)  # => ["", "", "hello"]
+  'hello'.partition(//)   # => ["", "", "hello"]
+  'hello'.partition(/$/)  # => ["hello", "", ""]
+  'hello'.partition(/x/)  # => ["hello", "", ""]
+
+If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
+then performs the equivalent of <tt>self.index(pattern)</tt>
+(and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+
+  'hello'.partition('h')     # => ["", "h", "ello"]
+  'hello'.partition('l')     # => ["he", "l", "lo"]
+  'hello'.partition('ll')    # => ["he", "ll", "o"]
+  'hello'.partition('o')     # => ["hell", "o", ""]
+  'hello'.partition('')      # => ["", "", "hello"]
+  'hello'.partition('x')     # => ["hello", "", ""]
+  'こんにちは'.partition('に') # => ["こん", "に", "ちは"]
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

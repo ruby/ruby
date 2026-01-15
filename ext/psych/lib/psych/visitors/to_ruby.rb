@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'psych/scalar_scanner'
-require 'psych/class_loader'
-require 'psych/exception'
+require_relative '../scalar_scanner'
+require_relative '../class_loader'
+require_relative '../exception'
 
 unless defined?(Regexp::NOENCODING)
   Regexp::NOENCODING = 32
@@ -12,39 +12,48 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create
+      unless RUBY_VERSION < "3.2"
+        DATA_INITIALIZE = Data.instance_method(:initialize)
+      end
+
+      def self.create(symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true)
         class_loader = ClassLoader.new
-        scanner      = ScalarScanner.new class_loader
-        new(scanner, class_loader)
+        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer, parse_symbols: parse_symbols
+        new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
       end
 
       attr_reader :class_loader
 
-      def initialize ss, class_loader
+      def initialize ss, class_loader, symbolize_names: false, freeze: false
         super()
         @st = {}
         @ss = ss
+        @load_tags = Psych.load_tags
         @domain_types = Psych.domain_types
         @class_loader = class_loader
+        @symbolize_names = symbolize_names
+        @freeze = freeze
       end
 
       def accept target
         result = super
-        return result if @domain_types.empty? || !target.tag
 
-        key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
-        key = "tag:#{key}" unless key =~ /^(?:tag:|x-private)/
+        unless @domain_types.empty? || !target.tag
+          key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
+          key = "tag:#{key}" unless key.match?(/^(?:tag:|x-private)/)
 
-        if @domain_types.key? key
-          value, block = @domain_types[key]
-          return block.call value, result
+          if @domain_types.key? key
+            value, block = @domain_types[key]
+            result = block.call value, result
+          end
         end
 
+        result = deduplicate(result).freeze if @freeze
         result
       end
 
       def deserialize o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -74,8 +83,9 @@ module Psych
           class_loader.big_decimal._load o.value
         when "!ruby/object:DateTime"
           class_loader.date_time
-          require 'date' unless defined? DateTime
-          @ss.parse_time(o.value).to_datetime
+          t = @ss.parse_time(o.value)
+          DateTime.civil(*t.to_a[0, 6].reverse, Rational(t.utc_offset, 86400)) +
+            (t.subsec/86400)
         when '!ruby/encoding'
           ::Encoding.find o.value
         when "!ruby/object:Complex"
@@ -90,11 +100,11 @@ module Psych
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
           klass = class_loader.regexp
-          o.value =~ /^\/(.*)\/([mixn]*)$/m
-          source  = $1
+          matches = /^\/(?<string>.*)\/(?<options>[mixn]*)$/m.match(o.value)
+          source  = matches[:string].gsub('\/', '/')
           options = 0
           lang    = nil
-          ($2 || '').split('').each do |option|
+          matches[:options].each_char do |option|
             case option
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
@@ -124,7 +134,7 @@ module Psych
       end
 
       def visit_Psych_Nodes_Sequence o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -156,8 +166,8 @@ module Psych
       end
 
       def visit_Psych_Nodes_Mapping o
-        if Psych.load_tags[o.tag]
-          return revive(resolve_class(Psych.load_tags[o.tag]), o)
+        if @load_tags[o.tag]
+          return revive(resolve_class(@load_tags[o.tag]), o)
         end
         return revive_hash(register(o, {}), o) unless o.tag
 
@@ -190,6 +200,32 @@ module Psych
             register(o, s)
             s
           end
+
+        when /^!ruby\/data(-with-ivars)?(?::(.*))?$/
+          data = register(o, resolve_class($2).allocate) if $2
+          members = {}
+
+          if $1 # data-with-ivars
+            ivars   = {}
+            o.children.each_slice(2) do |type, vars|
+              case accept(type)
+              when 'members'
+                revive_data_members(members, vars)
+                data ||= allocate_anon_data(o, members)
+              when 'ivars'
+                revive_hash(ivars, vars)
+              end
+            end
+            ivars.each do |ivar, v|
+              data.instance_variable_set ivar, v
+            end
+          else
+            revive_data_members(members, o)
+          end
+          data ||= allocate_anon_data(o, members)
+          DATA_INITIALIZE.bind_call(data, **members)
+          data.freeze
+          data
 
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
@@ -318,10 +354,11 @@ module Psych
       end
 
       def visit_Psych_Nodes_Alias o
-        @st.fetch(o.anchor) { raise BadAlias, "Unknown alias: #{o.anchor}" }
+        @st.fetch(o.anchor) { raise AnchorNotDefined, o.anchor }
       end
 
       private
+
       def register node, object
         @st[node.anchor] = object if node.anchor
         object
@@ -333,13 +370,26 @@ module Psych
         list
       end
 
-      SHOVEL = '<<'
-      def revive_hash hash, o
+      def allocate_anon_data node, members
+        klass = class_loader.data.define(*members.keys)
+        register(node, klass.allocate)
+      end
+
+      def revive_data_members hash, o
+        o.children.each_slice(2) do |k,v|
+          name  = accept(k)
+          value = accept(v)
+          hash[class_loader.symbolize(name)] = value
+        end
+        hash
+      end
+
+      def revive_hash hash, o, tagged= false
         o.children.each_slice(2) { |k,v|
-          key = deduplicate(accept(k))
+          key = accept(k)
           val = accept(v)
 
-          if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
+          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias, Nodes::Mapping
               begin
@@ -361,6 +411,12 @@ module Psych
               hash[key] = val
             end
           else
+            if !tagged && @symbolize_names && key.is_a?(String)
+              key = key.to_sym
+            elsif !@freeze
+              key = deduplicate(key)
+            end
+
             hash[key] = val
           end
 
@@ -371,6 +427,8 @@ module Psych
       if RUBY_VERSION < '2.7'
         def deduplicate key
           if key.is_a?(String)
+            # It is important to untaint the string, otherwise it won't
+            # be deduplicated into an fstring, but simply frozen.
             -(key.untaint)
           else
             key
@@ -391,7 +449,7 @@ module Psych
 
       def revive klass, node
         s = register(node, klass.allocate)
-        init_with(s, revive_hash({}, node), node)
+        init_with(s, revive_hash({}, node, true), node)
       end
 
       def init_with o, h, node
@@ -414,7 +472,7 @@ module Psych
 
     class NoAliasRuby < ToRuby
       def visit_Psych_Nodes_Alias o
-        raise BadAlias, "Unknown alias: #{o.anchor}"
+        raise AliasesNotEnabled
       end
     end
   end

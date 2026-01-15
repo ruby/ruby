@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 # Bundler::URI is a module providing classes to handle Uniform Resource Identifiers
-# (RFC2396[http://tools.ietf.org/html/rfc2396]).
+# (RFC2396[https://www.rfc-editor.org/rfc/rfc2396]).
 #
 # == Features
 #
@@ -30,7 +30,7 @@
 #     class RSYNC < Generic
 #       DEFAULT_PORT = 873
 #     end
-#     @@schemes['RSYNC'] = RSYNC
+#     register_scheme 'RSYNC', RSYNC
 #   end
 #   #=> Bundler::URI::RSYNC
 #
@@ -47,14 +47,14 @@
 # A good place to view an RFC spec is http://www.ietf.org/rfc.html.
 #
 # Here is a list of all related RFC's:
-# - RFC822[http://tools.ietf.org/html/rfc822]
-# - RFC1738[http://tools.ietf.org/html/rfc1738]
-# - RFC2255[http://tools.ietf.org/html/rfc2255]
-# - RFC2368[http://tools.ietf.org/html/rfc2368]
-# - RFC2373[http://tools.ietf.org/html/rfc2373]
-# - RFC2396[http://tools.ietf.org/html/rfc2396]
-# - RFC2732[http://tools.ietf.org/html/rfc2732]
-# - RFC3986[http://tools.ietf.org/html/rfc3986]
+# - RFC822[https://www.rfc-editor.org/rfc/rfc822]
+# - RFC1738[https://www.rfc-editor.org/rfc/rfc1738]
+# - RFC2255[https://www.rfc-editor.org/rfc/rfc2255]
+# - RFC2368[https://www.rfc-editor.org/rfc/rfc2368]
+# - RFC2373[https://www.rfc-editor.org/rfc/rfc2373]
+# - RFC2396[https://www.rfc-editor.org/rfc/rfc2396]
+# - RFC2732[https://www.rfc-editor.org/rfc/rfc2732]
+# - RFC3986[https://www.rfc-editor.org/rfc/rfc3986]
 #
 # == Class tree
 #
@@ -70,7 +70,6 @@
 # - Bundler::URI::REGEXP - (in uri/common.rb)
 #   - Bundler::URI::REGEXP::PATTERN - (in uri/common.rb)
 # - Bundler::URI::Util - (in uri/common.rb)
-# - Bundler::URI::Escape - (in uri/common.rb)
 # - Bundler::URI::Error - (in uri/common.rb)
 #   - Bundler::URI::InvalidURIError - (in uri/common.rb)
 #   - Bundler::URI::InvalidComponentError - (in uri/common.rb)
@@ -86,7 +85,6 @@
 # License::
 #  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
 #  You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 
 module Bundler::URI
@@ -102,3 +100,5 @@ require_relative 'uri/https'
 require_relative 'uri/ldap'
 require_relative 'uri/ldaps'
 require_relative 'uri/mailto'
+require_relative 'uri/ws'
+require_relative 'uri/wss'

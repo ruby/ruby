@@ -1,12 +1,9 @@
 #ifndef __STDC_WANT_LIB_EXT1__
-#define __STDC_WANT_LIB_EXT1__ 1
+#define __STDC_WANT_LIB_EXT1__ 1 /* for memset_s() */
 #endif
 
 #include "ruby/missing.h"
 #include <string.h>
-#ifdef HAVE_MEMSET_S
-# include <string.h>
-#endif
 
 #ifdef _WIN32
 #include <windows.h>

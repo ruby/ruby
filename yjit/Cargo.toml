@@ -1,0 +1,28 @@
+# NOTE: please avoid adding dependencies to external crates as these can
+# make building and packaging YJIT more challenging.
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package]
+name = "yjit"
+version = "0.1.0"       # YJIT version
+edition = "2021"        # Rust 2021 edition to compile with
+rust-version = "1.58.0" # Minimally supported rust version
+publish = false         # Don't publish to crates.io
+
+[dependencies]
+# No required dependencies to simplify build process.
+# Optional For development and testing purposes.
+capstone = { version = "0.13.0", optional = true }
+jit = { version = "0.1.0", path = "../jit" }
+
+# NOTE: Development builds select a set of these via configure.ac
+# For debugging, `make V=1` shows exact cargo invocation.
+[features]
+# Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
+disasm = ["capstone"]
+# Modify generated code for runtime checks, e.g. poison value in PC
+# for C method calls, and stack canary. This is managed separately
+# from cfg!(debug_assertions) so that we can see disasm of the code
+# that would run in the release mode.
+runtime_checks = []
+stats_allocator = []

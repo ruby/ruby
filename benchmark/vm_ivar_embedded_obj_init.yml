@@ -1,0 +1,14 @@
+prelude: |
+  class C
+    def set_ivars
+      @a = nil
+      @b = nil
+      @c = nil
+    end
+  end
+
+  c = C.new
+benchmark:
+  vm_ivar_embedded_obj_init: |
+    c.set_ivars
+loop_count: 30000000

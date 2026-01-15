@@ -11,3 +11,22 @@ enum ruby_insn_type_chars {
     <%= t %> = '<%= c %>',
 % end
 };
+
+static inline union iseq_inline_storage_entry *
+ISEQ_IS_ENTRY_START(const struct rb_iseq_constant_body *body, char op_type)
+{
+    unsigned int relative_ic_offset = 0;
+    switch (op_type) {
+      case TS_IC:
+        relative_ic_offset += body->ise_size;
+      case TS_ISE:
+        relative_ic_offset += body->icvarc_size;
+      case TS_ICVARC:
+        relative_ic_offset += body->ivc_size;
+      case TS_IVC:
+        break;
+      default:
+        rb_bug("Wrong op type");
+    }
+    return &body->is_entries[relative_ic_offset];
+}

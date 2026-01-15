@@ -4,7 +4,7 @@
 #include "ruby/config.h"
 #include RUBY_EXTCONF_H
 
-#ifdef __sun
+#if defined(__sun) || defined(_AIX)
 /* (Recent?)  Solaris' <nfs/nfs.h> have conflicting definition of T_DATA.  Let
  * us honour system definition by undefining ours.
  *
@@ -33,16 +33,14 @@
 #endif
 
 #ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  include <mswsock.h>
+#  include <iphlpapi.h>
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
-/*
- * FIXME: failures if we make nonblocking the default
- * [ruby-core:89973] [ruby-core:89976] [ruby-core:89977] [Bug #14968]
- */
-#  define RSOCK_NONBLOCK_DEFAULT (0)
 #else
-#  define RSOCK_NONBLOCK_DEFAULT (0)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
@@ -73,6 +71,11 @@
 
 #ifdef HAVE_SYS_UN_H
 #  include <sys/un.h>
+#endif
+
+#ifdef HAVE_AFUNIX_H
+// Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
+#  include <afunix.h>
 #endif
 
 #if defined(HAVE_FCNTL)
@@ -135,6 +138,7 @@
 
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/compilers.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/io.h"
@@ -145,6 +149,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "sockport.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
@@ -260,7 +265,6 @@ typedef union {
 #define INET_SOCKS  2
 
 extern int rsock_do_not_reverse_lookup;
-extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
 
 /* common socket families only */
@@ -274,7 +278,7 @@ extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
 extern VALUE rb_cTCPServer;
 extern VALUE rb_cUDPSocket;
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
@@ -283,18 +287,17 @@ extern VALUE rb_cAddrinfo;
 extern VALUE rb_cSockOpt;
 
 extern VALUE rb_eSocket;
+extern VALUE rb_eResolution;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
 #  ifndef SOCKS5
-void SOCKSinit();
-int Rconnect();
+void SOCKSinit(char *);
+int Rconnect(int, const struct sockaddr *, socklen_t);
 #  endif
 #endif
 
 #include "constdefs.h"
-
-#define BLOCKING_REGION_FD(func, arg) (long)rb_thread_io_blocking_region((func), (arg), (arg)->fd)
 
 #define SockAddrStringValue(v) rsock_sockaddr_string_value(&(v))
 #define SockAddrStringValuePtr(v) rsock_sockaddr_string_value_ptr(&(v))
@@ -305,7 +308,7 @@ VALUE rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *ai_ret
 
 VALUE rb_check_sockaddr_string_type(VALUE);
 
-NORETURN(void rsock_raise_socket_error(const char *, int));
+NORETURN(void rsock_raise_resolution_error(const char *, int));
 
 int rsock_family_arg(VALUE domain);
 int rsock_socktype_arg(VALUE type);
@@ -320,13 +323,13 @@ struct rb_addrinfo {
   struct addrinfo *ai;
   int allocated_by_malloc;
 };
-int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct rb_addrinfo **res);
 void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 int rsock_fd_family(int fd);
-struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
-struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
+struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
+
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
@@ -342,7 +345,7 @@ VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 socklen_t rsock_unix_sockaddr_len(VALUE path);
@@ -352,7 +355,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout, VALUE fast_fallback, VALUE test_mode_settings);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {
@@ -374,23 +377,23 @@ enum sock_recv_type {
 };
 
 VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
-			        VALUE ex, enum sock_recv_type from);
+                                VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
-int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
+int rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout);
 
-VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
-			      struct sockaddr *sockaddr, socklen_t *len);
+                              struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
 VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
-			  VALUE dest_sockaddr, VALUE controls);
+                          VALUE dest_sockaddr, VALUE controls);
 VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
-			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
+                             VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
@@ -398,9 +401,9 @@ VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
 
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
-			  VALUE scm_rights);
+                          VALUE scm_rights);
 VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
-				   VALUE flags, VALUE scm_rights, VALUE ex);
+                                   VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement
@@ -410,6 +413,47 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
+
+char *raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr);
+char *raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
+
+#ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
+#  if !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
+#  else
+#    include "ruby/thread_native.h"
+#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 1
+#    define IPV6_HOSTNAME_RESOLVED '1'
+#    define IPV4_HOSTNAME_RESOLVED '2'
+#    define SELECT_CANCELLED '3'
+
+struct fast_fallback_getaddrinfo_entry
+{
+    int family, err, refcount;
+    struct addrinfo hints;
+    struct addrinfo *ai;
+    struct fast_fallback_getaddrinfo_shared *shared;
+    int has_syserr;
+    long test_sleep_ms;
+    int test_ecode;
+};
+
+struct fast_fallback_getaddrinfo_shared
+{
+    int notify, refcount;
+    char *node, *service;
+    rb_nativethread_lock_t lock;
+    struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
+};
+
+int raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg);
+void *fork_safe_do_fast_fallback_getaddrinfo(void *ptr);
+void free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry);
+void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared);
+#  endif
+#endif
+
+NORETURN(void rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port));
 
 void rsock_init_basicsocket(void);
 void rsock_init_ipsocket(void);
@@ -438,30 +482,17 @@ NORETURN(void rsock_sys_fail_sockaddr(const char *, struct sockaddr *addr, sockl
 NORETURN(void rsock_sys_fail_raddrinfo(const char *, VALUE rai));
 NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VALUE rai));
 
-/*
- * It is safe on Linux to attempt using a socket without waiting on it in
- * all cases.  For some syscalls (e.g. accept/accept4), blocking on the
- * syscall instead of relying on select/poll allows the kernel to use
- * "wake-one" behavior and avoid the thundering herd problem.
- * This is likely safe on all other *nix-like systems, so this safe list
- * can be expanded by interested parties.
- */
-#if defined(__linux__)
-static inline int rsock_maybe_fd_writable(int fd) { return 1; }
-static inline void rsock_maybe_wait_fd(int fd) { }
-#  ifdef MSG_DONTWAIT
-#    define MSG_DONTWAIT_RELIABLE 1
-#  endif
-#else /* some systems (mswin/mingw) need these.  ref: r36946 */
-#  define rsock_maybe_fd_writable(fd) rb_thread_fd_writable((fd))
-#  define rsock_maybe_wait_fd(fd) rb_thread_wait_fd((fd))
+#if defined(__MINGW32__) || defined(_WIN32)
+#define RSOCK_WAIT_BEFORE_BLOCKING
 #endif
 
 /*
  * some OSes may support MSG_DONTWAIT inconsistently depending on socket
  * type, we only expect Linux to support it consistently for all socket types.
  */
-#ifndef MSG_DONTWAIT_RELIABLE
+#if defined(MSG_DONTWAIT) && defined(__linux__)
+#  define MSG_DONTWAIT_RELIABLE 1
+#else
 #  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
@@ -470,12 +501,14 @@ VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
 
 void rsock_make_fd_nonblock(int fd);
 
+int rsock_is_dgram(rb_io_t *fptr);
+
+extern ID tcp_fast_fallback;
+
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 #endif

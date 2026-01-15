@@ -27,7 +27,7 @@ describe :stringio_codepoints, shared: true do
     @io.close_read
     -> { @enum.to_a }.should raise_error(IOError)
 
-    io = StringIO.new("xyz", "w")
+    io = StringIO.new(+"xyz", "w")
     -> { io.send(@method).to_a }.should raise_error(IOError)
   end
 

@@ -17,28 +17,4 @@ describe :array_clone, shared: true do
     b.should == a
     b.__id__.should_not == a.__id__
   end
-
-  ruby_version_is ''...'2.7' do
-    it "copies taint status from the original" do
-      a = [1, 2, 3, 4]
-      b = [1, 2, 3, 4]
-      a.taint
-      aa = a.send @method
-      bb = b.send @method
-
-      aa.should.tainted?
-      bb.should_not.tainted?
-    end
-
-    it "copies untrusted status from the original" do
-      a = [1, 2, 3, 4]
-      b = [1, 2, 3, 4]
-      a.untrust
-      aa = a.send @method
-      bb = b.send @method
-
-      aa.should.untrusted?
-      bb.should_not.untrusted?
-    end
-  end
 end

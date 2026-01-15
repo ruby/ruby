@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 
 describe "Time._load" do
@@ -44,8 +44,7 @@ describe "Time._load" do
   end
 
   it "treats the data as binary data" do
-    data = "\x04\bu:\tTime\r\fM\x1C\xC0\x00\x00\xD0\xBE"
-    data.force_encoding Encoding::UTF_8
+    data = "\x04\bu:\tTime\r\fM\x1C\xC0\x00\x00\xD0\xBE".dup.force_encoding Encoding::UTF_8
     t = Marshal.load(data)
     t.to_s.should == "2013-04-08 12:47:45 UTC"
   end

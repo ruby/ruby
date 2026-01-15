@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 describe :io_putc, shared: true do
   after :each do
     @io.close if @io && !@io.closed?
@@ -6,7 +6,7 @@ describe :io_putc, shared: true do
     rm_r @name
   end
 
-  describe "with a Fixnum argument" do
+  describe "with an Integer argument" do
     it "writes one character as a String" do
       @io.should_receive(:write).with("A")
       @io_object.send(@method, 65).should == 65

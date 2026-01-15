@@ -39,7 +39,7 @@ module Bundler
       #     is present to be compatible with `Definition` and is used by
       #     rubygems source.
       module Source
-        attr_reader :uri, :options, :name
+        attr_reader :uri, :options, :name, :checksum_store
         attr_accessor :dependency_names
 
         def initialize(opts)
@@ -48,6 +48,7 @@ module Bundler
           @uri = opts["uri"]
           @type = opts["type"]
           @name = opts["name"] || "#{@type} at #{@uri}"
+          @checksum_store = Checksum::Store.new
         end
 
         # This is used by the default `spec` method to constructs the
@@ -66,7 +67,7 @@ module Bundler
         # to check out same version of gem later.
         #
         # There options are passed when the source plugin is created from the
-        # lock file.
+        # lockfile.
         #
         # @return [Hash]
         def options_to_lock
@@ -95,7 +96,7 @@ module Bundler
         #
         # Note: Do not override if you don't know what you are doing.
         def post_install(spec, disable_exts = false)
-          opts = { :env_shebang => false, :disable_extensions => disable_exts }
+          opts = { env_shebang: false, disable_extensions: disable_exts }
           installer = Bundler::Source::Path::Installer.new(spec, opts)
           installer.post_install
         end
@@ -106,7 +107,7 @@ module Bundler
         def install_path
           @install_path ||=
             begin
-              base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
+              base_name = File.basename(Gem::URI.parse(uri).normalize.path)
 
               gem_install_dir.join("#{base_name}-#{uri_hash[0..11]}")
             end
@@ -130,7 +131,7 @@ module Bundler
           Bundler::Index.build do |index|
             files.each do |file|
               next unless spec = Bundler.load_gemspec(file)
-              Bundler.rubygems.set_installed_by_version(spec)
+              spec.installed_by_version = Gem::VERSION
 
               spec.source = self
               Bundler.rubygems.validate(spec)
@@ -138,6 +139,13 @@ module Bundler
               index << spec
             end
           end
+        end
+
+        # Set internal representation to fetch the gems/specs locally.
+        #
+        # When this is called, the source should try to fetch the specs and
+        # install from the local system.
+        def local!
         end
 
         # Set internal representation to fetch the gems/specs from remote.
@@ -168,7 +176,7 @@ module Bundler
         #
         # This is used by `app_cache_path`
         def app_cache_dirname
-          base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
+          base_name = File.basename(Gem::URI.parse(uri).normalize.path)
           "#{base_name}-#{uri_hash}"
         end
 
@@ -188,6 +196,7 @@ module Bundler
 
           FileUtils.rm_rf(new_cache_path)
           FileUtils.cp_r(install_path, new_cache_path)
+          FileUtils.rm_rf(app_cache_path.join(".git"))
           FileUtils.touch(app_cache_path.join(".bundlecache"))
         end
 
@@ -237,7 +246,21 @@ module Bundler
           specs.unmet_dependency_names
         end
 
+        # Used by definition.
+        #
         # Note: Do not override if you don't know what you are doing.
+        def spec_names
+          specs.spec_names
+        end
+
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def add_dependency_names(names)
+          @dependencies |= Array(names)
+        end
+
+        # NOTE: Do not override if you don't know what you are doing.
         def can_lock?(spec)
           spec.source == self
         end
@@ -260,10 +283,11 @@ module Bundler
         end
 
         def to_s
-          "plugin source for #{options[:type]} with uri #{uri}"
+          "plugin source for #{@type} with uri #{@uri}"
         end
+        alias_method :identifier, :to_s
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def include?(other)
           other == self
         end
@@ -272,7 +296,7 @@ module Bundler
           SharedHelpers.digest(:SHA1).hexdigest(uri)
         end
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def gem_install_dir
           Bundler.install_path
         end
@@ -284,12 +308,6 @@ module Bundler
         # Note: Do not override if you don't know what you are doing.
         def root
           Bundler.root
-        end
-
-        # @private
-        # Returns true
-        def bundler_plugin_api_source?
-          true
         end
 
         # @private

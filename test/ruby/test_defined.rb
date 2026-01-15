@@ -42,21 +42,43 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?(File::Constants))	# nested constant
   end
 
-  def test_defined_method
+  def test_defined_public_method
     assert(defined?(Object.new))	# method
     assert(defined?(Object::new))	# method
+  end
+
+  def test_defined_private_method
     assert(!defined?(Object.print))	# private method
+  end
+
+  def test_defined_operator
     assert(defined?(1 == 2))		# operator expression
+  end
+
+  def test_defined_protected_method
     f = Foo.new
     assert_nil(defined?(f.foo))         # protected method
     f.bar(f) { |v| assert(v) }
+    f.bar(Class.new(Foo).new) { |v| assert(v, "inherited protected method") }
+  end
+
+  def test_defined_undefined_method
+    f = Foo.new
     assert_nil(defined?(f.quux))        # undefined method
+  end
+
+  def test_defined_undefined_argument
+    f = Foo.new
     assert_nil(defined?(f.baz(x)))      # undefined argument
     x = 0
     assert(defined?(f.baz(x)))
     assert_nil(defined?(f.quux(x)))
     assert(defined?(print(x)))
     assert_nil(defined?(quux(x)))
+  end
+
+  def test_defined_attrasgn
+    f = Foo.new
     assert(defined?(f.attr = 1))
     f.attrasgn_test { |v| assert(v) }
   end
@@ -105,11 +127,107 @@ class TestDefined < Test::Unit::TestCase
     assert_equal nil, defined?($2)
   end
 
+  def test_defined_assignment
+    assert_equal("assignment", defined?(a = 1))
+    assert_equal("assignment", defined?(a += 1))
+    assert_equal("assignment", defined?(a &&= 1))
+    assert_equal("assignment", eval('defined?(A = 1)'))
+    assert_equal("assignment", eval('defined?(A += 1)'))
+    assert_equal("assignment", eval('defined?(A &&= 1)'))
+    assert_equal("assignment", eval('defined?(A::B = 1)'))
+    assert_equal("assignment", eval('defined?(A::B += 1)'))
+    assert_equal("assignment", eval('defined?(A::B &&= 1)'))
+  end
+
+  def test_defined_splat
+    assert_nil(defined?([*a]))
+    assert_nil(defined?(itself(*a)))
+    assert_equal("expression", defined?([*itself]))
+    assert_equal("method", defined?(itself(*itself)))
+  end
+
+  def test_defined_hash
+    assert_nil(defined?({a: a}))
+    assert_nil(defined?({a => 1}))
+    assert_nil(defined?({a => a}))
+    assert_nil(defined?({**a}))
+    assert_nil(defined?(itself(a: a)))
+    assert_nil(defined?(itself(a => 1)))
+    assert_nil(defined?(itself(a => a)))
+    assert_nil(defined?(itself(**a)))
+    assert_nil(defined?(itself({a: a})))
+    assert_nil(defined?(itself({a => 1})))
+    assert_nil(defined?(itself({a => a})))
+    assert_nil(defined?(itself({**a})))
+
+    assert_equal("expression", defined?({a: itself}))
+    assert_equal("expression", defined?({itself => 1}))
+    assert_equal("expression", defined?({itself => itself}))
+    assert_equal("expression", defined?({**itself}))
+    assert_equal("method", defined?(itself(a: itself)))
+    assert_equal("method", defined?(itself(itself => 1)))
+    assert_equal("method", defined?(itself(itself => itself)))
+    assert_equal("method", defined?(itself(**itself)))
+    assert_equal("method", defined?(itself({a: itself})))
+    assert_equal("method", defined?(itself({itself => 1})))
+    assert_equal("method", defined?(itself({itself => itself})))
+    assert_equal("method", defined?(itself({**itself})))
+  end
+
   def test_defined_literal
     assert_equal("nil", defined?(nil))
     assert_equal("true", defined?(true))
     assert_equal("false", defined?(false))
     assert_equal("expression", defined?(1))
+  end
+
+  def test_defined_method
+    self_ = self
+    assert_equal("method", defined?(test_defined_method))
+    assert_equal("method", defined?(self.test_defined_method))
+    assert_equal("method", defined?(self_.test_defined_method))
+
+    assert_equal(nil, defined?(1.test_defined_method))
+    assert_equal("method", defined?(1.to_i))
+    assert_equal(nil, defined?(1.to_i.test_defined_method))
+    assert_equal(nil, defined?(1.test_defined_method.to_i))
+
+    assert_equal("method", defined?("x".reverse))
+    assert_equal("method", defined?("x".reverse(1)))
+    assert_equal("method", defined?("x".reverse.reverse))
+    assert_equal(nil, defined?("x".reverse(1).reverse))
+
+    assert_equal("method", defined?(1.to_i(10)))
+    assert_equal("method", defined?(1.to_i("x")))
+    assert_equal(nil, defined?(1.to_i("x").undefined))
+    assert_equal(nil, defined?(1.to_i(undefined).to_i))
+    assert_equal(nil, defined?(1.to_i("x").undefined.to_i))
+    assert_equal(nil, defined?(1.to_i(undefined).to_i.to_i))
+  end
+
+  def test_defined_method_single_call
+    times_called = 0
+    define_singleton_method(:t) do
+      times_called += 1
+      self
+    end
+    assert_equal("method", defined?(t))
+    assert_equal(0, times_called)
+
+    assert_equal("method", defined?(t.t))
+    assert_equal(1, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t))
+    assert_equal(2, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t.t))
+    assert_equal(3, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t.t.t))
+    assert_equal(4, times_called)
   end
 
   def test_defined_empty_paren_expr
@@ -123,6 +241,26 @@ class TestDefined < Test::Unit::TestCase
 
   def test_defined_empty_paren_arg
     assert_nil(defined?(p () + 1))
+  end
+
+  def test_defined_paren_void_stmts
+    assert_equal("expression", defined? (;x))
+    assert_equal("expression", defined? (x;))
+    assert_nil(defined? (
+
+      x
+
+    ))
+
+    x = 1
+
+    assert_equal("expression", defined? (;x))
+    assert_equal("expression", defined? (x;))
+    assert_equal("local-variable", defined? (
+
+      x
+
+    ))
   end
 
   def test_defined_impl_specific
@@ -232,8 +370,39 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("super", o.x, bug8367)
   end
 
+  def test_super_in_basic_object
+    BasicObject.class_eval do
+      def a
+        defined?(super)
+      end
+    end
+
+    assert_nil(a)
+  ensure
+    BasicObject.class_eval do
+      undef_method :a if defined?(a)
+    end
+  end
+
   def test_super_toplevel
     assert_separately([], "assert_nil(defined?(super))")
+  end
+
+  def test_respond_to
+    obj = "#{self.class.name}##{__method__}"
+    class << obj
+      def respond_to?(mid)
+        true
+      end
+    end
+    assert_warn(/deprecated method signature.*\n.*respond_to\? is defined here/) do
+      Warning[:deprecated] = true
+      defined?(obj.foo)
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      defined?(obj.foo)
+    end
   end
 
   class ExampleRespondToMissing
@@ -278,5 +447,54 @@ class TestDefined < Test::Unit::TestCase
 
   def test_top_level_constant_not_defined
     assert_nil(defined?(TestDefined::Object))
+  end
+
+  class RefinedClass
+  end
+
+  module RefiningModule
+    refine RefinedClass do
+      def pub
+      end
+
+      private
+
+      def priv
+      end
+    end
+
+    def self.call_without_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+
+    def self.vcall_without_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
+    end
+
+    using self
+
+    def self.call_with_using(x = RefinedClass.new)
+      defined?(x.pub)
+    end
+
+    def self.vcall_with_using(x = RefinedClass.new)
+      x.instance_eval {defined?(priv)}
+    end
+  end
+
+  def test_defined_refined_call_without_using
+    assert(!RefiningModule.call_without_using, "refined public method without using")
+  end
+
+  def test_defined_refined_vcall_without_using
+    assert(!RefiningModule.vcall_without_using, "refined private method without using")
+  end
+
+  def test_defined_refined_call_with_using
+    assert(RefiningModule.call_with_using, "refined public method with using")
+  end
+
+  def test_defined_refined_vcall_with_using
+    assert(RefiningModule.vcall_with_using, "refined private method with using")
   end
 end

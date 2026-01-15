@@ -9,39 +9,23 @@ class TestArgf < Test::Unit::TestCase
   def setup
     @tmpdir = Dir.mktmpdir
     @tmp_count = 0
-    @t1 = make_tempfile0("argf-foo")
-    @t1.binmode
-    @t1.puts "1"
-    @t1.puts "2"
-    @t1.close
-    @t2 = make_tempfile0("argf-bar")
-    @t2.binmode
-    @t2.puts "3"
-    @t2.puts "4"
-    @t2.close
-    @t3 = make_tempfile0("argf-baz")
-    @t3.binmode
-    @t3.puts "5"
-    @t3.puts "6"
-    @t3.close
+    @t1 = make_tempfile("argf-foo", %w"1 2", binmode: true)
+    @t2 = make_tempfile("argf-bar", %w"3 4", binmode: true)
+    @t3 = make_tempfile("argf-baz", %w"5 6", binmode: true)
   end
 
   def teardown
     FileUtils.rmtree(@tmpdir)
   end
 
-  def make_tempfile0(basename)
+  def make_tempfile(basename = "argf-qux", data = %w[foo bar baz], binmode: false)
     @tmp_count += 1
-    open("#{@tmpdir}/#{basename}-#{@tmp_count}", "w")
-  end
-
-  def make_tempfile(basename = "argf-qux")
-    t = make_tempfile0(basename)
-    t.puts "foo"
-    t.puts "bar"
-    t.puts "baz"
-    t.close
-    t
+    path = "#{@tmpdir}/#{basename}-#{@tmp_count}"
+    File.open(path, "w") do |f|
+      f.binmode if binmode
+      f.puts(*data)
+      f
+    end
   end
 
   def ruby(*args, external_encoding: Encoding::UTF_8)
@@ -136,6 +120,17 @@ class TestArgf < Test::Unit::TestCase
     expected = %w"1 1 1 2 2 2 3 3 1 4 4 2"
     assert_in_out_err(["-", @t1.path, @t2.path],
                       "#{<<~"{#"}\n#{<<~'};'}", expected, [], "[ruby-core:25205]")
+    {#
+      ARGF.each do |line|
+        puts [$., ARGF.lineno, ARGF.file.lineno]
+      end
+    };
+  end
+
+  def test_lineno_after_shebang
+    expected = %w"1 1 1 2 2 2 3 3 1 4 4 2"
+    assert_in_out_err(["--enable=gems", "-", @t1.path, @t2.path], "#{<<~"{#"}\n#{<<~'};'}", expected)
+    #!/usr/bin/env ruby
     {#
       ARGF.each do |line|
         puts [$., ARGF.lineno, ARGF.file.lineno]
@@ -257,13 +252,13 @@ class TestArgf < Test::Unit::TestCase
 
   def test_inplace_nonascii
     ext = Encoding.default_external or
-      skip "no default external encoding"
+      omit "no default external encoding"
     t = nil
     ["\u{3042}", "\u{e9}"].any? do |n|
       t = make_tempfile(n.encode(ext))
     rescue Encoding::UndefinedConversionError
     end
-    t or skip "no name to test"
+    t or omit "no name to test"
     assert_in_out_err(["-i.bak", "-", t.path],
                       "#{<<~"{#"}\n#{<<~'};'}")
     {#
@@ -385,6 +380,21 @@ class TestArgf < Test::Unit::TestCase
     assert_file.not_exist?(name+"-")
     assert_file.exist?(name+suffix)
     assert_equal("foo", File.read(name+suffix))
+  end
+
+  def test_inplace_bug_17117
+    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}")
+    {#
+      #!/usr/bin/ruby -pi.bak
+      BEGIN {
+        GC.start
+        arr = []
+        1000000.times { |x| arr << "fooo#{x}" }
+      }
+      puts "hello"
+    };
+    assert_equal("hello\n1\nhello\n2\n", File.read(@t1.path))
+    assert_equal("1\n2\n", File.read("#{@t1.path}.bak"))
   end
 
   def test_encoding
@@ -545,15 +555,11 @@ class TestArgf < Test::Unit::TestCase
       end
     end
 
-    t1 = open("#{@tmpdir}/argf-hoge", "w")
-    t1.binmode
-    t1.puts "foo"
-    t1.close
-    t2 = open("#{@tmpdir}/argf-moge", "w")
-    t2.binmode
-    t2.puts "bar"
-    t2.close
-    ruby('-e', 'STDERR.reopen(STDOUT); ARGF.gets; ARGF.skip; p ARGF.eof?', t1.path, t2.path) do |f|
+    t1 = "#{@tmpdir}/argf-hoge"
+    t2 = "#{@tmpdir}/argf-moge"
+    File.binwrite(t1, "foo\n")
+    File.binwrite(t2, "bar\n")
+    ruby('-e', 'STDERR.reopen(STDOUT); ARGF.gets; ARGF.skip; p ARGF.eof?', t1, t2) do |f|
       assert_equal(%w(false), f.read.split(/\n/))
     end
   end
@@ -567,7 +573,7 @@ class TestArgf < Test::Unit::TestCase
   def test_read2
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         ARGF.read(8, s)
         p s
       };
@@ -578,7 +584,7 @@ class TestArgf < Test::Unit::TestCase
   def test_read2_with_not_empty_buffer
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = "0123456789"
+        s = +"0123456789"
         ARGF.read(8, s)
         p s
       };
@@ -591,7 +597,7 @@ class TestArgf < Test::Unit::TestCase
       {#
         nil while ARGF.gets
         p ARGF.read
-        p ARGF.read(0, "")
+        p ARGF.read(0, +"")
       };
       assert_equal("nil\n\"\"\n", f.read)
     end
@@ -600,13 +606,13 @@ class TestArgf < Test::Unit::TestCase
   def test_readpartial
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         begin
           loop do
             s << ARGF.readpartial(1)
-            t = ""; ARGF.readpartial(1, t); s << t
+            t = +""; ARGF.readpartial(1, t); s << t
             # not empty buffer
-            u = "abcdef"; ARGF.readpartial(1, u); s << u
+            u = +"abcdef"; ARGF.readpartial(1, u); s << u
           end
         rescue EOFError
           puts s
@@ -619,11 +625,11 @@ class TestArgf < Test::Unit::TestCase
   def test_readpartial2
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}") do |f|
       {#
-        s = ""
+        s = +""
         begin
           loop do
             s << ARGF.readpartial(1)
-            t = ""; ARGF.readpartial(1, t); s << t
+            t = +""; ARGF.readpartial(1, t); s << t
           end
         rescue EOFError
           $stdout.binmode
@@ -654,7 +660,7 @@ class TestArgf < Test::Unit::TestCase
   def test_getc
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         while c = ARGF.getc
           s << c
         end
@@ -680,7 +686,7 @@ class TestArgf < Test::Unit::TestCase
   def test_readchar
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         begin
           while c = ARGF.readchar
             s << c
@@ -730,6 +736,18 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\"", "\"b\\n\""], [])
     assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
                       ["\"a\"", "\"b\""], [])
+
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    lines = []
+    begin
+      argf.each_line(chomp: true) do |line|
+        lines << line
+      end
+    ensure
+      argf.close
+    end
+    assert_equal(%w[foo bar baz], lines)
   end
 
   def test_each_byte
@@ -746,7 +764,7 @@ class TestArgf < Test::Unit::TestCase
   def test_each_char
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        s = ""
+        s = +""
         ARGF.each_char {|c| s << c }
         puts s
       };
@@ -816,7 +834,7 @@ class TestArgf < Test::Unit::TestCase
 
   def test_binmode
     bug5268 = '[ruby-core:39234]'
-    open(@t3.path, "wb") {|f| f.write "5\r\n6\r\n"}
+    File.binwrite(@t3.path, "5\r\n6\r\n")
     ruby('-e', "ARGF.binmode; STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
       f.binmode
       assert_equal("1\n2\n3\n4\n5\r\n6\r\n", f.read, bug5268)
@@ -825,7 +843,7 @@ class TestArgf < Test::Unit::TestCase
 
   def test_textmode
     bug5268 = '[ruby-core:39234]'
-    open(@t3.path, "wb") {|f| f.write "5\r\n6\r\n"}
+    File.binwrite(@t3.path, "5\r\n6\r\n")
     ruby('-e', "STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
       f.binmode
       assert_equal("1\n2\n3\n4\n5\n6\n", f.read, bug5268)
@@ -978,53 +996,55 @@ class TestArgf < Test::Unit::TestCase
     assert_nil(argf.gets, bug4274)
   end
 
+  def test_readlines_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal(%w[foo bar baz], argf.readlines(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
+  end
+
+  def test_readline_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.readline(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
+  def test_gets_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.gets(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
   def test_readlines_twice
     bug5952 = '[ruby-dev:45160]'
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
 
-  def test_lines
+  def test_each_codepoint
     ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        $stderr = $stdout
-        s = []
-        ARGF.lines {|l| s << l }
-        p s
+        print Marshal.dump(ARGF.each_codepoint.to_a)
       };
-      assert_match(/deprecated/, f.gets)
-      assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
-    end
-  end
-
-  def test_bytes
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.bytes.to_a)
-      };
-      assert_match(/deprecated/, f.gets)
-      assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
-    end
-  end
-
-  def test_chars
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print [Marshal.dump(ARGF.chars.to_a)].pack('m')
-      };
-      assert_match(/deprecated/, f.gets)
-      assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
-    end
-  end
-
-  def test_codepoints
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.codepoints.to_a)
-      };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
@@ -1033,7 +1053,7 @@ class TestArgf < Test::Unit::TestCase
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}") do |f|
       {#
         $stdout.sync = true
-        :wait_readable == ARGF.read_nonblock(1, "", exception: false) or
+        :wait_readable == ARGF.read_nonblock(1, +"", exception: false) or
           abort "did not return :wait_readable"
 
         begin
@@ -1046,7 +1066,7 @@ class TestArgf < Test::Unit::TestCase
         IO.select([ARGF]) == [[ARGF], [], []] or
           abort 'did not awaken for readability (before byte)'
 
-        buf = ''
+        buf = +''
         buf.object_id == ARGF.read_nonblock(1, buf).object_id or
           abort "read destination buffer failed"
         print buf
@@ -1080,5 +1100,54 @@ class TestArgf < Test::Unit::TestCase
       ARGV[0] = nil
       assert_raise(TypeError, bug11610) {gets}
     };
+  end
+
+  def test_sized_read
+    s = "a"
+    [@t1, @t2, @t3].each { |t|
+      File.binwrite(t.path, s)
+      s = s.succ
+    }
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
+    end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
+  end
+
+  def test_putc
+    t = make_tempfile("argf-#{__method__}", 'bar')
+    ruby('-pi-', '-e', "print ARGF.putc('x')", t.path) do |f|
+    end
+    assert_equal("xxbar\n", File.read(t.path))
+  end
+
+  def test_puts
+    t = make_tempfile("argf-#{__method__}", 'bar')
+    err = "#{@tmpdir}/errout"
+    ruby('-pi-', '-W2', '-e', "print ARGF.puts('foo')", t.path, {err: err}) do |f|
+    end
+    assert_equal("foo\nbar\n", File.read(t.path))
+    assert_empty File.read(err)
+  end
+
+  def test_print
+    t = make_tempfile("argf-#{__method__}", 'bar')
+    ruby('-pi-', '-e', "print ARGF.print('foo')", t.path) do |f|
+    end
+    assert_equal("foobar\n", File.read(t.path))
+  end
+
+  def test_printf
+    t = make_tempfile("argf-#{__method__}", 'bar')
+    ruby('-pi-', '-e', "print ARGF.printf('%s', 'foo')", t.path) do |f|
+    end
+    assert_equal("foobar\n", File.read(t.path))
   end
 end

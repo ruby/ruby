@@ -3,8 +3,8 @@ require 'matrix'
 
 describe "Matrix#hash" do
 
-  it "returns a Fixnum" do
-    Matrix[ [1,2] ].hash.should be_an_instance_of(Fixnum)
+  it "returns an Integer" do
+    Matrix[ [1,2] ].hash.should be_an_instance_of(Integer)
   end
 
   it "returns the same value for the same matrix" do

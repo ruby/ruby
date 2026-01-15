@@ -4,29 +4,29 @@ require 'mspec/runner/mspec'
 require 'mspec/runner/example'
 require 'mspec/utils/script'
 
-describe MethodFormatter, "#method_type" do
+RSpec.describe MethodFormatter, "#method_type" do
   before :each do
     @formatter = MethodFormatter.new
   end
 
   it "returns 'class' if the separator is '.' or '::'" do
-    @formatter.method_type('.').should == "class"
-    @formatter.method_type('::').should == "class"
+    expect(@formatter.method_type('.')).to eq("class")
+    expect(@formatter.method_type('::')).to eq("class")
   end
 
   it "returns 'instance' if the separator is '#'" do
-    @formatter.method_type('#').should == "instance"
+    expect(@formatter.method_type('#')).to eq("instance")
   end
 
   it "returns 'unknown' for all other cases" do
-    @formatter.method_type(nil).should == "unknown"
+    expect(@formatter.method_type(nil)).to eq("unknown")
   end
 end
 
-describe MethodFormatter, "#before" do
+RSpec.describe MethodFormatter, "#before" do
   before :each do
     @formatter = MethodFormatter.new
-    MSpec.stub(:register)
+    allow(MSpec).to receive(:register)
     @formatter.register
   end
 
@@ -38,32 +38,32 @@ describe MethodFormatter, "#before" do
 
     state = ExampleState.new ContextState.new("describe"), "it"
     @formatter.before state
-    @formatter.tally.counter.examples.should == 0
-    @formatter.tally.counter.expectations.should == 0
-    @formatter.tally.counter.failures.should == 0
-    @formatter.tally.counter.errors.should == 0
+    expect(@formatter.tally.counter.examples).to eq(0)
+    expect(@formatter.tally.counter.expectations).to eq(0)
+    expect(@formatter.tally.counter.failures).to eq(0)
+    expect(@formatter.tally.counter.errors).to eq(0)
   end
 
   it "records the class, method if available" do
     state = ExampleState.new ContextState.new("Some#method"), "it"
     @formatter.before state
     key = "Some#method"
-    @formatter.methods.keys.should include(key)
+    expect(@formatter.methods.keys).to include(key)
     h = @formatter.methods[key]
-    h[:class].should == "Some"
-    h[:method].should == "method"
-    h[:description].should == "Some#method it"
+    expect(h[:class]).to eq("Some")
+    expect(h[:method]).to eq("method")
+    expect(h[:description]).to eq("Some#method it")
   end
 
   it "does not record class, method unless both are available" do
     state = ExampleState.new ContextState.new("Some method"), "it"
     @formatter.before state
     key = "Some method"
-    @formatter.methods.keys.should include(key)
+    expect(@formatter.methods.keys).to include(key)
     h = @formatter.methods[key]
-    h[:class].should == ""
-    h[:method].should == ""
-    h[:description].should == "Some method it"
+    expect(h[:class]).to eq("")
+    expect(h[:method]).to eq("")
+    expect(h[:description]).to eq("Some method it")
   end
 
   it "sets the method type to unknown if class and method are not available" do
@@ -71,7 +71,7 @@ describe MethodFormatter, "#before" do
     @formatter.before state
     key = "Some method"
     h = @formatter.methods[key]
-    h[:type].should == "unknown"
+    expect(h[:type]).to eq("unknown")
   end
 
   it "sets the method type based on the class, method separator" do
@@ -79,7 +79,7 @@ describe MethodFormatter, "#before" do
       state = ExampleState.new ContextState.new(k), "it"
       @formatter.before state
       h = @formatter.methods[k]
-      h[:type].should == t
+      expect(h[:type]).to eq(t)
     end
   end
 
@@ -87,14 +87,14 @@ describe MethodFormatter, "#before" do
     state = ExampleState.new ContextState.new("describe"), "it"
     @formatter.exceptions << "stuff"
     @formatter.before state
-    @formatter.exceptions.should be_empty
+    expect(@formatter.exceptions).to be_empty
   end
 end
 
-describe MethodFormatter, "#after" do
+RSpec.describe MethodFormatter, "#after" do
   before :each do
     @formatter = MethodFormatter.new
-    MSpec.stub(:register)
+    allow(MSpec).to receive(:register)
     @formatter.register
   end
 
@@ -109,10 +109,10 @@ describe MethodFormatter, "#after" do
 
     @formatter.after state
     h = @formatter.methods["Some#method"]
-    h[:examples].should == 3
-    h[:expectations].should == 4
-    h[:failures].should == 2
-    h[:errors].should == 1
+    expect(h[:examples]).to eq(3)
+    expect(h[:expectations]).to eq(4)
+    expect(h[:failures]).to eq(2)
+    expect(h[:errors]).to eq(1)
   end
 
   it "renders the list of exceptions" do
@@ -125,20 +125,20 @@ describe MethodFormatter, "#after" do
 
     @formatter.after state
     h = @formatter.methods["Some#method"]
-    h[:exceptions].should == [
+    expect(h[:exceptions]).to eq([
       %[failed\n\n],
       %[failed\n\n]
-    ]
+    ])
   end
 end
 
-describe MethodFormatter, "#after" do
+RSpec.describe MethodFormatter, "#after" do
   before :each do
     $stdout = IOStub.new
     context = ContextState.new "Class#method"
     @state = ExampleState.new(context, "runs")
     @formatter = MethodFormatter.new
-    MSpec.stub(:register)
+    allow(MSpec).to receive(:register)
     @formatter.register
   end
 
@@ -159,8 +159,7 @@ describe MethodFormatter, "#after" do
 
     @formatter.after @state
     @formatter.finish
-    $stdout.should ==
-%[---
+    expect($stdout).to eq(%[---
 "Class#method":
   class: "Class"
   method: "method"
@@ -173,6 +172,6 @@ describe MethodFormatter, "#after" do
   exceptions:
   - "failed\\n\\n"
   - "failed\\n\\n"
-]
+])
   end
 end

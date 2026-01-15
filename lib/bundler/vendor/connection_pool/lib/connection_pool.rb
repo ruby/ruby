@@ -1,14 +1,20 @@
-require_relative 'connection_pool/version'
-require_relative 'connection_pool/timed_stack'
+require_relative "../../../vendored_timeout"
+require_relative "connection_pool/version"
 
+class Bundler::ConnectionPool
+  class Error < ::RuntimeError; end
 
-# Generic connection pool class for e.g. sharing a limited number of network connections
-# among many threads.  Note: Connections are lazily created.
+  class PoolShuttingDownError < ::Bundler::ConnectionPool::Error; end
+
+  class TimeoutError < ::Gem::Timeout::Error; end
+end
+
+# Generic connection pool class for sharing a limited number of objects or network connections
+# among many threads.  Note: pool elements are lazily created.
 #
 # Example usage with block (faster):
 #
 #    @pool = Bundler::ConnectionPool.new { Redis.new }
-#
 #    @pool.with do |redis|
 #      redis.lpop('my-list') if redis.llen('my-list') > 0
 #    end
@@ -30,34 +36,77 @@ require_relative 'connection_pool/timed_stack'
 # Accepts the following options:
 # - :size - number of connections to pool, defaults to 5
 # - :timeout - amount of time to wait for a connection if none currently available, defaults to 5 seconds
+# - :auto_reload_after_fork - automatically drop all connections after fork, defaults to true
 #
 class Bundler::ConnectionPool
-  DEFAULTS = {size: 5, timeout: 5}
-
-  class Error < RuntimeError
-  end
+  DEFAULTS = {size: 5, timeout: 5, auto_reload_after_fork: true}.freeze
 
   def self.wrap(options, &block)
     Wrapper.new(options, &block)
   end
 
+  if Process.respond_to?(:fork)
+    INSTANCES = ObjectSpace::WeakMap.new
+    private_constant :INSTANCES
+
+    def self.after_fork
+      INSTANCES.values.each do |pool|
+        next unless pool.auto_reload_after_fork
+
+        # We're on after fork, so we know all other threads are dead.
+        # All we need to do is to ensure the main thread doesn't have a
+        # checked out connection
+        pool.checkin(force: true)
+        pool.reload do |connection|
+          # Unfortunately we don't know what method to call to close the connection,
+          # so we try the most common one.
+          connection.close if connection.respond_to?(:close)
+        end
+      end
+      nil
+    end
+
+    if ::Process.respond_to?(:_fork) # MRI 3.1+
+      module ForkTracker
+        def _fork
+          pid = super
+          if pid == 0
+            Bundler::ConnectionPool.after_fork
+          end
+          pid
+        end
+      end
+      Process.singleton_class.prepend(ForkTracker)
+    end
+  else
+    INSTANCES = nil
+    private_constant :INSTANCES
+
+    def self.after_fork
+      # noop
+    end
+  end
+
   def initialize(options = {}, &block)
-    raise ArgumentError, 'Connection pool requires a block' unless block
+    raise ArgumentError, "Connection pool requires a block" unless block
 
     options = DEFAULTS.merge(options)
 
-    @size = options.fetch(:size)
+    @size = Integer(options.fetch(:size))
     @timeout = options.fetch(:timeout)
+    @auto_reload_after_fork = options.fetch(:auto_reload_after_fork)
 
     @available = TimedStack.new(@size, &block)
-    @key = :"current-#{@available.object_id}"
-    @key_count = :"current-#{@available.object_id}-count"
+    @key = :"pool-#{@available.object_id}"
+    @key_count = :"pool-#{@available.object_id}-count"
+    @discard_key = :"pool-#{@available.object_id}-discard"
+    INSTANCES[self] = self if @auto_reload_after_fork && INSTANCES
   end
 
-if Thread.respond_to?(:handle_interrupt)
-
-  # MRI
   def with(options = {})
+    # We need to manage exception handling manually here in order
+    # to work correctly with `Gem::Timeout.timeout` and `Thread#raise`.
+    # Otherwise an interrupted Thread can leak connections.
     Thread.handle_interrupt(Exception => :never) do
       conn = checkout(options)
       begin
@@ -69,93 +118,116 @@ if Thread.respond_to?(:handle_interrupt)
       end
     end
   end
+  alias_method :then, :with
 
-else
-
-  # jruby 1.7.x
-  def with(options = {})
-    conn = checkout(options)
-    begin
-      yield conn
-    ensure
-      checkin
-    end
+  ##
+  # Marks the current thread's checked-out connection for discard.
+  #
+  # When a connection is marked for discard, it will not be returned to the pool
+  # when checked in. Instead, the connection will be discarded.
+  # This is useful when a connection has become invalid or corrupted
+  # and should not be reused.
+  #
+  # Takes an optional block that will be called with the connection to be discarded.
+  # The block should perform any necessary clean-up on the connection.
+  #
+  # @yield [conn]
+  # @yieldparam conn [Object] The connection to be discarded.
+  # @yieldreturn [void]
+  #
+  #
+  # Note: This only affects the connection currently checked out by the calling thread.
+  # The connection will be discarded when +checkin+ is called.
+  #
+  # @return [void]
+  #
+  # @example
+  #   pool.with do |conn|
+  #     begin
+  #       conn.execute("SELECT 1")
+  #     rescue SomeConnectionError
+  #       pool.discard_current_connection  # Mark connection as bad
+  #       raise
+  #     end
+  #   end
+  def discard_current_connection(&block)
+    ::Thread.current[@discard_key] = block || proc { |conn| conn }
   end
-
-end
 
   def checkout(options = {})
     if ::Thread.current[@key]
-      ::Thread.current[@key_count]+= 1
+      ::Thread.current[@key_count] += 1
       ::Thread.current[@key]
     else
-      ::Thread.current[@key_count]= 1
-      ::Thread.current[@key]= @available.pop(options[:timeout] || @timeout)
+      ::Thread.current[@key_count] = 1
+      ::Thread.current[@key] = @available.pop(options[:timeout] || @timeout, options)
     end
   end
 
-  def checkin
+  def checkin(force: false)
     if ::Thread.current[@key]
-      if ::Thread.current[@key_count] == 1
-        @available.push(::Thread.current[@key])
-        ::Thread.current[@key]= nil
+      if ::Thread.current[@key_count] == 1 || force
+        if ::Thread.current[@discard_key]
+          begin
+            @available.decrement_created
+            ::Thread.current[@discard_key].call(::Thread.current[@key])
+          rescue
+            nil
+          ensure
+            ::Thread.current[@discard_key] = nil
+          end
+        else
+          @available.push(::Thread.current[@key])
+        end
+        ::Thread.current[@key] = nil
+        ::Thread.current[@key_count] = nil
       else
-        ::Thread.current[@key_count]-= 1
+        ::Thread.current[@key_count] -= 1
       end
-    else
-      raise Bundler::ConnectionPool::Error, 'no connections are checked out'
+    elsif !force
+      raise Bundler::ConnectionPool::Error, "no connections are checked out"
     end
 
     nil
   end
 
+  ##
+  # Shuts down the Bundler::ConnectionPool by passing each connection to +block+ and
+  # then removing it from the pool. Attempting to checkout a connection after
+  # shutdown will raise +Bundler::ConnectionPool::PoolShuttingDownError+.
   def shutdown(&block)
     @available.shutdown(&block)
   end
 
-  # Size of this connection pool
-  def size
-    @size
+  ##
+  # Reloads the Bundler::ConnectionPool by passing each connection to +block+ and then
+  # removing it the pool. Subsequent checkouts will create new connections as
+  # needed.
+  def reload(&block)
+    @available.shutdown(reload: true, &block)
   end
+
+  ## Reaps idle connections that have been idle for over +idle_seconds+.
+  # +idle_seconds+ defaults to 60.
+  def reap(idle_seconds = 60, &block)
+    @available.reap(idle_seconds, &block)
+  end
+
+  # Size of this connection pool
+  attr_reader :size
+  # Automatically drop all connections after fork
+  attr_reader :auto_reload_after_fork
 
   # Number of pool entries available for checkout at this instant.
   def available
     @available.length
   end
 
-  private
-
-  class Wrapper < ::BasicObject
-    METHODS = [:with, :pool_shutdown]
-
-    def initialize(options = {}, &block)
-      @pool = options.fetch(:pool) { ::Bundler::ConnectionPool.new(options, &block) }
-    end
-
-    def with(&block)
-      @pool.with(&block)
-    end
-
-    def pool_shutdown(&block)
-      @pool.shutdown(&block)
-    end
-
-    def pool_size
-      @pool.size
-    end
-
-    def pool_available
-      @pool.available
-    end
-
-    def respond_to?(id, *args)
-      METHODS.include?(id) || with { |c| c.respond_to?(id, *args) }
-    end
-
-    def method_missing(name, *args, &block)
-      with do |connection|
-        connection.send(name, *args, &block)
-      end
-    end
+  # Number of pool entries created and idle in the pool.
+  def idle
+    @available.idle
   end
 end
+
+require_relative "connection_pool/timed_stack"
+require_relative "connection_pool/wrapper"

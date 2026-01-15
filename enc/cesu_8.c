@@ -42,6 +42,8 @@
 #define VALID_CODE_LIMIT  0x0010ffff
 
 #define utf8_islead(c)     ((UChar )((c) & 0xc0) != 0x80)
+#define utf16_is_high_surrogate(v) ((v >> 10) == 0x36)
+#define utf16_is_low_surrogate(v)  ((v >> 10) == 0x37)
 
 static const int EncLen_CESU8[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -283,6 +285,12 @@ is_mbc_newline(const UChar* p, const UChar* end, OnigEncoding enc)
   return 0;
 }
 
+static int
+utf8_decode_3byte_sequence(const UChar* p)
+{
+    return ((p[0] & 0xF) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f);
+}
+
 static OnigCodePoint
 mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
@@ -295,11 +303,11 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
     case 2:
       return ((p[0] & 0x1F)  << 6) | (p[1] & 0x3f);
     case 3:
-      return ((p[0] & 0xF) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f);
+      return utf8_decode_3byte_sequence(p);
     case 6:
       {
-          int high = ((p[0] & 0xF) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f);
-          int low  = ((p[3] & 0xF) << 12) | ((p[4] & 0x3f) << 6) | (p[5] & 0x3f);
+          int high = utf8_decode_3byte_sequence(p);
+          int low  = utf8_decode_3byte_sequence(p + 3);
           return ((high & 0x03ff) << 10) + (low & 0x03ff) + 0x10000;
       }
   }
@@ -410,7 +418,6 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
   return onigenc_unicode_ctype_code_range(ctype, ranges);
 }
 
-
 static UChar*
 left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
@@ -420,6 +427,14 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
   p = s;
 
   while (!utf8_islead(*p) && p > start) p--;
+
+  if (p > start && s - p == 2 && utf16_is_low_surrogate(utf8_decode_3byte_sequence(p))) {
+    const UChar *p_surrogate_pair = p - 1;
+    while (!utf8_islead(*p_surrogate_pair) && p_surrogate_pair > start) p_surrogate_pair--;
+    if (p - p_surrogate_pair == 3 && utf16_is_high_surrogate(utf8_decode_3byte_sequence(p_surrogate_pair))) {
+      return (UChar* )p_surrogate_pair;
+    }
+  }
   return (UChar* )p;
 }
 

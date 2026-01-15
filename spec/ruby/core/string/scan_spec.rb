@@ -65,31 +65,15 @@ describe "String#scan" do
     -> { "cruel world".scan(mock('x')) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the results if the String argument is tainted" do
-      a = "hello hello hello".scan("hello".taint)
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a String argument if self is tainted" do
-      a = "hello hello hello".taint.scan("hello")
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results if the Regexp argument is tainted" do
-      a = "hello".scan(/./.taint)
-      a.each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a Regexp argument if self is tainted" do
-      a = "hello".taint.scan(/./)
-      a.each { |m| m.tainted?.should be_true }
-    end
-  end
-
   # jruby/jruby#5513
   it "does not raise any errors when passed a multi-byte string" do
     "あああaaaあああ".scan("あああ").should == ["あああ", "あああ"]
+  end
+
+  it "returns Strings in the same encoding as self" do
+    "cruel world".encode("US-ASCII").scan(/\w+/).each do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
   end
 end
 
@@ -119,11 +103,11 @@ describe "String#scan with pattern and block" do
     offsets = []
 
     str.scan(/([aeiou])/) do
-       md = $~
-       md.string.should == str
-       matches << md.to_a
-       offsets << md.offset(0)
-       str
+      md = $~
+      md.string.should == str
+      matches << md.to_a
+      offsets << md.offset(0)
+      str
     end
 
     matches.should == [["e", "e"], ["o", "o"]]
@@ -133,11 +117,11 @@ describe "String#scan with pattern and block" do
     offsets = []
 
     str.scan("l") do
-       md = $~
-       md.string.should == str
-       matches << md.to_a
-       offsets << md.offset(0)
-       str
+      md = $~
+      md.string.should == str
+      matches << md.to_a
+      offsets << md.offset(0)
+      str
     end
 
     matches.should == [["l"], ["l"]]
@@ -173,29 +157,17 @@ describe "String#scan with pattern and block" do
     $~.should == nil
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the results if the String argument is tainted" do
-      "hello hello hello".scan("hello".taint).each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a String argument if self is tainted" do
-      "hello hello hello".taint.scan("hello").each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results if the Regexp argument is tainted" do
-      "hello".scan(/./.taint).each { |m| m.tainted?.should be_true }
-    end
-
-    it "taints the results when passed a Regexp argument if self is tainted" do
-      "hello".taint.scan(/./).each { |m| m.tainted?.should be_true }
-    end
-  end
-
   it "passes block arguments as individual arguments when blocks are provided" do
     "a b c\na b c\na b c".scan(/(\w*) (\w*) (\w*)/) do |first,second,third|
       first.should == 'a';
       second.should == 'b';
       third.should == 'c';
     end
+  end
+
+  it "yields String instances for subclasses" do
+    a = []
+    StringSpecs::MyString.new("abc").scan(/./) { |s| a << s.class }
+    a.should == [String, String, String]
   end
 end

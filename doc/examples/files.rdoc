@@ -1,0 +1,26 @@
+# English text with newlines.
+text = <<~EOT
+  First line
+  Second line
+
+  Fourth line
+  Fifth line
+EOT
+
+# Japanese text.
+japanese = 'こんにちは'
+
+# Binary data.
+data = "\u9990\u9991\u9992\u9993\u9994"
+
+# Text file.
+File.write('t.txt', text)
+
+# File with Japanese text.
+File.write('t.ja', japanese)
+
+# File with binary data.
+f = File.new('t.dat', 'wb:UTF-16')
+f.write(data)
+f.close
+

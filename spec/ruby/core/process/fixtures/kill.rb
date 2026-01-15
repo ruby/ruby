@@ -1,5 +1,3 @@
-require 'thread'
-
 pid_file = ARGV.shift
 scenario = ARGV.shift
 

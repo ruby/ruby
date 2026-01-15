@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 # The Singleton module implements the Singleton pattern.
 #
@@ -13,7 +13,7 @@
 #
 # This ensures that only one instance of Klass can be created.
 #
-#      a,b  = Klass.instance, Klass.instance
+#      a,b = Klass.instance, Klass.instance
 #
 #      a == b
 #      # => true
@@ -92,20 +92,26 @@
 #    p a.strip #  => nil
 #
 module Singleton
-  # Raises a TypeError to prevent cloning.
-  def clone
-    raise TypeError, "can't clone instance of singleton #{self.class}"
-  end
+  # The version string
+  VERSION = "0.3.0"
 
-  # Raises a TypeError to prevent duping.
-  def dup
-    raise TypeError, "can't dup instance of singleton #{self.class}"
-  end
+  module SingletonInstanceMethods # :nodoc:
+    # Raises a TypeError to prevent cloning.
+    def clone
+      raise TypeError, "can't clone instance of singleton #{self.class}"
+    end
 
-  # By default, do not retain any state when marshalling.
-  def _dump(depth = -1)
-    ''
+    # Raises a TypeError to prevent duping.
+    def dup
+      raise TypeError, "can't dup instance of singleton #{self.class}"
+    end
+
+    # By default, do not retain any state when marshalling.
+    def _dump(depth = -1)
+      ''
+    end
   end
+  include SingletonInstanceMethods
 
   module SingletonClassMethods # :nodoc:
 
@@ -119,12 +125,7 @@ module Singleton
     end
 
     def instance # :nodoc:
-      return @singleton__instance__ if @singleton__instance__
-      @singleton__mutex__.synchronize {
-        return @singleton__instance__ if @singleton__instance__
-        @singleton__instance__ = new()
-      }
-      @singleton__instance__
+      @singleton__instance__ || @singleton__mutex__.synchronize { @singleton__instance__ ||= new }
     end
 
     private
@@ -133,21 +134,41 @@ module Singleton
       super
       Singleton.__init__(sub_klass)
     end
+
+    def set_instance(val)
+      @singleton__instance__ = val
+    end
+
+    def set_mutex(val)
+      @singleton__mutex__ = val
+    end
   end
 
-  class << Singleton # :nodoc:
+  def self.module_with_class_methods # :nodoc:
+    SingletonClassMethods
+  end
+
+  module SingletonClassProperties # :nodoc:
+
+    def self.included(c)
+      # extending an object with Singleton is a bad idea
+      c.undef_method :extend_object
+    end
+
+    def self.extended(c)
+      # extending an object with Singleton is a bad idea
+      c.singleton_class.send(:undef_method, :extend_object)
+    end
+
     def __init__(klass) # :nodoc:
       klass.instance_eval {
-        @singleton__instance__ = nil
-        @singleton__mutex__ = Thread::Mutex.new
+        set_instance(nil)
+        set_mutex(Thread::Mutex.new)
       }
       klass
     end
 
     private
-
-    # extending an object with Singleton is a bad idea
-    undef_method :extend_object
 
     def append_features(mod)
       #  help out people counting on transitive mixins
@@ -160,10 +181,11 @@ module Singleton
     def included(klass)
       super
       klass.private_class_method :new, :allocate
-      klass.extend SingletonClassMethods
+      klass.extend module_with_class_methods
       Singleton.__init__(klass)
     end
   end
+  extend SingletonClassProperties
 
   ##
   # :singleton-method: _load
@@ -172,4 +194,47 @@ module Singleton
   ##
   # :singleton-method: instance
   #  Returns the singleton instance.
+end
+
+if defined?(Ractor)
+  module RactorLocalSingleton # :nodoc:
+    include Singleton::SingletonInstanceMethods
+
+    module RactorLocalSingletonClassMethods # :nodoc:
+      include Singleton::SingletonClassMethods
+      def instance
+        set_mutex(Thread::Mutex.new) if Ractor.current[mutex_key].nil?
+        return Ractor.current[instance_key] if Ractor.current[instance_key]
+        Ractor.current[mutex_key].synchronize {
+          return Ractor.current[instance_key] if Ractor.current[instance_key]
+          set_instance(new())
+        }
+        Ractor.current[instance_key]
+      end
+
+      private
+
+      def instance_key
+        :"__RactorLocalSingleton_instance_with_class_id_#{object_id}__"
+      end
+
+      def mutex_key
+        :"__RactorLocalSingleton_mutex_with_class_id_#{object_id}__"
+      end
+
+      def set_instance(val)
+        Ractor.current[instance_key] = val
+      end
+
+      def set_mutex(val)
+        Ractor.current[mutex_key] = val
+      end
+    end
+
+    def self.module_with_class_methods
+      RactorLocalSingletonClassMethods
+    end
+
+    extend Singleton::SingletonClassProperties
+  end
 end

@@ -12,42 +12,42 @@ class HIMMSpecs
   end
 end
 
-describe HaveInstanceMethodMatcher do
+RSpec.describe HaveInstanceMethodMatcher do
   it "inherits from MethodMatcher" do
-    HaveInstanceMethodMatcher.new(:m).should be_kind_of(MethodMatcher)
+    expect(HaveInstanceMethodMatcher.new(:m)).to be_kind_of(MethodMatcher)
   end
 
   it "matches when mod has the instance method" do
     matcher = HaveInstanceMethodMatcher.new :instance_method
-    matcher.matches?(HIMMSpecs).should be_true
-    matcher.matches?(HIMMSpecs::Subclass).should be_true
+    expect(matcher.matches?(HIMMSpecs)).to be_truthy
+    expect(matcher.matches?(HIMMSpecs::Subclass)).to be_truthy
   end
 
   it "does not match when mod does not have the instance method" do
     matcher = HaveInstanceMethodMatcher.new :another_method
-    matcher.matches?(HIMMSpecs).should be_false
+    expect(matcher.matches?(HIMMSpecs)).to be_falsey
   end
 
   it "does not match if the method is in a superclass and include_super is false" do
     matcher = HaveInstanceMethodMatcher.new :instance_method, false
-    matcher.matches?(HIMMSpecs::Subclass).should be_false
+    expect(matcher.matches?(HIMMSpecs::Subclass)).to be_falsey
   end
 
   it "provides a failure message for #should" do
     matcher = HaveInstanceMethodMatcher.new :some_method
     matcher.matches?(HIMMSpecs)
-    matcher.failure_message.should == [
+    expect(matcher.failure_message).to eq([
       "Expected HIMMSpecs to have instance method 'some_method'",
       "but it does not"
-    ]
+    ])
   end
 
   it "provides a failure messoge for #should_not" do
     matcher = HaveInstanceMethodMatcher.new :some_method
     matcher.matches?(HIMMSpecs)
-    matcher.negative_failure_message.should == [
+    expect(matcher.negative_failure_message).to eq([
       "Expected HIMMSpecs NOT to have instance method 'some_method'",
       "but it does"
-    ]
+    ])
   end
 end

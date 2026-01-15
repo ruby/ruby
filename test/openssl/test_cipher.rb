@@ -32,28 +32,28 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     salt = "\x01" * 8
     num = 2048
     pt = "data to be encrypted"
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    cipher.pkcs5_keyivgen(pass, salt, num, "MD5")
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    cipher.pkcs5_keyivgen(pass, salt, num, "SHA256")
     s1 = cipher.update(pt) << cipher.final
 
-    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
-    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest::MD5.digest(out) }
-    key = (d1 + d2)[0, 24]
-    iv = (d1 + d2)[24, 8]
-    cipher = new_encryptor("DES-EDE3-CBC", key: key, iv: iv)
+    d1 = num.times.inject(pass + salt) {|out, _| OpenSSL::Digest.digest('SHA256', out) }
+    d2 = num.times.inject(d1 + pass + salt) {|out, _| OpenSSL::Digest.digest('SHA256', out) }
+    key = (d1 + d2)[0, 32]
+    iv = (d1 + d2)[32, 16]
+    cipher = new_encryptor("AES-256-CBC", key: key, iv: iv)
     s2 = cipher.update(pt) << cipher.final
 
     assert_equal s1, s2
 
-    cipher2 = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "MD5") }
+    cipher2 = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "SHA256") }
   end
 
   def test_info
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_equal "DES-EDE3-CBC", cipher.name
-    assert_equal 24, cipher.key_len
-    assert_equal 8, cipher.iv_len
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_equal "AES-256-CBC", cipher.name
+    assert_equal 32, cipher.key_len
+    assert_equal 16, cipher.iv_len
   end
 
   def test_dup
@@ -80,13 +80,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_key_iv_set
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    assert_raise(ArgumentError) { cipher.key = "\x01" * 23 }
-    assert_nothing_raised { cipher.key = "\x01" * 24 }
-    assert_raise(ArgumentError) { cipher.key = "\x01" * 25 }
-    assert_raise(ArgumentError) { cipher.iv = "\x01" * 7 }
-    assert_nothing_raised { cipher.iv = "\x01" * 8 }
-    assert_raise(ArgumentError) { cipher.iv = "\x01" * 9 }
+    cipher = OpenSSL::Cipher.new("AES-256-CBC").encrypt
+    assert_raise(ArgumentError) { cipher.key = "\x01" * 31 }
+    assert_nothing_raised { cipher.key = "\x01" * 32 }
+    assert_raise(ArgumentError) { cipher.key = "\x01" * 33 }
+    assert_raise(ArgumentError) { cipher.iv = "\x01" * 15 }
+    assert_nothing_raised { cipher.iv = "\x01" * 16 }
+    assert_raise(ArgumentError) { cipher.iv = "\x01" * 17 }
   end
 
   def test_random_key_iv
@@ -108,16 +108,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_not_equal s1, s2
   end
 
-  def test_empty_data
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    cipher.random_key
-    assert_raise(ArgumentError) { cipher.update("") }
-  end
-
   def test_initialize
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC")
-    assert_raise(RuntimeError) { cipher.__send__(:initialize, "DES-EDE3-CBC") }
+    cipher = OpenSSL::Cipher.new("AES-256-CBC")
+    assert_raise(RuntimeError) { cipher.__send__(:initialize, "AES-256-CBC") }
     assert_raise(RuntimeError) { OpenSSL::Cipher.allocate.final }
+    assert_raise(OpenSSL::Cipher::CipherError) {
+      OpenSSL::Cipher.new("no such algorithm")
+    }
   end
 
   def test_ctr_if_exists
@@ -134,28 +131,50 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal pt, cipher.update(ct) << cipher.final
   end
 
+  def test_update_with_buffer
+    cipher = OpenSSL::Cipher.new("aes-128-ecb").encrypt
+    cipher.random_key
+    expected = cipher.update("data" * 10) << cipher.final
+    assert_equal 48, expected.bytesize
+
+    # Buffer is supplied
+    cipher.reset
+    buf = String.new
+    assert_same buf, cipher.update("data" * 10, buf)
+    assert_equal 32, buf.bytesize
+    assert_equal expected, buf + cipher.final
+
+    # Buffer is frozen
+    cipher.reset
+    assert_raise(FrozenError) { cipher.update("data", String.new.freeze) }
+
+    # Buffer is a shared string [ruby-core:120141] [Bug #20937]
+    cipher.reset
+    buf = "x".b * 1024
+    shared = buf[-("data".bytesize * 10 + 32)..-1]
+    assert_same shared, cipher.update("data" * 10, shared)
+    assert_equal expected, shared + cipher.final
+  end
+
   def test_ciphers
-    OpenSSL::Cipher.ciphers.each{|name|
-      next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
-      begin
-        assert_kind_of(OpenSSL::Cipher, OpenSSL::Cipher.new(name))
-      rescue OpenSSL::Cipher::CipherError => e
-        raise unless /wrap/ =~ name and /wrap mode not allowed/ =~ e.message
-      end
-    }
+    ciphers = OpenSSL::Cipher.ciphers
+    assert_kind_of Array, ciphers
+    assert_include ciphers, "aes-128-cbc"
+    assert_include ciphers, "aes128" # alias of aes-128-cbc
+    assert_include ciphers, "aes-128-gcm"
   end
 
   def test_AES
     pt = File.read(__FILE__)
-    %w(ECB CBC CFB OFB).each{|mode|
-      c1 = OpenSSL::Cipher::AES256.new(mode)
+    %w(ecb cbc cfb ofb).each{|mode|
+      c1 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c1.encrypt
-      c1.pkcs5_keyivgen("passwd")
+      c1.pkcs5_keyivgen("passwd", "12345678", 10000, "SHA256")
       ct = c1.update(pt) + c1.final
 
-      c2 = OpenSSL::Cipher::AES256.new(mode)
+      c2 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c2.decrypt
-      c2.pkcs5_keyivgen("passwd")
+      c2.pkcs5_keyivgen("passwd", "12345678", 10000, "SHA256")
       assert_equal(pt, c2.update(ct) + c2.final)
     }
   end
@@ -163,8 +182,12 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_update_raise_if_key_not_set
     assert_raise(OpenSSL::Cipher::CipherError) do
       # it caused OpenSSL SEGV by uninitialized key [Bug #2768]
-      OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+      OpenSSL::Cipher.new("aes-128-ecb").update "." * 17
     end
+  end
+
+  def test_auth_tag_error_inheritance
+    assert_equal OpenSSL::Cipher::CipherError, OpenSSL::Cipher::AuthTagError.superclass
   end
 
   def test_authenticated
@@ -173,6 +196,49 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = OpenSSL::Cipher.new('aes-128-cbc')
     assert_not_predicate(cipher, :authenticated?)
   end
+
+  def test_aes_ccm
+    # RFC 3610 Section 8, Test Case 1
+    key = ["c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"].pack("H*")
+    iv =  ["00000003020100a0a1a2a3a4a5"].pack("H*")
+    aad = ["0001020304050607"].pack("H*")
+    pt =  ["08090a0b0c0d0e0f101112131415161718191a1b1c1d1e"].pack("H*")
+    ct =  ["588c979a61c663d2f066d0c2c0f989806d5f6b61dac384"].pack("H*")
+    tag = ["17e8d12cfdf926e0"].pack("H*")
+
+    kwargs = {auth_tag_len: 8, iv_len: 13, key: key, iv: iv}
+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
+    assert_equal ct, cipher.update(pt) << cipher.final
+    assert_equal tag, cipher.auth_tag
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad)
+    assert_equal pt, cipher.update(ct) << cipher.final
+
+    # truncated tag is accepted
+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
+    assert_equal ct, cipher.update(pt) << cipher.final
+    assert_equal tag[0, 8], cipher.auth_tag(8)
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag[0, 8], auth_data: aad)
+    assert_equal pt, cipher.update(ct) << cipher.final
+
+    # wrong tag is rejected - in CCM, authentication happens during update, but
+    # we consider this a general CipherError since update failures can have various causes
+    tag2 = tag.dup
+    tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag2, auth_data: aad)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
+
+    # wrong aad is rejected
+    aad2 = aad[0..-2] << aad[-1].succ
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad2)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
+
+    # wrong ciphertext is rejected
+    ct2 = ct[0..-2] << ct[-1].succ
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct2.length, auth_tag: tag, auth_data: aad)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
+  end if has_cipher?("aes-128-ccm") &&
+         OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
+         openssl?(1, 1, 1, 0x03, 0xf) # version >= 1.1.1c
 
   def test_aes_gcm
     # GCM spec Appendix B Test Case 4
@@ -208,19 +274,19 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag2, auth_data: aad)
     cipher.update(ct)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
 
     # wrong aad is rejected
     aad2 = aad[0..-2] << aad[-1].succ
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad2)
     cipher.update(ct)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
 
     # wrong ciphertext is rejected
     ct2 = ct[0..-2] << ct[-1].succ
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     cipher.update(ct2)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
   end
 
   def test_aes_gcm_variable_iv_len
@@ -247,6 +313,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_aes_ocb_tag_len
+    # AES-128-OCB is not FIPS-approved.
+    omit_on_fips
+
     # RFC 7253 Appendix A; the second sample
     key = ["000102030405060708090A0B0C0D0E0F"].pack("H*")
     iv  = ["BBAA99887766554433221101"].pack("H*")
@@ -280,6 +349,27 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
   end if has_cipher?("aes-128-ocb")
 
+  def test_aes_gcm_siv
+    # AES-128-GCM-SIV is not FIPS-approved.
+    omit_on_fips
+
+    # RFC 8452 Appendix C.1., 8th example
+    key = ["01000000000000000000000000000000"].pack("H*")
+    iv  = ["030000000000000000000000"].pack("H*")
+    aad = ["01"].pack("H*")
+    pt =  ["0200000000000000"].pack("H*")
+    ct =  ["1e6daba35669f4273b0a1a2560969cdf790d99759abd1508"].pack("H*")
+    tag = ["3b0a1a2560969cdf790d99759abd1508"].pack("H*")
+    ct_without_tag = ct.byteslice(0, ct.bytesize - tag.bytesize)
+
+    cipher = new_encryptor("aes-128-gcm-siv", key: key, iv: iv, auth_data: aad)
+    assert_equal ct_without_tag, cipher.update(pt) << cipher.final
+    assert_equal tag, cipher.auth_tag
+    cipher = new_decryptor("aes-128-gcm-siv", key: key, iv: iv, auth_tag: tag,
+                           auth_data: aad)
+    assert_equal pt, cipher.update(ct_without_tag) << cipher.final
+  end if openssl?(3, 2, 0)
+
   def test_aes_gcm_key_iv_order_issue
     pt = "[ruby/openssl#49]"
     cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt
@@ -296,6 +386,22 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
     assert_equal ct1, ct2
     assert_equal tag1, tag2
+  end
+
+  def test_aes_keywrap_pad
+    # RFC 5649 Section 6; The second example
+    kek = ["5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8"].pack("H*")
+    key = ["466f7250617369"].pack("H*")
+    wrap = ["afbeb0f07dfbf5419200f2ccb50bb24f"].pack("H*")
+
+    begin
+      cipher = OpenSSL::Cipher.new("id-aes192-wrap-pad").encrypt
+    rescue OpenSSL::Cipher::CipherError
+      omit "id-aes192-wrap-pad is not supported: #$!"
+    end
+    cipher.key = kek
+    ct = cipher.update(key) << cipher.final
+    assert_equal wrap, ct
   end
 
   def test_non_aead_cipher_set_auth_data

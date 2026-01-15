@@ -60,6 +60,24 @@ describe "Socket.getnameinfo" do
     name_info = Socket.getnameinfo ["AF_INET", 9, 'foo', '127.0.0.1']
     name_info[1].should == 'discard'
   end
+
+  ruby_version_is ""..."3.3" do
+    it "raises SocketError when fails to resolve address" do
+      -> {
+        Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
+      }.should raise_error(SocketError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raises ResolutionError when fails to resolve address" do
+      -> {
+        Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
+      }.should raise_error(Socket::ResolutionError) { |e|
+        [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
+      }
+    end
+  end
 end
 
 describe 'Socket.getnameinfo' do
@@ -70,7 +88,7 @@ describe 'Socket.getnameinfo' do
 
     it 'raises SocketError or TypeError when using an invalid String' do
       -> { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
-        [SocketError, TypeError].should include(e.class)
+        (e.is_a?(SocketError) || e.is_a?(TypeError)).should == true
       }
     end
 

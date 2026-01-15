@@ -1,5 +1,12 @@
-require_relative '../../shared/rational/to_i'
+require_relative "../../spec_helper"
 
 describe "Rational#to_i" do
-  it_behaves_like :rational_to_i, :to_i
+  it "converts self to an Integer by truncation" do
+    Rational(7, 4).to_i.should eql(1)
+    Rational(11, 4).to_i.should eql(2)
+  end
+
+  it "converts self to an Integer by truncation" do
+    Rational(-7, 4).to_i.should eql(-1)
+  end
 end

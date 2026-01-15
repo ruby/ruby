@@ -3,7 +3,6 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See Bundler::URI for general documentation
 #
@@ -18,7 +17,7 @@ module Bundler::URI
   # This class will be redesigned because of difference of implementations;
   # the structure of its path. draft-hoffman-ftp-uri-04 is a draft but it
   # is a good summary about the de facto spec.
-  # http://tools.ietf.org/html/draft-hoffman-ftp-uri-04
+  # https://datatracker.ietf.org/doc/html/draft-hoffman-ftp-uri-04
   #
   class FTP < Generic
     # A Default port of 21 for Bundler::URI::FTP.
@@ -263,5 +262,6 @@ module Bundler::URI
       return str
     end
   end
-  @@schemes['FTP'] = FTP
+
+  register_scheme 'FTP', FTP
 end

@@ -1,3 +1,14 @@
+prelude: |
+  ary = []
+  kw = {a: 1}
+  empty_kw = {}
+  kw_ary = [Hash.ruby2_keywords_hash(a: 1)]
+  empty_kw_ary = [Hash.ruby2_keywords_hash({})]
 benchmark:
-  vm_send_cfunc: self.class
-loop_count: 100000000
+  vm_send_cfunc: itself
+  vm_send_cfunc_splat: itself(*ary)
+  vm_send_cfunc_splat_kw_hash: equal?(*kw_ary)
+  vm_send_cfunc_splat_empty_kw_hash: itself(*empty_kw_ary)
+  vm_send_cfunc_splat_kw: equal?(*ary, **kw)
+  vm_send_cfunc_splat_empty_kw: itself(*ary, **empty_kw)
+loop_count: 20000000

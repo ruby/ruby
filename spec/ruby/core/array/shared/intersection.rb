@@ -11,7 +11,8 @@ describe :array_intersection, shared: true do
   end
 
   it "creates an array with elements in order they are first encountered" do
-    [ 1, 2, 3, 2, 5 ].send(@method, [ 5, 2, 3, 4 ]).should == [2, 3, 5]
+    [ 1, 2, 3, 2, 5, 6, 7, 8 ].send(@method, [ 5, 2, 3, 4 ]).should == [2, 3, 5] # array > other
+    [ 5, 2, 3, 4 ].send(@method, [ 1, 2, 3, 2, 5, 6, 7, 8 ]).should == [5, 2, 3] # array < other
   end
 
   it "does not modify the original Array" do

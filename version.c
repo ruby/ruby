@@ -9,20 +9,49 @@
 
 **********************************************************************/
 
+#include "internal/cmdlineopt.h"
+#include "internal/parse.h"
+#include "internal/gc.h"
+#include "ruby/internal/globals.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
-#include "mjit.h"
+#include "yjit.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
 
+#ifdef RUBY_REVISION
+# if RUBY_PATCHLEVEL == -1
+#  define RUBY_API_VERSION_NAME "master"
+#  ifndef RUBY_BRANCH_NAME
+#   define RUBY_BRANCH_NAME RUBY_API_VERSION_NAME
+#  endif
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
+# else
+#  define RUBY_REVISION_STR " revision "RUBY_REVISION
+# endif
+#else
+# define RUBY_REVISION "HEAD"
+# define RUBY_REVISION_STR ""
+#endif
+#ifndef RUBY_API_VERSION_NAME
+# define RUBY_API_VERSION_NAME RUBY_API_VERSION_STR
+#endif
+#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
+# undef RUBY_RELEASE_DATETIME
+# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
+#endif
+
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
 
+#define RUBY_API_VERSION_STR \
+    STRINGIZE(RUBY_API_VERSION_MAJOR) "." \
+    STRINGIZE(RUBY_API_VERSION_MINOR)
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
     RUBY_API_VERSION_MINOR,
@@ -35,95 +64,231 @@ const int ruby_api_version[] = {
 #ifndef RUBY_FULL_REVISION
 # define RUBY_FULL_REVISION RUBY_REVISION
 #endif
+#ifdef YJIT_SUPPORT
+#define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
+#else
+#define YJIT_DESCRIPTION " +YJIT"
+#endif
+#ifdef ZJIT_SUPPORT
+#define ZJIT_DESCRIPTION " +ZJIT " STRINGIZE(ZJIT_SUPPORT)
+#else
+#define ZJIT_DESCRIPTION " +ZJIT"
+#endif
+#if USE_MODULAR_GC
+#define GC_DESCRIPTION " +GC"
+#else
+#define GC_DESCRIPTION ""
+#endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
-const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
-const char ruby_copyright[] = RUBY_COPYRIGHT;
+const char ruby_api_version_name[] = RUBY_API_VERSION_NAME;
+const char ruby_description[] =
+    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " "
+    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ") "
+    "[" RUBY_PLATFORM "]";
+static const int ruby_description_opt_point =
+    (int)(sizeof(ruby_description) - sizeof(" [" RUBY_PLATFORM "]"));
+
+const char ruby_copyright[] = "ruby - Copyright (C) "
+    RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
+    RUBY_AUTHOR;
 const char ruby_engine[] = "ruby";
+
+// Might change after initialization
+const char *rb_dynamic_description = ruby_description;
+
+static inline void
+define_ruby_const(VALUE mod, const char *name, VALUE value, bool toplevel)
+{
+    if (toplevel) {
+        rb_define_global_const(name, value);
+        name += rb_strlen_lit("RUBY_");
+    }
+    rb_define_const(mod, name, value);
+}
+
+/* RDoc needs rb_define_const */
+#define rb_define_const(mod, name, value) \
+    define_ruby_const(mod, (mod == mRuby ? "RUBY_" name : name), value, (mod == mRuby))
+
+void
+Init_Ruby_module(void)
+{
+    rb_define_module("Ruby");
+}
 
 /*! Defines platform-depended Ruby-level constants */
 void
 Init_version(void)
 {
+    /*
+     * The Ruby[rdoc-ref:Ruby] module that contains portable information among
+     * implementations.
+     *
+     * The constants defined here are aliased in the toplevel with
+     * +RUBY_+ prefix.
+     */
+    VALUE mRuby = rb_define_module("Ruby");
+
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
-    VALUE version;
-    VALUE ruby_engine_name;
+    VALUE version = MKSTR(version);
+    VALUE ruby_engine_name = MKSTR(engine);
+    // MKSTR macro is a marker for fake.rb
+
     /*
      * The running version of ruby
      */
-    rb_define_global_const("RUBY_VERSION", (version = MKSTR(version)));
+    rb_define_const(mRuby, "VERSION", /* MKSTR(version) */ version);
     /*
      * The date this ruby was released
      */
-    rb_define_global_const("RUBY_RELEASE_DATE", MKSTR(release_date));
+    rb_define_const(mRuby, "RELEASE_DATE", MKSTR(release_date));
     /*
      * The platform for this ruby
      */
-    rb_define_global_const("RUBY_PLATFORM", MKSTR(platform));
+    rb_define_const(mRuby, "PLATFORM", MKSTR(platform));
     /*
      * The patchlevel for this ruby.  If this is a development build of ruby
      * the patchlevel will be -1
      */
-    rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
+    rb_define_const(mRuby, "PATCHLEVEL", MKINT(patchlevel));
     /*
      * The GIT commit hash for this ruby.
      */
-    rb_define_global_const("RUBY_REVISION", MKSTR(revision));
+    rb_define_const(mRuby, "REVISION", MKSTR(revision));
     /*
      * The copyright string for ruby
      */
-    rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
+    rb_define_const(mRuby, "COPYRIGHT", MKSTR(copyright));
     /*
      * The engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    rb_define_const(mRuby, "ENGINE", /* MKSTR(engine) */ ruby_engine_name);
     ruby_set_script_name(ruby_engine_name);
     /*
      * The version of the engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
+    rb_define_const(mRuby, "ENGINE_VERSION", /* MKSTR(version) */ version);
 
     rb_provide("ruby2_keywords.rb");
 }
 
-#if USE_MJIT
-#define MJIT_OPTS_ON mjit_opts.on
+#if USE_YJIT
+#define YJIT_OPTS_ON opt->yjit
 #else
-#define MJIT_OPTS_ON 0
+#define YJIT_OPTS_ON 0
 #endif
 
-void
-Init_ruby_description(void)
-{
-    VALUE description;
+#if USE_ZJIT
+#define ZJIT_OPTS_ON opt->zjit
+#else
+#define ZJIT_OPTS_ON 0
+#endif
 
-    if (MJIT_OPTS_ON) {
-        description = MKSTR(description_with_jit);
+int ruby_mn_threads_enabled;
+
+#ifndef RB_DEFAULT_PARSER
+#define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
+#endif
+static ruby_default_parser_enum default_parser = RB_DEFAULT_PARSER;
+
+ruby_default_parser_enum
+rb_ruby_default_parser(void)
+{
+    return default_parser;
+}
+
+void
+rb_ruby_default_parser_set(ruby_default_parser_enum parser)
+{
+    default_parser = parser;
+}
+
+static void
+define_ruby_description(const char *const jit_opt)
+{
+#define JIT_DESCRIPTION YJIT_DESCRIPTION ZJIT_DESCRIPTION
+
+    static char desc[
+        sizeof(ruby_description)
+        + rb_strlen_lit(JIT_DESCRIPTION)
+        + rb_strlen_lit(" +MN")
+        + rb_strlen_lit(" +PRISM")
+#if USE_MODULAR_GC
+        + rb_strlen_lit(GC_DESCRIPTION)
+        // Assume the active GC name can not be longer than 20 chars
+        // so that we don't have to use strlen and remove the static
+        // qualifier from desc.
+        + RB_GC_MAX_NAME_LEN + 3
+#endif
+
+    ];
+
+    int n = ruby_description_opt_point;
+    memcpy(desc, ruby_description, n);
+# define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n))
+    if (*jit_opt) append(jit_opt);
+    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(JIT_DESCRIPTION));
+    if (ruby_mn_threads_enabled) append(" +MN");
+    if (rb_ruby_prism_p()) append(" +PRISM");
+#if USE_MODULAR_GC
+    append(GC_DESCRIPTION);
+    if (rb_gc_modular_gc_loaded_p()) {
+        append("[");
+        append(rb_gc_active_gc_name());
+        append("]");
     }
-    else {
-        description = MKSTR(description);
-    }
+#endif
+    append(ruby_description + ruby_description_opt_point);
+# undef append
+
+    VALUE mRuby = rb_path2class("Ruby");
+    VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
+    rb_dynamic_description = desc;
 
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
-    rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
+    rb_define_const(mRuby, "DESCRIPTION", /* MKSTR(description) */ description);
+#undef JIT_DESCRIPTION
 }
 
-/*! Prints the version information of the CRuby interpreter to stdout. */
+void
+Init_ruby_description(ruby_cmdline_options_t *opt)
+{
+    const char *const jit_opt =
+        YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        ZJIT_OPTS_ON ? ZJIT_DESCRIPTION :
+        "";
+    define_ruby_description(jit_opt);
+}
+
+void
+ruby_set_yjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(YJIT_DESCRIPTION);
+}
+
+void
+ruby_set_zjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(ZJIT_DESCRIPTION);
+}
+
 void
 ruby_show_version(void)
 {
-    if (MJIT_OPTS_ON) {
-        PRINT(description_with_jit);
-    }
-    else {
-        PRINT(description);
-    }
+    puts(rb_dynamic_description);
+
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
 #endif
@@ -133,7 +298,6 @@ ruby_show_version(void)
     fflush(stdout);
 }
 
-/*! Prints the copyright notice of the CRuby interpreter to stdout. */
 void
 ruby_show_copyright(void)
 {

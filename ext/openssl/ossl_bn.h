@@ -5,15 +5,15 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(_OSSL_BN_H_)
 #define _OSSL_BN_H_
 
 extern VALUE cBN;
-extern VALUE eBNError;
 
-extern BN_CTX *ossl_bn_ctx;
+BN_CTX *ossl_bn_ctx_get(void);
+#define ossl_bn_ctx ossl_bn_ctx_get()
 
 #define GetBNPtr(obj) ossl_bn_value_ptr(&(obj))
 

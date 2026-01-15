@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
-require 'cgi'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 
 describe "CGI.unescapeHTML" do
   it "unescapes '&amp; &lt; &gt; &quot;' to '& < > \"'" do
@@ -34,6 +38,11 @@ describe "CGI.unescapeHTML" do
 
   it "leaves partial invalid &# at end of string" do
     input = "fooooooo&#"
+    CGI.unescapeHTML(input).should == input
+  end
+
+  it "unescapes invalid encoding" do
+    input = "\xFF&"
     CGI.unescapeHTML(input).should == input
   end
 end

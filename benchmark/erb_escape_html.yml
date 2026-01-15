@@ -1,0 +1,31 @@
+prelude: |
+  # frozen_string_literal: true
+  require 'erb'
+benchmark:
+  - script: ERB::Util.html_escape("")
+    loop_count: 20000000
+  - script: ERB::Util.html_escape("abcde")
+    loop_count: 20000000
+  - script: ERB::Util.html_escape("abcd<")
+    loop_count: 20000000
+  - script: ERB::Util.html_escape("'&\"<>")
+    loop_count: 5000000
+  - prelude: long_no_escape = "abcde" * 300
+    script: ERB::Util.html_escape(long_no_escape)
+    loop_count: 1000000
+  - prelude: long_all_escape = "'&\"<>" * 10
+    script: ERB::Util.html_escape(long_all_escape)
+    loop_count: 1000000
+  - prelude: | # http://example.com/
+      example_html = <<~HTML
+        <body>
+        <div>
+            <h1>Example Domain</h1>
+            <p>This domain is established to be used for illustrative examples in documents. You may use this
+            domain in examples without prior coordination or asking for permission.</p>
+            <p><a href="http://www.iana.org/domains/example">More information...</a></p>
+        </div>
+        </body>
+      HTML
+    script: ERB::Util.html_escape(example_html)
+    loop_count: 1000000

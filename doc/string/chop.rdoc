@@ -1,0 +1,17 @@
+Returns a new string copied from +self+, with trailing characters possibly removed.
+
+Removes <tt>"\r\n"</tt> if those are the last two characters.
+
+  "abc\r\n".chop      # => "abc"
+  "こんにちは\r\n".chop # => "こんにちは"
+
+Otherwise removes the last character if it exists.
+
+  'abcd'.chop     # => "abc"
+  'こんにちは'.chop # => "こんにち"
+  ''.chop         # => ""
+
+If you only need to remove the newline separator at the end of the string,
+String#chomp is a better alternative.
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

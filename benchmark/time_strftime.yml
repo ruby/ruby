@@ -1,0 +1,7 @@
+prelude: |
+  # frozen_string_literal: true
+  time = Time.now
+benchmark:
+  - time.strftime("%FT%T")     # 19B
+  - time.strftime("%FT%T.%3N") # 23B
+  - time.strftime("%FT%T.%6N") # 26B

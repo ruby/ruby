@@ -17,13 +17,25 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_C_ATTRIBUTE.
  */
+
+#include "ruby/internal/has/extension.h"
+#include "ruby/internal/has/warning.h"
 
 /** Wraps (or simulates) `__has_c_attribute`. */
 #if defined(__cplusplus)
 # /* Makes no sense. */
+# define RBIMPL_HAS_C_ATTRIBUTE(_) 0
+
+#elif RBIMPL_HAS_EXTENSION(c_attributes)
+# /* Hmm.  It  seems Clang 17 has  this macro defined even  when -std=c99 mode,
+#  * _and_ fails  to compile complaining  that attributes are C2X  feature.  We
+#  * need to work around this nonsense. */
+# define RBIMPL_HAS_C_ATTRIBUTE(_) __has_c_attribute(_)
+
+#elif RBIMPL_HAS_WARNING("-Wc2x-extensions")
 # define RBIMPL_HAS_C_ATTRIBUTE(_) 0
 
 #elif defined(__has_c_attribute)

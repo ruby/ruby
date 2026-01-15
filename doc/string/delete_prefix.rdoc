@@ -1,0 +1,9 @@
+Returns a copy of +self+ with leading substring +prefix+ removed:
+
+  'oof'.delete_prefix('o')          # => "of"
+  'oof'.delete_prefix('oo')         # => "f"
+  'oof'.delete_prefix('oof')        # => ""
+  'oof'.delete_prefix('x')          # => "oof"
+  'こんにちは'.delete_prefix('こん')  # => "にちは"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

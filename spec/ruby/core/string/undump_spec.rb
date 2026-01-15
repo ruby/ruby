@@ -3,16 +3,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#undump" do
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      '"foo"'.taint.undump.should.tainted?
-    end
-
-    it "untrusts the result if self is untrusted" do
-      '"foo"'.untrust.undump.should.untrusted?
-    end
-  end
-
   it "does not take into account if a string is frozen" do
     '"foo"'.freeze.undump.should_not.frozen?
   end
@@ -399,7 +389,7 @@ describe "String#undump" do
     '"\\bv".force_encoding("UTF-16BE")'.undump.should == "\u0876".encode('utf-16be')
   end
 
-  it "keeps origin encoding" do
+  it "returns a String in the same encoding as self" do
     '"foo"'.encode("ISO-8859-1").undump.encoding.should == Encoding::ISO_8859_1
     '"foo"'.encode('windows-1251').undump.encoding.should == Encoding::Windows_1251
   end

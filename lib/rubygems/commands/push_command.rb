@@ -1,11 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/gemcutter_utilities'
-require 'rubygems/package'
+
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../gemcutter_utilities"
+require_relative "../package"
 
 class Gem::Commands::PushCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
 
@@ -30,7 +30,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   end
 
   def initialize
-    super 'push', 'Push a gem up to the gem server', :host => self.host
+    super "push", "Push a gem up to the gem server", host: host, attestations: []
 
     @user_defined_host = false
 
@@ -38,11 +38,16 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     add_key_option
     add_otp_option
 
-    add_option('--host HOST',
-               'Push to another gemcutter-compatible host',
-               '  (e.g. https://rubygems.org)') do |value, options|
+    add_option("--host HOST",
+               "Push to another gemcutter-compatible host",
+               "  (e.g. https://rubygems.org)") do |value, options|
       options[:host] = value
       @user_defined_host = true
+    end
+
+    add_option("--attestation FILE",
+                "Push with sigstore attestations") do |value, options|
+      options[:attestations] << value
     end
 
     @host = nil
@@ -53,16 +58,16 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     default_gem_server, push_host = get_hosts_for(gem_name)
 
     @host = if @user_defined_host
-              options[:host]
-            elsif default_gem_server
-              default_gem_server
-            elsif push_host
-              push_host
-            else
-              options[:host]
-            end
+      options[:host]
+    elsif default_gem_server
+      default_gem_server
+    elsif push_host
+      push_host
+    else
+      options[:host]
+    end
 
-    sign_in @host
+    sign_in @host, scope: get_push_scope
 
     send_gem(gem_name)
   end
@@ -75,7 +80,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     @host ||= push_host
 
     # Always include @host, even if it's nil
-    args += [ @host, push_host ]
+    args += [@host, push_host]
 
     say "Pushing gem to #{@host || Gem.host}..."
 
@@ -87,12 +92,20 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   private
 
   def send_push_request(name, args)
-    rubygems_api_request(*args) do |request|
-      request.body = Gem.read_binary name
-      request.add_field "Content-Length", request.body.size
-      request.add_field "Content-Type",   "application/octet-stream"
-      request.add_field "Authorization",  api_key
-      request.add_field "OTP", options[:otp] if options[:otp]
+    scope = get_push_scope
+    rubygems_api_request(*args, scope: scope) do |request|
+      body = Gem.read_binary name
+      if options[:attestations].any?
+        request.set_form([
+          ["gem", body, { filename: name, content_type: "application/octet-stream" }],
+          get_attestations_part,
+        ], "multipart/form-data")
+      else
+        request.body = body
+        request.add_field "Content-Type",   "application/octet-stream"
+        request.add_field "Content-Length", request.body.size
+      end
+      request.add_field "Authorization", api_key
     end
   end
 
@@ -101,8 +114,22 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
     [
       gem_metadata["default_gem_server"],
-      gem_metadata["allowed_push_host"]
+      gem_metadata["allowed_push_host"],
     ]
   end
 
+  def get_push_scope
+    :push_rubygem
+  end
+
+  def get_attestations_part
+    bundles = "[" + options[:attestations].map do |attestation|
+      Gem.read_binary(attestation)
+    end.join(",") + "]"
+    [
+      "attestations",
+      bundles,
+      { content_type: "application/json" },
+    ]
+  end
 end

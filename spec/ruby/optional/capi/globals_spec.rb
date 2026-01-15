@@ -9,7 +9,7 @@ describe "CApiGlobalSpecs" do
   end
 
   it "correctly gets global values" do
-    @f.sb_gv_get("$BLAH").should == nil
+    suppress_warning { @f.sb_gv_get("$BLAH") }.should == nil
     @f.sb_gv_get("$\\").should == nil
     @f.sb_gv_get("\\").should == nil # rb_gv_get should change \ to $\
   end
@@ -21,7 +21,7 @@ describe "CApiGlobalSpecs" do
   end
 
   it "correctly sets global values" do
-    @f.sb_gv_get("$BLAH").should == nil
+    suppress_warning { @f.sb_gv_get("$BLAH") }.should == nil
     @f.sb_gv_set("$BLAH", 10)
     begin
       @f.sb_gv_get("$BLAH").should == 10
@@ -41,16 +41,71 @@ describe "CApiGlobalSpecs" do
     @f.sb_get_global_value.should == "XYZ"
   end
 
+  run = 0
+
   it "rb_define_readonly_variable should define a new readonly global variable" do
-    @f.rb_define_readonly_variable("ro_gvar", 15)
-    $ro_gvar.should == 15
-    -> { $ro_gvar = 10 }.should raise_error(NameError)
+    name = "ro_gvar#{run += 1}"
+    eval <<~RUBY
+    # Check the gvar doesn't exist and ensure rb_gv_get doesn't implicitly declare the gvar,
+    # otherwise the rb_define_readonly_variable call will conflict.
+    suppress_warning { @f.sb_gv_get("#{name}") }.should == nil
+
+    @f.rb_define_readonly_variable("#{name}", 15)
+    $#{name}.should == 15
+    -> { $#{name} = 10 }.should raise_error(NameError)
+    RUBY
   end
 
   it "rb_define_hooked_variable should define a C hooked global variable" do
     @f.rb_define_hooked_variable_2x("$hooked_gvar")
     $hooked_gvar = 2
     $hooked_gvar.should == 4
+  end
+
+  it "rb_define_hooked_variable should use default accessors if NULL ones are supplied" do
+    @f.rb_define_hooked_variable_default_accessors("$hooked_gvar_default_accessors")
+    $hooked_gvar_default_accessors = 10
+    $hooked_gvar_default_accessors.should == 10
+  end
+
+  it "rb_define_hooked_variable with default accessors should return nil for NULL variables" do
+    @f.rb_define_hooked_variable_null_var("$hooked_gvar_null_value")
+    $hooked_gvar_null_value.should == nil
+  end
+
+  describe "rb_define_virtual_variable" do
+    describe "with default accessors" do
+      before :all do
+        @f.rb_define_virtual_variable_default_accessors("$virtual_variable_default_accessors")
+      end
+
+      it "is read-only" do
+        -> { $virtual_variable_default_accessors = 10 }.should raise_error(NameError, /read-only/)
+      end
+
+      it "returns false with the default getter" do
+        $virtual_variable_default_accessors.should == false
+        $virtual_variable_default_accessors.should == false
+      end
+    end
+
+    describe "with supplied accessors" do
+      before :all do
+        @f.rb_define_virtual_variable_incrementing_accessors("$virtual_variable_incrementing_accessors")
+      end
+
+      it "returns a dynamically changing value" do
+        $virtual_variable_incrementing_accessors = 20
+        $virtual_variable_incrementing_accessors.should == 20
+        $virtual_variable_incrementing_accessors.should == 21
+        $virtual_variable_incrementing_accessors.should == 22
+
+        $virtual_variable_incrementing_accessors = 100
+        $virtual_variable_incrementing_accessors.should == 100
+        $virtual_variable_incrementing_accessors.should == 101
+        $virtual_variable_incrementing_accessors.should == 102
+      end
+    end
   end
 
   describe "rb_fs" do

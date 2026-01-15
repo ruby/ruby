@@ -74,24 +74,107 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
-  def pass_along(&block)
-    lambda(&block)
+  def test_proc_inside_lambda_inside_method_return_inside_lambda_inside_method
+    def self.a
+      -> do
+        p = Proc.new{return :a}
+        p.call
+      end.call
+    end
+    assert_equal(:a, a)
+
+    def self.b
+      lambda do
+        p = Proc.new{return :b}
+        p.call
+      end.call
+    end
+    assert_equal(:b, b)
   end
 
-  def pass_along2(&block)
-    pass_along(&block)
+  def test_proc_inside_lambda_inside_method_return_inside_lambda_outside_method
+    def self.a
+      -> do
+        p = Proc.new{return :a}
+        p.call
+      end
+    end
+    assert_equal(:a, a.call)
+
+    def self.b
+      lambda do
+        p = Proc.new{return :b}
+        p.call
+      end
+    end
+    assert_equal(:b, b.call)
   end
 
-  def test_create_non_lambda_for_proc_one_level
-    f = pass_along {}
-    refute_predicate(f, :lambda?, '[Bug #15620]')
-    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  def test_proc_inside_lambda_inside_method_return_outside_lambda_inside_method
+    def self.a
+      -> do
+        Proc.new{return :a}
+      end.call.call
+    end
+    assert_raise(LocalJumpError) {a}
+
+    def self.b
+      lambda do
+        Proc.new{return :b}
+      end.call.call
+    end
+    assert_raise(LocalJumpError) {b}
   end
 
-  def test_create_non_lambda_for_proc_two_levels
-    f = pass_along2 {}
-    refute_predicate(f, :lambda?, '[Bug #15620]')
-    assert_nothing_raised(ArgumentError) { f.call(:extra_arg) }
+  def test_proc_inside_lambda_inside_method_return_outside_lambda_outside_method
+    def self.a
+      -> do
+        Proc.new{return :a}
+      end
+    end
+    assert_raise(LocalJumpError) {a.call.call}
+
+    def self.b
+      lambda do
+        Proc.new{return :b}
+      end
+    end
+    assert_raise(LocalJumpError) {b.call.call}
+  end
+
+  def test_proc_inside_lambda2_inside_method_return_outside_lambda1_inside_method
+    def self.a
+      -> do
+        -> do
+          Proc.new{return :a}
+        end.call.call
+      end.call
+    end
+    assert_raise(LocalJumpError) {a}
+
+    def self.b
+      lambda do
+        lambda do
+          Proc.new{return :a}
+        end.call.call
+      end.call
+    end
+    assert_raise(LocalJumpError) {b}
+  end
+
+  def test_proc_inside_lambda_toplevel
+    assert_ruby_status [], <<~RUBY
+      lambda{
+        $g = proc{ return :pr }
+      }.call
+      begin
+        $g.call
+      rescue LocalJumpError
+        # OK!
+      else
+        raise
+      end
+    RUBY
   end
 
   def test_instance_exec
@@ -193,27 +276,27 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def test_do_lambda_source_location
-    exp_lineno = __LINE__ + 3
+    exp = [__LINE__ + 1, 10, __LINE__ + 5, 7]
     lmd = ->(x,
              y,
              z) do
       #
     end
-    file, lineno = lmd.source_location
+    file, *loc = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
+    assert_equal(exp, loc)
   end
 
   def test_brace_lambda_source_location
-    exp_lineno = __LINE__ + 3
+    exp = [__LINE__ + 1, 10, __LINE__ + 5, 5]
     lmd = ->(x,
              y,
              z) {
       #
     }
-    file, lineno = lmd.source_location
+    file, *loc = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
+    assert_equal(exp, loc)
   end
 
   def test_not_orphan_return

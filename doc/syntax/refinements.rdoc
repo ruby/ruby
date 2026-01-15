@@ -212,10 +212,7 @@ all refinements from the same module are active when a refined method
 
 When looking up a method for an instance of class +C+ Ruby checks:
 
-* If refinements are active for +C+, in the reverse order they were activated:
-  * The prepended modules from the refinement for +C+
-  * The refinement for +C+
-  * The included modules from the refinement for +C+
+* The refinements of +C+, in reverse order of activation
 * The prepended modules of +C+
 * +C+
 * The included modules of +C+
@@ -245,7 +242,8 @@ When +super+ is invoked method lookup checks:
 
 Note that +super+ in a method of a refinement invokes the method in the
 refined class even if there is another refinement which has been activated in
-the same context.
+the same context. This is only true for +super+ in a method of a refinement, it
+does not apply to +super+ in a method in a module that is included in a refinement.
 
 == Methods Introspection
 
@@ -278,6 +276,6 @@ Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 
-See https://bugs.ruby-lang.org/projects/ruby-master/wiki/RefinementsSpec for the
+See https://github.com/ruby/ruby/wiki/Refinements-Spec for the
 current specification for implementing refinements.  The specification also
 contains more details.

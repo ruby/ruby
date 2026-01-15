@@ -19,6 +19,9 @@ module DefinedSpecs
     DefinedSpecs
   end
 
+  def self.any_args(*)
+  end
+
   class Basic
     A = 42
 
@@ -279,6 +282,12 @@ module DefinedSpecs
   module IntermediateModule2
     def method_no_args
       defined?(super)
+    end
+  end
+
+  module ModuleWithConstMissing
+    def self.const_missing(const)
+      const
     end
   end
 

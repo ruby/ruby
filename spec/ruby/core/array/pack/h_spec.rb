@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -16,6 +16,11 @@ describe "Array#pack with format 'H'" do
     obj = mock("pack H string")
     obj.should_receive(:to_str).and_return("a")
     [obj].pack("H").should == "\xa0"
+  end
+
+  it "will not implicitly convert a number to a string" do
+    -> { [0].pack('H') }.should raise_error(TypeError)
+    -> { [0].pack('h') }.should raise_error(TypeError)
   end
 
   it "encodes the first character as the most significant nibble when passed no count modifier" do

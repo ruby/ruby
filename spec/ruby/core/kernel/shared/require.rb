@@ -60,7 +60,7 @@ describe :kernel_require_basic, shared: true do
       -> { @object.send(@method, nil) }.should raise_error(TypeError)
     end
 
-    it "raises a TypeError if passed a Fixnum" do
+    it "raises a TypeError if passed an Integer" do
       -> { @object.send(@method, 42) }.should raise_error(TypeError)
     end
 
@@ -160,6 +160,14 @@ describe :kernel_require_basic, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
+    it "accepts an Object with #to_path in $LOAD_PATH" do
+      obj = mock("to_path")
+      obj.should_receive(:to_path).at_least(:once).and_return(CODE_LOADING_DIR)
+      $LOAD_PATH << obj
+      @object.send(@method, "load_fixture.rb").should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
     it "does not require file twice after $LOAD_PATH change" do
       $LOAD_PATH << CODE_LOADING_DIR
       @object.require("load_fixture.rb").should be_true
@@ -204,6 +212,34 @@ end
 
 describe :kernel_require, shared: true do
   describe "(path resolution)" do
+    it "loads .rb file when passed absolute path without extension" do
+      path = File.expand_path "load_fixture", CODE_LOADING_DIR
+      @object.send(@method, path).should be_true
+      # This should _not_ be [:no_ext]
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    platform_is :linux, :darwin do
+      it "loads c-extension file when passed absolute path without extension when no .rb is present" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+        -> { @object.send(@method, path) }.should raise_error(LoadError)
+      end
+    end
+
+    platform_is :darwin do
+      it "loads .bundle file when passed absolute path with .so" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture.so"
+        -> { @object.send(@method, path) }.should raise_error(LoadError)
+      end
+    end
+
+    it "does not try an extra .rb if the path already ends in .rb" do
+      path = File.join CODE_LOADING_DIR, "d", "load_fixture.rb"
+      -> { @object.send(@method, path) }.should raise_error(LoadError)
+    end
+
     # For reference see [ruby-core:24155] in which matz confirms this feature is
     # intentional for security reasons.
     it "does not load a bare filename unless the current working directory is in $LOAD_PATH" do
@@ -229,6 +265,17 @@ describe :kernel_require, shared: true do
       }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
+
+    ruby_bug "#17340", ''...'3.3' do
+      it "loads a file concurrently" do
+        path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
+        ScratchPad.record(@object)
+        -> {
+          @object.require(path)
+        }.should_not complain(/circular require considered harmful/, verbose: true)
+        ScratchPad.recorded.join
+      end
+    end
   end
 
   describe "(non-extensioned path)" do
@@ -241,6 +288,23 @@ describe :kernel_require, shared: true do
     it "loads a .rb extensioned file when a C-extension file exists on an earlier load path" do
       @object.require("load_fixture").should be_true
       ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "does not load a feature twice when $LOAD_PATH has been modified" do
+      $LOAD_PATH.replace [CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_true
+      $LOAD_PATH.replace [File.expand_path("b", CODE_LOADING_DIR), CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_false
+    end
+
+    it "stores the missing path in a LoadError object" do
+      path = "abcd1234"
+
+      -> {
+        @object.send(@method, path)
+      }.should raise_error(LoadError) { |e|
+        e.path.should == path
+      }
     end
   end
 
@@ -334,6 +398,21 @@ describe :kernel_require, shared: true do
           @object.require(symlink_path).should be_true
           loaded_feature = $LOADED_FEATURES.last
           ScratchPad.recorded.should == [loaded_feature]
+        end
+
+        it "requires only once when a new matching file added to path" do
+          @object.require('load_fixture').should be_true
+          ScratchPad.recorded.should == [:loaded]
+
+          symlink_to_code_dir_two = tmp("codesymlinktwo")
+          File.symlink("#{CODE_LOADING_DIR}/b", symlink_to_code_dir_two)
+          begin
+            $LOAD_PATH.unshift(symlink_to_code_dir_two)
+
+            @object.require('load_fixture').should be_false
+          ensure
+            rm_r symlink_to_code_dir_two
+          end
         end
       end
 
@@ -514,18 +593,6 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    it "complex, enumerator, rational and thread are already required" do
-      provided = %w[complex enumerator rational thread]
-      features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-      provided.each { |feature|
-        features.should =~ /\b#{feature}\.(rb|so|jar)$/
-      }
-
-      code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-      required = ruby_exe(code, options: '--disable-gems')
-      required.should == "false\n" * provided.size
-    end
-
     it "unicode_normalize is part of core and not $LOADED_FEATURES" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       features.lines.each { |feature|
@@ -533,6 +600,23 @@ describe :kernel_require, shared: true do
       }
 
       -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
+    end
+
+    it "does not load a file earlier on the $LOAD_PATH when other similar features were already loaded" do
+      Dir.chdir CODE_LOADING_DIR do
+        @object.send(@method, "../code/load_fixture").should be_true
+      end
+      ScratchPad.recorded.should == [:loaded]
+
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/b"
+      # This loads because the above load was not on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_true
+      ScratchPad.recorded.should == [:loaded, :loaded]
+
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/c"
+      # This does not load because the above load was on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_false
+      ScratchPad.recorded.should == [:loaded, :loaded]
     end
   end
 
@@ -740,5 +824,25 @@ describe :kernel_require, shared: true do
     }.should raise_error(LoadError) { |e|
       e.path.should == path
     }
+  end
+
+  platform_is :linux, :darwin do
+    it "does not store the missing path in a LoadError object when c-extension file exists but loading fails and passed absolute path without extension" do
+      # the error message is specific to what dlerror() returns
+      path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+      -> { @object.send(@method, path) }.should raise_error(LoadError) { |e|
+        e.path.should == nil
+      }
+    end
+  end
+
+  platform_is :darwin do
+    it "does not store the missing path in a LoadError object when c-extension file exists but loading fails and passed absolute path with extension" do
+      # the error message is specific to what dlerror() returns
+      path = File.join CODE_LOADING_DIR, "a", "load_fixture.bundle"
+      -> { @object.send(@method, path) }.should raise_error(LoadError) { |e|
+        e.path.should == nil
+      }
+    end
   end
 end

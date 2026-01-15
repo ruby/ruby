@@ -13,27 +13,43 @@ end
 
 class Dir
 
-  @@systmpdir ||= defined?(Etc.systmpdir) ? Etc.systmpdir : '/tmp'
+  # Class variables are inaccessible from non-main Ractor.
+  # And instance variables too, in Ruby 3.0.
 
   ##
   # Returns the operating system's temporary file path.
+  #
+  #   require 'tmpdir'
+  #   Dir.tmpdir # => "/tmp"
 
   def self.tmpdir
-    tmp = nil
-    [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
-      next if !dir
+    Tmpname::TMPDIR_CANDIDATES.find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name] rescue next) or dir.empty?
+      end
       dir = File.expand_path(dir)
-      if stat = File.stat(dir) and stat.directory? and stat.writable? and
-          (!stat.world_writable? or stat.sticky?)
-        tmp = dir
-        break
-      end rescue nil
-    end
-    raise ArgumentError, "could not find a temporary directory" unless tmp
-    tmp
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !File.writable?(dir)
+        # We call File.writable?, not stat.writable?, because you can't tell if a dir is actually
+        # writable just from stat; OS mechanisms other than user/group/world bits can affect this.
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
+        break dir
+      end
+    end or raise ArgumentError, "could not find a temporary directory"
   end
 
   # Dir.mktmpdir creates a temporary directory.
+  #
+  #   require 'tmpdir'
+  #   Dir.mktmpdir {|dir|
+  #     # use the directory
+  #   }
   #
   # The directory is created with 0700 permission.
   # Application should not change the permission to make the temporary directory accessible from other users.
@@ -62,7 +78,7 @@ class Dir
   #
   #  Dir.mktmpdir {|dir|
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  }
   #
   # If a block is not given,
@@ -72,26 +88,27 @@ class Dir
   #  dir = Dir.mktmpdir
   #  begin
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  ensure
   #    # remove the directory.
   #    FileUtils.remove_entry dir
   #  end
   #
-  def self.mktmpdir(prefix_suffix=nil, *rest, **options)
+  def self.mktmpdir(prefix_suffix=nil, *rest, **options, &block)
     base = nil
     path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|path, _, _, d|
       base = d
       mkdir(path, 0700)
     }
-    if block_given?
+    if block
       begin
-        yield path
+        yield path.dup
       ensure
         unless base
-          stat = File.stat(File.dirname(path))
+          base = File.dirname(path)
+          stat = File.stat(base)
           if stat.world_writable? and !stat.sticky?
-            raise ArgumentError, "parent directory is world writable but not sticky"
+            raise ArgumentError, "parent directory is world writable but not sticky: #{base}"
           end
         end
         FileUtils.remove_entry path
@@ -101,26 +118,51 @@ class Dir
     end
   end
 
+  # Temporary name generator
   module Tmpname # :nodoc:
     module_function
+
+    # System-wide temporary directory path
+    systmpdir = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
+
+    # Temporary directory candidates consisting of environment variable
+    # names or description and path pairs.
+    TMPDIR_CANDIDATES = [
+      'TMPDIR', 'TMP', 'TEMP',
+      ['system temporary path', systmpdir],
+      %w[/tmp /tmp],
+      %w[. .],
+    ].each(&:freeze).freeze
 
     def tmpdir
       Dir.tmpdir
     end
 
-    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+    # Unusable characters as path name
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
-    class << (RANDOM = Random.new)
+    # Dedicated random number generator
+    RANDOM = Object.new
+    class << RANDOM # :nodoc:
+      # Maximum random number
       MAX = 36**6 # < 0x100000000
+
+      # Returns new random string upto 6 bytes
       def next
-        rand(MAX).to_s(36)
+        (::Random.urandom(4).unpack1("L")%MAX).to_s(36)
       end
     end
+    RANDOM.freeze
     private_constant :RANDOM
 
+    # Generates and yields random names to create a temporary name
     def create(basename, tmpdir=nil, max_try: nil, **opts)
-      origdir = tmpdir
-      tmpdir ||= tmpdir()
+      if tmpdir
+        origdir = tmpdir = File.path(tmpdir)
+        raise ArgumentError, "empty parent path" if tmpdir.empty?
+      else
+        tmpdir = tmpdir()
+      end
       n = nil
       prefix, suffix = basename
       prefix = (String.try_convert(prefix) or
@@ -139,7 +181,7 @@ class Dir
         n ||= 0
         n += 1
         retry if !max_try or n < max_try
-        raise "cannot generate temporary name using `#{basename}' under `#{tmpdir}'"
+        raise "cannot generate temporary name using '#{basename}' under '#{tmpdir}'"
       end
       path
     end

@@ -27,6 +27,9 @@
 #
 module Find
 
+  # The version string
+  VERSION = "0.2.0"
+
   #
   # Calls the associated block with the name of every file and directory listed
   # as arguments, then recursively on their subdirectories, and so on.
@@ -49,14 +52,14 @@ module Find
           yield file.dup
           begin
             s = File.lstat(file)
-          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL
             raise unless ignore_error
             next
           end
           if s.directory? then
             begin
               fs = Dir.children(file, encoding: enc)
-            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL
               raise unless ignore_error
               next
             end

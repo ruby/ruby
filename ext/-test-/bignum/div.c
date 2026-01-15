@@ -12,14 +12,14 @@ big(VALUE x)
 }
 
 static VALUE
-divrem_normal(VALUE x, VALUE y)
+divrem_normal(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_divrem_normal(big(x), big(y)));
 }
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
-divrem_gmp(VALUE x, VALUE y)
+divrem_gmp(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_divrem_gmp(big(x), big(y)));
 }
@@ -30,6 +30,6 @@ divrem_gmp(VALUE x, VALUE y)
 void
 Init_div(VALUE klass)
 {
-    rb_define_method(rb_cInteger, "big_divrem_normal", divrem_normal, 1);
-    rb_define_method(rb_cInteger, "big_divrem_gmp", divrem_gmp, 1);
+    rb_define_singleton_method(klass, "big_divrem_normal", divrem_normal, 2);
+    rb_define_singleton_method(klass, "big_divrem_gmp", divrem_gmp, 2);
 }

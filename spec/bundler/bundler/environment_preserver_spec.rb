@@ -27,8 +27,12 @@ RSpec.describe Bundler::EnvironmentPreserver do
     context "when a key is empty" do
       let(:env) { { "foo" => "" } }
 
-      it "should not create backup entries" do
-        expect(subject).not_to have_key "BUNDLER_ORIG_foo"
+      it "should keep the original entry" do
+        expect(subject["foo"]).to be_empty
+      end
+
+      it "should still create backup entries" do
+        expect(subject).to have_key "BUNDLER_ORIG_foo"
       end
     end
 
@@ -71,8 +75,12 @@ RSpec.describe Bundler::EnvironmentPreserver do
     context "when the original key is empty" do
       let(:env) { { "foo" => "my-foo", "BUNDLER_ORIG_foo" => "" } }
 
-      it "should keep the current value" do
-        expect(subject["foo"]).to eq("my-foo")
+      it "should restore the original value" do
+        expect(subject["foo"]).to be_empty
+      end
+
+      it "should delete the backup value" do
+        expect(subject.key?("BUNDLER_ORIG_foo")).to eq(false)
       end
     end
   end

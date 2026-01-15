@@ -1,0 +1,4 @@
+A::$b
+   ^ expected a constant after the `::` operator
+   ^~ unexpected global variable, expecting end-of-input
+

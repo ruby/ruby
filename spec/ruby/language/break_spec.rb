@@ -252,6 +252,25 @@ describe "Break inside a while loop" do
   end
 end
 
+describe "The break statement in a method" do
+  it "is invalid and raises a SyntaxError" do
+    -> {
+      eval("def m; break; end")
+    }.should raise_error(SyntaxError)
+  end
+end
+
+describe "The break statement in a module literal" do
+  it "is invalid and raises a SyntaxError" do
+    code = <<~RUBY
+      module BreakSpecs:ModuleWithBreak
+        break
+      end
+    RUBY
+
+    -> { eval(code) }.should raise_error(SyntaxError)
+  end
+end
 
 # TODO: Rewrite all the specs from here to the end of the file in the style
 # above.
@@ -361,5 +380,23 @@ describe "Executing break from within a block" do
     bt2 = BreakTest2.new
     bt2.three
     ScratchPad.recorded.should == [:two_ensure, :three_post, :three_ensure]
+  end
+
+  it "works when passing through a super call" do
+    cls1 = Class.new { def foo; yield; end }
+    cls2 = Class.new(cls1) { def foo; super { break 1 }; end }
+
+    -> do
+      cls2.new.foo.should == 1
+    end.should_not raise_error
+  end
+
+  it "raises LocalJumpError when converted into a proc during a super call" do
+    cls1 = Class.new { def foo(&b); b; end }
+    cls2 = Class.new(cls1) { def foo; super { break 1 }.call; end }
+
+    -> do
+      cls2.new.foo
+    end.should raise_error(LocalJumpError)
   end
 end

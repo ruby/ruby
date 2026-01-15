@@ -1,0 +1,538 @@
+module Prism
+  # This represents a node in the tree. It is the parent class of all of the
+  # various node types.
+  class Node
+    # A pointer to the source that this node was created from.
+    attr_reader :source
+    private :source
+
+    # A unique identifier for this node. This is used in a very specific
+    # use case where you want to keep around a reference to a node without
+    # having to keep around the syntax tree in memory. This unique identifier
+    # will be consistent across multiple parses of the same source code.
+    attr_reader :node_id
+
+    # Save this node using a saved source so that it can be retrieved later.
+    def save(repository)
+      repository.enter(node_id, :itself)
+    end
+
+    # A Location instance that represents the location of this node in the
+    # source.
+    def location
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+
+    # Save the location using a saved source so that it can be retrieved later.
+    def save_location(repository)
+      repository.enter(node_id, :location)
+    end
+
+    # Delegates to the start_line of the associated location object.
+    def start_line
+      location.start_line
+    end
+
+    # Delegates to the end_line of the associated location object.
+    def end_line
+      location.end_line
+    end
+
+    # The start offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def start_offset
+      location = @location
+      location.is_a?(Location) ? location.start_offset : location >> 32
+    end
+
+    # The end offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def end_offset
+      location = @location
+      location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
+    end
+
+    # Delegates to the start_character_offset of the associated location object.
+    def start_character_offset
+      location.start_character_offset
+    end
+
+    # Delegates to the end_character_offset of the associated location object.
+    def end_character_offset
+      location.end_character_offset
+    end
+
+    # Delegates to the cached_start_code_units_offset of the associated location
+    # object.
+    def cached_start_code_units_offset(cache)
+      location.cached_start_code_units_offset(cache)
+    end
+
+    # Delegates to the cached_end_code_units_offset of the associated location
+    # object.
+    def cached_end_code_units_offset(cache)
+      location.cached_end_code_units_offset(cache)
+    end
+
+    # Delegates to the start_column of the associated location object.
+    def start_column
+      location.start_column
+    end
+
+    # Delegates to the end_column of the associated location object.
+    def end_column
+      location.end_column
+    end
+
+    # Delegates to the start_character_column of the associated location object.
+    def start_character_column
+      location.start_character_column
+    end
+
+    # Delegates to the end_character_column of the associated location object.
+    def end_character_column
+      location.end_character_column
+    end
+
+    # Delegates to the cached_start_code_units_column of the associated location
+    # object.
+    def cached_start_code_units_column(cache)
+      location.cached_start_code_units_column(cache)
+    end
+
+    # Delegates to the cached_end_code_units_column of the associated location
+    # object.
+    def cached_end_code_units_column(cache)
+      location.cached_end_code_units_column(cache)
+    end
+
+    # Delegates to the leading_comments of the associated location object.
+    def leading_comments
+      location.leading_comments
+    end
+
+    # Delegates to the trailing_comments of the associated location object.
+    def trailing_comments
+      location.trailing_comments
+    end
+
+    # Delegates to the comments of the associated location object.
+    def comments
+      location.comments
+    end
+
+    # Returns all of the lines of the source code associated with this node.
+    def source_lines
+      location.source_lines
+    end
+
+    # An alias for source_lines, used to mimic the API from
+    # RubyVM::AbstractSyntaxTree to make it easier to migrate.
+    alias script_lines source_lines
+
+    # Slice the location of the node from the source.
+    def slice
+      location.slice
+    end
+
+    # Slice the location of the node from the source, starting at the beginning
+    # of the line that the location starts on, ending at the end of the line
+    # that the location ends on.
+    def slice_lines
+      location.slice_lines
+    end
+
+    # An bitset of flags for this node. There are certain flags that are common
+    # for all nodes, and then some nodes have specific flags.
+    attr_reader :flags
+    protected :flags
+
+    # Returns true if the node has the newline flag set.
+    def newline?
+      flags.anybits?(NodeFlags::NEWLINE)
+    end
+
+    # Returns true if the node has the static literal flag set.
+    def static_literal?
+      flags.anybits?(NodeFlags::STATIC_LITERAL)
+    end
+
+    # Similar to inspect, but respects the current level of indentation given by
+    # the pretty print object.
+    def pretty_print(q)
+      q.seplist(inspect.chomp.each_line, -> { q.breakable }) do |line|
+        q.text(line.chomp)
+      end
+      q.current_group.break
+    end
+
+    # Convert this node into a graphviz dot graph string.
+    def to_dot
+      # @type self: node
+      DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
+    end
+
+    # Returns a list of nodes that are descendants of this node that contain the
+    # given line and column. This is useful for locating a node that is selected
+    # based on the line and column of the source code.
+    #
+    # Important to note is that the column given to this method should be in
+    # bytes, as opposed to characters or code units.
+    def tunnel(line, column)
+      queue = [self] #: Array[Prism::node]
+      result = [] #: Array[Prism::node]
+
+      while (node = queue.shift)
+        result << node
+
+        node.each_child_node do |child_node|
+          child_location = child_node.location
+
+          start_line = child_location.start_line
+          end_line = child_location.end_line
+
+          if start_line == end_line
+            if line == start_line && column >= child_location.start_column && column < child_location.end_column
+              queue << child_node
+              break
+            end
+          elsif (line == start_line && column >= child_location.start_column) || (line == end_line && column < child_location.end_column)
+            queue << child_node
+            break
+          elsif line > start_line && line < end_line
+            queue << child_node
+            break
+          end
+        end
+      end
+
+      result
+    end
+
+    # Returns the first node that matches the given block when visited in a
+    # depth-first search. This is useful for finding a node that matches a
+    # particular condition.
+    #
+    #     node.breadth_first_search { |node| node.node_id == node_id }
+    #
+    def breadth_first_search(&block)
+      queue = [self] #: Array[Prism::node]
+
+      while (node = queue.shift)
+        return node if yield node
+        queue.concat(node.compact_child_nodes)
+      end
+
+      nil
+    end
+
+    # Returns a list of the fields that exist for this node class. Fields
+    # describe the structure of the node. This kind of reflection is useful for
+    # things like recursively visiting each node _and_ field in the tree.
+    def self.fields
+      # This method should only be called on subclasses of Node, not Node
+      # itself.
+      raise NoMethodError, "undefined method `fields' for #{inspect}" if self == Node
+
+      Reflection.fields_for(self)
+    end
+
+    # --------------------------------------------------------------------------
+    # :section: Node interface
+    # These methods are effectively abstract methods that must be implemented by
+    # the various subclasses of Node. They are here to make it easier to work
+    # with typecheckers.
+    # --------------------------------------------------------------------------
+
+    # Accepts a visitor and calls back into the specialized visit function.
+    def accept(visitor)
+      raise NoMethodError, "undefined method `accept' for #{inspect}"
+    end
+
+    # Returns an array of child nodes, including `nil`s in the place of optional
+    # nodes that were not present.
+    def child_nodes
+      raise NoMethodError, "undefined method `child_nodes' for #{inspect}"
+    end
+
+    alias deconstruct child_nodes
+
+    # With a block given, yields each child node. Without a block, returns
+    # an enumerator that contains each child node. Excludes any `nil`s in
+    # the place of optional nodes that were not present.
+    def each_child_node
+      raise NoMethodError, "undefined method `each_child_node' for #{inspect}"
+    end
+
+    # Returns an array of child nodes, excluding any `nil`s in the place of
+    # optional nodes that were not present.
+    def compact_child_nodes
+      raise NoMethodError, "undefined method `compact_child_nodes' for #{inspect}"
+    end
+
+    # Returns an array of child nodes and locations that could potentially have
+    # comments attached to them.
+    def comment_targets
+      raise NoMethodError, "undefined method `comment_targets' for #{inspect}"
+    end
+
+    # Returns a string representation of the node.
+    def inspect
+      raise NoMethodError, "undefined method `inspect' for #{inspect}"
+    end
+
+    # Sometimes you want to check an instance of a node against a list of
+    # classes to see what kind of behavior to perform. Usually this is done by
+    # calling `[cls1, cls2].include?(node.class)` or putting the node into a
+    # case statement and doing `case node; when cls1; when cls2; end`. Both of
+    # these approaches are relatively slow because of the constant lookups,
+    # method calls, and/or array allocations.
+    #
+    # Instead, you can call #type, which will return to you a symbol that you
+    # can use for comparison. This is faster than the other approaches because
+    # it uses a single integer comparison, but also because if you're on CRuby
+    # you can take advantage of the fact that case statements with all symbol
+    # keys will use a jump table.
+    def type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
+    end
+
+    # Similar to #type, this method returns a symbol that you can use for
+    # splitting on the type of the node without having to do a long === chain.
+    # Note that like #type, it will still be slower than using == for a single
+    # class, but should be faster in a case statement or an array comparison.
+    def self.type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
+    end
+  end
+  <%- nodes.each do |node| -%>
+
+  <%- node.each_comment_line do |line| -%>
+  #<%= line %>
+  <%- end -%>
+  class <%= node.name -%> < Node
+    # Initialize a new <%= node.name %> node.
+    def initialize(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
+      @source = source
+      @node_id = node_id
+      @location = location
+      @flags = flags
+      <%- node.fields.each do |field| -%>
+      <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
+      raise "<%= node.name %>#<%= field.name %> was of unexpected type:\n#{<%= field.name %>.inspect}" unless <%= field.check_field_kind %>
+      <%- end -%>
+      @<%= field.name %> = <%= field.name %>
+      <%- end -%>
+    end
+
+    # def accept: (Visitor visitor) -> void
+    def accept(visitor)
+      visitor.visit_<%= node.human %>(self)
+    end
+
+    # def child_nodes: () -> Array[Node?]
+    def child_nodes
+      [<%= node.fields.map { |field|
+        case field
+        when Prism::Template::NodeField, Prism::Template::OptionalNodeField then field.name
+        when Prism::Template::NodeListField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      <%- node.fields.each do |field| -%>
+      <%- case field -%>
+      <%- when Prism::Template::NodeField -%>
+      yield <%= field.name %>
+      <%- when Prism::Template::OptionalNodeField -%>
+      yield <%= field.name %> if <%= field.name %>
+      <%- when Prism::Template::NodeListField -%>
+      <%= field.name %>.each { |node| yield node }
+      <%- end -%>
+      <%- end -%>
+    end
+
+    # def compact_child_nodes: () -> Array[Node]
+    def compact_child_nodes
+      <%- if node.fields.any? { |field| field.is_a?(Prism::Template::OptionalNodeField) } -%>
+      compact = [] #: Array[Prism::node]
+      <%- node.fields.each do |field| -%>
+      <%- case field -%>
+      <%- when Prism::Template::NodeField -%>
+      compact << <%= field.name %>
+      <%- when Prism::Template::OptionalNodeField -%>
+      compact << <%= field.name %> if <%= field.name %>
+      <%- when Prism::Template::NodeListField -%>
+      compact.concat(<%= field.name %>)
+      <%- end -%>
+      <%- end -%>
+      compact
+      <%- else -%>
+      [<%= node.fields.map { |field|
+        case field
+        when Prism::Template::NodeField then field.name
+        when Prism::Template::NodeListField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>]
+      <%- end -%>
+    end
+
+    # def comment_targets: () -> Array[Node | Location]
+    def comment_targets
+      [<%= node.fields.map { |field|
+        case field
+        when Prism::Template::NodeField, Prism::Template::LocationField then field.name
+        when Prism::Template::OptionalNodeField, Prism::Template::NodeListField, Prism::Template::OptionalLocationField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>] #: Array[Prism::node | Location]
+    end
+
+    # def copy: (<%= (["?node_id: Integer", "?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (["node_id", "location", "flags"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
+    end
+
+    # def deconstruct: () -> Array[Node?]
+    alias deconstruct child_nodes
+
+    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }
+    def deconstruct_keys(keys)
+      { <%= (["node_id: node_id", "location: location"] + node.fields.map { |field| "#{field.name}: #{field.name}" }).join(", ") %> }
+    end
+    <%- if (node_flags = node.flags) -%>
+    <%- node_flags.values.each do |value| -%>
+
+    # def <%= value.name.downcase %>?: () -> bool
+    def <%= value.name.downcase %>?
+      flags.anybits?(<%= node_flags.name %>::<%= value.name %>)
+    end
+    <%- end -%>
+    <%- end -%>
+    <%- node.fields.each do |field| -%>
+
+    <%- if field.comment.nil? -%>
+    # attr_reader <%= field.name %>: <%= field.rbs_class %>
+    <%- else -%>
+    <%- field.each_comment_line do |line| -%>
+    #<%= line %>
+    <%- end -%>
+    <%- end -%>
+    <%- case field -%>
+    <%- when Prism::Template::LocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      return location if location.is_a?(Location)
+      @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+
+    # Save the <%= field.name %> location using the given saved source so that
+    # it can be retrieved later.
+    def save_<%= field.name %>(repository)
+      repository.enter(node_id, :<%= field.name %>)
+    end
+    <%- when Prism::Template::OptionalLocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      case location
+      when nil
+        nil
+      when Location
+        location
+      else
+        @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+      end
+    end
+
+    # Save the <%= field.name %> location using the given saved source so that
+    # it can be retrieved later.
+    def save_<%= field.name %>(repository)
+      repository.enter(node_id, :<%= field.name %>) unless @<%= field.name %>.nil?
+    end
+    <%- else -%>
+    attr_reader :<%= field.name %>
+    <%- end -%>
+    <%- end -%>
+    <%- node.fields.each do |field| -%>
+    <%- case field -%>
+    <%- when Prism::Template::LocationField -%>
+    <%- raise unless field.name.end_with?("_loc") -%>
+    <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
+
+    # def <%= field.name.delete_suffix("_loc") %>: () -> String
+    def <%= field.name.delete_suffix("_loc") %>
+      <%= field.name %>.slice
+    end
+    <%- when Prism::Template::OptionalLocationField -%>
+    <%- raise unless field.name.end_with?("_loc") -%>
+    <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
+
+    # def <%= field.name.delete_suffix("_loc") %>: () -> String?
+    def <%= field.name.delete_suffix("_loc") %>
+      <%= field.name %>&.slice
+    end
+    <%- end -%>
+    <%- end -%>
+
+    # def inspect -> String
+    def inspect
+      InspectVisitor.compose(self)
+    end
+
+    # Return a symbol representation of this node type. See `Node#type`.
+    def type
+      :<%= node.human %>
+    end
+
+    # Return a symbol representation of this node type. See `Node::type`.
+    def self.type
+      :<%= node.human %>
+    end
+
+    # Implements case-equality for the node. This is effectively == but without
+    # comparing the value of locations. Locations are checked only for presence.
+    def ===(other)
+      other.is_a?(<%= node.name %>)<%= " &&" if (fields = [*node.flags, *node.fields]).any? %>
+        <%- fields.each_with_index do |field, index| -%>
+        <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
+        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
+        (<%= field.name %>.length == other.<%= field.name %>.length) &&
+        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::Flags) -%>
+        (flags === other.flags)<%= " &&" if index != fields.length - 1 %>
+        <%- else -%>
+        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != fields.length - 1 %>
+        <%- end -%>
+        <%- end -%>
+    end
+  end
+  <%- end -%>
+  <%- flags.each do |flag| -%>
+
+  # <%= flag.comment %>
+  module <%= flag.name %>
+    <%- flag.values.each_with_index do |value, index| -%>
+    # <%= value.comment %>
+    <%= value.name %> = 1 << <%= index + Prism::Template::COMMON_FLAGS_COUNT %>
+<%= "\n" if value != flag.values.last -%>
+    <%- end -%>
+  end
+  <%- end -%>
+
+  # The flags that are common to all nodes.
+  module NodeFlags
+    # A flag to indicate that the node is a candidate to emit a :line event
+    # through tracepoint when compiled.
+    NEWLINE = 1
+
+    # A flag to indicate that the value that the node represents is a value that
+    # can be determined at parse-time.
+    STATIC_LITERAL = 2
+  end
+end

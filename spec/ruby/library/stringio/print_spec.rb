@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#print" do
   before :each do
-    @io = StringIO.new('example')
+    @io = StringIO.new(+'example')
   end
 
   it "prints $_ when passed no arguments" do
@@ -73,7 +73,7 @@ end
 
 describe "StringIO#print when in append mode" do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self" do
@@ -92,10 +92,10 @@ end
 
 describe "StringIO#print when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.print("test") }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.print("test") }.should raise_error(IOError)
   end

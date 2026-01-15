@@ -1,6 +1,10 @@
 # frozen_string_literal: false
 require 'yaml'
-require 'dbm'
+
+begin
+  require 'dbm'
+rescue LoadError
+end
 
 module YAML
 
@@ -16,7 +20,6 @@ module YAML
 #
 # See the documentation for ::DBM and ::YAML for more information.
 class DBM < ::DBM
-    VERSION = "0.1" # :nodoc:
 
     # :call-seq:
     #   ydbm[key] -> value
@@ -56,7 +59,13 @@ class DBM < ::DBM
     def fetch( keystr, ifnone = nil )
         begin
             val = super( keystr )
-            return YAML.load( val ) if String === val
+            if String === val
+                if YAML.respond_to?(:safe_load)
+                    return YAML.safe_load( val )
+                else
+                    return YAML.load( val )
+                end
+            end
         rescue IndexError
         end
         if block_given?
@@ -102,7 +111,11 @@ class DBM < ::DBM
     def delete( key )
         v = super( key )
         if String === v
-            v = YAML.load( v )
+            if YAML.respond_to?(:safe_load)
+                v = YAML.safe_load( v )
+            else
+                v = YAML.load( v )
+            end
         end
         v
     end
@@ -149,7 +162,7 @@ class DBM < ::DBM
     #
     # Returns +self+.
     def each_value # :yields: value
-        super { |v| yield YAML.load( v ) }
+        super { |v| yield YAML.respond_to?(:safe_load) ? YAML.safe_load( v ) : YAML.load( v ) }
         self
     end
 
@@ -158,7 +171,7 @@ class DBM < ::DBM
     #
     # Returns an array of values from the database.
     def values
-        super.collect { |v| YAML.load( v ) }
+        super.collect { |v| YAML.respond_to?(:safe_load) ? YAML.safe_load( v ) : YAML.load( v ) }
     end
 
     # :call-seq:
@@ -204,7 +217,9 @@ class DBM < ::DBM
     # The order in which values are removed/returned is not guaranteed.
     def shift
         a = super
-        a[1] = YAML.load( a[1] ) if a
+        if a
+          a[1] = YAML.respond_to?(:safe_load) ? YAML.safe_load( a[1] ) : YAML.load( a[1] )
+        end
         a
     end
 
@@ -277,4 +292,4 @@ class DBM < ::DBM
     alias :each :each_pair
 end
 
-end
+end if defined?(DBM)

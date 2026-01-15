@@ -1,0 +1,21 @@
+x = return 1
+    ^~~~~~~~ unexpected void value expression
+x = return, 1
+    ^~~~~~ unexpected void value expression
+x = 1, return
+       ^~~~~~ unexpected void value expression
+x, y = return
+       ^~~~~~ unexpected void value expression
+x = begin return ensure end
+          ^~~~~~ unexpected void value expression
+x = begin ensure return end
+                 ^~~~~~ unexpected void value expression
+x = begin return ensure return end
+          ^~~~~~ unexpected void value expression
+x = begin return; rescue; return end
+          ^~~~~~ unexpected void value expression
+x = begin return; rescue; return; else return end
+          ^~~~~~ unexpected void value expression
+x = begin; return; rescue; retry; end
+           ^~~~~~ unexpected void value expression
+

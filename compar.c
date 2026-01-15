@@ -30,13 +30,13 @@ rb_cmperr(VALUE x, VALUE y)
     VALUE classname;
 
     if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
-	classname = rb_inspect(y);
+        classname = rb_inspect(y);
     }
     else {
-	classname = rb_obj_class(y);
+        classname = rb_obj_class(y);
     }
     rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
-	     rb_obj_class(x), classname);
+             rb_obj_class(x), classname);
 }
 
 static VALUE
@@ -50,12 +50,12 @@ VALUE
 rb_invcmp(VALUE x, VALUE y)
 {
     VALUE invcmp = rb_exec_recursive(invcmp_recursive, x, y);
-    if (invcmp == Qundef || NIL_P(invcmp)) {
-	return Qnil;
+    if (NIL_OR_UNDEF_P(invcmp)) {
+        return Qnil;
     }
     else {
-	int result = -rb_cmpint(invcmp, x, y);
-	return INT2FIX(result);
+        int result = -rb_cmpint(invcmp, x, y);
+        return INT2FIX(result);
     }
 }
 
@@ -84,8 +84,7 @@ cmp_equal(VALUE x, VALUE y)
     c = rb_exec_recursive_paired_outer(cmp_eq_recursive, x, y, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (rb_cmpint(c, x, y) == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_cmpint(c, x, y) == 0);
 }
 
 static int
@@ -96,62 +95,75 @@ cmpint(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj > other    -> true or false
+ *    self > other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value greater than 0.
+ *  Returns whether +self+ is "greater than" +other+;
+ *  equivalent to <tt>(self <=> other) > 0</tt>:
+ *
+ *    'foo' > 'foo'  # => false
+ *    'food' > 'foo' # => true
  */
 
 static VALUE
 cmp_gt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) > 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) > 0);
 }
 
 /*
  *  call-seq:
- *     obj >= other    -> true or false
+ *    self >= other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value greater than or equal to 0.
+ *  Returns whether +self+ is "greater than or equal to" +other+;
+ *  equivalent to <tt>(self <=> other) >= 0</tt>:
+ *
+ *    'food' >= 'foo'  # => true
+ *    'foo'  >= 'foo'  # => true
+ *    'foo'  >= 'food' # => false
+ *
  */
 
 static VALUE
 cmp_ge(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) >= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) >= 0);
 }
 
 /*
  *  call-seq:
- *     obj < other    -> true or false
+ *    self < other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value less than 0.
+ *  Returns whether +self+ is "less than" +other+;
+ *  equivalent to <tt>(self <=> other) < 0</tt>:
+ *
+ *    'foo' < 'foo'  # => false
+ *    'foo' < 'food' # => true
+ *
  */
 
 static VALUE
 cmp_lt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) < 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) < 0);
 }
 
 /*
  *  call-seq:
- *     obj <= other    -> true or false
+ *    self <= other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value less than or equal to 0.
+ *  Returns whether +self+ is "less than or equal to" +other+;
+ *  equivalent to <tt>(self <=> other) <= 0</tt>:
+ *
+ *    'foo' <= 'foo'  # => true
+ *    'foo' <= 'food' # => true
+ *    'food' <= 'foo' # => false
+ *
  */
 
 static VALUE
 cmp_le(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) <= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) <= 0);
 }
 
 /*
@@ -172,9 +184,7 @@ cmp_le(VALUE x, VALUE y)
 static VALUE
 cmp_between(VALUE x, VALUE min, VALUE max)
 {
-    if (cmpint(x, min) < 0) return Qfalse;
-    if (cmpint(x, max) > 0) return Qfalse;
-    return Qtrue;
+    return RBOOL((cmpint(x, min) >= 0 && cmpint(x, max) <= 0));
 }
 
 /*
@@ -193,6 +203,12 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *
  *     'd'.clamp('a', 'f')      #=> 'd'
  *     'z'.clamp('a', 'f')      #=> 'f'
+ *
+ * If _min_ is +nil+, it is considered smaller than _obj_,
+ * and if _max_ is +nil+, it is considered greater than _obj_.
+ *
+ *     -20.clamp(0, nil)           #=> 0
+ *     523.clamp(nil, 100)         #=> 100
  *
  * In <code>(range)</code> form, returns _range.begin_ if _obj_
  * <code><=></code> _range.begin_ is less than zero, _range.end_
@@ -233,12 +249,10 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
         if (!NIL_P(max)) {
             if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
-            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
         }
     }
-    else if (cmpint(min, max) > 0) {
-      arg_error:
-	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
+        rb_raise(rb_eArgError, "min argument must be less than or equal to max argument");
     }
 
     if (!NIL_P(min)) {
@@ -266,39 +280,55 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *  <code>==</code>, <code>>=</code>, and <code>></code>) and the
  *  method <code>between?</code>.
  *
- *     class SizeMatters
+ *     class StringSorter
  *       include Comparable
+ *
  *       attr :str
  *       def <=>(other)
  *         str.size <=> other.str.size
  *       end
+ *
  *       def initialize(str)
  *         @str = str
  *       end
+ *
  *       def inspect
  *         @str
  *       end
  *     end
  *
- *     s1 = SizeMatters.new("Z")
- *     s2 = SizeMatters.new("YY")
- *     s3 = SizeMatters.new("XXX")
- *     s4 = SizeMatters.new("WWWW")
- *     s5 = SizeMatters.new("VVVVV")
+ *     s1 = StringSorter.new("Z")
+ *     s2 = StringSorter.new("YY")
+ *     s3 = StringSorter.new("XXX")
+ *     s4 = StringSorter.new("WWWW")
+ *     s5 = StringSorter.new("VVVVV")
  *
  *     s1 < s2                       #=> true
  *     s4.between?(s1, s3)           #=> false
  *     s4.between?(s3, s5)           #=> true
  *     [ s3, s2, s5, s4, s1 ].sort   #=> [Z, YY, XXX, WWWW, VVVVV]
  *
+ *  == What's Here
+ *
+ *  Module \Comparable provides these methods, all of which use method <tt>#<=></tt>:
+ *
+ *  - #<: Returns whether +self+ is less than the given object.
+ *  - #<=: Returns whether +self+ is less than or equal to the given object.
+ *  - #==: Returns whether +self+ is equal to the given object.
+ *  - #>: Returns whether +self+ is greater than the given object.
+ *  - #>=: Returns whether +self+ is greater than or equal to the given object.
+ *  - #between?: Returns +true+ if +self+ is between two given objects.
+ *  - #clamp: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *
+ *    - +min+ if <tt>(self <=> min) < 0</tt>.
+ *    - +max+ if <tt>(self <=> max) > 0</tt>.
+ *    - +self+ otherwise.
+ *
  */
 
 void
 Init_Comparable(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);

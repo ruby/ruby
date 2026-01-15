@@ -1,0 +1,10 @@
+def (return).x
+     ^~~~~~ unexpected void value expression
+end
+def x(a = return)
+          ^~~~~~ unexpected void value expression
+end
+def x(a: return)
+         ^~~~~~ unexpected void value expression
+end
+

@@ -22,23 +22,24 @@ Gem::Specification.new do |s|
   s.summary     = "The best way to manage your application's dependencies"
   s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
 
-  if s.respond_to?(:metadata=)
-    s.metadata = {
-      "bug_tracker_uri" => "https://github.com/bundler/bundler/issues",
-      "changelog_uri" => "https://github.com/bundler/bundler/blob/master/CHANGELOG.md",
-      "homepage_uri" => "https://bundler.io/",
-      "source_code_uri" => "https://github.com/bundler/bundler/",
-    }
-  end
+  s.metadata = {
+    "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
+    "homepage_uri" => "https://bundler.io/",
+    "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler",
+  }
 
-  s.required_ruby_version     = ">= 2.3.0"
-  s.required_rubygems_version = ">= 2.5.2"
+  s.required_ruby_version     = ">= 3.2.0"
 
-  s.files = (Dir.glob("lib/bundler/**/*", File::FNM_DOTMATCH) + Dir.glob("man/bundler*") + Dir.glob("libexec/bundle*")).reject {|f| File.directory?(f) }
+  # It should match the RubyGems version shipped with `required_ruby_version` above
+  s.required_rubygems_version = ">= 3.4.1"
 
-  s.files += ["lib/bundler.rb"]
+  s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
-  s.bindir        = "libexec"
+  # include the gemspec itself because warbler breaks w/o it
+  s.files += %w[lib/bundler/bundler.gemspec]
+
+  s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
 end

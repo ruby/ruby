@@ -13,7 +13,7 @@ describe "Thread#backtrace" do
 
     backtrace = t.backtrace
     backtrace.should be_kind_of(Array)
-    backtrace.first.should =~ /`sleep'/
+    backtrace.first.should =~ /[`'](?:Kernel#)?sleep'/
 
     t.raise 'finish the thread'
     t.join

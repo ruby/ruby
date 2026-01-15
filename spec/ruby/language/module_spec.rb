@@ -26,11 +26,39 @@ describe "The module keyword" do
   it "reopens an existing module" do
     module ModuleSpecs; Reopened = true; end
     ModuleSpecs::Reopened.should be_true
+  ensure
+    ModuleSpecs.send(:remove_const, :Reopened)
   end
 
-  it "reopens a module included in Object" do
-    module IncludedModuleSpecs; Reopened = true; end
-    ModuleSpecs::IncludedInObject::IncludedModuleSpecs::Reopened.should be_true
+  it "does not reopen a module included in Object" do
+    ruby_exe(<<~RUBY).should == "false"
+      module IncludedInObject
+        module IncludedModule; end
+      end
+      class Object
+        include IncludedInObject
+      end
+      module IncludedModule; end
+      print IncludedInObject::IncludedModule == Object::IncludedModule
+    RUBY
+  end
+
+  it "does not reopen a module included in non-Object modules" do
+    ruby_exe(<<~RUBY).should == "false/false"
+      module Included
+        module IncludedModule; end
+      end
+      module M
+        include Included
+        module IncludedModule; end
+      end
+      class C
+        include Included
+        module IncludedModule; end
+      end
+      print Included::IncludedModule == M::IncludedModule, "/",
+            Included::IncludedModule == C::IncludedModule
+    RUBY
   end
 
   it "raises a TypeError if the constant is a Class" do
@@ -43,7 +71,7 @@ describe "The module keyword" do
     -> { module ModuleSpecs::Modules::A; end }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if the constant is a Fixnum" do
+  it "raises a TypeError if the constant is an Integer" do
     -> { module ModuleSpecs::Modules::B; end }.should raise_error(TypeError)
   end
 
@@ -67,12 +95,14 @@ describe "Assigning an anonymous module to a constant" do
 
     ::ModuleSpecs_CS1 = mod
     mod.name.should == "ModuleSpecs_CS1"
+  ensure
+    Object.send(:remove_const, :ModuleSpecs_CS1)
   end
 
-  it "does not set the name of a module scoped by an anonymous module" do
+  it "sets the name of a module scoped by an anonymous module" do
     a, b = Module.new, Module.new
     a::B = b
-    b.name.should be_nil
+    b.name.should.end_with? '::B'
   end
 
   it "sets the name of contained modules when assigning a toplevel anonymous module" do
@@ -87,5 +117,7 @@ describe "Assigning an anonymous module to a constant" do
     b.name.should == "ModuleSpecs_CS2::B"
     c.name.should == "ModuleSpecs_CS2::B::C"
     d.name.should == "ModuleSpecs_CS2::D"
+  ensure
+    Object.send(:remove_const, :ModuleSpecs_CS2)
   end
 end

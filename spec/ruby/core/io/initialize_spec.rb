@@ -13,7 +13,7 @@ describe "IO#initialize" do
     rm_r @name
   end
 
-  it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
+  it "reassociates the IO instance with the new descriptor when passed an Integer" do
     fd = new_fd @name, "r:utf-8"
     @io.send :initialize, fd, 'r'
     @io.fileno.should == fd
@@ -25,6 +25,17 @@ describe "IO#initialize" do
     obj.should_receive(:to_int).and_return(fd)
     @io.send :initialize, obj, 'r'
     @io.fileno.should == fd
+  end
+
+  it "accepts options as keyword arguments" do
+    fd = new_fd @name, "w:utf-8"
+
+    @io.send(:initialize, fd, "w", flags: File::CREAT)
+    @io.fileno.should == fd
+
+    -> {
+      @io.send(:initialize, fd, "w", {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "raises a TypeError when passed an IO" do

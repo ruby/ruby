@@ -79,7 +79,6 @@ describe "IPAddr#new" do
 
   it "raises on incorrect IPAddr strings" do
     [
-      ["fe80::1%fxp0"],
       ["::1/255.255.255.0"],
       [IPAddr.new("::1").to_i],
       ["::ffff:192.168.1.2/120", Socket::AF_INET],

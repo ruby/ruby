@@ -129,9 +129,9 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(a, 0, Float::EPSILON)
     a = Float("-.0")
     assert_in_delta(a, 0, Float::EPSILON)
-    assert_raise(ArgumentError){Float("0.")}
-    assert_raise(ArgumentError){Float("+0.")}
-    assert_raise(ArgumentError){Float("-0.")}
+    assert_equal(0.0, Float("0."))
+    assert_equal(0.0, Float("+0."))
+    assert_equal(0.0, Float("-0."))
     assert_raise(ArgumentError){Float(".")}
     assert_raise(ArgumentError){Float("+")}
     assert_raise(ArgumentError){Float("+.")}
@@ -139,9 +139,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("-.")}
     assert_raise(ArgumentError){Float("1e")}
     assert_raise(ArgumentError){Float("1__1")}
-    assert_raise(ArgumentError){Float("1.")}
-    assert_raise(ArgumentError){Float("1.e+00")}
-    assert_raise(ArgumentError){Float("0x1.p+0")}
+    assert_equal(1.0, Float("1."))
+    assert_equal(1.0, Float("1.e+00"))
+    assert_equal(0.0625, Float("0x.1"))
+    assert_equal(1.0, Float("0x1."))
+    assert_equal(1.0, Float("0x1.0"))
+    assert_equal(1.0, Float("0x1.p+0"))
     # add expected behaviour here.
     assert_equal(10, Float("1_0"))
 
@@ -171,6 +174,24 @@ class TestFloat < Test::Unit::TestCase
       assert_raise(ArgumentError, n += z + "A") {Float(n)}
       assert_raise(ArgumentError, n += z + ".0") {Float(n)}
     end
+
+    x = nil
+    2000.times do
+      x = Float("0x"+"0"*30)
+      break unless x == 0.0
+    end
+    assert_equal(0.0, x, ->{"%a" % x})
+    x = nil
+    2000.times do
+      begin
+        x = Float("0x1."+"0"*270)
+      rescue ArgumentError => e
+        raise unless /"0x1\.0{270}"/ =~ e.message
+      else
+        break
+      end
+    end
+    assert_equal(1.0, x, ->{"%a" % x})
   end
 
   def test_divmod
@@ -206,6 +227,12 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-3.5, (-11.5).remainder(-4))
     assert_predicate(Float::NAN.remainder(4), :nan?)
     assert_predicate(4.remainder(Float::NAN), :nan?)
+
+    ten = Object.new
+    def ten.coerce(other)
+      [other, 10]
+    end
+    assert_equal(4, 14.0.remainder(ten))
   end
 
   def test_to_s
@@ -305,6 +332,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 1.0 ** (2**32))
     assert_equal(1.0, 1.0 ** 1.0)
     assert_raise(TypeError) { 1.0 ** nil }
+    assert_equal(9.0, 3.0 ** 2)
   end
 
   def test_eql
@@ -464,6 +492,17 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-1.26, -1.255.round(2))
   end
 
+  def test_round_half_even_with_precision
+    assert_equal(767573.18759, 767573.1875850001.round(5, half: :even))
+    assert_equal(767573.18758, 767573.187585.round(5, half: :even))
+    assert_equal(767573.18758, 767573.1875849998.round(5, half: :even))
+    assert_equal(767573.18758, 767573.187575.round(5, half: :even))
+    assert_equal(-767573.18759, -767573.1875850001.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.187585.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.1875849998.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.187575.round(5, half: :even))
+  end
+
   def test_floor_with_precision
     assert_equal(+0.0, +0.001.floor(1))
     assert_equal(-0.1, -0.001.floor(1))
@@ -491,6 +530,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.floor(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(0.99, 0.998.floor(prec))
+
+    assert_equal(-10000000000, -1.0.floor(-10), "[Bug #20654]")
+    assert_equal(-100000000000000000000, -1.0.floor(-20), "[Bug #20654]")
+    assert_equal(-100000000000000000000000000000000000000000000000000, -1.0.floor(-50), "[Bug #20654]")
   end
 
   def test_ceil_with_precision
@@ -518,6 +561,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.ceil(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(0.99, 0.981.ceil(prec))
+
+    assert_equal(10000000000, 1.0.ceil(-10), "[Bug #20654]")
+    assert_equal(100000000000000000000, 1.0.ceil(-20), "[Bug #20654]")
+    assert_equal(100000000000000000000000000000000000000000000000000, 1.0.ceil(-50), "[Bug #20654]")
   end
 
   def test_truncate_with_precision
@@ -786,11 +833,15 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(15, Float('0xf'))
     assert_equal(15, Float('0xfp0'))
     assert_raise(ArgumentError) { Float('0xfp') }
-    assert_raise(ArgumentError) { Float('0xf.') }
+    assert_equal(15, Float('0xf.'))
     assert_raise(ArgumentError) { Float('0xf.p') }
-    assert_raise(ArgumentError) { Float('0xf.p0') }
-    assert_raise(ArgumentError) { Float('0xf.f') }
+    assert_equal(15, Float('0xf.p0'))
+    assert_equal(15.9375, Float('0xf.f'))
     assert_raise(ArgumentError) { Float('0xf.fp') }
+    assert_equal(0x10a, Float("0x1_0a"))
+    assert_equal(1.625, Float("0x1.a_0"))
+    assert_equal(3.25, Float("0x1.ap0_1"))
+    assert_raise(ArgumentError) { Float("0x1.ap0a") }
     begin
       verbose_bak, $VERBOSE = $VERBOSE, nil
       assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
@@ -803,6 +854,16 @@ class TestFloat < Test::Unit::TestCase
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert_predicate(Float(o), :nan?)
+
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("iso-2022-jp"))}
+
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Float("\u{1f4a1}")}
+    end
   end
 
   def test_invalid_str
@@ -881,6 +942,11 @@ class TestFloat < Test::Unit::TestCase
     end
 
     assert_equal([5.0, 4.0, 3.0, 2.0], 5.0.step(1.5, -1).to_a)
+
+    assert_equal(11, ((0.24901079128550474)..(340.2500808898068)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((0.24901079128550474)..(340.25008088980684)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)..(-340.2500808898068)).step(-34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)..(-340.25008088980684)).step(-34.00010700985213).to_a.size)
   end
 
   def test_step2
@@ -892,6 +958,7 @@ class TestFloat < Test::Unit::TestCase
       a = rand
       b = a+rand*1000
       s = (b - a) / 10
+      b = a + s*9.999999
       seq = (a...b).step(s)
       assert_equal(10, seq.to_a.length, seq.inspect)
     end
@@ -902,6 +969,11 @@ class TestFloat < Test::Unit::TestCase
     (1.0 ... e).step(1E-16) do |n|
       assert_operator(n, :<=, e)
     end
+
+    assert_equal(10, ((0.24901079128550474)...(340.2500808898068)).step(34.00010700985213).to_a.size)
+    assert_equal(11, ((0.24901079128550474)...(340.25008088980684)).step(34.00010700985213).to_a.size)
+    assert_equal(10, ((-0.24901079128550474)...(-340.2500808898068)).step(-34.00010700985213).to_a.size)
+    assert_equal(11, ((-0.24901079128550474)...(-340.25008088980684)).step(-34.00010700985213).to_a.size)
   end
 
   def test_singleton_method

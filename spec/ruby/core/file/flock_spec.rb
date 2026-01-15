@@ -30,7 +30,7 @@ describe "File#flock" do
   it "returns false if trying to lock an exclusively locked file" do
     @file.flock File::LOCK_EX
 
-    ruby_exe(<<-END_OF_CODE, escape: true).should == "false"
+    ruby_exe(<<-END_OF_CODE).should == "false"
       File.open('#{@name}', "w") do |f2|
         print f2.flock(File::LOCK_EX | File::LOCK_NB).to_s
       end
@@ -40,7 +40,7 @@ describe "File#flock" do
   it "blocks if trying to lock an exclusively locked file" do
     @file.flock File::LOCK_EX
 
-    out = ruby_exe(<<-END_OF_CODE, escape: true)
+    out = ruby_exe(<<-END_OF_CODE)
       running = false
 
       t = Thread.new do
@@ -69,38 +69,6 @@ describe "File#flock" do
     File.open(@name, "r") do |f2|
       f2.flock(File::LOCK_SH | File::LOCK_NB).should == 0
       f2.flock(File::LOCK_UN).should == 0
-    end
-  end
-end
-
-platform_is :solaris do
-  describe "File#flock on Solaris" do
-    before :each do
-      @name = tmp("flock_test")
-      touch(@name)
-
-      @read_file = File.open @name, "r"
-      @write_file = File.open @name, "w"
-    end
-
-    after :each do
-      @read_file.flock File::LOCK_UN
-      @read_file.close
-      @write_file.flock File::LOCK_UN
-      @write_file.close
-      rm_r @name
-    end
-
-    it "fails with EBADF acquiring exclusive lock on read-only File" do
-      -> do
-        @read_file.flock File::LOCK_EX
-      end.should raise_error(Errno::EBADF)
-    end
-
-    it "fails with EBADF acquiring shared lock on read-only File" do
-      -> do
-        @write_file.flock File::LOCK_SH
-      end.should raise_error(Errno::EBADF)
     end
   end
 end

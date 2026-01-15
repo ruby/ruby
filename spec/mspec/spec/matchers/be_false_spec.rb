@@ -2,27 +2,27 @@ require 'spec_helper'
 require 'mspec/expectations/expectations'
 require 'mspec/matchers'
 
-describe BeFalseMatcher do
+RSpec.describe BeFalseMatcher do
   it "matches when actual is false" do
-    BeFalseMatcher.new.matches?(false).should == true
+    expect(BeFalseMatcher.new.matches?(false)).to eq(true)
   end
 
   it "does not match when actual is not false" do
-    BeFalseMatcher.new.matches?("").should == false
-    BeFalseMatcher.new.matches?(true).should == false
-    BeFalseMatcher.new.matches?(nil).should == false
-    BeFalseMatcher.new.matches?(0).should == false
+    expect(BeFalseMatcher.new.matches?("")).to eq(false)
+    expect(BeFalseMatcher.new.matches?(true)).to eq(false)
+    expect(BeFalseMatcher.new.matches?(nil)).to eq(false)
+    expect(BeFalseMatcher.new.matches?(0)).to eq(false)
   end
 
   it "provides a useful failure message" do
     matcher = BeFalseMatcher.new
     matcher.matches?("some string")
-    matcher.failure_message.should == ["Expected \"some string\"", "to be false"]
+    expect(matcher.failure_message).to eq(["Expected \"some string\"", "to be false"])
   end
 
   it "provides a useful negative failure message" do
     matcher = BeFalseMatcher.new
     matcher.matches?(false)
-    matcher.negative_failure_message.should == ["Expected false", "not to be false"]
+    expect(matcher.negative_failure_message).to eq(["Expected false", "not to be false"])
   end
 end

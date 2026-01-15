@@ -7,7 +7,6 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 % raise ':FIXME:TBW' if RubyVM::VmOptsH['INSTRUCTIONS_UNIFICATION']
-% n = RubyVM::Instructions.size
 <%= render 'copyright' %>
 <%= render 'notice', locals: {
     this_file: 'is for threaded code',
@@ -16,6 +15,4 @@
 
 /* Let .bss section automatically initialize this variable */
 /* cf. Section 6.7.8 of ISO/IEC 9899:1999 */
-static const int *const *const unified_insns_data[<%= n %>];
-
-ASSERT_VM_INSTRUCTION_SIZE(unified_insns_data);
+static const int *const *const unified_insns_data[VM_INSTRUCTION_SIZE];

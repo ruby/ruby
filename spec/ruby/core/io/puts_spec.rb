@@ -6,7 +6,7 @@ describe "IO#puts" do
     @before_separator = $/
     @name = tmp("io_puts.txt")
     @io = new_io @name
-    ScratchPad.record ""
+    ScratchPad.record(+"")
     def @io.write(str)
       ScratchPad << str
     end
@@ -25,7 +25,7 @@ describe "IO#puts" do
   end
 
   it "writes just a newline when given just a newline" do
-    -> { $stdout.puts "\n" }.should output_to_fd("\n", STDOUT)
+    -> { $stdout.puts "\n" }.should output_to_fd("\n", $stdout)
   end
 
   it "writes empty string with a newline when given nil as an arg" do
@@ -33,7 +33,7 @@ describe "IO#puts" do
     ScratchPad.recorded.should == "\n"
   end
 
-  it "writes empty string with a newline when when given nil as multiple args" do
+  it "writes empty string with a newline when given nil as multiple args" do
     @io.puts(nil, nil).should == nil
     ScratchPad.recorded.should == "\n\n"
   end

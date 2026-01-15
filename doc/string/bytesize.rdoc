@@ -1,0 +1,12 @@
+Returns the count of bytes in +self+.
+
+Note that the byte count may be different from the character count (returned by #size):
+
+  s = 'foo'
+  s.bytesize # => 3
+  s.size     # => 3
+  s = 'こんにちは'
+  s.bytesize # => 15
+  s.size     # => 5
+
+Related: see {Querying}[rdoc-ref:String@Querying].

@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -19,5 +19,10 @@ describe "String#unpack with format 'Z'" do
     [ ["a\x00 \x00b c",      ["a", " "]],
       ["\x00a\x00 bc \x00",  ["", "c"]]
     ].should be_computed_by(:unpack, "Z5Z")
+  end
+
+  it "does not advance past the null byte when given a 'Z' format specifier" do
+    "a\x00\x0f".unpack('Zxc').should == ['a', 15]
+    "a\x00\x0f".unpack('Zcc').should == ['a', 0, 15]
   end
 end

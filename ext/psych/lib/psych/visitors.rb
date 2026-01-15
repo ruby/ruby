@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'psych/visitors/visitor'
-require 'psych/visitors/to_ruby'
-require 'psych/visitors/emitter'
-require 'psych/visitors/yaml_tree'
-require 'psych/visitors/json_tree'
-require 'psych/visitors/depth_first'
+require_relative 'visitors/visitor'
+require_relative 'visitors/to_ruby'
+require_relative 'visitors/emitter'
+require_relative 'visitors/yaml_tree'
+require_relative 'visitors/json_tree'
+require_relative 'visitors/depth_first'

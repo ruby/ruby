@@ -1,0 +1,75 @@
+= Operators
+
+In Ruby, operators such as <code>+</code>, are defined as methods on the class.
+Literals[rdoc-ref:syntax/literals.rdoc] define their methods within the lower
+level, C language. String class, for example.
+
+Ruby objects can define or overload their own implementation for most operators.
+
+Here is an example:
+
+  class Foo < String
+    def +(str)
+      self.concat(str).concat("another string")
+    end
+  end
+
+  foobar = Foo.new("test ")
+  puts foobar + "baz "
+
+This prints:
+
+  test baz another string
+
+What operators are available is dependent on the implementing class.
+
+== Operator Behavior
+
+How a class behaves to a given operator is specific to that class, since
+operators are method implementations.
+
+When using an operator, it's the expression on the left-hand side of the
+operation that specifies the behavior.
+
+  'a' * 3         #=> "aaa"
+  3 * 'a'         # TypeError: String can't be coerced into Integer
+
+== Logical Operators
+
+Logical operators are not methods, and therefore cannot be
+redefined/overloaded. They are tokenized at a lower level.
+
+Short-circuit logical operators (<code>&&</code>, <code>||</code>,
+<code>and</code>, and <code>or</code>) do not always result in a boolean value.
+Similar to blocks, it's the last evaluated expression that defines the result
+of the operation.
+
+=== <code>&&</code>, <code>and</code>
+
+Both <code>&&</code>/<code>and</code> operators provide short-circuiting by executing each
+side of the operator, left to right, and stopping at the first occurrence of a
+falsey expression. The expression that defines the result is the last one
+executed, whether it be the final expression, or the first occurrence of a falsey
+expression.
+
+Some examples:
+
+  true && 9 && "string"                       #=> "string"
+  (1 + 2) && nil && "string"                  #=> nil
+  (a = 1) && (b = false) && (c = "string")    #=> false
+
+  puts a                                      #=> 1
+  puts b                                      #=> false
+  puts c                                      #=> nil
+
+In this last example, <code>c</code> was initialized, but not defined.
+
+=== <code>||</code>, <code>or</code>
+
+The means by which <code>||</code>/<code>or</code> short-circuits, is to return the result of
+the first expression that is truthy.
+
+Some examples:
+
+  (1 + 2) || true || "string"                 #=> 3
+  false || nil || "string"                    #=> "string"

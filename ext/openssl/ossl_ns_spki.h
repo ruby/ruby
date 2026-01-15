@@ -5,14 +5,10 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(_OSSL_NS_SPKI_H_)
 #define _OSSL_NS_SPKI_H_
-
-extern VALUE mNetscape;
-extern VALUE cSPKI;
-extern VALUE eSPKIError;
 
 void Init_ossl_ns_spki(void);
 

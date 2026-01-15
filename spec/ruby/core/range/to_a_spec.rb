@@ -16,13 +16,24 @@ describe "Range#to_a" do
     (0xffff...0xfffd).to_a.should == []
   end
 
+  it "works with Ranges of 64-bit integers" do
+    large = 1 << 40
+    (large..large+1).to_a.should == [1099511627776, 1099511627777]
+  end
+
   it "works with Ranges of Symbols" do
     (:A..:z).to_a.size.should == 58
   end
 
-  ruby_version_is "2.6" do
-    it "throws an exception for endless ranges" do
-      -> { eval("(1..)").to_a }.should raise_error(RangeError)
-    end
+  it "works for non-ASCII ranges" do
+    ('Σ'..'Ω').to_a.should == ["Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω"]
+  end
+
+  it "throws an exception for endless ranges" do
+    -> { eval("(1..)").to_a }.should raise_error(RangeError)
+  end
+
+  it "throws an exception for beginless ranges" do
+    -> { (..1).to_a }.should raise_error(TypeError)
   end
 end

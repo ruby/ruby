@@ -84,6 +84,9 @@ module NoMethodErrorSpecs
 
   class InstanceException < Exception
   end
+
+  class AClass; end
+  module AModule; end
 end
 
 class NameErrorSpecs
@@ -92,4 +95,8 @@ class NameErrorSpecs
       @@doesnt_exist
     end
   end
+end
+
+module DetailedMessageSpec
+  C = Class.new(RuntimeError)
 end

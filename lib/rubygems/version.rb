@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+
+require_relative "deprecate"
+
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -128,7 +131,7 @@
 #
 # == Preventing Version Catastrophe:
 #
-# From: http://blog.zenspider.com/2008/10/rubygems-howto-preventing-cata.html
+# From: https://www.zenspider.com/ruby/2008/10/rubygems-how-to-preventing-catastrophe.html
 #
 # Let's say you're depending on the fnord gem version 2.y.z. If you
 # specify your dependency as ">= 2.0.0" then, you're good, right? What
@@ -150,32 +153,25 @@
 # a zero to give a sensible result.
 
 class Gem::Version
-
-  autoload :Requirement, File.expand_path('requirement', __dir__)
-
   include Comparable
 
-  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'.freeze # :nodoc:
-  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze # :nodoc:
+  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
+  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
 
   ##
   # A string representation of this Version.
 
   def version
-    @version.dup
+    @version
   end
 
-  alias to_s version
+  alias_method :to_s, :version
 
   ##
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4" if version.nil?
-    end
-
-    !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
+    version.nil? || ANCHORED_VERSION_PATTERN.match?(version.to_s)
   end
 
   ##
@@ -184,13 +180,10 @@ class Gem::Version
   #
   #   ver1 = Version.create('1.3.17')   # -> (Version object)
   #   ver2 = Version.create(ver1)       # -> (ver1)
-  #   ver3 = Version.create(nil)        # -> nil
 
   def self.create(input)
     if self === input # check yourself before you wreck yourself
       input
-    elsif input.nil?
-      nil
     else
       new input
     end
@@ -201,7 +194,7 @@ class Gem::Version
   @@release = {}
 
   def self.new(version) # :nodoc:
-    return super unless Gem::Version == self
+    return super unless self == Gem::Version
 
     @@all[version] ||= super
   end
@@ -216,9 +209,17 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version.is_a?(String) && version =~ /\A\s*\Z/
+    version = 0 if version.nil? || (version.is_a?(String) && /\A\s*\Z/.match?(version))
 
-    @version = version.to_s.strip.gsub("-",".pre.")
+    @version = version.to_s
+
+    # optimization to avoid allocation when given an integer, since we know
+    # it's to_s won't have any spaces or dashes
+    unless version.is_a?(Integer)
+      @version = @version.strip
+      @version.gsub!("-",".pre.")
+    end
+    @version = -@version
     @segments = nil
   end
 
@@ -231,7 +232,7 @@ class Gem::Version
   def bump
     @@bump[self] ||= begin
                        segments = self.segments
-                       segments.pop while segments.any? { |s| String === s }
+                       segments.pop while segments.any? {|s| String === s }
                        segments.pop if segments.size > 1
 
                        segments[-1] = segments[-1].succ
@@ -244,7 +245,7 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql?(other)
-    self.class === other and @version == other._version
+    self.class === other && @version == other.version
   end
 
   def hash # :nodoc:
@@ -264,7 +265,7 @@ class Gem::Version
   # string for backwards (RubyGems 1.3.5 and earlier) compatibility.
 
   def marshal_dump
-    [version]
+    [@version]
   end
 
   ##
@@ -272,21 +273,20 @@ class Gem::Version
   # 1.3.5 and earlier) compatibility.
 
   def marshal_load(array)
-    initialize array[0]
+    string = array[0]
+    raise TypeError, "wrong version string" unless string.is_a?(String)
+
+    initialize string
   end
 
   def yaml_initialize(tag, map) # :nodoc:
-    @version = map['version']
+    @version = -map["version"]
     @segments = nil
     @hash = nil
   end
 
-  def to_yaml_properties # :nodoc:
-    ["@version"]
-  end
-
   def encode_with(coder) # :nodoc:
-    coder.add 'version', @version
+    coder.add "version", @version
   end
 
   ##
@@ -294,7 +294,7 @@ class Gem::Version
 
   def prerelease?
     unless instance_variable_defined? :@prerelease
-      @prerelease = !!(@version =~ /[a-zA-Z]/)
+      @prerelease = /[a-zA-Z]/.match?(version)
     end
     @prerelease
   end
@@ -309,12 +309,12 @@ class Gem::Version
 
   def release
     @@release[self] ||= if prerelease?
-                          segments = self.segments
-                          segments.pop while segments.any? { |s| String === s }
-                          self.class.new segments.join('.')
-                        else
-                          self
-                        end
+      segments = self.segments
+      segments.pop while segments.any? {|s| String === s }
+      self.class.new segments.join(".")
+    else
+      self
+    end
   end
 
   def segments # :nodoc:
@@ -327,7 +327,7 @@ class Gem::Version
   def approximate_recommendation
     segments = self.segments
 
-    segments.pop    while segments.any? { |s| String === s }
+    segments.pop    while segments.any? {|s| String === s }
     segments.pop    while segments.size > 2
     segments.push 0 while segments.size < 2
 
@@ -339,24 +339,30 @@ class Gem::Version
   ##
   # Compares this version with +other+ returning -1, 0, or 1 if the
   # other version is larger, the same, or smaller than this
-  # one. Attempts to compare to something that's not a
-  # <tt>Gem::Version</tt> return +nil+.
+  # one. +other+ must be an instance of Gem::Version, comparing with
+  # other types may raise an exception.
 
   def <=>(other)
+    if String === other
+      return unless self.class.correct?(other)
+      return self <=> self.class.new(other)
+    end
+
     return unless Gem::Version === other
-    return 0 if @version == other._version || canonical_segments == other.canonical_segments
+    return 0 if @version == other.version || canonical_segments == other.canonical_segments
 
     lhsegments = canonical_segments
     rhsegments = other.canonical_segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
-    limit  = (lhsize > rhsize ? lhsize : rhsize) - 1
+    limit  = (lhsize > rhsize ? rhsize : lhsize)
 
     i = 0
 
-    while i <= limit
-      lhs, rhs = lhsegments[i] || 0, rhsegments[i] || 0
+    while i < limit
+      lhs = lhsegments[i]
+      rhs = rhsegments[i]
       i += 1
 
       next      if lhs == rhs
@@ -366,43 +372,58 @@ class Gem::Version
       return lhs <=> rhs
     end
 
-    return 0
+    lhs = lhsegments[i]
+
+    if lhs.nil?
+      rhs = rhsegments[i]
+
+      while i < rhsize
+        return 1 if String === rhs
+        return -1 unless rhs.zero?
+        rhs = rhsegments[i += 1]
+      end
+    else
+      while i < lhsize
+        return -1 if String === lhs
+        return 1 unless lhs.zero?
+        lhs = lhsegments[i += 1]
+      end
+    end
+
+    0
   end
 
+  # remove trailing zeros segments before first letter or at the end of the version
   def canonical_segments
-    @canonical_segments ||=
-      _split_segments.map! do |segments|
-        segments.reverse_each.drop_while {|s| s == 0 }.reverse
-      end.reduce(&:concat)
+    @canonical_segments ||= begin
+      # remove trailing 0 segments, using dot or letter as anchor
+      # may leave a trailing dot which will be ignored by partition_segments
+      canonical_version = @version.sub(/(?<=[a-zA-Z.])[.0]+\z/, "")
+      # remove 0 segments before the first letter in a prerelease version
+      canonical_version.sub!(/(?<=\.|\A)[0.]+(?=[a-zA-Z])/, "") if prerelease?
+      partition_segments(canonical_version)
+    end
   end
 
   def freeze
     prerelease?
+    _segments
     canonical_segments
     super
   end
 
   protected
 
-  def _version
-    @version
-  end
-
   def _segments
     # segments is lazy so it can pick up version values that come from
     # old marshaled versions, which don't go through marshal_load.
     # since this version object is cached in @@all, its @segments should be frozen
+    @segments ||= partition_segments(@version)
+  end
 
-    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
-      /^\d+$/ =~ s ? s.to_i : s
+  def partition_segments(ver)
+    ver.scan(/\d+|[a-z]+/i).map! do |s|
+      /\A\d/.match?(s) ? s.to_i : -s
     end.freeze
   end
-
-  def _split_segments
-    string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments = segments
-    numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    return numeric_segments, string_segments
-  end
-
 end

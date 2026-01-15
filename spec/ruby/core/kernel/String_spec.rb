@@ -78,7 +78,7 @@ describe :kernel_String, shared: true do
   end
 
   it "returns the same object if it is already a String" do
-    string = "Hello"
+    string = +"Hello"
     string.should_not_receive(:to_s)
     string2 = @object.send(@method, string)
     string.should equal(string2)

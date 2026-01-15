@@ -1,0 +1,39 @@
+---
+page_dir: doc
+charset: UTF-8
+encoding: UTF-8
+main_page: index.md
+title: Documentation for Ruby development version
+visibility: :private
+rdoc_include:
+- doc
+
+exclude:
+- \.gemspec\z
+- lib/set/subclass_compatible.rb
+
+autolink_excluded_words:
+- Box
+- Class
+- Method
+- Module
+- Process
+- RDoc
+- Ruby
+- Set
+- ZJIT
+- YJIT
+
+canonical_root: https://docs.ruby-lang.org/en/master
+
+footer_content:
+  Ruby:
+    Documentation: index.html
+    Official Website: https://www.ruby-lang.org/
+    Playground: https://ruby.github.io/play-ruby/
+  Resources:
+    GitHub: https://github.com/ruby/ruby
+    Issue Tracker: https://bugs.ruby-lang.org/projects/ruby-master/issues
+    RubyGems: https://rubygems.org/
+  Community:
+    X: https://x.com/rubylangorg

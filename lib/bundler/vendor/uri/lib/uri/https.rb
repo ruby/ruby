@@ -3,7 +3,6 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
 #
 # See Bundler::URI for general documentation
 #
@@ -19,5 +18,6 @@ module Bundler::URI
     # A Default port of 443 for Bundler::URI::HTTPS
     DEFAULT_PORT = 443
   end
-  @@schemes['HTTPS'] = HTTPS
+
+  register_scheme 'HTTPS', HTTPS
 end

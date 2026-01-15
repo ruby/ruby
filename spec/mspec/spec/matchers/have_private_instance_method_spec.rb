@@ -16,42 +16,42 @@ class HPIMMSpecs
   end
 end
 
-describe HavePrivateInstanceMethodMatcher do
+RSpec.describe HavePrivateInstanceMethodMatcher do
   it "inherits from MethodMatcher" do
-    HavePrivateInstanceMethodMatcher.new(:m).should be_kind_of(MethodMatcher)
+    expect(HavePrivateInstanceMethodMatcher.new(:m)).to be_kind_of(MethodMatcher)
   end
 
   it "matches when mod has the private instance method" do
     matcher = HavePrivateInstanceMethodMatcher.new :private_method
-    matcher.matches?(HPIMMSpecs).should be_true
-    matcher.matches?(HPIMMSpecs::Subclass).should be_true
+    expect(matcher.matches?(HPIMMSpecs)).to be_truthy
+    expect(matcher.matches?(HPIMMSpecs::Subclass)).to be_truthy
   end
 
   it "does not match when mod does not have the private instance method" do
     matcher = HavePrivateInstanceMethodMatcher.new :another_method
-    matcher.matches?(HPIMMSpecs).should be_false
+    expect(matcher.matches?(HPIMMSpecs)).to be_falsey
   end
 
   it "does not match if the method is in a superclass and include_super is false" do
     matcher = HavePrivateInstanceMethodMatcher.new :private_method, false
-    matcher.matches?(HPIMMSpecs::Subclass).should be_false
+    expect(matcher.matches?(HPIMMSpecs::Subclass)).to be_falsey
   end
 
   it "provides a failure message for #should" do
     matcher = HavePrivateInstanceMethodMatcher.new :some_method
     matcher.matches?(HPIMMSpecs)
-    matcher.failure_message.should == [
+    expect(matcher.failure_message).to eq([
       "Expected HPIMMSpecs to have private instance method 'some_method'",
       "but it does not"
-    ]
+    ])
   end
 
   it "provides a failure message for #should_not" do
     matcher = HavePrivateInstanceMethodMatcher.new :some_method
     matcher.matches?(HPIMMSpecs)
-    matcher.negative_failure_message.should == [
+    expect(matcher.negative_failure_message).to eq([
       "Expected HPIMMSpecs NOT to have private instance method 'some_method'",
       "but it does"
-    ]
+    ])
   end
 end

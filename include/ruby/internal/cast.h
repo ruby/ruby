@@ -1,7 +1,6 @@
 #ifndef RBIMPL_CAST_H                                /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_CAST_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,9 +16,8 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines RBIMPL_CAST.
- * @cond       INTERNAL_MACRO
  *
  * This casting macro makes sense only inside  of other macros that are part of
  * public headers.  They could be used  from C++, and C-style casts could issue
@@ -48,6 +46,5 @@
 #else
 # define RBIMPL_CAST(expr) (expr)
 #endif
-/** @endcond */
 
 #endif /* RBIMPL_CAST_H */

@@ -363,7 +363,7 @@ assert_equal %q{[1, 2, 3, 5, 2, 3, 5, 7, 8]}, %q{$a = []; begin;  ; $a << 1
 ; $a << 8
 ; rescue Exception; $a << 99; end; $a}
 assert_equal %q{[1, 2, 6, 3, 5, 7, 8]}, %q{$a = []; begin;  ; $a << 1
-  o = "test"; $a << 2
+  o = "test".dup; $a << 2
   def o.test(a); $a << 3
     return a; $a << 4
   ensure; $a << 5
@@ -534,11 +534,11 @@ assert_equal %Q{ENSURE\n}, %q{
  ['[ruby-core:39125]', %q{
   class Bug5234
     include Enumerable
-    def each
+    def each(&block)
       begin
         yield :foo
       ensure
-        proc
+        proc(&block)
       end
     end
   end
@@ -547,11 +547,11 @@ assert_equal %Q{ENSURE\n}, %q{
  ['[ruby-dev:45656]', %q{
   class Bug6460
     include Enumerable
-    def each
+    def each(&block)
       begin
         yield :foo
       ensure
-        1.times { Proc.new }
+        1.times { Proc.new(&block) }
       end
     end
   end

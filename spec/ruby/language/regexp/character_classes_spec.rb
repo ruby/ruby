@@ -113,7 +113,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alnum:]]" do
-    "\u{36F}".match(/[[:alnum:]]/).should be_nil
+    "\u{3099}".match(/[[:alnum:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alnum:]]" do
@@ -133,7 +133,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alpha:]]" do
-    "\u{36F}".match(/[[:alpha:]]/).should be_nil
+    "\u{3099}".match(/[[:alpha:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alpha:]]" do
@@ -226,7 +226,7 @@ describe "Regexp with character classes" do
   end
 
   it "matches Unicode letter characters with [[:graph:]]" do
-      "à".match(/[[:graph:]]/).to_a.should == ["à"]
+    "à".match(/[[:graph:]]/).to_a.should == ["à"]
   end
 
   it "matches Unicode digits with [[:graph:]]" do
@@ -562,6 +562,13 @@ describe "Regexp with character classes" do
     "\u{16EE}".match(/[[:word:]]/).to_a.should == ["\u{16EE}"]
   end
 
+  ruby_bug "#19417", ""..."3.4.6" do
+    it "matches Unicode join control characters with [[:word:]]" do
+      "\u{200C}".match(/[[:word:]]/).to_a.should == ["\u{200C}"]
+      "\u{200D}".match(/[[:word:]]/).to_a.should == ["\u{200D}"]
+    end
+  end
+
   it "doesn't match Unicode No characters with [[:word:]]" do
     "\u{17F0}".match(/[[:word:]]/).should be_nil
   end
@@ -607,6 +614,15 @@ describe "Regexp with character classes" do
 
   it "matches unicode Hangul properties" do
     "루비(Ruby)".match(/\p{Hangul}+/u).to_a.should == ["루비"]
+  end
+
+  it "supports negated property condition" do
+    "a".match(eval("/\P{L}/")).should be_nil
+    "1".match(eval("/\P{N}/")).should be_nil
+  end
+
+  it "raises a RegexpError for an unterminated unicode property" do
+    -> { Regexp.new('\p{') }.should raise_error(RegexpError)
   end
 
   it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do

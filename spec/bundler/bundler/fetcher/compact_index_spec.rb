@@ -1,13 +1,21 @@
 # frozen_string_literal: true
 
+# load CompactIndexClient upfront to prevent thread safety issues during parallel specs
+require "bundler/compact_index_client"
+
 RSpec.describe Bundler::Fetcher::CompactIndex do
-  let(:downloader)  { double(:downloader) }
-  let(:display_uri) { Bundler::URI("http://sampleuri.com") }
-  let(:remote)      { double(:remote, :cache_slug => "lsjdf", :uri => display_uri) }
-  let(:compact_index) { described_class.new(downloader, remote, display_uri) }
+  let(:response) { double(:response) }
+  let(:downloader) { double(:downloader, fetch: response) }
+  let(:display_uri) { Gem::URI("http://sampleuri.com") }
+  let(:remote)      { double(:remote, cache_slug: "lsjdf", uri: display_uri) }
+  let(:gem_remote_fetcher) { nil }
+  let(:compact_index) { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }
+  let(:compact_index_client) { double(:compact_index_client, available?: true, info: [["lskdjf", "1", nil, [], []]]) }
 
   before do
+    allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified).and_return(true)
     allow(compact_index).to receive(:log_specs) {}
+    allow(compact_index).to receive(:compact_index_client).and_return(compact_index_client)
   end
 
   describe "#specs_for_names" do
@@ -28,11 +36,6 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
     end
 
     describe "#available?" do
-      before do
-        allow(compact_index).to receive(:compact_index_client).
-          and_return(double(:compact_index_client, :update_and_parse_checksums! => true))
-      end
-
       it "returns true" do
         expect(compact_index).to be_available
       end
@@ -62,7 +65,7 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
 
         context "when FIPS-mode is active" do
           before do
-            allow(OpenSSL::Digest::MD5).to receive(:digest).
+            allow(OpenSSL::Digest).to receive(:digest).with("MD5", "").
               and_raise(OpenSSL::Digest::DigestError)
           end
 

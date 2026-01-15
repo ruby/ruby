@@ -1,0 +1,11 @@
+(return).foo
+ ^~~~~~ unexpected void value expression
+(return).(1)
+ ^~~~~~ unexpected void value expression
+(return)[1]
+ ^~~~~~ unexpected void value expression
+(return)[1] = 2
+ ^~~~~~ unexpected void value expression
+(return)::foo
+ ^~~~~~ unexpected void value expression
+

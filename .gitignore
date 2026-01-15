@@ -10,24 +10,27 @@
 *.dylib
 *.elc
 *.i
+*.ii
 *.inc
 *.log
 *.o
+*.o.tmp
 *.obj
 *.old
 *.orig
 *.pch
 *.pdb
 *.rbinc
+*.rbbin
 *.rej
 *.s
 *.sav
 *.sl
 *.so
+*.so.*
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -38,6 +41,7 @@
 .ppack
 .svn
 .time
+.ruby-version
 Makefile
 cygruby*.def
 extconf.h
@@ -47,6 +51,7 @@ y.tab.c
 *.gcno
 *.gcov
 *.vscode
+!misc/.vscode
 lcov*.info
 
 # /
@@ -57,6 +62,8 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
 /build*/
 /COPYING.LIB
 /ChangeLog
@@ -118,28 +125,33 @@ lcov*.info
 /repack
 /revision.h
 /revision.tmp
+/ripper.tmp.y
 /riscos
 /rubicon
 /ruby
 /ruby-runner
 /ruby-runner.h
 /ruby-man.rd.gz
+/rubyspec_temp
 /run.gdb
 /sizes.c
+/static-ruby
 /test.rb
 /test-coverage.dat
 /tmp
+/vcpkg_installed
 /transdb.h
 /uncommon.mk
 /verconf.h
 /verconf.mk
 /web
-/yasmdata.rb
 
 # /bin/
 
 /bin/*.exe
 /bin/*.dll
+/bin/goruby
+/bin/ruby
 
 # /benchmark/
 /benchmark/bm_require.data
@@ -155,6 +167,7 @@ lcov*.info
 
 # /coroutine/
 !/coroutine/**/*.s
+!/coroutine/**/*.S
 
 # /enc/trans/
 /enc/trans/*.c
@@ -179,6 +192,9 @@ lcov*.info
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
 
+# /ext/-test-/gems
+/ext/-test-/gems
+
 # /ext/etc/
 /ext/etc/constdefs.h
 
@@ -191,7 +207,10 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/eventids1.h
+/ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
+/ext/ripper/ripper_init.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1
 /ext/ripper/ids2
@@ -210,7 +229,10 @@ lcov*.info
 /lib/ruby/[1-9]*.*
 /lib/ruby/vendor_ruby
 
-# /spec/bundler
+# /misc/
+/misc/**/__pycache__
+
+# for `make test-bundler`
 /.rspec_status
 
 # /tool/
@@ -220,7 +242,39 @@ lcov*.info
 # /win32/
 /win32/*.ico
 
-# MJIT
-/rb_mjit_header.h
-/mjit_config.h
-/include/ruby-*/*/rb_mjit_min_header-*.h
+
+# YJIT
+/yjit-bench
+/yjit_exit_locations.dump
+
+# Rust
+/target
+
+# /wasm/
+/wasm/tests/*.wasm
+
+# prism
+/lib/prism/compiler.rb
+/lib/prism/dispatcher.rb
+/lib/prism/dot_visitor.rb
+/lib/prism/dsl.rb
+/lib/prism/inspect_visitor.rb
+/lib/prism/mutation_compiler.rb
+/lib/prism/node.rb
+/lib/prism/reflection.rb
+/lib/prism/serialize.rb
+/lib/prism/visitor.rb
+/prism/api_node.c
+/prism/ast.h
+/prism/diagnostic.c
+/prism/diagnostic.h
+/prism/node.c
+/prism/prettyprint.c
+/prism/serialize.c
+/prism/token_type.c
+/prism/srcs.mk
+
+# tool/update-NEWS-gemlist.rb
+/bundled_gems.json
+/default_gems.json
+/gems/default_gems

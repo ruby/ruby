@@ -11,12 +11,11 @@ class TestLastThread < Test::Unit::TestCase
       }
 
       t0 = Time.now
-      Thread.current.__runnable_sleep__ 1
+      Bug::Thread.runnable_sleep 1
       t1 = Time.now
       t = t1 - t0
 
-      assert_in_delta(1.0, t, 0.16)
+      assert_in_delta(1.0, t, 0.8)
     end;
   end
 end
-

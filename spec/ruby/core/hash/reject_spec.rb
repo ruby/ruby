@@ -31,13 +31,6 @@ describe "Hash#reject" do
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { false }.should be_kind_of(Hash)
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Hash)
     end
-
-    ruby_version_is ''...'2.7' do
-      it "does not taint the resulting hash" do
-        h = { a: 1 }.taint
-        h.reject {false}.should_not.tainted?
-      end
-    end
   end
 
   it "processes entries with the same order as reject!" do
@@ -49,6 +42,27 @@ describe "Hash#reject" do
     h.reject! { |*pair| reject_bang_pairs << pair }
 
     reject_pairs.should == reject_bang_pairs
+  end
+
+  it "does not retain the default value" do
+    h = Hash.new(1)
+    h.reject { false }.default.should be_nil
+    h[:a] = 1
+    h.reject { false }.default.should be_nil
+  end
+
+  it "does not retain the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.reject { false }.default_proc.should be_nil
+    h[:a] = 1
+    h.reject { false }.default_proc.should be_nil
+  end
+
+  it "retains compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.reject { |k, _| k == :a }
+    h2.compare_by_identity?.should == true
   end
 
   it_behaves_like :hash_iteration_no_block, :reject

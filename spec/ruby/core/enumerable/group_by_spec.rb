@@ -33,15 +33,5 @@ describe "Enumerable#group_by" do
                   [3, 4, 5] => [[3, 4, 5]] }
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted hash if self is tainted" do
-      EnumerableSpecs::Empty.new.taint.group_by {}.tainted?.should be_true
-    end
-
-    it "returns an untrusted hash if self is untrusted" do
-      EnumerableSpecs::Empty.new.untrust.group_by {}.untrusted?.should be_true
-    end
-  end
-
   it_behaves_like :enumerable_enumeratorized_with_origin_size, :group_by
 end

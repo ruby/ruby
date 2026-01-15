@@ -24,29 +24,6 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed later
-  def test_without_filename_with_safe_level
-    erb = EnvUtil.suppress_warning do
-      ERB.new("<% raise ::TestERB::MyError %>", 1)
-    end
-    e = assert_raise(MyError) {
-      erb.result
-    }
-    assert_match(/\A\(erb\):1\b/, e.backtrace[0])
-  end
-
-  # [deprecated] This will be removed later
-  def test_with_filename_and_safe_level
-    erb = EnvUtil.suppress_warning do
-      ERB.new("<% raise ::TestERB::MyError %>", 1)
-    end
-    erb.filename = "test filename"
-    e = assert_raise(MyError) {
-      erb.result
-    }
-    assert_match(/\Atest filename:1\b/, e.backtrace[0])
-  end
-
   def test_with_filename_lineno
     erb = ERB.new("<% raise ::TestERB::MyError %>")
     erb.filename = "test filename"
@@ -73,12 +50,31 @@ class TestERB < Test::Unit::TestCase
     assert_equal("", ERB::Util.html_escape(""))
     assert_equal("abc", ERB::Util.html_escape("abc"))
     assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", ERB::Util.html_escape("'&\"><"))
 
     assert_equal("", ERB::Util.html_escape(nil))
     assert_equal("123", ERB::Util.html_escape(123))
+
+    assert_equal(65536+5, ERB::Util.html_escape("x"*65536 + "&").size)
+    assert_equal(65536+5, ERB::Util.html_escape("&" + "x"*65536).size)
   end
 
+  def test_html_escape_to_s
+    object = Object.new
+    def object.to_s
+      "object"
+    end
+    assert_equal("object", ERB::Util.html_escape(object))
+  end
+
+  def test_html_escape_extension
+    assert_nil(ERB::Util.method(:html_escape).source_location)
+  end if RUBY_ENGINE == 'ruby'
+
   def test_concurrent_default_binding
+    # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
+    pend if RUBY_ENGINE == 'jruby'
+
     template1 = 'one <%= ERB.new(template2).result %>'
 
     eval 'template2 = "two"', TOPLEVEL_BINDING
@@ -98,25 +94,16 @@ class TestERBCore < Test::Unit::TestCase
   end
 
   def test_core
-    # [deprecated] Fix initializer later
-    EnvUtil.suppress_warning do
-      _test_core(nil)
-      _test_core(0)
-      _test_core(1)
-    end
-  end
-
-  def _test_core(safe)
     erb = @erb.new("hello")
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 0)
+    erb = @erb.new("hello", trim_mode: 0)
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 1)
+    erb = @erb.new("hello", trim_mode: 1)
     assert_equal("hello", erb.result)
 
-    erb = @erb.new("hello", safe, 2)
+    erb = @erb.new("hello", trim_mode: 2)
     assert_equal("hello", erb.result)
 
     src = <<EOS
@@ -144,9 +131,9 @@ EOS
 EOS
     erb = @erb.new(src)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, 0)
+    erb = @erb.new(src, trim_mode: 0)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, '')
+    erb = EnvUtil.suppress_warning { @erb.new(src, trim_mode: '') }
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -157,9 +144,9 @@ EOS
 * 1% n=0
 * 2
 EOS
-    erb = @erb.new(src, safe, 1)
+    erb = @erb.new(src, trim_mode: 1)
     assert_equal(ans.chomp, erb.result)
-    erb = @erb.new(src, safe, '>')
+    erb = @erb.new(src, trim_mode: '>')
     assert_equal(ans.chomp, erb.result)
 
     ans  = <<EOS
@@ -173,9 +160,9 @@ EOS
 * 2
 EOS
 
-    erb = @erb.new(src, safe, 2)
+    erb = @erb.new(src, trim_mode: 2)
     assert_equal(ans, erb.result)
-    erb = @erb.new(src, safe, '<>')
+    erb = @erb.new(src, trim_mode: '<>')
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -189,7 +176,7 @@ EOS
 * 0
 
 EOS
-    erb = @erb.new(src, safe, '%')
+    erb = @erb.new(src, trim_mode: '%')
     assert_equal(ans, erb.result)
 
     ans = <<EOS
@@ -197,7 +184,7 @@ EOS
 = hello
 * 0* 0* 0
 EOS
-    erb = @erb.new(src, safe, '%>')
+    erb = @erb.new(src, trim_mode: '%>')
     assert_equal(ans.chomp, erb.result)
 
     ans = <<EOS
@@ -207,7 +194,7 @@ EOS
 * 0
 * 0
 EOS
-    erb = @erb.new(src, safe, '%<>')
+    erb = @erb.new(src, trim_mode: '%<>')
     assert_equal(ans, erb.result)
   end
 
@@ -236,6 +223,8 @@ EOS
   end
 
   def test_invalid_trim_mode
+    pend if RUBY_ENGINE == 'truffleruby'
+
     assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
       @erb.new("", trim_mode: 'abc-def')
     end
@@ -661,33 +650,6 @@ EOS
     end
   end
 
-  # [deprecated] These interfaces will be removed later
-  def test_deprecated_interface_warnings
-    [nil, 0].each do |safe|
-      assert_warning(/2nd argument of ERB.new is deprecated/) do
-        ERB.new('', safe)
-      end
-    end
-
-    [1, 2].each do |safe|
-      assert_warn(/2nd argument of ERB.new is deprecated/) do
-        ERB.new('', safe)
-      end
-    end
-
-    [nil, '', '%', '%<>'].each do |trim|
-      assert_warning(/3rd argument of ERB.new is deprecated/) do
-        ERB.new('', nil, trim)
-      end
-    end
-
-    [nil, '_erbout', '_hamlout'].each do |eoutvar|
-      assert_warning(/4th argument of ERB.new is deprecated/) do
-        ERB.new('', nil, nil, eoutvar)
-      end
-    end
-  end
-
   def test_prohibited_marshal_dump
     erb = ERB.new("")
     assert_raise(TypeError) {Marshal.dump(erb)}
@@ -700,6 +662,18 @@ EOS
     erb.instance_variable_set(:@_init, true)
     erb = Marshal.load(Marshal.dump(erb))
     assert_raise(ArgumentError) {erb.result}
+  end
+
+  def test_multi_line_comment_lineno
+    erb = ERB.new(<<~EOS)
+      <%= __LINE__ %>
+      <%#
+      %><%= __LINE__ %>
+    EOS
+    assert_equal <<~EOS, erb.result
+      1
+      3
+    EOS
   end
 end
 

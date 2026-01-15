@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 describe "Rational#zero?" do
   it "returns true if the numerator is 0" do
     Rational(0,26).zero?.should be_true

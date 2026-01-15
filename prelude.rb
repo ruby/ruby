@@ -1,23 +1,13 @@
-class << Thread
-  # call-seq:
-  #    Thread.exclusive { block }   -> obj
-  #
-  # Wraps the block in a single, VM-global Mutex.synchronize, returning the
-  # value of the block. A thread executing inside the exclusive section will
-  # only block other threads which also use the Thread.exclusive mechanism.
-  def exclusive(&block) end if false
-  mutex = Mutex.new # :nodoc:
-  define_method(:exclusive) do |&block|
-    warn "Thread.exclusive is deprecated, use Thread::Mutex", uplevel: 1
-    mutex.synchronize(&block)
-  end
-end
-
 class Binding
   # :nodoc:
-  def irb
-    require 'irb'
-    irb
+  def irb(...)
+    begin
+      require 'irb'
+    rescue LoadError, Gem::LoadError
+      Gem::BUNDLED_GEMS.force_activate 'irb'
+      require 'irb'
+    end
+    irb(...)
   end
 
   # suppress redefinition warning
@@ -25,13 +15,22 @@ class Binding
 end
 
 module Kernel
+  # :stopdoc:
   def pp(*objs)
     require 'pp'
     pp(*objs)
   end
 
   # suppress redefinition warning
-  alias pp pp # :nodoc:
+  alias pp pp
 
   private :pp
+  # :startdoc:
+end
+
+module Enumerable
+  # Makes a set from the enumerable object with given arguments.
+  def to_set(&block)
+    Set.new(self, &block)
+  end
 end

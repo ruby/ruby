@@ -1,11 +1,11 @@
 # frozen_string_literal: true
+
 ##
 #
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings
 # to the rest of RubyGems.
 #
 class Gem::PathSupport
-
   ##
   # The default system path for managing Gems.
   attr_reader :home
@@ -24,22 +24,21 @@ class Gem::PathSupport
   # hashtable, or defaults to ENV, the system environment.
   #
   def initialize(env)
-    @home = env["GEM_HOME"] || Gem.default_dir
-
-    if File::ALT_SEPARATOR
-      @home = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
-    end
-
-    @home = expand(@home)
-
+    @home = normalize_home_dir(env["GEM_HOME"] || Gem.default_dir)
     @path = split_gem_path env["GEM_PATH"], @home
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
-
-    @spec_cache_dir = @spec_cache_dir.dup.tap(&Gem::UNTAINT)
   end
 
   private
+
+  def normalize_home_dir(home)
+    if File::ALT_SEPARATOR
+      home = home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
+
+    expand(home)
+  end
 
   ##
   # Split the Gem search path (as reported by Gem.path).
@@ -53,7 +52,7 @@ class Gem::PathSupport
       gem_path = gpaths.split(Gem.path_separator)
       # Handle the path_separator being set to a regexp, which will cause
       # end_with? to error
-      if gpaths =~ /#{Gem.path_separator}\z/
+      if /#{Gem.path_separator}\z/.match?(gpaths)
         gem_path += default_path
       end
 
@@ -68,17 +67,12 @@ class Gem::PathSupport
       gem_path = default_path
     end
 
-    gem_path.map { |path| expand(path) }.uniq
+    gem_path.map {|path| expand(path) }.uniq
   end
 
   # Return the default Gem path
   def default_path
-    gem_path = Gem.default_path + [@home]
-
-    if defined?(APPLE_GEM_HOME)
-      gem_path << APPLE_GEM_HOME
-    end
-    gem_path
+    Gem.default_path + [@home]
   end
 
   def expand(path)
@@ -88,5 +82,4 @@ class Gem::PathSupport
       path
     end
   end
-
 end

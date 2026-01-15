@@ -12,7 +12,11 @@ describe "ObjectSpace.memsize_of" do
     ObjectSpace.memsize_of(42).should == 0
   end
 
-  it "returns an Integer for an Object" do
+  it "returns 0 for literal Symbols" do
+    ObjectSpace.memsize_of(:object_space_memsize_spec_static_sym).should == 0
+  end
+
+  it "returns a positive Integer for an Object" do
     obj = Object.new
     ObjectSpace.memsize_of(obj).should be_kind_of(Integer)
     ObjectSpace.memsize_of(obj).should > 0

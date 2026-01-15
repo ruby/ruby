@@ -12,9 +12,9 @@ class TestPTY < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
   def test_spawn_without_block
-    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"; sleep 0.1')
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert_equal("a\r\n", r.gets)
   ensure
@@ -24,7 +24,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_spawn_with_block
-    PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
+    PTY.spawn(RUBY, '-e', 'puts "b"; sleep 0.1') {|r,w,pid|
       begin
         assert_equal("b\r\n", r.gets)
       ensure
@@ -34,11 +34,11 @@ class TestPTY < Test::Unit::TestCase
       end
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_commandline
-    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"'])
+    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"; sleep 0.1'])
     PTY.spawn(commandline) {|r,w,pid|
       begin
         assert_equal("foo\r\n", r.gets)
@@ -49,11 +49,11 @@ class TestPTY < Test::Unit::TestCase
       end
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_argv0
-    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
+    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"; sleep 0.1') {|r,w,pid|
       begin
         assert_equal("bar\r\n", r.gets)
       ensure
@@ -63,13 +63,13 @@ class TestPTY < Test::Unit::TestCase
       end
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_open_without_block
     ret = PTY.open
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert_kind_of(Array, ret)
     assert_equal(2, ret.length)
@@ -100,7 +100,7 @@ class TestPTY < Test::Unit::TestCase
       x
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert(r[0].closed?)
     assert(r[1].closed?)
@@ -115,7 +115,7 @@ class TestPTY < Test::Unit::TestCase
       assert(master.closed?)
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert_nothing_raised {
       PTY.open {|master, slave|
@@ -133,7 +133,7 @@ class TestPTY < Test::Unit::TestCase
       assert_equal("bar", slave.gets.chomp)
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_stat_slave
@@ -143,7 +143,7 @@ class TestPTY < Test::Unit::TestCase
       assert_equal(0600, s.mode & 0777)
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_close_master
@@ -152,7 +152,7 @@ class TestPTY < Test::Unit::TestCase
       assert_raise(EOFError) { slave.readpartial(10) }
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_close_slave
@@ -165,7 +165,7 @@ class TestPTY < Test::Unit::TestCase
       ) { master.readpartial(10) }
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 
   def test_getpty_nonexistent
@@ -175,7 +175,7 @@ class TestPTY < Test::Unit::TestCase
         begin
           PTY.getpty(File.join(tmpdir, "no-such-command"))
         rescue RuntimeError
-          skip $!
+          omit $!
         end
       }
     end
@@ -194,7 +194,7 @@ class TestPTY < Test::Unit::TestCase
       end until st2 = PTY.check(pid)
     end
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert_nil(st1)
     assert_equal(pid, st2.pid)
@@ -212,7 +212,7 @@ class TestPTY < Test::Unit::TestCase
       st2 = assert_raise(PTY::ChildExited, bug2642) {PTY.check(pid, true)}.status
     end
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     assert_nil(st1)
     assert_equal(pid, st2.pid)
@@ -234,6 +234,6 @@ class TestPTY < Test::Unit::TestCase
       end
     }
   rescue RuntimeError
-    skip $!
+    omit $!
   end
 end if defined? PTY

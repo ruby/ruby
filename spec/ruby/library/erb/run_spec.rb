@@ -6,7 +6,7 @@ describe "ERB#run" do
   # lambda { ... }.should output
   def _steal_stdout
     orig = $stdout
-    s = ''
+    s = +''
     def s.write(arg); self << arg.to_s; end
     $stdout = s
     begin

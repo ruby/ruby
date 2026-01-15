@@ -1,21 +1,23 @@
 # frozen_string_literal: true
 require 'test/unit'
 
+return unless /darwin/ =~ RUBY_PLATFORM
+
 class TestVMDump < Test::Unit::TestCase
-  def assert_darwin_vm_dump_works(args)
-    skip if RUBY_PLATFORM !~ /darwin/
-    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
+  def assert_darwin_vm_dump_works(args, timeout=nil)
+    args.unshift({"RUBY_ON_BUG" => nil, "RUBY_CRASH_REPORT" => nil})
+    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 300)
   end
 
   def test_darwin_invalid_call
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle::Function.new(Fiddle::Pointer.new(1), [], Fiddle::TYPE_VOID).call'])
+    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_call(1)'])
   end
 
   def test_darwin_segv_in_syscall
-    assert_darwin_vm_dump_works('-e1.times{Process.kill :SEGV,$$}')
+    assert_darwin_vm_dump_works(['-e1.times{Process.kill :SEGV,$$}'])
   end
 
   def test_darwin_invalid_access
-    assert_darwin_vm_dump_works(['-rfiddle', '-eFiddle.dlunwrap(100).class'])
+    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_access(100)'])
   end
 end

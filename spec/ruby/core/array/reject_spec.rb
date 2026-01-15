@@ -2,6 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumeratorize'
 require_relative 'shared/delete_if'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 require_relative '../enumerable/shared/enumeratorized'
 
 describe "Array#reject" do
@@ -45,6 +46,10 @@ describe "Array#reject" do
 
   it_behaves_like :enumeratorize, :reject
   it_behaves_like :enumeratorized_with_origin_size, :reject, [1,2,3]
+end
+
+describe "Array#reject" do
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :reject
 end
 
 describe "Array#reject!" do
@@ -111,6 +116,11 @@ describe "Array#reject!" do
     -> { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(FrozenError)
   end
 
+  it "raises a FrozenError on a frozen array only during iteration if called without a block" do
+    enum = ArraySpecs.frozen_array.reject!
+    -> { enum.each {} }.should raise_error(FrozenError)
+  end
+
   it "does not truncate the array is the block raises an exception" do
     a = [1, 2, 3]
     begin
@@ -140,4 +150,9 @@ describe "Array#reject!" do
   it_behaves_like :enumeratorize, :reject!
   it_behaves_like :enumeratorized_with_origin_size, :reject!, [1,2,3]
   it_behaves_like :delete_if, :reject!
+end
+
+describe "Array#reject!" do
+  @value_to_return = -> _ { false }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :reject!
 end

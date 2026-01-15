@@ -315,22 +315,20 @@ describe 'BasicSocket#setsockopt' do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using a UNIX socket' do
-      before do
-        @path = SocketSpecs.socket_path
-        @server = UNIXServer.new(@path)
-      end
+  describe 'using a UNIX socket' do
+    before do
+      @path = SocketSpecs.socket_path
+      @server = UNIXServer.new(@path)
+    end
 
-      after do
-        @server.close
-        rm_r @path
-      end
+    after do
+      @server.close
+      rm_r @path
+    end
 
-      it 'sets a boolean option' do
-        @server.setsockopt(:SOCKET, :REUSEADDR, true)
-        @server.getsockopt(:SOCKET, :REUSEADDR).bool.should == true
-      end
+    it 'sets a boolean option' do
+      @server.setsockopt(:SOCKET, :REUSEADDR, true)
+      @server.getsockopt(:SOCKET, :REUSEADDR).bool.should == true
     end
   end
 end

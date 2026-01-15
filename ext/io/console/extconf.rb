@@ -1,7 +1,30 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-ok = true if RUBY_ENGINE == "ruby"
+# `--target-rbconfig` compatibility for Ruby 3.3 or earlier
+# See https://bugs.ruby-lang.org/issues/20345
+MakeMakefile::RbConfig ||= ::RbConfig
+
+have_func("rb_syserr_fail_str(0, Qnil)") or
+have_func("rb_syserr_new_str(0, Qnil)") or
+  abort
+
+have_func("rb_interned_str_cstr")
+have_func("rb_io_path", "ruby/io.h")
+have_func("rb_io_descriptor", "ruby/io.h")
+have_func("rb_io_get_write_io", "ruby/io.h")
+have_func("rb_io_closed_p", "ruby/io.h")
+have_func("rb_io_open_descriptor", "ruby/io.h")
+have_func("rb_ractor_local_storage_value_newkey")
+
+is_wasi = /wasi/ =~ MakeMakefile::RbConfig::CONFIG["platform"]
+# `ok` can be `true`, `false`, or `nil`:
+#   * `true` : Required headers and functions available, proceed regular build.
+#   * `false`: Required headers or functions not available, abort build.
+#   * `nil`  : Unsupported compilation target, generate dummy Makefile.
+#
+# Skip building io/console on WASI, as it does not support termios.h.
+ok = true if (RUBY_ENGINE == "ruby" && !is_wasi) || RUBY_ENGINE == "truffleruby"
 hdr = nil
 case
 when macro_defined?("_WIN32", "")
@@ -24,7 +47,12 @@ when true
   # rb_funcallv: 2.1.0
   # RARRAY_CONST_PTR: 2.1.0
   # rb_sym2str: 2.2.0
-  $defs << "-D""ENABLE_IO_GETPASS=1"
+  if have_macro("HAVE_RUBY_FIBER_SCHEDULER_H")
+    $defs << "-D""HAVE_RB_IO_WAIT=1"
+  elsif have_func("rb_scheduler_timeout") # 3.0
+    have_func("rb_io_wait")
+  end
+  have_func("ttyname_r") or have_func("ttyname")
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }

@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,8 +69,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define NTYPE(node)             ((node)->u.base.type)
 #define SET_NTYPE(node, ntype) \
     do { \
-	int value = ntype; \
-	memcpy(&((node)->u.base.type), &value, sizeof(int)); \
+        int value = ntype; \
+        memcpy(&((node)->u.base.type), &value, sizeof(int)); \
     } while (0)
 
 #define NSTR(node)         (&((node)->u.str))
@@ -339,7 +339,7 @@ typedef struct {
 extern int    onig_renumber_name_table(regex_t* reg, GroupNumRemap* map);
 #endif
 
-extern int    onig_strncmp(const UChar* s1, const UChar* s2, int n);
+extern int    onig_strncmp(const UChar* s1, const UChar* s2, size_t n);
 extern void   onig_strcpy(UChar* dest, const UChar* src, const UChar* end);
 extern void   onig_scan_env_set_error_string(ScanEnv* env, int ecode, UChar* arg, UChar* arg_end);
 extern int    onig_scan_unsigned_number(UChar** src, const UChar* end, OnigEncoding enc);
@@ -356,6 +356,7 @@ extern Node*  onig_node_list_add(Node* list, Node* x);
 extern Node*  onig_node_new_alt(Node* left, Node* right);
 extern void   onig_node_str_clear(Node* node);
 extern int    onig_names_free(regex_t* reg);
+extern int    onig_names_copy(regex_t* reg, regex_t* oreg);
 extern int    onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env);
 extern int    onig_free_shared_cclass_table(void);
 

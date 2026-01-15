@@ -1,0 +1,20 @@
+def def
+end
+
+def self.ensure
+end
+
+private def foo
+  bar do
+  end
+end
+
+def m(a, **nil)
+end
+
+%{abc}
+
+%"abc"
+
+def nil::a
+end

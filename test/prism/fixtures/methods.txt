@@ -1,0 +1,190 @@
+def foo((bar, baz))
+end
+
+def foo((bar, baz), optional = 1, (bin, bag))
+end
+
+
+def a; ensure; end
+
+def (b).a
+end
+
+def (a)::b
+end
+
+def false.a
+end
+
+def a(...)
+end
+
+def $var.a
+end
+
+def a.b
+end
+
+def @var.a
+end
+
+def a b:; end
+
+%,abc,
+
+def a(b:)
+end
+
+def a(**b)
+end
+
+def a(**)
+end
+
+a = 1; def a
+end
+
+def a b, c, d
+end
+
+def nil.a
+end
+
+def a b:, c: 1
+end
+
+def a(b:, c: 1)
+end
+
+def a(b:
+  1, c:)
+end
+
+%.abc.
+
+def a b = 1, c = 2
+end
+
+def a()
+end
+
+def a b, c = 2
+end
+
+def a b
+end
+
+def a; rescue; else; ensure; end
+
+def a *b
+end
+
+def a(*)
+end
+
+def a
+b = 1
+end
+
+def self.a
+end
+
+def true.a
+end
+
+def a
+end
+
+def hi
+return :hi if true
+:bye
+end
+
+def foo = 1
+def bar = 2
+
+def foo(bar) = 123
+
+def foo = 123
+
+def a(*); b(*); end
+
+def a(*, **); b { c(*, **) }; end
+
+def a(...); b(...); end
+
+def a(...); b(1, 2, ...); end
+
+def (c = b).a
+end
+
+def a &b
+end
+
+def a(&)
+end
+
+def @@var.a
+end
+
+def (a = b).C
+end
+
+def self.Array_function; end
+
+Const = 1; def Const.a
+end
+
+def a(...); "foo#{b(...)}"; end
+
+def foo
+  {}.merge **bar, **baz, **qux
+end
+
+def bar(a: (1...10))
+end
+
+def bar(a: (...10))
+end
+
+def bar(a: (1...))
+end
+
+def bar(a = (1...10))
+end
+
+def bar(a = (...10))
+end
+
+def bar(a = (1...))
+end
+
+def method(a)
+  item >> a {}
+end
+
+foo = 1
+def foo.bar; end
+
+def f(*); [*]; end
+
+def f x:-a; end
+
+def f x:+a; end
+
+def f x:!a; end
+
+def foo x:%(xx); end
+
+def foo(...)
+  bar(...)
+end
+
+def foo(bar = (def baz(bar) = bar; 1)) = 2
+
+def (class Foo; end).foo(bar = 1) = 2
+
+module Foo
+  def clone(opts = nil || (return self))
+  end
+end

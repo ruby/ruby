@@ -1,0 +1,17 @@
+a(&block, foo)
+        ^ unexpected argument after a block argument
+a(&block,)
+        ^ unexpected argument after a block argument
+a.(&block,)
+         ^ unexpected argument after a block argument
+a[&block,]
+        ^ unexpected argument after a block argument
+def a(&block)
+  p(&block,)
+          ^ unexpected argument after a block argument
+  a.(&block,)
+           ^ unexpected argument after a block argument
+  a[&block,]
+          ^ unexpected argument after a block argument
+end
+

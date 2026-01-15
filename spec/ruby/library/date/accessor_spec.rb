@@ -38,7 +38,7 @@ describe "Date#year" do
 end
 
 describe "Date#yday" do
-  it "determines the year" do
+  it "determines the day of the year" do
     Date.civil(2007,  1, 17).yday.should == 17
     Date.civil(2008, 10, 28).yday.should == 302
   end

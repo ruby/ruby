@@ -1,0 +1,42 @@
+"foo
+  bar"
+
+"foo
+  #{bar}"
+
+"fo
+o" "ba
+r"
+
+"
+foo\
+"
+
+"
+foo\\
+"
+
+"
+foo\\\
+"
+
+"
+foo\\\\
+"
+
+"
+foo\\\\\
+"
+
+"
+foo\
+b\nar
+#{}
+"
+
+"foo
+\n#{}bar\n\n#{}
+a\nb\n#{}\nc\n"
+
+"
+’"

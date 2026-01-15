@@ -21,6 +21,8 @@
 # SimpleDelegator's implementation serves as a nice example of the use of
 # Delegator:
 #
+#   require 'delegate'
+#
 #   class SimpleDelegator < Delegator
 #     def __getobj__
 #       @delegate_sd_obj # return object we are delegating to, required
@@ -37,10 +39,13 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
+  # The version string
+  VERSION = "0.6.1"
+
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s, :inspect, :=~, :!~, :===, :<=>, :hash].each do |m|
+    [:to_s, :inspect, :!~, :===, :<=>, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
@@ -73,7 +78,7 @@ class Delegator < BasicObject
   end
 
   #
-  # Handles the magic of delegation through \_\_getobj\_\_.
+  # Handles the magic of delegation through +__getobj__+.
   #
   ruby2_keywords def method_missing(m, *args, &block)
     r = true
@@ -90,7 +95,7 @@ class Delegator < BasicObject
 
   #
   # Checks for a method provided by this the delegate object by forwarding the
-  # call through \_\_getobj\_\_.
+  # call through +__getobj__+.
   #
   def respond_to_missing?(m, include_private)
     r = true
@@ -103,7 +108,7 @@ class Delegator < BasicObject
     r
   end
 
-  KERNEL_RESPOND_TO = ::Kernel.instance_method(:respond_to?)
+  KERNEL_RESPOND_TO = ::Kernel.instance_method(:respond_to?) # :nodoc:
   private_constant :KERNEL_RESPOND_TO
 
   # Handle BasicObject instances
@@ -122,7 +127,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ methods.
+  # of this object's and +__getobj__+ methods.
   #
   def methods(all=true)
     __getobj__.methods(all) | super
@@ -130,7 +135,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ public methods.
+  # of this object's and +__getobj__+ public methods.
   #
   def public_methods(all=true)
     __getobj__.public_methods(all) | super
@@ -138,7 +143,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ protected methods.
+  # of this object's and +__getobj__+ protected methods.
   #
   def protected_methods(all=true)
     __getobj__.protected_methods(all) | super
@@ -171,7 +176,7 @@ class Delegator < BasicObject
   end
 
   #
-  # Delegates ! to the \_\_getobj\_\_
+  # Delegates ! to the +__getobj__+
   #
   def !
     !__getobj__
@@ -182,7 +187,7 @@ class Delegator < BasicObject
   # method calls are being delegated to.
   #
   def __getobj__
-    __raise__ ::NotImplementedError, "need to define `__getobj__'"
+    __raise__ ::NotImplementedError, "need to define '__getobj__'"
   end
 
   #
@@ -190,11 +195,11 @@ class Delegator < BasicObject
   # to _obj_.
   #
   def __setobj__(obj)
-    __raise__ ::NotImplementedError, "need to define `__setobj__'"
+    __raise__ ::NotImplementedError, "need to define '__setobj__'"
   end
 
   #
-  # Serialization support for the object returned by \_\_getobj\_\_.
+  # Serialization support for the object returned by +__getobj__+.
   #
   def marshal_dump
     ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
@@ -228,7 +233,7 @@ class Delegator < BasicObject
 
   ##
   # :method: freeze
-  # Freeze both the object returned by \_\_getobj\_\_ and self.
+  # Freeze both the object returned by +__getobj__+ and self.
   #
   def freeze
     __getobj__.freeze
@@ -252,6 +257,8 @@ end
 #       Date.new(1989, 9, 10)
 #     end
 #   end
+#
+#   require 'delegate'
 #
 #   class UserDecorator < SimpleDelegator
 #     def birth_year
@@ -392,6 +399,17 @@ def DelegateClass(superclass, &block)
   protected_instance_methods -= ignores
   public_instance_methods = superclass.public_instance_methods
   public_instance_methods -= ignores
+
+  normal, special = public_instance_methods.partition { |m| m.match?(/\A[a-zA-Z]\w*[!\?]?\z/) }
+
+  source = normal.map do |method|
+    "def #{method}(...); __getobj__.#{method}(...); end"
+  end
+
+  protected_instance_methods.each do |method|
+    source << "def #{method}(...); __getobj__.__send__(#{method.inspect}, ...); end"
+  end
+
   klass.module_eval do
     def __getobj__ # :nodoc:
       unless defined?(@delegate_dc_obj)
@@ -400,23 +418,41 @@ def DelegateClass(superclass, &block)
       end
       @delegate_dc_obj
     end
+
     def __setobj__(obj)  # :nodoc:
       __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-    protected_instance_methods.each do |method|
+
+    class_eval(source.join(";"), __FILE__, __LINE__)
+
+    special.each do |method|
       define_method(method, Delegator.delegating_block(method))
-      protected method
     end
-    public_instance_methods.each do |method|
-      define_method(method, Delegator.delegating_block(method))
-    end
+
+    protected(*protected_instance_methods)
   end
+
   klass.define_singleton_method :public_instance_methods do |all=true|
     super(all) | superclass.public_instance_methods
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
+  end
+  klass.define_singleton_method :instance_methods do |all=true|
+    super(all) | superclass.instance_methods
+  end
+  klass.define_singleton_method :public_instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.public_instance_methods.include?(name)
+    superclass.public_instance_method(name)
+  end
+  klass.define_singleton_method :instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.instance_methods.include?(name)
+    superclass.instance_method(name)
   end
   klass.module_eval(&block) if block
   return klass

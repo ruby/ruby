@@ -1,0 +1,3 @@
+class << A; return; end
+            ^~~~~~ Invalid return in class/module body
+

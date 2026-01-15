@@ -1,6 +1,6 @@
 module ModuleSpecs
   def self.without_test_modules(modules)
-    ignore = %w[MSpecRSpecAdapter PP::ObjectMixin ModuleSpecs::IncludedInObject MainSpecs::Module ConstantSpecs::ModuleA]
+    ignore = %w[MSpecRSpecAdapter PP::ObjectMixin MainSpecs::Module ConstantSpecs::ModuleA]
     modules.reject { |k| ignore.include?(k.name) }
   end
 
@@ -40,6 +40,14 @@ module ModuleSpecs
   end
 
   class LookupChild < Lookup
+  end
+
+  module ModuleWithPrepend
+    prepend LookupMod
+  end
+
+  class WithPrependedModule
+    include ModuleWithPrepend
   end
 
   class Parent
@@ -352,6 +360,10 @@ module ModuleSpecs
     end
   end
 
+  class SubCVars < CVars
+    @@sub = :sub
+  end
+
   module MVars
     @@mvar = :mvar
   end
@@ -376,6 +388,7 @@ module ModuleSpecs
   # empty modules
   module M1; end
   module M2; end
+  module M3; end
 
   module Autoload
     def self.use_ex1
@@ -583,6 +596,32 @@ module ModuleSpecs
     private :foo
   end
   EmptyFooMethod = m.instance_method(:foo)
+
+  # for undefined_instance_methods spec
+  module UndefinedInstanceMethods
+    module Super
+      def super_included_method; end
+    end
+
+    class Parent
+      def undefed_method; end
+      undef_method :undefed_method
+
+      def parent_method; end
+      def another_parent_method; end
+    end
+
+    class Child < Parent
+      include Super
+
+      undef_method :parent_method
+      undef_method :another_parent_method
+    end
+
+    class Grandchild < Child
+      undef_method :super_included_method
+    end
+  end
 end
 
 class Object

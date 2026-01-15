@@ -29,6 +29,8 @@ describe "Errno::EMFILE" do
     ExceptionSpecs::EMFILESub = Class.new(Errno::EMFILE)
     exc = ExceptionSpecs::EMFILESub.new
     exc.should be_an_instance_of(ExceptionSpecs::EMFILESub)
+  ensure
+    ExceptionSpecs.send(:remove_const, :EMFILESub)
   end
 end
 
@@ -46,5 +48,22 @@ end
 describe "Errno::ENOTSUP" do
   it "is defined" do
     Errno.should have_constant(:ENOTSUP)
+  end
+
+  it "is the same class as Errno::EOPNOTSUPP if they represent the same errno value" do
+    if Errno::ENOTSUP::Errno == Errno::EOPNOTSUPP::Errno
+      Errno::ENOTSUP.should == Errno::EOPNOTSUPP
+    else
+      Errno::ENOTSUP.should_not == Errno::EOPNOTSUPP
+    end
+  end
+end
+
+describe "Errno::ENOENT" do
+  it "lets subclasses inherit the default error message" do
+    c = Class.new(Errno::ENOENT)
+    raise c, "custom message"
+  rescue => e
+    e.message.should == "No such file or directory - custom message"
   end
 end

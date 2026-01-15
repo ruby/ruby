@@ -22,6 +22,8 @@ describe "CApiModule" do
     it "sets a new constant on a module" do
       @m.rb_const_set(CApiModuleSpecs::C, :W, 7)
       CApiModuleSpecs::C::W.should == 7
+    ensure
+      CApiModuleSpecs::C.send(:remove_const, :W)
     end
 
     it "sets an existing constant's value" do
@@ -36,7 +38,7 @@ describe "CApiModule" do
         CApiModuleSpecs::C.const_set(:_INVALID, 1)
       }.should raise_error(NameError, /wrong constant name/)
 
-      @m.rb_const_set(CApiModuleSpecs::C, :_INVALID, 2)
+      suppress_warning { @m.rb_const_set(CApiModuleSpecs::C, :_INVALID, 2) }
       @m.rb_const_get(CApiModuleSpecs::C, :_INVALID).should == 2
 
       # Ruby-level should still not allow access
@@ -93,6 +95,8 @@ describe "CApiModule" do
     it "defines a new constant on a module" do
       @m.rb_define_const(CApiModuleSpecs::C, "V", 7)
       CApiModuleSpecs::C::V.should == 7
+    ensure
+      CApiModuleSpecs::C.send(:remove_const, :V)
     end
 
     it "sets an existing constant's value" do
@@ -134,8 +138,12 @@ describe "CApiModule" do
       @m.rb_const_get(CApiModuleSpecs::A, :X).should == 1
     end
 
+    it "returns a constant defined in the module for multiple constants" do
+      [:Q, :R, :S, :T].each { |x| @m.rb_const_get(CApiModuleSpecs::A, x).should == CApiModuleSpecs::A.const_get(x) }
+    end
+
     it "returns a constant defined at toplevel" do
-      @m.rb_const_get(CApiModuleSpecs::A, :Fixnum).should == Fixnum
+      @m.rb_const_get(CApiModuleSpecs::A, :Integer).should == Integer
     end
 
     it "returns a constant defined in a superclass" do
@@ -176,8 +184,8 @@ describe "CApiModule" do
     end
 
     it "calls #const_missing if the constant is not defined in the class or ancestors" do
-      CApiModuleSpecs::M.should_receive(:const_missing).with(:Fixnum)
-      @m.rb_const_get_from(CApiModuleSpecs::M, :Fixnum)
+      CApiModuleSpecs::M.should_receive(:const_missing).with(:Integer)
+      @m.rb_const_get_from(CApiModuleSpecs::M, :Integer)
     end
 
     it "resolves autoload constants" do
@@ -242,10 +250,48 @@ describe "CApiModule" do
       cls.new.test_method.should == :test_method
     end
 
+    it "returns the correct arity when argc of the method in class is 0" do
+      cls = Class.new
+      @m.rb_define_method(cls, "test_method")
+      cls.new.method(:test_method).arity.should == 0
+    end
+
+    it "returns the correct arity when argc of the method in class is 1" do
+      @m.rb_define_method_1required(42).should == 42
+      @m.method(:rb_define_method_1required).arity.should == 1
+    end
+
+    it "returns the correct arity when argc of the method in class is 2" do
+      @m.rb_define_method_2required(1, 2).should == 2
+      @m.method(:rb_define_method_2required).arity.should == 2
+    end
+
+    it "defines a method taking variable arguments as a C array if the argument count is -1" do
+      @m.rb_define_method_varargs_1(1, 3, 7, 4).should == [1, 3, 7, 4]
+    end
+
+    it "returns the correct arity when argc of the method in class is -1" do
+      @m.method(:rb_define_method_varargs_1).arity.should == -1
+    end
+
+    it "defines a method taking variable arguments as a Ruby array if the argument count is -2" do
+      @m.rb_define_method_varargs_2(1, 3, 7, 4).should == [1, 3, 7, 4]
+    end
+
+    it "returns the correct arity when argc of the method in class is -2" do
+      @m.method(:rb_define_method_varargs_2).arity.should == -1
+    end
+
     it "defines a method on a module" do
       mod = Module.new
       @m.rb_define_method(mod, "test_method")
       mod.should have_instance_method(:test_method)
+    end
+
+    it "returns the correct arity of the method in module" do
+      mod = Module.new
+      @m.rb_define_method(mod, "test_method")
+      mod.instance_method(:test_method).arity.should == 0
     end
   end
 
@@ -259,11 +305,22 @@ describe "CApiModule" do
       @mod.test_module_function.should == :test_method
     end
 
+    it "returns the correct arity of the module function" do
+      @mod.method(:test_module_function).arity.should == 0
+    end
+
     it "defines a private instance method" do
       cls = Class.new
       cls.include(@mod)
 
       cls.should have_private_instance_method(:test_module_function)
+    end
+
+    it "returns the correct arity for private instance method" do
+      cls = Class.new
+      cls.include(@mod)
+
+      @mod.instance_method(:test_module_function).arity.should == 0
     end
   end
 

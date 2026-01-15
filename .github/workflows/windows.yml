@@ -1,85 +1,201 @@
 name: Windows
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [test]
-        os: [windows-2019]
-        vs: [2019]
+        include:
+          - os: 2022
+            vc: 2022
+            test_task: check
+          - os: 2025
+            vc: 2022
+            test_task: check
+          - os: 11-arm
+            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+            target: arm64
+          - os: 2025
+            vc: 2022
+            test_task: test-bundled-gems
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    runs-on: windows-${{ matrix.os }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
+
     steps:
-      - uses: actions/cache@v1
+      - run: md build
+        working-directory:
+
+      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-download-
+          # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
+          ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
+          bundler: none
+          windows-toolchain: none
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          make-command: nmake
+          clean: true
+
+      - name: Install tools with scoop
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          iwr -useb get.scoop.sh | iex
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install vcpkg uutils-coreutils
+        shell: pwsh
+
+      - name: Restore vcpkg artifact
+        id: restore-vcpkg
+        uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        with:
+          path: src\vcpkg_installed
+          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v1
+          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
+        working-directory: src
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
+
+      - name: Save vcpkg artifact
+        uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
+          path: src\vcpkg_installed
+          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
+
+      - name: setup env
+        # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
+        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          choco install --no-progress openssl winflexbison3
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard ${{ github.sha }}
-        if: github.event_name == 'push'
-        shell: bash
-      - name: Checkout a pull request
-        run: |
-          git clone --single-branch --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
-      - run: md build
-        shell: cmd
+          ::- Set up VC ${{ matrix.vc }}
+          set | sort > old.env
+          call ..\src\win32\vssetup.cmd ^
+            -arch=${{ matrix.target || 'amd64' }} ^
+            ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
+          nmake -f nul
+          set TMP=%RUNNER_TEMP%
+          set TEMP=%RUNNER_TEMP%
+          set MAKEFLAGS=l
+          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          set | sort > new.env
+          comm -13 old.env new.env >> %GITHUB_ENV%
+          del *.env
+
+      - name: baseruby version
+        run: ruby -v
+
+      - name: compiler version
+        run: cl
+
+      - name: volume info
+        run: Get-Volume
+        shell: pwsh
+
+      # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
+        run: >-
+          ../src/win32/configure.bat --disable-install-doc
+          --with-opt-dir=%RUBY_OPT_DIR%
+          --with-gmp
+
+      - run: nmake prepare-vcpkg
+
+      - run: nmake incs
+
+      - run: nmake extract-extlibs
+
+      # On all other platforms, test-spec depending on extract-gems (in common.mk) is enough.
+      # But not for this Visual Studio workflow. So here we extract gems before building.
+      - run: nmake extract-gems
+
+      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
+      - name: make revision.h
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          ../src/win32/configure.bat --disable-install-doc --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-        working-directory: build
-        shell: cmd
-      - name: nmake
-        run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set YACC=win_bison
-          echo on
-          nmake up
-          nmake extract-gems
-          nmake
-        working-directory: build
-        shell: cmd
-      - name: nmake test
-        run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          nmake ${{ matrix.test_task }}
-        working-directory: build
-        shell: cmd
-      - uses: k0kubun/action-slack@v2.0.0
+          win32\lastrev.bat | win32\ifchange.bat --timestamp=.revision.time revision.h -
+          type revision.h
+        working-directory: src
+
+      - run: nmake
+
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
+          os: windows-${{ matrix.os }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+          test-task: ${{ matrix.test_task || 'check' }}
+        continue-on-error: true
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
+        timeout-minutes: 3
+
+      - run: nmake ${{ matrix.test_task || 'check' }}
         env:
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+        timeout-minutes: 70
+
+      - uses: ./.github/actions/slack
+        with:
+          label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() }}
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: windows-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        working-directory:
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
+defaults:
+  run:
+    working-directory: build
+    shell: cmd

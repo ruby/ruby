@@ -1,0 +1,3 @@
+case; when a b; end
+            ^ expected a delimiter after the predicates of a `when` clause
+

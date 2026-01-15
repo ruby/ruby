@@ -576,7 +576,11 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -593,7 +597,7 @@ ENC_ALIAS("eucJP", "EUC-JP") /* UI-OSF Application Platform Profile for Japanese
  * Name: eucJP-ms
  * Link: http://home.m05.itscom.net/numa/cde/ucs-conv/ucs-conv.html
  * Link: http://www2d.biglobe.ne.jp/~msyk/charcode/cp932/eucJP-ms.html
- * Link: http://ja.wikipedia.org/wiki/EUC-JP
+ * Link: https://ja.wikipedia.org/wiki/EUC-JP
  */
 ENC_REPLICATE("eucJP-ms", "EUC-JP") /* TOG/JVC CDE/Motif Technical WG */
 ENC_ALIAS("euc-jp-ms", "eucJP-ms")
@@ -610,7 +614,7 @@ ENC_REPLICATE("CP51932", "EUC-JP")
 
 /*
  * Name: EUC-JIS-2004
- * Link: http://ja.wikipedia.org/wiki/EUC-JIS-2004
+ * Link: https://ja.wikipedia.org/wiki/EUC-JIS-2004
  */
 ENC_REPLICATE("EUC-JIS-2004", "EUC-JP") /* defined at JIS X 0213:2004 */
 ENC_ALIAS("EUC-JISX0213", "EUC-JIS-2004") /* defined at JIS X 0213:2000, and obsolete at JIS X 0213:2004 */

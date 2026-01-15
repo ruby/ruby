@@ -11,14 +11,12 @@ module Bundler
 
       protected :original_path
 
-      DEFAULT_GLOB = "{,*,*/*}.gemspec".freeze
+      DEFAULT_GLOB = "{,*,*/*}.gemspec"
 
       def initialize(options)
+        @checksum_store = Checksum::Store.new
         @options = options.dup
         @glob = options["glob"] || DEFAULT_GLOB
-
-        @allow_cached = false
-        @allow_remote = false
 
         @root_path = options["root_path"] || root
 
@@ -26,7 +24,7 @@ module Bundler
           @path = Pathname.new(options["path"])
           expanded_path = expand(@path)
           @path = if @path.relative?
-            expanded_path.relative_path_from(root_path.expand_path)
+            expanded_path.relative_path_from(File.expand_path(root_path))
           else
             expanded_path
           end
@@ -38,16 +36,6 @@ module Bundler
         # Stores the original path. If at any point we move to the
         # cached directory, we still have the original path to copy from.
         @original_path = @path
-      end
-
-      def remote!
-        @local_specs = nil
-        @allow_remote = true
-      end
-
-      def cached!
-        @local_specs = nil
-        @allow_cached = true
       end
 
       def self.from_lock(options)
@@ -65,13 +53,17 @@ module Bundler
         "source at `#{@path}`"
       end
 
+      alias_method :identifier, :to_s
+
+      alias_method :to_gemfile, :path
+
       def hash
         [self.class, expanded_path, version].hash
       end
 
       def eql?(other)
-        return unless other.class == self.class
-        expanded_original_path == other.expanded_original_path &&
+        [Gemspec, Path].include?(other.class) &&
+          expanded_original_path == other.expanded_original_path &&
           version == other.version
       end
 
@@ -82,14 +74,16 @@ module Bundler
       end
 
       def install(spec, options = {})
-        print_using_message "Using #{version_message(spec)} from #{self}"
-        generate_bin(spec, :disable_extensions => true)
+        using_message = "Using #{version_message(spec, options[:previous_spec])} from #{self}"
+        using_message += " and installing its executables" unless spec.executables.empty?
+        print_using_message using_message
+        generate_bin(spec, disable_extensions: true)
         nil # no post-install message
       end
 
       def cache(spec, custom_path = nil)
         app_cache_path = app_cache_path(custom_path)
-        return unless Bundler.feature_flag.cache_all?
+        return unless Bundler.settings[:cache_all]
         return if expand(@original_path).to_s.index(root_path.to_s + "/") == 0
 
         unless @original_path.exist?
@@ -125,7 +119,7 @@ module Bundler
         @expanded_original_path ||= expand(original_path)
       end
 
-    private
+      private
 
       def expanded_path
         @expanded_path ||= expand(path)
@@ -154,7 +148,7 @@ module Bundler
 
       def load_gemspec(file)
         return unless spec = Bundler.load_gemspec(file)
-        Bundler.rubygems.set_installed_by_version(spec)
+        spec.installed_by_version = Gem::VERSION
         spec
       end
 
@@ -167,9 +161,16 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Dir["#{expanded_path}/#{@glob}"].sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
+
+            # The ignore attribute is for ignoring installed gems that don't
+            # have extensions correctly compiled for activation. In the case of
+            # path sources, there's a single version of each gem in the path
+            # source available to Bundler, so we always certainly want to
+            # consider that for activation and never makes sense to ignore it.
+            spec.ignored = false
 
             # Validation causes extension_dir to be calculated, which depends
             # on #source, so we validate here instead of load_gemspec
@@ -218,22 +219,22 @@ module Bundler
 
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
-        spec.files = spec.files.map do |p|
-          next p unless p =~ /\A#{Pathname::SEPARATOR_PAT}/
-          next if File.directory?(p)
+        spec.files = spec.files.filter_map do |path|
+          next path unless /\A#{Pathname::SEPARATOR_PAT}/o.match?(path)
+          next if File.directory?(path)
           begin
-            Pathname.new(p).relative_path_from(gem_dir).to_s
+            Pathname.new(path).relative_path_from(gem_dir).to_s
           rescue ArgumentError
-            p
+            path
           end
-        end.compact
+        end
 
         installer = Path::Installer.new(
           spec,
-          :env_shebang => false,
-          :disable_extensions => options[:disable_extensions],
-          :build_args => options[:build_args],
-          :bundler_extension_cache_path => extension_cache_path(spec)
+          env_shebang: false,
+          disable_extensions: options[:disable_extensions],
+          build_args: options[:build_args],
+          bundler_extension_cache_path: extension_cache_path(spec)
         )
         installer.post_install
       rescue Gem::InvalidSpecificationException => e

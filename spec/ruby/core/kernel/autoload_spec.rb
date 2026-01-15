@@ -7,7 +7,9 @@ require_relative 'fixtures/classes'
 
 autoload :KSAutoloadA, "autoload_a.rb"
 autoload :KSAutoloadB, fixture(__FILE__, "autoload_b.rb")
-autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+define_autoload_KSAutoloadCallsRequire = -> {
+  autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+}
 
 def check_autoload(const)
   autoload? const
@@ -43,6 +45,7 @@ describe "Kernel#autoload" do
   end
 
   it "calls main.require(path) to load the file" do
+    define_autoload_KSAutoloadCallsRequire.call
     main = TOPLEVEL_BINDING.eval("self")
     main.should_receive(:require).with("main_autoload_not_exist.rb")
     # The constant won't be defined since require is mocked to do nothing
@@ -53,6 +56,21 @@ describe "Kernel#autoload" do
     Object.new.instance_eval do
       autoload :KSAutoloadD, fixture(__FILE__, "autoload_d.rb")
       KSAutoloadD.loaded.should == :ksautoload_d
+    end
+  end
+
+  describe "inside a Class.new method body" do
+    # NOTE: this spec is being discussed in https://github.com/ruby/spec/pull/839
+    it "should define on the new anonymous class" do
+      cls = Class.new do
+        def go
+          autoload :Object, 'bogus'
+          autoload? :Object
+        end
+      end
+
+      cls.new.go.should == 'bogus'
+      cls.autoload?(:Object).should == 'bogus'
     end
   end
 

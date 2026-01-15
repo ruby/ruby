@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'psych/helper'
+require 'delegate'
 
 module Psych
   module Visitors
@@ -33,7 +34,7 @@ module Psych
         v << "hello world"
         v.finish
 
-        assert_match "hello world", io.string
+        assert_include io.string, "hello world"
       end
 
       def test_binary_formatting
@@ -62,19 +63,40 @@ module Psych
 
       def test_struct_anon
         s = Struct.new(:foo).new('bar')
-        obj =  Psych.load(Psych.dump(s))
+        obj =  Psych.unsafe_load(Psych.dump(s))
         assert_equal s.foo, obj.foo
       end
 
       def test_override_method
         s = Struct.new(:method).new('override')
-        obj =  Psych.load(Psych.dump(s))
+        obj =  Psych.unsafe_load(Psych.dump(s))
         assert_equal s.method, obj.method
+      end
+
+      D = Data.define(:foo) unless RUBY_VERSION < "3.2"
+
+      def test_data
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        assert_cycle D.new('bar')
+      end
+
+      def test_data_anon
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        d = Data.define(:foo).new('bar')
+        obj =  Psych.unsafe_load(Psych.dump(d))
+        assert_equal d.foo, obj.foo
+      end
+
+      def test_data_override_method
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        d = Data.define(:method).new('override')
+        obj =  Psych.unsafe_load(Psych.dump(d))
+        assert_equal d.method, obj.method
       end
 
       def test_exception
         ex = Exception.new 'foo'
-        loaded = Psych.load(Psych.dump(ex))
+        loaded = Psych.unsafe_load(Psych.dump(ex))
 
         assert_equal ex.message, loaded.message
         assert_equal ex.class, loaded.class
@@ -88,7 +110,7 @@ module Psych
 
       def test_time
         t = Time.now
-        assert_equal t, Psych.load(Psych.dump(t))
+        assert_equal t, Psych.unsafe_load(Psych.dump(t))
       end
 
       def test_date
@@ -127,11 +149,11 @@ module Psych
       end
 
       def test_anon_class
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           @v.accept Class.new
         end
 
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           Psych.dump(Class.new)
         end
       end
@@ -166,9 +188,9 @@ module Psych
       end
 
       def test_string
-        assert_match(/'017'/, Psych.dump({'a' => '017'}))
-        assert_match(/'019'/, Psych.dump({'a' => '019'}))
-        assert_match(/'01818'/, Psych.dump({'a' => '01818'}))
+        assert_include(Psych.dump({'a' => '017'}), "'017'")
+        assert_include(Psych.dump({'a' => '019'}), "'019'")
+        assert_include(Psych.dump({'a' => '01818'}), "'01818'")
       end
 
       # http://yaml.org/type/null.html

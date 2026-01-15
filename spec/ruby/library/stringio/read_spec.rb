@@ -53,7 +53,7 @@ describe "StringIO#read when passed length and a buffer" do
   end
 
   it "reads [length] characters into the buffer" do
-    buf = "foo"
+    buf = +"foo"
     result = @io.read(10, buf)
 
     buf.should == "abcdefghij"

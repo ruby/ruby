@@ -1,0 +1,127 @@
+name: Misc
+on: [push, pull_request, merge_group]
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Miscellaneous checks
+
+    permissions:
+      contents: write # for Git to git push
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          makeup: true
+          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
+          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
+
+      - name: Check for code styles
+        run: |
+          set -x
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA"
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        # Skip 'push' events because post_push.yml fixes them on push
+        if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
+
+      - name: Check for bash specific substitution in configure.ac
+        run: |
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+
+      - name: Check for header macros
+        run: |
+          fail=
+          for header in ruby/*.h; do
+            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
+            fail=1
+            echo $header
+          done
+          exit $fail
+        working-directory: include
+
+      - id: now
+        run: |
+          date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
+        env:
+          TZ: Tokyo/Asia
+
+      - id: deprecation
+        run: |
+          eval $(sed -n 's/^#define RUBY_API_VERSION_\(MAJOR\|MINOR\) /\1=/p' include/ruby/version.h)
+          if git --no-pager grep --color -o 'rb_warn_deprecated_to_remove_at('$MAJOR'\.'$MINOR',.*' -- '*.c' >&2; then
+              false
+          else
+              true
+          fi
+        continue-on-error: ${{ steps.now.outputs.mon < 12 }}
+
+      - name: Check if to generate documents
+        id: rdoc
+        run: |
+          set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
+          { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
+          echo RDOC='ruby -W0 --disable-gems tool/rdoc-srcdir -q' >> $GITHUB_ENV
+
+      - name: Checkout rdoc
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: ruby/rdoc
+          ref: ${{ steps.rdoc.outputs.ref }}
+          path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Generate rdoc
+        run: |
+          set -x
+          gempath=$(ruby -e 'print Gem.user_dir, "/bin"')
+          PATH=$gempath:$PATH
+          gem install --user bundler
+          bundle config --local path vendor/bundle
+          bundle install --jobs 4
+          bundle exec rake generate
+        working-directory: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Core docs coverage
+        run: |
+          $RDOC -C -x ^ext -x ^lib .
+
+      - name: Generate docs
+        id: docs
+        run: |
+          $RDOC --op html .
+          echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+        # Generate only when document commit/PR
+        if: >-
+          ${{false
+          || contains(github.event.head_commit.message, '[ruby/rdoc]')
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          }}
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          path: html
+          name: ${{ steps.docs.outputs.htmlout }}
+        if: ${{ steps.docs.outcome == 'success' }}
+
+      - uses: ./.github/actions/slack
+        with:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}

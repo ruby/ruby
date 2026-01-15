@@ -2,17 +2,10 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 
 describe :hash_to_s, shared: true do
-
   it "returns a string representation with same order as each()" do
     h = { a: [1, 2], b: -2, d: -6, nil => nil }
-
-    pairs = []
-    h.each do |key, value|
-      pairs << key.inspect + '=>' + value.inspect
-    end
-
-    str = '{' + pairs.join(', ') + '}'
-    h.send(@method).should == str
+    expected = ruby_version_is("3.4") ? "{a: [1, 2], b: -2, d: -6, nil => nil}" : "{:a=>[1, 2], :b=>-2, :d=>-6, nil=>nil}"
+    h.send(@method).should == expected
   end
 
   it "calls #inspect on keys and values" do
@@ -20,31 +13,31 @@ describe :hash_to_s, shared: true do
     val = mock('val')
     key.should_receive(:inspect).and_return('key')
     val.should_receive(:inspect).and_return('val')
-
-    { key => val }.send(@method).should == '{key=>val}'
+    expected = ruby_version_is("3.4") ? "{key => val}" : "{key=>val}"
+    { key => val }.send(@method).should == expected
   end
 
   it "does not call #to_s on a String returned from #inspect" do
-    str = "abc"
+    str = +"abc"
     str.should_not_receive(:to_s)
-
-    { a: str }.send(@method).should == '{:a=>"abc"}'
+    expected = ruby_version_is("3.4") ? '{a: "abc"}' : '{:a=>"abc"}'
+    { a: str }.send(@method).should == expected
   end
 
   it "calls #to_s on the object returned from #inspect if the Object isn't a String" do
     obj = mock("Hash#inspect/to_s calls #to_s")
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_return("abc")
-
-    { a: obj }.send(@method).should == "{:a=>abc}"
+    expected = ruby_version_is("3.4") ? "{a: abc}" : "{:a=>abc}"
+    { a: obj }.send(@method).should == expected
   end
 
   it "does not call #to_str on the object returned from #inspect when it is not a String" do
     obj = mock("Hash#inspect/to_s does not call #to_str")
     obj.should_receive(:inspect).and_return(obj)
     obj.should_not_receive(:to_str)
-
-    { a: obj }.send(@method).should =~ /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    expected_pattern = ruby_version_is("3.4") ? /^\{a: #<MockObject:0x[0-9a-f]+>\}$/ : /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    { a: obj }.send(@method).should =~ expected_pattern
   end
 
   it "does not call #to_str on the object returned from #to_s when it is not a String" do
@@ -52,8 +45,8 @@ describe :hash_to_s, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_return(obj)
     obj.should_not_receive(:to_str)
-
-    { a: obj }.send(@method).should =~ /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    expected_pattern = ruby_version_is("3.4") ? /^\{a: #<MockObject:0x[0-9a-f]+>\}$/ : /^\{:a=>#<MockObject:0x[0-9a-f]+>\}$/
+    { a: obj }.send(@method).should =~ expected_pattern
   end
 
   it "does not swallow exceptions raised by #to_s" do
@@ -67,32 +60,34 @@ describe :hash_to_s, shared: true do
   it "handles hashes with recursive values" do
     x = {}
     x[0] = x
-    x.send(@method).should == '{0=>{...}}'
+    expected = ruby_version_is("3.4") ? '{0 => {...}}' : '{0=>{...}}'
+    x.send(@method).should == expected
 
     x = {}
     y = {}
     x[0] = y
     y[1] = x
-    x.send(@method).should == "{0=>{1=>{...}}}"
-    y.send(@method).should == "{1=>{0=>{...}}}"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted string if self is tainted and not empty" do
-      {}.taint.send(@method).tainted?.should be_false
-      { nil => nil }.taint.send(@method).tainted?.should be_true
-    end
-
-    it "returns an untrusted string if self is untrusted and not empty" do
-      {}.untrust.send(@method).untrusted?.should be_false
-      { nil => nil }.untrust.send(@method).untrusted?.should be_true
-    end
+    expected_x = ruby_version_is("3.4") ? '{0 => {1 => {...}}}' : '{0=>{1=>{...}}}'
+    expected_y = ruby_version_is("3.4") ? '{1 => {0 => {...}}}' : '{1=>{0=>{...}}}'
+    x.send(@method).should == expected_x
+    y.send(@method).should == expected_y
   end
 
   it "does not raise if inspected result is not default external encoding" do
     utf_16be = mock("utf_16be")
-    utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
+    utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode(Encoding::UTF_16BE))
+    expected = ruby_version_is("3.4") ? '{a: "utf_16be \u3042"}' : '{:a=>"utf_16be \u3042"}'
+    {a: utf_16be}.send(@method).should == expected
+  end
 
-    {a: utf_16be}.send(@method).should == '{:a=>"utf_16be \u3042"}'
+  it "works for keys and values whose #inspect return a frozen String" do
+    expected = ruby_version_is("3.4") ? "{true => false}" : "{true=>false}"
+    { true => false }.to_s.should == expected
+  end
+
+  ruby_version_is "3.4" do
+    it "adds quotes to symbol keys that are not valid symbol literals" do
+      { "needs-quotes": 1 }.send(@method).should == '{"needs-quotes": 1}'
+    end
   end
 end

@@ -96,4 +96,25 @@ describe "Kernel#define_singleton_method" do
       o.define(:foo) { raise "not used" }
     }.should raise_error(ArgumentError)
   end
+
+  it "always defines the method with public visibility" do
+    cls = Class.new
+    def cls.define(name, &block)
+      private
+      define_singleton_method(name, &block)
+    end
+
+    -> {
+      suppress_warning do
+        cls.define(:foo) { :ok }
+      end
+      cls.foo.should == :ok
+    }.should_not raise_error(NoMethodError)
+  end
+
+  it "cannot define a singleton method with a frozen singleton class" do
+    o = Object.new
+    o.freeze
+    -> { o.define_singleton_method(:foo) { 1 } }.should raise_error(FrozenError)
+  end
 end

@@ -1,0 +1,3 @@
+case; in a if a b; end
+^~~~ expected a predicate for a case matching statement
+

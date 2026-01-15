@@ -10,7 +10,7 @@ describe "Integer#-" do
       (9237212 - 5_280).should == 9231932
 
       (781 - 0.5).should == 780.5
-      (2_560_496 - bignum_value).should == -9223372036852215312
+      (2_560_496 - bignum_value).should == -18446744073706991120
     end
 
     it "raises a TypeError when given a non-Integer" do
@@ -29,8 +29,8 @@ describe "Integer#-" do
     end
 
     it "returns self minus the given Integer" do
-      (@bignum - 9).should == 9223372036854776113
-      (@bignum - 12.57).should be_close(9223372036854776109.43, TOLERANCE)
+      (@bignum - 9).should == 18446744073709551921
+      (@bignum - 12.57).should be_close(18446744073709551917.43, TOLERANCE)
       (@bignum - bignum_value(42)).should == 272
     end
 
@@ -39,5 +39,22 @@ describe "Integer#-" do
       -> { @bignum - "10" }.should raise_error(TypeError)
       -> { @bignum - :symbol }.should raise_error(TypeError)
     end
+  end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(5).and_return([5, 10])
+    (5 - obj).should == -5
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 10]
+      end
+    end
+
+    (5 - obj).should == -5
   end
 end

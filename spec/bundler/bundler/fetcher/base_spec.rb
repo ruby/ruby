@@ -4,15 +4,16 @@ RSpec.describe Bundler::Fetcher::Base do
   let(:downloader)  { double(:downloader) }
   let(:remote)      { double(:remote) }
   let(:display_uri) { "http://sample_uri.com" }
+  let(:gem_remote_fetcher) { nil }
 
   class TestClass < described_class; end
 
-  subject { TestClass.new(downloader, remote, display_uri) }
+  subject { TestClass.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   describe "#initialize" do
     context "with the abstract Base class" do
       it "should raise an error" do
-        expect { described_class.new(downloader, remote, display_uri) }.to raise_error(RuntimeError, "Abstract class")
+        expect { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }.to raise_error(RuntimeError, "Abstract class")
       end
     end
 
@@ -36,7 +37,7 @@ RSpec.describe Bundler::Fetcher::Base do
   end
 
   describe "#fetch_uri" do
-    let(:remote_uri_obj) { Bundler::URI("http://rubygems.org") }
+    let(:remote_uri_obj) { Gem::URI("http://rubygems.org") }
 
     before { allow(subject).to receive(:remote_uri).and_return(remote_uri_obj) }
 
@@ -49,10 +50,10 @@ RSpec.describe Bundler::Fetcher::Base do
     end
 
     context "when the remote uri's host is not rubygems.org" do
-      let(:remote_uri_obj) { Bundler::URI("http://otherhost.org") }
+      let(:remote_uri_obj) { Gem::URI("http://otherhost.org") }
 
       it "should return the remote uri" do
-        expect(subject.fetch_uri).to eq(Bundler::URI("http://otherhost.org"))
+        expect(subject.fetch_uri).to eq(Gem::URI("http://otherhost.org"))
       end
     end
 

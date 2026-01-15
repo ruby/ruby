@@ -1,0 +1,30 @@
+.\" generated with Ronn-NG/v0.10.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.10.1
+.TH "BUNDLE\-BINSTUBS" "1" "September 2025" ""
+.SH "NAME"
+\fBbundle\-binstubs\fR \- Install the binstubs of the listed gems
+.SH "SYNOPSIS"
+\fBbundle binstubs\fR \fIGEM_NAME\fR [\-\-force] [\-\-standalone] [\-\-all\-platforms]
+.SH "DESCRIPTION"
+Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it into \fBbin/\fR\. Binstubs are a shortcut\-or alternative\- to always using \fBbundle exec\fR\. This gives you a file that can be run directly, and one that will always run the correct gem version used by the application\.
+.P
+For example, if you run \fBbundle binstubs rspec\-core\fR, Bundler will create the file \fBbin/rspec\fR\. That file will contain enough code to load Bundler, tell it to load the bundled gems, and then run rspec\.
+.P
+This command generates binstubs for executables in \fBGEM_NAME\fR\. Binstubs are put into \fBbin\fR, or the directory specified by \fBbin\fR setting if it has been configured\. Calling binstubs with [GEM [GEM]] will create binstubs for all given gems\.
+.SH "OPTIONS"
+.TP
+\fB\-\-force\fR
+Overwrite existing binstubs if they exist\.
+.TP
+\fB\-\-standalone\fR
+Makes binstubs that can work without depending on Rubygems or Bundler at runtime\.
+.TP
+\fB\-\-shebang=SHEBANG\fR
+Specify a different shebang executable name than the default (default 'ruby')
+.TP
+\fB\-\-all\fR
+Create binstubs for all gems in the bundle\.
+.TP
+\fB\-\-all\-platforms\fR
+Install binstubs for all platforms\.
+

@@ -219,6 +219,12 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_exec_cvar
+    [Object.new, [], 7, :sym, true, false, nil].each do |obj|
+      assert_equal(13, obj.instance_exec{@@cvar})
+    end
+  end
+
   def test_instance_eval_method
     bug2788 = '[ruby-core:28324]'
     [Object.new, [], nil, true, false].each do |o|
@@ -251,6 +257,70 @@ class TestEval < Test::Unit::TestCase
       bar = Foo.new.instance_eval("Bar")
     end
     assert_equal(2, bar)
+  end
+
+  def test_instance_exec_block_basic
+    forall_TYPE do |o|
+      assert_equal nil,   o.instance_exec { nil }
+      assert_equal true,  o.instance_exec { true }
+      assert_equal false, o.instance_exec { false }
+      assert_equal o,     o.instance_exec { self }
+      assert_equal 1,     o.instance_exec { 1 }
+      assert_equal :sym,  o.instance_exec { :sym }
+
+      assert_equal 11,    o.instance_exec { 11 }
+      assert_equal 12,    o.instance_exec { @ivar } unless o.frozen?
+      assert_equal 13,    o.instance_exec { @@cvar }
+      assert_equal 14,    o.instance_exec { $gvar__eval }
+      assert_equal 15,    o.instance_exec { Const }
+      assert_equal 16,    o.instance_exec { 7 + 9 }
+      assert_equal 17,    o.instance_exec { 17.to_i }
+      assert_equal "18",  o.instance_exec { "18" }
+      assert_equal "19",  o.instance_exec { "1#{9}" }
+
+      1.times {
+        assert_equal 12,  o.instance_exec { @ivar } unless o.frozen?
+        assert_equal 13,  o.instance_exec { @@cvar }
+        assert_equal 14,  o.instance_exec { $gvar__eval }
+        assert_equal 15,  o.instance_exec { Const }
+      }
+    end
+  end
+
+  def test_instance_exec_method_definition
+    klass = Class.new
+    o = klass.new
+
+    o.instance_exec do
+      def foo
+        :foo_result
+      end
+    end
+
+    assert_respond_to o, :foo
+    refute_respond_to klass, :foo
+    refute_respond_to klass.new, :foo
+
+    assert_equal :foo_result, o.foo
+  end
+
+  def test_instance_exec_eval_method_definition
+    klass = Class.new
+    o = klass.new
+
+    o.instance_exec do
+      eval %{
+        def foo
+          :foo_result
+        end
+      }
+    end
+
+    assert_respond_to o, :foo
+    refute_respond_to klass, :foo
+    refute_respond_to klass.new, :foo
+
+    assert_equal :foo_result, o.foo
   end
 
   #
@@ -418,6 +488,9 @@ class TestEval < Test::Unit::TestCase
       end
     end
     assert_equal(feature6609, feature6609_method)
+  ensure
+    Object.undef_method(:feature6609_block) rescue nil
+    Object.undef_method(:feature6609_method) rescue nil
   end
 
   def test_eval_using_integer_as_binding
@@ -462,6 +535,12 @@ class TestEval < Test::Unit::TestCase
     assert_equal(fname, eval("__FILE__", nil, fname, 1))
   end
 
+  def test_eval_invalid_block_exit_bug_20597
+    assert_raise(SyntaxError){eval("break if false")}
+    assert_raise(SyntaxError){eval("next if false")}
+    assert_raise(SyntaxError){eval("redo if false")}
+  end
+
   def test_eval_location_fstring
     o = Object.new
     o.instance_eval "def foo() end", "generated code"
@@ -474,8 +553,8 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_eval_location_binding
-    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", nil))
-    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", binding))
+    assert_equal(["(eval at #{__FILE__}:#{__LINE__})", 1], eval("[__FILE__, __LINE__]", nil))
+    assert_equal(["(eval at #{__FILE__}:#{__LINE__})", 1], eval("[__FILE__, __LINE__]", binding))
     assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", nil, 'foo'))
     assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", binding, 'foo'))
     assert_equal(['foo', 2], eval("[__FILE__, __LINE__]", nil, 'foo', 2))
@@ -532,5 +611,45 @@ class TestEval < Test::Unit::TestCase
   def test_return_in_eval_lambda
     x = orphan_lambda
     assert_equal(:ok, x.call)
+  end
+
+  def test_syntax_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      100_000.times do
+        eval("/[/=~s")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      a = 1
+
+      100_000.times do
+        eval("if a in [0, 0] | [0, a]; end")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+  end
+
+  def test_outer_local_variable_under_gc_compact_stress
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+    omit "compaction is not supported on s390x" if /s390x/ =~ RUBY_PLATFORM
+
+    assert_separately([], <<~RUBY)
+      o = Object.new
+      def o.m = 1
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      EnvUtil.under_gc_compact_stress do
+        assert_equal(1, eval("o.m"))
+      end
+    RUBY
   end
 end

@@ -1,0 +1,17 @@
+super
+
+super()
+
+super(1)
+
+super(1, 2, 3)
+
+super &:foo
+
+super(&:foo)
+
+super {}
+
+super(1, 2, 3) {}
+
+super(1, 2, 3, &:foo)

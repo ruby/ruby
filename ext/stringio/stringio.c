@@ -1,3 +1,4 @@
+/* -*- mode: c; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   stringio.c -
@@ -11,11 +12,15 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.1"
+static const char *const
+STRINGIO_VERSION = "3.2.1.dev";
+
+#include <stdbool.h>
 
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
+#include "ruby/version.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -31,79 +36,21 @@
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
-#ifndef HAVE_RB_IO_EXTRACT_MODEENC
-#define rb_io_extract_modeenc strio_extract_modeenc
-static void
-strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
-		      int *oflags_p, int *fmode_p, struct rb_io_enc_t *convconfig_p)
+static inline bool
+str_chilled_p(VALUE str)
 {
-    VALUE mode = *vmode_p;
-    VALUE intmode;
-    int fmode;
-    int has_enc = 0, has_vmode = 0;
-
-    convconfig_p->enc = convconfig_p->enc2 = 0;
-
-  vmode_handle:
-    if (NIL_P(mode)) {
-	fmode = FMODE_READABLE;
-    }
-    else if (!NIL_P(intmode = rb_check_to_integer(mode, "to_int"))) {
-	int flags = NUM2INT(intmode);
-	fmode = rb_io_oflags_fmode(flags);
-    }
-    else {
-	const char *m = StringValueCStr(mode), *n, *e;
-	fmode = rb_io_modestr_fmode(m);
-	n = strchr(m, ':');
-	if (n) {
-	    long len;
-	    char encname[ENCODING_MAXNAMELEN+1];
-	    has_enc = 1;
-	    if (fmode & FMODE_SETENC_BY_BOM) {
-		n = strchr(n, '|');
-	    }
-	    e = strchr(++n, ':');
-	    len = e ? e - n : strlen(n);
-	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
-		if (e) {
-		    memcpy(encname, n, len);
-		    encname[len] = '\0';
-		    n = encname;
-		}
-		convconfig_p->enc = rb_enc_find(n);
-	    }
-	    if (e && (len = strlen(++e)) > 0 && len <= ENCODING_MAXNAMELEN) {
-		convconfig_p->enc2 = rb_enc_find(e);
-	    }
-	}
-    }
-
-    if (!NIL_P(opthash)) {
-	rb_encoding *extenc = 0, *intenc = 0;
-	VALUE v;
-	if (!has_vmode) {
-	    ID id_mode;
-	    CONST_ID(id_mode, "mode");
-	    v = rb_hash_aref(opthash, ID2SYM(id_mode));
-	    if (!NIL_P(v)) {
-		if (!NIL_P(mode)) {
-		    rb_raise(rb_eArgError, "mode specified twice");
-		}
-		has_vmode = 1;
-		mode = v;
-		goto vmode_handle;
-	    }
-	}
-
-	if (rb_io_extract_encoding_option(opthash, &extenc, &intenc, &fmode)) {
-	    if (has_enc) {
-		rb_raise(rb_eArgError, "encoding specified twice");
-	    }
-	}
-    }
-    *fmode_p = fmode;
+#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+    // Do not attempt to modify chilled strings on Ruby 3.4+
+    // RUBY_FL_USER2 == STR_CHILLED_LITERAL
+    // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
+    return FL_TEST_RAW(str, RUBY_FL_USER2 | RUBY_FL_USER3);
+#else
+    return false;
+#endif
 }
+
+#ifndef HAVE_TYPE_RB_IO_MODE_T
+typedef int rb_io_mode_t;
 #endif
 
 struct StringIO {
@@ -111,7 +58,7 @@ struct StringIO {
     rb_encoding *enc;
     long pos;
     long lineno;
-    int flags;
+    rb_io_mode_t flags;
     int count;
 };
 
@@ -121,7 +68,13 @@ static long strio_write(VALUE self, VALUE str);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (rb_syserr_fail(EINVAL, msg))
-#define get_enc(ptr) ((ptr)->enc ? (ptr)->enc : rb_enc_get((ptr)->string))
+#define get_enc(ptr) ((ptr)->enc ? (ptr)->enc : !NIL_P((ptr)->string) ? rb_enc_get((ptr)->string) : NULL)
+
+static bool
+readonly_string_p(VALUE string)
+{
+    return OBJ_FROZEN_RAW(string);
+}
 
 static struct StringIO *
 strio_alloc(void)
@@ -165,7 +118,7 @@ static const rb_data_type_t strio_data_type = {
 	strio_free,
 	strio_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))
@@ -239,9 +192,27 @@ writable(VALUE strio)
 static void
 check_modifiable(struct StringIO *ptr)
 {
-    if (OBJ_FROZEN(ptr->string)) {
+    if (NIL_P(ptr->string)) {
+	/* Null device StringIO */
+    }
+    else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
     }
+    else {
+	rb_str_modify(ptr->string);
+    }
+}
+
+static inline bool
+outside_p(struct StringIO *ptr, long pos)
+{
+    return NIL_P(ptr->string) || pos >= RSTRING_LEN(ptr->string);
+}
+
+static inline bool
+eos_p(struct StringIO *ptr)
+{
+    return outside_p(ptr, ptr->pos);
 }
 
 static VALUE
@@ -251,9 +222,35 @@ strio_s_allocate(VALUE klass)
 }
 
 /*
- * call-seq: StringIO.new(string=""[, mode])
+ * call-seq:
+ *   StringIO.new(string = '', mode = 'r+') -> new_stringio
  *
- * Creates new StringIO instance from with _string_ and _mode_.
+ * Returns a new \StringIO instance formed from +string+ and +mode+;
+ * the instance should be closed when no longer needed:
+ *
+ *   strio = StringIO.new
+ *   strio.string        # => ""
+ *   strio.closed_read?  # => false
+ *   strio.closed_write? # => false
+ *   strio.close
+ *
+ * If +string+ is frozen, the default +mode+ is <tt>'r'</tt>:
+ *
+ *   strio = StringIO.new('foo'.freeze)
+ *   strio.string        # => "foo"
+ *   strio.closed_read?  # => false
+ *   strio.closed_write? # => true
+ *   strio.close
+ *
+ * Argument +mode+ must be a valid
+ * {Access Mode}[rdoc-ref:File@Access+Modes],
+ * which may be a string or an integer constant:
+ *
+ *   StringIO.new('foo', 'w+')
+ *   StringIO.new('foo', File::RDONLY)
+ *
+ * Related: StringIO.open
+ * (passes the \StringIO object to the block; closes the object automatically on block exit).
  */
 static VALUE
 strio_initialize(int argc, VALUE *argv, VALUE self)
@@ -339,17 +336,18 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, vmode, opt;
     int oflags;
-    struct rb_io_enc_t convconfig;
+    rb_io_enc_t convconfig;
 
     argc = rb_scan_args(argc, argv, "02:", &string, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &ptr->flags, &convconfig);
-    if (argc) {
+    if (!NIL_P(string)) {
 	StringValue(string);
     }
-    else {
+    else if (!argc) {
 	string = rb_enc_str_new("", 0, rb_default_external_encoding());
     }
-    if (OBJ_FROZEN_RAW(string)) {
+
+    if (!NIL_P(string) && readonly_string_p(string)) {
 	if (ptr->flags & FMODE_WRITABLE) {
 	    rb_syserr_fail(EACCES, 0);
 	}
@@ -359,11 +357,11 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 	    ptr->flags |= FMODE_WRITABLE;
 	}
     }
-    if (ptr->flags & FMODE_TRUNC) {
+    if (!NIL_P(string) && (ptr->flags & FMODE_TRUNC)) {
 	rb_str_resize(string, 0);
     }
-    ptr->string = string;
-    if (argc == 1) {
+    RB_OBJ_WRITE(self, &ptr->string, string);
+    if (argc == 1 && !NIL_P(string)) {
 	ptr->enc = rb_enc_get(string);
     }
     else {
@@ -380,17 +378,29 @@ static VALUE
 strio_finalize(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
-    ptr->string = Qnil;
+    RB_OBJ_WRITE(self, &ptr->string, Qnil);
     ptr->flags &= ~FMODE_READWRITE;
     return self;
 }
 
 /*
- * call-seq: StringIO.open(string=""[, mode]) {|strio| ...}
+ * call-seq:
+ *   StringIO.open(string = '', mode = 'r+') -> new_stringio
+ *   StringIO.open(string = '', mode = 'r+') {|strio| ... } -> object
  *
- * Equivalent to StringIO.new except that when it is called with a block, it
- * yields with the new instance and closes it, and returns the result which
- * returned from the block.
+ * Creates new \StringIO instance by calling <tt>StringIO.new(string, mode)</tt>.
+ *
+ * With no block given, returns the new instance:
+ *
+ *   strio = StringIO.open # => #<StringIO>
+ *
+ * With a block given, calls the block with the new instance
+ * and returns the block's value;
+ * closes the instance on block exit:
+ *
+ *   StringIO.open('foo') {|strio| strio.string.upcase } # => "FOO"
+ *
+ * Related: StringIO.new.
  */
 static VALUE
 strio_s_open(int argc, VALUE *argv, VALUE klass)
@@ -414,7 +424,7 @@ strio_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * Returns +false+.  Just for compatibility to IO.
+ * Returns +false+; for compatibility with IO.
  */
 static VALUE
 strio_false(VALUE self)
@@ -424,7 +434,7 @@ strio_false(VALUE self)
 }
 
 /*
- * Returns +nil+.  Just for compatibility to IO.
+ * Returns +nil+; for compatibility with IO.
  */
 static VALUE
 strio_nil(VALUE self)
@@ -434,7 +444,7 @@ strio_nil(VALUE self)
 }
 
 /*
- * Returns an object itself.  Just for compatibility to IO.
+ * Returns +self+; for compatibility with IO.
  */
 static VALUE
 strio_self(VALUE self)
@@ -444,7 +454,7 @@ strio_self(VALUE self)
 }
 
 /*
- * Returns 0.  Just for compatibility to IO.
+ * Returns 0; for compatibility with IO.
  */
 static VALUE
 strio_0(VALUE self)
@@ -476,9 +486,23 @@ strio_unimpl(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq: strio.string     -> string
+ * call-seq:
+ *   string -> string
  *
- * Returns underlying String object, the subject of IO.
+ * Returns underlying string:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string= (assigns the underlying string).
  */
 static VALUE
 strio_get_string(VALUE self)
@@ -488,9 +512,23 @@ strio_get_string(VALUE self)
 
 /*
  * call-seq:
- *   strio.string = string  -> string
+ *   string = other_string -> other_string
  *
- * Changes underlying String object, the subject of IO.
+ * Replaces the stored string with +other_string+, and sets the position to zero;
+ * returns +other_string+:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string (returns the stored string).
  */
 static VALUE
 strio_set_string(VALUE self, VALUE string)
@@ -500,18 +538,27 @@ strio_set_string(VALUE self, VALUE string)
     rb_io_taint_check(self);
     ptr->flags &= ~FMODE_READWRITE;
     StringValue(string);
-    ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
+    ptr->flags = readonly_string_p(string) ? FMODE_READABLE : FMODE_READWRITE;
     ptr->pos = 0;
     ptr->lineno = 0;
-    return ptr->string = string;
+    RB_OBJ_WRITE(self, &ptr->string, string);
+    return string;
 }
 
 /*
  * call-seq:
- *   strio.close  -> nil
+ *   close -> nil
  *
- * Closes a StringIO. The stream is unavailable for any further data
- * operations; an +IOError+ is raised if such an attempt is made.
+ * Closes +self+ for both reading and writing; returns +nil+:
+ *
+ *   strio = StringIO.new
+ *   strio.closed? # => false
+ *   strio.close   # => nil
+ *   strio.closed? # => true
+ *   strio.read    # Raises IOError: not opened for reading
+ *   strio.write   # Raises IOError: not opened for writing
+ *
+ * Related: StringIO#close_read, StringIO#close_write, StringIO.closed?.
  */
 static VALUE
 strio_close(VALUE self)
@@ -523,10 +570,20 @@ strio_close(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_read    -> nil
+ *   close_read -> nil
  *
- * Closes the read end of a StringIO.  Will raise an +IOError+ if the
- * receiver is not readable.
+ * Closes +self+ for reading;
+ * closed-write setting remains unchanged;
+ * returns +nil+:
+ *
+ *   strio = StringIO.new
+ *   strio.closed_read?  # => false
+ *   strio.close_read    # => nil
+ *   strio.closed_read?  # => true
+ *   strio.closed_write? # => false
+ *   strio.read          # Raises IOError: not opened for reading
+ *
+ * Related: StringIO#close, StringIO#close_write.
  */
 static VALUE
 strio_close_read(VALUE self)
@@ -541,10 +598,18 @@ strio_close_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_write    -> nil
+ *   close_write -> nil
  *
- * Closes the write end of a StringIO.  Will raise an  +IOError+ if the
- * receiver is not writeable.
+ * Closes +self+ for writing; closed-read setting remains unchanged; returns +nil+:
+ *
+ *   strio = StringIO.new
+ *   strio.closed_write? # => false
+ *   strio.close_write   # => nil
+ *   strio.closed_write? # => true
+ *   strio.closed_read?  # => false
+ *   strio.write('foo')  # Raises IOError: not opened for writing
+ *
+ * Related: StringIO#close, StringIO#close_read, StringIO#closed_write?.
  */
 static VALUE
 strio_close_write(VALUE self)
@@ -559,9 +624,18 @@ strio_close_write(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed?    -> true or false
+ *   closed? -> true or false
  *
- * Returns +true+ if the stream is completely closed, +false+ otherwise.
+ * Returns whether +self+ is closed for both reading and writing:
+ *
+ *   strio = StringIO.new
+ *   strio.closed?     # => false  # Open for reading and writing.
+ *   strio.close_read
+ *   strio.closed?     # => false  # Still open for writing.
+ *   strio.close_write
+ *   strio.closed?     # => true   # Now closed for both.
+ *
+ * Related: StringIO.closed_read?, StringIO.closed_write?.
  */
 static VALUE
 strio_closed(VALUE self)
@@ -573,9 +647,16 @@ strio_closed(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_read?    -> true or false
+ *   closed_read? -> true or false
  *
- * Returns +true+ if the stream is not readable, +false+ otherwise.
+ * Returns whether +self+ is closed for reading:
+ *
+ *   strio = StringIO.new
+ *   strio.closed_read?   # => false
+ *   strio.close_read
+ *   strio.closed_read?   # => true
+ *
+ * Related: StringIO#closed?, StringIO#closed_write?, StringIO#close_read.
  */
 static VALUE
 strio_closed_read(VALUE self)
@@ -587,9 +668,16 @@ strio_closed_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_write?    -> true or false
+ *   closed_write? -> true or false
  *
- * Returns +true+ if the stream is not writable, +false+ otherwise.
+ * Returns whether +self+ is closed for writing:
+ *
+ *   strio = StringIO.new
+ *   strio.closed_write? # => false
+ *   strio.close_write
+ *   strio.closed_write? # => true
+ *
+ * Related: StringIO#close_write, StringIO#closed?, StringIO#closed_read?.
  */
 static VALUE
 strio_closed_write(VALUE self)
@@ -599,19 +687,35 @@ strio_closed_write(VALUE self)
     return Qtrue;
 }
 
+static struct StringIO *
+strio_to_read(VALUE self)
+{
+    struct StringIO *ptr = readable(self);
+    if (eos_p(ptr)) return NULL;
+    return ptr;
+}
+
 /*
  * call-seq:
- *   strio.eof     -> true or false
- *   strio.eof?    -> true or false
+ *   eof? -> true or false
  *
- * Returns true if the stream is at the end of the data (underlying string).
- * The stream must be opened for reading or an +IOError+ will be raised.
+ * Returns whether +self+ is positioned at end-of-stream:
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.pos  # => 0
+ *   strio.eof? # => false
+ *   strio.read # => "foo"
+ *   strio.pos  # => 3
+ *   strio.eof? # => true
+ *   strio.close_read
+ *   strio.eof? # Raises IOError: not opened for reading
+ *
+ * Related: StringIO#pos.
  */
 static VALUE
 strio_eof(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
-    if (ptr->pos < RSTRING_LEN(ptr->string)) return Qfalse;
+    if (strio_to_read(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -619,15 +723,19 @@ strio_eof(VALUE self)
 static VALUE
 strio_copy(VALUE copy, VALUE orig)
 {
-    struct StringIO *ptr;
+    struct StringIO *ptr, *old_ptr;
+    VALUE old_string = Qundef;
 
     orig = rb_convert_type(orig, T_DATA, "StringIO", "to_strio");
     if (copy == orig) return copy;
     ptr = StringIO(orig);
-    if (check_strio(copy)) {
-	strio_free(DATA_PTR(copy));
+    old_ptr = check_strio(copy);
+    if (old_ptr) {
+	old_string = old_ptr->string;
+	strio_free(old_ptr);
     }
     DATA_PTR(copy) = ptr;
+    RB_OBJ_WRITTEN(copy, old_string, ptr->string);
     RBASIC(copy)->flags &= ~STRIO_READWRITE;
     RBASIC(copy)->flags |= RBASIC(orig)->flags & STRIO_READWRITE;
     ++ptr->count;
@@ -636,13 +744,10 @@ strio_copy(VALUE copy, VALUE orig)
 
 /*
  * call-seq:
- *   strio.lineno    -> integer
+ *   lineno -> current_line_number
  *
- * Returns the current line number. The stream must be
- * opened for reading. +lineno+ counts the number of times  +gets+ is
- * called, rather than the number of newlines  encountered. The two
- * values will differ if +gets+ is  called with a separator other than
- * newline.  See also the  <code>$.</code> variable.
+ * Returns the current line number in +self+;
+ * see {Line Number}[rdoc-ref:StringIO@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -652,10 +757,10 @@ strio_get_lineno(VALUE self)
 
 /*
  * call-seq:
- *   strio.lineno = integer    -> integer
+ *   lineno = new_line_number -> new_line_number
  *
- * Manually sets the current line number to the given value.
- * <code>$.</code> is updated only on the next read.
+ * Sets the current line number in +self+ to the given +new_line_number+;
+ * see {Line Number}[rdoc-ref:StringIO@Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -666,9 +771,10 @@ strio_set_lineno(VALUE self, VALUE lineno)
 
 /*
  * call-seq:
- *   strio.binmode    -> stringio
+ *   binmode -> self
  *
- * Puts stream into binary mode. See IO#binmode.
+ * Sets the data mode in +self+ to binary mode;
+ * see {Data Mode}[rdoc-ref:StringIO@Data+Mode].
  *
  */
 static VALUE
@@ -692,11 +798,27 @@ strio_binmode(VALUE self)
 
 /*
  * call-seq:
- *   strio.reopen(other_StrIO)     -> strio
- *   strio.reopen(string, mode)    -> strio
+ *   reopen(other, mode = 'r+') -> self
  *
- * Reinitializes the stream with the given <i>other_StrIO</i> or _string_
- * and _mode_ (see StringIO#new).
+ * Reinitializes the stream with the given +other+ (string or StringIO) and +mode+;
+ * see IO.new:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.reopen('bar')
+ *     p strio.string
+ *     other_strio = StringIO.new('baz')
+ *     strio.reopen(other_strio)
+ *     p strio.string
+ *     other_strio.close
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *   "baz"
+ *
  */
 static VALUE
 strio_reopen(int argc, VALUE *argv, VALUE self)
@@ -710,10 +832,10 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.pos     -> integer
- *   strio.tell    -> integer
+ *   pos -> stream_position
  *
- * Returns the current offset (in bytes).
+ * Returns the current position (in bytes);
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_get_pos(VALUE self)
@@ -723,9 +845,10 @@ strio_get_pos(VALUE self)
 
 /*
  * call-seq:
- *   strio.pos = integer    -> integer
+ *   pos = new_position -> new_position
  *
- * Seeks to the given position (in bytes).
+ * Sets the current position (in bytes);
+ * see {Position}[rdoc-ref:StringIO@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -741,10 +864,11 @@ strio_set_pos(VALUE self, VALUE pos)
 
 /*
  * call-seq:
- *   strio.rewind    -> 0
+ *   rewind -> 0
  *
- * Positions the stream to the beginning of input, resetting
- * +lineno+ to zero.
+ * Sets the current position and line number to zero;
+ * see {Position}[rdoc-ref:IO@Position]
+ * and {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_rewind(VALUE self)
@@ -757,10 +881,11 @@ strio_rewind(VALUE self)
 
 /*
  * call-seq:
- *   strio.seek(amount, whence=SEEK_SET) -> 0
+ *   seek(offset, whence = SEEK_SET) -> 0
  *
- * Seeks to a given offset _amount_ in the stream according to
- * the value of _whence_ (see IO#seek).
+ * Sets the position to the given integer +offset+ (in bytes),
+ * with respect to a given constant +whence+;
+ * see {IO#seek}[rdoc-ref:IO#seek].
  */
 static VALUE
 strio_seek(int argc, VALUE *argv, VALUE self)
@@ -782,7 +907,11 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 	offset = ptr->pos;
 	break;
       case 2:
-	offset = RSTRING_LEN(ptr->string);
+	if (NIL_P(ptr->string)) {
+	    offset = 0;
+	} else {
+	    offset = RSTRING_LEN(ptr->string);
+	}
 	break;
       default:
 	error_inval("invalid whence");
@@ -796,9 +925,9 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.sync    -> true
+ *   sync -> true
  *
- * Returns +true+ always.
+ * Returns +true+; implemented only for compatibility with other stream classes.
  */
 static VALUE
 strio_get_sync(VALUE self)
@@ -813,19 +942,20 @@ strio_get_sync(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_byte {|byte| block }  -> strio
- *   strio.each_byte                  -> anEnumerator
+ *   each_byte {|byte| ... } -> self
  *
- * See IO#each_byte.
+ * :include: stringio/each_byte.rdoc
+ *
+ * Related: StringIO#each_char, StringIO#each_codepoint, StringIO#each_line.
  */
 static VALUE
 strio_each_byte(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
+    struct StringIO *ptr;
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    while (ptr->pos < RSTRING_LEN(ptr->string)) {
+    while ((ptr = strio_to_read(self)) != NULL) {
 	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
@@ -833,22 +963,11 @@ strio_each_byte(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_byte.
- */
-static VALUE
-strio_bytes(VALUE self)
-{
-    rb_warn("StringIO#bytes is deprecated; use #each_byte instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return strio_each_byte(self);
-}
-
-/*
  * call-seq:
- *   strio.getc   -> string or nil
+ *   getc -> character, byte, or nil
  *
- * See IO#getc.
+ * :include: stringio/getc.rdoc
+ *
  */
 static VALUE
 strio_getc(VALUE self)
@@ -860,7 +979,7 @@ strio_getc(VALUE self)
     int len;
     char *p;
 
-    if (pos >= RSTRING_LEN(str)) {
+    if (eos_p(ptr)) {
 	return Qnil;
     }
     p = RSTRING_PTR(str)+pos;
@@ -871,16 +990,17 @@ strio_getc(VALUE self)
 
 /*
  * call-seq:
- *   strio.getbyte   -> fixnum or nil
+ *   getbyte -> integer or nil
  *
- * See IO#getbyte.
+ * :include: stringio/getbyte.rdoc
+ *
  */
 static VALUE
 strio_getbyte(VALUE self)
 {
     struct StringIO *ptr = readable(self);
     int c;
-    if (ptr->pos >= RSTRING_LEN(ptr->string)) {
+    if (eos_p(ptr)) {
 	return Qnil;
     }
     c = RSTRING_PTR(ptr->string)[ptr->pos++];
@@ -902,19 +1022,26 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 	if (pos > olen)
 	    MEMZERO(RSTRING_PTR(ptr->string) + olen, char, pos - olen);
     }
-    else {
-	rb_str_modify(ptr->string);
+}
+
+static void
+strio_unget_string(struct StringIO *ptr, VALUE c)
+{
+    const char *cp = NULL;
+    long cl = RSTRING_LEN(c);
+    if (cl > 0) {
+	if (c != ptr->string) cp = RSTRING_PTR(c);
+	strio_unget_bytes(ptr, cp, cl);
+	RB_GC_GUARD(c);
     }
 }
 
 /*
  * call-seq:
- *   strio.ungetc(string)   -> nil
+ *   ungetc(character) -> nil
  *
- * Pushes back one character (passed as a parameter)
- * such that a subsequent buffered read will return it.  There is no
- * limitation for multiple pushbacks including pushing back behind the
- * beginning of the buffer string.
+ * Pushes back ("unshifts") a character or integer onto the stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
@@ -923,6 +1050,7 @@ strio_ungetc(VALUE self, VALUE c)
     rb_encoding *enc, *enc2;
 
     check_modifiable(ptr);
+    if (NIL_P(ptr->string)) return Qnil;
     if (NIL_P(c)) return Qnil;
     if (RB_INTEGER_TYPE_P(c)) {
 	int len, cc = NUM2INT(c);
@@ -930,28 +1058,32 @@ strio_ungetc(VALUE self, VALUE c)
 
 	enc = rb_enc_get(ptr->string);
 	len = rb_enc_codelen(cc, enc);
-	if (len <= 0) rb_enc_uint_chr(cc, enc);
+	if (len <= 0) {
+	    rb_enc_uint_chr(cc, enc); /* to raise an exception */
+	    UNREACHABLE;
+	}
 	rb_enc_mbcput(cc, buf, enc);
 	return strio_unget_bytes(ptr, buf, len);
     }
     else {
-	SafeStringValue(c);
+	StringValue(c);
+	if (RSTRING_LEN(c) == 0) return Qnil;
 	enc = rb_enc_get(ptr->string);
 	enc2 = rb_enc_get(c);
 	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
 	    c = rb_str_conv_enc(c, enc2, enc);
 	}
-	strio_unget_bytes(ptr, RSTRING_PTR(c), RSTRING_LEN(c));
-	RB_GC_GUARD(c);
+	strio_unget_string(ptr, c);
 	return Qnil;
     }
 }
 
 /*
  * call-seq:
- *   strio.ungetbyte(fixnum)   -> nil
+ *   ungetbyte(byte) -> nil
  *
- * See IO#ungetbyte
+ * Pushes back ("unshifts") an 8-bit byte onto the stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
@@ -959,21 +1091,17 @@ strio_ungetbyte(VALUE self, VALUE c)
     struct StringIO *ptr = readable(self);
 
     check_modifiable(ptr);
+    if (NIL_P(ptr->string)) return Qnil;
     if (NIL_P(c)) return Qnil;
     if (RB_INTEGER_TYPE_P(c)) {
-        /* rb_int_and() not visible from exts */
-        VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
-        const char cc = NUM2INT(v) & 0xFF;
-        strio_unget_bytes(ptr, &cc, 1);
+	/* rb_int_and() not visible from exts */
+	VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
+	const char cc = NUM2INT(v) & 0xFF;
+	strio_unget_bytes(ptr, &cc, 1);
     }
     else {
-	long cl;
-	SafeStringValue(c);
-	cl = RSTRING_LEN(c);
-	if (cl > 0) {
-	    strio_unget_bytes(ptr, RSTRING_PTR(c), cl);
-	    RB_GC_GUARD(c);
-	}
+	StringValue(c);
+	strio_unget_string(ptr, c);
     }
     return Qnil;
 }
@@ -988,7 +1116,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
     len = RSTRING_LEN(str);
     rest = pos - len;
     if (cl > pos) {
-	long ex = (rest < 0 ? cl-pos : cl+rest);
+	long ex = cl - (rest < 0 ? pos : len);
 	rb_str_modify_expand(str, ex);
 	rb_str_set_len(str, len + ex);
 	s = RSTRING_PTR(str);
@@ -1004,16 +1132,17 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 	if (rest > cl) memset(s + len, 0, rest - cl);
 	pos -= cl;
     }
-    memcpy(s + pos, cp, cl);
+    memcpy(s + pos, (cp ? cp : s), cl);
     ptr->pos = pos;
     return Qnil;
 }
 
 /*
  * call-seq:
- *   strio.readchar   -> string
+ *   readchar -> string
  *
- * See IO#readchar.
+ * Like +getc+, but raises an exception if already at end-of-stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_readchar(VALUE self)
@@ -1025,9 +1154,10 @@ strio_readchar(VALUE self)
 
 /*
  * call-seq:
- *   strio.readbyte   -> fixnum
+ *   readbyte -> byte
  *
- * See IO#readbyte.
+ * Like +getbyte+, but raises an exception if already at end-of-stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_readbyte(VALUE self)
@@ -1039,10 +1169,11 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_char {|char| block }  -> strio
- *   strio.each_char                  -> anEnumerator
+ *   each_char {|char| ... } -> self
  *
- * See IO#each_char.
+ * :include: stringio/each_char.rdoc
+ *
+ * Related: StringIO#each_byte, StringIO#each_codepoint, StringIO#each_line.
  */
 static VALUE
 strio_each_char(VALUE self)
@@ -1058,23 +1189,12 @@ strio_each_char(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-static VALUE
-strio_chars(VALUE self)
-{
-    rb_warn("StringIO#chars is deprecated; use #each_char instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_char")), 0, 0);
-    return strio_each_char(self);
-}
-
-/*
  * call-seq:
- *   strio.each_codepoint {|c| block }  -> strio
- *   strio.each_codepoint               -> anEnumerator
+ *   each_codepoint {|codepoint| ... } -> self
  *
- * See IO#each_codepoint.
+ * :include: stringio/each_codepoint.rdoc
+ *
+ * Related: StringIO#each_byte, StringIO#each_char, StringIO#each_line.
  */
 static VALUE
 strio_each_codepoint(VALUE self)
@@ -1088,29 +1208,13 @@ strio_each_codepoint(VALUE self)
 
     ptr = readable(self);
     enc = get_enc(ptr);
-    for (;;) {
-	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
-	    return self;
-	}
-
+    while ((ptr = strio_to_read(self)) != NULL) {
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
-	rb_yield(UINT2NUM(c));
 	ptr->pos += n;
+	rb_yield(UINT2NUM(c));
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-static VALUE
-strio_codepoints(VALUE self)
-{
-    rb_warn("StringIO#codepoints is deprecated; use #each_codepoint instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return strio_each_codepoint(self);
 }
 
 /* Boyer-Moore search: copied from regex.c */
@@ -1153,36 +1257,57 @@ struct getline_arg {
 };
 
 static struct getline_arg *
-prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
+prepare_getline_args(struct StringIO *ptr, struct getline_arg *arg, int argc, VALUE *argv)
 {
-    VALUE str, lim, opts;
+    VALUE rs, lim, opts;
     long limit = -1;
+    int respect_chomp;
 
-    argc = rb_scan_args(argc, argv, "02:", &str, &lim, &opts);
+    argc = rb_scan_args(argc, argv, "02:", &rs, &lim, &opts);
+    respect_chomp = argc == 0 || !NIL_P(rs);
     switch (argc) {
       case 0:
-	str = rb_rs;
+	rs = rb_rs;
 	break;
 
       case 1:
-	if (!NIL_P(str) && !RB_TYPE_P(str, T_STRING)) {
-	    VALUE tmp = rb_check_string_type(str);
+	if (!NIL_P(rs) && !RB_TYPE_P(rs, T_STRING)) {
+	    VALUE tmp = rb_check_string_type(rs);
 	    if (NIL_P(tmp)) {
-		limit = NUM2LONG(str);
-		str = rb_rs;
+		limit = NUM2LONG(rs);
+		rs = rb_rs;
 	    }
 	    else {
-		str = tmp;
+		rs = tmp;
 	    }
 	}
 	break;
 
       case 2:
-	if (!NIL_P(str)) StringValue(str);
+	if (!NIL_P(rs)) StringValue(rs);
 	if (!NIL_P(lim)) limit = NUM2LONG(lim);
 	break;
     }
-    arg->rs = str;
+    if (!NIL_P(ptr->string) && !NIL_P(rs)) {
+	rb_encoding *enc_rs, *enc_io;
+	enc_rs = rb_enc_get(rs);
+	enc_io = get_enc(ptr);
+	if (enc_rs != enc_io &&
+	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
+	     (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
+	    if (rs == rb_rs) {
+		rs = rb_enc_str_new(0, 0, enc_io);
+		rb_str_buf_cat_ascii(rs, "\n");
+		rs = rs;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
+			 rb_enc_name(enc_io),
+			 rb_enc_name(enc_rs));
+	    }
+	}
+    }
+    arg->rs = rs;
     arg->limit = limit;
     arg->chomp = 0;
     if (!NIL_P(opts)) {
@@ -1192,7 +1317,9 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 	    keywords[0] = rb_intern_const("chomp");
 	}
 	rb_get_kwargs(opts, keywords, 0, 1, &vchomp);
-	arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+	if (respect_chomp) {
+	    arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+	}
     }
     return arg;
 }
@@ -1213,10 +1340,10 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     const char *s, *e, *p;
     long n, limit = arg->limit;
     VALUE str = arg->rs;
-    int w = 0;
+    long w = 0;
     rb_encoding *enc = get_enc(ptr);
 
-    if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
+    if (NIL_P(ptr->string) || ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
 	return Qnil;
     }
     s = RSTRING_PTR(ptr->string);
@@ -1232,6 +1359,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
+	const char *paragraph_end = NULL;
 	p = s;
 	while (p[(p + 1 < e) && (*p == '\r') && 0] == '\n') {
 	    p += *p == '\r';
@@ -1241,19 +1369,21 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	}
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
-	    if (*++p == '\n') {
-		e = p + 1;
-		w = (arg->chomp ? 1 : 0);
-		break;
+	    p++;
+	    if (!((p < e && *p == '\n') ||
+		  (p + 1 < e && *p == '\r' && *(p+1) == '\n'))) {
+		continue;
 	    }
-	    else if (*p == '\r' && p < e && p[1] == '\n') {
-		e = p + 2;
-		w = (arg->chomp ? 2 : 0);
-		break;
+	    paragraph_end = p - ((*(p-2) == '\r') ? 2 : 1);
+	    while ((p < e && *p == '\n') ||
+		   (p + 1 < e && *p == '\r' && *(p+1) == '\n')) {
+		p += (*p == '\r') ? 2 : 1;
 	    }
+	    e = p;
+	    break;
 	}
-	if (!w && arg->chomp) {
-	    w = chomp_newline_width(s, e);
+	if (arg->chomp && paragraph_end) {
+	    w = e - paragraph_end;
 	}
 	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w, enc);
     }
@@ -1265,11 +1395,13 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else {
-	if (n < e - s) {
-	    if (e - s < 1024) {
+	if (n < e - s + arg->chomp) {
+	    /* unless chomping, RS at the end does not matter */
+	    if (e - s < 1024 || n == e - s) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
-			e = p + (arg->chomp ? 0 : n);
+			e = p + n;
+			w = (arg->chomp ? n : 0);
 			break;
 		    }
 		}
@@ -1292,35 +1424,38 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 
 /*
  * call-seq:
- *   strio.gets(sep=$/, chomp: false)     -> string or nil
- *   strio.gets(limit, chomp: false)      -> string or nil
- *   strio.gets(sep, limit, chomp: false) -> string or nil
+ *   gets(sep = $/, chomp: false) -> string or nil
+ *   gets(limit, chomp: false) -> string or nil
+ *   gets(sep, limit, chomp: false) -> string or nil
  *
- * See IO#gets.
+ * :include: stringio/gets.rdoc
+ *
  */
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
 {
+    struct StringIO *ptr = readable(self);
     struct getline_arg arg;
     VALUE str;
 
-    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
-	struct StringIO *ptr = readable(self);
+    if (prepare_getline_args(ptr, &arg, argc, argv)->limit == 0) {
+	if (NIL_P(ptr->string)) return Qnil;
 	return rb_enc_str_new(0, 0, get_enc(ptr));
     }
 
-    str = strio_getline(&arg, readable(self));
+    str = strio_getline(&arg, ptr);
     rb_lastline_set(str);
     return str;
 }
 
 /*
  * call-seq:
- *   strio.readline(sep=$/, chomp: false)     -> string
- *   strio.readline(limit, chomp: false)      -> string or nil
- *   strio.readline(sep, limit, chomp: false) -> string or nil
+ *   readline(sep = $/, chomp: false) -> string
+ *   readline(limit, chomp: false) -> string
+ *   readline(sep, limit, chomp: false) -> string
  *
- * See IO#readline.
+ * Reads a line as with IO#gets, but raises EOFError if already at end-of-file;
+ * see {Line IO}[rdoc-ref:IO@Line+IO].
  */
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
@@ -1331,48 +1466,33 @@ strio_readline(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   strio.each(sep=$/, chomp: false) {|line| block }         -> strio
- *   strio.each(limit, chomp: false) {|line| block }          -> strio
- *   strio.each(sep, limit, chomp: false) {|line| block }     -> strio
- *   strio.each(...)                                          -> anEnumerator
+ *   each_line(sep = $/, chomp: false) {|line| ... }   -> self
+ *   each_line(limit, chomp: false) {|line| ... }      -> self
+ *   each_line(sep, limit, chomp: false) {|line| ... } -> self
  *
- *   strio.each_line(sep=$/, chomp: false) {|line| block }     -> strio
- *   strio.each_line(limit, chomp: false) {|line| block }      -> strio
- *   strio.each_line(sep, limit, chomp: false) {|line| block } -> strio
- *   strio.each_line(...)                                      -> anEnumerator
+ * :include: stringio/each_line.md
  *
- * See IO#each.
  */
 static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
 {
     VALUE line;
+    struct StringIO *ptr = readable(self);
     struct getline_arg arg;
 
-    StringIO(self);
     RETURN_ENUMERATOR(self, argc, argv);
 
-    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
+    if (prepare_getline_args(ptr, &arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
 
-    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
+    while (!NIL_P(line = strio_getline(&arg, ptr))) {
 	rb_yield(line);
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_line.
- */
-static VALUE
-strio_lines(int argc, VALUE *argv, VALUE self)
-{
-    rb_warn("StringIO#lines is deprecated; use #each_line instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_line")), argc, argv);
-    return strio_each(argc, argv, self);
 }
 
 /*
@@ -1387,15 +1507,15 @@ static VALUE
 strio_readlines(int argc, VALUE *argv, VALUE self)
 {
     VALUE ary, line;
+    struct StringIO *ptr = readable(self);
     struct getline_arg arg;
 
-    StringIO(self);
-    ary = rb_ary_new();
-    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
+    if (prepare_getline_args(ptr, &arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     }
 
-    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
+    ary = rb_ary_new();
+    while (!NIL_P(line = strio_getline(&arg, ptr))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -1429,13 +1549,19 @@ strio_write(VALUE self, VALUE str)
     long len, olen;
     rb_encoding *enc, *enc2;
     rb_encoding *const ascii8bit = rb_ascii8bit_encoding();
+    rb_encoding *usascii = 0;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = get_enc(ptr);
+    if (!enc) return 0;
     enc2 = rb_enc_get(str);
-    if (enc != enc2 && enc != ascii8bit) {
-	str = rb_str_conv_enc(str, enc2, enc);
+    if (enc != enc2 && enc != ascii8bit && enc != (usascii = rb_usascii_encoding())) {
+	VALUE converted = rb_str_conv_enc(str, enc2, enc);
+	if (converted == str && enc2 != ascii8bit && enc2 != usascii) { /* conversion failed */
+	    rb_enc_check(rb_enc_from_encoding(enc), str);
+	}
+	str = converted;
     }
     len = RSTRING_LEN(str);
     if (len == 0) return 0;
@@ -1454,6 +1580,7 @@ strio_write(VALUE self, VALUE str)
     }
     else {
 	strio_extend(ptr, ptr->pos, len);
+	rb_str_modify(ptr->string);
 	memmove(RSTRING_PTR(ptr->string)+ptr->pos, RSTRING_PTR(str), len);
     }
     RB_GC_GUARD(str);
@@ -1488,9 +1615,10 @@ strio_write(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *   strio.putc(obj)    -> obj
+ *   putc(object) -> object
  *
- * See IO#putc.
+ * :include: stringio/putc.rdoc
+ *
  */
 static VALUE
 strio_putc(VALUE self, VALUE ch)
@@ -1500,10 +1628,12 @@ strio_putc(VALUE self, VALUE ch)
 
     check_modifiable(ptr);
     if (RB_TYPE_P(ch, T_STRING)) {
+	if (NIL_P(ptr->string)) return ch;
 	str = rb_str_substr(ch, 0, 1);
     }
     else {
 	char c = NUM2CHR(ch);
+	if (NIL_P(ptr->string)) return ch;
 	str = rb_str_new(&c, 1);
     }
     strio_write(self, str);
@@ -1520,9 +1650,10 @@ strio_putc(VALUE self, VALUE ch)
 
 /*
  * call-seq:
- *   strio.read([length [, outbuf]])    -> string, outbuf, or nil
+ *   read(maxlen = nil, out_string = nil) → new_string, out_string, or nil
  *
- * See IO#read.
+ * :include: stringio/read.rdoc
+ *
  */
 static VALUE
 strio_read(int argc, VALUE *argv, VALUE self)
@@ -1532,7 +1663,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
     long len;
     int binary = 0;
 
-    rb_check_arity(argc, 0, 2);
     switch (argc) {
       case 2:
 	str = argv[1];
@@ -1547,15 +1677,16 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    if (len < 0) {
 		rb_raise(rb_eArgError, "negative length %ld given", len);
 	    }
-	    if (len > 0 && ptr->pos >= RSTRING_LEN(ptr->string)) {
+	    if (eos_p(ptr)) {
 		if (!NIL_P(str)) rb_str_resize(str, 0);
-		return Qnil;
+		return len > 0 ? Qnil : rb_str_new(0, 0);
 	    }
 	    binary = 1;
 	    break;
 	}
 	/* fall through */
       case 0:
+	if (NIL_P(ptr->string)) return Qnil;
 	len = RSTRING_LEN(ptr->string);
 	if (len <= ptr->pos) {
 	    rb_encoding *enc = get_enc(ptr);
@@ -1572,6 +1703,8 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    len -= ptr->pos;
 	}
 	break;
+      default:
+	rb_error_arity(argc, 0, 2);
     }
     if (NIL_P(str)) {
 	rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);
@@ -1582,14 +1715,62 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	if (len > rest) len = rest;
 	rb_str_resize(str, len);
 	MEMCPY(RSTRING_PTR(str), RSTRING_PTR(ptr->string) + ptr->pos, char, len);
-	if (binary)
-	    rb_enc_associate(str, rb_ascii8bit_encoding());
-	else
+	if (!binary) {
 	    rb_enc_copy(str, ptr->string);
+	}
     }
     ptr->pos += RSTRING_LEN(str);
     return str;
 }
+
+/*
+ *  call-seq:
+ *    pread(maxlen, offset, out_string = nil) -> new_string or out_string
+ *
+ *  :include: stringio/pread.rdoc
+ *
+ */
+static VALUE
+strio_pread(int argc, VALUE *argv, VALUE self)
+{
+    VALUE rb_len, rb_offset, rb_buf;
+    rb_scan_args(argc, argv, "21", &rb_len, &rb_offset, &rb_buf);
+    long len = NUM2LONG(rb_len);
+    long offset = NUM2LONG(rb_offset);
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
+    }
+
+    if (len == 0) {
+	if (NIL_P(rb_buf)) {
+	    return rb_str_new("", 0);
+	}
+	return rb_buf;
+    }
+
+    if (offset < 0) {
+	rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
+    }
+
+    struct StringIO *ptr = readable(self);
+
+    if (outside_p(ptr, offset)) {
+	rb_eof_error();
+    }
+
+    if (NIL_P(rb_buf)) {
+	return strio_substr(ptr, offset, len, rb_ascii8bit_encoding());
+    }
+
+    long rest = RSTRING_LEN(ptr->string) - offset;
+    if (len > rest) len = rest;
+    rb_str_resize(rb_buf, len);
+    rb_enc_associate(rb_buf, rb_ascii8bit_encoding());
+    MEMCPY(RSTRING_PTR(rb_buf), RSTRING_PTR(ptr->string) + offset, char, len);
+    return rb_buf;
+}
+
 
 /*
  * call-seq:
@@ -1639,8 +1820,14 @@ strio_read_nonblock(int argc, VALUE *argv, VALUE self)
     return val;
 }
 
+/*
+ * See IO#write
+ */
 #define strio_syswrite rb_io_write
 
+/*
+ * See IO#write_nonblock
+ */
 static VALUE
 strio_syswrite_nonblock(int argc, VALUE *argv, VALUE self)
 {
@@ -1658,17 +1845,17 @@ strio_syswrite_nonblock(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.length -> integer
- *   strio.size   -> integer
+ *   size -> integer
  *
- * Returns the size of the buffer string.
+ * :include: stringio/size.rdoc
+ *
  */
 static VALUE
 strio_size(VALUE self)
 {
     VALUE string = StringIO(self)->string;
     if (NIL_P(string)) {
-	rb_raise(rb_eIOError, "not opened");
+	return INT2FIX(0);
     }
     return ULONG2NUM(RSTRING_LEN(string));
 }
@@ -1685,24 +1872,34 @@ strio_truncate(VALUE self, VALUE len)
 {
     VALUE string = writable(self)->string;
     long l = NUM2LONG(len);
-    long plen = RSTRING_LEN(string);
+    long plen;
     if (l < 0) {
 	error_inval("negative length");
     }
+    if (NIL_P(string)) return 0;
+    plen = RSTRING_LEN(string);
     rb_str_resize(string, l);
     if (plen < l) {
 	MEMZERO(RSTRING_PTR(string) + plen, char, l - plen);
     }
-    return len;
+    return INT2FIX(0);
 }
 
 /*
- *  call-seq:
- *     strio.external_encoding   => encoding
+ * call-seq:
+ *   external_encoding -> encoding or nil
  *
- *  Returns the Encoding object that represents the encoding of the file.
- *  If the stream is write mode and no encoding is specified, returns
- *  +nil+.
+ * Returns an Encoding object that represents the encoding of the string;
+ * see {Encodings}[rdoc-ref:StringIO@Encodings]:
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.external_encoding # => #<Encoding:UTF-8>
+ *
+ * Returns +nil+ if +self+ has no string and is in write mode:
+ *
+ *   strio = StringIO.new(nil, 'w+')
+ *   strio.external_encoding # => nil
+ *
  */
 
 static VALUE
@@ -1714,10 +1911,9 @@ strio_external_encoding(VALUE self)
 
 /*
  *  call-seq:
- *     strio.internal_encoding   => encoding
+ *     internal_encoding -> nil
  *
- *  Returns the Encoding of the internal string if conversion is
- *  specified.  Otherwise returns +nil+.
+ *  Returns +nil+; for compatibility with IO.
  */
 
 static VALUE
@@ -1749,16 +1945,33 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_default_external_encoding();
     }
     else {
-	enc = rb_to_encoding(ext_enc);
+	enc = rb_find_encoding(ext_enc);
+	if (!enc) {
+	    rb_io_enc_t convconfig;
+	    int oflags;
+	    rb_io_mode_t fmode;
+	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
+	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
+	    enc = convconfig.enc2;
+	}
     }
     ptr->enc = enc;
-    if (WRITABLE(self)) {
+    if (!NIL_P(ptr->string) && WRITABLE(self) && !str_chilled_p(ptr->string)) {
 	rb_enc_associate(ptr->string, enc);
     }
 
     return self;
 }
 
+/*
+ *  call-seq:
+ *     strio.set_encoding_by_bom  => strio or nil
+ *
+ *  Sets the encoding according to the BOM (Byte Order Mark) in the
+ *  string.
+ *
+ *  Returns +self+ if the BOM is found, otherwise +nil.
+ */
 static VALUE
 strio_set_encoding_by_bom(VALUE self)
 {
@@ -1769,35 +1982,30 @@ strio_set_encoding_by_bom(VALUE self)
 }
 
 /*
- * Pseudo I/O on String object, with interface corresponding to IO.
+ * :markup: markdown
  *
- * Commonly used to simulate <code>$stdio</code> or <code>$stderr</code>
- *
- * === Examples
- *
- *   require 'stringio'
- *
- *   # Writing stream emulation
- *   io = StringIO.new
- *   io.puts "Hello World"
- *   io.string #=> "Hello World\n"
- *
- *   # Reading stream emulation
- *   io = StringIO.new "first\nsecond\nlast\n"
- *   io.getc #=> "f"
- *   io.gets #=> "irst\n"
- *   io.read #=> "second\nlast\n"
+ * :include: stringio/stringio.md
  */
 void
 Init_stringio(void)
 {
 #undef rb_intern
-    VALUE StringIO = rb_define_class("StringIO", rb_cData);
 
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
+    VALUE StringIO = rb_define_class("StringIO", rb_cObject);
+
+    /* The version string */
     rb_define_const(StringIO, "VERSION", rb_str_new_cstr(STRINGIO_VERSION));
 
     rb_include_module(StringIO, rb_mEnumerable);
     rb_define_alloc_func(StringIO, strio_s_allocate);
+
+    /* Maximum length that a StringIO instance can hold */
+    rb_define_const(StringIO, "MAX_LENGTH", LONG2NUM(LONG_MAX));
+
     rb_define_singleton_method(StringIO, "new", strio_s_new, -1);
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);
@@ -1837,13 +2045,9 @@ Init_stringio(void)
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
-    rb_define_method(StringIO, "lines", strio_lines, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
-    rb_define_method(StringIO, "bytes", strio_bytes, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
-    rb_define_method(StringIO, "chars", strio_chars, 0);
     rb_define_method(StringIO, "each_codepoint", strio_each_codepoint, 0);
-    rb_define_method(StringIO, "codepoints", strio_codepoints, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);
@@ -1851,6 +2055,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "gets", strio_gets, -1);
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
     rb_define_method(StringIO, "read", strio_read, -1);
+    rb_define_method(StringIO, "pread", strio_pread, -1);
 
     rb_define_method(StringIO, "write", strio_write_m, -1);
     rb_define_method(StringIO, "putc", strio_putc, 1);
@@ -1879,7 +2084,9 @@ Init_stringio(void)
     rb_define_method(StringIO, "set_encoding_by_bom", strio_set_encoding_by_bom, 0);
 
     {
+	/* :stopdoc: */
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
+	/* :startdoc: */
 	rb_define_method(mReadable, "readchar", strio_readchar, 0);
 	rb_define_method(mReadable, "readbyte", strio_readbyte, 0);
 	rb_define_method(mReadable, "readline", strio_readline, -1);
@@ -1889,7 +2096,9 @@ Init_stringio(void)
 	rb_include_module(StringIO, mReadable);
     }
     {
+	/* :stopdoc: */
 	VALUE mWritable = rb_define_module_under(rb_cIO, "generic_writable");
+	/* :startdoc: */
 	rb_define_method(mWritable, "<<", strio_addstr, 1);
 	rb_define_method(mWritable, "print", strio_print, -1);
 	rb_define_method(mWritable, "printf", strio_printf, -1);

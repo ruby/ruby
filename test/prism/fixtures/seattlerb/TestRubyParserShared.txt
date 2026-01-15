@@ -1,0 +1,92 @@
+%I[
+
+
+]
+
+%I[
+line2
+line3
+]
+
+%W[
+
+
+]
+
+%W[
+line2
+line3
+]
+
+%i[
+
+
+]
+
+%i[
+line2
+line3
+]
+
+%r[
+
+
+]
+
+%w[
+
+
+]
+
+%w[
+line2
+line3
+]
+
+[
+:line2,
+:line3
+]
+
+class X         # line 1
+  def self.y(a, # line 2
+        b)      # line 3
+    a + b       # line 4
+  end           # line 5
+end             # line 6
+
+
+class X    # line 1
+  class Y  # line 2
+    Z = 42 # line 3
+  end      # line 4
+end        # line 5
+
+
+class X    # line 1
+  def y(a, # line 2
+        b) # line 3
+    a + b  # line 4
+  end      # line 5
+end        # line 6
+
+
+module X
+  X = [
+    :line3,
+    :line4,
+  ]
+end
+
+
+module X   # line 1
+  module Y # line 2
+    Z = 42 # line 3
+  end      # line 4
+end        # line 5
+
+
+x(
+:line2,
+:line3
+)

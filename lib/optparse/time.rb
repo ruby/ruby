@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'optparse'
+require_relative '../optparse'
 require 'time'
 
 OptionParser.accept(Time) do |s,|

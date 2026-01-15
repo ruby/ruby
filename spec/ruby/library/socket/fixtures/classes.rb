@@ -37,7 +37,9 @@ module SocketSpecs
     # Check for too long unix socket path (max 104 bytes on macOS)
     # Note that Linux accepts not null-terminated paths but the man page advises against it.
     if path.bytesize > 104
-      path = "/tmp/unix_server_spec.socket"
+      # rm_r in spec/mspec/lib/mspec/helpers/fs.rb fails against
+      # "/tmp/unix_server_spec.socket"
+      skip "too long unix socket path: #{path}"
     end
     rm_socket(path)
     path
@@ -111,7 +113,7 @@ module SocketSpecs
       begin
         data = socket.recv(1024)
 
-        return if data.empty?
+        return if data.nil? || data.empty?
         log "SpecTCPServer received: #{data.inspect}"
 
         return if data == "QUIT"

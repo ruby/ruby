@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NONNULL.
  */
 #include "ruby/internal/has/attribute.h"
@@ -25,8 +25,10 @@
 /** Wraps (or simulates) `__attribute__((nonnull))` */
 #if RBIMPL_HAS_ATTRIBUTE(nonnull)
 # define RBIMPL_ATTR_NONNULL(list) __attribute__((__nonnull__ list))
+# define RBIMPL_NONNULL_ARG(arg) RBIMPL_ASSERT_NOTHING
 #else
 # define RBIMPL_ATTR_NONNULL(list) /* void */
+# define RBIMPL_NONNULL_ARG(arg) RUBY_ASSERT(arg)
 #endif
 
 #endif /* RBIMPL_ATTR_NONNULL_H */

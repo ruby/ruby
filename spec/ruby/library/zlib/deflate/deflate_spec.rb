@@ -23,7 +23,7 @@ describe "Zlib::Deflate.deflate" do
 
   it "deflates chunked data" do
     random_generator = Random.new(0)
-    deflated         = ''
+    deflated         = +''
 
     Zlib::Deflate.deflate(random_generator.bytes(20000)) do |chunk|
       deflated << chunk
@@ -58,6 +58,11 @@ describe "Zlib::Deflate#deflate" do
                       Array.new(31, 0) +
                       [24, 128, 0, 0, 1]).pack('C*')
   end
+
+  it "has a binary encoding" do
+    @deflator.deflate("").encoding.should == Encoding::BINARY
+    @deflator.finish.encoding.should == Encoding::BINARY
+  end
 end
 
 describe "Zlib::Deflate#deflate" do
@@ -65,7 +70,7 @@ describe "Zlib::Deflate#deflate" do
   before :each do
     @deflator         = Zlib::Deflate.new
     @random_generator = Random.new(0)
-    @original         = ''
+    @original         = +''
     @chunks           = []
   end
 

@@ -11,24 +11,28 @@
 
 **********************************************************************/
 
-RUBY_SYMBOL_EXPORT_BEGIN
-
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
-RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
-RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
-RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
+RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-RUBY_SYMBOL_EXPORT_END
+#if YJIT_STATS || ZJIT_STATS // We want vm_insn_count only on stats builds.
+// Increment vm_insn_count for --yjit-stats. We increment this even when
+// --yjit or --yjit-stats is not used because branching to skip it is slower.
+// We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.
+#define JIT_COLLECT_USAGE_INSN(insn) rb_vm_insn_count++
+#else
+#define JIT_COLLECT_USAGE_INSN(insn) // none
+#endif
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
-
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
 #else
-#define COLLECT_USAGE_INSN(insn)		/* none */
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
+#define COLLECT_USAGE_INSN(insn)           JIT_COLLECT_USAGE_INSN(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op) // none
+#define COLLECT_USAGE_REGISTER(reg, s)     // none
 #endif
 
 /**********************************************************/
@@ -53,6 +57,19 @@ RUBY_SYMBOL_EXPORT_END
 #define RESTORE_REGS() do { \
     VM_REG_CFP = ec->cfp; \
 } while (0)
+
+typedef enum call_type {
+    CALL_PUBLIC,
+    CALL_FCALL,
+    CALL_VCALL,
+    CALL_PUBLIC_KW,
+    CALL_FCALL_KW
+} call_type;
+
+struct rb_forwarding_call_data {
+    struct rb_call_data cd;
+    CALL_INFO caller_ci;
+};
 
 #if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
@@ -93,7 +110,7 @@ enum vm_regan_acttype {
 #define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = (x))
+#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
 /* instruction sequence C struct */
@@ -127,7 +144,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
     }
 }
 
-#define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
+#define GET_BLOCK_HANDLER() VM_CF_BLOCK_HANDLER(GET_CFP())
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
@@ -139,55 +156,50 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #if VM_CHECK_MODE > 0
-#define SETUP_CANARY() \
-    VALUE *canary; \
-    if (leaf) { \
+#define SETUP_CANARY(cond) \
+    VALUE *canary = 0; \
+    if (cond) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
     } \
     else {\
         SET_SV(Qfalse); /* cleanup */ \
     }
-#define CHECK_CANARY() \
-    if (leaf) { \
+#define CHECK_CANARY(cond, insn) \
+    if (cond) { \
         if (*canary == vm_stack_canary) { \
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+            rb_vm_canary_is_found_dead(insn, *canary); \
         } \
     }
 #else
-#define SETUP_CANARY()          /* void */
-#define CHECK_CANARY()          /* void */
+#define SETUP_CANARY(cond)       if (cond) {} else {}
+#define CHECK_CANARY(cond, insn) if (cond) {(void)(insn);}
 #endif
 
 /**********************************************************/
 /* others                                                 */
 /**********************************************************/
 
-#ifndef MJIT_HEADER
 #define CALL_SIMPLE_METHOD() do { \
-    rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
-    rb_snum_t y = attr_width_opt_send_without_block(0); \
-    rb_snum_t z = x - y; \
-    ADD_PC(z); \
+    rb_snum_t insn_width = attr_width_opt_send_without_block(0); \
+    ADD_PC(-insn_width); \
     DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
-#endif
 
-#define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
-#define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
-#define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
-#define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
-#define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
-#define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
+#define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
+#define INC_GLOBAL_CVAR_STATE() (++ruby_vm_global_cvar_state)
 
 static inline struct vm_throw_data *
 THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    struct vm_throw_data *obj = IMEMO_NEW(struct vm_throw_data, imemo_throw_data, 0);
+    *((VALUE *)&obj->throw_obj) = val;
+    *((struct rb_control_frame_struct **)&obj->catch_frame) = (struct rb_control_frame_struct *)cf;
     obj->throw_state = st;
+
     return obj;
 }
 
@@ -237,8 +249,8 @@ static inline void
 THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 {
     if (THROW_DATA_P(obj) &&
-	THROW_DATA_STATE(obj) == TAG_BREAK) {
-	obj->flags |= THROW_DATA_CONSUMED;
+        THROW_DATA_STATE(obj) == TAG_BREAK) {
+        obj->flags |= THROW_DATA_CONSUMED;
     }
 }
 
@@ -248,13 +260,18 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 #define IS_ARGS_KW_OR_KW_SPLAT(ci) (vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))
 #define IS_ARGS_KW_SPLAT_MUT(ci)   (vm_ci_flag(ci) & VM_CALL_KW_SPLAT_MUT)
 
+static inline bool
+vm_call_cacheable(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    return !(vm_ci_flag(ci) & VM_CALL_FORWARDING) && ((vm_ci_flag(ci) & VM_CALL_FCALL) ||
+        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED);
+}
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
-static bool
+static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
-    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED);
+    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && vm_call_cacheable(ci, cc);
 }
 
 #endif /* RUBY_INSNHELPER_H */

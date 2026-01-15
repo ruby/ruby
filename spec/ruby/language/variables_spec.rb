@@ -1,6 +1,51 @@
 require_relative '../spec_helper'
 require_relative 'fixtures/variables'
 
+describe "Evaluation order during assignment" do
+  context "with single assignment" do
+    it "evaluates from left to right" do
+      obj = VariablesSpecs::EvalOrder.new
+      obj.instance_eval do
+        foo[0] = a
+      end
+
+      obj.order.should == ["foo", "a", "foo[]="]
+    end
+  end
+
+  context "with multiple assignment" do
+    it "evaluates from left to right, receivers first then methods" do
+      obj = VariablesSpecs::EvalOrder.new
+      obj.instance_eval do
+        foo[0], bar.baz = a, b
+      end
+
+      obj.order.should == ["foo", "bar", "a", "b", "foo[]=", "bar.baz="]
+    end
+
+    it "can be used to swap variables with nested method calls" do
+      node = VariablesSpecs::EvalOrder.new.node
+
+      original_node = node
+      original_node_left = node.left
+      original_node_left_right = node.left.right
+
+      node.left, node.left.right, node = node.left.right, node, node.left
+      # Should evaluate in the order of:
+      # LHS: node, node.left(original_node_left)
+      # RHS: original_node_left_right, original_node, original_node_left
+      # Ops:
+      # * node(original_node), original_node.left = original_node_left_right
+      # * original_node_left.right = original_node
+      # * node = original_node_left
+
+      node.should == original_node_left
+      node.right.should == original_node
+      node.right.left.should == original_node_left_right
+    end
+  end
+end
+
 describe "Multiple assignment" do
   context "with a single RHS value" do
     it "assigns a simple MLHS" do
@@ -287,8 +332,13 @@ describe "Multiple assignment" do
 
     it "assigns indexed elements" do
       a = []
-      a[1], a[2] = 1
-      a.should == [nil, 1, nil]
+      a[1], a[2] = 1, 2
+      a.should == [nil, 1, 2]
+
+      # with splatted argument
+      a = []
+      a[*[1]], a[*[2]] = 1, 2
+      a.should == [nil, 1, 2]
     end
 
     it "assigns constants" do
@@ -296,6 +346,9 @@ describe "Multiple assignment" do
         SINGLE_RHS_1, SINGLE_RHS_2 = 1
         [SINGLE_RHS_1, SINGLE_RHS_2].should == [1, nil]
       end
+    ensure
+      VariableSpecs.send(:remove_const, :SINGLE_RHS_1)
+      VariableSpecs.send(:remove_const, :SINGLE_RHS_2)
     end
   end
 
@@ -310,11 +363,22 @@ describe "Multiple assignment" do
       a.should == []
     end
 
-    it "calls #to_a to convert nil to an empty Array" do
-      nil.should_receive(:to_a).and_return([])
+    ruby_version_is "4.0" do
+      it "converts nil to empty array without calling a method" do
+        nil.should_not_receive(:to_a)
 
-      (*a = *nil).should == []
-      a.should == []
+        (*a = *nil).should == []
+        a.should == []
+      end
+    end
+
+    ruby_version_is ""..."4.0"  do
+      it "calls #to_a to convert nil to an empty Array" do
+        nil.should_receive(:to_a).and_return([])
+
+        (*a = *nil).should == []
+        a.should == []
+      end
     end
 
     it "does not call #to_a on an Array" do
@@ -534,6 +598,8 @@ describe "Multiple assignment" do
         (*SINGLE_SPLATTED_RHS) = *1
         SINGLE_SPLATTED_RHS.should == [1]
       end
+    ensure
+      VariableSpecs.send(:remove_const, :SINGLE_SPLATTED_RHS)
     end
   end
 
@@ -715,12 +781,27 @@ describe "Multiple assignment" do
       x.should == [1, 2, 3, 4, 5]
     end
 
+    it "can be used to swap array elements" do
+      a = [1, 2]
+      a[0], a[1] = a[1], a[0]
+      a.should == [2, 1]
+    end
+
+    it "can be used to swap range of array elements" do
+      a = [1, 2, 3, 4]
+      a[0, 2], a[2, 2] = a[2, 2], a[0, 2]
+      a.should == [3, 4, 1, 2]
+    end
+
     it "assigns RHS values to LHS constants" do
       module VariableSpecs
         MRHS_VALUES_1, MRHS_VALUES_2 = 1, 2
         MRHS_VALUES_1.should == 1
         MRHS_VALUES_2.should == 2
       end
+    ensure
+      VariableSpecs.send(:remove_const, :MRHS_VALUES_1)
+      VariableSpecs.send(:remove_const, :MRHS_VALUES_2)
     end
 
     it "assigns all RHS values as an array to a single LHS constant" do
@@ -728,6 +809,8 @@ describe "Multiple assignment" do
         MRHS_VALUES = 1, 2, 3
         MRHS_VALUES.should == [1, 2, 3]
       end
+    ensure
+      VariableSpecs.send(:remove_const, :MRHS_VALUES)
     end
   end
 
@@ -770,29 +853,78 @@ describe "A local variable assigned only within a conditional block" do
 end
 
 describe 'Local variable shadowing' do
-  ruby_version_is ""..."2.6" do
-    it "leads to warning in verbose mode" do
-      -> do
-        eval <<-CODE
-          a = [1, 2, 3]
-          a.each { |a| a = 3 }
-        CODE
-      end.should complain(/shadowing outer local variable/, verbose: true)
+  it "does not warn in verbose mode" do
+    result = nil
+
+    -> do
+      eval <<-CODE
+        a = [1, 2, 3]
+        result = a.map { |a| a = 3 }
+      CODE
+    end.should_not complain(verbose: true)
+
+    result.should == [3, 3, 3]
+  end
+end
+
+describe 'Allowed characters' do
+  it 'allows non-ASCII lowercased characters at the beginning' do
+    result = nil
+
+    eval <<-CODE
+      def test
+        μ = 1
+      end
+
+      result = test
+    CODE
+
+    result.should == 1
+  end
+
+  it 'parses a non-ASCII upcased character as a constant identifier' do
+    -> do
+      eval <<-CODE
+        def test
+          ἍBB = 1
+        end
+      CODE
+    end.should raise_error(SyntaxError, /dynamic constant assignment/)
+  end
+end
+
+describe "Instance variables" do
+  context "when instance variable is uninitialized" do
+    it "doesn't warn about accessing uninitialized instance variable" do
+      obj = Object.new
+      def obj.foobar; a = @a; end
+
+      -> { obj.foobar }.should_not complain(verbose: true)
+    end
+
+    it "doesn't warn at lazy initialization" do
+      obj = Object.new
+      def obj.foobar; @a ||= 42; end
+
+      -> { obj.foobar }.should_not complain(verbose: true)
     end
   end
 
-  ruby_version_is "2.6" do
-    it "does not warn in verbose mode" do
-      result = nil
+  describe "global variable" do
+    context "when global variable is uninitialized" do
+      it "warns about accessing uninitialized global variable in verbose mode" do
+        obj = Object.new
+        def obj.foobar; a = $specs_uninitialized_global_variable; end
 
-      -> do
-        eval <<-CODE
-          a = [1, 2, 3]
-          result = a.map { |a| a = 3 }
-        CODE
-      end.should_not complain(verbose: true)
+        -> { obj.foobar }.should complain(/warning: global variable [`']\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+      end
 
-      result.should == [3, 3, 3]
+      it "doesn't warn at lazy initialization" do
+        obj = Object.new
+        def obj.foobar; $specs_uninitialized_global_variable_lazy ||= 42; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
     end
   end
 end

@@ -1,0 +1,14 @@
+begin
+  _1=:a;_2=:a;_3=:a;_4=:a;_5=:a
+  ^~ _1 is reserved for numbered parameters
+        ^~ _2 is reserved for numbered parameters
+              ^~ _3 is reserved for numbered parameters
+                    ^~ _4 is reserved for numbered parameters
+                          ^~ _5 is reserved for numbered parameters
+  _6=:a;_7=:a;_8=:a;_9=:a;_10=:a
+  ^~ _6 is reserved for numbered parameters
+        ^~ _7 is reserved for numbered parameters
+              ^~ _8 is reserved for numbered parameters
+                    ^~ _9 is reserved for numbered parameters
+end
+

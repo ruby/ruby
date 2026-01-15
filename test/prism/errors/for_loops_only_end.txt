@@ -1,0 +1,6 @@
+for end
+^~~ expected an index after `for`
+   ^ expected an `in` after the index in a `for` statement
+   ^ expected a collection after the `in` in a `for` statement
+    ^~~ unexpected 'end'; expected a 'do', newline, or ';' after the 'for' loop collection
+

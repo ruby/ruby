@@ -1,0 +1,3 @@
+defined? a b
+           ^ unexpected local variable or method, expecting end-of-input
+

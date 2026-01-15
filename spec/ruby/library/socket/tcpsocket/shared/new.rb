@@ -14,6 +14,15 @@ describe :tcpsocket_new, shared: true do
     }
   end
 
+  it 'raises IO::TimeoutError with :connect_timeout when no server is listening on the given address' do
+    -> {
+      TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
+    }.should raise_error(IO::TimeoutError)
+  rescue Errno::ENETUNREACH
+    # In the case all network interfaces down.
+    # raise_error cannot deal with multiple expected exceptions
+  end
+
   describe "with a running server" do
     before :each do
       @server = SocketSpecs::SpecTCPServer.new
@@ -44,14 +53,23 @@ describe :tcpsocket_new, shared: true do
     end
 
     it "connects to a server when passed local_host and local_port arguments" do
-      server = TCPServer.new(SocketSpecs.hostname, 0)
+      retries = 0
+      max_retries = 3
+
       begin
-        available_port = server.addr[1]
-      ensure
-        server.close
+        retries += 1
+        server = TCPServer.new(SocketSpecs.hostname, 0)
+        begin
+          available_port = server.addr[1]
+        ensure
+          server.close
+        end
+        @socket = TCPSocket.send(@method, @hostname, @server.port,
+                                 @hostname, available_port)
+      rescue Errno::EADDRINUSE
+        raise if retries >= max_retries
+        retry
       end
-      @socket = TCPSocket.send(@method, @hostname, @server.port,
-                               @hostname, available_port)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
@@ -74,6 +92,11 @@ describe :tcpsocket_new, shared: true do
 
       @socket.addr[1].should be_kind_of(Integer)
       @socket.addr[2].should =~ /^#{@hostname}/
+    end
+
+    it "connects to a server when passed connect_timeout argument" do
+      @socket = TCPSocket.send(@method, @hostname, @server.port, connect_timeout: 1)
+      @socket.should be_an_instance_of(TCPSocket)
     end
   end
 end

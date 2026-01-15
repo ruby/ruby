@@ -22,6 +22,9 @@ END
       include MyModule2ForErb
     end
     MyClass2ForErb.new.render('foo', 123).should == expected
+  ensure
+    Object.send(:remove_const, :MyClass2ForErb)
+    Object.send(:remove_const, :MyModule2ForErb)
   end
 
 end

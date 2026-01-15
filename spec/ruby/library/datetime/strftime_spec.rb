@@ -1,6 +1,8 @@
+require_relative '../../spec_helper'
 require 'date'
 require_relative '../../shared/time/strftime_for_date'
 require_relative '../../shared/time/strftime_for_time'
+date_version = defined?(Date::VERSION) ? Date::VERSION : '3.1.0'
 
 describe "DateTime#strftime" do
   before :all do
@@ -31,10 +33,9 @@ describe "DateTime#strftime" do
     @time.strftime("%Z").should == "+00:00"
   end
 
-  # %v is %e-%b-%Y for Date/DateTime
   it "should be able to show the commercial week" do
-    @time.strftime("%v").should == " 3-Feb-2001"
-    @time.strftime("%v").should == @time.strftime('%e-%b-%Y')
+    @time.strftime("%v").should == " 3-FEB-2001"
+    @time.strftime("%v").should != @time.strftime('%e-%b-%Y')
   end
 
   # additional conversion specifiers only in Date/DateTime

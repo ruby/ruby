@@ -20,4 +20,14 @@ describe "Enumerator::Yielder#yield" do
     y = Enumerator::Yielder.new {|x| x + 1}
     y.yield(1).should == 2
   end
+
+  context "when multiple arguments passed" do
+    it "yields the arguments list to the block" do
+      ary = []
+      y = Enumerator::Yielder.new { |*x| ary << x }
+      y.yield(1, 2)
+
+      ary.should == [[1, 2]]
+    end
+  end
 end

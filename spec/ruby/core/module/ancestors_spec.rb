@@ -7,10 +7,17 @@ describe "Module#ancestors" do
     ModuleSpecs.ancestors.should == [ModuleSpecs]
     ModuleSpecs::Basic.ancestors.should == [ModuleSpecs::Basic]
     ModuleSpecs::Super.ancestors.should == [ModuleSpecs::Super, ModuleSpecs::Basic]
-    ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
-      [ModuleSpecs::Parent, Object, Kernel, BasicObject]
-    ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
-      [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Kernel, BasicObject]
+    if defined?(Ruby::Box) && Ruby::Box.enabled?
+      ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
+        [ModuleSpecs::Parent, Object, Ruby::Box::Loader, Kernel, BasicObject]
+      ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
+        [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Ruby::Box::Loader, Kernel, BasicObject]
+    else
+      ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
+        [ModuleSpecs::Parent, Object, Kernel, BasicObject]
+      ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
+        [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Kernel, BasicObject]
+    end
   end
 
   it "returns only modules and classes" do
@@ -19,6 +26,17 @@ describe "Module#ancestors" do
 
   it "has 1 entry per module or class" do
     ModuleSpecs::Parent.ancestors.should == ModuleSpecs::Parent.ancestors.uniq
+  end
+
+  it "returns a module that is included later into a nested module as well" do
+    m1 = Module.new
+    m2 = Module.new
+    m3 = Module.new do
+      include m2
+    end
+    m2.include m1 # should be after m3 includes m2
+
+    m3.ancestors.should == [m3, m2, m1]
   end
 
   describe "when called on a singleton class" do

@@ -100,7 +100,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
     describe "#to_s" do
       it "should return info string with the ruby version, patchlevel, engine, and engine version" do
-        expect(subject.to_s).to eq("ruby 2.0.0p645 (jruby 2.0.1)")
+        expect(subject.to_s).to eq("ruby 2.0.0 (jruby 2.0.1)")
       end
 
       context "no patchlevel" do
@@ -115,7 +115,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         let(:engine) { "ruby" }
 
         it "should return info string with the ruby version and patchlevel" do
-          expect(subject.to_s).to eq("ruby 2.0.0p645")
+          expect(subject.to_s).to eq("ruby 2.0.0")
         end
       end
 
@@ -145,12 +145,6 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
       context "the versions do not match" do
         let(:other_version) { "1.21.6" }
-
-        it_behaves_like "two ruby versions are not equal"
-      end
-
-      context "the patchlevels do not match" do
-        let(:other_patchlevel) { "21" }
 
         it_behaves_like "two ruby versions are not equal"
       end
@@ -400,19 +394,19 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       let(:bundler_system_ruby_version) { subject }
 
       around do |example|
-        if Bundler::RubyVersion.instance_variable_defined?("@ruby_version")
+        if Bundler::RubyVersion.instance_variable_defined?("@system")
           begin
-            old_ruby_version = Bundler::RubyVersion.instance_variable_get("@ruby_version")
-            Bundler::RubyVersion.remove_instance_variable("@ruby_version")
+            old_ruby_version = Bundler::RubyVersion.instance_variable_get("@system")
+            Bundler::RubyVersion.remove_instance_variable("@system")
             example.run
           ensure
-            Bundler::RubyVersion.instance_variable_set("@ruby_version", old_ruby_version)
+            Bundler::RubyVersion.instance_variable_set("@system", old_ruby_version)
           end
         else
           begin
             example.run
           ensure
-            Bundler::RubyVersion.remove_instance_variable("@ruby_version")
+            Bundler::RubyVersion.remove_instance_variable("@system")
           end
         end
       end
@@ -427,9 +421,8 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       end
 
       describe "#version" do
-        it "should return a copy of the value of RUBY_VERSION" do
-          expect(subject.versions).to eq([RUBY_VERSION])
-          expect(subject.versions.first).to_not be(RUBY_VERSION)
+        it "should return the value of Gem.ruby_version as a string" do
+          expect(subject.versions).to eq([Gem.ruby_version.to_s])
         end
       end
 
@@ -446,13 +439,12 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       describe "#engine_version" do
         context "engine is ruby" do
           before do
-            stub_const("RUBY_ENGINE_VERSION", "2.2.4")
+            allow(Gem).to receive(:ruby_version).and_return(Gem::Version.new("2.2.4"))
             stub_const("RUBY_ENGINE", "ruby")
           end
 
-          it "should return a copy of the value of RUBY_ENGINE_VERSION" do
+          it "should return the value of Gem.ruby_version as a string" do
             expect(bundler_system_ruby_version.engine_versions).to eq(["2.2.4"])
-            expect(bundler_system_ruby_version.engine_versions.first).to_not be(RUBY_ENGINE_VERSION)
           end
         end
 
@@ -495,32 +487,6 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       describe "#patchlevel" do
         it "should return a string with the value of RUBY_PATCHLEVEL" do
           expect(subject.patchlevel).to eq(RUBY_PATCHLEVEL.to_s)
-        end
-      end
-    end
-
-    describe "#to_gem_version_with_patchlevel" do
-      shared_examples_for "the patchlevel is omitted" do
-        it "does not include a patch level" do
-          expect(subject.to_gem_version_with_patchlevel.to_s).to eq(version)
-        end
-      end
-
-      context "with nil patch number" do
-        let(:patchlevel) { nil }
-
-        it_behaves_like "the patchlevel is omitted"
-      end
-
-      context "with negative patch number" do
-        let(:patchlevel) { -1 }
-
-        it_behaves_like "the patchlevel is omitted"
-      end
-
-      context "with a valid patch number" do
-        it "uses the specified patchlevel as patchlevel" do
-          expect(subject.to_gem_version_with_patchlevel.to_s).to eq("#{version}.#{patchlevel}")
         end
       end
     end

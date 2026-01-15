@@ -7,7 +7,7 @@ class IOStub
   end
 
   def write(*str)
-    self << str.join
+    self << str.join('')
   end
 
   def << str
@@ -16,7 +16,7 @@ class IOStub
   end
 
   def print(*str)
-    write(str.join + $\.to_s)
+    write(str.join('') + $\.to_s)
   end
 
   def method_missing(name, *args, &block)
@@ -84,8 +84,4 @@ def new_io(name, mode = "w:utf-8")
   else
     File.new(name, mode)
   end
-end
-
-def find_unused_fd
-  Dir.entries("/dev/fd").map(&:to_i).max + 1
 end

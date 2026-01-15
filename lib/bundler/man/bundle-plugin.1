@@ -1,0 +1,76 @@
+.\" generated with Ronn-NG/v0.10.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.10.1
+.TH "BUNDLE\-PLUGIN" "1" "September 2025" ""
+.SH "NAME"
+\fBbundle\-plugin\fR \- Manage Bundler plugins
+.SH "SYNOPSIS"
+\fBbundle plugin\fR install PLUGINS [\-\-source=SOURCE] [\-\-version=VERSION] [\-\-git=GIT] [\-\-branch=BRANCH|\-\-ref=REF] [\-\-path=PATH]
+.br
+\fBbundle plugin\fR uninstall PLUGINS [\-\-all]
+.br
+\fBbundle plugin\fR list
+.br
+\fBbundle plugin\fR help [COMMAND]
+.SH "DESCRIPTION"
+You can install, uninstall, and list plugin(s) with this command to extend functionalities of Bundler\.
+.SH "SUB\-COMMANDS"
+.SS "install"
+Install the given plugin(s)\.
+.P
+For example, \fBbundle plugin install bundler\-graph\fR will install bundler\-graph gem from globally configured sources (defaults to RubyGems\.org)\. Note that the global source specified in Gemfile is ignored\.
+.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-source=SOURCE\fR
+Install the plugin gem from a specific source, rather than from globally configured sources\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-source https://example\.com\fR
+.TP
+\fB\-\-version=VERSION\fR
+Specify a version of the plugin gem to install via \fB\-\-version\fR\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-version 0\.2\.1\fR
+.TP
+\fB\-\-git=GIT\fR
+Install the plugin gem from a Git repository\. You can use standard Git URLs like:
+.IP
+\fBssh://[user@]host\.xz[:port]/path/to/repo\.git\fR
+.br
+\fBhttp[s]://host\.xz[:port]/path/to/repo\.git\fR
+.br
+\fB/path/to/repo\fR
+.br
+\fBfile:///path/to/repo\fR
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR
+.TP
+\fB\-\-branch=BRANCH\fR
+When you specify \fB\-\-git\fR, you can use \fB\-\-branch\fR to use\.
+.TP
+\fB\-\-ref=REF\fR
+When you specify \fB\-\-git\fR, you can use \fB\-\-ref\fR to specify any tag, or commit hash (revision) to use\.
+.TP
+\fB\-\-path=PATH\fR
+Install the plugin gem from a local path\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
+.SS "uninstall"
+Uninstall the plugin(s) specified in PLUGINS\.
+.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-all\fR
+Uninstall all the installed plugins\. If no plugin is installed, then it does nothing\.
+.SS "list"
+List the installed plugins and available commands\.
+.P
+No options\.
+.SS "help"
+Describe subcommands or one specific subcommand\.
+.P
+No options\.
+.SH "SEE ALSO"
+.IP "\(bu" 4
+How to write a Bundler plugin \fIhttps://bundler\.io/guides/bundler_plugins\.html\fR
+.IP "" 0
+

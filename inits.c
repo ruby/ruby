@@ -20,11 +20,8 @@ static void Init_builtin_prelude(void);
 void
 rb_call_inits(void)
 {
-#if USE_TRANSIENT_HEAP
-    CALL(TransientHeap);
-#endif
-    CALL(vm_postponed_job);
-    CALL(Method);
+    CALL(default_shapes);
+    CALL(Thread_Mutex);
     CALL(RandomSeedCore);
     CALL(encodings);
     CALL(sym);
@@ -50,42 +47,70 @@ rb_call_inits(void)
     CALL(marshal);
     CALL(Range);
     CALL(IO);
+    CALL(IO_Buffer)
     CALL(Dir);
     CALL(Time);
     CALL(Random);
-    CALL(signal);
     CALL(load);
+    CALL(Ruby_module);
+    CALL(Box);
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
     CALL(GC);
+    CALL(WeakMap);
     CALL(Enumerator);
+    CALL(Ractor);
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
-    CALL(process);
+    CALL(signal);
     CALL(Cont);
+    CALL(Fiber_Scheduler);
+    CALL(process);
     CALL(Rational);
     CALL(Complex);
+    CALL(MemoryView);
+    CALL(pathname);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
-    CALL(gc_stress);
+    CALL(shape);
+    CALL(Prism);
+    CALL(unicode_version);
+    CALL(Set);
 
     // enable builtin loading
     CALL(builtin);
+}
 
+void
+rb_call_builtin_inits(void)
+{
 #define BUILTIN(n) CALL(builtin_##n)
+    BUILTIN(jit_hook);
+    BUILTIN(yjit);
+    BUILTIN(zjit);
+    BUILTIN(kernel);
     BUILTIN(gc);
+    BUILTIN(ractor);
+    BUILTIN(numeric);
     BUILTIN(io);
     BUILTIN(dir);
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(pathname_builtin);
     BUILTIN(warning);
     BUILTIN(array);
-    BUILTIN(kernel);
+    BUILTIN(hash);
+    BUILTIN(symbol);
+    BUILTIN(timev);
+    BUILTIN(thread_sync);
+    BUILTIN(nilclass);
+    BUILTIN(marshal);
+    BUILTIN(jit_undef);
     Init_builtin_prelude();
 }
 #undef CALL

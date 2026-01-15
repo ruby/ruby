@@ -4,6 +4,7 @@ class LeakChecker
 
   def initialize
     @fd_info = find_fds
+    @@skip = false
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
     @env_info = find_env
@@ -63,7 +64,7 @@ class LeakChecker
       }
     end
     fd_leaked = live2 - live1
-    if !fd_leaked.empty?
+    if !@@skip && !fd_leaked.empty?
       leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
@@ -111,18 +112,19 @@ class LeakChecker
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          @@try_lsof |= system("lsof -p #$$", out: MiniTest::Unit.output)
+          @@try_lsof |= system(*%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
         end
       end
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
           str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-          puts "Multiple autoclose IO object for a file descriptor:#{str}"
+          puts "Multiple autoclose IO objects for a file descriptor in: #{test_name}: #{str}"
         end
       }
     end
     @fd_info = live2
+    @@skip = false
     return leaked
   end
 
@@ -134,14 +136,14 @@ class LeakChecker
         attr_accessor :count
       end
 
-      def new(data)
+      def new(...)
         LeakChecker::TempfileCounter.count += 1
-        super(data)
+        super
       end
     }
     LeakChecker.const_set(:TempfileCounter, m)
 
-    class << Tempfile::Remover
+    class << Tempfile
       prepend LeakChecker::TempfileCounter
     end
   end
@@ -153,8 +155,8 @@ class LeakChecker
     if prev_count == count
       [prev_count, []]
     else
-      tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t|
-        t.instance_variable_defined?(:@tmpfile) and t.path
+      tempfiles = ObjectSpace.each_object(Tempfile).reject {|t|
+        t.instance_variables.empty? || t.closed?
       }
       [count, tempfiles]
     end
@@ -180,7 +182,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 
@@ -207,15 +210,36 @@ class LeakChecker
     return leaked
   end
 
-  def find_env
-    ENV.to_h
+  e = ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"]
+  begin
+    ENV["_Ruby_Env_Ignorecase_"] = ENV["_RUBY_ENV_IGNORECASE_"] = nil
+    ENV["_RUBY_ENV_IGNORECASE_"] = "ENV_CASE_TEST"
+    ENV_IGNORECASE = ENV["_Ruby_Env_Ignorecase_"] == "ENV_CASE_TEST"
+  ensure
+    ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"] = e
+  end
+
+  if ENV_IGNORECASE
+    def find_env
+      ENV.to_h {|k, v| [k.upcase, v]}
+    end
+  else
+    def find_env
+      ENV.to_h
+    end
   end
 
   def check_env(test_name)
     old_env = @env_info
-    new_env = ENV.to_h
+    new_env = find_env
     return false if old_env == new_env
+    if defined?(Bundler::EnvironmentPreserver)
+      bundler_prefix = Bundler::EnvironmentPreserver::BUNDLER_PREFIX
+    end
     (old_env.keys | new_env.keys).sort.each {|k|
+      # Don't report changed environment variables caused by Bundler's backups
+      next if bundler_prefix and k.start_with?(bundler_prefix)
+
       if old_env.has_key?(k)
         if new_env.has_key?(k)
           if old_env[k] != new_env[k]
@@ -263,7 +287,7 @@ class LeakChecker
     leaked
   end
 
-  WARNING_CATEGORIES = %i[deprecated experimental].freeze
+  WARNING_CATEGORIES = (Warning.respond_to?(:[]) ? %i[deprecated experimental] : []).freeze
 
   def find_warning_flags
     WARNING_CATEGORIES.to_h do |category|
@@ -284,10 +308,14 @@ class LeakChecker
   end
 
   def puts(*a)
-    output = MiniTest::Unit.output
+    output = Test::Unit::Runner.output
     if defined?(output.set_encoding)
       output.set_encoding(nil, nil)
     end
     output.puts(*a)
+  end
+
+  def self.skip
+    @@skip = true
   end
 end

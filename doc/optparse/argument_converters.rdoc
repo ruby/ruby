@@ -1,0 +1,380 @@
+== Argument Converters
+
+An option can specify that its argument is to be converted
+from the default +String+ to an instance of another class.
+
+=== Contents
+
+- {Built-In Argument Converters}[#label-Built-In+Argument+Converters]
+  - {Date}[#label-Date]
+  - {DateTime}[#label-DateTime]
+  - {Time}[#label-Time]
+  - {URI}[#label-URI]
+  - {Shellwords}[#label-Shellwords]
+  - {Integer}[#label-Integer]
+  - {Float}[#label-Float]
+  - {Numeric}[#label-Numeric]
+  - {DecimalInteger}[#label-DecimalInteger]
+  - {OctalInteger}[#label-OctalInteger]
+  - {DecimalNumeric}[#label-DecimalNumeric]
+  - {TrueClass}[#label-TrueClass]
+  - {FalseClass}[#label-FalseClass]
+  - {Object}[#label-Object]
+  - {String}[#label-String]
+  - {Array}[#label-Array]
+  - {Regexp}[#label-Regexp]
+- {Custom Argument Converters}[#label-Custom+Argument+Converters]
+
+=== Built-In Argument Converters
+
++OptionParser+ has a number of built-in argument converters,
+which are demonstrated below.
+
+==== +Date+
+
+File +date.rb+
+defines an option whose argument is to be converted to a +Date+ object.
+The argument is converted by method Date#parse.
+
+  :include: ruby/date.rb
+
+Executions:
+
+  $ ruby date.rb --date 2001-02-03
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date 20010203
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date "3rd Feb 2001"
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+
+==== +DateTime+
+
+File +datetime.rb+
+defines an option whose argument is to be converted to a +DateTime+ object.
+The argument is converted by method DateTime#parse.
+
+  :include: ruby/datetime.rb
+
+Executions:
+
+  $ ruby datetime.rb --datetime 2001-02-03T04:05:06+07:00
+  [#<DateTime: 2001-02-03T04:05:06+07:00 ((2451943j,75906s,0n),+25200s,2299161j)>, DateTime]
+  $ ruby datetime.rb --datetime 20010203T040506+0700
+  [#<DateTime: 2001-02-03T04:05:06+07:00 ((2451943j,75906s,0n),+25200s,2299161j)>, DateTime]
+  $ ruby datetime.rb --datetime "3rd Feb 2001 04:05:06 PM"
+  [#<DateTime: 2001-02-03T16:05:06+00:00 ((2451944j,57906s,0n),+0s,2299161j)>, DateTime]
+
+==== +Time+
+
+File +time.rb+
+defines an option whose argument is to be converted to a +Time+ object.
+The argument is converted by method Time#httpdate or Time#parse.
+
+  :include: ruby/time.rb
+
+Executions:
+
+  $ ruby time.rb --time "Thu, 06 Oct 2011 02:26:12 GMT"
+  [2011-10-06 02:26:12 UTC, Time]
+  $ ruby time.rb --time 2010-10-31
+  [2010-10-31 00:00:00 -0500, Time]
+
+==== +URI+
+
+File +uri.rb+
+defines an option whose argument is to be converted to a +URI+ object.
+The argument is converted by method URI#parse.
+
+  :include: ruby/uri.rb
+
+Executions:
+
+  $ ruby uri.rb --uri https://github.com
+  [#<URI::HTTPS https://github.com>, URI::HTTPS]
+  $ ruby uri.rb --uri http://github.com
+  [#<URI::HTTP http://github.com>, URI::HTTP]
+  $ ruby uri.rb --uri file://~/var
+  [#<URI::File file://~/var>, URI::File]
+
+==== +Shellwords+
+
+File +shellwords.rb+
+defines an option whose argument is to be converted to an +Array+ object by method
+Shellwords#shellwords.
+
+  :include: ruby/shellwords.rb
+
+Executions:
+
+  $ ruby shellwords.rb --shellwords "ruby my_prog.rb | less"
+  [["ruby", "my_prog.rb", "|", "less"], Array]
+  $ ruby shellwords.rb --shellwords "here are 'two words'"
+  [["here", "are", "two words"], Array]
+
+==== +Integer+
+
+File +integer.rb+
+defines an option whose argument is to be converted to an +Integer+ object.
+The argument is converted by method Kernel#Integer.
+
+  :include: ruby/integer.rb
+
+Executions:
+
+  $ ruby integer.rb --integer 100
+  [100, Integer]
+  $ ruby integer.rb --integer -100
+  [-100, Integer]
+  $ ruby integer.rb --integer 0100
+  [64, Integer]
+  $ ruby integer.rb --integer 0x100
+  [256, Integer]
+  $ ruby integer.rb --integer 0b100
+  [4, Integer]
+
+==== +Float+
+
+File +float.rb+
+defines an option whose argument is to be converted to a +Float+ object.
+The argument is converted by method Kernel#Float.
+
+  :include: ruby/float.rb
+
+Executions:
+
+  $ ruby float.rb --float 1
+  [1.0, Float]
+  $ ruby float.rb --float 3.14159
+  [3.14159, Float]
+  $ ruby float.rb --float 1.234E2
+  [123.4, Float]
+  $ ruby float.rb --float 1.234E-2
+  [0.01234, Float]
+
+==== +Numeric+
+
+File +numeric.rb+
+defines an option whose argument is to be converted to an instance
+of +Rational+, +Float+, or +Integer+.
+The argument is converted by method Kernel#Rational,
+Kernel#Float, or Kernel#Integer.
+
+  :include: ruby/numeric.rb
+
+Executions:
+
+  $ ruby numeric.rb --numeric 1/3
+  [(1/3), Rational]
+  $ ruby numeric.rb --numeric 3.333E-1
+  [0.3333, Float]
+  $ ruby numeric.rb --numeric 3
+  [3, Integer]
+
+==== +DecimalInteger+
+
+File +decimal_integer.rb+
+defines an option whose argument is to be converted to an +Integer+ object.
+The argument is converted by method Kernel#Integer.
+
+  :include: ruby/decimal_integer.rb
+
+The argument may not be in a binary or hexadecimal format;
+a leading zero is ignored (not parsed as octal).
+
+Executions:
+
+  $ ruby decimal_integer.rb --decimal_integer 100
+  [100, Integer]
+  $ ruby decimal_integer.rb --decimal_integer -100
+  [-100, Integer]
+  $ ruby decimal_integer.rb --decimal_integer 0100
+  [100, Integer]
+  $ ruby decimal_integer.rb --decimal_integer -0100
+  [-100, Integer]
+
+==== +OctalInteger+
+
+File +octal_integer.rb+
+defines an option whose argument is to be converted to an +Integer+ object.
+The argument is converted by method Kernel#Integer.
+
+  :include: ruby/octal_integer.rb
+
+The argument may not be in a binary or hexadecimal format;
+it is parsed as octal, regardless of whether it has a leading zero.
+
+Executions:
+
+  $ ruby octal_integer.rb --octal_integer 100
+  [64, Integer]
+  $ ruby octal_integer.rb --octal_integer -100
+  [-64, Integer]
+  $ ruby octal_integer.rb --octal_integer 0100
+  [64, Integer]
+
+==== +DecimalNumeric+
+
+File +decimal_numeric.rb+
+defines an option whose argument is to be converted to an +Integer+ object.
+The argument is converted by method Kernel#Integer
+
+  :include: ruby/decimal_numeric.rb
+
+The argument may not be in a binary or hexadecimal format;
+a leading zero causes the argument to be parsed as octal.
+
+Executions:
+
+  $ ruby decimal_numeric.rb --decimal_numeric 100
+  [100, Integer]
+  $ ruby decimal_numeric.rb --decimal_numeric -100
+  [-100, Integer]
+  $ ruby decimal_numeric.rb --decimal_numeric 0100
+  [64, Integer]
+
+==== +TrueClass+
+
+File +true_class.rb+
+defines an option whose argument is to be converted to +true+ or +false+.
+The argument is evaluated by method Object#nil?.
+
+  :include: ruby/true_class.rb
+
+The argument may be any of those shown in the examples below.
+
+Executions:
+
+  $ ruby true_class.rb --true_class true
+  [true, TrueClass]
+  $ ruby true_class.rb --true_class yes
+  [true, TrueClass]
+  $ ruby true_class.rb --true_class +
+  [true, TrueClass]
+  $ ruby true_class.rb --true_class false
+  [false, FalseClass]
+  $ ruby true_class.rb --true_class no
+  [false, FalseClass]
+  $ ruby true_class.rb --true_class -
+  [false, FalseClass]
+  $ ruby true_class.rb --true_class nil
+  [false, FalseClass]
+
+==== +FalseClass+
+
+File +false_class.rb+
+defines an option whose argument is to be converted to +true+ or +false+.
+The argument is evaluated by method Object#nil?.
+
+  :include: ruby/false_class.rb
+
+The argument may be any of those shown in the examples below.
+
+Executions:
+
+  $ ruby false_class.rb --false_class false
+  [false, FalseClass]
+  $ ruby false_class.rb --false_class no
+  [false, FalseClass]
+  $ ruby false_class.rb --false_class -
+  [false, FalseClass]
+  $ ruby false_class.rb --false_class nil
+  [false, FalseClass]
+  $ ruby false_class.rb --false_class true
+  [true, TrueClass]
+  $ ruby false_class.rb --false_class yes
+  [true, TrueClass]
+  $ ruby false_class.rb --false_class +
+  [true, TrueClass]
+
+==== +Object+
+
+File +object.rb+
+defines an option whose argument is not to be converted from +String+.
+
+  :include: ruby/object.rb
+
+Executions:
+
+  $ ruby object.rb --object foo
+  ["foo", String]
+  $ ruby object.rb --object nil
+  ["nil", String]
+
+==== +String+
+
+File +string.rb+
+defines an option whose argument is not to be converted from +String+.
+
+  :include: ruby/string.rb
+
+Executions:
+
+  $ ruby string.rb --string foo
+  ["foo", String]
+  $ ruby string.rb --string nil
+  ["nil", String]
+
+==== +Array+
+
+File +array.rb+
+defines an option whose argument is to be converted from +String+
+to an array of strings, based on comma-separated substrings.
+
+  :include: ruby/array.rb
+
+Executions:
+
+  $ ruby array.rb --array ""
+  [[], Array]
+  $ ruby array.rb --array foo,bar,baz
+  [["foo", "bar", "baz"], Array]
+  $ ruby array.rb --array "foo, bar, baz"
+  [["foo", " bar", " baz"], Array]
+
+==== +Regexp+
+
+File +regexp.rb+
+defines an option whose argument is to be converted to a +Regexp+ object.
+
+  :include: ruby/regexp.rb
+
+Executions:
+
+  $ ruby regexp.rb --regexp foo
+
+=== Custom Argument Converters
+
+You can create custom argument converters.
+To create a custom converter, call OptionParser#accept with:
+
+- An identifier, which may be any object.
+- An optional match pattern, which defaults to <tt>/.*/m</tt>.
+- A block that accepts the argument and returns the converted value.
+
+This custom converter accepts any argument and converts it,
+if possible, to a +Complex+ object.
+
+  :include: ruby/custom_converter.rb
+
+Executions:
+
+  $ ruby custom_converter.rb --complex 0
+  [(0+0i), Complex]
+  $ ruby custom_converter.rb --complex 1
+  [(1+0i), Complex]
+  $ ruby custom_converter.rb --complex 1+2i
+  [(1+2i), Complex]
+  $ ruby custom_converter.rb --complex 0.3-0.5i
+  [(0.3-0.5i), Complex]
+
+This custom converter accepts any 1-word argument
+and capitalizes it, if possible.
+
+  :include: ruby/match_converter.rb
+
+Executions:
+
+  $ ruby match_converter.rb --capitalize foo
+  ["Foo", String]
+  $ ruby match_converter.rb --capitalize "foo bar"
+  match_converter.rb:9:in '<main>': invalid argument: --capitalize foo bar (OptionParser::InvalidArgument)

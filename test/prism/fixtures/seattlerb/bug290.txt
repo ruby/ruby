@@ -1,0 +1,3 @@
+begin
+  foo
+end

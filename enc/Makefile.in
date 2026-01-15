@@ -1,4 +1,5 @@
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@@NULLCMD@)
@@ -21,22 +22,26 @@ TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 LIBEXT = @LIBEXT@
+EXEEXT = @EXEEXT@
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
-ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-ENC_TRANS_SO_D = $(TIMESTAMPDIR)/.enc-trans.so.time
+ENC_TRANS_D   = $(TIMESTAMPDIR)/enc-trans.time
+ENC_TRANS_SO_D = $(TIMESTAMPDIR)/enc-trans-$(arch).time
 
 BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
 		  enc/unicode.c enc/utf_8.c
 
 BUILTIN_TRANSES	= enc/trans/newline.trans
+BUILTIN_TRANS_CSRCS = $(BUILTIN_TRANSES:.trans=.c)
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@
 LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 LIBRUBYARG_STATIC = $(LIBRUBYARG_SHARED)
+BUILTRUBY = $(topdir)/miniruby$(EXEEXT)
 
 empty =
 AR = @AR@
+LD = @LD@
 CC = @CC@
 ARFLAGS = @ARFLAGS@$(empty)
 RANLIB = @RANLIB@
@@ -48,11 +53,12 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@
 CCDLFLAGS = @CCDLFLAGS@
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir) @incflags@
 DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
 LDSHARED = @LDSHARED@
+POSTLINK = @POSTLINK@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
 extdldflags = @EXTDLDFLAGS@
@@ -67,6 +73,7 @@ WORKDIRS = @WORKDIRS@
 
 NULLCMD = @NULLCMD@
 RM = @RM@
+RMALL = @RMALL@
 RMDIR = @RMDIR@
 RMDIRS = @RMDIRS@
 MAKEDIRS = @MAKEDIRS@
@@ -77,6 +84,9 @@ all:
 
 make-workdir:
 	$(Q)$(MAKEDIRS) $(WORKDIRS)
+
+.PHONY: encs all modencs libencs enc libenc trans libtrans srcs
+.PHONY: clean distclean realclean clean-srcs
 
 clean:
 

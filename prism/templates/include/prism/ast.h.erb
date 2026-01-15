@@ -1,0 +1,238 @@
+/**
+ * @file ast.h
+ *
+ * The abstract syntax tree.
+ *
+ * --
+ */
+#ifndef PRISM_AST_H
+#define PRISM_AST_H
+
+#include "prism/defines.h"
+#include "prism/util/pm_constant_pool.h"
+#include "prism/util/pm_integer.h"
+#include "prism/util/pm_string.h"
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/**
+ * This enum represents every type of token in the Ruby source.
+ */
+typedef enum pm_token_type {
+<%- tokens.each do |token| -%>
+    /** <%= token.comment %> */
+    PM_TOKEN_<%= token.name %><%= " = #{token.value}" if token.value %>,
+
+<%- end -%>
+    /** The maximum token value. */
+    PM_TOKEN_MAXIMUM,
+} pm_token_type_t;
+
+/**
+ * This struct represents a token in the Ruby source. We use it to track both
+ * type and location information.
+ */
+typedef struct {
+    /** The type of the token. */
+    pm_token_type_t type;
+
+    /** A pointer to the start location of the token in the source. */
+    const uint8_t *start;
+
+    /** A pointer to the end location of the token in the source. */
+    const uint8_t *end;
+} pm_token_t;
+
+/**
+ * This represents a range of bytes in the source string to which a node or
+ * token corresponds.
+ */
+typedef struct {
+    /** A pointer to the start location of the range in the source. */
+    const uint8_t *start;
+
+    /** A pointer to the end location of the range in the source. */
+    const uint8_t *end;
+} pm_location_t;
+
+struct pm_node;
+
+/**
+ * A list of nodes in the source, most often used for lists of children.
+ */
+typedef struct pm_node_list {
+    /** The number of nodes in the list. */
+    size_t size;
+
+    /** The capacity of the list that has been allocated. */
+    size_t capacity;
+
+    /** The nodes in the list. */
+    struct pm_node **nodes;
+} pm_node_list_t;
+
+/**
+ * This enum represents every type of node in the Ruby syntax tree.
+ */
+enum pm_node_type {
+<%- nodes.each_with_index do |node, index| -%>
+    /** <%= node.name %> */
+    <%= node.type %> = <%= index + 1 %>,
+
+<%- end -%>
+    /** A special kind of node used for compilation. */
+    PM_SCOPE_NODE
+};
+
+/**
+ * This is the type of node embedded in the node struct. We explicitly control
+ * the size of it here to avoid having the variable-width enum.
+ */
+typedef uint16_t pm_node_type_t;
+
+/**
+ * These are the flags embedded in the node struct. We explicitly control the
+ * size of it here to avoid having the variable-width enum.
+ */
+typedef uint16_t pm_node_flags_t;
+
+/**
+ * We store the flags enum in every node in the tree. Some flags are common to
+ * all nodes (the ones listed below). Others are specific to certain node types.
+ */
+static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = 0x1;
+static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
+
+/**
+ * This is the base structure that represents a node in the syntax tree. It is
+ * embedded into every node type.
+ */
+typedef struct pm_node {
+    /**
+     * This represents the type of the node. It somewhat maps to the nodes that
+     * existed in the original grammar and ripper, but it's not a 1:1 mapping.
+     */
+    pm_node_type_t type;
+
+    /**
+     * This represents any flags on the node. Some are common to all nodes, and
+     * some are specific to the type of node.
+     */
+    pm_node_flags_t flags;
+
+    /**
+     * The unique identifier for this node, which is deterministic based on the
+     * source. It is used to identify unique nodes across parses.
+     */
+    uint32_t node_id;
+
+    /**
+     * This is the location of the node in the source. It's a range of bytes
+     * containing a start and an end.
+     */
+    pm_location_t location;
+} pm_node_t;
+
+/**
+ * Cast the given node to the base pm_node_t type.
+ */
+#define PM_NODE_UPCAST(node_) ((pm_node_t *) (node_))
+
+/**
+ * Cast the type to an enum to allow the compiler to provide exhaustiveness
+ * checking.
+ */
+#define PM_NODE_TYPE(node_) ((enum pm_node_type) (node_)->type)
+
+/**
+ * Return true if the type of the given node matches the given type.
+ */
+#define PM_NODE_TYPE_P(node_, type_) (PM_NODE_TYPE(node_) == (type_))
+
+/**
+ * Return the flags associated with the given node.
+ */
+#define PM_NODE_FLAGS(node_) (PM_NODE_UPCAST(node_)->flags)
+
+/**
+ * Return true if the given flag is set on the given node.
+ */
+#define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_FLAGS(node_) & (flag_)) != 0)
+<%- nodes.each do |node| -%>
+
+/**
+ * <%= node.name %>
+ *
+<%- node.each_comment_line do |line| -%>
+ *<%= line %>
+<%- end -%>
+ *
+ * Type: ::<%= node.type %>
+<% if (node_flags = node.flags) %>
+ * Flags (#pm_<%= node_flags.human %>):
+<%- node_flags.values.each do |value| -%>
+ * * ::PM_<%= node_flags.human.upcase %>_<%= value.name %>
+<%- end -%>
+<%- end -%>
+ *
+ * @extends pm_node_t
+ */
+typedef struct pm_<%= node.human %> {
+    /** The embedded base node. */
+    pm_node_t base;
+
+<%- node.fields.each do |field| -%>
+
+    /**
+     * <%= node.name %>#<%= field.name %>
+    <%- if field.comment -%>
+     *
+    <%- field.each_comment_line do |line| -%>
+     *<%= line %>
+    <%- end -%>
+    <%- end -%>
+     */
+    <%= case field
+    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
+    when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
+    when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Prism::Template::StringField then "pm_string_t #{field.name}"
+    when Prism::Template::LocationField, Prism::Template::OptionalLocationField then "pm_location_t #{field.name}"
+    when Prism::Template::UInt8Field then "uint8_t #{field.name}"
+    when Prism::Template::UInt32Field then "uint32_t #{field.name}"
+    when Prism::Template::IntegerField then "pm_integer_t #{field.name}"
+    when Prism::Template::DoubleField then "double #{field.name}"
+    else raise field.class.name
+    end
+    %>;
+<%- end -%>
+} pm_<%= node.human %>_t;
+<%- end -%>
+<%- flags.each do |flag| -%>
+
+/**
+ * <%= flag.comment %>
+ */
+typedef enum pm_<%= flag.human %> {
+    <%- flag.values.each_with_index do |value, index| -%>
+<%= "\n" if index > 0 -%>
+    /** <%= value.comment %> */
+    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
+    <%- end -%>
+
+    PM_<%= flag.human.upcase %>_LAST,
+} pm_<%= flag.human %>_t;
+<%- end -%>
+
+/**
+ * When we're serializing to Java, we want to skip serializing the location
+ * fields as they won't be used by JRuby or TruffleRuby. This boolean allows us
+ * to specify that through the environment. It will never be true except for in
+ * those build systems.
+ */
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
+
+#endif

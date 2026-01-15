@@ -1,0 +1,10 @@
+prelude: |
+  first = 1
+  last = 10000
+  mid = (first + last) / 2
+  r = first..last
+
+benchmark:
+  first: r.bsearch { |x| x >= first }
+  mid: r.bsearch { |x| x >= mid }
+  last: r.bsearch { |x| x >= last }

@@ -12,7 +12,7 @@ describe "Encoding.list" do
   end
 
   it "returns each encoding only once" do
-    orig = Encoding.list.map {|e| e.name}
+    orig = Encoding.list.map { |e| e.name }
     orig.should == orig.uniq
   end
 
@@ -33,7 +33,15 @@ describe "Encoding.list" do
   end
 
   it "includes dummy encodings" do
-    Encoding.list.select {|e| e.dummy?}.should_not == []
+    Encoding.list.select { |e| e.dummy? }.should_not == []
+  end
+
+  it 'includes UTF-8 encoding' do
+    Encoding.list.should.include?(Encoding::UTF_8)
+  end
+
+  it 'includes CESU-8 encoding' do
+    Encoding.list.should.include?(Encoding::CESU_8)
   end
 
   # TODO: Find example that illustrates this

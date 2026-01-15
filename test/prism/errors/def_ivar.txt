@@ -1,0 +1,3 @@
+def @foo; end
+    ^~~~ unexpected instance variable; expected a method name
+

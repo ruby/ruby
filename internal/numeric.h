@@ -1,7 +1,6 @@
 #ifndef INTERNAL_NUMERIC_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_NUMERIC_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -36,12 +35,25 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
+/* same as internal.h */
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
+
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
+typedef double rb_float_value_type;
+#else
+typedef struct {
+    VALUE values[roomof(SIZEOF_DOUBLE, SIZEOF_VALUE)];
+} rb_float_value_type;
+#endif
+
 struct RFloat {
     struct RBasic basic;
-    double float_value;
+    rb_float_value_type float_value;
 };
 
-#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
+#define RFLOAT(obj)  ((struct RFloat *)(obj))
 
 /* numeric.c */
 int rb_num_to_uint(VALUE val, unsigned int *ret);
@@ -50,11 +62,11 @@ double ruby_float_step_size(double beg, double end, double unit, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
-VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
 VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
+VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
@@ -73,14 +85,16 @@ VALUE rb_int_cmp(VALUE x, VALUE y);
 VALUE rb_int_equal(VALUE x, VALUE y);
 VALUE rb_int_divmod(VALUE x, VALUE y);
 VALUE rb_int_and(VALUE x, VALUE y);
+VALUE rb_int_xor(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
+VALUE rb_int_rshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
-VALUE rb_int_abs(VALUE num);
-VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
+VALUE rb_check_integer_type(VALUE);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
+VALUE rb_float_floor(VALUE x, int ndigits);
 VALUE rb_float_abs(VALUE flt);
 static inline VALUE rb_num_compare_with_zero(VALUE num, ID mid);
 static inline int rb_num_positive_int_p(VALUE num);
@@ -97,17 +111,69 @@ static inline bool FLOAT_ZERO_P(VALUE num);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
-VALUE rb_int_positive_pow(long x, unsigned long y);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_flo_div_flo(VALUE x, VALUE y);
 double ruby_float_mod(double x, double y);
 VALUE rb_float_equal(VALUE x, VALUE y);
 int rb_float_cmp(VALUE x, VALUE y);
 VALUE rb_float_eql(VALUE x, VALUE y);
 VALUE rb_fix_aref(VALUE fix, VALUE idx);
-MJIT_SYMBOL_EXPORT_END
+VALUE rb_int_zero_p(VALUE num);
+VALUE rb_int_even_p(VALUE num);
+VALUE rb_int_odd_p(VALUE num);
+VALUE rb_int_abs(VALUE num);
+VALUE rb_int_bit_length(VALUE num);
+VALUE rb_int_uminus(VALUE num);
+VALUE rb_int_comp(VALUE num);
+
+// Unified 128-bit integer structures that work with or without native support:
+union rb_uint128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    uint128_t value;
+#endif
+};
+typedef union rb_uint128 rb_uint128_t;
+
+union rb_int128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    int128_t value;
+#endif
+};
+typedef union rb_int128 rb_int128_t;
+
+union uint128_int128_conversion {
+    rb_uint128_t uint128;
+    rb_int128_t int128;
+};
+
+// Conversion functions for 128-bit integers:
+rb_uint128_t rb_numeric_to_uint128(VALUE x);
+rb_int128_t rb_numeric_to_int128(VALUE x);
+VALUE rb_uint128_to_numeric(rb_uint128_t n);
+VALUE rb_int128_to_numeric(rb_int128_t n);
 
 static inline bool
 INT_POSITIVE_P(VALUE num)
@@ -142,7 +208,7 @@ rb_num_compare_with_zero(VALUE num, ID mid)
 {
     VALUE zero = INT2FIX(0);
     VALUE r = rb_check_funcall(num, mid, 1, &zero);
-    if (r == Qundef) {
+    if (RB_UNDEF_P(r)) {
         rb_cmperr(num, zero);
     }
     return r;
@@ -204,7 +270,15 @@ rb_float_flonum_value(VALUE v)
 static inline double
 rb_float_noflonum_value(VALUE v)
 {
+#if SIZEOF_DOUBLE <= SIZEOF_VALUE
     return RFLOAT(v)->float_value;
+#else
+    union {
+        rb_float_value_type v;
+        double d;
+    } u = {RFLOAT(v)->float_value};
+    return u.d;
+#endif
 }
 
 static inline double

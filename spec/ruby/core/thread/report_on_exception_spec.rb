@@ -60,6 +60,55 @@ describe "Thread#report_on_exception=" do
         t.join
       }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
     end
+
+    it "prints a backtrace on $stderr in the regular backtrace order" do
+      line_raise = __LINE__ + 2
+      def foo
+        raise RuntimeError, "Thread#report_on_exception specs backtrace order"
+      end
+
+      line_call_foo = __LINE__ + 5
+      go = false
+      t = Thread.new {
+        Thread.current.report_on_exception = true
+        Thread.pass until go
+        foo
+      }
+
+      -> {
+        go = true
+        Thread.pass while t.alive?
+      }.should output("", /\A
+#{Regexp.quote(t.inspect)}\sterminated\swith\sexception\s\(report_on_exception\sis\strue\):\n
+#{Regexp.quote(__FILE__)}:#{line_raise}:in\s[`']foo':\sThread\#report_on_exception\sspecs\sbacktrace\sorder\s\(RuntimeError\)\n
+\tfrom\s#{Regexp.quote(__FILE__)}:#{line_call_foo}:in\s[`']block\s\(4\slevels\)\sin\s<top\s\(required\)>'\n
+\z/x)
+
+      -> {
+        t.join
+      }.should raise_error(RuntimeError, "Thread#report_on_exception specs backtrace order")
+    end
+
+    it "prints the backtrace even if the thread was killed just after Thread#raise" do
+      t = nil
+      ready = false
+      -> {
+        t = Thread.new {
+          Thread.current.report_on_exception = true
+          ready = true
+          sleep
+        }
+
+        Thread.pass until ready and t.stop?
+        t.raise RuntimeError, "Thread#report_on_exception before kill spec"
+        t.kill
+        Thread.pass while t.alive?
+      }.should output("", /Thread.+terminated with exception.+Thread#report_on_exception before kill spec/m)
+
+      -> {
+        t.join
+      }.should raise_error(RuntimeError, "Thread#report_on_exception before kill spec")
+    end
   end
 
   describe "when set to false" do

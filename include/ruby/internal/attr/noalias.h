@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NOALIAS.
  *
  * ### Q&A ###
@@ -46,10 +46,21 @@
  *       that has to  be passed to the function as  a pointer.  ::VALUE -taking
  *       functions thus cannot be attributed as such.
  */
+#include "ruby/internal/compiler_since.h"
 #include "ruby/internal/has/declspec_attribute.h"
 
 /** Wraps (or simulates) `__declspec((noalias))` */
-#if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)
+#if RBIMPL_COMPILER_BEFORE(Clang, 12, 0, 0)
+# /*
+#  * `::llvm::Attribute::ArgMemOnly`  was buggy  before.  Maybe  because nobody
+#  * actually seriously used it.  It seems they somehow mitigated the situation
+#  * in  LLVM  12.  Still  not  found  the  exact  changeset which  fiexed  the
+#  * attribute, though.
+#  *
+#  * :FIXME: others (armclang, xlclang, ...) can also be affected?
+#  */
+# define RBIMPL_ATTR_NOALIAS() /* void */
+#elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)
 # define RBIMPL_ATTR_NOALIAS() __declspec(noalias)
 #else
 # define RBIMPL_ATTR_NOALIAS() /* void */

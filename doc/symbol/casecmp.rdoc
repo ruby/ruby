@@ -1,0 +1,27 @@
+Like Symbol#<=>, but case-insensitive;
+equivalent to <tt>self.to_s.casecmp(object.to_s)</tt>:
+
+  lower = :abc
+  upper = :ABC
+  upper.casecmp(lower) # => 0
+  lower.casecmp(lower) # => 0
+  lower.casecmp(upper) # => 0
+
+Returns nil if +self+ and +object+ have incompatible encodings,
+or if +object+ is not a symbol:
+
+  sym = 'äöü'.encode("ISO-8859-1").to_sym
+  other_sym = 'ÄÖÜ'
+  sym.casecmp(other_sym) # => nil
+  :foo.casecmp(2)        # => nil
+
+Unlike Symbol#casecmp?,
+case-insensitivity does not work for characters outside of 'A'..'Z' and 'a'..'z':
+
+  lower = :äöü
+  upper = :ÄÖÜ
+  upper.casecmp(lower) # => -1
+  lower.casecmp(lower) # => 0
+  lower.casecmp(upper) # => 1
+
+Related: Symbol#casecmp?, String#casecmp.

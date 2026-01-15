@@ -1,0 +1,15 @@
+With a block given, calls the block with each successive byte from +self+;
+returns +self+:
+
+  a = []
+  'hello'.each_byte {|byte| a.push(byte) }     # Five 1-byte characters.
+  a # => [104, 101, 108, 108, 111]
+  a = []
+  'こんにちは'.each_byte {|byte| a.push(byte) }  # Five 3-byte characters.
+  a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+
+With no block given, returns an enumerator.
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].
+
+

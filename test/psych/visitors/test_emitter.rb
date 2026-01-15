@@ -61,9 +61,9 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/key: value/, @io.string)
+        assert_include(@io.string, "key: value")
         assert_equal @io.string, s.yaml
-        assert(/\.\.\./ !~ s.yaml)
+        assert_not_include(s.yaml, "...")
       end
 
       def test_scalar
@@ -76,7 +76,7 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/hello/, @io.string)
+        assert_include(@io.string, "hello")
         assert_equal @io.string, s.yaml
       end
 
@@ -90,8 +90,8 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/str/, @io.string)
-        assert_match(/hello/, @io.string)
+        assert_include(@io.string, "str")
+        assert_include(@io.string, "hello")
         assert_equal @io.string, s.yaml
       end
 
@@ -107,7 +107,7 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/- hello/, @io.string)
+        assert_include(@io.string, "- hello")
         assert_equal @io.string, s.yaml
       end
 
@@ -122,7 +122,7 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/key: value/, @io.string)
+        assert_include(@io.string, "key: value")
         assert_equal @io.string, s.yaml
       end
 
@@ -137,7 +137,7 @@ module Psych
 
         @visitor.accept s
 
-        assert_match(/&A key: \*A/, @io.string)
+        assert_include(@io.string, "&A key: \*A")
         assert_equal @io.string, s.yaml
       end
     end

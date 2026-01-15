@@ -1,0 +1,11 @@
+Returns the count of characters (not bytes) in +self+:
+
+  'foo'.length        # => 3
+  'こんにちは'.length  # => 5
+
+Contrast with String#bytesize:
+
+  'foo'.bytesize        # => 3
+  'こんにちは'.bytesize  # => 15
+
+Related: see {Querying}[rdoc-ref:String@Querying].

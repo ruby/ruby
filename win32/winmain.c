@@ -1,10 +1,10 @@
 #include <windows.h>
 #include <stdio.h>
 
-extern int main(int, char**);
+extern int wmain(int, WCHAR**);
 
 int WINAPI
 WinMain(HINSTANCE current, HINSTANCE prev, LPSTR cmdline, int showcmd)
 {
-    return main(0, NULL);
+    return wmain(0, NULL);
 }

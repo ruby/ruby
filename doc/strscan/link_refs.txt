@@ -1,0 +1,17 @@
+[1]: rdoc-ref:StringScanner@Stored+String
+[2]: rdoc-ref:StringScanner@Byte+Position+-28Position-29
+[3]: rdoc-ref:StringScanner@Target+Substring
+[4]: rdoc-ref:StringScanner@Setting+the+Target+Substring
+[5]: rdoc-ref:StringScanner@Traversing+the+Target+Substring
+[6]: https://docs.ruby-lang.org/en/master/Regexp.html
+[7]: rdoc-ref:StringScanner@Character+Position
+[8]: https://docs.ruby-lang.org/en/master/String.html#method-i-5B-5D
+[9]: rdoc-ref:StringScanner@Match+Values
+[10]: rdoc-ref:StringScanner@Fixed-Anchor+Property
+[11]: rdoc-ref:StringScanner@Positions
+[13]: rdoc-ref:StringScanner@Captured+Match+Values
+[14]: rdoc-ref:StringScanner@Querying+the+Target+Substring
+[15]: rdoc-ref:StringScanner@Searching+the+Target+Substring
+[16]: https://docs.ruby-lang.org/en/master/Regexp.html#class-Regexp-label-Groups+and+Captures
+[17]: rdoc-ref:StringScanner@Matching
+[18]: rdoc-ref:StringScanner@Basic+Match+Values

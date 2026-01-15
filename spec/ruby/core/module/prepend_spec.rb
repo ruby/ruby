@@ -36,12 +36,435 @@ describe "Module#prepend" do
     ScratchPad.recorded.should == [ [ m3, c], [ m2, c ], [ m, c ] ]
   end
 
+  it "updates the method when a module is prepended" do
+    m_module = Module.new do
+      def foo
+        "m"
+      end
+    end
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    a_class.class_eval do
+      prepend m_module
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a prepended module is updated" do
+    m_module = Module.new
+    a_class = Class.new do
+      prepend m_module
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the optimized method when a prepended module is updated" do
+    out = ruby_exe(<<~RUBY)
+    module M; end
+    class Integer
+      prepend M
+    end
+    l = -> { 1 + 2 }
+    p l.call
+    M.module_eval do
+      def +(o)
+        $called = true
+        super(o)
+      end
+    end
+    p l.call
+    p $called
+    RUBY
+    out.should == "3\n3\ntrue\n"
+  end
+
+  it "updates the method when there is a base included method and the prepended module overrides it" do
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new do
+      include base_module
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new do
+      def foo
+        "m"
+      end
+    end
+    a_class.prepend m_module
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when there is a base included method and the prepended module is later updated" do
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new do
+      include base_module
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new
+    a_class.prepend m_module
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a module prepended after a call is later updated" do
+    m_module = Module.new
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    a_class.prepend m_module
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a module is prepended after another and the method is defined later on that module" do
+    m_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new
+    a_class.prepend m_module
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    n_module = Module.new
+    a_class.prepend n_module
+    foo.call.should == 'a'
+
+    n_module.module_eval do
+      def foo
+        "n"
+      end
+    end
+    foo.call.should == 'n'
+  end
+
+  it "updates the method when a module is included in a prepended module and the method is defined later" do
+    a_class = Class.new
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class.prepend base_module
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new
+    n_module = Module.new
+    m_module.include n_module
+    a_class.prepend m_module
+
+    n_module.module_eval do
+      def foo
+        "n"
+      end
+    end
+    foo.call.should == 'n'
+  end
+
+  it "updates the method when a new module with an included module is prepended" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    n_module = Module.new do
+      def foo
+        'n'
+      end
+    end
+
+    m_module = Module.new  do
+      include n_module
+    end
+
+    a = a_class.new
+    foo = -> { a.foo }
+
+    foo.call.should == 'a'
+
+    a_class.class_eval do
+      prepend m_module
+    end
+
+    foo.call.should == 'n'
+  end
+
+  it "updates the constant when a module is prepended" do
+    module ModuleSpecs::ConstUpdatePrepended
+      module M
+        FOO = 'm'
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+
+      B.foo.should == 'a'
+      B.prepend M
+      B.foo.should == 'm'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatePrepended)
+  end
+
+  it "updates the constant when a prepended module is updated" do
+    module ModuleSpecs::ConstPrependedUpdated
+      module M
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        prepend M
+        def self.foo
+          FOO
+        end
+      end
+      B.foo.should == 'a'
+      M.const_set(:FOO, 'm')
+      B.foo.should == 'm'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstPrependedUpdated)
+  end
+
+  it "updates the constant when there is a base included constant and the prepended module overrides it" do
+    module ModuleSpecs::ConstIncludedPrependedOverride
+      module Base
+        FOO = 'a'
+      end
+      module A
+        include Base
+        def self.foo
+          FOO
+        end
+      end
+      A.foo.should == 'a'
+
+      module M
+        FOO = 'm'
+      end
+      A.prepend M
+      A.foo.should == 'm'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstIncludedPrependedOverride)
+  end
+
+  it "updates the constant when there is a base included constant and the prepended module is later updated" do
+    module ModuleSpecs::ConstIncludedPrependedLaterUpdated
+      module Base
+        FOO = 'a'
+      end
+      module A
+        include Base
+        def self.foo
+          FOO
+        end
+      end
+      A.foo.should == 'a'
+
+      module M
+      end
+      A.prepend M
+      A.foo.should == 'a'
+
+      M.const_set(:FOO, 'm')
+      A.foo.should == 'm'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstIncludedPrependedLaterUpdated)
+  end
+
+  it "updates the constant when a module prepended after a constant is later updated" do
+    module ModuleSpecs::ConstUpdatedPrependedAfterLaterUpdated
+      module M
+      end
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+      B.foo.should == 'a'
+
+      B.prepend M
+      B.foo.should == 'a'
+
+      M.const_set(:FOO, 'm')
+      B.foo.should == 'm'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedPrependedAfterLaterUpdated)
+  end
+
+  it "updates the constant when a module is prepended after another and the constant is defined later on that module" do
+    module ModuleSpecs::ConstUpdatedPrependedAfterConstDefined
+      module M
+        FOO = 'm'
+      end
+      module A
+        prepend M
+        def self.foo
+          FOO
+        end
+      end
+
+      A.foo.should == 'm'
+
+      module N
+      end
+      A.prepend N
+      A.foo.should == 'm'
+
+      N.const_set(:FOO, 'n')
+      A.foo.should == 'n'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedPrependedAfterConstDefined)
+  end
+
+  it "updates the constant when a module is included in a prepended module and the constant is defined later" do
+    module ModuleSpecs::ConstUpdatedIncludedInPrependedConstDefinedLater
+      module A
+        def self.foo
+          FOO
+        end
+      end
+      module Base
+        FOO = 'a'
+      end
+
+      A.prepend Base
+      A.foo.should == 'a'
+
+      module N
+      end
+      module M
+        include N
+      end
+
+      A.prepend M
+
+      N.const_set(:FOO, 'n')
+      A.foo.should == 'n'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedIncludedInPrependedConstDefinedLater)
+  end
+
+  it "updates the constant when a new module with an included module is prepended" do
+    module ModuleSpecs::ConstUpdatedNewModuleIncludedPrepended
+      module A
+        FOO = 'a'
+      end
+      module B
+        include A
+        def self.foo
+          FOO
+        end
+      end
+      module N
+        FOO = 'n'
+      end
+
+      module M
+        include N
+      end
+
+      B.foo.should == 'a'
+
+      B.prepend M
+      B.foo.should == 'n'
+    end
+  ensure
+    ModuleSpecs.send(:remove_const, :ConstUpdatedNewModuleIncludedPrepended)
+  end
+
   it "raises a TypeError when the argument is not a Module" do
     -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    -> { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    class ModuleSpecs::SubclassSpec::AClass
+    end
+    -> { ModuleSpecs::SubclassSpec::AClass.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+  ensure
+    ModuleSpecs::SubclassSpec.send(:remove_const, :AClass)
+  end
+
+  it "raises a TypeError when the argument is a refinement" do
+    refinement = nil
+
+    Module.new do
+      refine String do
+        refinement = self
+      end
+    end
+
+    -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(TypeError, "Cannot prepend refinement")
   end
 
   it "imports constants" do
@@ -128,16 +551,16 @@ describe "Module#prepend" do
     c.dup.new.should be_kind_of(m)
   end
 
-  it "keeps the module in the chain when dupping an intermediate module" do
+  it "uses only new module when dupping the module" do
     m1 = Module.new { def calc(x) x end }
     m2 = Module.new { prepend(m1) }
     c1 = Class.new { prepend(m2) }
     m2dup = m2.dup
-    m2dup.ancestors.should == [m2dup,m1,m2]
+    m2dup.ancestors.should == [m1,m2dup]
     c2 = Class.new { prepend(m2dup) }
     c1.ancestors[0,3].should == [m1,m2,c1]
     c1.new.should be_kind_of(m1)
-    c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
+    c2.ancestors[0,3].should == [m1,m2dup,c2]
     c2.new.should be_kind_of(m1)
   end
 
@@ -221,6 +644,18 @@ describe "Module#prepend" do
 
     c = Class.new { prepend(m) }
     ScratchPad.recorded.should == [[:prepend_features, c], [:prepended, c]]
+  end
+
+  it "prepends a module if it is included in a super class" do
+    module ModuleSpecs::M3
+      module M; end
+      class A; include M; end
+      class B < A; prepend M; end
+
+      all = [A, B, M]
+
+      (B.ancestors.filter { |a| all.include?(a) }).should == [M, B, A, M]
+    end
   end
 
   it "detects cyclic prepends" do
@@ -341,6 +776,33 @@ describe "Module#prepend" do
     ary = []
     child_class.new.foo(ary)
     ary.should == [3, 2, 1]
+  end
+
+  it "does not prepend a second copy if the module already indirectly exists in the hierarchy" do
+    mod = Module.new do; end
+    submod = Module.new do; end
+    klass = Class.new do; end
+    klass.include(mod)
+    mod.prepend(submod)
+    klass.include(mod)
+
+    klass.ancestors.take(4).should == [klass, submod, mod, Object]
+  end
+
+  # https://bugs.ruby-lang.org/issues/17423
+  describe "when module already exists in ancestor chain" do
+    it "modifies the ancestor chain" do
+      m = Module.new do; end
+      a = Module.new do; end
+      b = Class.new do; end
+
+      b.include(a)
+      a.prepend(m)
+      b.ancestors.take(4).should == [b, m, a, Object]
+
+      b.prepend(m)
+      b.ancestors.take(5).should == [m, b, m, a, Object]
+    end
   end
 
   describe "called on a module" do

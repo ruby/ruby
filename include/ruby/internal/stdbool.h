@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      C99 shim for <stdbool.h>
  */
 #include "ruby/internal/config.h"
@@ -27,25 +27,13 @@
 
 #elif defined(__cplusplus)
 # /* bool is a keyword in C++. */
-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
-#  include <cstdbool>
-# endif
-#
 # ifndef __bool_true_false_are_defined
 #  define __bool_true_false_are_defined
 # endif
 
-#elif defined(HAVE_STDBOOL_H)
-# /* Take stdbool.h definition. */
-# include <stdbool.h>
-
 #else
-typedef unsigned char _Bool;
-# /* See also http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2229.htm */
-# define bool  _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)+0)
-# define __bool_true_false_are_defined
+# /* Take stdbool.h definition. It exists since GCC 3.0 and VS 2015. */
+# include <stdbool.h>
 #endif
 
 #endif /* RBIMPL_STDBOOL_H */

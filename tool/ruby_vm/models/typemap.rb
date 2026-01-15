@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -14,9 +13,9 @@ RubyVM::Typemap = {
   "..."            => %w[. TS_VARIABLE],
   "CALL_DATA"      => %w[C TS_CALLDATA],
   "CDHASH"         => %w[H TS_CDHASH],
-  "GENTRY"         => %w[G TS_GENTRY],
   "IC"             => %w[K TS_IC],
   "IVC"            => %w[A TS_IVC],
+  "ICVARC"         => %w[J TS_ICVARC],
   "ID"             => %w[I TS_ID],
   "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],

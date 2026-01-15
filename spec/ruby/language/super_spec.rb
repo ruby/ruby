@@ -70,7 +70,7 @@ describe "The super keyword" do
     SuperSpecs::S4::B.new.foo([],"test").should == ["B#foo(a,test)", "A#foo"]
   end
 
-  it "raises an error error when super method does not exist" do
+  it "raises an error when super method does not exist" do
     sup = Class.new
     sub_normal = Class.new(sup) do
       def foo
@@ -100,6 +100,37 @@ describe "The super keyword" do
     end
 
     c2.new.m(:dump) { :value }.should == :value
+  end
+
+  it "can pass an explicit block" do
+    c1 = Class.new do
+      def m(v)
+        yield(v)
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        block = -> w { yield(w + 'b') }
+        super(v, &block)
+      end
+    end
+
+    c2.new.m('a') { |x| x + 'c' }.should == 'abc'
+  end
+
+  it "can pass no block using &nil" do
+    c1 = Class.new do
+      def m(v)
+        block_given?
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        super(v, &nil)
+      end
+    end
+
+    c2.new.m('a') { raise }.should be_false
   end
 
   it "uses block argument given to method when used in a block" do
@@ -170,6 +201,25 @@ describe "The super keyword" do
     end
 
     -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
+  end
+
+  it "is able to navigate to super, when a method is defined dynamically on the singleton class" do
+    foo_class = Class.new do
+      def bar
+        "bar"
+      end
+    end
+
+    mixin_module = Module.new do
+      def bar
+        "super_" + super
+      end
+    end
+
+    foo = foo_class.new
+    foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+    foo.bar.should == "super_bar"
   end
 
   # Rubinius ticket github#157
@@ -262,6 +312,21 @@ describe "The super keyword" do
 
   it "without explicit arguments passes arguments and rest arguments" do
     SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2, 3, 4, 5).should == [3, 4, 5]
+    SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2, 3, 4, 5).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2, 3, 4, 5).should == [2, 3, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2).should == []
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments including modifications, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [1, 14, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [2, 14, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2).should == [nil, 14]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2).should == [nil, 14]
   end
 
   it "without explicit arguments passes arguments and rest arguments including any modifications" do
@@ -270,10 +335,21 @@ describe "The super keyword" do
 
   it "without explicit arguments that are '_'" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m3(1, 2, 3).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m4(1, 2, 3, 4).should == [1, 2, 3, 4]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default(1).should == [1]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default.should == [0]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_pre_default_rest_post(1, 2, 3, 4, 5, 6, 7).should == [1, 2, 3, 4, 5, 6, 7]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_rest(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_kwrest(a: 1).should == {a: 1}
   end
 
   it "without explicit arguments that are '_' including any modifications" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m_modified(1, 2).should == [14, 2]
+  end
+
+  it "should pass method arguments when called within a closure" do
+    SuperSpecs::ZSuperInBlock::B.new.m(arg: 1).should == 1
   end
 
   describe 'when using keyword arguments' do

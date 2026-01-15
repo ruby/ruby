@@ -46,4 +46,8 @@ describe "Range#first" do
   it "raises a TypeError when passed a String" do
     -> { (2..3).first("1") }.should raise_error(TypeError)
   end
+
+  it "raises a RangeError when called on an beginless range" do
+    -> { (..1).first }.should raise_error(RangeError)
+  end
 end

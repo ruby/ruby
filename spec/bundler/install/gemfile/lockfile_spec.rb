@@ -2,13 +2,14 @@
 
 RSpec.describe "bundle install with a lockfile present" do
   let(:gf) { <<-G }
-    source "#{file_uri_for(gem_repo1)}"
+    source "https://gem.repo1"
 
-    gem "rack", "1.0.0"
+    gem "myrack", "1.0.0"
   G
 
-  subject do
+  it "touches the lockfile on install even when nothing has changed" do
     install_gemfile(gf)
+    expect { bundle :install }.to change { bundled_app_lock.mtime }
   end
 
   context "gemfile evaluation" do
@@ -16,32 +17,25 @@ RSpec.describe "bundle install with a lockfile present" do
 
     context "with plugins disabled" do
       before do
-        bundle! "config set plugins false"
-        subject
+        bundle "config set plugins false"
       end
 
-      it "does not evaluate the gemfile twice" do
-        bundle! :install
+      it "does not evaluate the gemfile twice when the gem is already installed" do
+        install_gemfile(gf)
+        bundle :install
 
-        with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "rack 1.0.0" }
+        with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "myrack 1.0.0" }
 
-        # The first eval is from the initial install, we're testing that the
-        # second install doesn't double-eval
         expect(bundled_app("evals").read.lines.to_a.size).to eq(2)
       end
 
-      context "when the gem is not installed" do
-        before { FileUtils.rm_rf ".bundle" }
+      it "does not evaluate the gemfile twice when the gem is not installed" do
+        gemfile(gf)
+        bundle :install
 
-        it "does not evaluate the gemfile twice" do
-          bundle! :install
+        with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "myrack 1.0.0" }
 
-          with_env_vars("BUNDLER_SPEC_NO_APPEND" => "1") { expect(the_bundle).to include_gem "rack 1.0.0" }
-
-          # The first eval is from the initial install, we're testing that the
-          # second install doesn't double-eval
-          expect(bundled_app("evals").read.lines.to_a.size).to eq(2)
-        end
+        expect(bundled_app("evals").read.lines.to_a.size).to eq(1)
       end
     end
   end

@@ -43,7 +43,7 @@ describe "Invoking a method" do
   end
 
   describe "with optional arguments" do
-    it "uses the optional argument if none is is passed" do
+    it "uses the optional argument if none is passed" do
       specs.fooM0O1.should == [1]
     end
 
@@ -104,6 +104,24 @@ describe "Invoking a method" do
     specs.makeproc(&o).call.should == :from_to_proc
 
     specs.yield_now(&o).should == :from_to_proc
+  end
+
+  ruby_version_is "4.0" do
+    it "raises TypeError if 'to_proc' doesn't return a Proc" do
+      o = LangSendSpecs::RawToProc.new(42)
+
+      -> {
+        specs.makeproc(&o)
+      }.should raise_error(TypeError, "can't convert LangSendSpecs::RawToProc to Proc (LangSendSpecs::RawToProc#to_proc gives Integer)")
+    end
+
+    it "raises TypeError if block object isn't a Proc and doesn't respond to `to_proc`" do
+      o = Object.new
+
+      -> {
+        specs.makeproc(&o)
+      }.should raise_error(TypeError, "no implicit conversion of Object into Proc")
+    end
   end
 
   it "raises a SyntaxError with both a literal block and an object as block" do
@@ -258,20 +276,10 @@ describe "Invoking a private setter method" do
 end
 
 describe "Invoking a private getter method" do
-  ruby_version_is ""..."2.7" do
-    it "does not permit self as a receiver" do
-      receiver = LangSendSpecs::PrivateGetter.new
-      -> { receiver.call_self_foo }.should raise_error(NoMethodError)
-      -> { receiver.call_self_foo_or_equals(6) }.should raise_error(NoMethodError)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "permits self as a receiver" do
-      receiver = LangSendSpecs::PrivateGetter.new
-      receiver.call_self_foo_or_equals(6)
-      receiver.call_self_foo.should == 6
-    end
+  it "permits self as a receiver" do
+    receiver = LangSendSpecs::PrivateGetter.new
+    receiver.call_self_foo_or_equals(6)
+    receiver.call_self_foo.should == 6
   end
 end
 
@@ -421,17 +429,17 @@ describe "Invoking a method" do
     specs.rest_len(0,*a,4,*5,6,7,*c,-1).should == 11
   end
 
-  it "expands the Array elements from the splat after executing the arguments and block if no other arguments follow the splat" do
+  it "expands the Array elements from the splat before applying block argument operations" do
     def self.m(*args, &block)
       [args, block]
     end
 
     args = [1, nil]
-    m(*args, &args.pop).should == [[1], nil]
+    m(*args, &args.pop).should == [[1, nil], nil]
 
     args = [1, nil]
     order = []
-    m(*(order << :args; args), &(order << :block; args.pop)).should == [[1], nil]
+    m(*(order << :args; args), &(order << :block; args.pop)).should == [[1, nil], nil]
     order.should == [:args, :block]
   end
 

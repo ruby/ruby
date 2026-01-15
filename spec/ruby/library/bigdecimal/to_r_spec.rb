@@ -13,4 +13,16 @@ describe "BigDecimal#to_r" do
     r.denominator.should eql(1000000000000000000000000)
   end
 
+  it "returns a Rational from a BigDecimal with an exponent" do
+    r = BigDecimal("1E2").to_r
+    r.numerator.should eql(100)
+    r.denominator.should eql(1)
+  end
+
+  it "returns a Rational from a negative BigDecimal with an exponent" do
+    r = BigDecimal("-1E2").to_r
+    r.numerator.should eql(-100)
+    r.denominator.should eql(1)
+  end
+
 end

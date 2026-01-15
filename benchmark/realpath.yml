@@ -12,6 +12,9 @@ prelude: |
   relative_dir = 'b/c'
   absolute_dir = File.join(pwd, relative_dir)
   file_dir = 'c'
+teardown: |
+  require 'fileutils'
+  FileUtils.rm_rf('b')
 benchmark:
   relative_nil: "f.realpath(relative, nil)"
   absolute_nil: "f.realpath(absolute, nil)"

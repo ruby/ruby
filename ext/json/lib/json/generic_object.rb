@@ -1,5 +1,9 @@
-#frozen_string_literal: false
-require 'ostruct'
+# frozen_string_literal: true
+begin
+  require 'ostruct'
+rescue LoadError
+  warn "JSON::GenericObject requires 'ostruct'. Please install it with `gem install ostruct`."
+end
 
 module JSON
   class GenericObject < OpenStruct
@@ -48,14 +52,6 @@ module JSON
       table
     end
 
-    def [](name)
-      __send__(name)
-    end unless method_defined?(:[])
-
-    def []=(name, value)
-      __send__("#{name}=", value)
-    end unless method_defined?(:[]=)
-
     def |(other)
       self.class[other.to_hash.merge(to_hash)]
     end
@@ -67,5 +63,5 @@ module JSON
     def to_json(*a)
       as_json.to_json(*a)
     end
-  end
+  end if defined?(::OpenStruct)
 end

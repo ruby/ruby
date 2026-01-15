@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative 'spec_helper'
 
 load_extension("integer")
@@ -140,6 +140,23 @@ describe "CApiIntegerSpecs" do
               result.should == -1
               @words.should == "\x11\x32\x54\x76\x98\xBA\xDC\xFE"
             end
+
+            it "converts numbers near the fixnum limit successfully" do
+              result = @s.rb_integer_pack(0x7123_4567_89ab_cdef, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xEF\xCD\xAB\x89\x67\x45\x23\x71"
+
+              result = @s.rb_integer_pack(2**62-1, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x3F"
+
+              result = @s.rb_integer_pack(2**63-1, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F"
+            end
           end
         end
       end
@@ -270,6 +287,21 @@ describe "CApiIntegerSpecs" do
           end
         end
       end
+    end
+  end
+
+  describe "rb_int_positive_pow" do
+    it "raises an integer to given power" do
+      @s.rb_int_positive_pow(2, 3).should == 8
+    end
+
+    it "raises a negative integer to given power" do
+      @s.rb_int_positive_pow(-2, 3).should == -8
+      @s.rb_int_positive_pow(-2, 4).should == 16
+    end
+
+    it "overflows for large inputs" do
+      @s.rb_int_positive_pow(8, 23).should == 590295810358705651712
     end
   end
 end

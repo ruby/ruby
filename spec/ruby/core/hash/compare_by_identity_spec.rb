@@ -85,19 +85,21 @@ describe "Hash#compare_by_identity" do
     -> { @h.compare_by_identity }.should raise_error(FrozenError)
   end
 
-  # Behaviour confirmed in bug #1871
+  # Behaviour confirmed in https://bugs.ruby-lang.org/issues/1871
   it "persists over #dups" do
-    @idh['foo'] = :bar
-    @idh['foo'] = :glark
+    @idh['foo'.dup] = :bar
+    @idh['foo'.dup] = :glark
     @idh.dup.should == @idh
     @idh.dup.size.should == @idh.size
+    @idh.dup.should.compare_by_identity?
   end
 
   it "persists over #clones" do
-    @idh['foo'] = :bar
-    @idh['foo'] = :glark
+    @idh['foo'.dup] = :bar
+    @idh['foo'.dup] = :glark
     @idh.clone.should == @idh
     @idh.clone.size.should == @idh.size
+    @idh.dup.should.compare_by_identity?
   end
 
   it "does not copy string keys" do
@@ -108,9 +110,16 @@ describe "Hash#compare_by_identity" do
     @idh.keys.first.should equal foo
   end
 
+  # Check `#[]=` call with a String literal.
+  # Don't use `#+` because with `#+` it's no longer a String literal.
+  #
+  # See https://bugs.ruby-lang.org/issues/12855
   it "gives different identity for string literals" do
+    eval <<~RUBY
+    # frozen_string_literal: false
     @idh['foo'] = 1
     @idh['foo'] = 2
+    RUBY
     @idh.values.should == [1, 2]
     @idh.size.should == 2
   end

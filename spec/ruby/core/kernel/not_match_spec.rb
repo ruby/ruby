@@ -14,6 +14,10 @@ describe "Kernel#!~" do
     (obj !~ :foo).should == false
   end
 
+  it "raises NoMethodError if self does not respond to #=~" do
+    -> { Object.new !~ :foo }.should raise_error(NoMethodError)
+  end
+
   it 'can be overridden in subclasses' do
     obj = KernelSpecs::NotMatch.new
     (obj !~ :bar).should == :foo

@@ -12,7 +12,7 @@ else
 end
 SPEC_TEMP_DIR = spec_temp_dir
 
-SPEC_TEMP_UNIQUIFIER = "0"
+SPEC_TEMP_UNIQUIFIER = +"0"
 
 at_exit do
   begin
@@ -36,11 +36,25 @@ all specs are cleaning up temporary files:
 end
 
 def tmp(name, uniquify = true)
-  mkdir_p SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
+  if Dir.exist? SPEC_TEMP_DIR
+    stat = File.stat(SPEC_TEMP_DIR)
+    if stat.world_writable? and !stat.sticky?
+      raise ArgumentError, "SPEC_TEMP_DIR (#{SPEC_TEMP_DIR}) is world writable but not sticky"
+    end
+  else
+    platform_is_not :windows do
+      umask = File.umask
+      if (umask & 0002) == 0 # o+w
+        raise ArgumentError, "File.umask #=> #{umask.to_s(8)} (world-writable)"
+      end
+    end
+    mkdir_p SPEC_TEMP_DIR
+  end
 
   if uniquify and !name.empty?
     slash = name.rindex "/"
     index = slash ? slash + 1 : 0
+    name = +name
     name.insert index, "#{SPEC_TEMP_UNIQUIFIER.succ!}-"
   end
 

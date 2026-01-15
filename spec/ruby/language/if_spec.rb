@@ -305,6 +305,59 @@ describe "The if expression" do
       6.times(&b)
       ScratchPad.recorded.should == [4, 5, 4, 5]
     end
+
+    it "warns when Integer literals are used instead of predicates" do
+      -> {
+        eval <<~RUBY
+          $. = 0
+          10.times { |i| ScratchPad << i if 4..5 }
+        RUBY
+      }.should complain(/warning: integer literal in flip-flop/, verbose: true)
+      ScratchPad.recorded.should == []
+    end
+  end
+
+  describe "when a branch syntactically does not return a value" do
+    it "raises SyntaxError if both do not return a value" do
+      -> {
+        eval <<~RUBY
+        def m
+          a = if rand
+            return
+          else
+            return
+          end
+          a
+        end
+        RUBY
+      }.should raise_error(SyntaxError, /void value expression/)
+    end
+
+    it "does not raise SyntaxError if one branch returns a value" do
+      eval(<<~RUBY).should == 1
+      def m
+        a = if false # using false to make it clear that's not checked for
+          42
+        else
+          return 1
+        end
+        a
+      end
+      m
+      RUBY
+
+      eval(<<~RUBY).should == 1
+      def m
+        a = if true # using true to make it clear that's not checked for
+          return 1
+        else
+          42
+        end
+        a
+      end
+      m
+      RUBY
+    end
   end
 end
 

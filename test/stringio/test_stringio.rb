@@ -14,14 +14,37 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_do_not_mutate_shared_buffers
+    # Ensure we have two strings that are not embedded but have the same shared
+    # string reference.
+    #
+    # In this case, we must use eval because we need two strings literals that
+    # are long enough they cannot be embedded, but also contain the same bytes.
+
+    a = eval("+"+("x" * 1024).dump)
+    b = eval("+"+("x" * 1024).dump)
+
+    s = StringIO.new(b)
+    s.getc
+    s.ungetc '#'
+
+    # We mutated b, so a should not be mutated
+    assert_equal("x", a[0])
+  end
+
+  def test_version
+    assert_kind_of(String, StringIO::VERSION)
+  end
+
   def test_initialize
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
     assert_kind_of StringIO, StringIO.new('str', 'r+')
+    assert_kind_of StringIO, StringIO.new(nil)
     assert_raise(ArgumentError) { StringIO.new('', 'x') }
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
-    assert_raise(TypeError) { StringIO.new(nil) }
+    assert_raise(TypeError) { StringIO.new(Object) }
 
     o = Object.new
     def o.to_str
@@ -36,14 +59,50 @@ class TestStringIO < Test::Unit::TestCase
     assert_kind_of StringIO, StringIO.new(o)
   end
 
+  def test_null
+    io = StringIO.new(nil)
+    assert_nil io.gets
+    io.puts "abc"
+    assert_nil io.string
+
+    # Null device StringIO just drop ungot string
+    io.ungetc '#'
+    assert_nil io.getc
+  end
+
+  def test_eof_null
+    io = StringIO.new(nil)
+    assert_predicate io, :eof?
+  end
+
+  def test_pread_null
+    io = StringIO.new(nil)
+    assert_raise(EOFError) { io.pread(1, 0) }
+  end
+
+  def test_read_null
+    io = StringIO.new(nil)
+    assert_equal "", io.read(0)
+  end
+
+  def test_seek_null
+    io = StringIO.new(nil)
+    assert_equal(0, io.seek(0, IO::SEEK_SET))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_CUR))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_END))  # This should not segfault
+    assert_equal(0, io.pos)
+  end
+
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"
-    io.truncate(0)
+    assert_equal(0, io.truncate(0))
     io.puts "def"
     assert_equal("\0\0\0\0def\n", io.string, "[ruby-dev:24190]")
     assert_raise(Errno::EINVAL) { io.truncate(-1) }
-    io.truncate(10)
+    assert_equal(0, io.truncate(10))
     assert_equal("\0\0\0\0def\n\0\0", io.string)
   end
 
@@ -84,6 +143,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_string("", Encoding::UTF_8, StringIO.new("foo").gets(0))
   end
 
+  def test_gets_utf_16
+    stringio = StringIO.new("line1\nline2\nline3\n".encode("utf-16le"))
+    assert_equal("line1\n".encode("utf-16le"), stringio.gets)
+    assert_equal("line2\n".encode("utf-16le"), stringio.gets)
+    assert_equal("line3\n".encode("utf-16le"), stringio.gets)
+    assert_nil(stringio.gets)
+  end
+
   def test_gets_chomp
     assert_equal(nil, StringIO.new("").gets(chomp: true))
     assert_equal("", StringIO.new("\n").gets(chomp: true))
@@ -92,13 +159,15 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a", StringIO.new("a").gets(chomp: true))
     assert_equal("a", StringIO.new("a\nb").gets(chomp: true))
     assert_equal("abc", StringIO.new("abc\n\ndef\n").gets(chomp: true))
-    assert_equal("abc\n\ndef", StringIO.new("abc\n\ndef\n").gets(nil, chomp: true))
-    assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets("", chomp: true))
+    assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil, chomp: true))
+    assert_equal("abc", StringIO.new("abc\n\ndef\n").gets("", chomp: true))
     stringio = StringIO.new("abc\n\ndef\n")
-    assert_equal("abc\n", stringio.gets("", chomp: true))
-    assert_equal("def", stringio.gets("", chomp: true))
+    assert_equal("abc", stringio.gets("", chomp: true))
+    assert_equal("def\n", stringio.gets("", chomp: true))
 
     assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
+
+    assert_equal("", StringIO.new("ab").gets("ab", chomp: true))
   end
 
   def test_gets_chomp_eol
@@ -109,11 +178,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a", StringIO.new("a").gets(chomp: true))
     assert_equal("a", StringIO.new("a\r\nb").gets(chomp: true))
     assert_equal("abc", StringIO.new("abc\r\n\r\ndef\r\n").gets(chomp: true))
-    assert_equal("abc\r\n\r\ndef", StringIO.new("abc\r\n\r\ndef\r\n").gets(nil, chomp: true))
-    assert_equal("abc\r\n", StringIO.new("abc\r\n\r\ndef\r\n").gets("", chomp: true))
+    assert_equal("abc\r\n\r\ndef\r\n", StringIO.new("abc\r\n\r\ndef\r\n").gets(nil, chomp: true))
+    assert_equal("abc", StringIO.new("abc\r\n\r\ndef\r\n").gets("", chomp: true))
     stringio = StringIO.new("abc\r\n\r\ndef\r\n")
-    assert_equal("abc\r\n", stringio.gets("", chomp: true))
-    assert_equal("def", stringio.gets("", chomp: true))
+    assert_equal("abc", stringio.gets("", chomp: true))
+    assert_equal("def\r\n", stringio.gets("", chomp: true))
   end
 
   def test_readlines
@@ -187,9 +256,43 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_write_encoding_conversion
+    convertible = "\u{3042}"
+    inconvertible = "\u{1f363}"
+    conversion_encoding = Encoding::Windows_31J
+
+    s = StringIO.new.set_encoding(conversion_encoding)
+    s.write(convertible)
+    assert_equal(conversion_encoding, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::UTF_8)
+    s.write("foo".force_encoding("ISO-8859-1"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    s = StringIO.new.set_encoding(Encoding::US_ASCII)
+    s.write("foo".force_encoding("US-ASCII"), convertible)
+    assert_equal(Encoding::UTF_8, s.string.encoding)
+
+    all_assertions do |a|
+      [
+        inconvertible,
+        convertible + inconvertible,
+        [convertible, inconvertible],
+        ["a", inconvertible],
+      ].each do |data|
+        a.for(data.inspect) do
+          s = StringIO.new.set_encoding(conversion_encoding)
+          assert_raise(Encoding::CompatibilityError) do
+            s.write(*data)
+          end
+        end
+      end
+    end
+  end
+
   def test_write_integer_overflow
     f = StringIO.new
-    f.pos = RbConfig::LIMITS["LONG_MAX"]
+    f.pos = StringIO::MAX_LENGTH
     assert_raise(ArgumentError) {
       f.write("pos + len overflows")
     }
@@ -222,6 +325,12 @@ class TestStringIO < Test::Unit::TestCase
       f.set_encoding(Encoding::ASCII_8BIT)
     }
     assert_equal("foo\x83".b, f.gets)
+
+    f = StringIO.new()
+    f.set_encoding("ISO-8859-16:ISO-8859-1")
+    assert_equal(Encoding::ISO_8859_16, f.external_encoding)
+    assert_equal(Encoding::ISO_8859_16, f.string.encoding)
+    assert_nil(f.internal_encoding)
   end
 
   def test_mode_error
@@ -403,6 +512,11 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_seek_frozen_string
+    f = StringIO.new(-"1234")
+    assert_equal(0, f.seek(1))
+  end
+
   def test_each_byte
     f = StringIO.new("1234")
     a = []
@@ -410,6 +524,15 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(%w(1 2 3 4).map {|c| c.ord }, a)
   ensure
     f.close unless f.closed?
+  end
+
+  def test_each_byte_closed
+    f = StringIO.new("1234")
+    assert_equal("1".ord, f.each_byte {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_byte { f.close }
+    end
   end
 
   def test_getbyte
@@ -486,9 +609,37 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(%w(1 2 3 4), f.each_char.to_a)
   end
 
+  def test_each_char_closed
+    f = StringIO.new("1234")
+    assert_equal("1", f.each_char {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_char { f.close }
+    end
+  end
+
   def test_each_codepoint
     f = StringIO.new("1234")
     assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
+  end
+
+  def test_each_codepoint_closed
+    f = StringIO.new("1234")
+    assert_equal("1".ord, f.each_codepoint {|c| f.close; break c })
+    f = StringIO.new("1234")
+    assert_raise(IOError) do
+      f.each_codepoint { f.close }
+    end
+  end
+
+  def test_each_codepoint_enumerator
+    io = StringIO.new('你好построить')
+
+    chinese_part = io.each_codepoint.take(2).pack('U*')
+    russian_part = io.read(40).force_encoding('UTF-8')
+
+    assert_equal("你好", chinese_part)
+    assert_equal("построить", russian_part)
   end
 
   def test_gets2
@@ -513,20 +664,30 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_each_string_sep
+    f = StringIO.new('a||b||c')
+    assert_equal(["a||", "b||", "c"], f.each("||").to_a)
+    f.rewind
+    assert_equal(["a", "b", "c"], f.each("||", chomp: true).to_a)
+  end
+
   def test_each
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)
     f.rewind
     assert_equal(["foo", "bar", "baz"], f.each(chomp: true).to_a)
-    f = StringIO.new("foo\nbar\n\nbaz\n")
-    assert_equal(["foo\nbar\n\n", "baz\n"], f.each("").to_a)
+    f = StringIO.new("foo\nbar\n\n\nbaz\n")
+    assert_equal(["foo\nbar\n\n\n", "baz\n"], f.each("").to_a)
     f.rewind
-    assert_equal(["foo\nbar\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\nbar", "baz\n"], f.each("", chomp: true).to_a)
 
-    f = StringIO.new("foo\r\nbar\r\n\r\nbaz\r\n")
-    assert_equal(["foo\r\nbar\r\n\r\n", "baz\r\n"], f.each("").to_a)
+    f = StringIO.new("foo\r\nbar\r\n\r\n\r\nbaz\r\n")
+    assert_equal(["foo\r\nbar\r\n\r\n\r\n", "baz\r\n"], f.each("").to_a)
     f.rewind
-    assert_equal(["foo\r\nbar\r\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\r\nbar", "baz\r\n"], f.each("", chomp: true).to_a)
+
+    f = StringIO.new("abc\n\ndef\n")
+    assert_equal(["ab", "c\n", "\nd", "ef", "\n"], f.each(nil, 2, chomp: true).to_a)
   end
 
   def test_putc
@@ -591,6 +752,18 @@ class TestStringIO < Test::Unit::TestCase
     s.force_encoding(Encoding::US_ASCII)
     assert_same(s, f.read(nil, s))
     assert_string("", Encoding::UTF_8, s, bug13806)
+
+    bug20418 = '[Bug #20418] ™€®'.b
+    f = StringIO.new(bug20418)
+    s = ""
+    assert_equal(Encoding::UTF_8, s.encoding, bug20418)
+    f.read(4, s)
+    assert_equal(Encoding::UTF_8, s.encoding, bug20418)
+
+    f.rewind
+    s = ""
+    f.read(nil, s)
+    assert_equal(Encoding::ASCII_8BIT, s.encoding, bug20418)
   end
 
   def test_readpartial
@@ -602,8 +775,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size))
     f.rewind
     # not empty buffer
-    s = '0123456789'
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size, s))
+    s = '0123456789'.b
+    assert_equal("\u3042\u3044".b, f.readpartial(f.size, s))
   end
 
   def test_read_nonblock
@@ -627,8 +800,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
     f.rewind
     # not empty buffer
-    s = '0123456789'
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
+    s = '0123456789'.b
+    assert_equal("\u3042\u3044".b, f.read_nonblock(f.size, s))
   end
 
   def test_sysread
@@ -638,6 +811,32 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(EOFError) { f.sysread(1) }
     f.rewind
     assert_equal Encoding::ASCII_8BIT, f.sysread(3).encoding
+  end
+
+  def test_pread
+    f = StringIO.new("pread")
+    f.read
+
+    assert_equal "pre".b, f.pread(3, 0)
+    assert_equal "read".b, f.pread(4, 1)
+    assert_equal Encoding::ASCII_8BIT, f.pread(4, 1).encoding
+
+    buf = "".b
+    f.pread(3, 0, buf)
+    assert_equal "pre".b, buf
+    f.pread(4, 1, buf)
+    assert_equal "read".b, buf
+
+    assert_raise(EOFError) { f.pread(1, 5) }
+    assert_raise(ArgumentError) { f.pread(-1, 0) }
+    assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+
+    assert_equal "".b, StringIO.new("").pread(0, 0)
+    assert_equal "".b, StringIO.new("").pread(0, -10)
+
+    buf = "stale".b
+    assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
+    assert_equal "stale".b, buf
   end
 
   def test_size
@@ -686,6 +885,26 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("b""\0""a", s.string)
   end
 
+  def test_ungetc_fill
+    count = 100
+    s = StringIO.new
+    s.print 'a' * count
+    s.ungetc('b' * (count * 5))
+    assert_equal((count * 5), s.string.size)
+    assert_match(/\Ab+\z/, s.string)
+  end
+
+  def test_ungetc_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
+  end
+
   def test_ungetbyte_pos
     b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
     s = StringIO.new( b )
@@ -709,6 +928,26 @@ class TestStringIO < Test::Unit::TestCase
     s.pos = 0
     s.ungetbyte("b".ord)
     assert_equal("b""\0""a", s.string)
+  end
+
+  def test_ungetbyte_fill
+    count = 100
+    s = StringIO.new
+    s.print 'a' * count
+    s.ungetbyte('b' * (count * 5))
+    assert_equal((count * 5), s.string.size)
+    assert_match(/\Ab+\z/, s.string)
+  end
+
+  def test_ungetbyte_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetbyte(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
   end
 
   def test_frozen
@@ -754,18 +993,18 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
-    limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
-    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
+    return if intptr_max > StringIO::MAX_LENGTH
+    limit = intptr_max - 0x10
+    assert_separately(%w[-W0 -rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
       ary = []
-      while true
+      begin
         x = "a"*0x100000
         break if [x].pack("p").unpack("i!")[0] < 0
         ary << x
-        skip if ary.size > 100
-      end
+      end while ary.size <= 100
       s = StringIO.new(x)
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
@@ -808,6 +1047,65 @@ class TestStringIO < Test::Unit::TestCase
     Encoding.default_internal = default_internal
     $VERBOSE = verbose
   end
+
+  def test_coderange_after_overwrite
+    s = StringIO.new("".b)
+
+    s.write("a=b&c=d")
+    s.rewind
+    assert_predicate(s.string, :ascii_only?)
+    s.write "\u{431 43e 433 443 441}"
+    assert_not_predicate(s.string, :ascii_only?)
+
+    s = StringIO.new("\u{3042}")
+    s.rewind
+    assert_not_predicate(s.string, :ascii_only?)
+    s.write('aaaa')
+    assert_predicate(s.string, :ascii_only?)
+  end
+
+  def test_coderange_after_read_into_buffer
+    s = StringIO.new("01234567890".b)
+
+    buf = "¿Cómo estás? Ça va bien?"
+    assert_not_predicate(buf, :ascii_only?)
+
+    assert_predicate(s.string, :ascii_only?)
+
+    s.read(10, buf)
+
+    assert_predicate(buf, :ascii_only?)
+    assert_equal '0123456789', buf
+  end
+
+  require "objspace"
+  if ObjectSpace.respond_to?(:dump) && ObjectSpace.dump(eval(%{"test"})).include?('"chilled":true') # Ruby 3.4+ chilled strings
+    def test_chilled_string
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+
+    def test_chilled_string_string_set
+      io = StringIO.new
+      chilled_string = eval(%{""})
+      io.string = chilled_string
+      assert_warning(/literal string will be frozen/) { io << "test" }
+      assert_equal("test", io.string)
+      assert_same(chilled_string, io.string)
+    end
+
+    def test_chilled_string_set_enocoding
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning("") { io.set_encoding(Encoding::BINARY) }
+      assert_same(chilled_string, io.string)
+    end
+  end
+
+  private
 
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)

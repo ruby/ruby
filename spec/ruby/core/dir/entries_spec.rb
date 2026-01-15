@@ -35,9 +35,9 @@ describe "Dir.entries" do
     Dir.entries(p)
   end
 
-  it "accepts an options Hash" do
-    a = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").sort
-    a.should == %w|. .. .dotfile.ext directory|
+  it "accepts an encoding keyword for the encoding of the entries" do
+    dirs = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
+    dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
   end
 
   it "returns entries encoded with the filesystem encoding by default" do
@@ -47,7 +47,7 @@ describe "Dir.entries" do
     encoding = Encoding.find("filesystem")
     encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
-      entries.should include("こんにちは.txt".force_encoding(encoding))
+      entries.should include("こんにちは.txt".dup.force_encoding(encoding))
     end
     entries.first.encoding.should equal(Encoding.find("filesystem"))
   end

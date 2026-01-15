@@ -6,13 +6,10 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(OSSL_ENGINE_H)
 #define OSSL_ENGINE_H
-
-extern VALUE cEngine;
-extern VALUE eEngineError;
 
 void Init_ossl_engine(void);
 

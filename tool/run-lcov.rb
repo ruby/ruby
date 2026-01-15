@@ -20,7 +20,7 @@ def backup_gcda_files(gcda_files)
 end
 
 def run_lcov(*args)
-  system("lcov", "--rc", "lcov_branch_coverage=1", *args)
+  system("lcov", "--rc", "geninfo_unexecuted_blocks=1", "--rc", "lcov_branch_coverage=1", *args, exception: true)
 end
 
 $info_files = []
@@ -41,11 +41,19 @@ def run_lcov_remove(info_src, info_out)
     ext/-test-/*
     ext/nkf/nkf-utf8/nkf.c
   ).each {|f| dirs << File.join(File.dirname(__dir__), f) }
-  run_lcov("--remove", info_src, *dirs, "-o", info_out)
+  run_lcov("--ignore-errors", "unused", "--remove", info_src, *dirs, "-o", info_out)
 end
 
 def run_genhtml(info, out)
-  system("genhtml", "--branch-coverage", "--ignore-errors", "source", info, "-o", out)
+  base_dir = File.dirname(File.dirname(__dir__))
+  ignore_errors = %w(source unmapped category).reject do |a|
+    Open3.capture3("genhtml", "--ignore-errors", a)[1].include?("unknown argument for --ignore-errors")
+  end
+  system("genhtml",
+    "--branch-coverage",
+    "--prefix", base_dir,
+    *ignore_errors.flat_map {|a| ["--ignore-errors", a] },
+    info, "-o", out, exception: true)
 end
 
 def gen_rb_lcov(file)

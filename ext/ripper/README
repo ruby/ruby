@@ -13,7 +13,6 @@ Requirements
 ------------
 
   * ruby 1.9 (support CVS HEAD only)
-  * bison 1.28 or later (Other yaccs do not work)
 
 Usage
 -----

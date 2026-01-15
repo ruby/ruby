@@ -23,7 +23,7 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading' do
           @client.shutdown(Socket::SHUT_RD)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for writing' do
@@ -35,7 +35,7 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading and writing' do
           @client.shutdown(Socket::SHUT_RDWR)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
 
           -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
@@ -49,13 +49,13 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading using :RD' do
           @client.shutdown(:RD)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for reading using :SHUT_RD' do
           @client.shutdown(:SHUT_RD)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for writing using :WR' do
@@ -73,7 +73,7 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading and writing' do
           @client.shutdown(:RDWR)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
 
           -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end
@@ -87,13 +87,13 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading using "RD"' do
           @client.shutdown('RD')
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for reading using "SHUT_RD"' do
           @client.shutdown('SHUT_RD')
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for writing using "WR"' do
@@ -123,7 +123,7 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for reading using "SHUT_RD"' do
@@ -131,7 +131,7 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
         end
 
         it 'shuts down a socket for reading and writing' do
@@ -139,7 +139,7 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).should be_empty
+          @client.recv(1).to_s.should be_empty
 
           -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
         end

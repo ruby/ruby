@@ -4,14 +4,15 @@ module Bundler
   class Source
     class Gemspec < Path
       attr_reader :gemspec
+      attr_writer :checksum_store
 
       def initialize(options)
         super
         @gemspec = options["gemspec"]
       end
 
-      def as_path_source
-        Path.new(options)
+      def to_s
+        "gemspec at `#{@path}`"
       end
     end
   end

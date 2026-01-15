@@ -1,0 +1,4 @@
+benchmark:
+  - 'Time.new(2021)'
+  - 'Time.new(2021, 8, 22)'
+  - 'Time.new(2021, 8, 22, in: "+09:00")'

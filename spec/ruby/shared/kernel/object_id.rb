@@ -52,10 +52,30 @@ describe :object_id, shared: true do
     o1.send(@method).should_not == o2.send(@method)
   end
 
-  it "returns a different value for two String literals" do
-    o1 = "hello"
-    o2 = "hello"
-    o1.send(@method).should_not == o2.send(@method)
+  guard -> { "test".frozen? && "test".equal?("test") } do # --enable-frozen-string-literal in $RUBYOPT
+    it "returns the same value for two identical String literals" do
+      o1 = "hello"
+      o2 = "hello"
+      o1.send(@method).should == o2.send(@method)
+    end
+  end
+
+  guard -> { "test".frozen? && !"test".equal?("test") } do # chilled string literals
+    it "returns a different frozen value for two String literals" do
+      o1 = "hello"
+      o2 = "hello"
+      o1.send(@method).should_not == o2.send(@method)
+      o1.frozen?.should == true
+      o2.frozen?.should == true
+    end
+  end
+
+  guard -> { !"test".frozen? } do
+    it "returns a different value for two String literals" do
+      o1 = "hello"
+      o2 = "hello"
+      o1.send(@method).should_not == o2.send(@method)
+    end
   end
 
   it "returns a different value for an object and its dup" do

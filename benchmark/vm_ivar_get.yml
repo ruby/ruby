@@ -1,0 +1,100 @@
+prelude: |
+  class Example
+    def initialize
+      @levar = 1
+      @v0 = 1
+      @v1 = 2
+      @v3 = 3
+    end
+
+    def get_value_loop
+      sum = 0
+
+      i = 0
+      while i < 100_000
+        # 10 times to de-emphasize loop overhead
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        i += 1
+      end
+
+      return sum
+    end
+
+    @levar = 1
+    @v0 = 1
+    @v1 = 2
+    @v3 = 3
+
+    def self.get_value_loop
+      sum = 0
+
+      i = 0
+      while i < 100_000
+        # 10 times to de-emphasize loop overhead
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        i += 1
+      end
+
+      return sum
+    end
+  end
+
+  class GenExample < Time
+    def initialize
+      @levar = 1
+      @v0 = 1
+      @v1 = 2
+      @v3 = 3
+    end
+
+    def get_value_loop
+      sum = 0
+
+      i = 0
+      while i < 100_000
+        # 10 times to de-emphasize loop overhead
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        sum += @levar
+        i += 1
+      end
+
+      return sum
+    end
+  end
+
+  obj = Example.new
+  gen = GenExample.new
+benchmark:
+  vm_ivar_get_on_obj: |
+    obj.get_value_loop
+  vm_ivar_get_on_class: |
+    Example.get_value_loop
+  vm_ivar_get_on_generic: |
+    gen.get_value_loop
+loop_count: 100

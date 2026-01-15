@@ -1,0 +1,13 @@
+Returns a copy of +self+, left-justified and, if necessary, right-padded with the +pad_string+:
+
+  'hello'.ljust(10)       # => "hello     "
+  '  hello'.ljust(10)     # => "  hello   "
+  'hello'.ljust(10, 'ab') # => "helloababa"
+  'こんにちは'.ljust(10)   # => "こんにちは     "
+
+If <tt>width <= self.length</tt>, returns a copy of +self+:
+
+  'hello'.ljust(5)  # => "hello"
+  'hello'.ljust(1)  # => "hello"  # Does not truncate to width.
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

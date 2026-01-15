@@ -25,6 +25,7 @@ def new_datetime(opts = {})
 end
 
 def with_timezone(name, offset = nil, daylight_saving_zone = "")
+  skip "WASI doesn't have TZ concept" if PlatformGuard.wasi?
   zone = name.dup
 
   if offset

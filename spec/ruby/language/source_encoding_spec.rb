@@ -15,7 +15,7 @@ describe "Source files" do
   end
 
   describe "encoded in UTF-16 LE without a BOM" do
-    it "are parsed because empty as they contain a NUL byte before the encoding comment" do
+    it "are parsed as empty because they contain a NUL byte before the encoding comment" do
       ruby_exe(fixture(__FILE__, "utf16-le-nobom.rb"), args: "2>&1").should == ""
     end
   end
@@ -29,7 +29,7 @@ describe "Source files" do
 
       touch(path, "wb") { |f| f.write source }
       begin
-        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+        ruby_exe(path, args: "2>&1", exit_status: 1).should =~ /invalid multibyte char/
       ensure
         rm_r path
       end
@@ -51,7 +51,7 @@ describe "Source files" do
 
       touch(path, "wb") { |f| f.write source }
       begin
-        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+        ruby_exe(path, args: "2>&1", exit_status: 1).should =~ /invalid multibyte char/
       ensure
         rm_r path
       end

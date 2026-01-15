@@ -1,0 +1,6 @@
+1.. * 2
+    ^ unexpected *; .. is a non-associative operator
+    ^ unexpected *, expecting end-of-input
+      ^ unexpected write target
+    ^~~ unexpected write target
+

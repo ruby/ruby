@@ -1,0 +1,3 @@
+def foo();A=1;end
+          ^~~ dynamic constant assignment
+

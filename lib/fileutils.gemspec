@@ -17,13 +17,13 @@ Gem::Specification.new do |s|
   s.description = "Several file utility methods for copying, moving, removing, etc."
 
   s.require_path = %w{lib}
-  s.files = ["LICENSE.txt", "README.md", "Rakefile", "fileutils.gemspec", "lib/fileutils.rb"]
-  s.required_ruby_version = ">= 2.3.0"
+  s.files = ["COPYING", "BSDL", "README.md", "Rakefile", "fileutils.gemspec", "lib/fileutils.rb"]
+  s.required_ruby_version = ">= 2.5.0"
 
   s.authors = ["Minero Aoki"]
   s.email = [nil]
   s.homepage = "https://github.com/ruby/fileutils"
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 
   s.metadata = {
     "source_code_uri" => "https://github.com/ruby/fileutils"

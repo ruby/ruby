@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Integer#size" do
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     it "returns the number of bytes in the machine representation of self" do
       -1.size.should == 4
       0.size.should == 4
@@ -9,7 +9,7 @@ describe "Integer#size" do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     it "returns the number of bytes in the machine representation of self" do
       -1.size.should == 8
       0.size.should == 8

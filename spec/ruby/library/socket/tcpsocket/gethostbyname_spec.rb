@@ -2,9 +2,11 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 # TODO: verify these for windows
-describe "TCPSocket#gethostbyname" do
+describe "TCPSocket.gethostbyname" do
   before :each do
-    @host_info = TCPSocket.gethostbyname(SocketSpecs.hostname)
+    suppress_warning do
+      @host_info = TCPSocket.gethostbyname(SocketSpecs.hostname)
+    end
   end
 
   it "returns an array elements of information on the hostname" do
@@ -50,15 +52,19 @@ describe "TCPSocket#gethostbyname" do
   end
 end
 
-describe 'TCPSocket#gethostbyname' do
+describe 'TCPSocket.gethostbyname' do
   it 'returns an Array' do
-    TCPSocket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)
+    suppress_warning do
+      TCPSocket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)
+    end
   end
 
   describe 'using a hostname' do
     describe 'the returned Array' do
       before do
-        @array = TCPSocket.gethostbyname('127.0.0.1')
+        suppress_warning do
+          @array = TCPSocket.gethostbyname('127.0.0.1')
+        end
       end
 
       it 'includes the canonical name as the 1st value' do
@@ -88,7 +94,9 @@ describe 'TCPSocket#gethostbyname' do
   SocketSpecs.each_ip_protocol do |family, ip_address|
     describe 'the returned Array' do
       before do
-        @array = TCPSocket.gethostbyname(ip_address)
+        suppress_warning do
+          @array = TCPSocket.gethostbyname(ip_address)
+        end
       end
 
       it 'includes the IP address as the 1st value' do

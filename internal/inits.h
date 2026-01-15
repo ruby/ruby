@@ -1,7 +1,6 @@
 #ifndef INTERNAL_INITS_H                                 /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_INITS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -9,6 +8,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header aggregating init functions.
  */
+
+/* box.c */
+void Init_enable_box(void);
+void Init_root_box(void);
 
 /* class.c */
 void Init_class_hierarchy(void);
@@ -19,9 +22,6 @@ void Init_ext(void);
 
 /* file.c */
 void Init_File(void);
-
-/* gc.c */
-void Init_heap(void);
 
 /* localeinit.c */
 int Init_enc_set_filesystem_encoding(void);

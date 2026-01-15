@@ -255,7 +255,7 @@ module Test_Symbol
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_not_send([Thread.current, :thread_variable?, name])
-      assert_not_interned(name)
+      assert_not_pinneddown(name)
     end
 
     def test_enumerable_inject_op
@@ -485,10 +485,8 @@ module Test_Symbol
 
     def test_iv_get
       obj = Object.new
-      assert_warning(/not initialized/) do
-        assert_no_immortal_symbol_created("rb_iv_get") do |name|
-          Bug::Symbol.iv_get(obj, name)
-        end
+      assert_no_immortal_symbol_created("rb_iv_get") do |name|
+        Bug::Symbol.iv_get(obj, name)
       end
     end
   end

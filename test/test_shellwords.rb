@@ -128,4 +128,13 @@ class TestShellwords < Test::Unit::TestCase
     # used as shell meta-character that needs to be escaped.
     assert_equal "\\あ\\い", "あい".shellescape
   end
+
+  def test_nul_char
+    assert_raise(ArgumentError) do
+      shellescape("\0")
+    end
+    assert_raise(ArgumentError) do
+      shelljoin(["\0"])
+    end
+  end
 end

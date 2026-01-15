@@ -4,7 +4,7 @@ require 'openssl'
 
 describe "OpenSSL::HMAC.hexdigest" do
   it "returns an SHA1 hex digest" do
-    cur_digest = OpenSSL::Digest::SHA1.new
+    cur_digest = OpenSSL::Digest.new("SHA1")
     cur_digest.hexdigest.should == HMACConstants::BlankSHA1HexDigest
     hexdigest = OpenSSL::HMAC.hexdigest(cur_digest,
                                         HMACConstants::Key,

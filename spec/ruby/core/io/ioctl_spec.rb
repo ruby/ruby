@@ -12,7 +12,7 @@ describe "IO#ioctl" do
     guard -> { RUBY_PLATFORM.include?("86") } do # x86 / x86_64
       it "resizes an empty String to match the output size" do
         File.open(__FILE__, 'r') do |f|
-          buffer = ''
+          buffer = +''
           # FIONREAD in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x541B, buffer
           buffer.unpack('I').first.should be_kind_of(Integer)
@@ -20,12 +20,12 @@ describe "IO#ioctl" do
       end
     end
 
-    it "raises an Errno error when ioctl fails" do
+    it "raises a system call error when ioctl fails" do
       File.open(__FILE__, 'r') do |f|
         -> {
           # TIOCGWINSZ in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x5413, nil
-        }.should raise_error(Errno::ENOTTY)
+        }.should raise_error(SystemCallError)
       end
     end
   end

@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexRateLimited < CompactIndexAPI
   class RequestCounter
     def self.queue
-      @queue ||= Queue.new
+      @queue ||= Thread::Queue.new
     end
 
     def self.size
@@ -44,5 +42,7 @@ class CompactIndexRateLimited < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexRateLimited)

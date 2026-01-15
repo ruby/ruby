@@ -1,0 +1,15 @@
+.\" generated with Ronn-NG/v0.10.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.10.1
+.TH "BUNDLE\-REMOVE" "1" "September 2025" ""
+.SH "NAME"
+\fBbundle\-remove\fR \- Removes gems from the Gemfile
+.SH "SYNOPSIS"
+`bundle remove [GEM [GEM \|\.\|\.\|\.]]
+.SH "DESCRIPTION"
+Removes the given gems from the Gemfile while ensuring that the resulting Gemfile is still valid\. If a gem cannot be removed, a warning is printed\. If a gem is already absent from the Gemfile, and error is raised\.
+.P
+Example:
+.P
+bundle remove rails
+.P
+bundle remove rails rack

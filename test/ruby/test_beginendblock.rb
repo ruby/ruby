@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+EnvUtil.suppress_warning {require 'continuation'}
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))
@@ -12,6 +13,11 @@ class TestBeginEndBlock < Test::Unit::TestCase
     assert_in_out_err(["-p", "-eBEGIN{p :begin}", "-eEND{p :end}"], '', %w(:begin))
     assert_in_out_err(["-n", "-eBEGIN{p :begin}", "-eEND{p :end}"], "foo\nbar\n", %w(:begin :end))
     assert_in_out_err(["-p", "-eBEGIN{p :begin}", "-eEND{p :end}"], "foo\nbar\n", %w(:begin foo bar :end))
+  end
+
+  def test_endblock_variable
+    assert_in_out_err(["-n", "-ea = :ok", "-eEND{p a}"], "foo\n", %w(:ok))
+    assert_in_out_err(["-p", "-ea = :ok", "-eEND{p a}"], "foo\n", %w(foo :ok))
   end
 
   def test_begininmethod
@@ -40,9 +46,9 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endblockwarn_in_eval
-    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], ['(eval):2: warning: END in method; use at_exit'])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], ['test.rb:1: warning: END in method; use at_exit'])
     begin;
-      eval <<-EOE
+      eval <<-EOE, nil, "test.rb", 0
         def end2
           END {}
         end
@@ -62,7 +68,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
     bug8501 = '[ruby-core:55365] [Bug #8501]'
     args = ['-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
             '-e', 'at_exit{o.nope}']
-    status = assert_in_out_err(args, '', [], /undefined method `nope'/, bug8501)
+    status = assert_in_out_err(args, '', [], /undefined method 'nope'/, bug8501)
     assert_not_predicate(status, :success?, bug8501)
   end
 
@@ -126,6 +132,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_callcc_at_exit
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9110 = '[ruby-core:58329][Bug #9110]'
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug9110)
     begin;

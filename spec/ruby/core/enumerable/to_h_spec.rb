@@ -44,47 +44,53 @@ describe "Enumerable#to_h" do
     -> { enum.to_h }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.6" do
-    context "with block" do
-      before do
-        @enum = EnumerableSpecs::EachDefiner.new(:a, :b)
-      end
+  context "with block" do
+    before do
+      @enum = EnumerableSpecs::EachDefiner.new(:a, :b)
+    end
 
-      it "converts [key, value] pairs returned by the block to a hash" do
-        @enum.to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
-      end
+    it "converts [key, value] pairs returned by the block to a hash" do
+      @enum.to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
+    end
 
-      it "raises ArgumentError if block returns longer or shorter array" do
-        -> do
-          @enum.to_h { |k| [k, k.to_s, 1] }
-        end.should raise_error(ArgumentError, /element has wrong array length/)
+    it "passes to a block each element as a single argument" do
+      enum_of_arrays = EnumerableSpecs::EachDefiner.new([:a, 1], [:b, 2])
 
-        -> do
-          @enum.to_h { |k| [k] }
-        end.should raise_error(ArgumentError, /element has wrong array length/)
-      end
+      ScratchPad.record []
+      enum_of_arrays.to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [[[:a, 1]], [[:b, 2]]]
+    end
 
-      it "raises TypeError if block returns something other than Array" do
-        -> do
-          @enum.to_h { |k| "not-array" }
-        end.should raise_error(TypeError, /wrong element type String/)
-      end
+    it "raises ArgumentError if block returns longer or shorter array" do
+      -> do
+        @enum.to_h { |k| [k, k.to_s, 1] }
+      end.should raise_error(ArgumentError, /element has wrong array length/)
 
-      it "coerces returned pair to Array with #to_ary" do
-        x = mock('x')
-        x.stub!(:to_ary).and_return([:b, 'b'])
+      -> do
+        @enum.to_h { |k| [k] }
+      end.should raise_error(ArgumentError, /element has wrong array length/)
+    end
 
-        @enum.to_h { |k| x }.should == { :b => 'b' }
-      end
+    it "raises TypeError if block returns something other than Array" do
+      -> do
+        @enum.to_h { |k| "not-array" }
+      end.should raise_error(TypeError, /wrong element type String/)
+    end
 
-      it "does not coerce returned pair to Array with #to_a" do
-        x = mock('x')
-        x.stub!(:to_a).and_return([:b, 'b'])
+    it "coerces returned pair to Array with #to_ary" do
+      x = mock('x')
+      x.stub!(:to_ary).and_return([:b, 'b'])
 
-        -> do
-          @enum.to_h { |k| x }
-        end.should raise_error(TypeError, /wrong element type MockObject/)
-      end
+      @enum.to_h { |k| x }.should == { :b => 'b' }
+    end
+
+    it "does not coerce returned pair to Array with #to_a" do
+      x = mock('x')
+      x.stub!(:to_a).and_return([:b, 'b'])
+
+      -> do
+        @enum.to_h { |k| x }
+      end.should raise_error(TypeError, /wrong element type MockObject/)
     end
   end
 end

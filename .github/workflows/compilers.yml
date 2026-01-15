@@ -1,202 +1,335 @@
+# Some tests depending on this name 'Compilations' via $GITHUB_WORKFLOW. Make sure to update such tests when renaming this workflow.
 name: Compilations
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  merge_group:
 
-# Github actions does not support YAML anchors.  This creative use of
-# environment variables (plus the "echo ::set-env" hack) is to reroute that
-# restriction.
-env:
-  default_cc: clang-11
-  append_cc: ''
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-  # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
-  # to optimize binaries.  Also Github Actions runs on a relatively modern CPU
-  # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
-  # because compilers tend not understand what the CPU is.
-  optflags: '-O1 -march=x86-64 -mtune=generic'
+permissions:
+  contents: read
 
-  # -g0 disables backtraces when SEGV.  Do not set that.
-  debugflags: '-ggdb3'
-
-  default_configure: >-
-    --enable-debug-env
-    --disable-install-doc
-    --with-ext=-test-/cxxanyargs,+
-  append_configure: >-
-    --without-valgrind
-    --without-jemalloc
-    --without-gmp
-
-  UPDATE_UNICODE: >-
-    UNICODE_FILES=.
-    UNICODE_PROPERTY_FILES=.
-    UNICODE_AUXILIARY_FILES=.
-    UNICODE_EMOJI_FILES=.
-  CONFIGURE_TTY: never
-  RUBY_DEBUG: ci rgengc
-  RUBY_TESTOPTS: >-
-    -q
-    --color=always
-    --tty=no
-
+# Each job is split so that they roughly take 30min to run through.
 jobs:
-  compile:
-    strategy:
-      fail-fast: false
-      matrix:
-        entry:
-          - { key: default_cc, name: gcc-10,    value: gcc-10 }
-          - { key: default_cc, name: gcc-9,     value: gcc-9 }
-          - { key: default_cc, name: gcc-8,     value: gcc-8 }
-          - { key: default_cc, name: gcc-7,     value: gcc-7 }
-          - { key: default_cc, name: gcc-6,     value: gcc-6 }
-          - { key: default_cc, name: gcc-5,     value: gcc-5 }
-          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8 }
-          - { key: default_cc, name: clang-11,  value: clang-11 }
-          - { key: default_cc, name: clang-10,  value: clang-10 }
-          - { key: default_cc, name: clang-9,   value: clang-9 }
-          - { key: default_cc, name: clang-8,   value: clang-8 }
-          - { key: default_cc, name: clang-7,   value: clang-7 }
-          - { key: default_cc, name: clang-6.0, value: clang-6.0 }
-          - { key: default_cc, name: clang-5.0, value: clang-5.0 }
-          - { key: default_cc, name: clang-4.0, value: clang-4.0 }
-          - { key: default_cc, name: clang-3.9, value: clang-3.9 }
-
-          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors' }
-          - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++17, value: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-
-          - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
-          - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
-
-          - { key: append_configure, name: gmp,                  value: '--with-gmp' }
-          - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
-          - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
-          - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
-          - { key: append_configure, name: 'coroutine=copy',     value: '--with-coroutine=copy' }
-          - { key: append_configure, name: disable-mathn,        value: '--disable-mathn' }
-          - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
-          - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
-          - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
-
-          - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
-          - { key: cppflags, name: OPT_THREADED_CODE=2,            value: '-DOPT_THREADED_CODE=2' }
-          - { key: cppflags, name: OPT_THREADED_CODE=3,            value: '-DOPT_THREADED_CODE=3' }
-
-          - { key: cppflags, name: NDEBUG,                         value: '-DNDEBUG' }
-          - { key: cppflags, name: RUBY_DEBUG,                     value: '-DRUBY_DEBUG' }
-          - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
-          - { key: cppflags, name: BUGNUM_DEBUG,                   value: '-DBUGNUM_DEBUG' }
-          - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
-          - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
-          - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }
-          - { key: cppflags, name: GC_DEBUG,                       value: '-DGC_DEBUG' }
-          - { key: cppflags, name: HASH_DEBUG,                     value: '-DHASH_DEBUG' }
-          - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
-          - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
-          - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
-          - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
-
-          - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
-          - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
-          - { key: cppflags, name: VM_CHECK_MODE,                  value: '-DVM_CHECK_MODE' }
-
-          - { key: cppflags, name: USE_EMBED_CI=0,                 value: '-DUSE_EMBED_CI=0' }
-          - { key: cppflags, name: USE_FLONUM=0,                   value: '-DUSE_FLONUM=0' }
-#         - { key: cppflags, name: USE_GC_MALLOC_OBJ_INFO_DETAILS, value: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' }
-          - { key: cppflags, name: USE_LAZY_LOAD,                  value: '-DUSE_LAZY_LOAD' }
-          - { key: cppflags, name: USE_RINCGC=0,                   value: '-DUSE_RINCGC=0' }
-          - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
-          - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
-          - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
-
-          - { key: cppflags, name: DEBUG_FIND_TIME_NUMGESS,        value: '-DDEBUG_FIND_TIME_NUMGESS' }
-          - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
-          - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
-
-          - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
-          - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
-          - { key: cppflags, name: GC_PROFILE_DETAIL_MEMOTY,       value: '-DGC_PROFILE_DETAIL_MEMOTY' }
-          - { key: cppflags, name: GC_PROFILE_MORE_DETAIL,         value: '-DGC_PROFILE_MORE_DETAIL' }
-
-          - { key: cppflags, name: CALC_EXACT_MALLOC_SIZE,         value: '-DCALC_EXACT_MALLOC_SIZE' }
-          - { key: cppflags, name: MALLOC_ALLOCATED_SIZE_CHECK,    value: '-DMALLOC_ALLOCATED_SIZE_CHECK' }
-
-          - { key: cppflags, name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   value: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' }
-
-          - { key: cppflags, name: RGENGC_ESTIMATE_OLDMALLOC,      value: '-DRGENGC_ESTIMATE_OLDMALLOC' }
-          - { key: cppflags, name: RGENGC_FORCE_MAJOR_GC,          value: '-DRGENGC_FORCE_MAJOR_GC' }
-          - { key: cppflags, name: RGENGC_OBJ_INFO,                value: '-DRGENGC_OBJ_INFO' }
-          - { key: cppflags, name: RGENGC_OLD_NEWOBJ_CHECK,        value: '-DRGENGC_OLD_NEWOBJ_CHECK' }
-          - { key: cppflags, name: RGENGC_PROFILE,                 value: '-DRGENGC_PROFILE' }
-
-          - { key: cppflags, name: VM_DEBUG_BP_CHECK,              value: '-DVM_DEBUG_BP_CHECK' }
-          - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
-
-    name: ${{ matrix.entry.name }}
+  compile-if:
+    name: 'omnibus compilations, trigger'
     runs-on: ubuntu-latest
-    container: shyouhei/c-compilers:latest
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
     steps:
-      - name: setenv
-        run: |
-          echo ::set-env name=${{ matrix.entry.key }}::${{ matrix.entry.value }}
-          echo ::set-env name=make::make -sj$((1 + $(nproc --all)))
-      - run: mkdir build
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 128
-          path: src
-      - run: autoconf
-        working-directory: src
-      - name: Run configure
-        working-directory: build
-        run: |
-          ../src/configure -C \
-            ${default_configure} \
-            ${append_configure} \
-            --with-gcc="${default_cc} ${append_cc}"
-      - run: $make incs
-        working-directory: build
-      - run: $make
-        working-directory: build
-      - run: $make test
-        working-directory: build
-      - run: $make $UPDATE_UNICODE up
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
-      - run: $make install
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
-      - run: /usr/local/bin/gem install --no-doc timezone tzinfo
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-tool
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-all TESTS='-- ruby -ext-'
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
-      - run: $make test-spec
-        working-directory: build
-        if: "matrix.entry.name == '-O3'"
+      - run: true
+        working-directory:
 
-      - uses: k0kubun/action-slack@v2.0.0
+  compile1:
+    name: 'omnibus compilations, #1'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      # Set fetch-depth: 10 so that Launchable can receive commits information.
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - name: 'clang 18 LTO'
+        uses: './.github/actions/compilers'
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ matrix.entry.name }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
-        env:
+          tag: clang-18
+          with_gcc: 'clang-18 -flto=auto'
+          optflags: '-O2'
+          enable_shared: false
+        timeout-minutes: 30
+      - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' }, timeout-minutes: 5 }
+      # - { uses: './.github/actions/compilers', name: '-O3', with: { optflags: '-O3 -march=x86-64 -mtune=generic', check: true } }
+
+  compile2:
+    name: 'omnibus compilations, #2'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - name: 'GCC 15 LTO'
+        uses: './.github/actions/compilers'
+        with:
+          tag: gcc-15
+          with_gcc: 'gcc-15 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
+          optflags: '-O2'
+          enable_shared: false
+        timeout-minutes: 10
+      - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 15', with: { tag: 'gcc-15' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 14', with: { tag: 'gcc-14' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 13', with: { tag: 'gcc-13' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 12', with: { tag: 'gcc-12' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 11', with: { tag: 'gcc-11' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 10', with: { tag: 'gcc-10' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 9',  with: { tag: 'gcc-9'  }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 8',  with: { tag: 'gcc-8'  }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 7',  with: { tag: 'gcc-7'  }, timeout-minutes: 5 }
+
+  compile3:
+    name: 'omnibus compilations, #3'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 17', with: { tag: 'clang-17' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 16', with: { tag: 'clang-16' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 15', with: { tag: 'clang-15' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 14', with: { tag: 'clang-14' }, timeout-minutes: 5 }
+
+  compile4:
+    name: 'omnibus compilations, #4'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 10', with: { tag: 'clang-10' }, timeout-minutes: 5 }
+        # llvm-objcopy<=9 doesn't have --wildcard. It compiles, but leaves Rust symbols in libyjit.o and fail `make test-leaked-globals`.
+      - { uses: './.github/actions/compilers', name: 'clang 9',  with: { tag: 'clang-9',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 8',  with: { tag: 'clang-8',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 7',  with: { tag: 'clang-7',   append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 6',  with: { tag: 'clang-6.0', append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+
+  compile5:
+    name: 'omnibus compilations, #5'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      # -Wno-strict-prototypes is necessary with current clang-15 since
+      # older autoconf generate functions without prototype and -pedantic
+      # now implies strict-prototypes. Disabling the error but leaving the
+      # warning generates a lot of noise from use of ANYARGS in
+      # rb_define_method() and friends.
+      # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
+      - { uses: './.github/actions/compilers', name: 'C99',      with: { CFLAGS: '-std=c99 -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C11',   with: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C17',   with: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C23',   with: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++98', with: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++11', with: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++14', with: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++17', with: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+
+  compile6:
+    name: 'omnibus compilations, #6'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', test_all: 'ruby/test_bignum.rb', test_spec: "/github/workspace/src/spec/ruby/core/integer" }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'jemalloc',            with: { append_configure: '--with-jemalloc' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'valgrind',            with: { append_configure: '--with-valgrind' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'coroutine=ucontext',  with: { append_configure: '--with-coroutine=ucontext' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'coroutine=pthread',   with: { append_configure: '--with-coroutine=pthread' }, timeout-minutes: 5 }
+
+  compile7:
+    name: 'omnibus compilations, #7'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'disable-yjit',        with: { append_configure: '--disable-yjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'disable-zjit',        with: { append_configure: '--disable-zjit' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'disable-dln',         with: { append_configure: '--disable-dln' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RUBY_DEVEL',          with: { append_configure: '--enable-devel' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' }, timeout-minutes: 5 }
+
+  compile8:
+    name: 'omnibus compilations, #8'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'NDEBUG',                         with: { cppflags: '-DNDEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RUBY_DEBUG',                     with: { cppflags: '-DRUBY_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'ARRAY_DEBUG',                    with: { cppflags: '-DARRAY_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'BIGNUM_DEBUG',                   with: { cppflags: '-DBIGNUM_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'CCAN_LIST_DEBUG',                with: { cppflags: '-DCCAN_LIST_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'CPDEBUG=-1',                     with: { cppflags: '-DCPDEBUG=-1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'ENC_DEBUG',                      with: { cppflags: '-DENC_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GC_DEBUG',                       with: { cppflags: '-DGC_DEBUG' }, timeout-minutes: 5 }
+
+  compile9:
+    name: 'omnibus compilations, #9'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'ID_TABLE_DEBUG',                 with: { cppflags: '-DID_TABLE_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RGENGC_DEBUG=-1',                with: { cppflags: '-DRGENGC_DEBUG=-1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'SYMBOL_DEBUG',                   with: { cppflags: '-DSYMBOL_DEBUG' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RGENGC_CHECK_MODE',              with: { cppflags: '-DRGENGC_CHECK_MODE' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'VM_CHECK_MODE',                  with: { cppflags: '-DVM_CHECK_MODE' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_EMBED_CI=0',                 with: { cppflags: '-DUSE_EMBED_CI=0' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_FLONUM=0',                   with: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
+
+  compileX:
+    name: 'omnibus compilations, #10'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_SYMBOL_GC=0',                with: { cppflags: '-DUSE_SYMBOL_GC=0' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_THREAD_CACHE=0',             with: { cppflags: '-DUSE_THREAD_CACHE=0' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_RUBY_DEBUG_LOG=1',           with: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'USE_DEBUG_COUNTER',              with: { cppflags: '-DUSE_DEBUG_COUNTER=1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'SHARABLE_MIDDLE_SUBSTRING',      with: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'DEBUG_FIND_TIME_NUMGUESS',       with: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'DEBUG_INTEGER_PACK',             with: { cppflags: '-DDEBUG_INTEGER_PACK' }, timeout-minutes: 5 }
+
+  compileB:
+    name: 'omnibus compilations, #11'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GC_PROFILE_MORE_DETAIL',         with: { cppflags: '-DGC_PROFILE_MORE_DETAIL' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'MALLOC_ALLOCATED_SIZE_CHECK',    with: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RGENGC_ESTIMATE_OLDMALLOC',      with: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'RGENGC_PROFILE',                 with: { cppflags: '-DRGENGC_PROFILE' }, timeout-minutes: 5 }
+
+  compileC:
+    name: 'omnibus compilations, #12'
+    runs-on: ubuntu-latest
+    needs: compile-if
+    if: ${{ needs.compile-if.result == 'success' }}
+    timeout-minutes: 60
+    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' }, timeout-minutes: 5 }
+
+  compilemax:
+    name: 'omnibus compilations, result'
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - 'compile1'
+      - 'compile2'
+      - 'compile3'
+      - 'compile4'
+      - 'compile5'
+      - 'compile6'
+      - 'compile7'
+      - 'compile8'
+      - 'compile9'
+      - 'compileX'
+      - 'compileB'
+      - 'compileC'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
+      - uses: ./.github/actions/slack
+        with:
+          label: 'omnibus'
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+      - run: false
+        working-directory:
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
+defaults:
+  run:
+    working-directory: build

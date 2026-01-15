@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe 'BasicSocket#getpeereid' do
-  with_feature :unix_socket do
+  platform_is_not :windows do
     describe 'using a UNIXSocket' do
       before do
         @path = SocketSpecs.socket_path

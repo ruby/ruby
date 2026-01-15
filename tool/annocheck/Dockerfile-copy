@@ -1,0 +1,6 @@
+FROM ghcr.io/ruby/fedora:latest
+ARG IN_DIR
+
+RUN dnf -y install annobin-annocheck
+COPY ${IN_DIR} /work
+WORKDIR /work

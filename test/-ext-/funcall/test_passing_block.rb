@@ -9,6 +9,11 @@ class TestFuncall < Test::Unit::TestCase
   end
   require '-test-/funcall'
 
+  def test_funcall_extra_args
+    assert_equal 'TestFuncall', TestFuncall.extra_args_name,
+	 '[ruby-core:85266] [Bug #14425]'
+  end
+
   def test_with_funcall2
     ok = nil
     Relay.with_funcall2("feature#4504") {|arg| ok = arg || true}

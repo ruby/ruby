@@ -21,7 +21,7 @@ describe 'Socket.udp_server_loop' do
     it 'yields the message and a Socket::UDPSource' do
       msg, src = nil
 
-      Thread.new do
+      thread = Thread.new do
         SocketSpecs::ServerLoopPortFinder.udp_server_loop('127.0.0.1', 0) do |message, source|
           msg = message
           src = source
@@ -49,6 +49,8 @@ describe 'Socket.udp_server_loop' do
           end
         end
       end
+
+      thread.join
 
       msg.should == 'hello'
       src.should be_an_instance_of(Socket::UDPSource)

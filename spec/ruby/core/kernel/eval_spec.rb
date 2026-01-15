@@ -135,7 +135,7 @@ describe "Kernel#eval" do
   it "includes file and line information in syntax error" do
     expected = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected)
+      eval('if true', TOPLEVEL_BINDING, expected)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected}:1:.+/
     }
@@ -144,7 +144,7 @@ describe "Kernel#eval" do
   it "evaluates string with given filename and negative linenumber" do
     expected_file = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected_file, -100)
+      eval('if true', TOPLEVEL_BINDING, expected_file, -100)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected_file}:-100:.+/
     }
@@ -159,18 +159,7 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is ""..."2.8" do
-    it "uses the filename of the binding if none is provided" do
-      eval("__FILE__").should == "(eval)"
-      suppress_warning {eval("__FILE__", binding)}.should == __FILE__
-      eval("__FILE__", binding, "success").should == "success"
-      suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
-      suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
-      suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
-    end
-  end
-
-  ruby_version_is "2.8" do
+  ruby_version_is ""..."3.3" do
     it "uses (eval) filename if none is provided" do
       eval("__FILE__").should == "(eval)"
       eval("__FILE__", binding).should == "(eval)"
@@ -180,8 +169,96 @@ describe "Kernel#eval" do
       eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
       eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
     end
+
+    it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
+      eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
+    end
   end
 
+  context "parameter forwarding" do
+    it "allows anonymous rest parameter forwarding" do
+      object = Object.new
+      def object.foo(a, b, c)
+        [a, b, c]
+      end
+      def object.bar(*)
+        eval "foo(*)"
+      end
+
+      object.bar(1, 2, 3).should == [1, 2, 3]
+    end
+
+    it "allows anonymous keyword parameters forwarding" do
+      object = Object.new
+      def object.foo(a:, b:, c:)
+        [a, b, c]
+      end
+      def object.bar(**)
+        eval "foo(**)"
+      end
+
+      object.bar(a: 1, b: 2, c: 3).should == [1, 2, 3]
+    end
+
+    it "allows anonymous block parameter forwarding" do
+      object = Object.new
+      def object.foo(&block)
+        block.call
+      end
+      def object.bar(&)
+        eval "foo(&)"
+      end
+
+      object.bar { :foobar }.should == :foobar
+    end
+
+    it "allows ... forwarding" do
+      object = Object.new
+      def object.foo(a, b:, &block)
+        [a, b, block.call]
+      end
+      def object.bar(...)
+        eval "foo(...)"
+      end
+
+      object.bar(1, b: 2) { 3 }.should == [1, 2, 3]
+    end
+
+    it "allows parameter forwarding to super" do
+      m = Module.new do
+        def foo(a, b:, &block)
+          [a, b, block.call]
+        end
+      end
+
+      c = Class.new do
+        include m
+
+        def foo(a, b:, &block)
+          eval "super"
+        end
+      end
+
+      object = c.new
+      object.foo(1, b: 2) { 3 }.should == [1, 2, 3]
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "uses (eval at __FILE__:__LINE__) if none is provided" do
+      eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"
+      eval("__FILE__", binding).should == "(eval at #{__FILE__}:#{__LINE__})"
+      eval("__FILE__", binding, "success").should == "success"
+      eval("eval '__FILE__', binding").should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+      eval("eval '__FILE__', binding", binding).should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+      eval("eval '__FILE__', binding", binding, 'success').should == "(eval at success:1)"
+      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+    end
+
+    it 'uses (eval at __FILE__:__LINE__) for __FILE__ and 1 for __LINE__ with a binding argument' do
+      eval("[__FILE__, __LINE__]", binding).should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
+    end
+  end
   # Found via Rubinius bug github:#149
   it "does not alter the value of __FILE__ in the binding" do
     first_time =  EvalSpecs.call_eval
@@ -218,6 +295,20 @@ describe "Kernel#eval" do
     -> { eval("return :eval") }.call.should == :eval
   end
 
+  it "returns from the method calling #eval when evaluating 'return'" do
+    def eval_return(n)
+      eval("return n*2")
+    end
+    -> { eval_return(3) }.call.should == 6
+  end
+
+  it "returns from the method calling #eval when evaluating 'return' in BEGIN" do
+    def eval_return(n)
+      eval("BEGIN {return n*3}")
+    end
+    -> { eval_return(4) }.call.should == 12
+  end
+
   it "unwinds through a Proc-style closure and returns from a lambda-style closure in the closure chain" do
     code = fixture __FILE__, "eval_return_with_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,eval,f"
@@ -226,6 +317,50 @@ describe "Kernel#eval" do
   it "raises a LocalJumpError if there is no lambda-style closure in the chain" do
     code = fixture __FILE__, "eval_return_without_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
+  end
+
+  it "can be called with Method#call" do
+    method(:eval).call("2 * 3").should == 6
+  end
+
+  it "has the correct default definee when called through Method#call" do
+    class EvalSpecs
+      method(:eval).call("def eval_spec_method_call; end")
+      EvalSpecs.should have_instance_method(:eval_spec_method_call)
+    end
+  end
+
+  it "makes flip-flop operator work correctly" do
+    ScratchPad.record []
+
+    eval "10.times { |i| ScratchPad << i if (i == 4)...(i == 4) }"
+    ScratchPad.recorded.should == [4, 5, 6, 7, 8, 9]
+
+    ScratchPad.clear
+  end
+
+  it "returns nil if given an empty string" do
+    eval("").should == nil
+  end
+
+  context "with shebang" do
+    it "ignores shebang with ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env ruby
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
+
+    it "ignores shebang with non-ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env puma
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
   end
 
   # See language/magic_comment_spec.rb for more magic comments specs
@@ -247,6 +382,8 @@ CODE
       eval(code)
       EvalSpecs.constants(false).should include(:"Vπ")
       EvalSpecs::Vπ.should == 3.14
+    ensure
+      EvalSpecs.send(:remove_const, :Vπ)
     end
 
     it "allows an emacs-style magic comment encoding" do
@@ -260,6 +397,8 @@ CODE
       eval(code)
       EvalSpecs.constants(false).should include(:"Vπemacs")
       EvalSpecs::Vπemacs.should == 3.14
+    ensure
+      EvalSpecs.send(:remove_const, :Vπemacs)
     end
 
     it "allows spaces before the magic encoding comment" do
@@ -273,6 +412,8 @@ CODE
       eval(code)
       EvalSpecs.constants(false).should include(:"Vπspaces")
       EvalSpecs::Vπspaces.should == 3.14
+    ensure
+      EvalSpecs.send(:remove_const, :Vπspaces)
     end
 
     it "allows a shebang line before the magic encoding comment" do
@@ -287,6 +428,8 @@ CODE
       eval(code)
       EvalSpecs.constants(false).should include(:"Vπshebang")
       EvalSpecs::Vπshebang.should == 3.14
+    ensure
+      EvalSpecs.send(:remove_const, :Vπshebang)
     end
 
     it "allows a shebang line and some spaces before the magic encoding comment" do
@@ -301,15 +444,16 @@ CODE
       eval(code)
       EvalSpecs.constants(false).should include(:"Vπshebang_spaces")
       EvalSpecs::Vπshebang_spaces.should == 3.14
+    ensure
+      EvalSpecs.send(:remove_const, :Vπshebang_spaces)
     end
 
     it "allows a magic encoding comment and a subsequent frozen_string_literal magic comment" do
-      # Make sure frozen_string_literal is not default true
-      eval("'foo'".b).frozen?.should be_false
+      frozen_string_default = "test".frozen?
 
       code = <<CODE.b
 # encoding: UTF-8
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 class EvalSpecs
   Vπstring = "frozen"
 end
@@ -319,7 +463,9 @@ CODE
       EvalSpecs.constants(false).should include(:"Vπstring")
       EvalSpecs::Vπstring.should == "frozen"
       EvalSpecs::Vπstring.encoding.should == Encoding::UTF_8
-      EvalSpecs::Vπstring.frozen?.should be_true
+      EvalSpecs::Vπstring.frozen?.should == !frozen_string_default
+    ensure
+      EvalSpecs.send(:remove_const, :Vπstring)
     end
 
     it "allows a magic encoding comment and a frozen_string_literal magic comment on the same line in emacs style" do
@@ -335,11 +481,14 @@ CODE
       EvalSpecs::Vπsame_line.should == "frozen"
       EvalSpecs::Vπsame_line.encoding.should == Encoding::UTF_8
       EvalSpecs::Vπsame_line.frozen?.should be_true
+    ensure
+      EvalSpecs.send(:remove_const, :Vπsame_line)
     end
 
     it "ignores the magic encoding comment if it is after a frozen_string_literal magic comment" do
+      frozen_string_default = "test".frozen?
       code = <<CODE.b
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 # encoding: UTF-8
 class EvalSpecs
   Vπfrozen_first = "frozen"
@@ -353,64 +502,69 @@ CODE
       value = EvalSpecs.const_get(binary_constant)
       value.should == "frozen"
       value.encoding.should == Encoding::BINARY
-      value.frozen?.should be_true
+      value.frozen?.should == !frozen_string_default
+    ensure
+      EvalSpecs.send(:remove_const, binary_constant)
     end
 
     it "ignores the frozen_string_literal magic comment if it appears after a token and warns if $VERBOSE is true" do
+      frozen_string_default = "test".frozen?
       code = <<CODE
 some_token_before_magic_comment = :anything
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 class EvalSpecs
   Vπstring_not_frozen = "not frozen"
 end
 CODE
-      -> { eval(code) }.should complain(/warning: `frozen_string_literal' is ignored after any tokens/, verbose: true)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      -> { eval(code) }.should complain(/warning: [`']frozen_string_literal' is ignored after any tokens/, verbose: true)
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == frozen_string_default
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
 
       -> { eval(code) }.should_not complain(verbose: false)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == frozen_string_default
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
     end
   end
 
-  it "activates refinements from the eval scope" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+  describe 'with refinements' do
+    it "activates refinements from the eval scope" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      result = nil
+
+      Module.new do
+        using refinery
+
+        result = eval "EvalSpecs::A.new.foo"
+      end
+
+      result.should == "bar"
     end
 
-    result = nil
-
-    Module.new do
-      using refinery
-
-      result = eval "EvalSpecs::A.new.foo"
-    end
-
-    result.should == "bar"
-  end
-
-  it "activates refinements from the binding" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+    it "activates refinements from the binding" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      b = nil
+      m = Module.new do
+        using refinery
+        b = binding
+      end
+
+      result = eval "EvalSpecs::A.new.foo", b
+
+      result.should == "bar"
     end
-
-    b = nil
-    m = Module.new do
-      using refinery
-      b = binding
-    end
-
-    result = eval "EvalSpecs::A.new.foo", b
-
-    result.should == "bar"
   end
 end

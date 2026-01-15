@@ -1,7 +1,6 @@
 #ifndef INTERNAL_RANGE_H                                  /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RANGE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -19,19 +18,23 @@ static inline VALUE RANGE_EXCL(VALUE r);
 static inline VALUE
 RANGE_BEG(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[0];
+    return RSTRUCT_GET_RAW(r, 0);
 }
 
 static inline VALUE
 RANGE_END(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[1];
+    return RSTRUCT_GET_RAW(r, 1);
 }
 
 static inline VALUE
 RANGE_EXCL(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[2];
+    return RSTRUCT_GET_RAW(r, 2);
 }
+
+VALUE
+rb_range_component_beg_len(VALUE b, VALUE e, int excl,
+                           long *begp, long *lenp, long len, int err);
 
 #endif /* INTERNAL_RANGE_H */

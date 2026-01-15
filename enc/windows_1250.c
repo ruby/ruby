@@ -190,6 +190,7 @@ cp1250_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#ifdef USE_CASE_MAP_API
 static int
 case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
 	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
@@ -239,6 +240,7 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
   *flagP = flags;
   return (int )(to - to_start);
 }
+#endif
 
 OnigEncodingDefine(windows_1250, Windows_1250) = {
   onigenc_single_byte_mbc_enc_len,
@@ -257,7 +259,11 @@ OnigEncodingDefine(windows_1250, Windows_1250) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -266,6 +272,6 @@ OnigEncodingDefine(windows_1250, Windows_1250) = {
  * MIBenum: 2251
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://www.microsoft.com/globaldev/reference/sbcs/1250.mspx
- * Link: http://en.wikipedia.org/wiki/Windows-1250
+ * Link: https://en.wikipedia.org/wiki/Windows-1250
  */
 ENC_ALIAS("CP1250", "Windows-1250")

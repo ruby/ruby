@@ -15,23 +15,22 @@ end
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]
-      return ruby
-    end
-    ruby = "ruby"
-    exeext = RbConfig::CONFIG["EXEEXT"]
-    rubyexe = (ruby + exeext if exeext and !exeext.empty?)
-    3.times do
-      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
-        return File.expand_path(ruby)
-      end
-      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
-        return File.expand_path(rubyexe)
-      end
-      ruby = File.join("..", ruby)
-    end
-    if defined?(RbConfig.ruby)
+      ruby
+    elsif defined?(RbConfig.ruby)
       RbConfig.ruby
     else
+      ruby = "ruby"
+      exeext = RbConfig::CONFIG["EXEEXT"]
+      rubyexe = (ruby + exeext if exeext and !exeext.empty?)
+      3.times do
+        if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+          return File.expand_path(ruby)
+        end
+        if rubyexe and File.exist? rubyexe and File.executable? rubyexe
+          return File.expand_path(rubyexe)
+        end
+        ruby = File.join("..", ruby)
+      end
       "ruby"
     end
   end
@@ -47,12 +46,20 @@ module EnvUtil
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
-                :original_verbose
+                :original_verbose, :original_warning
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
+      @original_warning =
+        if defined?(Warning.categories)
+          Warning.categories.to_h {|i| [i, Warning[i]]}
+        elsif defined?(Warning.[]) # 2.7+
+          %i[deprecated experimental performance].to_h do |i|
+            [i, begin Warning[i]; rescue ArgumentError; end]
+          end.compact
+        end
     end
   end
 
@@ -72,6 +79,72 @@ module EnvUtil
   end
   module_function :timeout
 
+  class Debugger
+    @list = []
+
+    attr_accessor :name
+
+    def self.register(name, &block)
+      @list << new(name, &block)
+    end
+
+    def initialize(name, &block)
+      @name = name
+      instance_eval(&block)
+    end
+
+    def usable?; false; end
+
+    def start(pid, *args) end
+
+    def dump(pid, timeout: 60, reprieve: timeout&.div(4))
+      dpid = start(pid, *command_file(File.join(__dir__, "dump.#{name}")), out: :err)
+    rescue Errno::ENOENT
+      return
+    else
+      return unless dpid
+      [[timeout, :TERM], [reprieve, :KILL]].find do |t, sig|
+        begin
+          return EnvUtil.timeout(t) {Process.wait(dpid)}
+        rescue Timeout::Error
+          Process.kill(sig, dpid)
+        end
+      end
+      true
+    end
+
+    # sudo -n: --non-interactive
+    PRECOMMAND = (%[sudo -n] if /darwin/ =~ RUBY_PLATFORM)
+
+    def spawn(*args, **opts)
+      super(*PRECOMMAND, *args, **opts)
+    end
+
+    register("gdb") do
+      class << self
+        def usable?; system(*%w[gdb --batch --quiet --nx -ex exit]); end
+        def start(pid, *args, **opts)
+          spawn(*%W[gdb --batch --quiet --pid #{pid}], *args, **opts)
+        end
+        def command_file(file) "--command=#{file}"; end
+      end
+    end
+
+    register("lldb") do
+      class << self
+        def usable?; system(*%w[lldb -Q --no-lldbinit -o exit]); end
+        def start(pid, *args, **opts)
+          spawn(*%W[lldb --batch -Q --attach-pid #{pid}], *args, **opts)
+        end
+        def command_file(file) ["--source", file]; end
+      end
+    end
+
+    def self.search
+      @debugger ||= @list.find(&:usable?)
+    end
+  end
+
   def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 1)
     reprieve = apply_timeout_scale(reprieve) if reprieve
 
@@ -86,7 +159,15 @@ module EnvUtil
     when nil, false
       pgroup = pid
     end
+
+    dumped = false
     while signal = signals.shift
+
+      if !dumped and [:ABRT, :KILL].include?(signal)
+        Debugger.search&.dump(pid)
+        dumped = true
+      end
+
       begin
         Process.kill signal, pgroup
       rescue Errno::EINVAL
@@ -100,6 +181,8 @@ module EnvUtil
         begin
           Timeout.timeout(reprieve) {Process.wait(pid)}
         rescue Timeout::Error
+        else
+          break
         end
       end
     end
@@ -109,7 +192,7 @@ module EnvUtil
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
-                  stdout_filter: nil, stderr_filter: nil,
+                  stdout_filter: nil, stderr_filter: nil, ios: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
@@ -125,6 +208,8 @@ module EnvUtil
       out_p.set_encoding(encoding) if out_p
       err_p.set_encoding(encoding) if err_p
     end
+    ios.each {|i, o = i|opt[i] = o} if ios
+
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -134,8 +219,19 @@ module EnvUtil
     if RUBYLIB and lib = child_env["RUBYLIB"]
       child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
+
+    # remain env
+    %w(ASAN_OPTIONS RUBY_ON_BUG).each{|name|
+      child_env[name] = ENV[name] if !child_env.key?(name) and ENV.key?(name)
+    }
+
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
+    # use the same parser as current ruby
+    if (args.none? { |arg| arg.start_with?("--parser=") } and
+        /^ +--parser=/ =~ IO.popen([rubybin, "--help"], &:read))
+      args = ["--parser=#{current_parser}"] + args
+    end
+    pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
     out_c&.close
     out_c = nil
@@ -182,10 +278,11 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
-  alias rubyexec invoke_ruby
-  class << self
-    alias rubyexec invoke_ruby
+  def current_parser
+    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z\[\] ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
+    features&.split&.include?("+PRISM") ? "prism" : "parse.y"
   end
+  module_function :current_parser
 
   def verbose_warning
     class << (stderr = "".dup)
@@ -199,8 +296,24 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
+    EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
+
+  if defined?(Warning.[]=)
+    def deprecation_warning
+      previous_deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+      yield
+    ensure
+      Warning[:deprecated] = previous_deprecated
+    end
+  else
+    def deprecation_warning
+      yield
+    end
+  end
+  module_function :deprecation_warning
 
   def default_warning
     $VERBOSE = false
@@ -226,7 +339,30 @@ module EnvUtil
   end
   module_function :under_gc_stress
 
-  def with_default_external(enc)
+  def under_gc_compact_stress(val = :empty, &block)
+    raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+
+    if GC.respond_to?(:auto_compact)
+      auto_compact = GC.auto_compact
+      GC.auto_compact = val
+    end
+
+    under_gc_stress(&block)
+  ensure
+    GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact)
+  end
+  module_function :under_gc_compact_stress
+
+  def without_gc
+    prev_disabled = GC.disable
+    yield
+  ensure
+    GC.enable unless prev_disabled
+  end
+  module_function :without_gc
+
+  def with_default_external(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_external = enc }
     yield
   ensure
@@ -234,7 +370,8 @@ module EnvUtil
   end
   module_function :with_default_external
 
-  def with_default_internal(enc)
+  def with_default_internal(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_internal = enc }
     yield
   ensure
@@ -277,16 +414,24 @@ module EnvUtil
       cmd = @ruby_install_name if "ruby-runner#{RbConfig::CONFIG["EXEEXT"]}" == cmd
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
-      pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
+      pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.{crash,ips}"
       first = true
       30.times do
         first ? (first = false) : sleep(0.1)
         Dir.glob(pat) do |name|
           log = File.read(name) rescue next
-          if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
-            File.unlink(name)
-            File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
-            return log
+          case name
+          when /\.crash\z/
+            if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
+              File.unlink(name)
+              File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
+              return log
+            end
+          when /\.ips\z/
+            if /^ *"pid" *: *#{pid},/ =~ log
+              File.unlink(name)
+              return log
+            end
           end
         end
       end

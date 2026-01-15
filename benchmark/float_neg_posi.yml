@@ -1,0 +1,8 @@
+prelude: |
+  flo = 4.2
+benchmark:
+  negative?: |
+    flo.negative?
+  positive?: |
+    flo.positive?
+loop_count: 20000000

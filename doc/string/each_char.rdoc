@@ -1,0 +1,17 @@
+With a block given, calls the block with each successive character from +self+;
+returns +self+:
+
+  a = []
+  'hello'.each_char do |char|
+    a.push(char)
+  end
+  a # => ["h", "e", "l", "l", "o"]
+  a = []
+  'こんにちは'.each_char do |char|
+    a.push(char)
+  end
+  a # => ["こ", "ん", "に", "ち", "は"]
+
+With no block given, returns an enumerator.
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].

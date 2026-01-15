@@ -6,6 +6,6 @@ require "mkmf"
 
 $INSTALLFILES = {
   "digest.h" => "$(HDRDIR)"
-}
+} if $extmk
 
 create_makefile("digest")

@@ -1,0 +1,4 @@
+def foo(x!,y?); end
+        ^~ unexpected name for a parameter
+           ^~ unexpected name for a parameter
+

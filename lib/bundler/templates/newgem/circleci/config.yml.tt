@@ -1,0 +1,37 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: ruby:<%= RUBY_VERSION %>
+<%- if config[:ext] == 'rust' -%>
+    environment:
+      RB_SYS_FORCE_INSTALL_RUST_TOOLCHAIN: 'true'
+<%- end -%>
+<%- if config[:ext] == 'go' -%>
+    environment:
+      GO_VERSION: '1.23.0'
+<%- end -%>
+    steps:
+      - checkout
+<%- if config[:ext] == 'rust' -%>
+      - run:
+          name: Install Rust/Cargo dependencies
+          command: apt-get update && apt-get install -y clang
+      - run:
+          name: Install a RubyGems version that can compile rust extensions
+          command: gem update --system '<%= ::Gem.rubygems_version %>'
+<%- end -%>
+<%- if config[:ext] == 'go' -%>
+      - run:
+          name: Install Go
+          command: |
+            wget https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz -O /tmp/go.tar.gz
+            tar -C /usr/local -xzf /tmp/go.tar.gz
+            echo 'export PATH=/usr/local/go/bin:"$PATH"' >> "$BASH_ENV"
+<%- end -%>
+      - run:
+          name: Run the default task
+          command: |
+            gem install bundler -v <%= Bundler::VERSION %>
+            bundle install
+            bundle exec rake

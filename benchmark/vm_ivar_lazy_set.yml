@@ -1,0 +1,12 @@
+prelude: |
+  class Example
+    def lazy_set
+      @uninitialized ||= 123
+    end
+  end
+
+  objs = 10000000.times.map { Example.new }
+benchmark:
+  vm_ivar_lazy_set: |
+    objs.each(&:lazy_set)
+loop_count: 1

@@ -7,15 +7,23 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  HOST_OS = RbConfig::CONFIG['host_os']
+  private def host_os?(os)
+    HOST_OS =~ os
+  end
+
+  begin
+    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  rescue Encoding::CompatibilityError
+    $stderr.puts "test_io_console.rb debug"
+    $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
+    raise
+  end
   PATHS.uniq!
+  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
-  #
-  # Solaris gets stuck too, even in non-parallel mode.
-  # It occurs only in chkbuild.  It does not occur when running
-  # `make test-all` in SSH terminal.
   #
   # I suspect that it occurs only when having no TTY.
   # (Parallel mode runs tests in child processes, so I guess
@@ -23,24 +31,33 @@ class TestIO_Console < Test::Unit::TestCase
   # But it does not occur in `make test-all > /dev/null`, so
   # there should be an additional factor, I guess.
   def set_winsize_setup
-    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd|solaris/i
+    @old_ttou = trap(:TTOU, 'IGNORE') if host_os?(/freebsd/)
   end
 
   def set_winsize_teardown
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
 
+  exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
+    Errno.const_get(e) if Errno.const_defined?(e)
+  }
+  exceptions.compact!
+  FailedPathExceptions = (exceptions unless exceptions.empty?)
+
   def test_failed_path
-    exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
-      Errno.const_get(e) if Errno.const_defined?(e)
-    }
-    exceptions.compact!
-    skip if exceptions.empty?
     File.open(IO::NULL) do |f|
-      e = assert_raise(*exceptions) do
+      e = assert_raise(*FailedPathExceptions) do
         f.echo?
       end
       assert_include(e.message, IO::NULL)
+    end
+  end if FailedPathExceptions
+
+  def test_bad_keyword
+    assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
+      File.open(IO::NULL) do |f|
+        f.raw(bad: 0)
+      end
     end
   end
 end
@@ -226,8 +243,25 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    skip unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\n"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+
+    run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\C-D\C-D"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+
+    run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
       w.print "asdf\n"
@@ -338,10 +372,28 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     w.print cc
     w.flush
     result = EnvUtil.timeout(3) {r.gets}
+    if result
+      case cc.chr
+      when "\C-A".."\C-_"
+        cc = "^" + (cc.ord | 0x40).chr
+      when "\C-?"
+        cc = "^?"
+      end
+      result.sub!(cc, "")
+    end
     assert_equal(expect, result.chomp)
   end
 
   def test_intr
+    # This test fails randomly on FreeBSD 13
+    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
+    #
+    #   1) Failure:
+    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
+    # <"25"> expected but was
+    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
+    omit if host_os?(/freebsd/)
+
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
@@ -366,7 +418,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless host_os?(/linux/)
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)
@@ -392,8 +444,19 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal(["true"], run_pty("IO.console(:close); p IO.console(:tty?)"))
     end
 
+    def test_console_kw
+      assert_equal(["File"], run_pty("IO.console.close; p IO.console(:clone, freeze: true).class"))
+    end
+
     def test_sync
       assert_equal(["true"], run_pty("p IO.console.sync"))
+    end
+
+    def test_ttyname
+      return unless IO.method_defined?(:ttyname)
+      # [Bug #20682]
+      # `sleep 0.1` is added to stabilize flaky failures on macOS.
+      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname; sleep 0.1"))
     end
   end
 
@@ -401,7 +464,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def helper
     m, s = PTY.open
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     yield m, s
   ensure
@@ -410,9 +473,13 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
+    pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
+
+    args = [TestIO_Console::INCLUDE_OPTS, "-rio/console", "-e", src]
+    args.shift if args.first == "-I" # statically linked
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
-    skip $!
+    omit $!
   else
     if block_given?
       yield r, w, pid
@@ -443,10 +510,14 @@ defined?(IO.console) and TestIO_Console.class_eval do
       s = IO.console.winsize
       assert_nothing_raised(TypeError) {IO.console.winsize = s}
       bug = '[ruby-core:82741] [Bug #13888]'
-      IO.console.winsize = [s[0], s[1]+1]
-      assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
-      IO.console.winsize = s
-      assert_equal(s, IO.console.winsize, bug)
+      begin
+        IO.console.winsize = [s[0], s[1]+1]
+        assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
+      rescue Errno::EINVAL    # Error if run on an actual console.
+      else
+        IO.console.winsize = s
+        assert_equal(s, IO.console.winsize, bug)
+      end
     ensure
       set_winsize_teardown
     end
@@ -462,15 +533,30 @@ defined?(IO.console) and TestIO_Console.class_eval do
       IO.console(:close)
     end
 
+    def test_console_kw
+      io = IO.console(:clone, freeze: true)
+      io.close
+      assert_kind_of(IO, io)
+    end
+
     def test_sync
       assert(IO.console.sync, "console should be unbuffered")
     ensure
       IO.console(:close)
     end
-  end
-end
 
-defined?(IO.console) and TestIO_Console.class_eval do
+    def test_getch_timeout
+      assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
+    end
+
+    def test_ttyname
+      return unless IO.method_defined?(:ttyname)
+      ttyname = IO.console.ttyname
+      assert_not_nil(ttyname)
+      File.open(ttyname) {|f| assert_predicate(f, :tty?)}
+    end
+  end
+
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
@@ -482,17 +568,18 @@ defined?(IO.console) and TestIO_Console.class_eval do
   if noctty
     require 'tempfile'
     NOCTTY = noctty
-    def test_noctty
+    def run_noctty(src)
       t = Tempfile.new("noctty_out")
       t.close
       t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
+        TestIO_Console::INCLUDE_OPTS,
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
         '-e',   'require "io/console"',
-        '-e',   'f.puts IO.console.inspect',
+        '-e',   "f.puts (#{src}).inspect",
         '-e',   'f.flush',
         '-e',   'File.unlink(ARGV[1])',
         '-e', '}',
@@ -503,10 +590,17 @@ defined?(IO.console) and TestIO_Console.class_eval do
         sleep 0.1
       end
       t.open
-      assert_equal("nil", t.gets(nil).chomp)
+      t.gets.lines(chomp: true)
     ensure
       t.close! if t and !t.closed?
       t2.close!
+    end
+
+    def test_noctty
+      assert_equal(["nil"], run_noctty("IO.console"))
+      if IO.method_defined?(:ttyname)
+        assert_equal(["nil"], run_noctty("STDIN.ttyname rescue $!"))
+      end
     end
   end
 end
@@ -528,14 +622,14 @@ end
 
 TestIO_Console.class_eval do
   def test_stringio_getch
-    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rio/console -rstringio", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rstringio", %q{
-      assert_not_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio", %q{
+      abort if StringIO.method_defined?(:getch)
     }
   end
 end

@@ -1,0 +1,16 @@
+Returns whether +self+ starts with any of the given +patterns+.
+
+For each argument, the pattern used is:
+
+- The pattern itself, if it is a Regexp.
+- <tt>Regexp.quote(pattern)</tt>, if it is a string.
+
+Returns +true+ if any pattern matches the beginning, +false+ otherwise:
+
+  'hello'.start_with?('hell')               # => true
+  'hello'.start_with?(/H/i)                 # => true
+  'hello'.start_with?('heaven', 'hell')     # => true
+  'hello'.start_with?('heaven', 'paradise') # => false
+  'こんにちは'.start_with?('こ')              # => true
+
+Related: see {Querying}[rdoc-ref:String@Querying].

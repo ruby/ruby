@@ -408,19 +408,32 @@ class TestIntegerComb < Test::Unit::TestCase
   end
 
   def test_remainder
+    coerce = EnvUtil.labeled_class("CoerceNum") do
+      def initialize(num)
+        @num = num
+      end
+      def coerce(other)
+        [other, @num]
+      end
+      def inspect
+        "#{self.class.name}(#@num)"
+      end
+      alias to_s inspect
+    end
+
     VS.each {|a|
-      VS.each {|b|
-        if b == 0
+      (VS + VS.map {|b| [coerce.new(b), b]}).each {|b, i = b|
+        if i == 0
           assert_raise(ZeroDivisionError) { a.divmod(b) }
         else
-          r = a.remainder(b)
+          r = assert_nothing_raised(ArgumentError, "#{a}.remainder(#{b})") {a.remainder(b)}
           assert_kind_of(Integer, r)
           if a < 0
-            assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
+            assert_operator(-i.abs, :<, r, "#{a}.remainder(#{b})")
             assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
           elsif 0 < a
             assert_operator(0, :<=, r, "#{a}.remainder(#{b})")
-            assert_operator(b.abs, :>, r, "#{a}.remainder(#{b})")
+            assert_operator(i.abs, :>, r, "#{a}.remainder(#{b})")
           else
             assert_equal(0, r, "#{a}.remainder(#{b})")
           end

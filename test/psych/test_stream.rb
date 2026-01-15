@@ -54,6 +54,14 @@ module Psych
       assert_equal %w{ foo bar }, list
     end
 
+    def test_safe_load_stream_yields_documents
+      list = []
+      Psych.safe_load_stream("--- foo\n...\n--- bar") do |ruby|
+        list << ruby
+      end
+      assert_equal %w{ foo bar }, list
+    end
+
     def test_load_stream_break
       list = []
       Psych.load_stream("--- foo\n...\n--- `") do |ruby|

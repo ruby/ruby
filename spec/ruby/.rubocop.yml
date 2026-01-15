@@ -1,11 +1,16 @@
 inherit_from: .rubocop_todo.yml
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 3.2
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
+    - core/exception/fixtures/syntax_error.rb
   DisabledByDefault: true
+  NewCops: disable
+
+Layout/IndentationConsistency:
+  Enabled: true
 
 Layout/TrailingWhitespace:
   Enabled: true
@@ -14,6 +19,10 @@ Layout/TrailingEmptyLines:
   Enabled: true
   Exclude:
     - library/coverage/fixtures/some_class.rb
+
+Layout/SpaceInLambdaLiteral:
+  Enabled: true
+  EnforcedStyle: require_space
 
 Lint:
   Enabled: true
@@ -28,16 +37,31 @@ Lint/AssignmentInCondition:
 Lint/BooleanSymbol:
   Enabled: false
 
+Lint/DeprecatedOpenSSLConstant:
+  Exclude:
+    - library/openssl/digest/**/*.rb
+
 Lint/InterpolationCheck:
   Enabled: false
 
 Lint/LiteralAsCondition:
   Enabled: false
 
+# Required to support Ruby 3.0
 Lint/RedundantRequireStatement:
-  Enabled: false
+  Exclude:
+    - core/fiber/**/*.rb
+    - library/fiber/**/*.rb
+    - optional/capi/fiber_spec.rb
+
+Lint/RedundantSafeNavigation:
+  Exclude:
+    - language/safe_navigator_spec.rb
 
 Lint/RedundantSplatExpansion:
+  Enabled: false
+
+Lint/RescueException:
   Enabled: false
 
 Lint/UnifiedInteger:
@@ -52,11 +76,57 @@ Lint/UnusedMethodArgument:
 Lint/UselessAssignment:
   Enabled: false
 
-Lint/UselessComparison:
+Lint/BinaryOperatorWithIdenticalOperands:
   Enabled: false
+
+Lint/EmptyConditionalBody:
+  Enabled: false # buggy
 
 Lint/Void:
   Enabled: false
+
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+
+Lint/RaiseException:
+  Enabled: false
+
+Lint/FloatComparison:
+  Enabled: false
+
+Lint/DeprecatedClassMethods:
+  Enabled: false
+
+Lint/UnreachableLoop:
+  Enabled: false
+
+Lint/MissingSuper:
+  Enabled: false
+
+Lint/UselessMethodDefinition:
+  Enabled: false
+
+Lint/UselessTimes:
+  Enabled: false
+
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+
+Lint/DuplicateElsifCondition:
+  Enabled: false
+
+Lint/OutOfRangeRegexpRef:
+  Enabled: false
+
+Lint/InheritException:
+  Enabled: false
+
+Lint/SafeNavigationChain:
+  Enabled: false
+
+Lint/ElseLayout:
+  Exclude:
+    - 'language/if_spec.rb'
 
 Lint/EmptyExpression:
   Exclude:
@@ -66,6 +136,10 @@ Lint/EmptyWhen:
   Exclude:
     - language/case_spec.rb
     - optional/capi/spec_helper.rb
+
+Lint/ErbNewArguments:
+  Exclude:
+    - 'library/erb/new_spec.rb'
 
 Lint/FormatParameterMismatch:
   Exclude:
@@ -88,8 +162,10 @@ Lint/UnreachableCode:
   Exclude:
     - 'core/enumerator/lazy/fixtures/classes.rb'
     - 'core/kernel/catch_spec.rb'
+    - 'core/kernel/raise_spec.rb'
     - 'core/kernel/throw_spec.rb'
     - 'language/break_spec.rb'
+    - 'language/optional_assignments_spec.rb'
     - 'language/fixtures/break.rb'
     - 'language/fixtures/break_lambda_toplevel.rb'
     - 'language/fixtures/break_lambda_toplevel_block.rb'
@@ -108,6 +184,12 @@ Lint/Debugger:
   Exclude:
     - 'core/binding/fixtures/irb.rb'
 
+Lint/Loop:
+  Enabled: false
+
+Style/BlockComments:
+  Enabled: true
+
 Style/Lambda:
   Enabled: true
   EnforcedStyle: literal
@@ -115,6 +197,7 @@ Style/Lambda:
     - 'language/lambda_spec.rb'
     - 'language/proc_spec.rb'
     - 'language/numbered_parameters_spec.rb'
+    - 'language/it_parameter_spec.rb'
     - 'core/kernel/lambda_spec.rb'
 
 Style/EmptyLambdaParameter:

@@ -12,7 +12,7 @@ module Memory
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
-      IO.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
+      File.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
         yield($1.downcase.intern, $2.to_i * 1024) if VM_PAT =~ l
       end
     end
@@ -20,47 +20,68 @@ module Memory
     data.scan(pat) {|k, v| keys << k.downcase.intern}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
-    require 'fiddle/import'
-    require 'fiddle/types'
+    keys.push(:size, :rss, :peak)
 
-    module Win32
-      extend Fiddle::Importer
-      dlload "kernel32.dll", "psapi.dll"
-      include Fiddle::Win32Types
-      typealias "SIZE_T", "size_t"
+    begin
+      require 'fiddle/import'
+      require 'fiddle/types'
+    rescue LoadError
+      # Fallback to PowerShell command to get memory information for current process
+      def self.read_status
+        cmd = [
+          "powershell.exe", "-NoProfile", "-Command",
+          "Get-Process -Id #{$$} | " \
+          "% { Write-Output $_.PagedMemorySize64 $_.WorkingSet64 $_.PeakWorkingSet64 }"
+        ]
 
-      PROCESS_MEMORY_COUNTERS = struct [
-        "DWORD  cb",
-        "DWORD  PageFaultCount",
-        "SIZE_T PeakWorkingSetSize",
-        "SIZE_T WorkingSetSize",
-        "SIZE_T QuotaPeakPagedPoolUsage",
-        "SIZE_T QuotaPagedPoolUsage",
-        "SIZE_T QuotaPeakNonPagedPoolUsage",
-        "SIZE_T QuotaNonPagedPoolUsage",
-        "SIZE_T PagefileUsage",
-        "SIZE_T PeakPagefileUsage",
-      ]
-
-      typealias "PPROCESS_MEMORY_COUNTERS", "PROCESS_MEMORY_COUNTERS*"
-
-      extern "HANDLE GetCurrentProcess()", :stdcall
-      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)", :stdcall
-
-      module_function
-      def memory_info
-        size = PROCESS_MEMORY_COUNTERS.size
-        data = PROCESS_MEMORY_COUNTERS.malloc
-        data.cb = size
-        data if GetProcessMemoryInfo(GetCurrentProcess(), data, size)
+        IO.popen(cmd, "r", err: [:child, :out]) do |out|
+          if /^(\d+)\n(\d+)\n(\d+)$/ =~ out.read
+            yield :size, $1.to_i
+            yield :rss, $2.to_i
+            yield :peak, $3.to_i
+          end
+        end
       end
-    end
+    else
+      module Win32
+        extend Fiddle::Importer
+        dlload "kernel32.dll", "psapi.dll"
+        include Fiddle::Win32Types
+        typealias "SIZE_T", "size_t"
 
-    keys << :peak << :size
-    def self.read_status
-      if info = Win32.memory_info
-        yield :peak, info.PeakPagefileUsage
-        yield :size, info.PagefileUsage
+        PROCESS_MEMORY_COUNTERS = struct [
+          "DWORD  cb",
+          "DWORD  PageFaultCount",
+          "SIZE_T PeakWorkingSetSize",
+          "SIZE_T WorkingSetSize",
+          "SIZE_T QuotaPeakPagedPoolUsage",
+          "SIZE_T QuotaPagedPoolUsage",
+          "SIZE_T QuotaPeakNonPagedPoolUsage",
+          "SIZE_T QuotaNonPagedPoolUsage",
+          "SIZE_T PagefileUsage",
+          "SIZE_T PeakPagefileUsage",
+        ]
+
+        typealias "PPROCESS_MEMORY_COUNTERS", "PROCESS_MEMORY_COUNTERS*"
+
+        extern "HANDLE GetCurrentProcess()", :stdcall
+        extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)", :stdcall
+
+        module_function
+        def memory_info
+          size = PROCESS_MEMORY_COUNTERS.size
+          data = PROCESS_MEMORY_COUNTERS.malloc
+          data.cb = size
+          data if GetProcessMemoryInfo(GetCurrentProcess(), data, size)
+        end
+      end
+
+      def self.read_status
+        if info = Win32.memory_info
+          yield :size, info.PagefileUsage
+          yield :rss, info.WorkingSetSize
+          yield :peak, info.PeakWorkingSetSize
+        end
       end
     end
   when (require_relative 'find_executable'
@@ -94,6 +115,7 @@ if defined?(Memory::Status)
       Memory.read_status do |key, val|
         self[key] = val
       end
+      self
     end unless method_defined?(:_update)
 
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')

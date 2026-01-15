@@ -15,7 +15,7 @@ class TestIONonblock < Test::Unit::TestCase
     Socket.pair(:INET, :STREAM) {|s1, s2|
       return if flush_test(s1, s2)
     }
-    skip "nonblocking IO did not work"
+    omit "nonblocking IO did not work"
   end
 
   def flush_test(r, w)

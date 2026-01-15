@@ -1,3 +1,6 @@
+#ifndef COROUTINE_PPC64LE_CONTEXT_H
+#define COROUTINE_PPC64LE_CONTEXT_H 1
+
 #pragma once
 
 #include <assert.h>
@@ -9,13 +12,14 @@
 
 enum {
   COROUTINE_REGISTERS =
-  19  /* 18 general purpose registers (r14-r31) and 1 return address */
+  20  /* 18 general purpose registers (r14-r31), 1 special register (cr) and 1 return address */
   + 4  /* space for fiber_entry() to store the link register */
 };
 
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
@@ -49,3 +53,5 @@ static inline void coroutine_destroy(struct coroutine_context * context)
 {
     context->stack_pointer = NULL;
 }
+
+#endif /* COROUTINE_PPC64LE_CONTEXT_H */

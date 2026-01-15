@@ -28,20 +28,6 @@ describe "Module#prepend_features" do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "copies own tainted status to the given module" do
-      other = Module.new
-      Module.new.taint.send :prepend_features, other
-      other.tainted?.should be_true
-    end
-
-    it "copies own untrusted status to the given module" do
-      other = Module.new
-      Module.new.untrust.send :prepend_features, other
-      other.untrusted?.should be_true
-    end
-  end
-
   it "clears caches of the given module" do
     parent = Class.new do
       def bar; :bar; end

@@ -1,0 +1,22 @@
+<<~RUBY
+pre
+#{
+<<RUBY
+  hello
+RUBY
+}
+post
+RUBY
+
+# depth greater than PM_LEX_STACK_SIZE
+<<-A
+#{
+<<-B
+#{
+<<-C
+#{3}
+C
+}
+B
+}
+A

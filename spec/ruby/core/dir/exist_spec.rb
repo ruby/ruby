@@ -13,3 +13,9 @@ describe "Dir.exist?" do
 
   it_behaves_like :dir_exist, :exist?
 end
+
+describe "Dir.exists?" do
+  it "has been removed" do
+    Dir.should_not.respond_to?(:exists?)
+  end
+end

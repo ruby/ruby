@@ -3,7 +3,8 @@ require_relative 'fixtures/classes'
 
 describe "IO#close_write" do
   before :each do
-    @io = IO.popen 'cat', 'r+'
+    cmd = platform_is(:windows) ? 'rem' : 'cat'
+    @io = IO.popen cmd, 'r+'
     @path = tmp('io.close.txt')
   end
 
@@ -48,12 +49,15 @@ describe "IO#close_write" do
     io.should.closed?
   end
 
-  it "flushes and closes the write stream" do
-    @io.puts '12345'
+  # Windows didn't have command like cat
+  platform_is_not :windows do
+    it "flushes and closes the write stream" do
+      @io.puts '12345'
 
-    @io.close_write
+      @io.close_write
 
-    @io.read.should == "12345\n"
+      @io.read.should == "12345\n"
+    end
   end
 
   it "does nothing on closed stream" do

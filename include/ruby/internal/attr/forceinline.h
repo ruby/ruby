@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_FORCEINLINE.
  */
 #include "ruby/internal/compiler_since.h"
@@ -29,7 +29,7 @@
  * `__forceinline` are mutually exclusive.  We have to mimic that behaviour for
  * non-MSVC compilers.
  */
-#if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+#if RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_FORCEINLINE() __forceinline
 #elif RBIMPL_HAS_ATTRIBUTE(always_inline)
 # define RBIMPL_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline

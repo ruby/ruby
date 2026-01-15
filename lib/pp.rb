@@ -46,6 +46,7 @@ require 'prettyprint'
 #
 # To define a customized pretty printing function for your classes,
 # redefine method <code>#pretty_print(pp)</code> in the class.
+# Note that <code>require 'pp'</code> is needed before redefining <code>#pretty_print(pp)</code>.
 #
 # <code>#pretty_print</code> takes the +pp+ argument, which is an instance of the PP class.
 # The method uses #text, #breakable, #nest, #group and #pp to print the
@@ -61,15 +62,39 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+
+  # The version string
+  VERSION = "0.6.3"
+
+  # Returns the usable width for +out+.
+  # As the width of +out+:
+  # 1. If +out+ is assigned to a tty device, its width is used.
+  # 2. Otherwise, or it could not get the value, the +COLUMN+
+  #    environment variable is assumed to be set to the width.
+  # 3. If +COLUMN+ is not set to a non-zero number, 80 is assumed.
+  #
+  # And finally, returns the above width value - 1.
+  # * This -1 is for Windows command prompt, which moves the cursor to
+  #   the next line if it reaches the last column.
+  def PP.width_for(out)
+    begin
+      require 'io/console'
+      _, width = out.winsize
+    rescue LoadError, NoMethodError, SystemCallError
+    end
+    (width || ENV['COLUMNS']&.to_i&.nonzero? || 80) - 1
+  end
+
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
   # If +out+ is omitted, <code>$></code> is assumed.
-  # If +width+ is omitted, 79 is assumed.
+  # If +width+ is omitted, the width of +out+ is assumed (see
+  # width_for).
   #
   # PP.pp returns +out+.
-  def PP.pp(obj, out=$>, width=79)
-    q = PP.new(out, width)
+  def PP.pp(obj, out=$>, width=width_for(out))
+    q = new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
     #$pp = q
@@ -93,33 +118,40 @@ class PP < PrettyPrint
   end
   # :startdoc:
 
-  @sharing_detection = false
-  class << self
-    # Returns the sharing detection flag as a boolean value.
-    # It is false by default.
-    attr_accessor :sharing_detection
+  if defined? ::Ractor
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false (nil) by default.
+      def sharing_detection
+        Ractor.current[:pp_sharing_detection]
+      end
+      # Sets the sharing detection flag to b.
+      def sharing_detection=(b)
+        Ractor.current[:pp_sharing_detection] = b
+      end
+    end
+  else
+    @sharing_detection = false
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false by default.
+      attr_accessor :sharing_detection
+    end
   end
 
+  # Module that defines helper methods for pretty_print.
   module PPMethods
 
     # Yields to a block
     # and preserves the previous set of objects being printed.
     def guard_inspect_key
-      if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.compare_by_identity
-      end
-
-      if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
-      end
-
-      save = Thread.current[:__recursive_key__][:inspect]
-
+      recursive_state = Thread.current[:__recursive_key__] ||= {}.compare_by_identity
+      save = recursive_state[:inspect] ||= {}.compare_by_identity
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
+        recursive_state[:inspect] = {}.compare_by_identity
         yield
       ensure
-        Thread.current[:__recursive_key__][:inspect] = save
+        recursive_state[:inspect] = save
       end
     end
 
@@ -127,9 +159,8 @@ class PP < PrettyPrint
     # to be pretty printed. Used to break cycles in chains of objects to be
     # pretty printed.
     def check_inspect_key(id)
-      Thread.current[:__recursive_key__] &&
-      Thread.current[:__recursive_key__][:inspect] &&
-      Thread.current[:__recursive_key__][:inspect].include?(id)
+      recursive_state = Thread.current[:__recursive_key__] or return false
+      recursive_state[:inspect]&.include?(id)
     end
 
     # Adds the object_id +id+ to the set of objects being pretty printed, so
@@ -143,6 +174,24 @@ class PP < PrettyPrint
       Thread.current[:__recursive_key__][:inspect].delete id
     end
 
+    private def guard_inspect(object) # :nodoc:
+      recursive_state = Thread.current[:__recursive_key__]
+
+      if recursive_state&.key?(:inspect)
+        begin
+          push_inspect_key(object)
+          yield
+        ensure
+          pop_inspect_key(object) unless PP.sharing_detection
+        end
+      else
+        guard_inspect_key do
+          push_inspect_key(object)
+          yield
+        end
+      end
+    end
+
     # Adds +obj+ to the pretty printing buffer
     # using Object#pretty_print or Object#pretty_print_cycle.
     #
@@ -151,18 +200,19 @@ class PP < PrettyPrint
     def pp(obj)
       # If obj is a Delegator then use the object being delegated to for cycle
       # detection
-      obj = obj.__getobj__ if defined?(::Delegator) and obj.is_a?(::Delegator)
+      obj = obj.__getobj__ if defined?(::Delegator) and ::Delegator === obj
 
       if check_inspect_key(obj)
         group {obj.pretty_print_cycle self}
         return
       end
 
-      begin
-        push_inspect_key(obj)
-        group {obj.pretty_print self}
-      ensure
-        pop_inspect_key(obj) unless PP.sharing_detection
+      guard_inspect(obj) do
+        group do
+          obj.pretty_print self
+        rescue NoMethodError
+          text Kernel.instance_method(:inspect).bind_call(obj)
+        end
       end
     end
 
@@ -217,15 +267,20 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
+      kwsplat = EMPTY_KWHASH
       list.__send__(iter_method) {|*v|
         if first
           first = false
         else
           sep.call
         end
-        yield(*v, **{})
+        kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0" # :nodoc:
+      {}.freeze
+    end
+    private_constant :EMPTY_KWHASH
 
     # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
@@ -248,15 +303,39 @@ class PP < PrettyPrint
       group(1, '{', '}') {
         seplist(obj, nil, :each_pair) {|k, v|
           group {
-            pp k
-            text '=>'
-            group(1) {
-              breakable ''
-              pp v
-            }
+            pp_hash_pair k, v
           }
         }
       }
+    end
+
+    if RUBY_VERSION >= '3.4.'
+      # A pretty print for a pair of Hash
+      def pp_hash_pair(k, v)
+        if Symbol === k
+          if k.inspect.match?(%r[\A:["$@!]|[%&*+\-\/<=>@\]^`|~]\z])
+            k = k.to_s.inspect
+          end
+          text "#{k}:"
+        else
+          pp k
+          text ' '
+          text '=>'
+        end
+        group(1) {
+          breakable
+          pp v
+        }
+      end
+    else
+      def pp_hash_pair(k, v)
+        pp k
+        text '=>'
+        group(1) {
+          breakable ''
+          pp v
+        }
+      end
     end
   end
 
@@ -309,7 +388,8 @@ class PP < PrettyPrint
     # This method should return an array of names of instance variables as symbols or strings as:
     # +[:@a, :@b]+.
     def pretty_print_instance_variables
-      instance_variables.sort
+      ivars = respond_to?(:instance_variables_to_inspect, true) ? instance_variables_to_inspect || instance_variables : instance_variables
+      ivars.sort
     end
 
     # Is #inspect implementation using #pretty_print.
@@ -352,6 +432,28 @@ class Hash # :nodoc:
   end
 end
 
+if defined?(Set)
+  if set_pp = Set.instance_method(:initialize).source_location
+    set_pp = !set_pp.first.end_with?("/set.rb") # not defined in set.rb
+  else
+    set_pp = true               # defined in C
+  end
+end
+class Set # :nodoc:
+  def pretty_print(pp)  # :nodoc:
+    pp.group(1, "#{self.class.name}[", ']') {
+      pp.seplist(self) { |o|
+        pp.pp o
+      }
+    }
+  end
+
+  def pretty_print_cycle(pp)    # :nodoc:
+    name = self.class.name
+    pp.text(empty? ? "#{name}[]" : "#{name}[...]")
+  end
+end if set_pp
+
 class << ENV # :nodoc:
   def pretty_print(q) # :nodoc:
     h = {}
@@ -382,13 +484,56 @@ class Struct # :nodoc:
   end
 end
 
+verbose, $VERBOSE = $VERBOSE, nil
+begin
+  has_data_define = defined?(Data.define)
+ensure
+  $VERBOSE = verbose
+end
+
+class Data # :nodoc:
+  def pretty_print(q) # :nodoc:
+    class_name = PP.mcall(self, Kernel, :class).name
+    class_name = " #{class_name}" if class_name
+    q.group(1, "#<data#{class_name}", '>') {
+
+      members = PP.mcall(self, Kernel, :class).members
+      values = []
+      members.select! do |member|
+        begin
+          values << __send__(member)
+          true
+        rescue NoMethodError
+          false
+        end
+      end
+
+      q.seplist(members.zip(values), lambda { q.text "," }) {|(member, value)|
+        q.breakable
+        q.text member.to_s
+        q.text '='
+        q.group(1) {
+          q.breakable ''
+          q.pp value
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(q) # :nodoc:
+    q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
+  end
+end if has_data_define
+
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.pp self.begin
+    begin_nil = self.begin == nil
+    end_nil = self.end == nil
+    q.pp self.begin if !begin_nil || end_nil
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end if self.end
+    q.pp self.end if !end_nil || begin_nil
   end
 end
 
@@ -410,7 +555,7 @@ end
 class File < IO # :nodoc:
   class Stat # :nodoc:
     def pretty_print(q) # :nodoc:
-      require 'etc.so'
+      require 'etc'
       q.object_group(self) {
         q.breakable
         q.text sprintf("dev=0x%x", self.dev); q.comma_breakable
@@ -516,37 +661,39 @@ class MatchData # :nodoc:
   end
 end
 
-class RubyVM::AbstractSyntaxTree::Node
-  def pretty_print_children(q, names = [])
-    children.zip(names) do |c, n|
-      if n
-        q.breakable
-        q.text "#{n}:"
-      end
-      q.group(2) do
-        q.breakable
-        q.pp c
+if defined?(RubyVM::AbstractSyntaxTree)
+  class RubyVM::AbstractSyntaxTree::Node # :nodoc:
+    def pretty_print_children(q, names = [])
+      children.zip(names) do |c, n|
+        if n
+          q.breakable
+          q.text "#{n}:"
+        end
+        q.group(2) do
+          q.breakable
+          q.pp c
+        end
       end
     end
-  end
 
-  def pretty_print(q)
-    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
-      case type
-      when :SCOPE
-        pretty_print_children(q, %w"tbl args body")
-      when :ARGS
-        pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
-      when :DEFN
-        pretty_print_children(q, %w[mid body])
-      when :ARYPTN
-        pretty_print_children(q, %w[const pre rest post])
-      when :HSHPTN
-        pretty_print_children(q, %w[const kw kwrest])
-      else
-        pretty_print_children(q)
-      end
-    }
+    def pretty_print(q)
+      q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+        case type
+        when :SCOPE
+          pretty_print_children(q, %w"tbl args body")
+        when :ARGS
+          pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
+        when :DEFN
+          pretty_print_children(q, %w[mid body])
+        when :ARYPTN
+          pretty_print_children(q, %w[const pre rest post])
+        when :HSHPTN
+          pretty_print_children(q, %w[const kw kwrest])
+        else
+          pretty_print_children(q)
+        end
+      }
+    end
   end
 end
 
@@ -573,10 +720,6 @@ end
 module Kernel
   # Returns a pretty printed object as a string.
   #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
-  #
   # See the PP module for more information.
   def pretty_inspect
     PP.pp(self, ''.dup)
@@ -584,7 +727,7 @@ module Kernel
 
   # prints arguments in pretty form.
   #
-  # pp returns argument(s).
+  # +#pp+ returns argument(s).
   def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)

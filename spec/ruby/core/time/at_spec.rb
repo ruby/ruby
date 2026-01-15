@@ -32,10 +32,17 @@ describe "Time.at" do
       t2.nsec.should == t.nsec
     end
 
-    describe "passed BigDecimal" do
-      it "doesn't round input value" do
-        require 'bigdecimal'
-        Time.at(BigDecimal('1.1')).to_f.should == 1.1
+    describe "passed Rational" do
+      it "returns Time with correct microseconds" do
+        t = Time.at(Rational(1_486_570_508_539_759, 1_000_000))
+        t.usec.should == 539_759
+        t.nsec.should == 539_759_000
+      end
+
+      it "returns Time with correct nanoseconds" do
+        t = Time.at(Rational(1_486_570_508_539_759_123, 1_000_000_000))
+        t.usec.should == 539_759
+        t.nsec.should == 539_759_123
       end
     end
   end
@@ -91,6 +98,12 @@ describe "Time.at" do
         o = mock_numeric('rational')
         o.should_receive(:to_r).and_return(Rational(5, 2))
         Time.at(o).should == Time.at(Rational(5, 2))
+      end
+
+      it "needs for the argument to respond to #to_int too" do
+        o = mock('rational-but-no-to_int')
+        def o.to_r; Rational(5, 2) end
+        -> { Time.at(o) }.should raise_error(TypeError, "can't convert MockObject into an exact number")
       end
     end
   end
@@ -183,7 +196,7 @@ describe "Time.at" do
       end
 
       it "does not try to convert format to Symbol with #to_sym" do
-        format = "usec"
+        format = +"usec"
         format.should_not_receive(:to_sym)
         -> { Time.at(0, 123456, format) }.should raise_error(ArgumentError)
       end
@@ -198,54 +211,105 @@ describe "Time.at" do
     end
   end
 
-  ruby_version_is "2.6" do
-    describe ":in keyword argument" do
-      before do
-        @epoch_time = Time.now.to_i
-      end
+  describe ":in keyword argument" do
+    before do
+      @epoch_time = Time.now.to_i
+    end
 
-      it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
-        time = Time.at(@epoch_time, in: "+05:00")
+    it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
+      time = Time.at(@epoch_time, in: "+05:00")
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
 
-        time = Time.at(@epoch_time, in: "-09:00")
+      time = Time.at(@epoch_time, in: "-09:00")
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
 
-      it "could be UTC offset as a number of seconds" do
-        time = Time.at(@epoch_time, in: 5*60*60)
+      time = Time.at(@epoch_time, in: "-09:00:01")
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == -(9*60*60 + 1)
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
 
-        time = Time.at(@epoch_time, in: -9*60*60)
+    it "could be UTC offset as a number of seconds" do
+      time = Time.at(@epoch_time, in: 5*60*60)
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
-      end
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
 
-      it "could be a timezone object" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
-        time = Time.at(@epoch_time, in: zone)
+      time = Time.at(@epoch_time, in: -9*60*60)
 
-        time.utc_offset.should == 5*3600+30*60
-        time.zone.should == zone
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
 
-        zone = TimeSpecs::TimezoneWithName.new(name: "PST")
-        time = Time.at(@epoch_time, in: zone)
+    it "could be UTC offset as a 'UTC' String" do
+      time = Time.at(@epoch_time, in: "UTC")
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == zone
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == 0
+      time.zone.should == "UTC"
+      time.to_i.should == @epoch_time
+    end
+
+    it "could be UTC offset as a military zone A-Z" do
+      time = Time.at(@epoch_time, in: "B")
+
+      time.utc_offset.should == 3600 * 2
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
+
+    it "could be a timezone object" do
+      zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
+      time = Time.at(@epoch_time, in: zone)
+
+      time.utc_offset.should == 5*3600+30*60
+      time.zone.should == zone
+      time.to_i.should == @epoch_time
+
+      zone = TimeSpecs::TimezoneWithName.new(name: "PST")
+      time = Time.at(@epoch_time, in: zone)
+
+      time.utc_offset.should == -9*60*60
+      time.zone.should == zone
+      time.to_i.should == @epoch_time
+    end
+
+    it "raises ArgumentError if format is invalid" do
+      -> { Time.at(@epoch_time, in: "+09:99") }.should raise_error(ArgumentError)
+      -> { Time.at(@epoch_time, in: "ABC") }.should raise_error(ArgumentError)
+    end
+
+    it "raises ArgumentError if hours greater than 23" do # TODO
+      -> { Time.at(@epoch_time, in: "+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+2400") }.should raise_error(ArgumentError, "utc_offset out of range")
+
+      -> { Time.at(@epoch_time, in: "+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+9900") }.should raise_error(ArgumentError, "utc_offset out of range")
+    end
+
+    it "raises ArgumentError if minutes greater than 59" do # TODO
+      -> { Time.at(@epoch_time, in: "+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
+      -> { Time.at(@epoch_time, in: "+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
+
+      -> { Time.at(@epoch_time, in: "+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
+      -> { Time.at(@epoch_time, in: "+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
+    end
+
+    ruby_bug '#20797', ''...'3.4' do
+      it "raises ArgumentError if seconds greater than 59" do
+        -> { Time.at(@epoch_time, in: "+00:00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:60')
+        -> { Time.at(@epoch_time, in: "+000060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000060')
+
+        -> { Time.at(@epoch_time, in: "+00:00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:99')
+        -> { Time.at(@epoch_time, in: "+000099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000099')
       end
     end
   end

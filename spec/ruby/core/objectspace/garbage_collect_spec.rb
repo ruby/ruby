@@ -6,8 +6,8 @@ describe "ObjectSpace.garbage_collect" do
     -> { ObjectSpace.garbage_collect }.should_not raise_error
   end
 
-  it "doesn't accept any arguments" do
-    -> { ObjectSpace.garbage_collect(1) }.should raise_error(ArgumentError)
+  it "accepts keyword arguments" do
+    ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true).should == nil
   end
 
   it "ignores the supplied block" do

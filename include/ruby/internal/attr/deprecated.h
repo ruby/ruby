@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_DEPRECATED.
  */
 #include "ruby/internal/compiler_since.h"
@@ -28,8 +28,16 @@
 #include "ruby/internal/has/extension.h"
 
 /** Wraps (or simulates) `[[deprecated]]` */
-#if RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)
+#if defined(__COVERITY__)
+/* Coverity Scan emulates gcc but seems not to support this attribute correctly */
+# define RBIMPL_ATTR_DEPRECATED(msg)
+
+#elif RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__ msg))
+
+#elif defined(__cplusplus) && RBIMPL_COMPILER_SINCE(GCC, 10, 1, 0) && RBIMPL_COMPILER_BEFORE(GCC, 10, 3, 0)
+# /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95302 */
+# define RBIMPL_ATTR_DEPRECATED(msg) /* disable until they fix this bug */
 
 #elif RBIMPL_COMPILER_SINCE(GCC, 4, 5, 0)
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__ msg))
@@ -40,7 +48,7 @@
 #elif RBIMPL_HAS_ATTRIBUTE(deprecated) /* but not with message. */
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__))
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_DEPRECATED(msg) __declspec(deprecated msg)
 
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(deprecated)
@@ -55,5 +63,20 @@
 #else
 # define RBIMPL_ATTR_DEPRECATED(msg) /* void */
 #endif
+
+/** This is when a function is used internally (for backwards compatibility
+ * etc.), but extension libraries must consider it deprecated. */
+#if defined(RUBY_EXPORT)
+# define RBIMPL_ATTR_DEPRECATED_EXT(msg) /* void */
+#else
+# define RBIMPL_ATTR_DEPRECATED_EXT(msg) RBIMPL_ATTR_DEPRECATED(msg)
+#endif
+
+#define RBIMPL_ATTR_DEPRECATED_SINCE(ver) \
+    RBIMPL_ATTR_DEPRECATED(("since " #ver))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL(ver) \
+    RBIMPL_ATTR_DEPRECATED(("since "#ver", also internal"))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY() \
+    RBIMPL_ATTR_DEPRECATED(("only for internal use"))
 
 #endif /* RBIMPL_ATTR_DEPRECATED_H */

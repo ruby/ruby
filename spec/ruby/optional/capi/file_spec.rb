@@ -69,7 +69,7 @@ describe "C-API File function" do
     end
 
     it "does not call #to_str on a String" do
-      obj = "path"
+      obj = +"path"
       obj.should_not_receive(:to_str)
       @s.FilePathValue(obj).should eql(obj)
     end

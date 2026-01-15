@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `st_data_t` and Ruby's.
  */
 #include "ruby/internal/arithmetic/fixnum.h"
@@ -30,19 +30,35 @@
 #include "ruby/assert.h"
 #include "ruby/st.h"
 
-#define ST2FIX    RB_ST2FIX
+#define ST2FIX    RB_ST2FIX     /**< @old{RB_ST2FIX} */
 /** @cond INTERNAL_MACRO */
 #define RB_ST2FIX RB_ST2FIX
 /** @endcond */
 
-RBIMPL_ATTR_CONST_ON_NDEBUG()
-RBIMPL_ATTR_CONSTEXPR_ON_NDEBUG(CXX14)
+RBIMPL_ATTR_CONST_UNLESS_DEBUG()
+RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
 RBIMPL_ATTR_ARTIFICIAL()
-/* See also [ruby-core:84395] [Bug #14218] [ruby-core:82687] [Bug #13877] */
+/**
+ * Converts a C's `st_data_t` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  i  The data in question.
+ * @return     A converted result
+ * @warning    THIS CONVERSION LOSES DATA!  Be warned.
+ * @see        https://bugs.ruby-lang.org/issues/13877
+ * @see        https://bugs.ruby-lang.org/issues/14218
+ *
+ * @internal
+ *
+ * This  is   needed  because  of   hash  functions.   Hash   functions  return
+ * `st_data_t`,  which could  theoretically  be bigger  than Fixnums.   However
+ * allocating Bignums for them every time  we calculate hash values is just too
+ * heavy.  To avoid  penalty we need to  ignore some upper bit(s)  and stick to
+ * Fixnums.  This function is used for that purpose.
+ */
 static inline VALUE
 RB_ST2FIX(st_data_t i)
 {
-    SIGNED_VALUE x = i;
+    SIGNED_VALUE x = RBIMPL_CAST((SIGNED_VALUE)i);
 
     if (x >= 0) {
         x &= RUBY_FIXNUM_MAX;
@@ -53,7 +69,7 @@ RB_ST2FIX(st_data_t i)
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(x));
     unsigned long y = RBIMPL_CAST((unsigned long)x);
-    return RB_LONG2FIX(y);
+    return RB_LONG2FIX(RBIMPL_CAST((long)y));
 }
 
-#endif /* RBIMPL_ARITHMERIC_ST_DATA_T_H */
+#endif /* RBIMPL_ARITHMETIC_ST_DATA_T_H */

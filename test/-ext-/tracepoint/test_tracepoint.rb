@@ -11,6 +11,7 @@ class TestTracepointObj < Test::Unit::TestCase
 
   def test_tracks_objspace_events
     result = EnvUtil.suppress_warning {eval(<<-EOS, nil, __FILE__, __LINE__+1)}
+    # frozen_string_literal: false
     Bug.tracepoint_track_objspace_events {
       99
       'abc'
@@ -62,23 +63,27 @@ class TestTracepointObj < Test::Unit::TestCase
     bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
     assert_nothing_raised(Timeout::Error, bug8492) do
       assert_in_out_err(%w[-r-test-/tracepoint], <<-'end;', /\A[1-9]/, timeout: 2)
-        stress, GC.stress = GC.stress, false
         count = 0
-        Bug.after_gc_start_hook = proc {count += 1}
-        begin
-          GC.stress = true
-          3.times {Object.new}
-        ensure
-          GC.stress = stress
-          Bug.after_gc_start_hook = nil
+        hook = proc {count += 1}
+        def run(hook)
+          stress, GC.stress = GC.stress, false
+          Bug.after_gc_start_hook = hook
+          begin
+            GC.stress = true
+            3.times {Object.new}
+          ensure
+            GC.stress = stress
+            Bug.after_gc_start_hook = nil
+          end
         end
+        run(hook)
         puts count
       end;
     end
   end
 
   def test_teardown_with_active_GC_end_hook
-    assert_separately([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}')
+    assert_ruby_status([], 'require("-test-/tracepoint"); Bug.after_gc_exit_hook = proc {}; GC.start')
   end
 
 end

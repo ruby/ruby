@@ -1,0 +1,1 @@
+f (g rescue nil)

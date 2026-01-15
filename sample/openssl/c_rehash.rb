@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'openssl'
-require 'digest/md5'
 
 class CHashDir
   include Enumerable
@@ -157,11 +156,11 @@ private
   end
 
   def hash_name(name)
-    sprintf("%x", name.hash)
+    sprintf("%08x", name.hash)
   end
 
   def fingerprint(der)
-    Digest::MD5.hexdigest(der).upcase
+    OpenSSL::Digest.hexdigest('MD5', der).upcase
   end
 end
 

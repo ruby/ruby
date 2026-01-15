@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RBasic.
  */
 #include "ruby/internal/attr/artificial.h"
@@ -31,22 +31,69 @@
 #include "ruby/internal/value.h"
 #include "ruby/assert.h"
 
-#define RBASIC(obj)          RBIMPL_CAST((struct RBasic *)(obj))
-#define RBASIC_CLASS         RBASIC_CLASS
-#define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
-
+/**
+ * Convenient casting macro.
+ *
+ * @param   obj  Arbitrary Ruby object.
+ * @return  The passed object casted to ::RBasic.
+ */
+#define RBASIC(obj)                 RBIMPL_CAST((struct RBasic *)(obj))
 /** @cond INTERNAL_MACRO */
+#define RBASIC_CLASS                RBASIC_CLASS
+#define RBIMPL_RVALUE_EMBED_LEN_MAX 3
+#define RVALUE_EMBED_LEN_MAX        RVALUE_EMBED_LEN_MAX
 #define RBIMPL_EMBED_LEN_MAX_OF(T) \
-    RBIMPL_CAST((int)(sizeof(VALUE[RVALUE_EMBED_LEN_MAX]) / sizeof(T)))
+    RBIMPL_CAST((int)(sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) / (sizeof(T))))
 /** @endcond */
 
-enum ruby_rvalue_flags { RVALUE_EMBED_LEN_MAX = 3 };
+/**
+ * This is an enum because GDB wants it (rather than a macro).  People need not
+ * bother.
+ */
+enum ruby_rvalue_flags {
+    /** Max possible number of objects that can be embedded. */
+    RVALUE_EMBED_LEN_MAX = RBIMPL_RVALUE_EMBED_LEN_MAX
+};
 
+#if (SIZEOF_VALUE < SIZEOF_UINT64_T)
+#define RBASIC_SHAPE_ID_FIELD 1
+#else
+#define RBASIC_SHAPE_ID_FIELD 0
+#endif
+
+/**
+ * Ruby object's base components. All Ruby objects have them in common.
+ */
 struct
 RUBY_ALIGNAS(SIZEOF_VALUE)
 RBasic {
-    VALUE flags;                /**< @see enum ::ruby_fl_type. */
+
+    /**
+     * Per-object flags.   Each Ruby object  has its own  characteristics apart
+     * from its class.  For instance, whether an object is frozen or not is not
+     * controlled by its class.  This is where such properties are stored.
+     *
+     * @see enum ::ruby_fl_type
+     *
+     * @note  This is ::VALUE rather than  an enum for alignment purposes.  Back
+     *        in the 1990s there were no such thing like `_Alignas` in C.
+     */
+    VALUE flags;
+
+    /**
+     * Class of an object.  Every object has its class.  Also, everything is an
+     * object  in Ruby.   This means  classes are  also objects.   Classes have
+     * their own classes,  classes  of classes have their classes too,  and  it
+     * recursively continues forever.
+     *
+     * Also note the `const` qualifier.  In Ruby, an object cannot "change" its
+     * class.
+     */
     const VALUE klass;
+
+#if RBASIC_SHAPE_ID_FIELD
+    VALUE shape_id;
+#endif
 
 #ifdef __cplusplus
   public:
@@ -63,18 +110,58 @@ RBasic {
     RBasic() :
         flags(RBIMPL_VALUE_NULL),
         klass(RBIMPL_VALUE_NULL)
+#if RBASIC_SHAPE_ID_FIELD
+        , shape_id(RBIMPL_VALUE_NULL)
+#endif
     {
     }
+# define RBASIC_INIT RBasic()
+#else
+# define RBASIC_INIT {RBIMPL_VALUE_NULL}
 #endif
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
+/**
+ * Make the object invisible from Ruby code.
+ *
+ * It is  useful to let  Ruby's GC manage your  internal data structure  -- The
+ * object keeps being managed by GC, but `ObjectSpace.each_object` never yields
+ * the object.
+ *
+ * Note that the object also lose a way to call a method on it.
+ *
+ * @param[out]  obj  A Ruby object.
+ * @return      The passed object.
+ * @post        The object is destructively modified to be invisible.
+ * @see         rb_obj_reveal
+ */
 VALUE rb_obj_hide(VALUE obj);
+
+/**
+ * Make a hidden object visible again.
+ *
+ * It is  the caller's  responsibility to  pass the  right `klass`  which `obj`
+ * originally used to belong to.
+ *
+ * @param[out]  obj    A Ruby object.
+ * @param[in]   klass  Class of `obj`.
+ * @return      Passed `obj`.
+ * @pre         `obj` was previously hidden.
+ * @post        `obj`'s class is `klass`.
+ * @see         rb_obj_hide
+ */
 VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE_ON_NDEBUG()
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries the class of an object.
+ *
+ * @param[in]  obj  An object.
+ * @return     Its class.
+ */
 static inline VALUE
 RBASIC_CLASS(VALUE obj)
 {

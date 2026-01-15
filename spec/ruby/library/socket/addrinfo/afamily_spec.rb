@@ -23,15 +23,13 @@ describe "Addrinfo#afamily" do
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns Socket::AF_UNIX" do
-        @addrinfo.afamily.should == Socket::AF_UNIX
-      end
+    it "returns Socket::AF_UNIX" do
+      @addrinfo.afamily.should == Socket::AF_UNIX
     end
   end
 end

@@ -39,8 +39,11 @@ CodingUS_ASCII
 CodingUTF_8
 ComparisonTest
 ConstantSpecsIncludedModule
+ConstantSpecsTwo
+ConstantSpecsThree
 ConstantVisibility
 Coverage
+CoverageSpecs
 CustomArgumentError
 DRb
 DRbIdConv
@@ -72,6 +75,7 @@ EvalBindingProcA
 Exception2MessageMapper
 ExceptionForMatrix
 Fcntl
+Fiddle
 FileStat
 FileUtils
 Find
@@ -142,6 +146,7 @@ Prime
 Private
 ProcFromMethod
 Psych
+RactorLocalSingleton
 REXML
 RUBY_SIGNALS
 RbReadline
@@ -152,6 +157,7 @@ RegexpSpecsSubclassTwo
 Reline
 RescueInClassExample
 Resolv
+Ripper
 SHA1Constants
 SHA256Constants
 SHA384Constants
@@ -199,6 +205,7 @@ UserArray
 UserCustomConstructorString
 UserDefined
 UserDefinedImmediate
+UserDefinedString
 UserDefinedWithIvar
 UserHash
 UserHashInitParams

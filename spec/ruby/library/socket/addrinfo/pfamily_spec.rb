@@ -29,15 +29,13 @@ describe "Addrinfo#pfamily" do
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns Socket::PF_UNIX" do
-        @addrinfo.pfamily.should == Socket::PF_UNIX
-      end
+    it "returns Socket::PF_UNIX" do
+      @addrinfo.pfamily.should == Socket::PF_UNIX
     end
   end
 end

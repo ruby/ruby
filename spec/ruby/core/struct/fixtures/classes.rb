@@ -13,6 +13,12 @@ module StructClasses
     end
   end
 
+  class StructWithOverriddenName < Struct.new(:a)
+    def self.name
+      "A"
+    end
+  end
+
   class SubclassX < Struct
   end
 
@@ -23,4 +29,6 @@ module StructClasses
       super
     end
   end
+
+  class StructSubclass < Struct; end
 end

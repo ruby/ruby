@@ -1,82 +1,84 @@
-require 'net/http'
-require_relative '../../../../uri/lib/uri'
-require 'cgi' # for escaping
+require_relative '../../../../../vendored_net_http'
+require_relative '../../../../../vendored_uri'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi/util' # for escaping
+end
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
 
 ##
-# Persistent connections for Net::HTTP
+# Persistent connections for Gem::Net::HTTP
 #
-# Bundler::Persistent::Net::HTTP::Persistent maintains persistent connections across all the
+# Gem::Net::HTTP::Persistent maintains persistent connections across all the
 # servers you wish to talk to.  For each host:port you communicate with a
 # single persistent connection is created.
 #
-# Multiple Bundler::Persistent::Net::HTTP::Persistent objects will share the same set of
-# connections.
+# Connections will be shared across threads through a connection pool to
+# increase reuse of connections.
 #
-# For each thread you start a new connection will be created.  A
-# Bundler::Persistent::Net::HTTP::Persistent connection will not be shared across threads.
-#
-# You can shut down the HTTP connections when done by calling #shutdown.  You
-# should name your Bundler::Persistent::Net::HTTP::Persistent object if you intend to call this
-# method.
+# You can shut down any remaining HTTP connections when done by calling
+# #shutdown.
 #
 # Example:
 #
 #   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
 #
-#   uri = Bundler::URI 'http://example.com/awesome/web/service'
+#   uri = Gem::URI 'http://example.com/awesome/web/service'
 #
-#   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
+#   http = Gem::Net::HTTP::Persistent.new
 #
 #   # perform a GET
 #   response = http.request uri
 #
 #   # or
 #
-#   get = Net::HTTP::Get.new uri.request_uri
+#   get = Gem::Net::HTTP::Get.new uri.request_uri
 #   response = http.request get
 #
 #   # create a POST
 #   post_uri = uri + 'create'
-#   post = Net::HTTP::Post.new post_uri.path
+#   post = Gem::Net::HTTP::Post.new post_uri.path
 #   post.set_form_data 'some' => 'cool data'
 #
-#   # perform the POST, the Bundler::URI is always required
+#   # perform the POST, the Gem::URI is always required
 #   response http.request post_uri, post
 #
-# Note that for GET, HEAD and other requests that do not have a body you want
-# to use Bundler::URI#request_uri not Bundler::URI#path.  The request_uri contains the query
-# params which are sent in the body for other requests.
+# ⚠ Note that for GET, HEAD and other requests that do not have a body,
+# it uses Gem::URI#request_uri as default to send query params
 #
-# == SSL
+# == TLS/SSL
 #
-# SSL connections are automatically created depending upon the scheme of the
-# Bundler::URI.  SSL connections are automatically verified against the default
+# TLS connections are automatically created depending upon the scheme of the
+# Gem::URI.  TLS connections are automatically verified against the default
 # certificate store for your computer.  You can override this by changing
 # verify_mode or by specifying an alternate cert_store.
 #
-# Here are the SSL settings, see the individual methods for documentation:
+# Here are the TLS settings, see the individual methods for documentation:
 #
 # #certificate        :: This client's certificate
 # #ca_file            :: The certificate-authorities
 # #ca_path            :: Directory with certificate-authorities
 # #cert_store         :: An SSL certificate store
 # #ciphers            :: List of SSl ciphers allowed
+# #extra_chain_cert   :: Extra certificates to be added to the certificate chain
 # #private_key        :: The client's SSL private key
 # #reuse_ssl_sessions :: Reuse a previously opened SSL session for a new
 #                        connection
-# #ssl_timeout        :: SSL session lifetime
+# #ssl_timeout        :: Session lifetime
 # #ssl_version        :: Which specific SSL version to use
 # #verify_callback    :: For server certificate verification
 # #verify_depth       :: Depth of certificate verification
 # #verify_mode        :: How connections should be verified
+# #verify_hostname    :: Use hostname verification for server certificate
+#                        during the handshake
 #
 # == Proxies
 #
 # A proxy can be set through #proxy= or at initialization time by providing a
-# second argument to ::new.  The proxy may be the Bundler::URI of the proxy server or
+# second argument to ::new.  The proxy may be the Gem::URI of the proxy server or
 # <code>:ENV</code> which will consult environment variables.
 #
 # See #proxy= and #proxy_from_env for details.
@@ -96,14 +98,15 @@ autoload :OpenSSL, 'openssl'
 #
 # === Segregation
 #
-# By providing an application name to ::new you can separate your connections
-# from the connections of other applications.
+# Each Gem::Net::HTTP::Persistent instance has its own pool of connections.  There
+# is no sharing with other instances (as was true in earlier versions).
 #
 # === Idle Timeout
 #
-# If a connection hasn't been used for this number of seconds it will automatically be
-# reset upon the next use to avoid attempting to send to a closed connection.
-# The default value is 5 seconds. nil means no timeout. Set through #idle_timeout.
+# If a connection hasn't been used for this number of seconds it will
+# automatically be reset upon the next use to avoid attempting to send to a
+# closed connection.  The default value is 5 seconds. nil means no timeout.
+# Set through #idle_timeout.
 #
 # Reducing this value may help avoid the "too many connection resets" error
 # when sending non-idempotent requests while increasing this value will cause
@@ -118,8 +121,9 @@ autoload :OpenSSL, 'openssl'
 #
 # The number of requests that should be made before opening a new connection.
 # Typically many keep-alive capable servers tune this to 100 or less, so the
-# 101st request will fail with ECONNRESET. If unset (default), this value has no
-# effect, if set, connections will be reset on the request after max_requests.
+# 101st request will fail with ECONNRESET. If unset (default), this value has
+# no effect, if set, connections will be reset on the request after
+# max_requests.
 #
 # === Open Timeout
 #
@@ -131,48 +135,9 @@ autoload :OpenSSL, 'openssl'
 # Socket options may be set on newly-created connections.  See #socket_options
 # for details.
 #
-# === Non-Idempotent Requests
-#
-# By default non-idempotent requests will not be retried per RFC 2616.  By
-# setting retry_change_requests to true requests will automatically be retried
-# once.
-#
-# Only do this when you know that retrying a POST or other non-idempotent
-# request is safe for your application and will not create duplicate
-# resources.
-#
-# The recommended way to handle non-idempotent requests is the following:
-#
-#   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
-#
-#   uri = Bundler::URI 'http://example.com/awesome/web/service'
-#   post_uri = uri + 'create'
-#
-#   http = Bundler::Persistent::Net::HTTP::Persistent.new name: 'my_app_name'
-#
-#   post = Net::HTTP::Post.new post_uri.path
-#   # ... fill in POST request
-#
-#   begin
-#     response = http.request post_uri, post
-#   rescue Bundler::Persistent::Net::HTTP::Persistent::Error
-#
-#     # POST failed, make a new request to verify the server did not process
-#     # the request
-#     exists_uri = uri + '...'
-#     response = http.get exists_uri
-#
-#     # Retry if it failed
-#     retry if response.code == '404'
-#   end
-#
-# The method of determining if the resource was created or not is unique to
-# the particular service you are using.  Of course, you will want to add
-# protection from infinite looping.
-#
 # === Connection Termination
 #
-# If you are done using the Bundler::Persistent::Net::HTTP::Persistent instance you may shut down
+# If you are done using the Gem::Net::HTTP::Persistent instance you may shut down
 # all the connections in the current thread with #shutdown.  This is not
 # recommended for normal use, it should only be used when it will be several
 # minutes before you make another HTTP request.
@@ -182,7 +147,7 @@ autoload :OpenSSL, 'openssl'
 # Ruby will automatically garbage collect and shutdown your HTTP connections
 # when the thread terminates.
 
-class Bundler::Persistent::Net::HTTP::Persistent
+class Gem::Net::HTTP::Persistent
 
   ##
   # The beginning of Time
@@ -195,36 +160,30 @@ class Bundler::Persistent::Net::HTTP::Persistent
   HAVE_OPENSSL = defined? OpenSSL::SSL # :nodoc:
 
   ##
-  # The default connection pool size is 1/4 the allowed open files.
+  # The default connection pool size is 1/4 the allowed open files
+  # (<code>ulimit -n</code>) or 256 if your OS does not support file handle
+  # limits (typically windows).
 
-  if Gem.win_platform? then
-    DEFAULT_POOL_SIZE = 256
+  if Process.const_defined? :RLIMIT_NOFILE
+    open_file_limits = Process.getrlimit(Process::RLIMIT_NOFILE)
+
+    # Under JRuby on Windows Process responds to `getrlimit` but returns something that does not match docs
+    if open_file_limits.respond_to?(:first)
+      DEFAULT_POOL_SIZE = open_file_limits.first / 4
+    else
+      DEFAULT_POOL_SIZE = 256
+    end
   else
-    DEFAULT_POOL_SIZE = Process.getrlimit(Process::RLIMIT_NOFILE).first / 4
+    DEFAULT_POOL_SIZE = 256
   end
 
   ##
-  # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
+  # The version of Gem::Net::HTTP::Persistent you are using
 
-  VERSION = '3.1.0'
-
-  ##
-  # Exceptions rescued for automatic retry on ruby 2.0.0.  This overlaps with
-  # the exception list for ruby 1.x.
-
-  RETRIED_EXCEPTIONS = [ # :nodoc:
-    (Net::ReadTimeout if Net.const_defined? :ReadTimeout),
-    IOError,
-    EOFError,
-    Errno::ECONNRESET,
-    Errno::ECONNABORTED,
-    Errno::EPIPE,
-    (OpenSSL::SSL::SSLError if HAVE_OPENSSL),
-    Timeout::Error,
-  ].compact
+  VERSION = '4.0.6'
 
   ##
-  # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various
+  # Error class for errors raised by Gem::Net::HTTP::Persistent.  Various
   # SystemCallErrors are re-raised with a human-readable message under this
   # class.
 
@@ -244,10 +203,10 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # NOTE:  This may not work on ruby > 1.9.
 
   def self.detect_idle_timeout uri, max = 10
-    uri = Bundler::URI uri unless Bundler::URI::Generic === uri
+    uri = Gem::URI uri unless Gem::URI::Generic === uri
     uri += '/'
 
-    req = Net::HTTP::Head.new uri.request_uri
+    req = Gem::Net::HTTP::Head.new uri.request_uri
 
     http = new 'net-http-persistent detect_idle_timeout'
 
@@ -261,7 +220,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
         $stderr.puts "HEAD #{uri} => #{response.code}" if $DEBUG
 
-        unless Net::HTTPOK === response then
+        unless Gem::Net::HTTPOK === response then
           raise Error, "bad response code #{response.code} detecting idle timeout"
         end
 
@@ -285,7 +244,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :certificate
 
   ##
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
 
   alias cert certificate
 
@@ -313,7 +272,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :ciphers
 
   ##
-  # Sends debug_output to this IO via Net::HTTP#set_debug_output.
+  # Extra certificates to be added to the certificate chain
+
+  attr_reader :extra_chain_cert
+
+  ##
+  # Sends debug_output to this IO via Gem::Net::HTTP#set_debug_output.
   #
   # Never use this method in production code, it causes a serious security
   # hole.
@@ -326,7 +290,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :generation # :nodoc:
 
   ##
-  # Headers that are added to every request using Net::HTTP#add_field
+  # Headers that are added to every request using Gem::Net::HTTP#add_field
 
   attr_reader :headers
 
@@ -349,6 +313,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_accessor :max_requests
 
   ##
+  # Number of retries to perform if a request fails.
+  #
+  # See also #max_retries=, Gem::Net::HTTP#max_retries=.
+
+  attr_reader :max_retries
+
+  ##
   # The value sent in the Keep-Alive header.  Defaults to 30.  Not needed for
   # HTTP/1.1 servers.
   #
@@ -360,18 +331,17 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_accessor :keep_alive
 
   ##
-  # A name for this connection.  Allows you to keep your connections apart
-  # from everybody else's.
+  # The name for this collection of persistent connections.
 
   attr_reader :name
 
   ##
-  # Seconds to wait until a connection is opened.  See Net::HTTP#open_timeout
+  # Seconds to wait until a connection is opened.  See Gem::Net::HTTP#open_timeout
 
   attr_accessor :open_timeout
 
   ##
-  # Headers that are added to every request using Net::HTTP#[]=
+  # Headers that are added to every request using Gem::Net::HTTP#[]=
 
   attr_reader :override_headers
 
@@ -381,7 +351,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :private_key
 
   ##
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
 
   alias key private_key
 
@@ -401,12 +371,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :pool # :nodoc:
 
   ##
-  # Seconds to wait until reading one block.  See Net::HTTP#read_timeout
+  # Seconds to wait until reading one block.  See Gem::Net::HTTP#read_timeout
 
   attr_accessor :read_timeout
 
   ##
-  # Seconds to wait until writing one block.  See Net::HTTP#write_timeout
+  # Seconds to wait until writing one block.  See Gem::Net::HTTP#write_timeout
 
   attr_accessor :write_timeout
 
@@ -491,36 +461,40 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :verify_mode
 
   ##
-  # Enable retries of non-idempotent requests that change data (e.g. POST
-  # requests) when the server has disconnected.
+  # HTTPS verify_hostname.
   #
-  # This will in the worst case lead to multiple requests with the same data,
-  # but it may be useful for some applications.  Take care when enabling
-  # this option to ensure it is safe to POST or perform other non-idempotent
-  # requests to the server.
+  # If a client sets this to true and enables SNI with SSLSocket#hostname=,
+  # the hostname verification on the server certificate is performed
+  # automatically during the handshake using
+  # OpenSSL::SSL.verify_certificate_identity().
+  #
+  # You can set +verify_hostname+ as true to use hostname verification
+  # during the handshake.
+  #
+  # NOTE: This works with Ruby > 3.0.
 
-  attr_accessor :retry_change_requests
+  attr_reader :verify_hostname
 
   ##
-  # Creates a new Bundler::Persistent::Net::HTTP::Persistent.
+  # Creates a new Gem::Net::HTTP::Persistent.
   #
-  # Set +name+ to keep your connections apart from everybody else's.  Not
-  # required currently, but highly recommended.  Your library name should be
-  # good enough.  This parameter will be required in a future version.
+  # Set a +name+ for fun.  Your library name should be good enough, but this
+  # otherwise has no purpose.
   #
-  # +proxy+ may be set to a Bundler::URI::HTTP or :ENV to pick up proxy options from
+  # +proxy+ may be set to a Gem::URI::HTTP or :ENV to pick up proxy options from
   # the environment.  See proxy_from_env for details.
   #
-  # In order to use a Bundler::URI for the proxy you may need to do some extra work
-  # beyond Bundler::URI parsing if the proxy requires a password:
+  # In order to use a Gem::URI for the proxy you may need to do some extra work
+  # beyond Gem::URI parsing if the proxy requires a password:
   #
-  #   proxy = Bundler::URI 'http://proxy.example'
+  #   proxy = Gem::URI 'http://proxy.example'
   #   proxy.user     = 'AzureDiamond'
   #   proxy.password = 'hunter2'
   #
   # Set +pool_size+ to limit the maximum number of connections allowed.
-  # Defaults to 1/4 the number of allowed file handles.  You can have no more
-  # than this many threads with active HTTP transactions.
+  # Defaults to 1/4 the number of allowed file handles or 256 if your OS does
+  # not support a limit on allowed file handles.  You can have no more than
+  # this many threads with active HTTP transactions.
 
   def initialize name: nil, proxy: nil, pool_size: DEFAULT_POOL_SIZE
     @name = name
@@ -537,14 +511,15 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @write_timeout    = nil
     @idle_timeout     = 5
     @max_requests     = nil
+    @max_retries      = 1
     @socket_options   = []
     @ssl_generation   = 0 # incremented when SSL session variables change
 
     @socket_options << [Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1] if
       Socket.const_defined? :TCP_NODELAY
 
-    @pool = Bundler::Persistent::Net::HTTP::Persistent::Pool.new size: pool_size do |http_args|
-      Bundler::Persistent::Net::HTTP::Persistent::Connection.new Net::HTTP, http_args, @ssl_generation
+    @pool = Gem::Net::HTTP::Persistent::Pool.new size: pool_size do |http_args|
+      Gem::Net::HTTP::Persistent::Connection.new Gem::Net::HTTP, http_args, @ssl_generation
     end
 
     @certificate        = nil
@@ -559,16 +534,15 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @verify_callback    = nil
     @verify_depth       = nil
     @verify_mode        = nil
+    @verify_hostname    = nil
     @cert_store         = nil
 
-    @generation         = 0 # incremented when proxy Bundler::URI changes
+    @generation         = 0 # incremented when proxy Gem::URI changes
 
     if HAVE_OPENSSL then
       @verify_mode        = OpenSSL::SSL::VERIFY_PEER
       @reuse_ssl_sessions = OpenSSL::SSL.const_defined? :Session
     end
-
-    @retry_change_requests = false
 
     self.proxy = proxy if proxy
   end
@@ -582,7 +556,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     reconnect_ssl
   end
 
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
   alias cert= certificate=
 
   ##
@@ -622,6 +596,21 @@ class Bundler::Persistent::Net::HTTP::Persistent
     reconnect_ssl
   end
 
+  if Gem::Net::HTTP.method_defined?(:extra_chain_cert=)
+    ##
+    # Extra certificates to be added to the certificate chain.
+    # It is only supported starting from Gem::Net::HTTP version 0.1.1
+    def extra_chain_cert= extra_chain_cert
+      @extra_chain_cert = extra_chain_cert
+
+      reconnect_ssl
+    end
+  else
+    def extra_chain_cert= _extra_chain_cert
+      raise "extra_chain_cert= is not supported by this version of Gem::Net::HTTP"
+    end
+  end
+
   ##
   # Creates a new connection for +uri+
 
@@ -630,7 +619,9 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     net_http_args = [uri.hostname, uri.port]
 
-    if @proxy_uri and not proxy_bypass? uri.hostname, uri.port then
+    # I'm unsure if uri.host or uri.hostname should be checked against
+    # the proxy bypass list.
+    if @proxy_uri and not proxy_bypass? uri.host, uri.port then
       net_http_args.concat @proxy_args
     else
       net_http_args.concat [nil, nil, nil, nil]
@@ -638,59 +629,60 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     connection = @pool.checkout net_http_args
 
-    http = connection.http
+    begin
+      http = connection.http
 
-    connection.ressl @ssl_generation if
-      connection.ssl_generation != @ssl_generation
+      connection.ressl @ssl_generation if
+        connection.ssl_generation != @ssl_generation
 
-    if not http.started? then
-      ssl   http if use_ssl
-      start http
-    elsif expired? connection then
-      reset connection
+      if not http.started? then
+        ssl   http if use_ssl
+        start http
+      elsif expired? connection then
+        reset connection
+      end
+
+      http.keep_alive_timeout = @idle_timeout  if @idle_timeout
+      http.max_retries        = @max_retries   if http.respond_to?(:max_retries=)
+      http.read_timeout       = @read_timeout  if @read_timeout
+      http.write_timeout      = @write_timeout if
+        @write_timeout && http.respond_to?(:write_timeout=)
+
+      return yield connection
+    rescue Errno::ECONNREFUSED
+      if http.proxy?
+        address = http.proxy_address
+        port    = http.proxy_port
+      else
+        address = http.address
+        port    = http.port
+      end
+
+      raise Error, "connection refused: #{address}:#{port}"
+    rescue Errno::EHOSTDOWN
+      if http.proxy?
+        address = http.proxy_address
+        port    = http.proxy_port
+      else
+        address = http.address
+        port    = http.port
+      end
+
+      raise Error, "host down: #{address}:#{port}"
+    ensure
+      @pool.checkin net_http_args
     end
-
-    http.read_timeout = @read_timeout if @read_timeout
-    http.write_timeout = @write_timeout if @write_timeout && http.respond_to?(:write_timeout=)
-    http.keep_alive_timeout = @idle_timeout if @idle_timeout
-
-    return yield connection
-  rescue Errno::ECONNREFUSED
-    address = http.proxy_address || http.address
-    port    = http.proxy_port    || http.port
-
-    raise Error, "connection refused: #{address}:#{port}"
-  rescue Errno::EHOSTDOWN
-    address = http.proxy_address || http.address
-    port    = http.proxy_port    || http.port
-
-    raise Error, "host down: #{address}:#{port}"
-  ensure
-    @pool.checkin net_http_args
   end
 
   ##
-  # Returns an error message containing the number of requests performed on
-  # this connection
-
-  def error_message connection
-    connection.requests -= 1 # fixup
-
-    age = Time.now - connection.last_use
-
-    "after #{connection.requests} requests on #{connection.http.object_id}, " \
-      "last used #{age} seconds ago"
-  end
-
-  ##
-  # Bundler::URI::escape wrapper
+  # CGI::escape wrapper
 
   def escape str
     CGI.escape str if str
   end
 
   ##
-  # Bundler::URI::unescape wrapper
+  # CGI::unescape wrapper
 
   def unescape str
     CGI.unescape str if str
@@ -710,7 +702,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Starts the Net::HTTP +connection+
+  # Starts the Gem::Net::HTTP +connection+
 
   def start http
     http.set_debug_output @debug_output if @debug_output
@@ -728,11 +720,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Finishes the Net::HTTP +connection+
+  # Finishes the Gem::Net::HTTP +connection+
 
   def finish connection
     connection.finish
 
+    connection.http.instance_variable_set :@last_communicated, nil
     connection.http.instance_variable_set :@ssl_session, nil unless
       @reuse_ssl_sessions
   end
@@ -741,24 +734,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # Returns the HTTP protocol version for +uri+
 
   def http_version uri
-    @http_versions["#{uri.host}:#{uri.port}"]
-  end
-
-  ##
-  # Is +req+ idempotent according to RFC 2616?
-
-  def idempotent? req
-    case req.method
-    when 'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT', 'TRACE' then
-      true
-    end
-  end
-
-  ##
-  # Is the request +req+ idempotent or is retry_change_requests allowed.
-
-  def can_retry? req
-    @retry_change_requests && !idempotent?(req)
+    @http_versions["#{uri.hostname}:#{uri.port}"]
   end
 
   ##
@@ -766,6 +742,23 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   def normalize_uri uri
     (uri =~ /^https?:/) ? uri : "http://#{uri}"
+  end
+
+  ##
+  # Set the maximum number of retries for a request.
+  #
+  # Defaults to one retry.
+  #
+  # Set this to 0 to disable retries.
+
+  def max_retries= retries
+    retries = retries.to_int
+
+    raise ArgumentError, "max_retries must be positive" if retries < 0
+
+    @max_retries = retries
+
+    reconnect
   end
 
   ##
@@ -777,16 +770,16 @@ class Bundler::Persistent::Net::HTTP::Persistent
     reconnect_ssl
   end
 
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
   alias key= private_key=
 
   ##
-  # Sets the proxy server.  The +proxy+ may be the Bundler::URI of the proxy server,
+  # Sets the proxy server.  The +proxy+ may be the Gem::URI of the proxy server,
   # the symbol +:ENV+ which will read the proxy from the environment or nil to
   # disable use of a proxy.  See #proxy_from_env for details on setting the
   # proxy from the environment.
   #
-  # If the proxy Bundler::URI is set after requests have been made, the next request
+  # If the proxy Gem::URI is set after requests have been made, the next request
   # will shut-down and re-open all connections.
   #
   # The +no_proxy+ query parameter can be used to specify hosts which shouldn't
@@ -797,16 +790,16 @@ class Bundler::Persistent::Net::HTTP::Persistent
   def proxy= proxy
     @proxy_uri = case proxy
                  when :ENV      then proxy_from_env
-                 when Bundler::URI::HTTP then proxy
+                 when Gem::URI::HTTP then proxy
                  when nil       then # ignore
-                 else raise ArgumentError, 'proxy must be :ENV or a Bundler::URI::HTTP'
+                 else raise ArgumentError, 'proxy must be :ENV or a Gem::URI::HTTP'
                  end
 
     @no_proxy.clear
 
     if @proxy_uri then
       @proxy_args = [
-        @proxy_uri.host,
+        @proxy_uri.hostname,
         @proxy_uri.port,
         unescape(@proxy_uri.user),
         unescape(@proxy_uri.password),
@@ -815,7 +808,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
       @proxy_connection_id = [nil, *@proxy_args].join ':'
 
       if @proxy_uri.query then
-        @no_proxy = CGI.parse(@proxy_uri.query)['no_proxy'].join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
+        @no_proxy = Gem::URI.decode_www_form(@proxy_uri.query).filter_map { |k, v| v if k == 'no_proxy' }.join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
       end
     end
 
@@ -824,13 +817,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Creates a Bundler::URI for an HTTP proxy server from ENV variables.
+  # Creates a Gem::URI for an HTTP proxy server from ENV variables.
   #
   # If +HTTP_PROXY+ is set a proxy will be returned.
   #
-  # If +HTTP_PROXY_USER+ or +HTTP_PROXY_PASS+ are set the Bundler::URI is given the
+  # If +HTTP_PROXY_USER+ or +HTTP_PROXY_PASS+ are set the Gem::URI is given the
   # indicated user and password unless HTTP_PROXY contains either of these in
-  # the Bundler::URI.
+  # the Gem::URI.
   #
   # The +NO_PROXY+ ENV variable can be used to specify hosts which shouldn't
   # be reached via proxy; if set it should be a comma separated list of
@@ -846,7 +839,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
     return nil if env_proxy.nil? or env_proxy.empty?
 
-    uri = Bundler::URI normalize_uri env_proxy
+    uri = Gem::URI normalize_uri env_proxy
 
     env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
 
@@ -881,21 +874,22 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Forces reconnection of HTTP connections.
+  # Forces reconnection of all HTTP connections, including TLS/SSL
+  # connections.
 
   def reconnect
     @generation += 1
   end
 
   ##
-  # Forces reconnection of SSL connections.
+  # Forces reconnection of only TLS/SSL connections.
 
   def reconnect_ssl
     @ssl_generation += 1
   end
 
   ##
-  # Finishes then restarts the Net::HTTP +connection+
+  # Finishes then restarts the Gem::Net::HTTP +connection+
 
   def reset connection
     http = connection.http
@@ -914,22 +908,16 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Makes a request on +uri+.  If +req+ is nil a Net::HTTP::Get is performed
+  # Makes a request on +uri+.  If +req+ is nil a Gem::Net::HTTP::Get is performed
   # against +uri+.
   #
-  # If a block is passed #request behaves like Net::HTTP#request (the body of
+  # If a block is passed #request behaves like Gem::Net::HTTP#request (the body of
   # the response will not have been read).
   #
-  # +req+ must be a Net::HTTPGenericRequest subclass (see Net::HTTP for a list).
-  #
-  # If there is an error and the request is idempotent according to RFC 2616
-  # it will be retried automatically.
+  # +req+ must be a Gem::Net::HTTPGenericRequest subclass (see Gem::Net::HTTP for a list).
 
   def request uri, req = nil, &block
-    retried      = false
-    bad_response = false
-
-    uri      = Bundler::URI uri
+    uri      = Gem::URI uri
     req      = request_setup req || uri
     response = nil
 
@@ -942,37 +930,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
         response = http.request req, &block
 
         if req.connection_close? or
-           (response.http_version <= '1.0' and
+          (response.http_version <= '1.0' and
             not response.connection_keep_alive?) or
-           response.connection_close? then
+            response.connection_close? then
           finish connection
         end
-      rescue Net::HTTPBadResponse => e
-        message = error_message connection
-
-        finish connection
-
-        raise Error, "too many bad responses #{message}" if
-        bad_response or not can_retry? req
-
-        bad_response = true
-        retry
-      rescue *RETRIED_EXCEPTIONS => e
-        request_failed e, req, connection if
-          retried or not can_retry? req
-
-        reset connection
-
-        retried = true
-        retry
-      rescue Errno::EINVAL, Errno::ETIMEDOUT => e # not retried on ruby 2
-        request_failed e, req, connection if retried or not can_retry? req
-
-        reset connection
-
-        retried = true
-        retry
-      rescue Exception => e
+      rescue Exception # make sure to close the connection when it was interrupted
         finish connection
 
         raise
@@ -981,35 +944,20 @@ class Bundler::Persistent::Net::HTTP::Persistent
       end
     end
 
-    @http_versions["#{uri.host}:#{uri.port}"] ||= response.http_version
+    @http_versions["#{uri.hostname}:#{uri.port}"] ||= response.http_version
 
     response
   end
 
   ##
-  # Raises an Error for +exception+ which resulted from attempting the request
-  # +req+ on the +connection+.
-  #
-  # Finishes the +connection+.
-
-  def request_failed exception, req, connection # :nodoc:
-    due_to = "(due to #{exception.message} - #{exception.class})"
-    message = "too many connection resets #{due_to} #{error_message connection}"
-
-    finish connection
-
-    raise Error, message, exception.backtrace
-  end
-
-  ##
-  # Creates a GET request if +req_or_uri+ is a Bundler::URI and adds headers to the
+  # Creates a GET request if +req_or_uri+ is a Gem::URI and adds headers to the
   # request.
   #
   # Returns the request.
 
   def request_setup req_or_uri # :nodoc:
-    req = if Bundler::URI === req_or_uri then
-            Net::HTTP::Get.new req_or_uri.request_uri
+    req = if req_or_uri.respond_to? 'request_uri' then
+            Gem::Net::HTTP::Get.new req_or_uri.request_uri
           else
             req_or_uri
           end
@@ -1031,7 +979,8 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Shuts down all connections
+  # Shuts down all connections. Attempting to checkout a connection after
+  # shutdown will raise an error.
   #
   # *NOTE*: Calling shutdown for can be dangerous!
   #
@@ -1040,6 +989,17 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   def shutdown
     @pool.shutdown { |http| http.finish }
+  end
+
+  ##
+  # Discard all existing connections. Subsequent checkouts will create
+  # new connections as needed.
+  #
+  # If any thread is still using a connection it may cause an error!  Call
+  # #reload when you are completely done making requests!
+
+  def reload
+    @pool.reload { |http| http.finish }
   end
 
   ##
@@ -1054,8 +1014,10 @@ class Bundler::Persistent::Net::HTTP::Persistent
     connection.min_version = @min_version if @min_version
     connection.max_version = @max_version if @max_version
 
-    connection.verify_depth = @verify_depth
-    connection.verify_mode  = @verify_mode
+    connection.verify_depth    = @verify_depth
+    connection.verify_mode     = @verify_mode
+    connection.verify_hostname = @verify_hostname if
+      @verify_hostname != nil && connection.respond_to?(:verify_hostname=)
 
     if OpenSSL::SSL::VERIFY_PEER == OpenSSL::SSL::VERIFY_NONE and
        not Object.const_defined?(:I_KNOW_THAT_OPENSSL_VERIFY_PEER_EQUALS_VERIFY_NONE_IS_WRONG) then
@@ -1095,6 +1057,10 @@ application:
     if @certificate and @private_key then
       connection.cert = @certificate
       connection.key  = @private_key
+    end
+
+    if defined?(@extra_chain_cert) and @extra_chain_cert
+      connection.extra_chain_cert = @extra_chain_cert
     end
 
     connection.cert_store = if @cert_store then
@@ -1165,6 +1131,15 @@ application:
   end
 
   ##
+  # Sets the HTTPS verify_hostname.
+
+  def verify_hostname= verify_hostname
+    @verify_hostname = verify_hostname
+
+    reconnect_ssl
+  end
+
+  ##
   # SSL verification callback.
 
   def verify_callback= callback
@@ -1172,9 +1147,7 @@ application:
 
     reconnect_ssl
   end
-
 end
 
 require_relative 'persistent/connection'
 require_relative 'persistent/pool'
-

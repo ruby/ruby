@@ -17,6 +17,19 @@ module Psych
       end
     end
 
+    # 'y', 'Y', 'n', 'N' are kind of ambiguous.  Syck treated those literals in
+    # YAML documents as strings.  But this is not what the YAML 1.1 spec says.
+    # YAML 1.1 says they should be treated as booleans.  When we're dumping
+    # documents, we know it's a string, so adding quotes will eliminate the
+    # "ambiguity" in the emitted document
+
+    def test_all_yaml_1_1_booleans_are_quoted
+      yaml_1_1_booleans = %w[y Y yes Yes YES n N no No NO true True TRUE false False FALSE on On ON off Off OFF] # from https://yaml.org/type/bool.html
+      yaml_1_1_booleans.each do |boolean|
+        assert_match(/"#{boolean}"|'#{boolean}'/, Psych.dump(boolean))
+      end
+    end
+
     def test_string_with_newline
       assert_equal "1\n2", Psych.load("--- ! '1\n\n  2'\n")
     end
@@ -35,6 +48,16 @@ module Psych
       yaml = Psych.dump str
       assert_match(/---\s*"/, yaml)
       assert_equal str, Psych.load(yaml)
+    end
+
+    def test_single_quote_when_matching_date
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
+      lib = File.expand_path("../../../lib", __FILE__)
+      assert_separately(["-I", lib, "-r", "psych"], __FILE__, __LINE__ + 1, <<~'RUBY')
+        yml = Psych.dump('2024-11-19')
+        assert_equal '2024-11-19', Psych.load(yml)
+      RUBY
     end
 
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
@@ -104,7 +127,7 @@ module Psych
     end
 
     def test_string_subclass_with_anchor
-      y = Psych.load <<-eoyml
+      y = Psych.unsafe_load <<-eoyml
 ---
 body:
   string: &70121654388580 !ruby/string
@@ -116,7 +139,7 @@ body:
     end
 
     def test_self_referential_string
-      y = Psych.load <<-eoyml
+      y = Psych.unsafe_load <<-eoyml
 ---
 string: &70121654388580 !ruby/string
   str: ! 'foo'
@@ -129,32 +152,32 @@ string: &70121654388580 !ruby/string
     end
 
     def test_another_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new("foo").tap {|o| o.val = 1}
+      y = Psych.unsafe_load Psych.dump Y.new("foo").tap {|o| o.val = 1}
       assert_equal "foo", y
       assert_equal Y, y.class
       assert_equal 1, y.val
     end
 
     def test_backwards_with_syck
-      x = Psych.load "--- !str:#{X.name} foo\n\n"
+      x = Psych.unsafe_load "--- !str:#{X.name} foo\n\n"
       assert_equal X, x.class
       assert_equal 'foo', x
     end
 
     def test_empty_subclass
       assert_match "!ruby/string:#{X}", Psych.dump(X.new)
-      x = Psych.load Psych.dump X.new
+      x = Psych.unsafe_load Psych.dump X.new
       assert_equal X, x.class
     end
 
     def test_empty_character_subclass
       assert_match "!ruby/string:#{Z}", Psych.dump(Z.new)
-      x = Psych.load Psych.dump Z.new
+      x = Psych.unsafe_load Psych.dump Z.new
       assert_equal Z, x.class
     end
 
     def test_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new.tap {|o| o.val = 1}
+      y = Psych.unsafe_load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
     end

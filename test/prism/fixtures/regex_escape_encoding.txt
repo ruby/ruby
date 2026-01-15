@@ -1,0 +1,3 @@
+# encoding: US-ASCII
+str = "hello \xFC"
+str =~ /hello \u{fc}/

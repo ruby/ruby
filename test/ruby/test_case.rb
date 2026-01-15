@@ -68,10 +68,13 @@ class TestCase < Test::Unit::TestCase
       assert(false)
     end
 
-    assert_raise(NameError) do
-      case
-      when false, *x, false
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_raise(NameError) do
+        eval("case; when false, *x, false; end")
       end
+    ensure
+      $VERBOSE = verbose_bak
     end
   end
 
@@ -98,6 +101,18 @@ class TestCase < Test::Unit::TestCase
     when 536870911.9, 536870912.1
       assert(false)
     when 536870912.0
+      assert(true)
+    else
+      assert(false)
+    end
+    case 0
+    when 0r
+      assert(true)
+    else
+      assert(false)
+    end
+    case 0
+    when 0i
       assert(true)
     else
       assert(false)

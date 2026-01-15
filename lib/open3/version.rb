@@ -1,3 +1,4 @@
 module Open3
-  VERSION = "0.1.0"
+  # The version string
+  VERSION = "0.2.1"
 end

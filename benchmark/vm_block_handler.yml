@@ -1,0 +1,27 @@
+# :FIXME: is there a way to benchmark block_handler_type_ifunc?
+
+prelude: |
+  p = proc{_1}
+  o = Object.new
+  def o.each
+    i = 0
+    while i < 3_000_000 do
+      yield i
+      i += 1
+    end
+  end
+
+benchmark:
+  - name: block_handler_type_iseq
+    script: |
+      o.each{_1}
+
+  - name: block_handler_type_symbol
+    script: |
+      o.each(&:itself)
+
+  - name: block_handler_type_proc
+    script: |
+      o.each(&p)
+
+loop_count: 1

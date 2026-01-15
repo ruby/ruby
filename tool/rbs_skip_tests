@@ -1,0 +1,57 @@
+# Running tests of RBS gem may fail because of various reasons.
+# You can skip tests of RBS gem using this file, instead of pushing a new commit to `ruby/rbs` repository.
+#
+# The most frequently seen reason is the incompatibilities introduced to the unreleased version, including
+#
+# * Strict argument type check is introduced
+# * A required method parameter is added
+# * A method/class is removed
+#
+# Feel free to skip the tests with this file for that case.
+#
+# Syntax:
+#
+#   $(test-case-name) ` ` $(optional comment)    # Skipping single test case
+#   $(test-class-name) ` ` $(optional comment)   # Skipping a test class
+#
+
+## Failed tests because of testing environment
+
+test_collection_install(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__stdlib_source(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__dependency_no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__rbs_dependency_and__gem_dependency(RBS::CliTest) running tests without Bundler
+test_collection_install_frozen(RBS::CliTest) running tests without Bundler
+test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
+test_collection_update(RBS::CliTest) running tests without Bundler
+
+NetSingletonTest depending on external resources
+NetInstanceTest depending on external resources
+TestHTTPRequest depending on external resources
+TestSingletonNetHTTPResponse depending on external resources
+TestInstanceNetHTTPResponse depending on external resources
+
+test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
+
+# Failing because ObjectSpace.count_nodes has been removed
+test_count_nodes(ObjectSpaceTest)
+
+## Unknown failures
+
+# NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
+test_compile(RegexpSingletonTest)
+test_linear_time?(RegexpSingletonTest)
+test_new(RegexpSingletonTest)
+
+## Failed tests caused by unreleased version of Ruby
+test_source_location(MethodInstanceTest)
+test_source_location(ProcInstanceTest)
+test_source_location(UnboundMethodInstanceTest)
+
+# Errno::ENOENT: No such file or directory - bundle
+test_collection_install__pathname_set(RBS::CliTest)
+test_collection_install__set_pathname__manifest(RBS::CliTest)

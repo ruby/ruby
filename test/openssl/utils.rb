@@ -1,38 +1,13 @@
 # frozen_string_literal: true
 begin
   require "openssl"
-
-  # Disable FIPS mode for tests for installations
-  # where FIPS mode would be enabled by default.
-  # Has no effect on all other installations.
-  OpenSSL.fips_mode=false
 rescue LoadError
 end
 
-# Compile OpenSSL with crypto-mdebug and run this test suite with OSSL_MDEBUG=1
-# environment variable to enable memory leak check.
-if ENV["OSSL_MDEBUG"] == "1"
-  if OpenSSL.respond_to?(:print_mem_leaks)
-    OpenSSL.mem_check_start
-
-    END {
-      GC.start
-      case OpenSSL.print_mem_leaks
-      when nil
-        warn "mdebug: check what is printed"
-      when true
-        raise "mdebug: memory leaks detected"
-      end
-    }
-  else
-    warn "OSSL_MDEBUG=1 is specified but OpenSSL is not built with crypto-mdebug"
-  end
-end
-
 require "test/unit"
+require "core_assertions"
 require "tempfile"
 require "socket"
-require "envutil"
 
 if defined?(OpenSSL)
 
@@ -42,19 +17,12 @@ module OpenSSL::TestUtils
 
     def pkey(name)
       OpenSSL::PKey.read(read_file("pkey", name))
-    rescue OpenSSL::PKey::PKeyError
-      # TODO: DH parameters can be read by OpenSSL::PKey.read atm
-      OpenSSL::PKey::DH.new(read_file("pkey", name))
     end
 
     def read_file(category, name)
       @file_cache ||= {}
       @file_cache[[category, name]] ||=
         File.read(File.join(__dir__, "fixtures", category, name + ".pem"))
-    end
-
-    def file_path(category, name)
-      File.join(__dir__, "fixtures", category, name)
     end
   end
 
@@ -126,7 +94,7 @@ module OpenSSL::TestUtils
     pkinfo    = tbscert.value[6]
     publickey = pkinfo.value[1]
     pkvalue   = publickey.value
-    digest = OpenSSL::Digest::SHA1.digest(pkvalue)
+    digest = OpenSSL::Digest.digest('SHA1', pkvalue)
     if hex
       digest.unpack("H2"*20).join(":").upcase
     else
@@ -134,11 +102,12 @@ module OpenSSL::TestUtils
     end
   end
 
-  def openssl?(major = nil, minor = nil, fix = nil, patch = 0)
-    return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL")
+  def openssl?(major = nil, minor = nil, fix = nil, patch = 0, status = 0)
+    return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL") || OpenSSL::OPENSSL_VERSION.include?("AWS-LC")
     return true unless major
     OpenSSL::OPENSSL_VERSION_NUMBER >=
-      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10
+      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10 +
+      status * 0x1
   end
 
   def libressl?(major = nil, minor = nil, fix = nil)
@@ -146,11 +115,16 @@ module OpenSSL::TestUtils
     return false unless version
     !major || (version.map(&:to_i) <=> [major, minor, fix]) >= 0
   end
+
+  def aws_lc?
+    OpenSSL::OPENSSL_VERSION.include?("AWS-LC")
+  end
 end
 
 class OpenSSL::TestCase < Test::Unit::TestCase
   include OpenSSL::TestUtils
   extend OpenSSL::TestUtils
+  include Test::Unit::CoreAssertions
 
   def setup
     if ENV["OSSL_GC_STRESS"] == "1"
@@ -164,6 +138,30 @@ class OpenSSL::TestCase < Test::Unit::TestCase
     end
     # OpenSSL error stack must be empty
     assert_equal([], OpenSSL.errors)
+  end
+
+  # Omit the tests in FIPS.
+  #
+  # For example, the password based encryption used in the PEM format uses MD5
+  # for deriving the encryption key from the password, and MD5 is not
+  # FIPS-approved.
+  #
+  # See https://github.com/openssl/openssl/discussions/21830#discussioncomment-6865636
+  # for details.
+  def omit_on_fips
+    return unless OpenSSL.fips_mode
+
+    omit <<~MESSAGE
+      Only for OpenSSL non-FIPS with the following possible reasons:
+      * A testing logic is non-FIPS specific.
+      * An encryption used in the test is not FIPS-approved.
+    MESSAGE
+  end
+
+  def omit_on_non_fips
+    return if OpenSSL.fips_mode
+
+    omit "Only for OpenSSL FIPS"
   end
 end
 
@@ -179,24 +177,17 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-    ca_exts = [
+    @ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","cRLSign,keyCertSign",true],
     ]
-    ee_exts = [
+    @ee_exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
     ]
-    @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
-    @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
-    @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
+    @ca_cert  = issue_cert(@ca, @ca_key, 1, @ca_exts, nil, nil)
+    @svr_cert = issue_cert(@svr, @svr_key, 2, @ee_exts, @ca_cert, @ca_key)
+    @cli_cert = issue_cert(@cli, @cli_key, 3, @ee_exts, @ca_cert, @ca_key)
     @server = nil
-  end
-
-  def tls12_supported?
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    true
-  rescue
   end
 
   def readwrite_loop(ctx, ssl)
@@ -205,19 +196,14 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     end
   end
 
-  def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true,
+  def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE,
                    ctx_proc: nil, server_proc: method(:readwrite_loop),
                    accept_proc: proc{},
                    ignore_listener_error: false, &block)
     IO.pipe {|stop_pipe_r, stop_pipe_w|
-      store = OpenSSL::X509::Store.new
-      store.add_cert(@ca_cert)
-      store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 
@@ -226,14 +212,11 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       port = tcps.connect_address.ip_port
 
       ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-      ssls.start_immediately = start_immediately
 
       threads = []
       begin
         server_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=) # Ruby >= 2.4
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             loop do
@@ -249,9 +232,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
               end
 
               th = Thread.new do
-                if Thread.method_defined?(:report_on_exception=)
-                  Thread.current.report_on_exception = false
-                end
+                Thread.current.report_on_exception = false
 
                 begin
                   server_proc.call(ctx, ssl)
@@ -268,9 +249,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         end
 
         client_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=)
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             block.call(port)
@@ -289,8 +268,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
             timeout = EnvUtil.apply_timeout_scale(30)
             th.join(timeout) or
               th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
-          rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
-            # MiniTest::Skip is for the Ruby tree
+          rescue Test::Unit::PendedError
             pend = $!
           rescue Exception
           end
@@ -309,30 +287,39 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
     }
   end
 
-  def dup_public(key)
-    case key
-    when OpenSSL::PKey::RSA
-      rsa = OpenSSL::PKey::RSA.new
-      rsa.set_key(key.n, key.e, nil)
-      rsa
-    when OpenSSL::PKey::DSA
-      dsa = OpenSSL::PKey::DSA.new
-      dsa.set_pqg(key.p, key.q, key.g)
-      dsa.set_key(key.pub_key, nil)
-      dsa
-    when OpenSSL::PKey::DH
-      dh = OpenSSL::PKey::DH.new
-      dh.set_pqg(key.p, nil, key.g)
-      dh
-    else
-      if defined?(OpenSSL::PKey::EC) && OpenSSL::PKey::EC === key
-        ec = OpenSSL::PKey::EC.new(key.group)
-        ec.public_key = key.public_key
-        ec
-      else
-        raise "unknown key type"
-      end
-    end
+  def assert_sign_verify_false_or_error
+    ret = yield
+  rescue => e
+    assert_kind_of(OpenSSL::PKey::PKeyError, e)
+  else
+    assert_equal(false, ret)
+  end
+
+  def der_to_pem(der, pem_header)
+    # RFC 7468
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    #{[der].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
+  end
+
+  def der_to_encrypted_pem(der, pem_header, password)
+    # OpenSSL encryption, non-standard
+    iv = 16.times.to_a.pack("C*")
+    encrypted = OpenSSL::Cipher.new("aes-128-cbc").encrypt.then { |cipher|
+      cipher.key = OpenSSL::Digest.digest("MD5", password + iv[0, 8])
+      cipher.iv = iv
+      cipher.update(der) << cipher.final
+    }
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-128-CBC,#{iv.unpack1("H*").upcase}
+
+    #{[encrypted].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
   end
 end
 

@@ -1,0 +1,28 @@
+tap { next }
+
+tap { next (1), (2), (3) }
+
+tap { next 1 }
+
+tap { next 1, 2,
+3 }
+
+tap { next 1, 2, 3 }
+
+tap { next [1, 2, 3] }
+
+tap { next(
+  1
+  2
+) }
+
+tap { next
+1 }
+
+tap { next() }
+
+tap { next(1) }
+
+tap { (next 1) }
+
+tap { foo && (next 1) }

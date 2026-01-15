@@ -83,6 +83,8 @@ describe "Class.new" do
     a = Class.new
     MyClass::NestedClass = a
     MyClass::NestedClass.name.should == "MyClass::NestedClass"
+  ensure
+    Object.send(:remove_const, :MyClass)
   end
 
   it "sets the new class' superclass to the given class" do
@@ -95,12 +97,13 @@ describe "Class.new" do
   end
 
   it "raises a TypeError when given a non-Class" do
-    error_msg = /superclass must be a Class/
-    -> { Class.new("")         }.should raise_error(TypeError, error_msg)
-    -> { Class.new(1)          }.should raise_error(TypeError, error_msg)
-    -> { Class.new(:symbol)    }.should raise_error(TypeError, error_msg)
-    -> { Class.new(mock('o'))  }.should raise_error(TypeError, error_msg)
-    -> { Class.new(Module.new) }.should raise_error(TypeError, error_msg)
+    error_msg = /superclass must be a.*Class/
+    -> { Class.new("")              }.should raise_error(TypeError, error_msg)
+    -> { Class.new(1)               }.should raise_error(TypeError, error_msg)
+    -> { Class.new(:symbol)         }.should raise_error(TypeError, error_msg)
+    -> { Class.new(mock('o'))       }.should raise_error(TypeError, error_msg)
+    -> { Class.new(Module.new)      }.should raise_error(TypeError, error_msg)
+    -> { Class.new(BasicObject.new) }.should raise_error(TypeError, error_msg)
   end
 end
 

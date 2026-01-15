@@ -7,32 +7,35 @@
 
 = Licence
   This program is licensed under the same licence as Ruby.
-  (See the file 'LICENCE'.)
+  (See the file 'COPYING'.)
 =end
 
 require 'openssl.so'
 
 require_relative 'openssl/bn'
-require_relative 'openssl/pkey'
 require_relative 'openssl/cipher'
-require_relative 'openssl/config'
 require_relative 'openssl/digest'
 require_relative 'openssl/hmac'
-require_relative 'openssl/x509'
-require_relative 'openssl/ssl'
 require_relative 'openssl/pkcs5'
+require_relative 'openssl/pkey'
+require_relative 'openssl/ssl'
 require_relative 'openssl/version'
+require_relative 'openssl/x509'
 
 module OpenSSL
-  # call-seq:
-  #   OpenSSL.secure_compare(string, string) -> boolean
+  # :call-seq:
+  #    OpenSSL.secure_compare(string, string) -> true or false
   #
   # Constant time memory comparison. Inputs are hashed using SHA-256 to mask
   # the length of the secret. Returns +true+ if the strings are identical,
   # +false+ otherwise.
+  #
+  # This method is expensive due to the SHA-256 hashing. In most cases, where
+  # the input lengths are known to be equal or are not sensitive,
+  # OpenSSL.fixed_length_secure_compare should be used instead.
   def self.secure_compare(a, b)
-    hashed_a = OpenSSL::Digest::SHA256.digest(a)
-    hashed_b = OpenSSL::Digest::SHA256.digest(b)
+    hashed_a = OpenSSL::Digest.digest('SHA256', a)
+    hashed_b = OpenSSL::Digest.digest('SHA256', b)
     OpenSSL.fixed_length_secure_compare(hashed_a, hashed_b) && a == b
   end
 end

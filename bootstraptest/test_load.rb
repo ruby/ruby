@@ -1,9 +1,9 @@
 assert_equal 'ok', %q{
-  open("require-lock-test.rb", "w") {|f|
-    f.puts "sleep 0.1"
-    f.puts "module M"
-    f.puts "end"
-  }
+  File.write("require-lock-test.rb", <<-END)
+    sleep 0.1
+    module M
+    end
+  END
   $:.unshift Dir.pwd
   vs = (1..2).map {|i|
     Thread.start {
@@ -16,7 +16,7 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   %w[a a/foo b].each {|d| Dir.mkdir(d)}
-  open("b/foo", "w") {|f| f.puts "$ok = :ok"}
+  File.write("b/foo", "$ok = :ok\n")
   $:.replace(%w[a b])
   begin
     load "foo"

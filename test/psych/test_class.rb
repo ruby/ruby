@@ -7,13 +7,13 @@ module Psych
     end
 
     def test_cycle_anonymous_class
-      assert_raises(::TypeError) do
+      assert_raise(::TypeError) do
         assert_cycle(Class.new)
       end
     end
 
     def test_cycle_anonymous_module
-      assert_raises(::TypeError) do
+      assert_raise(::TypeError) do
         assert_cycle(Module.new)
       end
     end

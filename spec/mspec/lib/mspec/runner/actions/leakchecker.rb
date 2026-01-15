@@ -36,6 +36,7 @@ class LeakChecker
     @thread_info = find_threads
     @env_info = find_env
     @argv_info = find_argv
+    @globals_info = find_globals
     @encoding_info = find_encodings
   end
 
@@ -48,8 +49,10 @@ class LeakChecker
     check_process_leak
     check_env
     check_argv
+    check_globals
     check_encodings
-    GC.start if !@leaks.empty?
+    check_tracepoints
+    GC.start unless @leaks.empty?
     @leaks.empty?
   end
 
@@ -129,14 +132,14 @@ class LeakChecker
         attr_accessor :count
       end
 
-      def new(data)
+      def new(...)
         LeakChecker::TempfileCounter.count += 1
-        super(data)
+        super
       end
     }
     LeakChecker.const_set(:TempfileCounter, m)
 
-    class << Tempfile::Remover
+    class << Tempfile
       prepend LeakChecker::TempfileCounter
     end
   end
@@ -170,7 +173,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 
@@ -243,6 +247,19 @@ class LeakChecker
     end
   end
 
+  def find_globals
+    { verbose: $VERBOSE, debug: $DEBUG }
+  end
+
+  def check_globals
+    old_globals = @globals_info
+    new_globals = find_globals
+    if new_globals != old_globals
+      leak "Globals changed: #{old_globals.inspect} to #{new_globals.inspect}"
+      @globals_info = new_globals
+    end
+  end
+
   def find_encodings
     [Encoding.default_internal, Encoding.default_external]
   end
@@ -257,6 +274,14 @@ class LeakChecker
       leak "Encoding.default_external changed: #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
+  end
+
+  def check_tracepoints
+    ObjectSpace.each_object(TracePoint) do |tp|
+      if tp.enabled?
+        leak "TracePoint is still enabled: #{tp.inspect}"
+      end
+    end
   end
 
   def leak(message)
@@ -276,6 +301,7 @@ class LeakCheckerAction
   end
 
   def start
+    disable_nss_modules
     @checker = LeakChecker.new
   end
 
@@ -290,5 +316,62 @@ class LeakCheckerAction
         raise LeakError, leak_messages.join("\n")
       end
     end
+  end
+
+  private
+
+  # This function is intended to disable all NSS modules when ruby is compiled
+  # against glibc. NSS modules allow the system administrator to load custom
+  # shared objects into all processes using glibc, and use them to customise
+  # the behaviour of username, groupname, hostname, etc lookups. This is
+  # normally configured in the file /etc/nsswitch.conf.
+  # These modules often do things like open cache files or connect to system
+  # daemons like sssd or dbus, which of course means they have open file
+  # descriptors of their own. This can cause the leak-checking functionality
+  # in this file to report that such descriptors have been leaked, and fail
+  # the test suite.
+  # This function uses glibc's __nss_configure_lookup function to override any
+  # configuration in /etc/nsswitch.conf, and just use the built in files/dns
+  # name lookup functionality (which is of course perfectly sufficient for
+  # running ruby/spec).
+  def disable_nss_modules
+    begin
+      require 'fiddle'
+    rescue LoadError
+      # Make sure it's possible to run the test suite on a ruby implementation
+      # which does not (yet?) have Fiddle.
+      return
+    end
+
+    begin
+      libc = Fiddle.dlopen(nil)
+      # Older versions of fiddle don't have Fiddle::Type (and instead rely on Fiddle::TYPE_)
+      # Even older versions of fiddle don't have CONST_STRING,
+      string_type = defined?(Fiddle::TYPE_CONST_STRING) ? Fiddle::TYPE_CONST_STRING : Fiddle::TYPE_VOIDP
+      nss_configure_lookup = Fiddle::Function.new(
+        libc['__nss_configure_lookup'],
+        [string_type, string_type],
+        Fiddle::TYPE_INT
+      )
+    rescue Fiddle::DLError
+      # We're not running with glibc - no need to do this.
+      return
+    end
+
+    nss_configure_lookup.call 'passwd', 'files'
+    nss_configure_lookup.call 'shadow', 'files'
+    nss_configure_lookup.call 'group', 'files'
+    nss_configure_lookup.call 'hosts', 'files dns'
+    nss_configure_lookup.call 'services', 'files'
+    nss_configure_lookup.call 'netgroup', 'files'
+    nss_configure_lookup.call 'automount', 'files'
+    nss_configure_lookup.call 'aliases', 'files'
+    nss_configure_lookup.call 'ethers', 'files'
+    nss_configure_lookup.call 'gshadow', 'files'
+    nss_configure_lookup.call 'initgroups', 'files'
+    nss_configure_lookup.call 'networks', 'files dns'
+    nss_configure_lookup.call 'protocols', 'files'
+    nss_configure_lookup.call 'publickey', 'files'
+    nss_configure_lookup.call 'rpc', 'files'
   end
 end

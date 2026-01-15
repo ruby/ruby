@@ -1,8 +1,8 @@
 ##
-# A Net::HTTP connection wrapper that holds extra information for managing the
+# A Gem::Net::HTTP connection wrapper that holds extra information for managing the
 # connection's lifetime.
 
-class Bundler::Persistent::Net::HTTP::Persistent::Connection # :nodoc:
+class Gem::Net::HTTP::Persistent::Connection # :nodoc:
 
   attr_accessor :http
 
@@ -25,9 +25,10 @@ class Bundler::Persistent::Net::HTTP::Persistent::Connection # :nodoc:
   ensure
     reset
   end
+  alias_method :close, :finish
 
   def reset
-    @last_use = Bundler::Persistent::Net::HTTP::Persistent::EPOCH
+    @last_use = Gem::Net::HTTP::Persistent::EPOCH
     @requests = 0
   end
 

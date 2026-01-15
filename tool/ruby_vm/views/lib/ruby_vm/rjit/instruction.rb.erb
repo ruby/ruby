@@ -1,0 +1,14 @@
+module RubyVM::RJIT # :nodoc: all
+  Instruction = Data.define(:name, :bin, :len, :operands)
+
+  INSNS = {
+% RubyVM::Instructions.each_with_index do |insn, i|
+    <%= i %> => Instruction.new(
+      name: :<%= insn.name %>,
+      bin: <%= i %>, # BIN(<%= insn.name %>)
+      len: <%= insn.width %>, # insn_len
+      operands: <%= (insn.operands unless insn.name.start_with?(/trace_|zjit_/)).inspect %>,
+    ),
+% end
+  }
+end

@@ -3,6 +3,9 @@ require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
 describe "Thread#raise" do
+  it_behaves_like :kernel_raise, :raise, ThreadSpecs::NewThreadToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, ThreadSpecs::NewThreadToRaise
+
   it "ignores dead threads and returns nil" do
     t = Thread.new { :dead }
     Thread.pass while t.alive?
@@ -101,6 +104,30 @@ describe "Thread#raise on a sleeping thread" do
       raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
       raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
     end
+  end
+
+  it "calls #exception in both the caller and in the target thread" do
+    cls = Class.new(Exception) do
+      attr_accessor :log
+      def initialize(*args)
+        @log = [] # This is shared because the super #exception uses a shallow clone
+        super
+      end
+
+      def exception(*args)
+        @log << [self, Thread.current, args]
+        super
+      end
+    end
+    exc = cls.new
+
+    @thr.raise exc, "Thread#raise #exception spec"
+    @thr.join
+    ScratchPad.recorded.should.is_a?(cls)
+    exc.log.should == [
+      [exc, Thread.current, ["Thread#raise #exception spec"]],
+      [ScratchPad.recorded, @thr, []]
+    ]
   end
 end
 
@@ -203,6 +230,6 @@ describe "Thread#raise on same thread" do
         Thread.current.raise
       end
     end
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should raise_error(RuntimeError, '')
   end
 end

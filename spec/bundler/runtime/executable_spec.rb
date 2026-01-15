@@ -2,164 +2,133 @@
 
 RSpec.describe "Running bin/* commands" do
   before :each do
-    install_gemfile! <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
     G
   end
 
   it "runs the bundled command when in the bundle" do
-    bundle! "binstubs rack"
+    bundle "binstubs myrack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
-      s.executables = "rackup"
+    build_gem "myrack", "2.0", to_system: true do |s|
+      s.executables = "myrackup"
     end
 
-    gembin "rackup"
+    gembin "myrackup"
     expect(out).to eq("1.0.0")
   end
 
-  it "allows the location of the gem stubs to be specified" do
-    bundle! "binstubs rack", :path => "gbin"
+  it "allows the location of the gem stubs to be configured" do
+    bundle "config bin gbin"
+    bundle "binstubs myrack"
 
     expect(bundled_app("bin")).not_to exist
-    expect(bundled_app("gbin/rackup")).to exist
+    expect(bundled_app("gbin/myrackup")).to exist
 
-    gembin bundled_app("gbin/rackup")
+    gembin bundled_app("gbin/myrackup")
     expect(out).to eq("1.0.0")
   end
 
   it "allows absolute paths as a specification of where to install bin stubs" do
-    bundle! "binstubs rack", :path => tmp("bin")
+    bundle "config bin #{tmp("bin")}"
+    bundle "binstubs myrack"
 
-    gembin tmp("bin/rackup")
+    gembin tmp("bin/myrackup")
     expect(out).to eq("1.0.0")
   end
 
   it "uses the default ruby install name when shebang is not specified" do
-    bundle! "binstubs rack"
-    expect(File.open("bin/rackup").gets).to eq("#!/usr/bin/env #{RbConfig::CONFIG["ruby_install_name"]}\n")
+    bundle "binstubs myrack"
+    expect(File.readlines(bundled_app("bin/myrackup")).first).to eq("#!/usr/bin/env #{RbConfig::CONFIG["ruby_install_name"]}\n")
   end
 
   it "allows the name of the shebang executable to be specified" do
-    bundle! "binstubs rack", :shebang => "ruby-foo"
-    expect(File.open("bin/rackup").gets).to eq("#!/usr/bin/env ruby-foo\n")
+    bundle "binstubs myrack", shebang: "ruby-foo"
+    expect(File.readlines(bundled_app("bin/myrackup")).first).to eq("#!/usr/bin/env ruby-foo\n")
   end
 
   it "runs the bundled command when out of the bundle" do
-    bundle! "binstubs rack"
+    bundle "binstubs myrack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
-      s.executables = "rackup"
+    build_gem "myrack", "2.0", to_system: true do |s|
+      s.executables = "myrackup"
     end
 
-    Dir.chdir(tmp) do
-      gembin "rackup"
-      expect(out).to eq("1.0.0")
-    end
+    gembin "myrackup", dir: tmp
+    expect(out).to eq("1.0.0")
   end
 
   it "works with gems in path" do
-    build_lib "rack", :path => lib_path("rack") do |s|
-      s.executables = "rackup"
+    build_lib "myrack", path: lib_path("myrack") do |s|
+      s.executables = "myrackup"
     end
 
     gemfile <<-G
-      gem "rack", :path => "#{lib_path("rack")}"
+      source "https://gem.repo1"
+      gem "myrack", :path => "#{lib_path("myrack")}"
     G
 
-    bundle! "binstubs rack"
+    bundle "binstubs myrack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
-      s.executables = "rackup"
+    build_gem "myrack", "2.0", to_system: true do |s|
+      s.executables = "myrackup"
     end
 
-    gembin "rackup"
+    gembin "myrackup"
     expect(out).to eq("1.0")
   end
 
-  it "creates a bundle binstub" do
-    build_gem "bundler", Bundler::VERSION, :to_system => true do |s|
-      s.executables = "bundle"
-    end
-
+  it "does not create a bundle binstub" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "bundler"
     G
 
-    bundle! "binstubs bundler"
+    bundle "binstubs bundler"
 
-    expect(bundled_app("bin/bundle")).to exist
+    expect(bundled_app("bin/bundle")).not_to exist
+
+    expect(err).to include("Bundler itself does not use binstubs because its version is selected by RubyGems")
   end
 
   it "does not generate bin stubs if the option was not specified" do
-    bundle! "install"
-
-    expect(bundled_app("bin/rackup")).not_to exist
-  end
-
-  it "allows you to stop installing binstubs", :bundler => "< 3" do
-    bundle! "install --binstubs bin/"
-    bundled_app("bin/rackup").rmtree
-    bundle! "install --binstubs \"\""
-
-    expect(bundled_app("bin/rackup")).not_to exist
-
-    bundle! "config bin"
-    expect(out).to include("You have not configured a value for `bin`")
-  end
-
-  it "remembers that the option was specified", :bundler => "< 3" do
-    gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "activesupport"
-    G
-
-    bundle! :install, :binstubs => "bin"
-
-    gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "activesupport"
-      gem "rack"
-    G
-
     bundle "install"
 
-    expect(bundled_app("bin/rackup")).to exist
+    expect(bundled_app("bin/myrackup")).not_to exist
   end
 
-  it "rewrites bins on binstubs (to maintain backwards compatibility)" do
-    install_gemfile! <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+  it "rewrites bins on binstubs with --force option" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
-    create_file("bin/rackup", "OMG")
+    create_file("bin/myrackup", "OMG")
 
-    bundle! "binstubs rack"
+    bundle "binstubs myrack", { force: true }
 
-    expect(bundled_app("bin/rackup").read).to_not eq("OMG")
+    expect(bundled_app("bin/myrackup").read.strip).to_not eq("OMG")
   end
 
   it "use BUNDLE_GEMFILE gemfile for binstub" do
     # context with bin/bundler w/ default Gemfile
-    bundle! "binstubs bundler"
+    bundle "binstubs bundler"
 
     # generate other Gemfile with executable gem
     build_repo2 do
       build_gem("bindir") {|s| s.executables = "foo" }
     end
 
-    create_file("OtherGemfile", <<-G)
-      source "#{file_uri_for(gem_repo2)}"
+    gemfile("OtherGemfile", <<-G)
+      source "https://gem.repo2"
       gem 'bindir'
     G
 
     # generate binstub for executable from non default Gemfile (other then bin/bundler version)
     ENV["BUNDLE_GEMFILE"] = "OtherGemfile"
     bundle "install"
-    bundle! "binstubs bindir"
+    bundle "binstubs bindir"
 
     # remove user settings
     ENV["BUNDLE_GEMFILE"] = nil
@@ -167,7 +136,6 @@ RSpec.describe "Running bin/* commands" do
     # run binstub for non default Gemfile
     gembin "foo"
 
-    expect(exitstatus).to eq(0) if exitstatus
     expect(out).to eq("1.0")
   end
 end

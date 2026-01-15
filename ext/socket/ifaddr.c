@@ -104,7 +104,7 @@ rsock_getifaddrs(void)
         rb_sys_fail("getifaddrs");
 
     if (!ifaddrs) {
-	return rb_ary_new();
+        return rb_ary_new();
     }
 
     numifaddrs = 0;
@@ -128,9 +128,9 @@ rsock_getifaddrs(void)
     result = rb_ary_new2(numifaddrs);
     rb_ary_push(result, addr);
     for (i = 1; i < numifaddrs; i++) {
-	addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
-	root->refcount++;
-	rb_ary_push(result, addr);
+        addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
+        root->refcount++;
+        rb_ary_push(result, addr);
     }
 
     return result;
@@ -177,6 +177,8 @@ ifaddr_ifindex(VALUE self)
  *   ifaddr.flags => integer
  *
  * Returns the flags of _ifaddr_.
+ *
+ * The value is bitwise-or of Socket::IFF_* constants such as Socket::IFF_LOOPBACK.
  */
 
 static VALUE
@@ -459,7 +461,8 @@ rsock_init_sockifaddr(void)
      *
      * Socket::Ifaddr represents a result of getifaddrs() function.
      */
-    rb_cSockIfaddr = rb_define_class_under(rb_cSocket, "Ifaddr", rb_cData);
+    rb_cSockIfaddr = rb_define_class_under(rb_cSocket, "Ifaddr", rb_cObject);
+    rb_undef_alloc_func(rb_cSockIfaddr);
     rb_define_method(rb_cSockIfaddr, "inspect", ifaddr_inspect, 0);
     rb_define_method(rb_cSockIfaddr, "name", ifaddr_name, 0);
     rb_define_method(rb_cSockIfaddr, "ifindex", ifaddr_ifindex, 0);

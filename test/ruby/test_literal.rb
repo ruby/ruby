@@ -26,7 +26,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal '5', 0b101.inspect
     assert_instance_of Integer, 0b101
     assert_raise(SyntaxError) { eval("0b") }
-    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
+    assert_equal '123456789012345678901234567890', 123456789012345678901234567890.to_s
     assert_instance_of Integer, 123456789012345678901234567890
     assert_instance_of Float, 1.3
     assert_equal '2', eval("0x00+2").inspect
@@ -39,6 +39,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_string
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     assert_instance_of String, ?a
     assert_equal "a", ?a
     assert_instance_of String, ?A
@@ -94,6 +96,15 @@ class TestRubyLiteral < Test::Unit::TestCase
 
     assert_equal "ab", eval("?a 'b'")
     assert_equal "a\nb", eval("<<A 'b'\na\nA")
+
+    assert_raise(SyntaxError) {eval('"\C-' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\C-\\' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\M-' "\u3042" '"')}
+    assert_raise(SyntaxError) {eval('"\M-\\' "\u3042" '"')}
+
+    assert_equal "\x09 \xC9 \x89", eval('"\C-\111 \M-\111 \M-\C-\111"')
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_dstring
@@ -142,6 +153,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_frozen_string
+    default = eval("'test'").frozen?
+
     all_assertions do |a|
       a.for("false with indicator") do
         str = eval("# -*- frozen-string-literal: false -*-\n""'foo'")
@@ -161,19 +174,19 @@ class TestRubyLiteral < Test::Unit::TestCase
       end
       a.for("false with preceding garbage") do
         str = eval("# x frozen-string-literal: false\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("true with preceding garbage") do
         str = eval("# x frozen-string-literal: true\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("false with succeeding garbage") do
         str = eval("# frozen-string-literal: false x\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
       a.for("true with succeeding garbage") do
         str = eval("# frozen-string-literal: true x\n""'foo'")
-        assert_not_predicate(str, :frozen?)
+        assert_equal(default, str.frozen?)
       end
     end
   end
@@ -184,17 +197,22 @@ class TestRubyLiteral < Test::Unit::TestCase
     list.each { |str| assert_predicate str, :frozen? }
   end
 
+  def test_string_in_hash_literal
+    hash = eval("# frozen-string-literal: false\n""{foo: 'foo'}")
+    assert_not_predicate(hash[:foo], :frozen?)
+  end
+
   if defined?(RubyVM::InstructionSequence.compile_option) and
     RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
     def test_debug_frozen_string
-      src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      src = '_="foo-1"'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
       str = RubyVM::InstructionSequence.compile(src, f, f, n, **opt).eval
       assert_equal("foo-1", str)
       assert_predicate(str, :frozen?)
       assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
         str << "x"
-      }
+      } unless ENV['RUBY_ISEQ_DUMP_DEBUG']
     end
 
     def test_debug_frozen_string_in_array_literal
@@ -234,8 +252,9 @@ class TestRubyLiteral < Test::Unit::TestCase
   def test_dregexp
     assert_instance_of Regexp, /re#{'ge'}xp/
     assert_equal(/regexp/, /re#{'ge'}xp/)
-    bug3903 = '[ruby-core:32682]'
-    assert_raise(SyntaxError, bug3903) {eval('/[#{"\x80"}]/')}
+
+    # [ruby-core:32682]
+    eval('/[#{"\x80"}]/')
   end
 
   def test_array
@@ -461,17 +480,47 @@ class TestRubyLiteral < Test::Unit::TestCase
 
   def test_hash_duplicated_key
     h = EnvUtil.suppress_warning do
-      eval <<~end
+      eval "#{<<-"begin;"}\n#{<<-'end;'}"
+      begin;
         # This is a syntax that renders warning at very early stage.
         # eval used to delay warning, to be suppressible by EnvUtil.
         {"a" => 100, "b" => 200, "a" => 300, "a" => 400}
-      end
+      end;
     end
     assert_equal(2, h.size)
     assert_equal(400, h['a'])
     assert_equal(200, h['b'])
     assert_nil(h['c'])
     assert_equal(nil, h.key('300'))
+
+    a = []
+    h = EnvUtil.suppress_warning do
+      eval <<~end
+        # This is a syntax that renders warning at very early stage.
+        # eval used to delay warning, to be suppressible by EnvUtil.
+        {"a" => a.push(100).last, "b" => a.push(200).last, "a" => a.push(300).last, "a" => a.push(400).last}
+      end
+    end
+    assert_equal({'a' => 400, 'b' => 200}, h)
+    assert_equal([100, 200, 300, 400], a)
+
+    assert_all_assertions_foreach(
+      "duplicated literal key",
+      ':foo',
+      '"a"',
+      '1000',
+      '1.0',
+      '1_000_000_000_000_000_000_000',
+      '1.0r',
+      '1.0i',
+      '1.72723e-77',
+      '//',
+      '__LINE__',
+      '__FILE__',
+      '__ENCODING__',
+    ) do |key|
+      assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
+    end
   end
 
   def test_hash_frozen_key_id
@@ -486,6 +535,30 @@ class TestRubyLiteral < Test::Unit::TestCase
     h = {key => 100}
     key.upcase!
     assert_equal(100, h['a'])
+  end
+
+  FOO = "foo"
+
+  def test_hash_value_omission
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, {x:, y:})
+    assert_equal({x: 1, y: 2, z: 3}, {x:, y:, z: 3})
+    assert_equal({one: 1, two: 2}, {one:, two:})
+    b = binding
+    b.local_variable_set(:if, "if")
+    b.local_variable_set(:self, "self")
+    assert_equal({FOO: "foo", if: "if", self: "self"},
+                 eval('{FOO:, if:, self:}', b))
+    assert_syntax_error('{"#{x}":}', /'\}'/)
+  end
+
+  private def one
+    1
+  end
+
+  private def two
+    2
   end
 
   def test_range
@@ -529,6 +602,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_integer
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '0x', '0o', '0b', '0d', '-', '+']
     chars = ['0', '1', '_', '9', 'f']
     head.each {|h|
@@ -558,9 +633,14 @@ class TestRubyLiteral < Test::Unit::TestCase
         assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
     end
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_float
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '-', '+']
     chars = ['0', '1', '_', '9', 'f', '.']
     head.each {|h|
@@ -579,15 +659,32 @@ class TestRubyLiteral < Test::Unit::TestCase
           end
           begin
             r2 = eval(s)
-          rescue NameError, SyntaxError
+          rescue ArgumentError
+            # Debug log for a random failure: ArgumentError: SyntaxError#path changed
+            $stderr.puts "TestRubyLiteral#test_float failed: %p" % s
+            raise
+          rescue SyntaxError => e
+            r2 = :err
+          rescue NameError
             r2 = :err
           end
           r2 = :err if Range === r2
-          assert_equal(r1, r2, "Float(#{s.inspect}) != eval(#{s.inspect})")
+          s = s.inspect
+          mesg = "Float(#{s}) != eval(#{s})"
+          mesg << ":" << e.message if e
+          assert_equal(r1, r2, mesg)
         }
       }
     }
     assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
+
+  ensure
+    $VERBOSE = verbose_bak
+  end
+
+  def test_rational_float
+    assert_equal(12, 0.12r * 100)
+    assert_equal(12, 0.1_2r * 100)
   end
 
   def test_symbol_list

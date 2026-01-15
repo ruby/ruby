@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 
 describe "Array#sum" do
   it "returns the sum of elements" do
@@ -7,6 +8,39 @@ describe "Array#sum" do
 
   it "applies a block to each element before adding if it's given" do
     [1, 2, 3].sum { |i| i * 10 }.should == 60
+  end
+
+  it "doesn't apply the block init" do
+    [1, 2, 3].sum(1) { |i| i * 10 }.should == 61
+  end
+
+  # https://bugs.ruby-lang.org/issues/12217
+  # https://github.com/ruby/ruby/blob/master/doc/ChangeLog/ChangeLog-2.4.0#L6208-L6214
+  it "uses Kahan's compensated summation algorithm for precise sum of float numbers" do
+    floats = [2.7800000000000002, 5.0, 2.5, 4.44, 3.89, 3.89, 4.44, 7.78, 5.0, 2.7800000000000002, 5.0, 2.5]
+    naive_sum = floats.reduce { |sum, e| sum + e }
+    naive_sum.should == 50.00000000000001
+    floats.sum.should == 50.0
+  end
+
+  it "handles infinite values and NaN" do
+    [1.0, Float::INFINITY].sum.should == Float::INFINITY
+    [1.0, -Float::INFINITY].sum.should == -Float::INFINITY
+    [1.0, Float::NAN].sum.should.nan?
+
+    [Float::INFINITY, 1.0].sum.should == Float::INFINITY
+    [-Float::INFINITY, 1.0].sum.should == -Float::INFINITY
+    [Float::NAN, 1.0].sum.should.nan?
+
+    [Float::NAN, Float::INFINITY].sum.should.nan?
+    [Float::INFINITY, Float::NAN].sum.should.nan?
+
+    [Float::INFINITY, -Float::INFINITY].sum.should.nan?
+    [-Float::INFINITY, Float::INFINITY].sum.should.nan?
+
+    [Float::INFINITY, Float::INFINITY].sum.should == Float::INFINITY
+    [-Float::INFINITY, -Float::INFINITY].sum.should == -Float::INFINITY
+    [Float::NAN, Float::NAN].sum.should.nan?
   end
 
   it "returns init value if array is empty" do
@@ -39,4 +73,18 @@ describe "Array#sum" do
     a.should_receive(:+).with(b).and_return(42)
     [b].sum(a).should == 42
   end
+
+  ruby_bug '#19530', ''...'3.3' do
+    it "calls + on the init value" do
+      a = mock("a")
+      b = mock("b")
+      a.should_receive(:+).with(42).and_return(b)
+      [42].sum(a).should == b
+    end
+  end
+end
+
+describe "Array#sum" do
+  @value_to_return = -> _ { 1 }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :sum
 end

@@ -1,0 +1,3 @@
+def foo(...) = foo(...) { }
+                        ^~~ both block arg and actual block given; only one block is allowed
+

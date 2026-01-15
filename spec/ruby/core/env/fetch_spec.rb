@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../shared/hash/key_error'
+require_relative 'fixtures/common'
 
 describe "ENV.fetch" do
   before :each do
@@ -46,7 +47,7 @@ describe "ENV.fetch" do
 
   it "warns on block and default parameter given" do
     -> do
-       ENV.fetch("foo", "default") { "bar" }.should == "bar"
+      ENV.fetch("foo", "default") { "bar" }.should == "bar"
     end.should complain(/block supersedes default value argument/)
   end
 
@@ -57,6 +58,6 @@ describe "ENV.fetch" do
 
   it "uses the locale encoding" do
     ENV["foo"] = "bar"
-    ENV.fetch("foo").encoding.should == Encoding.find('locale')
+    ENV.fetch("foo").encoding.should == ENVSpecs.encoding
   end
 end

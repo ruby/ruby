@@ -9,39 +9,24 @@
 #
 # = Licence
 # This program is licensed under the same licence as Ruby.
-# (See the file 'LICENCE'.)
+# (See the file 'COPYING'.)
 #++
 
 module OpenSSL
   class Digest
 
-    # You can get a list of all algorithms:
-    #   openssl list -digest-algorithms
-
-    ALGORITHMS = %w(MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512)
-
-    if !OPENSSL_VERSION.include?("LibreSSL") && OPENSSL_VERSION_NUMBER > 0x10101000
-      ALGORITHMS.concat %w(BLAKE2b512 BLAKE2s256 SHA3-224 SHA3-256 SHA3-384 SHA3-512 SHA512-224 SHA512-256)
-    end
-
-    ALGORITHMS.freeze
-
     # Return the hash value computed with _name_ Digest. _name_ is either the
     # long name or short name of a supported digest algorithm.
     #
-    # === Examples
+    # === Example
     #
     #   OpenSSL::Digest.digest("SHA256", "abc")
-    #
-    # which is equivalent to:
-    #
-    #   OpenSSL::Digest::SHA256.digest("abc")
 
     def self.digest(name, data)
       super(data, name)
     end
 
-    ALGORITHMS.each do |name|
+    %w(MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512).each do |name|
       klass = Class.new(self) {
         define_method(:initialize, ->(data = nil) {super(name, data)})
       }
@@ -72,7 +57,7 @@ module OpenSSL
   #   OpenSSL::Digest("MD5")
   #   # => OpenSSL::Digest::MD5
   #
-  #   Digest("Foo")
+  #   OpenSSL::Digest("Foo")
   #   # => NameError: wrong constant name Foo
 
   def Digest(name)

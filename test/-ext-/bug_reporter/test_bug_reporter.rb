@@ -1,13 +1,13 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
+require_relative '../../lib/jit_support'
+require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
-    skip if ENV['RUBY_ON_BUG']
-
     description = RUBY_DESCRIPTION
-    description = description.sub(/\+JIT /, '') if RubyVM::MJIT.enabled?
+    description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,
@@ -18,9 +18,13 @@ class TestBugReporter < Test::Unit::TestCase
     ]
     tmpdir = Dir.mktmpdir
 
-    args = ["--disable-gems", "-r-test-/bug_reporter",
-            "-C", tmpdir]
-    stdin = "register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
+    no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
+    args = ["-r-test-/bug_reporter", "-C", tmpdir]
+    # We want the printed description to match this process's RUBY_DESCRIPTION
+    args.push("--yjit") if JITSupport.yjit_enabled?
+    args.push("--zjit") if JITSupport.zjit_enabled?
+    args.unshift({"RUBY_ON_BUG" => nil, "RUBY_CRASH_REPORT" => nil})
+    stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
     assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
   ensure
     FileUtils.rm_rf(tmpdir) if tmpdir

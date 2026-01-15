@@ -1,4 +1,7 @@
-# -*- encoding: binary -*-
+# encoding: binary
+
+require_relative 'marshal_multibyte_data'
+
 class UserDefined
   class Nested
     def ==(other)
@@ -38,7 +41,7 @@ class UserDefinedWithIvar
   attr_reader :a, :b, :c
 
   def initialize
-    @a = 'stuff'
+    @a = +'stuff'
     @a.instance_variable_set :@foo, :UserDefinedWithIvar
     @b = 'more'
     @c = @b
@@ -78,12 +81,47 @@ class UserDefinedImmediate
   end
 end
 
+class UserDefinedString
+  attr_reader :string
+
+  def initialize(string)
+    @string = string
+  end
+
+  def _dump(depth)
+    @string
+  end
+
+  def self._load(data)
+    new(data)
+  end
+end
+
+module MarshalSpec
+  class UserDefinedDumpWithIVars
+    attr_reader :string
+
+    def initialize(string, ivar_value)
+      @string = string
+      @string.instance_variable_set(:@foo, ivar_value)
+    end
+
+    def _dump(depth)
+      @string
+    end
+
+    def self._load(data)
+      new(data)
+    end
+  end
+end
+
 class UserPreviouslyDefinedWithInitializedIvar
   attr_accessor :field1, :field2
 end
 
 class UserMarshal
-  attr_reader :data
+  attr_accessor :data
 
   def initialize
     @data = 'stuff'
@@ -117,6 +155,32 @@ class UserMarshalWithIvar
   def ==(other)
     self.class === other and
     @data = other.data
+  end
+end
+
+module MarshalSpec
+  class UserMarshalDumpWithIvar
+    attr_reader :data
+
+    def initialize(data, ivar_value)
+      @data = data
+      @ivar_value = ivar_value
+    end
+
+    def marshal_dump
+      obj = [data]
+      obj.instance_variable_set(:@foo, @ivar_value)
+      obj
+    end
+
+    def marshal_load(o)
+      @data = o[0]
+    end
+
+    def ==(other)
+      self.class === other and
+        @data = other.data
+    end
   end
 end
 
@@ -167,10 +231,15 @@ module MarshalSpec
     end
   end
 
+  StructToDump = Struct.new(:a, :b)
+
   class BasicObjectSubWithRespondToFalse < BasicObject
     def respond_to?(method_name, include_all=false)
       false
     end
+  end
+
+  module ModuleToExtendBy
   end
 
   def self.random_data
@@ -190,6 +259,70 @@ module MarshalSpec
 
   def self.reset_swapped_class
     set_swapped_class(nil)
+  end
+
+  class ClassWithOverriddenName
+    def self.name
+      "Foo"
+    end
+  end
+
+  class ModuleWithOverriddenName
+    def self.name
+      "Foo"
+    end
+  end
+
+  class TimeWithOverriddenName < Time
+    def self.name
+      "Foo"
+    end
+  end
+
+  class StructWithOverriddenName < Struct.new(:a)
+    def self.name
+      "Foo"
+    end
+  end
+
+  class UserDefinedWithOverriddenName < UserDefined
+    def self.name
+      "Foo"
+    end
+  end
+
+  class StringWithOverriddenName < String
+    def self.name
+      "Foo"
+    end
+  end
+
+  class ArrayWithOverriddenName < Array
+    def self.name
+      "Foo"
+    end
+  end
+
+  class HashWithOverriddenName < Hash
+    def self.name
+      "Foo"
+    end
+  end
+
+  class RegexpWithOverriddenName < Regexp
+    def self.name
+      "Foo"
+    end
+  end
+
+  class ObjectWithFreezeRaisingException < Object
+    def freeze
+      raise
+    end
+  end
+
+  class ObjectWithoutFreeze < Object
+    undef freeze
   end
 
   DATA = {
@@ -217,7 +350,7 @@ module MarshalSpec
                        "\004\b\"\012small"],
     "String big" => ['big' * 100,
                      "\004\b\"\002,\001#{'big' * 100}"],
-    "String extended" => [''.extend(Meths), # TODO: check for module on load
+    "String extended" => [''.dup.extend(Meths), # TODO: check for module on load
                           "\004\be:\nMeths\"\000"],
     "String subclass" => [UserString.new,
                           "\004\bC:\017UserString\"\000"],
@@ -227,36 +360,36 @@ module MarshalSpec
                        "\004\b:\010big"],
     "Symbol big" => [('big' * 100).to_sym,
                                "\004\b:\002,\001#{'big' * 100}"],
-    "Bignum -2**64" => [-2**64,
+    "Integer -2**64" => [-2**64,
                         "\004\bl-\n\000\000\000\000\000\000\000\000\001\000"],
-    "Bignum -2**63" => [-2**63,
+    "Integer -2**63" => [-2**63,
                         "\004\bl-\t\000\000\000\000\000\000\000\200"],
-    "Fixnum -2**24" => [-2**24,
+    "Integer -2**24" => [-2**24,
                         "\004\bi\375\000\000\000"],
-    "Fixnum -4516727" => [-4516727,
+    "Integer -4516727" => [-4516727,
                           "\004\bi\375\211\024\273"],
-    "Fixnum -2**16" => [-2**16,
+    "Integer -2**16" => [-2**16,
                         "\004\bi\376\000\000"],
-    "Fixnum -2**8" => [-2**8,
+    "Integer -2**8" => [-2**8,
                        "\004\bi\377\000"],
-    "Fixnum -123" => [-123,
+    "Integer -123" => [-123,
                       "\004\bi\200"],
-    "Fixnum -124" => [-124, "\004\bi\377\204"],
-    "Fixnum 0" => [0,
+    "Integer -124" => [-124, "\004\bi\377\204"],
+    "Integer 0" => [0,
                    "\004\bi\000"],
-    "Fixnum 5" => [5,
+    "Integer 5" => [5,
                    "\004\bi\n"],
-    "Fixnum 122" => [122, "\004\bi\177"],
-    "Fixnum 123" => [123, "\004\bi\001{"],
-    "Fixnum 2**8" => [2**8,
+    "Integer 122" => [122, "\004\bi\177"],
+    "Integer 123" => [123, "\004\bi\001{"],
+    "Integer 2**8" => [2**8,
                       "\004\bi\002\000\001"],
-    "Fixnum 2**16" => [2**16,
+    "Integer 2**16" => [2**16,
                        "\004\bi\003\000\000\001"],
-    "Fixnum 2**24" => [2**24,
+    "Integer 2**24" => [2**24,
                        "\004\bi\004\000\000\000\001"],
-    "Bignum 2**64" => [2**64,
+    "Integer 2**64" => [2**64,
                        "\004\bl+\n\000\000\000\000\000\000\000\000\001\000"],
-    "Bignum 2**90" => [2**90,
+    "Integer 2**90" => [2**90,
                        "\004\bl+\v#{"\000" * 11}\004"],
     "Class String" => [String,
                        "\004\bc\vString"],
@@ -324,7 +457,7 @@ module MarshalSpec
                     "\x04\bI\"\nsmall\x06:\x06EF"],
     "String big" => ['big' * 100,
                     "\x04\bI\"\x02,\x01bigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbigbig\x06:\x06EF"],
-    "String extended" => [''.extend(Meths), # TODO: check for module on load
+    "String extended" => [''.dup.extend(Meths), # TODO: check for module on load
                           "\x04\bIe:\nMeths\"\x00\x06:\x06EF"],
     "String subclass" => [UserString.new,
                           "\004\bC:\017UserString\"\000"],
@@ -334,31 +467,31 @@ module MarshalSpec
                        "\004\b:\010big"],
     "Symbol big" => [('big' * 100).to_sym,
                                "\004\b:\002,\001#{'big' * 100}"],
-    "Bignum -2**64" => [-2**64,
+    "Integer -2**64" => [-2**64,
                         "\004\bl-\n\000\000\000\000\000\000\000\000\001\000"],
-    "Bignum -2**63" => [-2**63,
+    "Integer -2**63" => [-2**63,
                         "\004\bl-\t\000\000\000\000\000\000\000\200"],
-    "Fixnum -2**24" => [-2**24,
+    "Integer -2**24" => [-2**24,
                         "\004\bi\375\000\000\000"],
-    "Fixnum -2**16" => [-2**16,
+    "Integer -2**16" => [-2**16,
                         "\004\bi\376\000\000"],
-    "Fixnum -2**8" => [-2**8,
+    "Integer -2**8" => [-2**8,
                        "\004\bi\377\000"],
-    "Fixnum -123" => [-123,
+    "Integer -123" => [-123,
                       "\004\bi\200"],
-    "Fixnum 0" => [0,
+    "Integer 0" => [0,
                    "\004\bi\000"],
-    "Fixnum 5" => [5,
+    "Integer 5" => [5,
                    "\004\bi\n"],
-    "Fixnum 2**8" => [2**8,
+    "Integer 2**8" => [2**8,
                       "\004\bi\002\000\001"],
-    "Fixnum 2**16" => [2**16,
+    "Integer 2**16" => [2**16,
                        "\004\bi\003\000\000\001"],
-    "Fixnum 2**24" => [2**24,
+    "Integer 2**24" => [2**24,
                        "\004\bi\004\000\000\000\001"],
-    "Bignum 2**64" => [2**64,
+    "Integer 2**64" => [2**64,
                        "\004\bl+\n\000\000\000\000\000\000\000\000\001\000"],
-    "Bignum 2**90" => [2**90,
+    "Integer 2**90" => [2**90,
                        "\004\bl+\v#{"\000" * 11}\004"],
     "Class String" => [String,
                        "\004\bc\vString"],
@@ -398,6 +531,20 @@ module MarshalSpec
                  "\004\bS:\024Struct::Pyramid\000"],
     "Random" => random_data,
   }
+
+  module DataSpec
+    Measure = Data.define(:amount, :unit)
+    Empty = Data.define
+
+    MeasureExtended = Class.new(Measure)
+    MeasureExtended.extend(Enumerable)
+
+    class MeasureWithOverriddenName < Measure
+      def self.name
+        "Foo"
+      end
+    end
+  end
 end
 
 class ArraySub < Array

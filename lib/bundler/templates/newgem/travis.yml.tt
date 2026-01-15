@@ -1,6 +1,0 @@
----
-language: ruby
-cache: bundler
-rvm:
-  - <%= RUBY_VERSION %>
-before_install: gem install bundler -v <%= Bundler::VERSION %>

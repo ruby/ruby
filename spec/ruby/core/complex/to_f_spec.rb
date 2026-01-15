@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Complex#to_f" do
-  describe "when the imaginary part is Fixnum 0" do
+  describe "when the imaginary part is Integer 0" do
     it "returns the result of sending #to_f to the real part" do
       real = mock_numeric('real')
       real.should_receive(:to_f).and_return(:f)

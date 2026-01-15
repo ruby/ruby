@@ -147,7 +147,7 @@ assert_equal %q{131}, %q{
   }
 }
 assert_match %r{Invalid retry}, %q{
-STDERR.reopen(STDOUT)
+$stderr = STDOUT
 begin
   eval %q{
     1.times{
@@ -292,12 +292,12 @@ assert_equal "true", %q{
       end
     end
   end
-  s = "foo"
+  s = +"foo"
   s.return_eigenclass == class << s; self; end
 }, '[ruby-core:21379]'
 
 assert_match %r{Invalid yield}, %q{
-STDERR.reopen(STDOUT)
+$stderr = STDOUT
 begin
   eval %q{
     class Object

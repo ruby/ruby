@@ -1,0 +1,5 @@
+(return)::A
+ ^~~~~~ unexpected void value expression
+class (return)::A; end
+       ^~~~~~ unexpected void value expression
+

@@ -1,0 +1,51 @@
+name: Post a message to slack
+description: >-
+  We have our ruby/action-slack webhook.  However its arguments are
+  bit verbose to be listed in every workflow files.  Better merge them
+  into one.
+
+inputs:
+  SLACK_WEBHOOK_URL:
+    required: true
+    description: >-
+      The URL to post the payload.  This is an input because it tends
+      to be stored in a secrets vault and a composite action cannot
+      look into one.
+
+  label:
+    required: false
+    description: >-
+      Human-readable description of the run, something like "DEBUG=1".
+      This need not be unique among runs.
+
+  event_name:
+    required: false
+    default: 'push'
+    description: >-
+      Target event to trigger notification. Notify only push by default.
+
+  extra_channel_id:
+    required: false
+    description: >-
+      Slack channel ID to notify besides #alerts and #alerts-emoji.
+
+outputs: {} # Nothing?
+
+runs:
+  using: composite
+
+  steps:
+    - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      with:
+        payload: |
+          {
+            "ci": "GitHub Actions",
+            "env": "${{ github.workflow }}${{ inputs.label && format(' / {0}', inputs.label) }}",
+            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+            ${{ inputs.extra_channel_id && format(', "extra_channel_id": "{0}"', inputs.extra_channel_id) }}
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.SLACK_WEBHOOK_URL }}
+      if: ${{ github.event_name == inputs.event_name && startsWith(github.repository, 'ruby/') }}

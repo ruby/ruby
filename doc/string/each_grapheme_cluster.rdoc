@@ -1,0 +1,19 @@
+With a block given, calls the given block with each successive grapheme cluster from +self+
+(see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]);
+returns +self+:
+
+  a = []
+  'hello'.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a  # => ["h", "e", "l", "l", "o"]
+
+  a = []
+  'こんにちは'.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a # => ["こ", "ん", "に", "ち", "は"]
+
+With no block given, returns an enumerator.
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].

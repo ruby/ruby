@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
+# Should be synchronized with core/struct/values_at_spec.rb
 describe "Array#values_at" do
   it "returns an array of elements at the indexes when passed indexes" do
     [1, 2, 3, 4, 5].values_at().should == []
@@ -61,10 +62,13 @@ describe "Array#values_at" do
     ArraySpecs::MyArray[1, 2, 3].values_at(0, 1..2, 1).should be_an_instance_of(Array)
   end
 
-  ruby_version_is "2.6" do
-    it "works when given endless ranges" do
-      [1, 2, 3, 4].values_at(eval("(1..)")).should == [2, 3, 4]
-      [1, 2, 3, 4].values_at(eval("(3...)")).should == [4]
-    end
+  it "works when given endless ranges" do
+    [1, 2, 3, 4].values_at(eval("(1..)")).should == [2, 3, 4]
+    [1, 2, 3, 4].values_at(eval("(3...)")).should == [4]
+  end
+
+  it "works when given beginless ranges" do
+    [1, 2, 3, 4].values_at((..2)).should == [1, 2, 3]
+    [1, 2, 3, 4].values_at((...2)).should == [1, 2]
   end
 end

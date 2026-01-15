@@ -23,4 +23,12 @@ describe "Module#class_variables" do
     c.extend ModuleSpecs::MVars
     c.class_variables.should_not include(:@@mvar)
   end
+
+  it "returns the correct class variables when inherit is given" do
+    ModuleSpecs::SubCVars.class_variables(false).should == [:@@sub]
+    ModuleSpecs::SubCVars.new.singleton_class.class_variables(false).should == []
+
+    ModuleSpecs::SubCVars.class_variables(true).should == [:@@sub, :@@cls, :@@meta]
+    ModuleSpecs::SubCVars.new.singleton_class.class_variables(true).should ==  [:@@sub, :@@cls, :@@meta]
+  end
 end

@@ -6,6 +6,8 @@ describe "Struct.new" do
     struct = Struct.new('Animal', :name, :legs, :eyeballs)
     struct.should == Struct::Animal
     struct.name.should == "Struct::Animal"
+  ensure
+    Struct.send(:remove_const, :Animal)
   end
 
   it "overwrites previously defined constants with string as first argument" do
@@ -19,6 +21,8 @@ describe "Struct.new" do
     second.should == Struct::Person
 
     first.members.should_not == second.members
+  ensure
+    Struct.send(:remove_const, :Person)
   end
 
   it "calls to_str on its first argument (constant name)" do
@@ -27,6 +31,8 @@ describe "Struct.new" do
     struct = Struct.new(obj)
     struct.should == Struct::Foo
     struct.name.should == "Struct::Foo"
+  ensure
+    Struct.send(:remove_const, :Foo)
   end
 
   it "creates a new anonymous class with nil first argument" do
@@ -47,6 +53,11 @@ describe "Struct.new" do
     Struct.const_defined?("Animal2").should be_false
   end
 
+  it "allows non-ASCII member name" do
+    name = "r\xe9sum\xe9".dup.force_encoding(Encoding::ISO_8859_1).to_sym
+    struct = Struct.new(name)
+    struct.new("foo").send(name).should == "foo"
+  end
 
   it "fails with invalid constant name as first argument" do
     -> { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)
@@ -62,8 +73,22 @@ describe "Struct.new" do
     -> { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
   end
 
-  it "raises a ArgumentError if passed a Hash with an unknown key" do
-    -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+  it "raises a TypeError if passed a Hash with an unknown key" do
+    -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+  end
+
+  ruby_version_is ""..."3.3" do
+    it "raises ArgumentError if not provided any arguments" do
+      -> { Struct.new }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "works when not provided any arguments" do
+      c = Struct.new
+      c.should be_kind_of(Class)
+      c.superclass.should == Struct
+    end
   end
 
   it "raises ArgumentError when there is a duplicate member" do
@@ -107,6 +132,8 @@ describe "Struct.new" do
     it "creates a constant in subclass' namespace" do
       struct = StructClasses::Apple.new('Computer', :size)
       struct.should == StructClasses::Apple::Computer
+    ensure
+      StructClasses::Apple.send(:remove_const, :Computer)
     end
 
     it "creates an instance" do
@@ -127,15 +154,44 @@ describe "Struct.new" do
       -> { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
     end
 
-    it "passes a hash as a normal argument" do
+    it "accepts keyword arguments to initialize" do
       type = Struct.new(:args)
 
-      obj = type.new(keyword: :arg)
-      obj2 = type.new(*[{keyword: :arg}])
+      obj = type.new(args: 42)
+      obj2 = type.new(42)
 
       obj.should == obj2
-      obj.args.should == {keyword: :arg}
-      obj2.args.should == {keyword: :arg}
+      obj.args.should == 42
+      obj2.args.should == 42
+    end
+
+    context "given positional and keyword arguments" do
+      it "treats keyword arguments as a positional parameter" do
+        type = Struct.new(:a, :b)
+        s = type.new("a", b: "b")
+        s.a.should == "a"
+        s.b.should == {b: "b"}
+
+        type = Struct.new(:a, :b, :c)
+        s = type.new("a", b: "b", c: "c")
+        s.a.should == "a"
+        s.b.should == {b: "b", c: "c"}
+        s.c.should == nil
+      end
+
+      it "ignores empty keyword arguments" do
+        type = Struct.new(:a, :b)
+        h = {}
+        s = type.new("a", **h)
+
+        s.a.should == "a"
+        s.b.should == nil
+      end
+
+      it "raises ArgumentError when all struct attribute values are specified" do
+        type = Struct.new(:a, :b)
+        -> { type.new("a", "b", c: "c") }.should raise_error(ArgumentError, "struct size differs")
+      end
     end
   end
 

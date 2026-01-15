@@ -8,7 +8,7 @@ class ChangeWordTest < Test::Unit::TestCase
     @len = @input.length
   end
 
-  def test_deleletion
+  def test_deletion
     assert_match @cw.deletion(5), 'spec/ervices/anything_spec'
     assert_match @cw.deletion(@len - 1), 'spec/services/anything_spe'
     assert_match @cw.deletion(0), 'pec/services/anything_spec'

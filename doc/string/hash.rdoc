@@ -1,0 +1,19 @@
+Returns the integer hash value for +self+.
+
+Two \String objects that have identical content and compatible encodings
+also have the same hash value;
+see Object#hash and {Encodings}[rdoc-ref:encodings.rdoc]:
+
+  s = 'foo'
+  h = s.hash       # => -569050784
+  h == 'foo'.hash  # => true
+  h == 'food'.hash # => false
+  h == 'FOO'.hash  # => false
+
+  s0 = "äöü"
+  s1 = s0.encode(Encoding::ISO_8859_1)
+  s0.encoding        # => #<Encoding:UTF-8>
+  s1.encoding        # => #<Encoding:ISO-8859-1>
+  s0.hash == s1.hash # => false
+
+Related: see {Querying}[rdoc-ref:String@Querying].

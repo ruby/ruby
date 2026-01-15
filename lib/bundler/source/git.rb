@@ -11,6 +11,7 @@ module Bundler
 
       def initialize(options)
         @options = options
+        @checksum_store = Checksum::Store.new
         @glob = options["glob"] || DEFAULT_GLOB
 
         @allow_cached = false
@@ -19,16 +20,30 @@ module Bundler
         # Stringify options that could be set as symbols
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
-        @uri        = options["uri"] || ""
+        @uri        = URINormalizer.normalize_suffix(options["uri"] || "", trailing_slash: false)
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
-        @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
+        @ref        = options["ref"] || options["branch"] || options["tag"]
         @submodules = options["submodules"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
 
         @copied     = false
         @local      = false
+      end
+
+      def remote!
+        return if @allow_remote
+
+        @local_specs = nil
+        @allow_remote = true
+      end
+
+      def cached!
+        return if @allow_cached
+
+        @local_specs = nil
+        @allow_cached = true
       end
 
       def self.from_lock(options)
@@ -42,43 +57,65 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
-        out << "  glob: #{@glob}\n" unless @glob == DEFAULT_GLOB
+        out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
 
+      def to_gemfile
+        specifiers = %w[ref branch tag submodules glob].map do |opt|
+          "#{opt}: #{options[opt]}" if options[opt]
+        end
+
+        uri_with_specifiers(specifiers)
+      end
+
       def hash
-        [self.class, uri, ref, branch, name, version, glob, submodules].hash
+        [self.class, uri, ref, branch, name, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && glob == other.glob &&
+          glob == other.glob &&
           submodules == other.submodules
       end
 
       alias_method :==, :eql?
 
+      def include?(other)
+        other.is_a?(Git) && uri == other.uri &&
+          name == other.name &&
+          glob == other.glob &&
+          submodules == other.submodules
+      end
+
       def to_s
-        at = if local?
-          path
-        elsif user_ref = options["ref"]
-          if ref =~ /\A[a-z0-9]{4,}\z/i
-            shortref_for_display(user_ref)
-          else
-            user_ref
-          end
-        else
-          ref
+        begin
+          at = humanized_ref || current_branch
+
+          rev = "at #{at}@#{shortref_for_display(revision)}"
+        rescue GitError
+          ""
         end
 
-        rev = begin
-                "@#{shortref_for_display(revision)}"
-              rescue GitError
-                nil
-              end
+        uri_with_specifiers([rev, glob_for_display])
+      end
 
-        "#{@safe_uri} (at #{at}#{rev})"
+      def identifier
+        uri_with_specifiers([humanized_ref, locked_revision, glob_for_display])
+      end
+
+      def uri_with_specifiers(specifiers)
+        specifiers.compact!
+
+        suffix =
+          if specifiers.any?
+            " (#{specifiers.join(", ")})"
+          else
+            ""
+          end
+
+        "#{@safe_uri}#{suffix}"
       end
 
       def name
@@ -92,13 +129,7 @@ module Bundler
         @install_path ||= begin
           git_scope = "#{base_name}-#{shortref_for_path(revision)}"
 
-          path = Bundler.install_path.join(git_scope)
-
-          if !path.exist? && Bundler.requires_sudo?
-            Bundler.user_bundle_path.join(Bundler.ruby_scope).join(git_scope)
-          else
-            path
-          end
+          Bundler.install_path.join(git_scope)
         end
       end
 
@@ -122,7 +153,7 @@ module Bundler
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
-        unless options["branch"] || Bundler.settings[:disable_local_branch_check]
+        unless branch || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
             ":branch is not specified in Gemfile. Specify a branch or run " \
             "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
@@ -133,21 +164,22 @@ module Bundler
             "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
-        set_local!(path)
+        @local = true
+        set_paths!(path)
 
         # Create a new git proxy without the cached revision
         # so the Gemfile.lock always picks up the new revision.
-        @git_proxy = GitProxy.new(path, uri, ref)
+        @git_proxy = GitProxy.new(path, uri, options)
 
-        if git_proxy.branch != options["branch"] && !Bundler.settings[:disable_local_branch_check]
+        if current_branch != branch && !Bundler.settings[:disable_local_branch_check]
           raise GitError, "Local override for #{name} at #{path} is using branch " \
-            "#{git_proxy.branch} but Gemfile specifies #{options["branch"]}"
+            "#{current_branch} but Gemfile specifies #{branch}"
         end
 
-        changed = cached_revision && cached_revision != git_proxy.revision
+        changed = locked_revision && locked_revision != revision
 
-        if changed && !@unlocked && !git_proxy.contains?(cached_revision)
-          raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \
+        if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(locked_revision)
+          raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(locked_revision)} " \
             "but the current branch in your local override for #{name} does not contain such commit. " \
             "Please make sure your branch is up to date."
         end
@@ -156,45 +188,42 @@ module Bundler
       end
 
       def specs(*)
-        set_local!(app_cache_path) if has_app_cache? && !local?
+        set_cache_path!(app_cache_path) if use_app_cache?
 
         if requires_checkout? && !@copied
-          fetch
-          git_proxy.copy_to(install_path, submodules)
-          serialize_gemspecs_in(install_path)
-          @copied = true
+          fetch unless use_app_cache?
+          checkout
         end
 
         local_specs
       end
 
       def install(spec, options = {})
+        return if Bundler.settings[:no_install]
         force = options[:force]
 
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        print_using_message "Using #{version_message(spec, options[:previous_spec])} from #{self}"
 
         if (requires_checkout? && !@copied) || force
-          Bundler.ui.debug "  * Checking out revision: #{ref}"
-          git_proxy.copy_to(install_path, submodules)
-          serialize_gemspecs_in(install_path)
-          @copied = true
+          checkout
         end
 
-        generate_bin_options = { :disable_extensions => !Bundler.rubygems.spec_missing_extensions?(spec), :build_args => options[:build_args] }
+        generate_bin_options = { disable_extensions: !spec.missing_extensions?, build_args: options[:build_args] }
         generate_bin(spec, generate_bin_options)
 
         requires_checkout? ? spec.post_install_message : nil
       end
 
+      def migrate_cache(custom_path = nil, local: false)
+        if local
+          cache_to(custom_path, try_migrate: false)
+        else
+          cache_to(custom_path, try_migrate: true)
+        end
+      end
+
       def cache(spec, custom_path = nil)
-        app_cache_path = app_cache_path(custom_path)
-        return unless Bundler.feature_flag.cache_all?
-        return if path == app_cache_path
-        cached!
-        FileUtils.rm_rf(app_cache_path)
-        git_proxy.checkout if requires_checkout?
-        git_proxy.copy_to(app_cache_path, @submodules)
-        serialize_gemspecs_in(app_cache_path)
+        cache_to(custom_path, try_migrate: false)
       end
 
       def load_spec_files
@@ -209,28 +238,85 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= begin
-          if Bundler.requires_sudo? || Bundler.feature_flag.global_gem_cache?
-            Bundler.user_cache
-          else
-            Bundler.bundle_path.join("cache", "bundler")
-          end.join("git", git_scope)
-        end
+        @cache_path ||= if Bundler.settings[:global_gem_cache]
+          Bundler.user_cache
+        else
+          Bundler.bundle_path.join("cache", "bundler")
+        end.join("git", git_scope)
       end
 
       def app_cache_dirname
-        "#{base_name}-#{shortref_for_path(cached_revision || revision)}"
+        "#{base_name}-#{shortref_for_path(locked_revision || revision)}"
       end
 
       def revision
         git_proxy.revision
       end
 
+      def current_branch
+        git_proxy.current_branch
+      end
+
       def allow_git_ops?
         @allow_remote || @allow_cached
       end
 
-    private
+      def local?
+        @local
+      end
+
+      private
+
+      def cache_to(custom_path, try_migrate: false)
+        return unless Bundler.settings[:cache_all]
+
+        app_cache_path = app_cache_path(custom_path)
+
+        migrate = try_migrate ? bare_repo?(app_cache_path) : false
+
+        set_cache_path!(nil) if migrate
+
+        return if cache_path == app_cache_path
+
+        cached!
+        FileUtils.rm_rf(app_cache_path)
+        git_proxy.checkout if migrate || requires_checkout?
+        git_proxy.copy_to(app_cache_path, @submodules)
+        serialize_gemspecs_in(app_cache_path)
+      end
+
+      def checkout
+        Bundler.ui.debug "  * Checking out revision: #{ref}"
+        if use_app_cache? && !bare_repo?(app_cache_path)
+          SharedHelpers.filesystem_access(install_path.dirname) do |p|
+            FileUtils.mkdir_p(p)
+          end
+          FileUtils.cp_r("#{app_cache_path}/.", install_path)
+        else
+          if use_app_cache? && bare_repo?(app_cache_path)
+            Bundler.ui.warn "Installing from cache in old \"bare repository\" format for compatibility. " \
+                            "Please run `bundle cache` and commit the updated cache to migrate to the new format and get rid of this warning."
+          end
+
+          git_proxy.copy_to(install_path, submodules)
+        end
+        serialize_gemspecs_in(install_path)
+        @copied = true
+      end
+
+      def humanized_ref
+        if local?
+          path
+        elsif user_ref = options["ref"]
+          if /\A[a-z0-9]{4,}\z/i.match?(ref)
+            shortref_for_display(user_ref)
+          else
+            user_ref
+          end
+        elsif ref
+          ref
+        end
+      end
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
@@ -240,32 +326,45 @@ module Bundler
           # The gemspecs we cache should already be evaluated.
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
-          Bundler.rubygems.set_installed_by_version(spec)
+          spec.installed_by_version = Gem::VERSION
           Bundler.rubygems.validate(spec)
           File.open(spec_path, "wb") {|file| file.write(spec.to_ruby) }
         end
       end
 
-      def set_local!(path)
-        @local       = true
-        @local_specs = @git_proxy = nil
-        @cache_path  = @install_path = path
+      def set_paths!(path)
+        set_cache_path!(path)
+        set_install_path!(path)
+      end
+
+      def set_cache_path!(path)
+        @git_proxy = nil
+        @cache_path = path
+      end
+
+      def set_install_path!(path)
+        @local_specs = nil
+        @install_path = path
       end
 
       def has_app_cache?
-        cached_revision && super
+        locked_revision && super
       end
 
-      def local?
-        @local
+      def use_app_cache?
+        has_app_cache? && !local?
       end
 
       def requires_checkout?
-        allow_git_ops? && !local? && !cached_revision_checked_out?
+        allow_git_ops? && !local? && !locked_revision_checked_out?
       end
 
-      def cached_revision_checked_out?
-        cached_revision && cached_revision == revision && install_path.exist?
+      def locked_revision_checked_out?
+        locked_revision && locked_revision == revision && installed?
+      end
+
+      def installed?
+        git_proxy.installed_to?(install_path)
       end
 
       def base_name
@@ -280,19 +379,29 @@ module Bundler
         ref[0..11]
       end
 
+      def glob_for_display
+        default_glob? ? nil : "glob: #{@glob}"
+      end
+
+      def default_glob?
+        @glob == DEFAULT_GLOB
+      end
+
       def uri_hash
-        if uri =~ %r{^\w+://(\w+@)?}
+        if %r{^\w+://(\w+@)?}.match?(uri)
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
-          input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
+          input = Gem::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
         else
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri
         end
-        SharedHelpers.digest(:SHA1).hexdigest(input)
+        # We use SHA1 here for historical reason and to preserve backward compatibility.
+        # But a transition to a simpler mangling algorithm would be welcome.
+        Bundler::Digest.sha1(input)
       end
 
-      def cached_revision
+      def locked_revision
         options["revision"]
       end
 
@@ -301,13 +410,12 @@ module Bundler
       end
 
       def git_proxy
-        @git_proxy ||= GitProxy.new(cache_path, uri, ref, cached_revision, self)
+        @git_proxy ||= GitProxy.new(cache_path, uri, options, locked_revision, self)
       end
 
       def fetch
         git_proxy.checkout
       rescue GitError => e
-        raise unless Bundler.feature_flag.allow_offline_install?
         Bundler.ui.warn "Using cached git data because of network errors:\n#{e}"
       end
 
@@ -315,9 +423,12 @@ module Bundler
       def validate_spec(_spec); end
 
       def load_gemspec(file)
-        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
-        StubSpecification.from_stub(stub)
+        dirname = Pathname.new(file).dirname
+        SharedHelpers.chdir(dirname.to_s) do
+          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+          stub.full_gem_path = dirname.expand_path(root).to_s
+          StubSpecification.from_stub(stub)
+        end
       end
 
       def git_scope
@@ -330,6 +441,10 @@ module Bundler
 
       def override_for(path)
         Bundler.settings.local_overrides.key(path)
+      end
+
+      def bare_repo?(path)
+        File.exist?(path.join("objects")) && File.exist?(path.join("HEAD"))
       end
     end
   end

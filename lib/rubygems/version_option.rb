@@ -1,22 +1,22 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
+require_relative "../rubygems"
 
 ##
 # Mixin methods for --version and --platform Gem::Command options.
 
 module Gem::VersionOption
-
   ##
   # Add the --platform option to the option parser.
 
   def add_platform_option(task = command, *wrap)
-    OptionParser.accept Gem::Platform do |value|
+    Gem::OptionParser.accept Gem::Platform do |value|
       if value == Gem::Platform::RUBY
         value
       else
@@ -24,9 +24,8 @@ module Gem::VersionOption
       end
     end
 
-    add_option('--platform PLATFORM', Gem::Platform,
-               "Specify the platform of gem to #{task}", *wrap) do
-                 |value, options|
+    add_option("--platform PLATFORM", Gem::Platform,
+               "Specify the platform of gem to #{task}", *wrap) do |value, options|
       unless options[:added_platform]
         Gem.platforms = [Gem::Platform::RUBY]
         options[:added_platform] = true
@@ -51,13 +50,12 @@ module Gem::VersionOption
   # Add the --version option to the option parser.
 
   def add_version_option(task = command, *wrap)
-    OptionParser.accept Gem::Requirement do |value|
+    Gem::OptionParser.accept Gem::Requirement do |value|
       Gem::Requirement.new(*value.split(/\s*,\s*/))
     end
 
-    add_option('-v', '--version VERSION', Gem::Requirement,
-               "Specify version of gem to #{task}", *wrap) do
-                 |value, options|
+    add_option("-v", "--version VERSION", Gem::Requirement,
+               "Specify version of gem to #{task}", *wrap) do |value, options|
       # Allow handling for multiple --version operators
       if options[:version] && !options[:version].none?
         options[:version].concat([value])
@@ -73,4 +71,10 @@ module Gem::VersionOption
     end
   end
 
+  ##
+  # Extract platform given on the command line
+
+  def get_platform_from_requirements(requirements)
+    Gem.platforms[1].to_s if requirements.key? :added_platform
+  end
 end

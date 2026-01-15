@@ -1,0 +1,7 @@
+Creates an option from the given parameters +params+.
+See {Parameters for New Options}[optparse/option_params.rdoc].
+
+The block, if given, is the handler for the created option.
+When the option is encountered during command-line parsing,
+the block is called with the argument given for the option, if any.
+See {Option Handlers}[optparse/option_params.rdoc#label-Option+Handlers].

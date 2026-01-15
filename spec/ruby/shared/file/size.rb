@@ -72,7 +72,7 @@ describe :file_size_nil_when_missing, shared: true do
   end
 
   it "returns nil if file_name doesn't exist or has 0 size" do
-     @object.send(@method, @missing).should == nil
+    @object.send(@method, @missing).should == nil
   end
 end
 

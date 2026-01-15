@@ -1,0 +1,4 @@
+(1 + 2
+      ^ unexpected end-of-input, assuming it is closing the parent top level context
+      ^ expected a matching `)`
+

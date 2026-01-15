@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems/source'
 
 ##
 # The SourceList represents the sources rubygems has been configured to use.
@@ -15,7 +14,6 @@ require 'rubygems/source'
 # The most common way to get a SourceList is Gem.sources.
 
 class Gem::SourceList
-
   include Enumerable
 
   ##
@@ -38,7 +36,7 @@ class Gem::SourceList
 
     list.replace ary
 
-    return list
+    list
   end
 
   def initialize_copy(other) # :nodoc:
@@ -46,22 +44,54 @@ class Gem::SourceList
   end
 
   ##
-  # Appends +obj+ to the source list which may be a Gem::Source, URI or URI
+  # Appends +obj+ to the source list which may be a Gem::Source, Gem::URI or URI
   # String.
 
   def <<(obj)
-    require "uri"
-
     src = case obj
-          when URI
-            Gem::Source.new(obj)
           when Gem::Source
             obj
           else
-            Gem::Source.new(URI.parse(obj))
-          end
+            Gem::Source.new(obj)
+    end
 
     @sources << src unless @sources.include?(src)
+    src
+  end
+
+  ##
+  # Prepends +obj+ to the beginning of the source list which may be a Gem::Source, Gem::URI or URI
+  # Moves +obj+ to the beginning of the list if already present.
+  # String.
+
+  def prepend(obj)
+    src = case obj
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
+    end
+
+    @sources.delete(src) if @sources.include?(src)
+    @sources.unshift(src)
+    src
+  end
+
+  ##
+  # Appends +obj+ to the end of the source list, moving it if already present.
+  # +obj+ may be a Gem::Source, Gem::URI or URI String.
+  # Moves +obj+ to the end of the list if already present.
+
+  def append(obj)
+    src = case obj
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
+    end
+
+    @sources.delete(src) if @sources.include?(src)
+    @sources << src
     src
   end
 
@@ -90,7 +120,7 @@ class Gem::SourceList
   # Yields each source URI in the list.
 
   def each
-    @sources.each { |s| yield s.uri.to_s }
+    @sources.each {|s| yield s.uri.to_s }
   end
 
   ##
@@ -115,7 +145,7 @@ class Gem::SourceList
   # Returns an Array of source URI Strings.
 
   def to_a
-    @sources.map { |x| x.uri.to_s }
+    @sources.map {|x| x.uri.to_s }
   end
 
   alias_method :to_ary, :to_a
@@ -132,10 +162,10 @@ class Gem::SourceList
   # Gem::Source or a source URI.
 
   def include?(other)
-    if other.kind_of? Gem::Source
+    if other.is_a? Gem::Source
       @sources.include? other
     else
-      @sources.find { |x| x.uri.to_s == other.to_s }
+      @sources.find {|x| x.uri.to_s == other.to_s }
     end
   end
 
@@ -143,11 +173,10 @@ class Gem::SourceList
   # Deletes +source+ from the source list which may be a Gem::Source or a URI.
 
   def delete(source)
-    if source.kind_of? Gem::Source
+    if source.is_a? Gem::Source
       @sources.delete source
     else
-      @sources.delete_if { |x| x.uri.to_s == source.to_s }
+      @sources.delete_if {|x| x.uri.to_s == source.to_s }
     end
   end
-
 end

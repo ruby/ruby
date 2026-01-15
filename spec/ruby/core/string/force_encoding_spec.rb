@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 
 describe "String#force_encoding" do
@@ -60,7 +61,7 @@ describe "String#force_encoding" do
   end
 
   it "does not transcode self" do
-    str = "\u{8612}"
+    str = "é"
     str.dup.force_encoding('utf-16le').should_not == str.encode('utf-16le')
   end
 

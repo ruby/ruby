@@ -2,7 +2,17 @@
 
 RSpec.describe Bundler::Plugin::Events do
   context "plugin events" do
-    before { Bundler::Plugin::Events.send :reset }
+    before do
+      @old_constants = Bundler::Plugin::Events.constants.map {|name| [name, Bundler::Plugin::Events.const_get(name)] }
+      Bundler::Plugin::Events.send :reset
+    end
+
+    after do
+      Bundler::Plugin::Events.send(:reset)
+      Hash[@old_constants].each do |name, value|
+        Bundler::Plugin::Events.send(:define, name, value)
+      end
+    end
 
     describe "#define" do
       it "raises when redefining a constant" do

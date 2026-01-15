@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "name": "Run ruby",
+            "request": "launch",
+            "program": "${workspaceFolder}/ruby",
+            "args": ["test.rb"],
+            "preLaunchTask": "${defaultBuildTask}"
+        }
+    ]
+}

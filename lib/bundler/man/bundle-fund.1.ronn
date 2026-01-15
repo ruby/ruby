@@ -1,0 +1,25 @@
+bundle-fund(1) -- Lists information about gems seeking funding assistance
+=========================================================================
+
+## SYNOPSIS
+
+`bundle fund` [*OPTIONS*]
+
+## DESCRIPTION
+
+**bundle fund** lists information about gems seeking funding assistance.
+
+## OPTIONS
+
+* `--group=<list>`, `-g=<list>`:
+  Fetch funding information for a specific group.
+
+## EXAMPLES
+
+```
+# Lists funding information for all gems
+bundle fund
+
+# Lists funding information for a specific group
+bundle fund --group=security
+```

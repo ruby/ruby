@@ -1,9 +1,12 @@
 %{
+#define GPERF_DOWNCASE 1
+#define GPERF_CASE_STRNCMP 1
+#define gperf_case_strncmp strncasecmp
 struct zone {
     int name;
     int offset;
 };
-static const struct zone *zonetab();
+static const struct zone *zonetab(register const char *str, register size_t len);
 %}
 
 struct zone;
@@ -47,12 +50,12 @@ utc,  0*3600
 wet,  0*3600
 at,  -2*3600
 brst,-2*3600
-ndt, -(2*3600+1800)
+ndt, -(1*3600+1800)
 art, -3*3600
 adt, -3*3600
 brt, -3*3600
 clst,-3*3600
-nst, -(3*3600+1800)
+nst, -(2*3600+1800)
 ast, -4*3600
 clt, -4*3600
 akdt,-8*3600
@@ -62,7 +65,7 @@ hadt,-9*3600
 hdt, -9*3600
 yst, -9*3600
 ahst,-10*3600
-cat,-10*3600
+cat,2*3600
 hast,-10*3600
 hst,-10*3600
 nt,  -11*3600
@@ -82,7 +85,7 @@ fst,  2*3600
 mest, 2*3600
 mesz, 2*3600
 sast, 2*3600
-sst,  2*3600
+sst,  -11*3600
 bt,   3*3600
 eat,  3*3600
 eest, 3*3600
@@ -92,13 +95,13 @@ zp4,  4*3600
 zp5,  5*3600
 ist,  (5*3600+1800)
 zp6,  6*3600
-wast, 7*3600
-cct,  8*3600
+wast, 2*3600
+cct,  (6*3600+1800)
 sgt,  8*3600
 wadt, 8*3600
 jst,  9*3600
 kst,  9*3600
-east,10*3600
+east,-6*3600
 gst, 10*3600
 eadt,11*3600
 idle,12*3600
@@ -313,8 +316,8 @@ vut,39600
 wakt,43200
 warst,-10800
 wft,43200
-wgst,-7200
-wgt,-10800
+wgst,-3600
+wgt,-7200
 wib,25200
 wit,32400
 wita,28800

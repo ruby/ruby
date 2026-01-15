@@ -3,7 +3,11 @@
 # YAML::Store
 #
 require 'yaml'
-require 'pstore'
+
+begin
+  require 'pstore'
+rescue LoadError
+end
 
 # YAML::Store provides the same functionality as PStore, except it uses YAML
 # to dump objects instead of Marshal.
@@ -65,8 +69,16 @@ class YAML::Store < PStore
   end
 
   def load(content)
-    table = YAML.load(content)
-    if table == false
+    table =  if YAML.respond_to?(:safe_load)
+      if Psych::VERSION >= "3.1"
+        YAML.safe_load(content, permitted_classes: [Symbol])
+      else
+        YAML.safe_load(content, [Symbol])
+      end
+    else
+      YAML.load(content)
+    end
+    if table == false || table == nil
       {}
     else
       table
@@ -83,4 +95,4 @@ class YAML::Store < PStore
   def empty_marshal_checksum
     CHECKSUM_ALGO.digest(empty_marshal_data)
   end
-end
+end if defined?(::PStore)

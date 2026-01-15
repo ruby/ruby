@@ -132,7 +132,6 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
   end
 
   def test_hkdf_rfc5869_test_case_1
-    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
     hash = "sha256"
     ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
     salt = B("000102030405060708090a0b0c")
@@ -146,7 +145,6 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
   end
 
   def test_hkdf_rfc5869_test_case_3
-    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
     hash = "sha256"
     ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
     salt = B("")
@@ -160,7 +158,6 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
   end
 
   def test_hkdf_rfc5869_test_case_4
-    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
     hash = "sha1"
     ikm = B("0b0b0b0b0b0b0b0b0b0b0b")
     salt = B("000102030405060708090a0b0c")

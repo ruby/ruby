@@ -1,0 +1,16 @@
+benchmark:
+  fstring_random: |
+    i = 0
+    str = "same".dup
+    while i < 5_000_000
+      -(i.to_s.freeze)
+      i += 1
+    end
+  fstring_same: |
+    i = 0
+    str = "same".dup
+    while i < 10_000_000
+      -str
+      i += 1
+    end
+loop_count: 1

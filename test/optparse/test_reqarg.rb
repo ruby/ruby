@@ -1,15 +1,16 @@
 # frozen_string_literal: false
 require_relative 'test_optparse'
 
-module TestOptionParser::ReqArg
+module TestOptionParserReqArg
   def setup
     super
     @opt.def_option "--with_underscore=VAL" do |x| @flag = x end
     @opt.def_option "--with-hyphen=VAL" do |x| @flag = x end
+    @opt.def_option("--lambda=VAL", &->(x) {@flag = x})
   end
 
   class Def1 < TestOptionParser
-    include ReqArg
+    include TestOptionParserReqArg
     def setup
       super
       @opt.def_option("-xVAL") {|x| @flag = x}
@@ -19,21 +20,21 @@ module TestOptionParser::ReqArg
     end
   end
   class Def2 < TestOptionParser
-    include ReqArg
+    include TestOptionParserReqArg
     def setup
       super
       @opt.def_option("-x", "--option=VAL") {|x| @flag = x}
     end
   end
   class Def3 < TestOptionParser
-    include ReqArg
+    include TestOptionParserReqArg
     def setup
       super
       @opt.def_option("--option=VAL", "-x") {|x| @flag = x}
     end
   end
   class Def4 < TestOptionParser
-    include ReqArg
+    include TestOptionParserReqArg
     def setup
       super
       @opt.def_option("-xVAL", "--option=VAL") {|x| @flag = x}
@@ -79,6 +80,11 @@ module TestOptionParser::ReqArg
     assert_equal("foo3", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"--with_hyphen foo4")})
     assert_equal("foo4", @flag)
+  end
+
+  def test_lambda
+    assert_equal(%w"", no_error {@opt.parse!(%w"--lambda=lambda1")})
+    assert_equal("lambda1", @flag)
   end
 
   class TestOptionParser::WithPattern < TestOptionParser

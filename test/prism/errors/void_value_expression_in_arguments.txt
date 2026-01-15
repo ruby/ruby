@@ -1,0 +1,17 @@
+foo(return)
+    ^~~~~~ unexpected void value expression
+foo(1, return)
+       ^~~~~~ unexpected void value expression
+foo(*return)
+     ^~~~~~ unexpected void value expression
+foo(**return)
+      ^~~~~~ unexpected void value expression
+foo(&return)
+     ^~~~~~ unexpected void value expression
+foo(return => 1)
+    ^~~~~~ unexpected void value expression
+foo(:a => return)
+          ^~~~~~ unexpected void value expression
+foo(a: return)
+       ^~~~~~ unexpected void value expression
+

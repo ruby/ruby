@@ -1,3 +1,6 @@
+#ifndef COROUTINE_WIN32_CONTEXT_H
+#define COROUTINE_WIN32_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -13,6 +16,7 @@
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void __fastcall
+#define COROUTINE_DECL void __fastcall
 #define COROUTINE_LIMITED_ADDRESS_SPACE
 
 /* This doesn't include thread information block */
@@ -21,6 +25,7 @@ enum {COROUTINE_REGISTERS = 4};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef void(__fastcall * coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
@@ -41,7 +46,7 @@ static inline void coroutine_initialize(
     char * top = (char*)stack + size;
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
 
     /* Windows Thread Information Block */
     *--context->stack_pointer = (void*)0xFFFFFFFF; /* fs:[0] */
@@ -57,3 +62,5 @@ struct coroutine_context * __fastcall coroutine_transfer(struct coroutine_contex
 static inline void coroutine_destroy(struct coroutine_context * context)
 {
 }
+
+#endif /* COROUTINE_WIN32_CONTEXT_H */

@@ -23,11 +23,127 @@ describe "The rescue keyword" do
     end.should == :caught
   end
 
-  it "can capture the raised exception in a local variable" do
-    begin
-      raise SpecificExampleException, "some text"
-    rescue SpecificExampleException => e
-      e.message.should == "some text"
+  describe 'can capture the raised exception' do
+    before :all do
+      require_relative 'fixtures/rescue_captures'
+    end
+
+    it 'in a local variable' do
+      RescueSpecs::LocalVariableCaptor.should_capture_exception
+    end
+
+    it 'in a class variable' do
+      RescueSpecs::ClassVariableCaptor.should_capture_exception
+    end
+
+    it 'in a constant' do
+      RescueSpecs::ConstantCaptor.should_capture_exception
+    end
+
+    it 'in a global variable' do
+      RescueSpecs::GlobalVariableCaptor.should_capture_exception
+    end
+
+    it 'in an instance variable' do
+      RescueSpecs::InstanceVariableCaptor.should_capture_exception
+    end
+
+    it 'using a safely navigated setter method' do
+      RescueSpecs::SafeNavigationSetterCaptor.should_capture_exception
+    end
+
+    it 'using a safely navigated setter method on a nil target' do
+      target = nil
+      begin
+        raise SpecificExampleException, "Raising this to be handled below"
+      rescue SpecificExampleException => target&.captured_error
+        :caught
+      end.should == :caught
+      target.should be_nil
+    end
+
+    it 'using a setter method' do
+      RescueSpecs::SetterCaptor.should_capture_exception
+    end
+
+    it 'using a square brackets setter' do
+      RescueSpecs::SquareBracketsCaptor.should_capture_exception
+    end
+  end
+
+  describe 'capturing in a local variable (that defines it)' do
+    it 'captures successfully in a method' do
+      ScratchPad.record []
+
+      def a
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      a
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a block' do
+      ScratchPad.record []
+
+      p = proc do
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      p.call
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a class' do
+      ScratchPad.record []
+
+      class RescueSpecs::C
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a module' do
+      ScratchPad.record []
+
+      module RescueSpecs::M
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures sucpcessfully in a singleton class' do
+      ScratchPad.record []
+
+      class << Object.new
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully at the top-level' do
+      ScratchPad.record []
+      loaded_features = $".dup
+      begin
+        require_relative 'fixtures/rescue/top_level'
+
+        ScratchPad.recorded.should == ["message"]
+      ensure
+        $".replace loaded_features
+      end
     end
   end
 
@@ -83,6 +199,18 @@ describe "The rescue keyword" do
     exception_list.each do |exception_class|
       caught.map{|e| e.class}.should include(exception_class)
     end
+  end
+
+  it "converts the splatted list of exceptions using #to_a" do
+    exceptions = mock("to_a")
+    exceptions.should_receive(:to_a).and_return(exception_list)
+    caught_it = false
+    begin
+      raise SpecificExampleException, "not important"
+    rescue *exceptions
+      caught_it = true
+    end
+    caught_it.should be_true
   end
 
   it "can combine a splatted list of exceptions with a literal list of exceptions" do
@@ -149,7 +277,7 @@ describe "The rescue keyword" do
       rescue ArgumentError
       end
     rescue StandardError => e
-      e.backtrace.first.should include ":in `raise_standard_error'"
+      e.backtrace.first.should =~ /:in [`'](?:RescueSpecs\.)?raise_standard_error'/
     else
       fail("exception wasn't handled by the correct rescue block")
     end
@@ -208,34 +336,16 @@ describe "The rescue keyword" do
     ScratchPad.recorded.should == [:one, :else_ran, :ensure_ran, :outside_begin]
   end
 
-  ruby_version_is ''...'2.6' do
-    it "will execute an else block even without rescue and ensure" do
-      -> {
-        eval <<-ruby
-          begin
-            ScratchPad << :begin
-          else
-            ScratchPad << :else
-          end
-        ruby
-      }.should complain(/else without rescue is useless/)
-
-      ScratchPad.recorded.should == [:begin, :else]
-    end
-  end
-
-  ruby_version_is '2.6' do
-    it "raises SyntaxError when else is used without rescue and ensure" do
-      -> {
-        eval <<-ruby
-          begin
-            ScratchPad << :begin
-          else
-            ScratchPad << :else
-          end
-        ruby
-      }.should raise_error(SyntaxError, /else without rescue is useless/)
-    end
+  it "raises SyntaxError when else is used without rescue and ensure" do
+    -> {
+      eval <<-ruby
+        begin
+          ScratchPad << :begin
+        else
+          ScratchPad << :else
+        end
+      ruby
+    }.should raise_error(SyntaxError, /else without rescue is useless/)
   end
 
   it "will not execute an else block if an exception was raised" do
@@ -398,9 +508,9 @@ describe "The rescue keyword" do
         raise "from block"
       rescue (raise "from rescue expression")
       end
-    }.should raise_error(RuntimeError, "from rescue expression") do |e|
+    }.should raise_error(RuntimeError, "from rescue expression") { |e|
       e.cause.message.should == "from block"
-    end
+    }
   end
 
   it "should splat the handling Error classes" do
@@ -457,6 +567,21 @@ describe "The rescue keyword" do
     eval('1.+((1 rescue 1))').should == 2
   end
 
+  ruby_version_is "3.4" do
+    it "does not introduce extra backtrace entries" do
+      def foo
+        begin
+          raise "oops"
+        rescue
+          return caller(0, 2)
+        end
+      end
+      line = __LINE__
+      foo[0].should =~ /#{__FILE__}:#{line-3}:in 'foo'/
+      foo[1].should =~ /#{__FILE__}:#{line+2}:in 'block/
+    end
+  end
+
   describe "inline form" do
     it "can be inlined" do
       a = 1/0 rescue 1
@@ -480,14 +605,12 @@ describe "The rescue keyword" do
       }.should raise_error(Exception)
     end
 
-    ruby_version_is "2.7" do
-      it "rescues with multiple assignment" do
+    it "rescues with multiple assignment" do
 
-        a, b = raise rescue [1, 2]
+      a, b = raise rescue [1, 2]
 
-        a.should == 1
-        b.should == 2
-      end
+      a.should == 1
+      b.should == 2
     end
   end
 end

@@ -43,7 +43,8 @@ class Bundler::Thor
       # Boolean:: true if it is identical, false otherwise.
       #
       def identical?
-        exists? && File.binread(destination) == render
+        # binread uses ASCII-8BIT, so to avoid false negatives, the string must use the same
+        exists? && File.binread(destination) == String.new(render).force_encoding("ASCII-8BIT")
       end
 
       # Holds the content to be added to the file.
@@ -60,7 +61,7 @@ class Bundler::Thor
         invoke_with_conflict_check do
           require "fileutils"
           FileUtils.mkdir_p(File.dirname(destination))
-          File.open(destination, "wb") { |f| f.write render }
+          File.open(destination, "wb", config[:perm]) { |f| f.write render }
         end
         given_destination
       end

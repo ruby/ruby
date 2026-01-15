@@ -5,7 +5,6 @@ require 'test/unit'
 class TestRegexp < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -41,20 +40,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("a".gsub(/a\Z/, ""), "")
   end
 
-  def test_yoshidam_net_20041111_1
-    s = "[\xC2\xA0-\xC3\xBE]"
-    assert_match(Regexp.new(s, nil, "u"), "\xC3\xBE")
-  end
-
-  def test_yoshidam_net_20041111_2
-    assert_raise(RegexpError) do
-      s = "[\xFF-\xFF]".force_encoding("utf-8")
-      Regexp.new(s, nil, "u")
-    end
-  end
-
   def test_ruby_dev_31309
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
+  end
+
+  def test_premature_end_char_property
+    ["\\p{",
+     "\\p{".dup.force_encoding("UTF-8"),
+     "\\p{".dup.force_encoding("US-ASCII")
+    ].each do |string|
+      assert_raise(RegexpError) do
+        Regexp.new(string)
+      end
+    end
   end
 
   def test_assert_normal_exit
@@ -74,10 +72,139 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      str = "abcd\u3042"
+      [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
+        enc = Encoding.const_get(es)
+        rs = Regexp.new(str.encode(enc)).to_s
+        assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
+        assert_equal(enc, rs.encoding)
+      end
+    end
+  end
+
   def test_to_s_extended_subexp
     re = /#\g#{"\n"}/x
     re = /#{re}/
     assert_warn('', '[ruby-core:82328] [Bug #13798]') {re.to_s}
+  end
+
+  def test_extended_comment_invalid_escape_bug_18294
+    assert_separately([], <<-RUBY)
+      re = / C:\\\\[a-z]{5} # e.g. C:\\users /x
+      assert_match(re, 'C:\\users')
+      assert_not_match(re, 'C:\\user')
+
+      re = /
+        foo  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f[#o]o  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f[[:alnum:]#]o  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f(?# \\M-ca)oo  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /f(?# \\M-ca)oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /[-(?# fca)]oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /f(?# ca\0\\M-ca)oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+    RUBY
+
+    assert_raise(SyntaxError) {eval "/\\users/x"}
+    assert_raise(SyntaxError) {eval "/[\\users]/x"}
+    assert_raise(SyntaxError) {eval "/(?<\\users)/x"}
+    assert_raise(SyntaxError) {eval "/# \\users/"}
+  end
+
+  def test_nonextended_section_of_extended_regexp_bug_19379
+    assert_separately([], <<-'RUBY')
+      re = /(?-x:#)/x
+      assert_match(re, '#')
+      assert_not_match(re, '-')
+
+      re = /(?xi:#
+      y)/
+      assert_match(re, 'Y')
+      assert_not_match(re, '-')
+
+      re = /(?mix:#
+      y)/
+      assert_match(re, 'Y')
+      assert_not_match(re, '-')
+
+      re = /(?x-im:#
+      y)/i
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?-imx:(?xim:#
+      y))/x
+      assert_match(re, 'y')
+      assert_not_match(re, '-')
+
+      re = /(?x)#
+      y/
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?mx-i)#
+      y/i
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?-imx:(?xim:#
+      (?-x)y#))/x
+      assert_match(re, 'Y#')
+      assert_not_match(re, '-#')
+
+      re = /(?imx:#
+      (?-xim:#(?im)#(?x)#
+      )#
+      (?x)#
+      y)/
+      assert_match(re, '###Y')
+      assert_not_match(re, '###-')
+
+      re = %r{#c-\w+/comment/[\w-]+}
+      re = %r{https?://[^/]+#{re}}x
+      assert_match(re, 'http://foo#c-x/comment/bar')
+      assert_not_match(re, 'http://foo#cx/comment/bar')
+    RUBY
+  end
+
+  def test_utf8_comment_in_usascii_extended_regexp_bug_19455
+    assert_separately([], <<-RUBY)
+      assert_equal(Encoding::UTF_8, /(?#\u1000)/x.encoding)
+      assert_equal(Encoding::UTF_8, /#\u1000/x.encoding)
+    RUBY
   end
 
   def test_union
@@ -197,6 +324,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({'a' => '1', 'b' => '2', 'c' => '3'}, /^(?<a>.)(?<b>.)(?<c>.)?/.match('123').named_captures)
     assert_equal({'a' => '1', 'b' => '2', 'c' => ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures)
 
+    assert_equal({a: '1', b: '2', c: ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures(symbolize_names: true))
+    assert_equal({'a' => '1', 'b' => '2', 'c' => ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures(symbolize_names: false))
+
     assert_equal({'a' => 'x'}, /(?<a>x)|(?<a>y)/.match('x').named_captures)
     assert_equal({'a' => 'y'}, /(?<a>x)|(?<a>y)/.match('y').named_captures)
 
@@ -218,6 +348,17 @@ class TestRegexp < Test::Unit::TestCase
   def test_assign_named_capture_to_reserved_word
     /(?<nil>.)/ =~ "a"
     assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
+
+    def (obj = Object.new).test(s, nil: :ng)
+      /(?<nil>.)/ =~ s
+      binding.local_variable_get(:nil)
+    end
+    assert_equal("b", obj.test("b"))
+
+    tap do |nil: :ng|
+      /(?<nil>.)/ =~ "c"
+      assert_equal("c", binding.local_variable_get(:nil))
+    end
   end
 
   def test_assign_named_capture_to_const
@@ -241,6 +382,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(r, m.regexp)
     re = /foo/
     assert_equal(re, re.match("foo").regexp)
+  end
+
+  def test_match_lambda_multithread
+    bug17507 = "[ruby-core:101901]"
+    str = "a-x-foo-bar-baz-z-b"
+
+    worker = lambda do
+      m = /foo-([A-Za-z0-9_\.]+)-baz/.match(str)
+      assert_equal("bar", m[1], bug17507)
+
+      # These two lines are needed to trigger the bug
+      File.exist? "/tmp"
+      str.gsub(/foo-bar-baz/, "foo-abc-baz")
+    end
+
+    def self. threaded_test(worker)
+      6.times.map {Thread.new {10_000.times {worker.call}}}.each(&:join)
+    end
+
+    # The bug only occurs in a method calling a block/proc/lambda
+    threaded_test(worker)
   end
 
   def test_source
@@ -306,6 +468,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("/\n/i", /#{"\n"}/i.inspect)
     s = [0xf1, 0xf2, 0xf3].pack("C*")
     assert_equal('/\/\xF1\xF2\xF3/i', /\/#{s}/i.inspect)
+  end
+
+  def test_inspect_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
+    end
   end
 
   def test_char_to_option
@@ -381,6 +550,37 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([2, 3], m.offset(3))
   end
 
+  def test_match_byteoffset_begin_end
+    m = /(?<x>b..)/.match("foobarbaz")
+    assert_equal([3, 6], m.byteoffset("x"))
+    assert_equal(3, m.begin("x"))
+    assert_equal(6, m.end("x"))
+    assert_raise(IndexError) { m.byteoffset("y") }
+    assert_raise(IndexError) { m.byteoffset(2) }
+    assert_raise(IndexError) { m.begin(2) }
+    assert_raise(IndexError) { m.end(2) }
+    assert_raise(IndexError) { m.bytebegin(2) }
+    assert_raise(IndexError) { m.byteend(2) }
+
+    m = /(?<x>q..)?/.match("foobarbaz")
+    assert_equal([nil, nil], m.byteoffset("x"))
+    assert_equal(nil, m.begin("x"))
+    assert_equal(nil, m.end("x"))
+    assert_equal(nil, m.bytebegin("x"))
+    assert_equal(nil, m.byteend("x"))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal([3, 6], m.byteoffset(1))
+    assert_equal(3, m.bytebegin(1))
+    assert_equal(6, m.byteend(1))
+    assert_equal([nil, nil], m.byteoffset(2))
+    assert_equal(nil, m.bytebegin(2))
+    assert_equal(nil, m.byteend(2))
+    assert_equal([6, 9], m.byteoffset(3))
+    assert_equal(6, m.bytebegin(3))
+    assert_equal(9, m.byteend(3))
+  end
+
   def test_match_to_s
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("bar", m.to_s)
@@ -424,6 +624,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil(m[5])
     assert_raise(IndexError) { m[:foo] }
     assert_raise(TypeError) { m[nil] }
+    assert_equal(["baz", nil], m[-2, 3])
   end
 
   def test_match_values_at
@@ -451,27 +652,164 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foobarbaz", m.string)
   end
 
+  def test_match_matchsubstring
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal("HX1138", m.match(0))
+    assert_equal("8", m.match(4))
+    assert_nil(m.match(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal("\u3043", m.match(1))
+    assert_nil(m.match(2))
+    assert_equal("\u3044", m.match(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal("h", m.match(:foo))
+    assert_nil(m.match(:n))
+    assert_equal("oge\u3042", m.match(:bar))
+  end
+
+  def test_match_match_length
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal(6, m.match_length(0))
+    assert_equal(1, m.match_length(4))
+    assert_nil(m.match_length(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal(1, m.match_length(1))
+    assert_nil(m.match_length(2))
+    assert_equal(1, m.match_length(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal(1, m.match_length(:foo))
+    assert_nil(m.match_length(:n))
+    assert_equal(4, m.match_length(:bar))
+  end
+
   def test_match_inspect
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal('#<MatchData "foobarbaz" 1:"foo" 2:"bar" 3:"baz" 4:nil>', m.inspect)
   end
 
+  def test_match_data_deconstruct
+    m = /foo.+/.match("foobarbaz")
+    assert_equal([], m.deconstruct)
+
+    m = /(foo).+(baz)/.match("foobarbaz")
+    assert_equal(["foo", "baz"], m.deconstruct)
+
+    m = /(...)(...)(...)(...)?/.match("foobarbaz")
+    assert_equal(["foo", "bar", "baz", nil], m.deconstruct)
+  end
+
+  def test_match_data_deconstruct_keys
+    m = /foo.+/.match("foobarbaz")
+    assert_equal({}, m.deconstruct_keys([:a]))
+
+    m = /(?<a>foo).+(?<b>baz)/.match("foobarbaz")
+    assert_equal({a: "foo", b: "baz"}, m.deconstruct_keys(nil))
+    assert_equal({a: "foo", b: "baz"}, m.deconstruct_keys([:a, :b]))
+    assert_equal({b: "baz"}, m.deconstruct_keys([:b]))
+    assert_equal({}, m.deconstruct_keys([:c, :a]))
+    assert_equal({a: "foo"}, m.deconstruct_keys([:a, :c]))
+    assert_equal({}, m.deconstruct_keys([:a, :b, :c]))
+
+    assert_raise(TypeError) {
+      m.deconstruct_keys(0)
+    }
+
+    assert_raise(TypeError) {
+      m.deconstruct_keys(["a", "b"])
+    }
+  end
+
+  def test_match_no_match_no_matchdata
+    EnvUtil.without_gc do
+      h = {}
+      ObjectSpace.count_objects(h)
+      prev_matches = h[:T_MATCH] || 0
+      _md = /[A-Z]/.match('1') # no match
+      ObjectSpace.count_objects(h)
+      new_matches = h[:T_MATCH] || 0
+      assert_equal prev_matches, new_matches, "Bug [#20104]"
+    end
+  end
+
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
-    assert_equal(/foo/, Regexp.new(/foo/, Regexp::IGNORECASE))
+    assert_equal(/foo/, assert_warning(/ignored/) {Regexp.new(/foo/, Regexp::IGNORECASE)})
+    assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/)})
+    assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/, timeout: nil)})
 
-    assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
-    assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
-    assert_equal(//n, Regexp.new("", nil, "n"))
+    arg_encoding_none = //n.options # ARG_ENCODING_NONE is implementation defined value
 
-    arg_encoding_none = 32 # ARG_ENCODING_NONE is implementation defined value
-    assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
-    assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
+    assert_deprecated_warning('') do
+      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", Regexp::NOENCODING).encoding)
+      assert_equal("bar", "foobarbaz"[Regexp.new("b..", Regexp::NOENCODING)])
+      assert_equal(//, Regexp.new(""))
+      assert_equal(//, Regexp.new("", timeout: 1))
+      assert_equal(//n, Regexp.new("", Regexp::NOENCODING))
+      assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
+
+      assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
+
+      assert_nil(Regexp.new("").timeout)
+      assert_equal(1.0, Regexp.new("", timeout: 1.0).timeout)
+      assert_nil(Regexp.compile("").timeout)
+      assert_equal(1.0, Regexp.compile("", timeout: 1.0).timeout)
+    end
 
     assert_raise(RegexpError) { Regexp.new(")(") }
     assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
     assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
+  end
+
+  def test_initialize_from_regex_memory_corruption
+    assert_ruby_status([], <<-'end;')
+      10_000.times { Regexp.new(Regexp.new("(?<name>)")) }
+    end;
+  end
+
+  def test_initialize_bool_warning
+    assert_warning(/expected true or false as ignorecase/) do
+      Regexp.new("foo", :i)
+    end
+  end
+
+  def test_initialize_option
+    assert_equal(//i, Regexp.new("", "i"))
+    assert_equal(//m, Regexp.new("", "m"))
+    assert_equal(//x, Regexp.new("", "x"))
+    assert_equal(//imx, Regexp.new("", "imx"))
+    assert_equal(//, Regexp.new("", ""))
+    assert_equal(//imx, Regexp.new("", "mimix"))
+
+    assert_raise(ArgumentError) { Regexp.new("", "e") }
+    assert_raise(ArgumentError) { Regexp.new("", "n") }
+    assert_raise(ArgumentError) { Regexp.new("", "s") }
+    assert_raise(ArgumentError) { Regexp.new("", "u") }
+    assert_raise(ArgumentError) { Regexp.new("", "o") }
+    assert_raise(ArgumentError) { Regexp.new("", "j") }
+    assert_raise(ArgumentError) { Regexp.new("", "xmen") }
+  end
+
+  def test_match_control_meta_escape
+    assert_equal(0, /\c\xFF/ =~ "\c\xFF")
+    assert_equal(0, /\c\M-\xFF/ =~ "\c\M-\xFF")
+    assert_equal(0, /\C-\xFF/ =~ "\C-\xFF")
+    assert_equal(0, /\C-\M-\xFF/ =~ "\C-\M-\xFF")
+    assert_equal(0, /\M-\xFF/ =~ "\M-\xFF")
+    assert_equal(0, /\M-\C-\xFF/ =~ "\M-\C-\xFF")
+    assert_equal(0, /\M-\c\xFF/ =~ "\M-\c\xFF")
+
+    assert_nil(/\c\xFE/ =~ "\c\xFF")
+    assert_nil(/\c\M-\xFE/ =~ "\c\M-\xFF")
+    assert_nil(/\C-\xFE/ =~ "\C-\xFF")
+    assert_nil(/\C-\M-\xFE/ =~ "\C-\M-\xFF")
+    assert_nil(/\M-\xFE/ =~ "\M-\xFF")
+    assert_nil(/\M-\C-\xFE/ =~ "\M-\C-\xFF")
+    assert_nil(/\M-\c\xFE/ =~ "\M-\c\xFF")
   end
 
   def test_unescape
@@ -550,7 +888,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("bc", /../.match('abc', -2)[0])
     assert_nil(/../.match("abc", -4))
     assert_nil(/../.match("abc", 4))
-    assert_equal('\x', /../n.match("\u3042" + '\x', 1)[0])
+
+    # use eval because only one warning is shown for the same regexp literal
+    pat = eval('/../n')
+    assert_equal('\x', assert_warning(/binary regexp/) {pat.match("\u3042" + '\x', 1)}[0])
 
     r = nil
     /.../.match("abc") {|m| r = m[0] }
@@ -559,6 +900,14 @@ class TestRegexp < Test::Unit::TestCase
     $_ = "abc"; assert_equal(1, ~/bc/)
     $_ = "abc"; assert_nil(~/d/)
     $_ = nil; assert_nil(~/./)
+  end
+
+  def test_match_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+      assert_equal("h", m.match(:foo))
+    end
   end
 
   def test_match_p
@@ -650,21 +999,22 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
-  def test_KCODE
-    assert_nil($KCODE)
-    assert_nothing_raised { $KCODE = nil }
-    assert_equal(false, $=)
-    assert_nothing_raised { $= = nil }
+  def test_regsub_no_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+      code = proc do
+        "aaaaaaaaaaa".gsub(/a/, "")
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
   end
 
-  def test_KCODE_warning
-    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
-    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
-  end
-
-  def test_ignorecase_warning
-    assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
-    assert_warning(/variable \$= is no longer effective/) { $= }
+  def test_ignorecase
+    v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
+    assert_equal(false, v)
+    assert_deprecated_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
   end
 
   def test_match_setter
@@ -680,11 +1030,18 @@ class TestRegexp < Test::Unit::TestCase
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
 
     bug10877 = '[ruby-core:68209] [Bug #10877]'
+    bug18160 = '[Bug #18160]'
     test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
+      pat = /#{idx}/
+      EnvUtil.with_default_internal(enc) do
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
+      end
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }
@@ -726,11 +1083,13 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_rindex_regexp
-    assert_equal(3, "foobarbaz\u3042".rindex(/b../n, 5))
+    # use eval because only one warning is shown for the same regexp literal
+    pat = eval('/b../n')
+    assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(pat, 5)})
   end
 
   def assert_regexp(re, ss, fs = [], msg = nil)
-    re = Regexp.new(re) unless re.is_a?(Regexp)
+    re = EnvUtil.suppress_warning {Regexp.new(re)} unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
       s ||= e
@@ -763,7 +1122,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\80\z/, "80", ["\100", ""])
     check(/\A\77\z/, "?")
     check(/\A\78\z/, "\7" + '8', ["\100", ""])
-    check(eval('/\A\Qfoo\E\z/'), "QfooE")
+    check(assert_warning(/Unknown escape/) {eval('/\A\Qfoo\E\z/')}, "QfooE")
     check(/\Aa++\z/, "aaa")
     check('\Ax]\z', "x]")
     check(/x#foo/x, "x", "#foo")
@@ -807,8 +1166,8 @@ class TestRegexp < Test::Unit::TestCase
     check(/^(A+|B(?>\g<1>)*)[AC]$/, %w(AAAC BBBAAAAC), %w(BBBAAA))
     check(/^()(?>\g<1>)*$/, "", "a")
     check(/^(?>(?=a)(#{ "a" * 1000 }|))++$/, ["a" * 1000, "a" * 2000, "a" * 3000], ["", "a" * 500, "b" * 1000])
-    check(eval('/^(?:a?)?$/'), ["", "a"], ["aa"])
-    check(eval('/^(?:a+)?$/'), ["", "a", "aa"], ["ab"])
+    check(assert_warning(/nested repeat operator/) {eval('/^(?:a?)?$/')}, ["", "a"], ["aa"])
+    check(assert_warning(/nested repeat operator/) {eval('/^(?:a+)?$/')}, ["", "a", "aa"], ["ab"])
     check(/^(?:a?)+?$/, ["", "a", "aa"], ["ab"])
     check(/^a??[ab]/, [["a", "a"], ["a", "aa"], ["b", "b"], ["a", "ab"]], ["c"])
     check(/^(?:a*){3,5}$/, ["", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa"], ["b"])
@@ -937,13 +1296,13 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_posix_bracket
     check(/\A[[:alpha:]0]\z/, %w(0 a), %w(1 .))
-    check(eval('/\A[[:^alpha:]0]\z/'), %w(0 1 .), "a")
-    check(eval('/\A[[:alpha\:]]\z/'), %w(a l p h a :), %w(b 0 1 .))
-    check(eval('/\A[[:alpha:foo]0]\z/'), %w(0 a), %w(1 .))
+    check(assert_warning(/duplicated range/) {eval('/\A[[:^alpha:]0]\z/')}, %w(0 1 .), "a")
+    check(assert_warning(/duplicated range/) {eval('/\A[[:alpha\:]]\z/')}, %w(a l p h a :), %w(b 0 1 .))
+    check(assert_warning(/duplicated range/) {eval('/\A[[:alpha:foo]0]\z/')}, %w(0 a), %w(1 .))
     check(/\A[[:xdigit:]&&[:alpha:]]\z/, "a", %w(g 0))
     check('\A[[:abcdefghijklmnopqrstu:]]+\z', "[]")
     failcheck('[[:alpha')
-    failcheck('[[:alpha:')
+    assert_warning(/duplicated range/) {failcheck('[[:alpha:')}
     failcheck('[[:alp:]]')
 
     assert_match(/\A[[:digit:]]+\z/, "\uff10\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19")
@@ -951,6 +1310,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
     assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
+
+    assert_match(/[[:word:]]/, "\u{200C}")
+    assert_match(/[[:word:]]/, "\u{200D}")
   end
 
   def test_cclass_R
@@ -1071,25 +1433,223 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_unicode_age
-    assert_match(/^\p{Age=6.0}$/u, "\u261c")
-    assert_match(/^\p{Age=1.1}$/u, "\u261c")
-    assert_no_match(/^\P{age=6.0}$/u, "\u261c")
+    assert_unicode_age("\u261c", matches: %w"6.0 1.1", unmatches: [])
 
-    assert_match(/^\p{age=6.0}$/u, "\u31f6")
-    assert_match(/^\p{age=3.2}$/u, "\u31f6")
-    assert_no_match(/^\p{age=3.1}$/u, "\u31f6")
-    assert_no_match(/^\p{age=3.0}$/u, "\u31f6")
-    assert_no_match(/^\p{age=1.1}$/u, "\u31f6")
+    assert_unicode_age("\u31f6", matches: %w"6.0 3.2", unmatches: %w"3.1 3.0 1.1")
+    assert_unicode_age("\u2754", matches: %w"6.0", unmatches: %w"5.0 4.0 3.0 2.0 1.1")
 
-    assert_match(/^\p{age=6.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=5.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=4.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=3.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=2.0}$/u, "\u2754")
-    assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+    assert_unicode_age("\u32FF", matches: %w"12.1", unmatches: %w"12.0")
+  end
 
-    assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
-    assert_match(/^\p{age=12.1}$/u, "\u32FF")
+  def test_unicode_age_14_0
+    @matches = %w"14.0"
+    @unmatches = %w"13.0"
+
+    assert_unicode_age("\u{10570}")
+    assert_unicode_age("\u9FFF")
+    assert_unicode_age("\u{2A6DF}")
+    assert_unicode_age("\u{2B738}")
+  end
+
+  def test_unicode_age_15_0
+    @matches = %w"15.0"
+    @unmatches = %w"14.0"
+
+    assert_unicode_age("\u{0CF3}",
+                       "KANNADA SIGN COMBINING ANUSVARA ABOVE RIGHT")
+    assert_unicode_age("\u{0ECE}", "LAO YAMAKKAN")
+    assert_unicode_age("\u{10EFD}".."\u{10EFF}",
+                       "ARABIC SMALL LOW WORD SAKTA..ARABIC SMALL LOW WORD MADDA")
+    assert_unicode_age("\u{1123F}".."\u{11241}",
+                       "KHOJKI LETTER QA..KHOJKI VOWEL SIGN VOCALIC R")
+    assert_unicode_age("\u{11B00}".."\u{11B09}",
+                       "DEVANAGARI HEAD MARK..DEVANAGARI SIGN MINDU")
+    assert_unicode_age("\u{11F00}".."\u{11F10}",
+                       "KAWI SIGN CANDRABINDU..KAWI LETTER O")
+    assert_unicode_age("\u{11F12}".."\u{11F3A}",
+                       "KAWI LETTER KA..KAWI VOWEL SIGN VOCALIC R")
+    assert_unicode_age("\u{11F3E}".."\u{11F59}",
+                       "KAWI VOWEL SIGN E..KAWI DIGIT NINE")
+    assert_unicode_age("\u{1342F}",
+                       "EGYPTIAN HIEROGLYPH V011D")
+    assert_unicode_age("\u{13439}".."\u{1343F}",
+                       "EGYPTIAN HIEROGLYPH INSERT AT MIDDLE..EGYPTIAN HIEROGLYPH END WALLED ENCLOSURE")
+    assert_unicode_age("\u{13440}".."\u{13455}",
+                       "EGYPTIAN HIEROGLYPH MIRROR HORIZONTALLY..EGYPTIAN HIEROGLYPH MODIFIER DAMAGED")
+    assert_unicode_age("\u{1B132}", "HIRAGANA LETTER SMALL KO")
+    assert_unicode_age("\u{1B155}", "KATAKANA LETTER SMALL KO")
+    assert_unicode_age("\u{1D2C0}".."\u{1D2D3}",
+                       "KAKTOVIK NUMERAL ZERO..KAKTOVIK NUMERAL NINETEEN")
+    assert_unicode_age("\u{1DF25}".."\u{1DF2A}",
+                       "LATIN SMALL LETTER D WITH MID-HEIGHT LEFT HOOK..LATIN SMALL LETTER T WITH MID-HEIGHT LEFT HOOK")
+    assert_unicode_age("\u{1E030}".."\u{1E06D}",
+                       "MODIFIER LETTER CYRILLIC SMALL A..MODIFIER LETTER CYRILLIC SMALL STRAIGHT U WITH STROKE")
+    assert_unicode_age("\u{1E08F}",
+                       "COMBINING CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I")
+    assert_unicode_age("\u{1E4D0}".."\u{1E4F9}",
+                       "NAG MUNDARI LETTER O..NAG MUNDARI DIGIT NINE")
+    assert_unicode_age("\u{1F6DC}", "WIRELESS")
+    assert_unicode_age("\u{1F774}".."\u{1F776}",
+                       "LOT OF FORTUNE..LUNAR ECLIPSE")
+    assert_unicode_age("\u{1F77B}".."\u{1F77F}",
+                       "HAUMEA..ORCUS")
+    assert_unicode_age("\u{1F7D9}", "NINE POINTED WHITE STAR")
+    assert_unicode_age("\u{1FA75}".."\u{1FA77}",
+                       "LIGHT BLUE HEART..PINK HEART")
+    assert_unicode_age("\u{1FA87}".."\u{1FA88}",
+                       "MARACAS..FLUTE")
+    assert_unicode_age("\u{1FAAD}".."\u{1FAAF}",
+                       "FOLDING HAND FAN..KHANDA")
+    assert_unicode_age("\u{1FABB}".."\u{1FABD}",
+                       "HYACINTH..WING")
+    assert_unicode_age("\u{1FABF}", "GOOSE")
+    assert_unicode_age("\u{1FACE}".."\u{1FACF}",
+                       "MOOSE..DONKEY")
+    assert_unicode_age("\u{1FADA}".."\u{1FADB}",
+                       "GINGER ROOT..PEA POD")
+    assert_unicode_age("\u{1FAE8}", "SHAKING FACE")
+    assert_unicode_age("\u{1FAF7}".."\u{1FAF8}",
+                       "LEFTWARDS PUSHING HAND..RIGHTWARDS PUSHING HAND")
+    assert_unicode_age("\u{2B739}",
+                       "CJK UNIFIED IDEOGRAPH-2B739")
+    assert_unicode_age("\u{31350}".."\u{323AF}",
+                       "CJK UNIFIED IDEOGRAPH-31350..CJK UNIFIED IDEOGRAPH-323AF")
+  end
+
+  def test_unicode_age_15_1
+    @matches   = %w"15.1"
+    @unmatches = %w"15.0"
+
+    # https://www.unicode.org/Public/15.1.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{2FFC}".."\u{2FFF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SURROUND FROM RIGHT..IDEOGRAPHIC DESCRIPTION CHARACTER ROTATION")
+    assert_unicode_age("\u{31EF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SUBTRACTION")
+    assert_unicode_age("\u{2EBF0}".."\u{2EE5D}",
+                       "CJK UNIFIED IDEOGRAPH-2EBF0..CJK UNIFIED IDEOGRAPH-2EE5D")
+  end
+
+  def test_unicode_age_16_0
+    @matches   = %w"16.0"
+    @unmatches = %w"15.1"
+
+    # https://www.unicode.org/Public/16.0.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{0897}",
+                       "ARABIC PEPET")
+    assert_unicode_age("\u{1B4E}".."\u{1B4F}",
+                       "BALINESE INVERTED CARIK SIKI..BALINESE INVERTED CARIK PAREREN")
+    assert_unicode_age("\u{1B7F}",
+                       "BALINESE PANTI BAWAK")
+    assert_unicode_age("\u{1C89}".."\u{1C8A}",
+                       "CYRILLIC CAPITAL LETTER TJE..CYRILLIC SMALL LETTER TJE")
+    assert_unicode_age("\u{2427}".."\u{2429}",
+                       "SYMBOL FOR DELETE SQUARE CHECKER BOARD FORM..SYMBOL FOR DELETE MEDIUM SHADE FORM")
+    assert_unicode_age("\u{31E4}".."\u{31E5}",
+                       "CJK STROKE HXG..CJK STROKE SZP")
+    assert_unicode_age("\u{A7CB}".."\u{A7CD}",
+                       "LATIN CAPITAL LETTER RAMS HORN..LATIN SMALL LETTER S WITH DIAGONAL STROKE")
+    assert_unicode_age("\u{A7DA}".."\u{A7DC}",
+                       "LATIN CAPITAL LETTER LAMBDA..LATIN CAPITAL LETTER LAMBDA WITH STROKE")
+    assert_unicode_age("\u{105C0}".."\u{105F3}",
+                       "TODHRI LETTER A..TODHRI LETTER OO")
+    assert_unicode_age("\u{10D40}".."\u{10D65}",
+                       "GARAY DIGIT ZERO..GARAY CAPITAL LETTER OLD NA")
+    assert_unicode_age("\u{10D69}".."\u{10D85}",
+                       "GARAY VOWEL SIGN E..GARAY SMALL LETTER OLD NA")
+    assert_unicode_age("\u{10D8E}".."\u{10D8F}",
+                       "GARAY PLUS SIGN..GARAY MINUS SIGN")
+    assert_unicode_age("\u{10EC2}".."\u{10EC4}",
+                       "ARABIC LETTER DAL WITH TWO DOTS VERTICALLY BELOW..ARABIC LETTER KAF WITH TWO DOTS VERTICALLY BELOW")
+    assert_unicode_age("\u{10EFC}",
+                       "ARABIC COMBINING ALEF OVERLAY")
+    assert_unicode_age("\u{11380}".."\u{11389}",
+                       "TULU-TIGALARI LETTER A..TULU-TIGALARI LETTER VOCALIC LL")
+    assert_unicode_age("\u{1138B}",
+                       "TULU-TIGALARI LETTER EE")
+    assert_unicode_age("\u{1138E}",
+                       "TULU-TIGALARI LETTER AI")
+    assert_unicode_age("\u{11390}".."\u{113B5}",
+                       "TULU-TIGALARI LETTER OO..TULU-TIGALARI LETTER LLLA")
+    assert_unicode_age("\u{113B7}".."\u{113C0}",
+                       "TULU-TIGALARI SIGN AVAGRAHA..TULU-TIGALARI VOWEL SIGN VOCALIC LL")
+    assert_unicode_age("\u{113C2}",
+                       "TULU-TIGALARI VOWEL SIGN EE")
+    assert_unicode_age("\u{113C5}",
+                       "TULU-TIGALARI VOWEL SIGN AI")
+    assert_unicode_age("\u{113C7}".."\u{113CA}",
+                       "TULU-TIGALARI VOWEL SIGN OO..TULU-TIGALARI SIGN CANDRA ANUNASIKA")
+    assert_unicode_age("\u{113CC}".."\u{113D5}",
+                       "TULU-TIGALARI SIGN ANUSVARA..TULU-TIGALARI DOUBLE DANDA")
+    assert_unicode_age("\u{113D7}".."\u{113D8}",
+                       "TULU-TIGALARI SIGN OM PUSHPIKA..TULU-TIGALARI SIGN SHRII PUSHPIKA")
+    assert_unicode_age("\u{113E1}".."\u{113E2}",
+                       "TULU-TIGALARI VEDIC TONE SVARITA..TULU-TIGALARI VEDIC TONE ANUDATTA")
+    assert_unicode_age("\u{116D0}".."\u{116E3}",
+                       "MYANMAR PAO DIGIT ZERO..MYANMAR EASTERN PWO KAREN DIGIT NINE")
+    assert_unicode_age("\u{11BC0}".."\u{11BE1}",
+                       "SUNUWAR LETTER DEVI..SUNUWAR SIGN PVO")
+    assert_unicode_age("\u{11BF0}".."\u{11BF9}",
+                       "SUNUWAR DIGIT ZERO..SUNUWAR DIGIT NINE")
+    assert_unicode_age("\u{11F5A}",
+                       "KAWI SIGN NUKTA")
+    assert_unicode_age("\u{13460}".."\u{143FA}",
+                       "EGYPTIAN HIEROGLYPH-13460..EGYPTIAN HIEROGLYPH-143FA")
+    assert_unicode_age("\u{16100}".."\u{16139}",
+                       "GURUNG KHEMA LETTER A..GURUNG KHEMA DIGIT NINE")
+    assert_unicode_age("\u{16D40}".."\u{16D79}",
+                       "KIRAT RAI SIGN ANUSVARA..KIRAT RAI DIGIT NINE")
+    assert_unicode_age("\u{18CFF}",
+                       "KHITAN SMALL SCRIPT CHARACTER-18CFF")
+    assert_unicode_age("\u{1CC00}".."\u{1CCF9}",
+                       "UP-POINTING GO-KART..OUTLINED DIGIT NINE")
+    assert_unicode_age("\u{1CD00}".."\u{1CEB3}",
+                       "BLOCK OCTANT-3..BLACK RIGHT TRIANGLE CARET")
+    assert_unicode_age("\u{1E5D0}".."\u{1E5FA}",
+                       "OL ONAL LETTER O..OL ONAL DIGIT NINE")
+    assert_unicode_age("\u{1E5FF}",
+                       "OL ONAL ABBREVIATION SIGN")
+    assert_unicode_age("\u{1F8B2}".."\u{1F8BB}",
+                       "RIGHTWARDS ARROW WITH LOWER HOOK..SOUTH WEST ARROW FROM BAR")
+    assert_unicode_age("\u{1F8C0}".."\u{1F8C1}",
+                       "LEFTWARDS ARROW FROM DOWNWARDS ARROW..RIGHTWARDS ARROW FROM DOWNWARDS ARROW")
+    assert_unicode_age("\u{1FA89}",
+                       "HARP")
+    assert_unicode_age("\u{1FA8F}",
+                       "SHOVEL")
+    assert_unicode_age("\u{1FABE}",
+                       "LEAFLESS TREE")
+    assert_unicode_age("\u{1FAC6}",
+                       "FINGERPRINT")
+    assert_unicode_age("\u{1FADC}",
+                       "ROOT VEGETABLE")
+    assert_unicode_age("\u{1FADF}",
+                       "SPLATTER")
+    assert_unicode_age("\u{1FAE9}",
+                       "FACE WITH BAGS UNDER EYES")
+    assert_unicode_age("\u{1FBCB}".."\u{1FBEF}",
+                       "WHITE CROSS MARK..TOP LEFT JUSTIFIED LOWER RIGHT QUARTER BLACK CIRCLE")
+  end
+
+  UnicodeAgeRegexps = Hash.new do |h, age|
+    h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u].freeze
+  end
+
+  def assert_unicode_age(char, mesg = nil, matches: @matches, unmatches: @unmatches)
+    if Range === char
+      char = char.to_a.join("")
+    end
+
+    matches.each do |age|
+      pos, neg = UnicodeAgeRegexps[age]
+      assert_match(pos, char, mesg)
+      assert_not_match(neg, char, mesg)
+    end
+
+    unmatches.each do |age|
+      pos, neg = UnicodeAgeRegexps[age]
+      assert_not_match(pos, char, mesg)
+      assert_match(neg, char, mesg)
+    end
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
@@ -1110,13 +1670,17 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_regexp_popped
-    assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
-    assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
+    EnvUtil.suppress_warning do
+      assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
+      assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
+    end
   end
 
   def test_invalid_fragment
     bug2547 = '[ruby-core:27374]'
-    assert_raise(SyntaxError, bug2547) {eval('/#{"\\\\"}y/')}
+    assert_raise(SyntaxError, bug2547) do
+      assert_warning(/ignored/) {eval('/#{"\\\\"}y/')}
+    end
   end
 
   def test_dup_warn
@@ -1156,7 +1720,8 @@ class TestRegexp < Test::Unit::TestCase
   def test_raw_hyphen_and_tk_char_type_after_range
     bug6853 = '[ruby-core:47115]'
     # use Regexp.new instead of literal to ignore a parser warning.
-    check(Regexp.new('[0-1-\\s]'), [' ', '-'], ['2', 'a'], bug6853)
+    re = assert_warning(/without escape/) {Regexp.new('[0-1-\\s]')}
+    check(re, [' ', '-'], ['2', 'a'], bug6853)
   end
 
   def test_error_message_on_failed_conversion
@@ -1178,6 +1743,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
+  def test_quick_search
+    assert_match_at('(?i) *TOOKY', 'Mozilla/5.0 (Linux; Android 4.0.3; TOOKY', [[34, 40]])   # Issue #120
+  end
+
+  def test_ss_in_look_behind
+    assert_match_at("(?i:ss)", "ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "Ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "SS", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u017fS", [[0, 2]])  # LATIN SMALL LETTER LONG S
+    assert_match_at("(?i:ss)", "s\u017f", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u00df", [[0, 1]])   # LATIN SMALL LETTER SHARP S
+    assert_match_at("(?i:ss)", "\u1e9e", [[0, 1]])   # LATIN CAPITAL LETTER SHARP S
+    assert_match_at("(?i:xssy)", "xssy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSsy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u017fSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xs\u017fy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u00dfy", [[0, 3]])
+    assert_match_at("(?i:xssy)", "x\u1e9ey", [[0, 3]])
+    assert_match_at("(?i:\u00df)", "ss", [[0, 2]])
+    assert_match_at("(?i:\u00df)", "SS", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "ss", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "SS", [[0, 2]])
+    assert_match_at("(?i)(?<!ss)\u2728", "qq\u2728", [[2, 3]])     # Issue #92
+    assert_match_at("(?i)(?<!xss)\u2728", "qq\u2728", [[2, 3]])
+  end
+
   def test_options_in_look_behind
     assert_nothing_raised {
       assert_match_at("(?<=(?i)ab)cd", "ABcd", [[2,4]])
@@ -1190,6 +1782,20 @@ class TestRegexp < Test::Unit::TestCase
       assert_not_match("(?<!(?i)ab)cd", "ABcd")
       assert_not_match("(?<!(?i:ab))cd", "ABcd")
     }
+  end
+
+  def test_quantifier_reduction
+    assert_equal('aa', eval('/(a+?)*/').match('aa')[0])
+    assert_equal('aa', eval('/(?:a+?)*/').match('aa')[0])
+
+    quantifiers = %w'? * + ?? *? +?'
+    quantifiers.product(quantifiers) do |q1, q2|
+      EnvUtil.suppress_warning do
+        r1 = eval("/(a#{q1})#{q2}/").match('aa')[0]
+        r2 = eval("/(?:a#{q1})#{q2}/").match('aa')[0]
+        assert_equal(r1, r2)
+      end
+    end
   end
 
   def test_once
@@ -1275,6 +1881,36 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_equal(0, /(?~(a)c)/ =~ "abb")
     assert_nil($1)
+
+    assert_equal(0, /(?~(a))/ =~ "")
+    assert_nil($1)
+  end
+
+  def test_backref_overrun
+    assert_raise_with_message(SyntaxError, /invalid backref number/) do
+      eval(%["".match(/(())(?<X>)((?(90000)))/)])
+    end
+  end
+
+  def test_bug18631
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaab")
+  end
+
+  def test_invalid_group
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+        Regexp.new("((?(1)x|x|)x)+")
+      end
+    end;
+  end
+
+  def test_too_big_number_for_repeat_range
+    assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
+      eval(%[/|{1000000}/])
+    end
   end
 
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
@@ -1305,5 +1941,354 @@ class TestRegexp < Test::Unit::TestCase
       errs.map {|str, match| "\t#{'not ' unless match}match #{str.inspect}"}.join(",\n")
     }
     assert_empty(errs, msg)
+  end
+
+  def test_s_timeout
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(0.2).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_in_delta(timeout, Regexp.timeout, timeout * 2 * Float::EPSILON)
+
+      t = Time.now
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
+        # A typical ReDoS case
+        /^(a*)*\1$/ =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_operator(timeout, :<=, [timeout * 1.5, 1].max)
+    end;
+  end
+
+  def test_s_timeout_corner_cases
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_nil(Regexp.timeout)
+
+      # This is just an implementation detail that users should not depend on:
+      # If Regexp.timeout is set to a value greater than the value that can be
+      # represented in the internal representation of timeout, it uses the
+      # maximum value that can be represented.
+      Regexp.timeout = Float::INFINITY
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
+
+      Regexp.timeout = 1e300
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
+
+      assert_raise(ArgumentError) { Regexp.timeout = 0 }
+      assert_raise(ArgumentError) { Regexp.timeout = -1 }
+
+      Regexp.timeout = nil
+      assert_nil(Regexp.timeout)
+    end;
+  end
+
+  def test_s_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #20228]", rss: true)
+      Regexp.timeout = 0.001
+      regex = /^(a*)*$/
+      str = "a" * 1000000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
+  end
+
+  def test_bug_20453
+    re = Regexp.new("^(a*)x$", timeout: 0.001)
+
+    assert_raise(Regexp::TimeoutError) do
+      re =~ "a" * 1000000 + "x"
+    end
+  end
+
+  def test_bug_20886
+    re = Regexp.new("d()*+|a*a*bc", timeout: 0.02)
+    assert_raise(Regexp::TimeoutError) do
+      re === "b" + "a" * 1000
+    end
+  end
+
+  def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 60)
+      global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
+      per_instance_timeout = #{ (per_instance_timeout ? EnvUtil.apply_timeout_scale(per_instance_timeout) : nil).inspect }
+      expected_timeout = #{ EnvUtil.apply_timeout_scale(expected_timeout).inspect }
+    begin;
+      Regexp.timeout = global_timeout
+
+      re = Regexp.new("^(a*)\\1b?a*$", timeout: per_instance_timeout)
+      if per_instance_timeout
+        assert_in_delta(per_instance_timeout, re.timeout, per_instance_timeout * 2 * Float::EPSILON)
+      else
+        assert_nil(re.timeout)
+      end
+
+      t = Time.now
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
+        re =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_in_delta(expected_timeout, t, expected_timeout * 3 / 4)
+    end;
+  end
+
+  def test_timeout_shorter_than_global
+    omit "timeout test is too unstable on s390x" if RUBY_PLATFORM =~ /s390x/
+    per_instance_redos_test(10, 0.5, 0.5)
+  end
+
+  def test_timeout_longer_than_global
+    omit "timeout test is too unstable on s390x" if RUBY_PLATFORM =~ /s390x/
+    per_instance_redos_test(0.01, 0.5, 0.5)
+  end
+
+  def test_timeout_nil
+    per_instance_redos_test(0.5, nil, 0.5)
+  end
+
+  def test_timeout_corner_cases
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_nil(//.timeout)
+
+      # This is just an implementation detail that users should not depend on:
+      # If Regexp.timeout is set to a value greater than the value that can be
+      # represented in the internal representation of timeout, it uses the
+      # maximum value that can be represented.
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: Float::INFINITY).timeout)
+
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: 1e300).timeout)
+
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
+    end;
+  end
+
+  def test_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
+  end
+
+  def test_match_cache_exponential
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/^(a*)*$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_square
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_atomic
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/^a*?(?>a*a*)$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_atomic_complex
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/a*(?>a*)ab/ =~ "a" * 1000000 + "b")
+    end;
+  end
+
+  def test_match_cache_positive_look_ahead
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+       Regexp.timeout = timeout
+       assert_nil(/^a*?(?=a*a*)$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_positive_look_ahead_complex
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+       Regexp.timeout = timeout
+       assert_equal(/(?:(?=a*)a)*/ =~ "a" * 1000000, 0)
+    end;
+  end
+
+  def test_match_cache_negative_look_ahead
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/^a*?(?!a*a*)$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_positive_look_behind
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/(?<=abc|def)(a|a)*$/ =~ "abc" + "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_negative_look_behind
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/(?<!x)(a|a)*$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_with_peek_optimization
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/a+z/ =~ "a" * 1000000 + "xz")
+    end;
+  end
+
+  def test_cache_opcodes_initialize
+    str = 'test1-test2-test3-test4-test_5'
+    re = '^([0-9a-zA-Z\-/]*){1,256}$'
+    100.times do
+      assert !Regexp.new(re).match?(str)
+    end
+  end
+
+  def test_bug_19273 # [Bug #19273]
+    pattern = /(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))(?::(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))){0,3}/
+    assert_equal("10:0:0".match(pattern)[0], "10:0:0")
+  end
+
+  def test_bug_19467 # [Bug #19467]
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+
+      assert_nil(/\A.*a.*z\z/ =~ "a" * 1000000 + "y")
+    end;
+  end
+
+  def test_bug_19476 # [Bug #19476]
+    assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
+    assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
+  end
+
+  def test_encoding_flags_are_preserved_when_initialized_with_another_regexp
+    re = Regexp.new("\u2018hello\u2019".encode("UTF-8"))
+    str = "".encode("US-ASCII")
+
+    assert_nothing_raised do
+      str.match?(re)
+      str.match?(Regexp.new(re))
+    end
+  end
+
+  def test_bug_19537 # [Bug #19537]
+    str = 'aac'
+    re = '^([ab]{1,3})(a?)*$'
+    100.times do
+      assert !Regexp.new(re).match?(str)
+    end
+  end
+
+  def test_bug_20083 # [Bug #20083]
+    re = /([\s]*ABC)$/i
+    (1..100).each do |n|
+      text = "#{"0" * n}ABC"
+      assert text.match?(re)
+    end
+  end
+
+  def test_bug_20098 # [Bug #20098]
+    assert(/a((.|.)|bc){,4}z/.match? 'abcbcbcbcz')
+    assert(/a(b+?c*){4,5}z/.match? 'abbbccbbbccbcbcz')
+    assert(/a(b+?(.|.)){2,3}z/.match? 'abbbcbbbcbbbcz')
+    assert(/a(b*?(.|.)[bc]){2,5}z/.match? 'abcbbbcbcccbcz')
+    assert(/^(?:.+){2,4}?b|b/.match? "aaaabaa")
+  end
+
+  def test_bug_20207 # [Bug #20207]
+    assert(!'clan'.match?(/(?=.*a)(?!.*n)/))
+  end
+
+  def test_bug_20212 # [Bug #20212]
+    regex = Regexp.new(
+      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+)\Z/x
+    )
+    string = "www.google.com"
+    100.times.each { assert(regex.match?(string)) }
+  end
+
+  def test_bug_20246 # [Bug #20246]
+    assert_equal '1.2.3', '1.2.3'[/(\d+)(\.\g<1>){2}/]
+    assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
+  end
+
+  def test_linear_time_p
+    assert_send [Regexp, :linear_time?, /a/]
+    assert_send [Regexp, :linear_time?, 'a']
+    assert_send [Regexp, :linear_time?, 'a', Regexp::IGNORECASE]
+    assert_not_send [Regexp, :linear_time?, /(a)\1/]
+    assert_not_send [Regexp, :linear_time?, "(a)\\1"]
+
+    assert_not_send [Regexp, :linear_time?, /(?=(a))/]
+    assert_not_send [Regexp, :linear_time?, /(?!(a))/]
+
+    assert_raise(TypeError) {Regexp.linear_time?(nil)}
+    assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
+  end
+
+  def test_linear_performance
+    pre = ->(n) {[Regexp.new("a?" * n + "a" * n), "a" * n]}
+    assert_linear_performance([10, 29], pre: pre) do |re, s|
+      re =~ s
+    end
+  end
+
+  def test_bug_16145_and_bug_21176_caseinsensitive_small # [Bug#16145] [Bug#21176]
+    encodings = [Encoding::UTF_8, Encoding::ISO_8859_1]
+    encodings.each do |enc|
+      o_acute_lower = "\u00F3".encode(enc)
+      o_acute_upper = "\u00D3".encode(enc)
+      assert_match(/[x#{o_acute_lower}]/i, "abc#{o_acute_upper}", "should match o acute case insensitive")
+
+      e_acute_lower = "\u00E9".encode(enc)
+      e_acute_upper = "\u00C9".encode(enc)
+      assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
+    end
   end
 end

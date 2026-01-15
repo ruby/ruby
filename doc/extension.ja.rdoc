@@ -1,5 +1,7 @@
 # extension.ja.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
+{English}[rdoc-ref:extension.rdoc]
+
 = Rubyの拡張ライブラリの作り方
 
 Rubyの拡張ライブラリの作り方を説明します．
@@ -617,11 +619,13 @@ C言語とRubyの間で情報を共有する方法について解説します．
 Qtrue ::
 Qfalse ::
 
-  真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+  真偽値．C言語から見た「true」と「false」．
 
 Qnil ::
 
   C言語から見た「nil」．
+
+RTEST(obj)というマクロはobjがQfalseかQnilのとき0を返します．
 
 === CとRubyで共有される大域変数
 
@@ -697,30 +701,28 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 
 このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
 
-klassはこのオブジェクトのクラスです．data_typeはこの構造体を
-Rubyが管理するための情報を記述したconst rb_data_type_t型への
-ポインタです．
+klassはこのオブジェクトのクラスです．klassは, Objectクラスか
+ら派生し, 必ずrb_define_alloc_funcかrb_undef_alloc_funcを呼
+び出してallocatorを設定してください．
 
-なお, klassは, Objectや他のクラスではなくData (rb_cData)とい
-う特別なクラスから派生することが推奨されます．
-Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
-を呼び出してください．
+data_typeはこの構造体をRubyが管理するための情報を記述した
+const rb_data_type_t型へのポインタです．
 
 rb_data_type_tは次のように定義されています．
 
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void *reserved[2];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void *reserved[2];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_nameはこの構造体を識別する名前です．主に統計情報
@@ -743,8 +745,8 @@ dmarkはガーベージコレクタがオブジェクトへの参照をマーク
 ++
 
 dfreeはこの構造体がもう不要になった時に呼ばれる関数です．こ
-の関数がガーベージコレクタから呼ばれます．これが-1の場合は，
-単純に構造体が解放されます．
+の関数がガーベージコレクタから呼ばれます．これが
+RUBY_DEFAULT_FREEの場合は，単純に構造体が解放されます．
 
 dsizeは構造体が消費しているメモリのバイト数を返す関数です．
 引数として構造体へのポインタが渡されます．実装困難であれば0
@@ -780,9 +782,14 @@ RUBY_TYPED_WB_PROTECTED ::
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
 
-  ライトバリアについてはdoc/extension.ja.rdocのAppendix D
-  "世代別GC"も参照してください．
+  ライトバリアについては{世代別
+  GC}[rdoc-ref:@Appendix+D.+-E4-B8-96-E4-BB-A3-E5-88-A5GC]
+  も参照してください．
 
+このマクロは例外を発生させる可能性があることに注意してくださ
+い． ラップされる sval が，解放する必要があるリソース (割り
+当てられたメモリ，外部ライブラリからのハンドルなど) を保持し
+ている場合は，rb_protect を使用する必要があります．
 
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
 ロとして以下のものが提供されています．
@@ -888,12 +895,12 @@ dbm.cではTypedData_Make_Structを以下のように使っています．
 
   obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 
-ここではdbmdata構造体へのポインタをDataにカプセル化してい
-ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
-えてのことです．
+ここではdbmdata構造体へのポインタをRubyオブジェクトにカプセ
+ル化しています．DBM*を直接カプセル化しないのはclose()した時
+の処理を考えてのことです．
 
-Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
-に以下のマクロを使っています．
+Rubyオブジェクトからdbmdata構造体のポインタを取り出すために
+以下のマクロを使っています．
 
   #define GetDBM(obj, dbmp) do {\
       TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
@@ -1066,6 +1073,20 @@ Rubyのソースはいくつかに分類することが出来ます．このう�
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
 
+=== Rubyのヘッダファイル
+
+<tt>$repo_root/include/ruby</tt>以下はすべて<tt>make
+install</tt>でインストールされます．拡張ライブラリからは，
+<tt>#include <ruby.h></tt>でインクルードする必要があります．
++rbimpl_+，+RBIMPL_+のプレフィックスが付いた実装の詳細のため
+のシンボルを除き，すべてのシンボルは公開APIです．
+
+拡張ライブラリで直接インクルードできるのは，
+<tt>$repo_root/include/ruby/*.h</tt>のうち，対応する
+<tt>HAVE_RUBY_*_H</tt>マクロが
+<tt>$repo_root/include/ruby.h</tt>ヘッダーで定義されているも
+のです．
+
 === Ruby言語のコア
 
 class.c    :: クラスとモジュール
@@ -1108,9 +1129,8 @@ lex.c         :: 自動生成
     -> opt*.inc            : 自動生成
     -> vm.inc              : 自動生成
 
-=== 正規表現エンジン (鬼車)
+=== 正規表現エンジン (鬼雲)
 
-  regex.c
   regcomp.c
   regenc.c
   regerror.c
@@ -1682,6 +1702,9 @@ HAVE_RUBY_*_H ::
   を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
   単なる st.h ではなく ruby/st.h を使用する．
 
+  これらのマクロに対応するヘッダーファイルは，拡張ライブラリ
+  から直接インクルードしてもよい．
+
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
   rb_add_event_hook() がフック関数に渡す data を第3引数として
@@ -1715,7 +1738,7 @@ have_func(func, header) ::
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
   く事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{FUNC}` を定義し，trueを返す．
+  <tt>HAVE_{FUNC}</tt> を定義し，trueを返す．
 
 have_var(var, header) ::
 
@@ -1723,40 +1746,48 @@ have_var(var, header) ::
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
   事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{VAR}` を定義し，trueを返す．
+  <tt>HAVE_{VAR}</tt> を定義し，trueを返す．
 
 have_header(header) ::
 
   ヘッダファイルの存在をチェックする．チェックに成功すると，
-  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  プリプロセッサマクロ <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
   ヘッダファイルheaderをインクルードして型typeが定義され，
   なおかつメンバmemberが存在するかをチェックする．チェックに
-  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  成功すると，プリプロセッサマクロ <tt>HAVE_{TYPE}_{MEMBER}</tt> を
   定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
   チェックする．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
+  <tt>HAVE_TYPE_{TYPE}</tt> を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
   ズを調べる．チェックに成功すると，プリプロセッサマクロ
-  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  <tt>SIZEOF_{TYPE}</tt> を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
+
+append_cppflags(array-of-flags[, opt]) ::
+append_cflags(array-of-flags[, opt]) ::
+append_ldflags(array-of-flags[, opt]) ::
+
+  各flagが使用可能であれば，それぞれ$CPPFLAGS, $CFLAGS,
+  $LDFLAGSに追加する．コンパイラのフラグには移植性がないので，
+  変数に直接追加せずこれらを使うことが望ましい．
 
 create_makefile(target[, target_prefix]) ::
 
@@ -1826,9 +1857,23 @@ RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
 rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
-GC」を参照して下さい．
+そのほか，対応についての詳細は {Appendix D. Generational
+GC}[rdoc-ref:extension.rdoc@Appendix+D.+Generational+GC]を参
+照して下さい．
 
-:enddoc: Local variables:
-:enddoc: fill-column: 60
-:enddoc: end:
+== Appendix E. Ractor サポート
+
+Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組みである Ractor
+が導入されました。適切に並列に実行するためには、Ractor サポートが必要に
+なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
+エラーになります（Ractor::UnsafeError）。
+
+Ractor をサポートするための詳細は、{Appendix F. Ractor
+support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]
+を参照してください。
+
+--
+Local variables:
+fill-column: 60
+end:
+++

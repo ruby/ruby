@@ -4,11 +4,6 @@ describe :file_exist, shared: true do
     @object.send(@method, 'a_fake_file').should == false
   end
 
-  it "returns true if the file exist using the alias exists?" do
-    @object.send(@method, __FILE__).should == true
-    @object.send(@method, 'a_fake_file').should == false
-  end
-
   it "raises an ArgumentError if not passed one argument" do
     -> { @object.send(@method) }.should raise_error(ArgumentError)
     -> { @object.send(@method, __FILE__, __FILE__) }.should raise_error(ArgumentError)

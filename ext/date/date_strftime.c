@@ -393,7 +393,7 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 	    continue;
 
 	  case 'v':
-	    STRFTIME("%e-%b-%Y");
+	    STRFTIME("%e-%^b-%Y");
 	    continue;
 
 	  case 'w':	/* weekday, Sunday == 0, 0 - 6 */

@@ -43,11 +43,11 @@ describe "Thread.list" do
       end
     end
 
-    while spawner.alive?
+    begin
       Thread.list.each { |th|
         th.should be_kind_of(Thread)
       }
-    end
+    end while spawner.alive?
 
     threads = spawner.value
     threads.each(&:join)

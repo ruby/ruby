@@ -4,6 +4,71 @@ require "bundler"
 require "tmpdir"
 
 RSpec.describe Bundler do
+  describe "#load_marshal" do
+    it "is a private method and raises an error" do
+      data = Marshal.dump(Bundler)
+      expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method [`']load_marshal' called/)
+    end
+
+    it "loads any data" do
+      data = Marshal.dump(Bundler)
+      expect(Bundler.send(:load_marshal, data)).to eq(Bundler)
+    end
+  end
+
+  describe "#safe_load_marshal" do
+    it "fails on unexpected class" do
+      data = Marshal.dump(Bundler)
+      expect { Bundler.safe_load_marshal(data) }.to raise_error(Bundler::MarshalError)
+    end
+
+    it "loads simple structure" do
+      simple_structure = { "name" => [:development] }
+      data = Marshal.dump(simple_structure)
+      expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
+    end
+
+    it "loads Gem::Specification" do
+      gem_spec = Gem::Specification.new do |s|
+        s.name = "bundler"
+        s.version = Gem::Version.new("2.4.7")
+        s.installed_by_version = Gem::Version.new("0")
+        s.authors = ["André Arko",
+                     "Samuel Giddins",
+                     "Colby Swandale",
+                     "Hiroshi Shibata",
+                     "David Rodríguez",
+                     "Grey Baker",
+                     "Stephanie Morillo",
+                     "Chris Morris",
+                     "James Wen",
+                     "Tim Moore",
+                     "André Medeiros",
+                     "Jessica Lynn Suttles",
+                     "Terence Lee",
+                     "Carl Lerche",
+                     "Yehuda Katz"]
+        s.date = Time.utc(2023, 2, 15)
+        s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
+        s.email = ["team@bundler.io"]
+        s.homepage = "https://bundler.io"
+        s.metadata = { "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+                       "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
+                       "homepage_uri" => "https://bundler.io/",
+                       "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler" }
+        s.require_paths = ["lib"]
+        s.required_ruby_version = Gem::Requirement.new([">= 2.6.0"])
+        s.required_rubygems_version = Gem::Requirement.new([">= 3.0.1"])
+        s.rubygems_version = "3.4.7"
+        s.specification_version = 4
+        s.summary = "The best way to manage your application's dependencies"
+        s.license = false
+      end
+      data = Marshal.dump(gem_spec)
+      expect(Bundler.safe_load_marshal(data)).to eq(gem_spec)
+    end
+  end
+
   describe "#load_gemspec_uncached" do
     let(:app_gemspec_path) { tmp("test.gemspec") }
     subject { Bundler.load_gemspec_uncached(app_gemspec_path) }
@@ -11,7 +76,7 @@ RSpec.describe Bundler do
     context "with incorrect YAML file" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             ---
               {:!00 ao=gu\g1= 7~f
           GEMSPEC
@@ -21,33 +86,9 @@ RSpec.describe Bundler do
       it "catches YAML syntax errors" do
         expect { subject }.to raise_error(Bundler::GemspecError, /error while loading `test.gemspec`/)
       end
-
-      context "on Rubies with a settable YAML engine", :if => defined?(YAML::ENGINE) do
-        context "with Syck as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws ArgumentError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "syck"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-
-        context "with Psych as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws Psych::SyntaxError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "psych"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-      end
     end
 
-    context "with correct YAML file", :if => defined?(Encoding) do
+    context "with correct YAML file", if: defined?(Encoding) do
       it "can load a gemspec with unicode characters with default ruby encoding" do
         # spec_helper forces the external encoding to UTF-8 but that's not the
         # default until Ruby 2.0
@@ -58,7 +99,7 @@ RSpec.describe Bundler do
         $VERBOSE = verbose
 
         File.open(app_gemspec_path, "wb") do |file|
-          file.puts <<-GEMSPEC.gsub(/^\s+/, "")
+          file.puts <<~GEMSPEC
             # -*- encoding: utf-8 -*-
             Gem::Specification.new do |gem|
               gem.author = "André the Giant"
@@ -98,7 +139,7 @@ RSpec.describe Bundler do
             end
           GEMSPEC
         end
-        expect(Bundler.rubygems).to receive(:validate).with have_attributes(:name => "validated")
+        expect(Bundler.rubygems).to receive(:validate).with have_attributes(name: "validated")
         subject
       end
     end
@@ -106,7 +147,7 @@ RSpec.describe Bundler do
     context "with gemspec containing local variables" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             must_not_leak = true
             Gem::Specification.new do |gem|
               gem.name = "leak check"
@@ -123,68 +164,45 @@ RSpec.describe Bundler do
   end
 
   describe "#which" do
-    let(:executable) { "executable" }
-    let(:path) { %w[/a /b c ../d /e] }
-    let(:expected) { "executable" }
+    it "can detect relative path" do
+      script_path = bundled_app("tmp/test_command")
+      create_file(script_path, "#!/usr/bin/env ruby\n")
 
-    before do
-      ENV["PATH"] = path.join(File::PATH_SEPARATOR)
-
-      allow(File).to receive(:file?).and_return(false)
-      allow(File).to receive(:executable?).and_return(false)
-      if expected
-        expect(File).to receive(:file?).with(expected).and_return(true)
-        expect(File).to receive(:executable?).with(expected).and_return(true)
+      result = Dir.chdir script_path.dirname.dirname do
+        Bundler.which("test_command")
       end
-    end
+      expect(result).to eq(nil)
 
-    subject { described_class.which(executable) }
-
-    shared_examples_for "it returns the correct executable" do
-      it "returns the expected file" do
-        expect(subject).to eq(expected)
+      result = Dir.chdir script_path.dirname do
+        Bundler.which("test_command")
       end
+
+      expect(result).to eq("test_command") unless Gem.win_platform?
+      expect(result).to eq("test_command.bat") if Gem.win_platform?
     end
 
-    it_behaves_like "it returns the correct executable"
+    it "can detect absolute path" do
+      create_file("test_command", "#!/usr/bin/env ruby\n")
 
-    context "when the executable in inside a quoted path" do
-      let(:expected) { "/e/executable" }
-      it_behaves_like "it returns the correct executable"
+      ENV["PATH"] = bundled_app("test_command").parent.to_s
+
+      result = Bundler.which("test_command")
+      expect(result).to eq(bundled_app("test_command").to_s) unless Gem.win_platform?
+      expect(result).to eq(bundled_app("test_command.bat").to_s) if Gem.win_platform?
     end
 
-    context "when the executable is not found" do
-      let(:expected) { nil }
-      it_behaves_like "it returns the correct executable"
+    it "returns nil when not found" do
+      result = Bundler.which("test_command")
+      expect(result).to eq(nil)
     end
   end
 
   describe "configuration" do
     context "disable_shared_gems" do
       it "should unset GEM_PATH with empty string" do
-        env = {}
         expect(Bundler).to receive(:use_system_gems?).and_return(false)
-        Bundler.send(:configure_gem_path, env)
-        expect(env.keys).to include("GEM_PATH")
-        expect(env["GEM_PATH"]).to eq ""
-      end
-    end
-  end
-
-  describe "#rm_rf" do
-    context "the directory is world writable" do
-      let(:bundler_ui) { Bundler.ui }
-      it "should raise a friendly error" do
-        allow(File).to receive(:exist?).and_return(true)
-        allow(::Bundler::FileUtils).to receive(:remove_entry_secure).and_raise(ArgumentError)
-        allow(File).to receive(:world_writable?).and_return(true)
-        message = <<EOF
-It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
-You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to https://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
-EOF
-        expect(bundler_ui).to receive(:warn).with(message)
-        expect { Bundler.send(:rm_rf, bundled_app) }.to raise_error(Bundler::PathError)
+        Bundler.send(:configure_gem_path)
+        expect(ENV["GEM_PATH"]).to eq ""
       end
     end
   end
@@ -192,28 +210,14 @@ EOF
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
-      Bundler.mkdir_p(bundled_app.join("foo", "bar"))
-      expect(bundled_app.join("foo", "bar")).to exist
-    end
+      allow(Bundler).to receive(:root).and_return(bundled_app)
 
-    context "when mkdir_p requires sudo" do
-      it "creates a new folder using sudo" do
-        expect(Bundler).to receive(:requires_sudo?).and_return(true)
-        expect(Bundler).to receive(:sudo).and_return true
-        Bundler.mkdir_p(bundled_app.join("foo"))
-      end
-    end
-
-    context "with :no_sudo option" do
-      it "forces mkdir_p to not use sudo" do
-        expect(Bundler).to receive(:requires_sudo?).and_return(true)
-        expect(Bundler).to_not receive(:sudo)
-        Bundler.mkdir_p(bundled_app.join("foo"), :no_sudo => true)
-      end
+      Bundler.mkdir_p(bundled_app("foo", "bar"))
+      expect(bundled_app("foo", "bar")).to exist
     end
   end
 
@@ -233,11 +237,8 @@ EOF
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-          message = <<EOF
-`/home/oggy` is not a directory.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-          expect(Bundler.ui).to receive(:warn).with(message)
+          expect(Bundler.ui).to receive(:warn).with("`/home/oggy` is not a directory.\n")
+          expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
           expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
       end
@@ -249,14 +250,12 @@ EOF
         it "should issue a warning and return a temporary user home" do
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return true
+          allow(File).to receive(:writable?).and_call_original
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-          message = <<EOF
-`/home/oggy` is not writable.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-          expect(Bundler.ui).to receive(:warn).with(message)
+          expect(Bundler.ui).to receive(:warn).with("`/home/oggy` is not writable.\n")
+          expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
           expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
 
@@ -277,124 +276,9 @@ EOF
       it "should issue warning and return a temporary user home" do
         allow(Bundler.rubygems).to receive(:user_home).and_return(nil)
         allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-        message = <<EOF
-Your home directory is not set.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-        expect(Bundler.ui).to receive(:warn).with(message)
+        expect(Bundler.ui).to receive(:warn).with("Your home directory is not set.\n")
+        expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
         expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
-      end
-    end
-  end
-
-  describe "#requires_sudo?" do
-    let!(:tmpdir) { Dir.mktmpdir }
-    let(:bundle_path) { Pathname("#{tmpdir}/bundle") }
-
-    def clear_cached_requires_sudo
-      return unless Bundler.instance_variable_defined?(:@requires_sudo_ran)
-      Bundler.remove_instance_variable(:@requires_sudo_ran)
-      Bundler.remove_instance_variable(:@requires_sudo)
-    end
-
-    before do
-      clear_cached_requires_sudo
-      allow(Bundler).to receive(:which).with("sudo").and_return("/usr/bin/sudo")
-      allow(Bundler).to receive(:bundle_path).and_return(bundle_path)
-    end
-
-    after do
-      FileUtils.rm_rf(tmpdir)
-      clear_cached_requires_sudo
-    end
-
-    subject { Bundler.requires_sudo? }
-
-    context "bundle_path doesn't exist" do
-      it { should be false }
-
-      context "and parent dir can't be written" do
-        before do
-          FileUtils.chmod(0o500, tmpdir)
-        end
-
-        it { should be true }
-      end
-
-      context "with unwritable files in a parent dir" do
-        # Regression test for https://github.com/bundler/bundler/pull/6316
-        # It doesn't matter if there are other unwritable files so long as
-        # bundle_path can be created
-        before do
-          file = File.join(tmpdir, "unrelated_file")
-          FileUtils.touch(file)
-          FileUtils.chmod(0o400, file)
-        end
-
-        it { should be false }
-      end
-    end
-
-    context "bundle_path exists" do
-      before do
-        FileUtils.mkdir_p(bundle_path)
-      end
-
-      it { should be false }
-
-      context "and is unwritable" do
-        before do
-          FileUtils.chmod(0o500, bundle_path)
-        end
-
-        it { should be true }
-      end
-    end
-
-    context "path writability" do
-      before do
-        FileUtils.mkdir_p("tmp/vendor/bundle")
-        FileUtils.mkdir_p("tmp/vendor/bin_dir")
-      end
-      after do
-        FileUtils.rm_rf("tmp/vendor/bundle")
-        FileUtils.rm_rf("tmp/vendor/bin_dir")
-      end
-      context "writable paths" do
-        it "should return false and display nothing" do
-          allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
-          expect(Bundler.ui).to_not receive(:warn)
-          expect(Bundler.requires_sudo?).to eq(false)
-        end
-      end
-      context "unwritable paths" do
-        before do
-          FileUtils.touch("tmp/vendor/bundle/unwritable1.txt")
-          FileUtils.touch("tmp/vendor/bundle/unwritable2.txt")
-          FileUtils.touch("tmp/vendor/bin_dir/unwritable3.txt")
-          FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable1.txt")
-          FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable2.txt")
-          FileUtils.chmod(0o400, "tmp/vendor/bin_dir/unwritable3.txt")
-        end
-        it "should return true and display warn message" do
-          allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
-          bin_dir = Pathname("tmp/vendor/bin_dir/")
-
-          # allow File#writable? to be called with args other than the stubbed on below
-          allow(File).to receive(:writable?).and_call_original
-
-          # fake make the directory unwritable
-          allow(File).to receive(:writable?).with(bin_dir).and_return(false)
-          allow(Bundler).to receive(:system_bindir).and_return(Pathname("tmp/vendor/bin_dir/"))
-          message = <<-MESSAGE.chomp
-Following files may not be writable, so sudo is needed:
-  tmp/vendor/bin_dir/
-  tmp/vendor/bundle/unwritable1.txt
-  tmp/vendor/bundle/unwritable2.txt
-MESSAGE
-          expect(Bundler.ui).to receive(:warn).with(message)
-          expect(Bundler.requires_sudo?).to eq(true)
-        end
       end
     end
   end

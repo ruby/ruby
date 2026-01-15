@@ -37,11 +37,11 @@ test_fdset(VALUE self)
     FD_ZERO(&set);
 
     for (i = 0; i < FD_SETSIZE * 2; i++) {
-	int sd = socket(AF_INET, SOCK_DGRAM, 0);
-	FD_SET(sd, &set);
-	if (set.fd_count > FD_SETSIZE) {
-	    return Qfalse;
-	}
+        int sd = socket(AF_INET, SOCK_DGRAM, 0);
+        FD_SET(sd, &set);
+        if (set.fd_count > FD_SETSIZE) {
+            return Qfalse;
+        }
     }
     return Qtrue;
 }

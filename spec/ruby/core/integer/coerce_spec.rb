@@ -1,13 +1,11 @@
 require_relative '../../spec_helper'
 
-require 'bigdecimal'
-
 describe "Integer#coerce" do
   context "fixnum" do
     describe "when given a Fixnum" do
       it "returns an array containing two Fixnums" do
         1.coerce(2).should == [2, 1]
-        1.coerce(2).map { |i| i.class }.should == [Fixnum, Fixnum]
+        1.coerce(2).map { |i| i.class }.should == [Integer, Integer]
       end
     end
 
@@ -46,8 +44,8 @@ describe "Integer#coerce" do
       a = bignum_value
       ary = a.coerce(2)
 
-      ary[0].should be_kind_of(Bignum)
-      ary[1].should be_kind_of(Bignum)
+      ary[0].should be_kind_of(Integer)
+      ary[1].should be_kind_of(Integer)
       ary.should == [2, a]
     end
 
@@ -56,8 +54,8 @@ describe "Integer#coerce" do
       b = bignum_value
       ary = a.coerce(b)
 
-      ary[0].should be_kind_of(Bignum)
-      ary[1].should be_kind_of(Bignum)
+      ary[0].should be_kind_of(Integer)
+      ary[1].should be_kind_of(Integer)
       ary.should == [b, a]
     end
 
@@ -90,15 +88,4 @@ describe "Integer#coerce" do
       ary.should == [1.2, a.to_f]
     end
   end
-
-  context "bigdecimal" do
-    it "produces Floats" do
-      x, y = 3.coerce(BigDecimal("3.4"))
-      x.class.should == Float
-      x.should == 3.4
-      y.class.should == Float
-      y.should == 3.0
-    end
-  end
-
 end

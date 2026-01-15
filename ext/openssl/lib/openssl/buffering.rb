@@ -8,7 +8,7 @@
 #
 #= Licence
 #  This program is licensed under the same licence as Ruby.
-#  (See the file 'LICENCE'.)
+#  (See the file 'COPYING'.)
 #++
 
 ##
@@ -24,25 +24,21 @@ module OpenSSL::Buffering
 
   # A buffer which will retain binary encoding.
   class Buffer < String
-    BINARY = Encoding::BINARY
+    unless String.method_defined?(:append_as_bytes)
+      alias_method :_append, :<<
+      def append_as_bytes(string)
+        if string.encoding == Encoding::BINARY
+          _append(string)
+        else
+          _append(string.b)
+        end
 
-    def initialize
-      super
-
-      force_encoding(BINARY)
-    end
-    
-    def << string
-      if string.encoding == BINARY
-        super(string)
-      else
-        super(string.b)
+        self
       end
-
-      return self
     end
 
-    alias concat <<
+    undef_method :concat
+    undef_method :<<
   end
 
   ##
@@ -77,7 +73,7 @@ module OpenSSL::Buffering
 
   def fill_rbuff
     begin
-      @rbuffer << self.sysread(BLOCK_SIZE)
+      @rbuffer.append_as_bytes(self.sysread(BLOCK_SIZE))
     rescue Errno::EAGAIN
       retry
     rescue EOFError
@@ -93,13 +89,25 @@ module OpenSSL::Buffering
       nil
     else
       size = @rbuffer.size unless size
-      ret = @rbuffer[0, size]
-      @rbuffer[0, size] = ""
-      ret
+      @rbuffer.slice!(0, size)
     end
   end
 
   public
+
+  # call-seq:
+  #   ssl.getbyte => 81
+  #
+  # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
+  def getbyte
+    read(1)&.ord
+  end
+
+  # Get the next 8bit byte. Raises EOFError on EOF
+  def readbyte
+    raise EOFError if eof?
+    getbyte
+  end
 
   ##
   # Reads _size_ bytes from the stream.  If _buf_ is provided it must
@@ -223,7 +231,7 @@ module OpenSSL::Buffering
   #
   # Unlike IO#gets the separator must be provided if a limit is provided.
 
-  def gets(eol=$/, limit=nil)
+  def gets(eol=$/, limit=nil, chomp: false)
     idx = @rbuffer.index(eol)
     until @eof
       break if idx
@@ -238,7 +246,11 @@ module OpenSSL::Buffering
     if size && limit && limit >= 0
       size = [size, limit].min
     end
-    consume_rbuff(size)
+    line = consume_rbuff(size)
+    if chomp && line
+      line.chomp!(eol)
+    end
+    line
   end
 
   ##
@@ -336,17 +348,32 @@ module OpenSSL::Buffering
 
   def do_write(s)
     @wbuffer = Buffer.new unless defined? @wbuffer
-    @wbuffer << s
-    @wbuffer.force_encoding(Encoding::BINARY)
+    @wbuffer.append_as_bytes(s)
+
     @sync ||= false
-    if @sync or @wbuffer.size > BLOCK_SIZE
-      until @wbuffer.empty?
-        begin
-          nwrote = syswrite(@wbuffer)
-        rescue Errno::EAGAIN
-          retry
+    buffer_size = @wbuffer.bytesize
+    if @sync or buffer_size > BLOCK_SIZE
+      nwrote = 0
+      begin
+        while nwrote < buffer_size do
+          begin
+            chunk = if nwrote > 0
+              @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
+            else
+              @wbuffer
+            end
+
+            nwrote += syswrite(chunk)
+          rescue Errno::EAGAIN
+            retry
+          end
         end
-        @wbuffer[0, nwrote] = ""
+      ensure
+        if nwrote < @wbuffer.bytesize
+          @wbuffer[0, nwrote] = ""
+        else
+          @wbuffer.clear
+        end
       end
     end
   end
@@ -423,10 +450,10 @@ module OpenSSL::Buffering
   def puts(*args)
     s = Buffer.new
     if args.empty?
-      s << "\n"
+      s.append_as_bytes("\n")
     end
     args.each{|arg|
-      s << arg.to_s
+      s.append_as_bytes(arg.to_s)
       s.sub!(/(?<!\n)\z/, "\n")
     }
     do_write(s)
@@ -440,7 +467,7 @@ module OpenSSL::Buffering
 
   def print(*args)
     s = Buffer.new
-    args.each{ |arg| s << arg.to_s }
+    args.each{ |arg| s.append_as_bytes(arg.to_s) }
     do_write(s)
     nil
   end

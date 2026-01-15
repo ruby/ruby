@@ -50,6 +50,8 @@ module MethodSpecs
     def one_req(a); end
     def two_req(a, b); end
 
+    def one_req_named(a:); end
+
     def zero_with_block(&blk); end
     def one_req_with_block(a, &blk); end
     def two_req_with_block(a, b, &blk); end
@@ -58,6 +60,8 @@ module MethodSpecs
     def one_req_one_opt(a, b=nil); end
     def one_req_two_opt(a, b=nil, c=nil); end
     def two_req_one_opt(a, b, c=nil); end
+
+    def one_opt_named(a: nil); end
 
     def one_opt_with_block(a=nil, &blk); end
     def one_req_one_opt_with_block(a, b=nil, &blk); end
@@ -71,12 +75,20 @@ module MethodSpecs
     def two_req_one_opt_with_splat(a, b, c=nil, *d); end
     def one_req_two_opt_with_splat(a, b=nil, c=nil, *d); end
 
+    def zero_with_double_splat(**a); end
+
     def zero_with_splat_and_block(*a, &blk); end
     def one_req_with_splat_and_block(a, *b, &blk); end
     def two_req_with_splat_and_block(a, b, *c, &blk); end
     def one_req_one_opt_with_splat_and_block(a, b=nil, *c, &blk); end
     def two_req_one_opt_with_splat_and_block(a, b, c=nil, *d, &blk); end
     def one_req_two_opt_with_splat_and_block(a, b=nil, c=nil, *d, &blk); end
+
+    def my_public_method; end
+    def my_protected_method; end
+    def my_private_method; end
+    protected :my_protected_method
+    private :my_private_method
 
     define_method(:zero_defined_method, Proc.new {||})
     define_method(:zero_with_splat_defined_method, Proc.new {|*x|})
@@ -205,6 +217,30 @@ module MethodSpecs
 
     def mul(n, m)
       n * m
+    end
+  end
+
+  module InheritedMethods
+    module A
+      private
+      def derp(message)
+        'A'
+      end
+    end
+
+    module B
+      private
+      def derp
+        'B' + super('superclass')
+      end
+    end
+
+    class C
+      include A
+      include B
+
+      public :derp
+      alias_method :meow, :derp
     end
   end
 end

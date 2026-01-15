@@ -30,11 +30,12 @@ socks_init(VALUE sock, VALUE host, VALUE port)
     static int init = 0;
 
     if (init == 0) {
-	SOCKSinit("ruby");
-	init = 1;
+        char progname[] = "ruby";
+        SOCKSinit(progname);
+        init = 1;
     }
 
-    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS);
+    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS, Qnil, Qnil, Qnil, Qfalse, Qnil);
 }
 
 #ifdef SOCKS5
@@ -48,7 +49,7 @@ socks_s_close(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    shutdown(fptr->fd, 2);
+    shutdown(fptr->fd, SHUT_RDWR);
     return rb_io_close(sock);
 }
 #endif

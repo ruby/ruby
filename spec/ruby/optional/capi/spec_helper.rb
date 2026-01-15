@@ -29,12 +29,14 @@ def compile_extension(name)
 
   ext = "#{name}_spec"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
-  ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
+  rubyhdrdir = RbConfig::CONFIG['rubyhdrdir']
+  ruby_header = "#{rubyhdrdir}/ruby.h"
+  abi_header = "#{rubyhdrdir}/ruby/internal/abi.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-    libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :
-                   RbConfig::CONFIG['libdirname'] # defined since 2.1
-    libruby_so = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+    # below is defined since 2.1, except for mswin, and maybe other platforms
+    libdirname = RbConfig::CONFIG.fetch 'libdirname', 'libdir'
+    libruby = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY']}"
   end
 
   begin
@@ -46,7 +48,8 @@ def compile_extension(name)
     when mtime <= File.mtime("#{core_ext_dir}/rubyspec.h")
     when mtime <= File.mtime("#{spec_ext_dir}/#{ext}.c")
     when mtime <= File.mtime(ruby_header)
-    when libruby_so && mtime <= File.mtime(libruby_so)
+    when (mtime <= File.mtime(abi_header) rescue nil)
+    when libruby && mtime <= File.mtime(libruby)
     else
       return lib # up-to-date
     end
@@ -71,11 +74,19 @@ def compile_extension(name)
         init_mkmf unless required
         create_makefile(ext, tmpdir)
       else
+        # Workaround for digest C-API specs to find the ruby/digest.h header
+        # when run in the CRuby repository via make test-spec
+        if MSpecScript.instance_variable_defined?(:@testing_ruby)
+          ruby_repository_extra_include_dir = "-I#{RbConfig::CONFIG.fetch("prefix")}/#{RbConfig::CONFIG.fetch("EXTOUT")}/include"
+        end
+
         File.write("extconf.rb", <<-RUBY)
           require 'mkmf'
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
+          append_cflags '-Wno-declaration-after-statement'
+          #{"append_cflags #{ruby_repository_extra_include_dir.inspect}" if ruby_repository_extra_include_dir}
           create_makefile(#{ext.inspect})
         RUBY
         output = ruby_exe("extconf.rb")
@@ -111,13 +122,9 @@ def setup_make
 
   opts = {}
   if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
-    begin
-      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-    rescue Errno::EBADF
-    else
-      opts[r] = r
-      opts[w] = w
+    [$1, $2].each do |fd|
+      fd = fd.to_i(10)
+      opts[fd] = fd
     end
   end
 

@@ -19,13 +19,13 @@ describe "Integer#pow" do
       2.pow(61, 5843009213693951).should eql 3697379018277258
       2.pow(62, 5843009213693952).should eql 1551748822859776
       2.pow(63, 5843009213693953).should eql 3103497645717974
-      2.pow(64, 5843009213693954).should eql  363986077738838
+      2.pow(64, 5843009213693954).should eql 363986077738838
     end
 
     it "handles sign like #divmod does" do
-       2.pow(5,  12).should ==  8
-       2.pow(5, -12).should == -4
-      -2.pow(5,  12).should ==  4
+      2.pow(5, 12).should == 8
+      2.pow(5, -12).should == -4
+      -2.pow(5, 12).should == 4
       -2.pow(5, -12).should == -8
     end
 
@@ -42,6 +42,10 @@ describe "Integer#pow" do
 
     it "raises a ZeroDivisionError when the given argument is 0" do
       -> { 2.pow(5, 0) }.should raise_error(ZeroDivisionError)
+    end
+
+    it "raises a RangeError when the first argument is negative and the second argument is present" do
+      -> { 2.pow(-5, 1) }.should raise_error(RangeError)
     end
   end
 end

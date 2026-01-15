@@ -1,7 +1,6 @@
 #ifndef INTERNAL_TRANSCODE_H                             /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_TRANSCODE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,5 +16,8 @@
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;
 size_t rb_econv_memsize(rb_econv_t *);
+
+/* vm.c */
+void rb_free_transcoder_table(void);
 
 #endif /* INTERNAL_TRANSCODE_H */

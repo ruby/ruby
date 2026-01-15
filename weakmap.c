@@ -1,0 +1,1003 @@
+#include "internal.h"
+#include "internal/gc.h"
+#include "internal/hash.h"
+#include "internal/proc.h"
+#include "internal/sanitizers.h"
+#include "ruby/st.h"
+
+/* ===== WeakMap =====
+ *
+ * WeakMap contains one ST table which contains a pointer to the object as the
+ * key and a pointer to the object as the value. This means that the key and
+ * value of the table are both of the type `VALUE *`.
+ *
+ * The objects are not directly stored as keys and values in the table because
+ * `rb_gc_mark_weak` requires a pointer to the memory location to overwrite
+ * when the object is reclaimed. Using a pointer into the ST table entry is not
+ * safe because the pointer can change when the ST table is resized.
+ *
+ * WeakMap hashes and compares using the pointer address of the object.
+ *
+ * For performance and memory efficiency reasons, the key and value
+ * are allocated at the same time and adjacent to each other.
+ *
+ * During GC and while iterating, reclaimed entries (i.e. either the key or
+ * value points to `Qundef`) are removed from the ST table.
+ */
+
+struct weakmap {
+    st_table *table;
+};
+
+struct weakmap_entry {
+    VALUE key;
+    VALUE val;
+};
+
+static void
+wmap_free(void *ptr)
+{
+    struct weakmap *w = ptr;
+
+    st_free_table(w->table);
+}
+
+static size_t
+wmap_memsize(const void *ptr)
+{
+    const struct weakmap *w = ptr;
+
+    size_t size = 0;
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* The key and value of the table each take sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * (2 * sizeof(VALUE));
+    }
+
+    return size;
+}
+
+struct wmap_compact_table_data {
+    st_table *table;
+    struct weakmap_entry *dead_entry;
+};
+
+static int
+wmap_compact_table_each_i(st_data_t k, st_data_t v, st_data_t d, int error)
+{
+    st_table *table = (st_table *)d;
+
+    VALUE key = (VALUE)k;
+    VALUE val = (VALUE)v;
+
+    VALUE moved_key = rb_gc_location(key);
+    VALUE moved_val = rb_gc_location(val);
+
+    /* If the key object moves, then we must reinsert because the hash is
+     * based on the pointer rather than the object itself. */
+    if (key != moved_key) {
+        st_insert(table, (st_data_t)moved_key, (st_data_t)moved_val);
+
+        return ST_DELETE;
+    }
+    else if (val != moved_val) {
+        return ST_REPLACE;
+    }
+    else {
+        return ST_CONTINUE;
+    }
+}
+
+static int
+wmap_compact_table_replace_i(st_data_t *k, st_data_t *v, st_data_t d, int existing)
+{
+    RUBY_ASSERT((VALUE)*k == rb_gc_location((VALUE)*k));
+
+    *v = (st_data_t)rb_gc_location((VALUE)*v);
+
+    return ST_CONTINUE;
+}
+
+static void
+wmap_compact(void *ptr)
+{
+    struct weakmap *w = ptr;
+
+    if (w->table) {
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            st_foreach_with_replace(w->table, wmap_compact_table_each_i, wmap_compact_table_replace_i, (st_data_t)w->table);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
+    }
+}
+
+static int
+rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key) &&
+            rb_gc_handle_weak_references_alive_p(val)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wmap_handle_weak_references(void *ptr)
+{
+    struct weakmap *w = ptr;
+
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
+}
+
+const rb_data_type_t rb_weakmap_type = {
+    "weakmap",
+    {
+        NULL,
+        wmap_free,
+        wmap_memsize,
+        wmap_compact,
+        wmap_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+static int
+wmap_cmp(st_data_t x, st_data_t y)
+{
+    return x != y;
+}
+
+static st_index_t
+wmap_hash(st_data_t n)
+{
+    return st_numhash(n);
+}
+
+static const struct st_hash_type wmap_hash_type = {
+    wmap_cmp,
+    wmap_hash,
+};
+
+static VALUE
+wmap_allocate(VALUE klass)
+{
+    struct weakmap *w;
+    VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &rb_weakmap_type, w);
+
+    w->table = st_init_table(&wmap_hash_type);
+
+    rb_gc_declare_weak_references(obj);
+
+    return obj;
+}
+
+static VALUE
+wmap_inspect_append(VALUE str, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return rb_str_append(str, rb_inspect(obj));
+    }
+    else {
+        return rb_str_append(str, rb_any_to_s(obj));
+    }
+}
+
+static int
+wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
+{
+    VALUE key = (VALUE)k;
+    VALUE val = (VALUE)v;
+    VALUE str = (VALUE)data;
+
+    if (RSTRING_PTR(str)[0] == '#') {
+        rb_str_cat2(str, ", ");
+    }
+    else {
+        rb_str_cat2(str, ": ");
+        RSTRING_PTR(str)[0] = '#';
+    }
+
+    wmap_inspect_append(str, key);
+    rb_str_cat2(str, " => ");
+    wmap_inspect_append(str, val);
+
+    return ST_CONTINUE;
+}
+
+/* call-seq:
+ *   inspect -> new_string
+ *
+ * Returns a new string containing the \WeakMap entries:
+ *
+ *   m = ObjectSpace::WeakMap.new
+ *   m["one"] = 1
+ *   m["two"] = 2
+ *   m.inspect
+ *   # => "#<ObjectSpace::WeakMap:0x00007c457b2523e8: #<String:0x00007c457b2674f0> => 1, #<String:0x00007c457b27b8d8> => 2>"
+ */
+static VALUE
+wmap_inspect(VALUE self)
+{
+    VALUE c = rb_class_name(CLASS_OF(self));
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    VALUE str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
+
+    st_foreach(w->table, wmap_inspect_i, (st_data_t)str);
+
+    RSTRING_PTR(str)[0] = '#';
+    rb_str_cat2(str, ">");
+
+    return str;
+}
+
+static int
+wmap_each_i(st_data_t k, st_data_t v, st_data_t _)
+{
+    rb_yield_values(2, (VALUE)k, (VALUE)v);
+
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   map.each {|key, val| ... } -> self
+ *
+ * Iterates over keys and values. Note that unlike other collections,
+ * +each+ without block isn't supported.
+ *
+ */
+static VALUE
+wmap_each(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_foreach(w->table, wmap_each_i, (st_data_t)0);
+
+    return self;
+}
+
+static int
+wmap_each_key_i(st_data_t k, st_data_t _v, st_data_t _data)
+{
+    rb_yield((VALUE)k);
+
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   map.each_key {|key| ... } -> self
+ *
+ * Iterates over keys. Note that unlike other collections,
+ * +each_key+ without block isn't supported.
+ *
+ */
+static VALUE
+wmap_each_key(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_foreach(w->table, wmap_each_key_i, (st_data_t)0);
+
+    return self;
+}
+
+static int
+wmap_each_value_i(st_data_t k, st_data_t v, st_data_t _data)
+{
+    rb_yield((VALUE)v);
+
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   map.each_value {|val| ... } -> self
+ *
+ * Iterates over values. Note that unlike other collections,
+ * +each_value+ without block isn't supported.
+ *
+ */
+static VALUE
+wmap_each_value(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_foreach(w->table, wmap_each_value_i, (st_data_t)0);
+
+    return self;
+}
+
+static int
+wmap_keys_i(st_data_t k, st_data_t v, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+
+    rb_ary_push(ary, (VALUE)k);
+
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   map.keys -> new_array
+ *
+ * Returns a new Array containing all keys in the map.
+ *
+ */
+static VALUE
+wmap_keys(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    VALUE ary = rb_ary_new();
+    st_foreach(w->table, wmap_keys_i, (st_data_t)ary);
+
+    return ary;
+}
+
+static int
+wmap_values_i(st_data_t k, st_data_t v, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+
+    rb_ary_push(ary, (VALUE)v);
+
+    return ST_CONTINUE;
+}
+
+/*
+ * call-seq:
+ *   map.values -> new_array
+ *
+ * Returns a new Array containing all values in the map.
+ *
+ */
+static VALUE
+wmap_values(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    VALUE ary = rb_ary_new();
+    st_foreach(w->table, wmap_values_i, (st_data_t)ary);
+
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *    map[key] = value -> value
+ *
+ *  Associates the given +value+ with the given +key+.
+ *
+ *  If the given +key+ exists, replaces its value with the given +value+;
+ *  the ordering is not affected.
+ */
+static VALUE
+wmap_aset(VALUE self, VALUE key, VALUE val)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_insert(w->table, (st_data_t)key, (st_data_t)val);
+
+    RB_OBJ_WRITTEN(self, Qundef, key);
+    RB_OBJ_WRITTEN(self, Qundef, val);
+
+    return Qnil;
+}
+
+/* Retrieves a weakly referenced object with the given key */
+static VALUE
+wmap_lookup(VALUE self, VALUE key)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_data_t data;
+    if (!st_lookup(w->table, (st_data_t)key, &data)) return Qundef;
+
+    return (VALUE)data;
+}
+
+/*
+ *  call-seq:
+ *    map[key] -> value
+ *
+ *  Returns the value associated with the given +key+ if found.
+ *
+ *  If +key+ is not found, returns +nil+.
+ */
+static VALUE
+wmap_aref(VALUE self, VALUE key)
+{
+    VALUE obj = wmap_lookup(self, key);
+    return !UNDEF_P(obj) ? obj : Qnil;
+}
+
+/*
+ *  call-seq:
+ *    map.delete(key) -> value or nil
+ *    map.delete(key) {|key| ... } -> object
+ *
+ *  Deletes the entry for the given +key+ and returns its associated value.
+ *
+ *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *    m = ObjectSpace::WeakMap.new
+ *    key = "foo"
+ *    m[key] = 1
+ *    m.delete(key) # => 1
+ *    m[key] # => nil
+ *
+ *  If no block is given and +key+ is not found, returns +nil+.
+ *
+ *  If a block is given and +key+ is found, ignores the block,
+ *  deletes the entry, and returns the associated value:
+ *    m = ObjectSpace::WeakMap.new
+ *    key = "foo"
+ *    m[key] = 2
+ *    m.delete(key) { |key| raise 'Will never happen'} # => 2
+ *
+ *  If a block is given and +key+ is not found,
+ *  yields the +key+ to the block and returns the block's return value:
+ *    m = ObjectSpace::WeakMap.new
+ *    m.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ */
+static VALUE
+wmap_delete(VALUE self, VALUE key)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_data_t orig_key = (st_data_t)key;
+    st_data_t orig_val;
+    if (st_delete(w->table, &orig_key, &orig_val)) {
+        return (VALUE)orig_val;
+    }
+
+    if (rb_block_given_p()) {
+        return rb_yield(key);
+    }
+    else {
+        return Qnil;
+    }
+}
+
+/*
+ *  call-seq:
+ *    map.key?(key) -> true or false
+ *
+ *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
+ */
+static VALUE
+wmap_has_key(VALUE self, VALUE key)
+{
+    return RBOOL(!UNDEF_P(wmap_lookup(self, key)));
+}
+
+/*
+ * call-seq:
+ *   map.size -> number
+ *
+ * Returns the number of referenced objects
+ */
+static VALUE
+wmap_size(VALUE self)
+{
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
+
+    st_index_t n = st_table_size(w->table);
+
+#if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
+    return ULONG2NUM(n);
+#else
+    return ULL2NUM(n);
+#endif
+}
+
+/* ===== WeakKeyMap =====
+ *
+ * WeakKeyMap contains one ST table which contains a pointer to the object as
+ * the key and the object as the value. This means that the key is of the type
+ * `VALUE *` while the value is of the type `VALUE`.
+ *
+ * The object is not directly stored as keys in the table because
+ * `rb_gc_mark_weak` requires a pointer to the memory location to overwrite
+ * when the object is reclaimed. Using a pointer into the ST table entry is not
+ * safe because the pointer can change when the ST table is resized.
+ *
+ * WeakKeyMap hashes and compares using the `#hash` and `#==` methods of the
+ * object, respectively.
+ *
+ * During GC and while iterating, reclaimed entries (i.e. the key points to
+ * `Qundef`) are removed from the ST table.
+ */
+
+struct weakkeymap {
+    st_table *table;
+};
+
+static int
+wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t _data)
+{
+    rb_gc_mark_movable((VALUE)val_obj);
+
+    return ST_CONTINUE;
+}
+
+static void
+wkmap_mark(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+    if (w->table) {
+        st_foreach(w->table, wkmap_mark_table_i, (st_data_t)0);
+    }
+}
+
+static void
+wkmap_free(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+
+    st_free_table(w->table);
+}
+
+static size_t
+wkmap_memsize(const void *ptr)
+{
+    const struct weakkeymap *w = ptr;
+
+    size_t size = 0;
+    if (w->table) {
+        size += st_memsize(w->table);
+        /* Each key of the table takes sizeof(VALUE) in size. */
+        size += st_table_size(w->table) * sizeof(VALUE);
+    }
+
+    return size;
+}
+
+static int
+wkmap_compact_table_i(st_data_t key, st_data_t val, st_data_t _data, int _error)
+{
+    if ((VALUE)key != rb_gc_location((VALUE)key) || (VALUE)val != rb_gc_location((VALUE)val)) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _data, int existing)
+{
+    RUBY_ASSERT(existing);
+
+    *key_ptr = (st_data_t)rb_gc_location((VALUE)*key_ptr);
+    *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
+
+    return ST_CONTINUE;
+}
+
+static void
+wkmap_compact(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+
+    if (w->table) {
+        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+    }
+}
+
+static int
+rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p(key)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wkmap_handle_weak_references(void *ptr)
+{
+    struct weakkeymap *w = ptr;
+
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
+}
+
+static const rb_data_type_t rb_weakkeymap_type = {
+    "weakkeymap",
+    {
+        wkmap_mark,
+        wkmap_free,
+        wkmap_memsize,
+        wkmap_compact,
+        wkmap_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+static int
+wkmap_cmp(st_data_t x, st_data_t y)
+{
+    VALUE x_obj = (VALUE)x;
+    VALUE y_obj = (VALUE)y;
+
+    return rb_any_cmp(x_obj, y_obj);
+}
+
+static st_index_t
+wkmap_hash(st_data_t n)
+{
+    VALUE obj = (VALUE)n;
+
+    return rb_any_hash(obj);
+}
+
+static const struct st_hash_type wkmap_hash_type = {
+    wkmap_cmp,
+    wkmap_hash,
+};
+
+static VALUE
+wkmap_allocate(VALUE klass)
+{
+    struct weakkeymap *w;
+
+    VALUE obj = TypedData_Make_Struct(klass, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    w->table = st_init_table(&wkmap_hash_type);
+
+    rb_gc_declare_weak_references(obj);
+
+    return obj;
+}
+
+static VALUE
+wkmap_lookup(VALUE self, VALUE key)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    st_data_t data;
+    if (!st_lookup(w->table, (st_data_t)key, &data)) return Qundef;
+
+    return (VALUE)data;
+}
+
+/*
+ *  call-seq:
+ *    map[key] -> value
+ *
+ *  Returns the value associated with the given +key+ if found.
+ *
+ *  If +key+ is not found, returns +nil+.
+ */
+static VALUE
+wkmap_aref(VALUE self, VALUE key)
+{
+    VALUE obj = wkmap_lookup(self, key);
+    return !UNDEF_P(obj) ? obj : Qnil;
+}
+
+struct wkmap_aset_args {
+    VALUE new_key;
+    VALUE new_val;
+};
+
+/*
+ *  call-seq:
+ *    map[key] = value -> value
+ *
+ *  Associates the given +value+ with the given +key+
+ *
+ *  The reference to +key+ is weak, so when there is no other reference
+ *  to +key+ it may be garbage collected.
+ *
+ *  If the given +key+ exists, replaces its value with the given +value+;
+ *  the ordering is not affected
+ */
+static VALUE
+wkmap_aset(VALUE self, VALUE key, VALUE val)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    if (!FL_ABLE(key) || SYMBOL_P(key) || RB_BIGNUM_TYPE_P(key) || RB_TYPE_P(key, T_FLOAT)) {
+        rb_raise(rb_eArgError, "WeakKeyMap keys must be garbage collectable");
+        UNREACHABLE_RETURN(Qnil);
+    }
+
+    st_insert(w->table, (st_data_t)key, (st_data_t)val);
+
+    RB_OBJ_WRITTEN(self, Qundef, key);
+    RB_OBJ_WRITTEN(self, Qundef, val);
+
+    return val;
+}
+
+/*
+ *  call-seq:
+ *    map.delete(key) -> value or nil
+ *    map.delete(key) {|key| ... } -> object
+ *
+ *  Deletes the entry for the given +key+ and returns its associated value.
+ *
+ *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    key = "foo" # to hold reference to the key
+ *    m[key] = 1
+ *    m.delete("foo") # => 1
+ *    m["foo"] # => nil
+ *
+ *  If no block given and +key+ is not found, returns +nil+.
+ *
+ *  If a block is given and +key+ is found, ignores the block,
+ *  deletes the entry, and returns the associated value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    key = "foo" # to hold reference to the key
+ *    m[key] = 2
+ *    m.delete("foo") { |key| raise 'Will never happen'} # => 2
+ *
+ *  If a block is given and +key+ is not found,
+ *  yields the +key+ to the block and returns the block's return value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    m.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ */
+
+static VALUE
+wkmap_delete(VALUE self, VALUE key)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    st_data_t orig_key = (st_data_t)key;
+    st_data_t orig_val;
+    if (st_delete(w->table, &orig_key, &orig_val)) {
+        return (VALUE)orig_val;
+    }
+
+    if (rb_block_given_p()) {
+        return rb_yield(key);
+    }
+    else {
+        return Qnil;
+    }
+}
+
+/*
+ *  call-seq:
+ *    map.getkey(key) -> existing_key or nil
+ *
+ *  Returns the existing equal key if it exists, otherwise returns +nil+.
+ *
+ *  This might be useful for implementing caches, so that only one copy of
+ *  some object would be used everywhere in the program:
+ *
+ *    value = {amount: 1, currency: 'USD'}
+ *
+ *    # Now if we put this object in a cache:
+ *    cache = ObjectSpace::WeakKeyMap.new
+ *    cache[value] = true
+ *
+ *    # ...we can always extract from there and use the same object:
+ *    copy = cache.getkey({amount: 1, currency: 'USD'})
+ *    copy.object_id == value.object_id #=> true
+ */
+static VALUE
+wkmap_getkey(VALUE self, VALUE key)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    st_data_t orig_key;
+    if (!st_get_key(w->table, (st_data_t)key, &orig_key)) return Qnil;
+
+    return (VALUE)orig_key;
+}
+
+/*
+ *  call-seq:
+ *    map.key?(key) -> true or false
+ *
+ *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
+ */
+static VALUE
+wkmap_has_key(VALUE self, VALUE key)
+{
+    return RBOOL(!UNDEF_P(wkmap_lookup(self, key)));
+}
+
+/*
+ *  call-seq:
+ *    map.clear -> self
+ *
+ *  Removes all map entries; returns +self+.
+ */
+static VALUE
+wkmap_clear(VALUE self)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    st_clear(w->table);
+
+    return self;
+}
+
+/*
+ *  call-seq:
+ *    map.inspect -> new_string
+ *
+ *  Returns a new String containing informations about the map:
+ *
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    m[key] = value
+ *    m.inspect # => "#<ObjectSpace::WeakKeyMap:0x00000001028dcba8 size=1>"
+ *
+ */
+static VALUE
+wkmap_inspect(VALUE self)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
+
+    st_index_t n = st_table_size(w->table);
+
+#if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
+    const char * format = "#<%"PRIsVALUE":%p size=%lu>";
+#else
+    const char * format = "#<%"PRIsVALUE":%p size=%llu>";
+#endif
+
+    VALUE str = rb_sprintf(format, rb_class_name(CLASS_OF(self)), (void *)self, n);
+    return str;
+}
+
+/*
+ *  Document-class: ObjectSpace::WeakMap
+ *
+ *  An ObjectSpace::WeakMap is a key-value map that holds weak references
+ *  to its keys and values, so they can be garbage-collected when there are
+ *  no more references left.
+ *
+ *  Keys in the map are compared by identity.
+ *
+ *     m = ObjectSpace::WeakMap.new
+ *     key1 = "foo"
+ *     val1 = Object.new
+ *     m[key1] = val1
+ *
+ *     key2 = "bar"
+ *     val2 = Object.new
+ *     m[key2] = val2
+ *
+ *     m[key1] #=> #<Object:0x0...>
+ *     m[key2] #=> #<Object:0x0...>
+ *
+ *     val1 = nil # remove the other reference to value
+ *     GC.start
+ *
+ *     m[key1] #=> nil
+ *     m.keys #=> ["bar"]
+ *
+ *     key2 = nil # remove the other reference to key
+ *     GC.start
+ *
+ *     m[key2] #=> nil
+ *     m.keys #=> []
+ *
+ *  (Note that GC.start is used here only for demonstrational purposes and might
+ *  not always lead to demonstrated results.)
+ *
+ *
+ *  See also ObjectSpace::WeakKeyMap map class, which compares keys by value,
+ *  and holds weak references only to the keys.
+ */
+
+/*
+ *  Document-class: ObjectSpace::WeakKeyMap
+ *
+ *  An ObjectSpace::WeakKeyMap is a key-value map that holds weak references
+ *  to its keys, so they can be garbage collected when there is no more references.
+ *
+ *  Unlike ObjectSpace::WeakMap:
+ *
+ *  * references to values are _strong_, so they aren't garbage collected while
+ *    they are in the map;
+ *  * keys are compared by value (using Object#eql?), not by identity;
+ *  * only garbage-collectable objects can be used as keys.
+ *
+ *       map = ObjectSpace::WeakKeyMap.new
+ *       val = Time.new(2023, 12, 7)
+ *       key = "name"
+ *       map[key] = val
+ *
+ *       # Value is fetched by equality: the instance of string "name" is
+ *       # different here, but it is equal to the key
+ *       map["name"] #=> 2023-12-07 00:00:00 +0200
+ *
+ *       val = nil
+ *       GC.start
+ *       # There are no more references to `val`, yet the pair isn't
+ *       # garbage-collected.
+ *       map["name"] #=> 2023-12-07 00:00:00 +0200
+ *
+ *       key = nil
+ *       GC.start
+ *       # There are no more references to `key`, key and value are
+ *       # garbage-collected.
+ *       map["name"] #=> nil
+ *
+ *  (Note that GC.start is used here only for demonstrational purposes and might
+ *  not always lead to demonstrated results.)
+ *
+ *  The collection is especially useful for implementing caches of lightweight value
+ *  objects, so that only one copy of each value representation would be stored in
+ *  memory, but the copies that aren't used would be garbage-collected.
+ *
+ *    CACHE = ObjectSpace::WeakKeyMap
+ *
+ *    def make_value(**)
+ *       val = ValueObject.new(**)
+ *       if (existing = @cache.getkey(val))
+ *          # if the object with this value exists, we return it
+ *          existing
+ *       else
+ *          # otherwise, put it in the cache
+ *          @cache[val] = true
+ *          val
+ *       end
+ *    end
+ *
+ *  This will result in +make_value+ returning the same object for same set of attributes
+ *  always, but the values that aren't needed anymore wouldn't be sitting in the cache forever.
+ */
+
+void
+Init_WeakMap(void)
+{
+    VALUE rb_mObjectSpace = rb_define_module("ObjectSpace");
+
+    VALUE rb_cWeakMap = rb_define_class_under(rb_mObjectSpace, "WeakMap", rb_cObject);
+    rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
+    rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
+    rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
+    rb_define_method(rb_cWeakMap, "delete", wmap_delete, 1);
+    rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
+    rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
+    rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 1);
+    rb_define_method(rb_cWeakMap, "inspect", wmap_inspect, 0);
+    rb_define_method(rb_cWeakMap, "each", wmap_each, 0);
+    rb_define_method(rb_cWeakMap, "each_pair", wmap_each, 0);
+    rb_define_method(rb_cWeakMap, "each_key", wmap_each_key, 0);
+    rb_define_method(rb_cWeakMap, "each_value", wmap_each_value, 0);
+    rb_define_method(rb_cWeakMap, "keys", wmap_keys, 0);
+    rb_define_method(rb_cWeakMap, "values", wmap_values, 0);
+    rb_define_method(rb_cWeakMap, "size", wmap_size, 0);
+    rb_define_method(rb_cWeakMap, "length", wmap_size, 0);
+    rb_include_module(rb_cWeakMap, rb_mEnumerable);
+
+    VALUE rb_cWeakKeyMap = rb_define_class_under(rb_mObjectSpace, "WeakKeyMap", rb_cObject);
+    rb_define_alloc_func(rb_cWeakKeyMap, wkmap_allocate);
+    rb_define_method(rb_cWeakKeyMap, "[]=", wkmap_aset, 2);
+    rb_define_method(rb_cWeakKeyMap, "[]", wkmap_aref, 1);
+    rb_define_method(rb_cWeakKeyMap, "delete", wkmap_delete, 1);
+    rb_define_method(rb_cWeakKeyMap, "getkey", wkmap_getkey, 1);
+    rb_define_method(rb_cWeakKeyMap, "key?", wkmap_has_key, 1);
+    rb_define_method(rb_cWeakKeyMap, "clear", wkmap_clear, 0);
+    rb_define_method(rb_cWeakKeyMap, "inspect", wkmap_inspect, 0);
+}

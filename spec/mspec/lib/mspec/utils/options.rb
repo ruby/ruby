@@ -32,6 +32,10 @@ class MSpecOptions
   # Raised if an unrecognized option is encountered.
   class ParseError < Exception; end
 
+  class << self
+    attr_accessor :latest
+  end
+
   attr_accessor :config, :banner, :width, :options
 
   def initialize(banner = "", width = 30, config = nil)
@@ -46,7 +50,7 @@ class MSpecOptions
       @extra << x
     }
 
-    yield self if block_given?
+    MSpecOptions.latest = self
   end
 
   # Registers an option. Acceptable formats for arguments are:
@@ -200,6 +204,13 @@ class MSpecOptions
        "Load FILE containing configuration options", &block)
   end
 
+  def env
+    on("--env", "KEY=VALUE", "Set environment variable") do |env|
+      key, value = env.split('=', 2)
+      ENV[key] = value
+    end
+  end
+
   def targets
     on("-t", "--target", "TARGET",
        "Implementation to run the specs, where TARGET is:") do |t|
@@ -311,6 +322,11 @@ class MSpecOptions
        "Write formatter output to FILE") do |f|
       config[:output] = f
     end
+
+    on("--error-output", "FILE",
+       "Write error output of failing specs to FILE, or $stderr if value is 'stderr'.") do |f|
+      config[:error_output] = f
+    end
   end
 
   def filters
@@ -399,7 +415,7 @@ class MSpecOptions
       end
       def obj.load
         file = MSpec.file
-        STDERR.print "\n#{file.ljust(@width)}"
+        STDERR.print "\n#{file.ljust(@width)}\n"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj
@@ -413,6 +429,10 @@ class MSpecOptions
         STDERR.print @marker
       end
       MSpec.register :load, obj
+    end
+
+    on("--print-skips", "Print skips") do
+      config[:print_skips] = true
     end
   end
 
@@ -464,13 +484,22 @@ class MSpecOptions
 
   def debug
     on("-d", "--debug",
-       "Set MSpec debugging flag for more verbose output") do
+       "Disable MSpec backtrace filtering") do
       $MSPEC_DEBUG = true
+    end
+  end
+
+  def launchable
+    on("--launchable-test-reports", "DIR",
+       "DIR The directory for reporting test results in Launchable JSON format") do |o|
+      require 'mspec/runner/formatters/launchable'
+      config[:launchable] = LaunchableFormatter.setDir(o)
     end
   end
 
   def all
     configure {}
+    env
     targets
     formatters
     filters
@@ -487,5 +516,6 @@ class MSpecOptions
     action_filters
     actions
     debug
+    launchable
   end
 end

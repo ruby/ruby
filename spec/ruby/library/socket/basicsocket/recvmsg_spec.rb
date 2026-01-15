@@ -195,3 +195,87 @@ describe 'BasicSocket#recvmsg' do
     end
   end
 end
+
+describe 'BasicSocket#recvmsg' do
+  context "when recvfrom(2) returns 0 (if no messages are available to be received and the peer has performed an orderly shutdown)" do
+    describe "stream socket" do
+      before :each do
+        @server = TCPServer.new('127.0.0.1', 0)
+        @port = @server.addr[1]
+      end
+
+      after :each do
+        @server.close unless @server.closed?
+      end
+
+      ruby_version_is ""..."3.3" do
+        platform_is_not :windows do
+          it "returns an empty String as received data on a closed stream socket" do
+            t = Thread.new do
+              client = @server.accept
+              client.recvmsg(10)
+            ensure
+              client.close if client
+            end
+
+            Thread.pass while t.status and t.status != "sleep"
+            t.status.should_not be_nil
+
+            socket = TCPSocket.new('127.0.0.1', @port)
+            socket.close
+
+            t.value.should.is_a? Array
+            t.value[0].should == ""
+          end
+        end
+      end
+
+      ruby_version_is "3.3" do
+        platform_is_not :windows do
+          it "returns nil on a closed stream socket" do
+            t = Thread.new do
+              client = @server.accept
+              client.recvmsg(10)
+            ensure
+              client.close if client
+            end
+
+            Thread.pass while t.status and t.status != "sleep"
+            t.status.should_not be_nil
+
+            socket = TCPSocket.new('127.0.0.1', @port)
+            socket.close
+
+            t.value.should be_nil
+          end
+        end
+      end
+    end
+
+    describe "datagram socket" do
+      SocketSpecs.each_ip_protocol do |family, ip_address|
+        before :each do
+          @server = UDPSocket.new(family)
+          @client = UDPSocket.new(family)
+        end
+
+        after :each do
+          @server.close unless @server.closed?
+          @client.close unless @client.closed?
+        end
+
+        it "returns an empty String as received data" do
+          @server.bind(ip_address, 0)
+          addr = @server.connect_address
+          @client.connect(addr.ip_address, addr.ip_port)
+
+          @client.send('', 0)
+          message = @server.recvmsg(1)
+
+          message.should.is_a? Array
+          message[0].should == ""
+        end
+      end
+    end
+  end
+end

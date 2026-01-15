@@ -3,18 +3,19 @@
 RSpec.describe "Bundler.load" do
   describe "with a gemfile" do
     before(:each) do
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
+      allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
     end
 
     it "provides a list of the env dependencies" do
-      expect(Bundler.load.dependencies).to have_dep("rack", ">= 0")
+      expect(Bundler.load.dependencies).to have_dep("myrack", ">= 0")
     end
 
     it "provides a list of the resolved gems" do
-      expect(Bundler.load.gems).to have_gem("rack-1.0.0", "bundler-#{Bundler::VERSION}")
+      expect(Bundler.load.gems).to have_gem("myrack-1.0.0", "bundler-#{Bundler::VERSION}")
     end
 
     it "ignores blank BUNDLE_GEMFILEs" do
@@ -27,19 +28,20 @@ RSpec.describe "Bundler.load" do
 
   describe "with a gems.rb file" do
     before(:each) do
-      create_file "gems.rb", <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      gemfile "gems.rb", <<-G
+        source "https://gem.repo1"
+        gem "myrack"
       G
-      bundle! :install
+      bundle :install
+      allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
     end
 
     it "provides a list of the env dependencies" do
-      expect(Bundler.load.dependencies).to have_dep("rack", ">= 0")
+      expect(Bundler.load.dependencies).to have_dep("myrack", ">= 0")
     end
 
     it "provides a list of the resolved gems" do
-      expect(Bundler.load.gems).to have_gem("rack-1.0.0", "bundler-#{Bundler::VERSION}")
+      expect(Bundler.load.gems).to have_gem("myrack-1.0.0", "bundler-#{Bundler::VERSION}")
     end
   end
 
@@ -66,24 +68,24 @@ RSpec.describe "Bundler.load" do
       begin
         expect { Bundler.load }.to raise_error(Bundler::GemfileNotFound)
       ensure
-        bundler_gemfile.rmtree if @remove_bundler_gemfile
+        FileUtils.rm_rf bundler_gemfile if @remove_bundler_gemfile
       end
     end
   end
 
   describe "when called twice" do
     it "doesn't try to load the runtime twice" do
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
         gem "activesupport", :group => :test
       G
 
-      ruby! <<-RUBY
-        require "#{lib_dir}/bundler"
+      ruby <<-RUBY
+        require "bundler"
         Bundler.setup :default
         Bundler.require :default
-        puts RACK
+        puts MYRACK
         begin
           require "activesupport"
         rescue LoadError
@@ -97,11 +99,11 @@ RSpec.describe "Bundler.load" do
 
   describe "not hurting brittle rubygems" do
     it "does not inject #source into the generated YAML of the gem specs" do
-      install_gemfile! <<-G
-        source "#{file_uri_for(gem_repo1)}"
+      install_gemfile <<-G
+        source "https://gem.repo1"
         gem "activerecord"
       G
-
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       Bundler.load.specs.each do |spec|
         expect(spec.to_yaml).not_to match(/^\s+source:/)
         expect(spec.to_yaml).not_to match(/^\s+groups:/)

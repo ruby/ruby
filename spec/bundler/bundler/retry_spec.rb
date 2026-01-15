@@ -12,7 +12,7 @@ RSpec.describe Bundler::Retry do
   end
 
   it "returns the first valid result" do
-    jobs = [proc { raise "foo" }, proc { :bar }, proc { raise "foo" }]
+    jobs = [proc { raise "job 1 failed" }, proc { :bar }, proc { raise "job 2 failed" }]
     attempts = 0
     result = Bundler::Retry.new(nil, nil, 3).attempt do
       attempts += 1
@@ -68,7 +68,7 @@ RSpec.describe Bundler::Retry do
       it "print error message with newlines" do
         allow(Bundler.ui).to  receive(:debug?).and_return(false)
         expect(Bundler.ui).to receive(:info).with("").twice
-        expect(Bundler.ui).to receive(:warn).with(failure_message, false)
+        expect(Bundler.ui).to receive(:warn).with(failure_message, true)
 
         expect do
           Bundler::Retry.new("test", [], 1).attempt do

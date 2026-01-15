@@ -1,0 +1,6 @@
+#!/bin/bash
+export LANG=C LC_ALL=C # Suppress localication
+exec 2> >(exec grep -v \
+  -e ' no symbols$' \
+  >&2)
+exec "$@"

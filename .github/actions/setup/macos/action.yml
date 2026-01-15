@@ -1,0 +1,29 @@
+name: Setup macOS environment
+description: >-
+  Installs necessary packages via Homebrew.
+
+inputs: {} # nothing?
+
+outputs: {} # nothing?
+
+runs:
+  using: composite
+
+  steps:
+    - name: brew
+      shell: bash
+      run: |
+        brew install --quiet jemalloc gmp libffi openssl@3 zlib autoconf automake libtool
+
+    - name: Set ENV
+      shell: bash
+      run: |
+        dir_config() {
+          local args=() lib var="$1"; shift
+          for lib in "$@"; do
+            args+=("--with-${lib%@*}-dir=$(brew --prefix $lib)")
+          done
+          echo "$var=${args[*]}" >> $GITHUB_ENV
+        }
+        dir_config ruby_configure_args gmp
+        dir_config CONFIGURE_ARGS openssl@3

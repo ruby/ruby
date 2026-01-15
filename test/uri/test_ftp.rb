@@ -2,10 +2,7 @@
 require 'test/unit'
 require 'uri/ftp'
 
-module URI
-
-
-class TestFTP < Test::Unit::TestCase
+class URI::TestFTP < Test::Unit::TestCase
   def setup
   end
 
@@ -29,18 +26,18 @@ class TestFTP < Test::Unit::TestCase
   end
 
   def test_parse_invalid
-    assert_raise(InvalidURIError){URI.parse('ftp:example')}
+    assert_raise(URI::InvalidURIError) {URI.parse('ftp:example')}
   end
 
   def test_paths
     # If you think what's below is wrong, please read RubyForge bug 2055,
     # RFC 1738 section 3.2.2, and RFC 2396.
     u = URI.parse('ftp://ftp.example.com/foo/bar/file.ext')
-    assert(u.path == 'foo/bar/file.ext')
+    assert_equal('foo/bar/file.ext', u.path)
     u = URI.parse('ftp://ftp.example.com//foo/bar/file.ext')
-    assert(u.path == '/foo/bar/file.ext')
+    assert_equal('/foo/bar/file.ext', u.path)
     u = URI.parse('ftp://ftp.example.com/%2Ffoo/bar/file.ext')
-    assert(u.path == '/foo/bar/file.ext')
+    assert_equal('/foo/bar/file.ext', u.path)
   end
 
   def test_assemble
@@ -48,8 +45,8 @@ class TestFTP < Test::Unit::TestCase
     # assuming everyone else has implemented RFC 2396.
     uri = URI::FTP.build(['user:password', 'ftp.example.com', nil,
                          '/path/file.zip', 'i'])
-    assert(uri.to_s ==
-           'ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=i')
+    assert_equal('ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=i',
+                 uri.to_s)
   end
 
   def test_select
@@ -61,7 +58,4 @@ class TestFTP < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
-
-
 end

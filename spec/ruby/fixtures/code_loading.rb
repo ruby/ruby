@@ -12,7 +12,22 @@ module CodeLoadingSpecs
     end
   end
 
+  def self.preload_rubygems
+    # Require RubyGems eagerly, to ensure #require is already the RubyGems
+    # version and RubyGems is only loaded once, before starting #require/#autoload specs
+    # which snapshot $LOADED_FEATURES and could cause RubyGems to load twice.
+    # #require specs also snapshot #require, and could end up redefining #require as the original core Kernel#require.
+    @rubygems ||= begin
+      require "rubygems"
+      true
+    rescue LoadError
+      true
+    end
+  end
+
   def self.spec_setup
+    preload_rubygems
+
     @saved_loaded_features = $LOADED_FEATURES.clone
     @saved_load_path = $LOAD_PATH.clone
     ScratchPad.record []

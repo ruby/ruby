@@ -71,13 +71,17 @@ module FindDirSpecs
   end
 
   def self.create_mock_dirs
+    tmp('') # make sure there is an tmpdir
     umask = File.umask 0
-    mock_dir_files.each do |name|
-      file = File.join mock_dir, name
-      mkdir_p File.dirname(file)
-      touch file
+    begin
+      mock_dir_files.each do |name|
+        file = File.join mock_dir, name
+        mkdir_p File.dirname(file)
+        touch file
+      end
+    ensure
+      File.umask umask
     end
-    File.umask umask
   end
 
   def self.delete_mock_dirs

@@ -5,15 +5,13 @@ describe "NameError.new" do
     NameError.new("msg","name").name.should == "name"
   end
 
-  ruby_version_is "2.6" do
-    it "accepts a :receiver keyword argument" do
-      receiver = mock("receiver")
+  it "accepts a :receiver keyword argument" do
+    receiver = mock("receiver")
 
-      error = NameError.new("msg", :name, receiver: receiver)
+    error = NameError.new("msg", :name, receiver: receiver)
 
-      error.receiver.should == receiver
-      error.name.should == :name
-    end
+    error.receiver.should == receiver
+    error.name.should == :name
   end
 end
 

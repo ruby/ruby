@@ -1,0 +1,5 @@
+foo 1 in a
+      ^~ unexpected 'in', expecting end-of-input
+      ^~ unexpected 'in', ignoring it
+a = foo 2 in b
+

@@ -1,0 +1,4 @@
+<<-EOE
+ some
+ heredocs
+EOE

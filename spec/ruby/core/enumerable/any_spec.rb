@@ -145,15 +145,6 @@ describe "Enumerable#any?" do
       pattern.yielded.should == [[0], [1], [2]]
     end
 
-    # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.any?(NilClass) { raise }.should == true
-        [1, 2, nil].any?(NilClass) { raise }.should == true
-        {a: 1}.any?(Array) { raise }.should == true
-      end
-    end
-
     it "always returns false on empty enumeration" do
       @empty.any?(Integer).should == false
       [].any?(Integer).should == false
@@ -198,6 +189,12 @@ describe "Enumerable#any?" do
       pattern = EnumerableSpecs::Pattern.new { false }
       multi.any?(pattern).should == false
       pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+    end
+
+    it "ignores the block if there is an argument" do
+      -> {
+        EnumerableSpecs::Numerous.new(1, 2, 3, 4, 5).any?(String) { true }.should == false
+      }.should complain(/given block not used/)
     end
   end
 end

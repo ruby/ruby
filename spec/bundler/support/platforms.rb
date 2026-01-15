@@ -2,81 +2,43 @@
 
 module Spec
   module Platforms
-    include Bundler::GemHelpers
-
-    def rb
-      Gem::Platform::RUBY
+    def not_local
+      generic_local_platform == Gem::Platform::RUBY ? "java" : Gem::Platform::RUBY
     end
 
-    def mac
-      Gem::Platform.new("x86-darwin-10")
-    end
-
-    def x64_mac
-      Gem::Platform.new("x86_64-darwin-15")
-    end
-
-    def java
-      Gem::Platform.new([nil, "java", nil])
-    end
-
-    def linux
-      Gem::Platform.new(["x86", "linux", nil])
-    end
-
-    def mswin
-      Gem::Platform.new(["x86", "mswin32", nil])
-    end
-
-    def mingw
-      Gem::Platform.new(["x86", "mingw32", nil])
-    end
-
-    def x64_mingw
-      Gem::Platform.new(["x64", "mingw32", nil])
-    end
-
-    def all_platforms
-      [rb, java, linux, mswin, mingw, x64_mingw]
-    end
-
-    def local
-      generic_local_platform
-    end
-
-    def specific_local_platform
+    def local_platform
       Bundler.local_platform
     end
 
-    def not_local
-      all_platforms.find {|p| p != generic_local_platform }
+    def generic_local_platform
+      Gem::Platform.generic(local_platform)
     end
 
     def local_tag
-      if RUBY_PLATFORM == "java"
+      if Gem.java_platform?
         :jruby
+      elsif Gem.win_platform?
+        :windows
       else
         :ruby
       end
     end
 
     def not_local_tag
-      [:ruby, :jruby].find {|tag| tag != local_tag }
+      [:jruby, :windows, :ruby].find {|tag| tag != local_tag }
     end
 
     def local_ruby_engine
-      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || RUBY_ENGINE
+      RUBY_ENGINE
     end
 
     def local_engine_version
-      return ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"] if ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
-
-      RUBY_ENGINE_VERSION
+      RUBY_ENGINE == "ruby" ? Gem.ruby_version : RUBY_ENGINE_VERSION
     end
 
     def not_local_engine_version
       case not_local_tag
-      when :ruby
+      when :ruby, :windows
         not_local_ruby_version
       when :jruby
         "1.6.1"
@@ -91,16 +53,23 @@ module Spec
       9999
     end
 
-    def lockfile_platforms
-      local_platforms.map(&:to_s).sort.join("\n  ")
+    def default_platform_list(*extra, defaults: default_locked_platforms)
+      defaults.concat(extra).map(&:to_s).uniq
     end
 
-    def local_platforms
-      if Bundler.feature_flag.specific_platform?
-        [local, specific_local_platform]
-      else
-        [local]
-      end
+    def lockfile_platforms(*extra, defaults: default_locked_platforms)
+      platforms = default_platform_list(*extra, defaults: defaults)
+      platforms.sort.join("\n  ")
+    end
+
+    def default_locked_platforms
+      [local_platform, generic_default_locked_platform].compact
+    end
+
+    def generic_default_locked_platform
+      return unless Bundler::MatchPlatform.generic_local_platform_is_ruby?
+
+      Gem::Platform::RUBY
     end
   end
 end

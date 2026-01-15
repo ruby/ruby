@@ -1,6 +1,11 @@
 require_relative '../../spec_helper'
+require_relative '../integer/shared/integer_ceil_precision'
 
 describe "Float#ceil" do
+  context "with precision" do
+    it_behaves_like :integer_ceil_precision, :Float
+  end
+
   it "returns the smallest Integer greater than or equal to self" do
     -1.2.ceil.should eql( -1)
     -1.0.ceil.should eql( -1)

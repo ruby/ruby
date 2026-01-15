@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 
 describe "String#b" do
@@ -11,14 +12,5 @@ describe "String#b" do
     str = "こんちには"
     str.b.should_not equal(str)
     str.should == "こんちには"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "copies own tainted/untrusted status to the returning value" do
-      utf_8 = "こんちには".taint.untrust
-      ret = utf_8.b
-      ret.tainted?.should be_true
-      ret.untrusted?.should be_true
-    end
   end
 end

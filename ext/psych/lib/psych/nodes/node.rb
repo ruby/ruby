@@ -1,7 +1,6 @@
 # frozen_string_literal: true
-require 'stringio'
-require 'psych/class_loader'
-require 'psych/scalar_scanner'
+require_relative '../class_loader'
+require_relative '../scalar_scanner'
 
 module Psych
   module Nodes
@@ -46,8 +45,8 @@ module Psych
       # Convert this node to Ruby.
       #
       # See also Psych::Visitors::ToRuby
-      def to_ruby
-        Visitors::ToRuby.create.accept(self)
+      def to_ruby(symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true)
+        Visitors::ToRuby.create(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer, parse_symbols: parse_symbols).accept(self)
       end
       alias :transform :to_ruby
 
@@ -56,6 +55,8 @@ module Psych
       #
       # See also Psych::Visitors::Emitter
       def yaml io = nil, options = {}
+        require "stringio" unless defined?(StringIO)
+
         real_io = io || StringIO.new(''.encode('utf-8'))
 
         Visitors::Emitter.new(real_io, options).accept self

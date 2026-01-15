@@ -38,7 +38,7 @@ RSpec.describe "bundler plugin list" do
 
   context "single plugin installed" do
     it "shows plugin name with commands list" do
-      bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install foo --source https://gem.repo2"
       plugin_should_be_installed("foo")
       bundle "plugin list"
 
@@ -49,7 +49,7 @@ RSpec.describe "bundler plugin list" do
 
   context "multiple plugins installed" do
     it "shows plugin names with commands list" do
-      bundle "plugin install foo bar --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install foo bar --source https://gem.repo2"
       plugin_should_be_installed("foo", "bar")
       bundle "plugin list"
 

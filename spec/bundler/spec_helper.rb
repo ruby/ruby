@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "support/path"
-
-$:.unshift Spec::Path.spec_dir.to_s
-$:.unshift Spec::Path.lib_dir.to_s
-
-require "bundler/psyched_yaml"
+require "psych"
 require "bundler/vendored_fileutils"
 require "bundler/vendored_uri"
 require "digest"
@@ -14,19 +9,36 @@ if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
 end
 
+# Bundler CLI will have different help text depending on whether any of these
+# variables is set, since the `-e` flag `bundle gem` with require an explicit
+# value if they are not set, but will use their value by default if set. So make
+# sure they are `nil` before loading bundler to get a consistent help text,
+# since some tests rely on that.
+ENV["EDITOR"] = nil
+ENV["VISUAL"] = nil
+ENV["BUNDLER_EDITOR"] = nil
 require "bundler"
-require "rspec"
+
+# If we use shared GEM_HOME and install multiple versions, it may cause
+# unexpected test failures.
+gem "diff-lcs"
+
+require "rspec/core"
+require "rspec/expectations"
+require "rspec/mocks"
+require "rspec/support/differ"
+gem "rubygems-generate_index"
+require "rubygems/indexer"
 
 require_relative "support/builders"
+require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
 require_relative "support/matchers"
-require_relative "support/parallel"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/sometimes"
-require_relative "support/sudo"
+require_relative "support/windows_tag_group"
 
 $debug = false
 
@@ -38,16 +50,22 @@ end
 
 RSpec.configure do |config|
   config.include Spec::Builders
+  config.include Spec::Checksums
   config.include Spec::Helpers
   config.include Spec::Indexes
   config.include Spec::Matchers
   config.include Spec::Path
   config.include Spec::Platforms
-  config.include Spec::Sudo
   config.include Spec::Permissions
+  config.include Spec::WindowsTagGroup
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
+
+  config.silence_filter_announcements = !ENV["TEST_ENV_NUMBER"].nil?
+
+  config.backtrace_exclusion_patterns <<
+    %r{./spec/(spec_helper\.rb|support/.+)}
 
   config.disable_monkey_patching!
 
@@ -59,72 +77,73 @@ RSpec.configure do |config|
 
   config.bisect_runner = :shell
 
-  original_wd  = Dir.pwd
-  original_env = ENV.to_hash
-
   config.expect_with :rspec do |c|
     c.syntax = :expect
+
+    c.max_formatted_output_length = 1000
   end
 
   config.mock_with :rspec do |mocks|
     mocks.allow_message_expectations_on_nil = false
   end
 
-  config.around :each do |example|
-    if ENV["RUBY"]
-      orig_ruby = Gem.ruby
-      Gem.ruby = ENV["RUBY"]
-    end
-    example.run
-    Gem.ruby = orig_ruby if ENV["RUBY"]
-  end
-
   config.before :suite do
+    Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
+
     require_relative "support/rubygems_ext"
-    Spec::Rubygems.setup
-    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
-    ENV["BUNDLE_SPEC_RUN"] = "true"
+    Spec::Rubygems.test_setup
+
+    # Simulate bundler has not yet been loaded
+    ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
+
+    ENV["BUNDLER_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["BUNDLE_APP_CONFIG"] = nil
+    ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
+    ENV["RUBYGEMS_GEMDEPS"] = nil
+    ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    original_env = ENV.to_hash
+    extend(Spec::Builders)
 
-    if ENV["RUBY"]
-      FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")
-    end
-  end
-
-  config.before :all do
     build_repo1
+
+    reset!
   end
 
   config.around :each do |example|
-    ENV.replace(original_env)
-    reset!
-    system_gems []
-    in_app_root
-    @command_executions = []
+    default_system_gems
 
-    Bundler.ui.silence { example.run }
+    with_gem_path_as(system_gem_path) do
+      Bundler.ui.silence { example.run }
 
-    all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
-    if example.exception && !all_output.empty?
-      warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
-      message = example.exception.message + "\n\nCommands:\n#{all_output}"
-      (class << example.exception; self; end).send(:define_method, :message) do
-        message
+      all_output = all_commands_output
+      if example.exception && !all_output.empty?
+        message = all_output + "\n" + example.exception.message
+        (class << example.exception; self; end).send(:define_method, :message) do
+          message
+        end
       end
     end
-
-    Dir.chdir(original_wd)
+  ensure
+    reset!
   end
 
-  config.after :suite do
-    if ENV["RUBY"]
-      FileUtils.rm_rf File.join(Spec::Path.root, "lib", "exe")
+  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+    file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
+
+    config.define_derived_metadata(file_path: file_pattern) do |metadata|
+      metadata[tag] = true
     end
   end
+
+  config.before(:context) do |example|
+    metadata = example.class.metadata
+    if metadata[:type] != :aruba && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    end
+  end unless Spec::Path.ruby_core?
 end

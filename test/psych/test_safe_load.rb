@@ -19,25 +19,36 @@ module Psych
       end
     end
 
-    def test_no_recursion
-      x = []
-      x << x
-      assert_raises(Psych::BadAlias) do
-        Psych.safe_load Psych.dump(x)
+    def test_raises_when_alias_found_if_alias_parsing_not_enabled
+      yaml_with_aliases = <<~YAML
+        ---
+        a: &ABC
+          k1: v1
+          k2: v2
+        b: *ABC
+      YAML
+
+      assert_raise(Psych::AliasesNotEnabled) do
+        Psych.safe_load(yaml_with_aliases)
       end
     end
 
-    def test_explicit_recursion
-      x = []
-      x << x
-      assert_equal(x, Psych.safe_load(Psych.dump(x), permitted_classes: [], permitted_symbols: [], aliases: true))
-      # deprecated interface
-      assert_equal(x, Psych.safe_load(Psych.dump(x), [], [], true))
+    def test_aliases_are_parsed_when_alias_parsing_is_enabled
+      yaml_with_aliases = <<~YAML
+        ---
+        a: &ABC
+          k1: v1
+          k2: v2
+        b: *ABC
+      YAML
+
+      result = Psych.safe_load(yaml_with_aliases, aliases: true)
+      assert_same result.fetch("a"), result.fetch("b")
     end
 
     def test_permitted_symbol
       yml = Psych.dump :foo
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load yml
       end
       assert_equal(
@@ -48,55 +59,36 @@ module Psych
           permitted_symbols: [:foo]
         )
       )
-
-      # deprecated interface
-      assert_equal(:foo, Psych.safe_load(yml, [Symbol], [:foo]))
     end
 
     def test_symbol
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         assert_safe_cycle :foo
       end
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/symbol foo', permitted_classes: []
-      end
-
-      # deprecated interface
-      assert_raises(Psych::DisallowedClass) do
-        Psych.safe_load '--- !ruby/symbol foo', []
       end
 
       assert_safe_cycle :foo, permitted_classes: [Symbol]
       assert_safe_cycle :foo, permitted_classes: %w{ Symbol }
       assert_equal :foo, Psych.safe_load('--- !ruby/symbol foo', permitted_classes: [Symbol])
-
-      # deprecated interface
-      assert_equal :foo, Psych.safe_load('--- !ruby/symbol foo', [Symbol])
     end
 
     def test_foo
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/object:Foo {}', permitted_classes: [Foo]
       end
 
-      # deprecated interface
-      assert_raises(Psych::DisallowedClass) do
-        Psych.safe_load '--- !ruby/object:Foo {}', [Foo]
-      end
-
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         assert_safe_cycle Foo.new
       end
       assert_kind_of(Foo, Psych.safe_load(Psych.dump(Foo.new), permitted_classes: [Foo]))
-
-      # deprecated interface
-      assert_kind_of(Foo, Psych.safe_load(Psych.dump(Foo.new), [Foo]))
     end
 
     X = Struct.new(:x)
     def test_struct_depends_on_sym
       assert_safe_cycle(X.new, permitted_classes: [X, Symbol])
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         cycle X.new, permitted_classes: [X]
       end
     end
@@ -107,14 +99,14 @@ module Psych
   foo: bar
                       eoyml
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, permitted_classes: [Struct])
 --- !ruby/struct
   foo: bar
                       eoyml
       end
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, permitted_classes: [Symbol])
 --- !ruby/struct
   foo: bar
@@ -122,24 +114,35 @@ module Psych
       end
     end
 
-    def test_deprecated_anon_struct
-      assert Psych.safe_load(<<-eoyml, [Struct, Symbol])
---- !ruby/struct
-  foo: bar
-                      eoyml
+    D = Data.define(:d) unless RUBY_VERSION < "3.2"
 
-      assert_raises(Psych::DisallowedClass) do
-        Psych.safe_load(<<-eoyml, [Struct])
---- !ruby/struct
+    def test_data_depends_on_sym
+      omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+      assert_safe_cycle(D.new(nil), permitted_classes: [D, Symbol])
+      assert_raise(Psych::DisallowedClass) do
+        cycle D.new(nil), permitted_classes: [D]
+      end
+    end
+
+    def test_anon_data
+      omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+      assert Psych.safe_load(<<-eoyml, permitted_classes: [Data, Symbol])
+--- !ruby/data
   foo: bar
-                      eoyml
+      eoyml
+
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load(<<-eoyml, permitted_classes: [Data])
+--- !ruby/data
+  foo: bar
+        eoyml
       end
 
-      assert_raises(Psych::DisallowedClass) do
-        Psych.safe_load(<<-eoyml, [Symbol])
---- !ruby/struct
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load(<<-eoyml, permitted_classes: [Symbol])
+--- !ruby/data
   foo: bar
-                      eoyml
+        eoyml
       end
     end
 
@@ -152,15 +155,13 @@ module Psych
     end
 
     def test_safe_load_raises_on_bad_input
-      assert_raises(Psych::SyntaxError) { Psych.safe_load("--- `") }
+      assert_raise(Psych::SyntaxError) { Psych.safe_load("--- `") }
     end
 
     private
 
     def cycle object, permitted_classes: []
       Psych.safe_load(Psych.dump(object), permitted_classes: permitted_classes)
-      # deprecated interface test
-      Psych.safe_load(Psych.dump(object), permitted_classes)
     end
 
     def assert_safe_cycle object, permitted_classes: []

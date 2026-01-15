@@ -1,0 +1,53 @@
+prelude: |
+  array_length = 2
+  fixnum_array2 = array_length.times.to_a.map {rand(10000)}
+  float_array2 = array_length.times.to_a.map {rand(10000.0).to_f}
+  string_array2 = array_length.times.to_a.map {"r" * rand(1..10000)}
+  mix_array2 = array_length.times.to_a.map {if rand(1..100) <= 50 then rand(1..10000).to_f else rand(1..10000) end}
+  all_zero_array2 =array_length.times.to_a.map {0}
+
+  array_length = 10
+  fixnum_array10 = array_length.times.to_a.map {rand(10000)}
+  float_array10 = array_length.times.to_a.map {rand(10000.0).to_f}
+  string_array10 = array_length.times.to_a.map {"r" * rand(1..10000)}
+  mix_array10 = array_length.times.to_a.map {if rand(1..100) <= 50 then rand(1..10000).to_f else rand(1..10000) end}
+  all_zero_array10 =array_length.times.to_a.map {0}
+
+  array_length = 1000
+  fixnum_array1000 = array_length.times.to_a.map {rand(10000)}
+  float_array1000 = array_length.times.to_a.map {rand(10000.0).to_f}
+  string_array1000 = array_length.times.to_a.map {"r" * rand(1..10000)}
+  mix_array1000 = array_length.times.to_a.map {if rand(1..100) <= 50 then rand(1..10000).to_f else rand(1..10000) end}
+  all_zero_array1000 =array_length.times.to_a.map {0}
+
+  array_length = 100000
+  fixnum_array100000 = array_length.times.to_a.map {rand(10000)}
+  float_array100000 = array_length.times.to_a.map {rand(10000.0).to_f}
+  string_array100000 = array_length.times.to_a.map {"r" * rand(1..10000)}
+  mix_array100000 = array_length.times.to_a.map {if rand(1..100) <= 50 then rand(1..10000).to_f else rand(1..10000) end}
+  all_zero_array100000 =array_length.times.to_a.map {0}
+
+benchmark:
+  fixnum_array2.sort_by: fixnum_array2.sort_by {|a| a}
+  float_array2.sort_by:  float_array2.sort_by {|a| a}
+  string_length2.sort_by: string_array2.sort_by {|a| a.length}
+  mix_array2.sort_by:  mix_array2.sort_by {|a| a}
+  all_zero2.sort_by: all_zero_array2.sort_by{|a| a}
+
+  fixnum_array10.sort_by: fixnum_array10.sort_by {|a| a}
+  float_array10.sort_by:  float_array10.sort_by {|a| a}
+  string_length10.sort_by: string_array10.sort_by {|a| a.length}
+  mix_array10.sort_by:  mix_array10.sort_by {|a| a}
+  all_zero10.sort_by: all_zero_array10.sort_by{|a| a}
+
+  fixnum_array1000.sort_by: fixnum_array1000.sort_by {|a| a}
+  float_array1000.sort_by:  float_array1000.sort_by {|a| a}
+  string_length1000.sort_by: string_array1000.sort_by {|a| a.length}
+  mix_array1000.sort_by:  mix_array1000.sort_by {|a| a}
+  all_zero1000.sort_by: all_zero_array1000.sort_by{|a| a}
+
+  fixnum_array100000.sort_by: fixnum_array100000.sort_by {|a| a}
+  float_array100000.sort_by:  float_array100000.sort_by {|a| a}
+  string_length100000.sort_by: string_array100000.sort_by {|a| a.length}
+  mix_array100000.sort_by:  mix_array100000.sort_by {|a| a}
+  all_zero100000.sort_by: all_zero_array100000.sort_by{|a| a}

@@ -1,25 +1,13 @@
 require_relative '../../spec_helper'
 
 describe "Fixnum" do
-  it "is unified into Integer" do
-    suppress_warning do
-      Fixnum.should equal(Integer)
-    end
-  end
-
-  it "is deprecated" do
-    -> { Fixnum }.should complain(/constant ::Fixnum is deprecated/)
+  it "is no longer defined" do
+    Object.should_not.const_defined?(:Fixnum)
   end
 end
 
 describe "Bignum" do
-  it "is unified into Integer" do
-    suppress_warning do
-      Bignum.should equal(Integer)
-    end
-  end
-
-  it "is deprecated" do
-    -> { Bignum }.should complain(/constant ::Bignum is deprecated/)
+  it "is no longer defined" do
+    Object.should_not.const_defined?(:Bignum)
   end
 end

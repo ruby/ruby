@@ -1,0 +1,8 @@
+..1..
+   ^~ unexpected range operator; .. and ... are non-associative and cannot be chained
+...1..
+    ^~ unexpected range operator; .. and ... are non-associative and cannot be chained
+    ^~ unexpected ..; .. is a non-associative operator
+    ^~ unexpected .., expecting end-of-input
+    ^~ unexpected .., ignoring it
+

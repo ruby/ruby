@@ -7,7 +7,7 @@
 #
 # See OptionParser for documentation.
 #
-
+require 'set' unless defined?(Set)
 
 #--
 # == Developer Documentation (not for RDoc output)
@@ -48,6 +48,10 @@
 #
 # == OptionParser
 #
+# === New to +OptionParser+?
+#
+# See the {Tutorial}[optparse/tutorial.rdoc].
+#
 # === Introduction
 #
 # OptionParser is a class for command-line option analysis.  It is much more
@@ -72,10 +76,10 @@
 #   require 'optparse'
 #
 #   options = {}
-#   OptionParser.new do |opts|
-#     opts.banner = "Usage: example.rb [options]"
+#   OptionParser.new do |parser|
+#     parser.banner = "Usage: example.rb [options]"
 #
-#     opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+#     parser.on("-v", "--[no-]verbose", "Run verbosely") do |v|
 #       options[:verbose] = v
 #     end
 #   end.parse!
@@ -96,15 +100,15 @@
 #     def self.parse(options)
 #       args = Options.new("world")
 #
-#       opt_parser = OptionParser.new do |opts|
-#         opts.banner = "Usage: example.rb [options]"
+#       opt_parser = OptionParser.new do |parser|
+#         parser.banner = "Usage: example.rb [options]"
 #
-#         opts.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
+#         parser.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
 #           args.name = n
 #         end
 #
-#         opts.on("-h", "--help", "Prints this help") do
-#           puts opts
+#         parser.on("-h", "--help", "Prints this help") do
+#           puts parser
 #           exit
 #         end
 #       end
@@ -139,7 +143,7 @@
 # Used:
 #
 #   $ ruby optparse-test.rb -r
-#   optparse-test.rb:9:in `<main>': missing argument: -r (OptionParser::MissingArgument)
+#   optparse-test.rb:9:in '<main>': missing argument: -r (OptionParser::MissingArgument)
 #   $ ruby optparse-test.rb -r my-library
 #   You required my-library!
 #
@@ -148,14 +152,14 @@
 # OptionParser supports the ability to coerce command line arguments
 # into objects for us.
 #
-# OptionParser comes with a few ready-to-use kinds of  type
+# OptionParser comes with a few ready-to-use kinds of type
 # coercion. They are:
 #
-# - Date  -- Anything accepted by +Date.parse+
-# - DateTime -- Anything accepted by +DateTime.parse+
-# - Time -- Anything accepted by +Time.httpdate+ or +Time.parse+
-# - URI  -- Anything accepted by +URI.parse+
-# - Shellwords -- Anything accepted by +Shellwords.shellwords+
+# - Date  -- Anything accepted by +Date.parse+ (need to require +optparse/date+)
+# - DateTime -- Anything accepted by +DateTime.parse+ (need to require +optparse/date+)
+# - Time -- Anything accepted by +Time.httpdate+ or +Time.parse+ (need to require +optparse/time+)
+# - URI  -- Anything accepted by +URI.parse+ (need to require +optparse/uri+)
+# - Shellwords -- Anything accepted by +Shellwords.shellwords+ (need to require +optparse/shellwords+)
 # - String -- Any non-empty string
 # - Integer -- Any integer. Will convert octal. (e.g. 124, -3, 040)
 # - Float -- Any float. (e.g. 10, 3.14, -100E+13)
@@ -232,7 +236,7 @@
 #   $ ruby optparse-test.rb --user 2
 #   #<struct User id=2, name="Gandalf">
 #   $ ruby optparse-test.rb --user 3
-#   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
+#   optparse-test.rb:15:in 'block in find_user': No User Found for id 3 (RuntimeError)
 #
 # === Store options to a Hash
 #
@@ -240,14 +244,14 @@
 #
 #   require 'optparse'
 #
-#   params = {}
-#   OptionParser.new do |opts|
-#     opts.on('-a')
-#     opts.on('-b NUM', Integer)
-#     opts.on('-v', '--verbose')
-#   end.parse!(into: params)
+#   options = {}
+#   OptionParser.new do |parser|
+#     parser.on('-a')
+#     parser.on('-b NUM', Integer)
+#     parser.on('-v', '--verbose')
+#   end.parse!(into: options)
 #
-#   p params
+#   p options
 #
 # Used:
 #
@@ -415,10 +419,17 @@
 #
 # === Further documentation
 #
-# The above examples should be enough to learn how to use this class.  If you
-# have any questions, file a ticket at http://bugs.ruby-lang.org.
+# The above examples, along with the accompanying
+# {Tutorial}[optparse/tutorial.rdoc],
+# should be enough to learn how to use this class.
+# If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
+  # The version string
+  VERSION = "0.8.1"
+  # An alias for compatibility
+  Version = VERSION
+
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze
@@ -430,6 +441,8 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
+    # :nodoc:
+
     def self.regexp(key, icase)
       Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'), icase)
     end
@@ -451,11 +464,14 @@ class OptionParser
       candidates
     end
 
-    def candidate(key, icase = false, pat = nil)
+    def self.completable?(key)
+      String.try_convert(key) or defined?(key.id2name)
+    end
+
+    def candidate(key, icase = false, pat = nil, &_)
       Completion.candidate(key, icase, pat, &method(:each))
     end
 
-    public
     def complete(key, icase = false, pat = nil)
       candidates = candidate(key, icase, pat, &method(:each)).sort_by {|k, v, kn| kn.size}
       if candidates.size == 1
@@ -486,14 +502,12 @@ class OptionParser
     end
   end
 
-
   #
   # Map from option/keyword string to object with completion.
   #
   class OptionMap < Hash
     include Completion
   end
-
 
   #
   # Individual switch class.  Not important to the user.
@@ -502,6 +516,8 @@ class OptionParser
   # RequiredArgument, etc.
   #
   class Switch
+    # :nodoc:
+
     attr_reader :pattern, :conv, :short, :long, :arg, :desc, :block
 
     #
@@ -534,18 +550,18 @@ class OptionParser
 
     def initialize(pattern = nil, conv = nil,
                    short = nil, long = nil, arg = nil,
-                   desc = ([] if short or long), block = nil, &_block)
+                   desc = ([] if short or long), block = nil, values = nil, &_block)
       raise if Array === pattern
       block ||= _block
-      @pattern, @conv, @short, @long, @arg, @desc, @block =
-        pattern, conv, short, long, arg, desc, block
+      @pattern, @conv, @short, @long, @arg, @desc, @block, @values =
+        pattern, conv, short, long, arg, desc, block, values
     end
 
     #
     # Parses +arg+ and returns rest of +arg+ and matched portion to the
     # argument pattern. Yields when the pattern doesn't match substring.
     #
-    def parse_arg(arg)
+    private def parse_arg(arg) # :nodoc:
       pattern or return nil, [arg]
       unless m = pattern.match(arg)
         yield(InvalidArgument, arg)
@@ -563,22 +579,24 @@ class OptionParser
       yield(InvalidArgument, arg) # didn't match whole arg
       return arg[s.length..-1], m
     end
-    private :parse_arg
 
     #
     # Parses argument, converts and returns +arg+, +block+ and result of
     # conversion. Yields at semi-error condition instead of raising an
     # exception.
     #
-    def conv_arg(arg, val = [])
+    private def conv_arg(arg, val = []) # :nodoc:
+      v, = *val
       if conv
         val = conv.call(*val)
       else
         val = proc {|v| v}.call(*val)
       end
+      if @values
+        @values.include?(val) or raise InvalidArgument, v
+      end
       return arg, block, val
     end
-    private :conv_arg
 
     #
     # Produces the summary text. Each line of the summary is yielded to the
@@ -656,7 +674,7 @@ class OptionParser
 
       (sopts+lopts).each do |opt|
         # "(-x -c -r)-l[left justify]"
-        if /^--\[no-\](.+)$/ =~ opt
+        if /\A--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
           yield("--no-#{o}", desc.join(""))
@@ -664,6 +682,34 @@ class OptionParser
           yield("#{opt}", desc.join(""))
         end
       end
+    end
+
+    def pretty_print_contents(q) # :nodoc:
+      if @block
+        q.text ":" + @block.source_location.join(":") + ":"
+        first = false
+      else
+        first = true
+      end
+      [@short, @long].each do |list|
+        list.each do |opt|
+          if first
+            q.text ":"
+            first = false
+          end
+          q.breakable
+          q.text opt
+        end
+      end
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.object_group(self) {pretty_print_contents(q)}
+    end
+
+    def omitted_argument(val)   # :nodoc:
+      val.pop if val.size == 3 and val.last.nil?
+      val
     end
 
     #
@@ -679,11 +725,15 @@ class OptionParser
         conv_arg(arg)
       end
 
-      def self.incompatible_argument_styles(*)
+      def self.incompatible_argument_styles(*) # :nodoc:
       end
 
-      def self.pattern
+      def self.pattern          # :nodoc:
         Object
+      end
+
+      def pretty_head           # :nodoc:
+        "NoArgument"
       end
     end
 
@@ -695,12 +745,16 @@ class OptionParser
       #
       # Raises an exception if argument is not present.
       #
-      def parse(arg, argv)
+      def parse(arg, argv, &_)
         unless arg
           raise MissingArgument if argv.empty?
           arg = argv.shift
         end
         conv_arg(*parse_arg(arg, &method(:raise)))
+      end
+
+      def pretty_head           # :nodoc:
+        "Required"
       end
     end
 
@@ -716,31 +770,40 @@ class OptionParser
         if arg
           conv_arg(*parse_arg(arg, &error))
         else
-          conv_arg(arg)
+          omitted_argument conv_arg(arg)
         end
+      end
+
+      def pretty_head           # :nodoc:
+        "Optional"
       end
     end
 
     #
-    # Switch that takes an argument, which does not begin with '-'.
+    # Switch that takes an argument, which does not begin with '-' or is '-'.
     #
     class PlacedArgument < self
 
       #
-      # Returns nil if argument is not present or begins with '-'.
+      # Returns nil if argument is not present or begins with '-' and is not '-'.
       #
       def parse(arg, argv, &error)
-        if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
-          return nil, block, nil
+        if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
+          return nil, block
         end
         opt = (val = parse_arg(val, &error))[1]
         val = conv_arg(*val)
         if opt and !arg
           argv.shift
         else
+          omitted_argument val
           val[0] = nil
         end
         val
+      end
+
+      def pretty_head           # :nodoc:
+        "Placed"
       end
     end
   end
@@ -751,6 +814,8 @@ class OptionParser
   # matching pattern and converter pair. Also provides summary feature.
   #
   class List
+    # :nodoc:
+
     # Map from acceptable argument types to pattern and converter pairs.
     attr_reader :atype
 
@@ -773,13 +838,24 @@ class OptionParser
       @list = []
     end
 
+    def pretty_print(q)         # :nodoc:
+      q.group(1, "(", ")") do
+        @list.each do |sw|
+          next unless Switch === sw
+          q.group(1, "(" + sw.pretty_head, ")") do
+            sw.pretty_print_contents(q)
+          end
+        end
+      end
+    end
+
     #
     # See OptionParser.accept.
     #
     def accept(t, pat = /.*/m, &block)
       if pat
         pat.respond_to?(:match) or
-          raise TypeError, "has no `match'", ParseError.filter_backtrace(caller(2))
+          raise TypeError, "has no 'match'", ParseError.filter_backtrace(caller(2))
       else
         pat = t if t.respond_to?(:match)
       end
@@ -804,14 +880,13 @@ class OptionParser
     # +lopts+::  Long style option list.
     # +nlopts+:: Negated long style options list.
     #
-    def update(sw, sopts, lopts, nsw = nil, nlopts = nil)
+    private def update(sw, sopts, lopts, nsw = nil, nlopts = nil) # :nodoc:
       sopts.each {|o| @short[o] = sw} if sopts
       lopts.each {|o| @long[o] = sw} if lopts
       nlopts.each {|o| @long[o] = nsw} if nsw and nlopts
       used = @short.invert.update(@long.invert)
       @list.delete_if {|o| Switch === o and !used[o]}
     end
-    private :update
 
     #
     # Inserts +switch+ at the head of the list, and associates short, long
@@ -962,7 +1037,6 @@ class OptionParser
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
-
   COMPSYS_HEADER = <<'XXX'      # :nodoc:
 
 typeset -A opt_args
@@ -975,9 +1049,29 @@ XXX
     to << "#compdef #{name}\n"
     to << COMPSYS_HEADER
     visit(:compsys, {}, {}) {|o, d|
-      to << %Q[  "#{o}[#{d.gsub(/[\"\[\]]/, '\\\\\&')}]" \\\n]
+      to << %Q[  "#{o}[#{d.gsub(/[\\\"\[\]]/, '\\\\\&')}]" \\\n]
     }
     to << "  '*:file:_files' && return 0\n"
+  end
+
+  def help_exit
+    if $stdout.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
+      less = ENV["LESS"]
+      args = [{"LESS" => "#{less} -Fe"}, pager, "w"]
+      print = proc do |f|
+        f.puts help
+      rescue Errno::EPIPE
+        # pager terminated
+      end
+      if Process.respond_to?(:fork) and false
+        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call($stdout)}
+        # unreachable
+      end
+      IO.popen(*args, &print)
+    else
+      puts help
+    end
+    exit
   end
 
   #
@@ -991,8 +1085,7 @@ XXX
   #
   Officious['help'] = proc do |parser|
     Switch::NoArgument.new do |arg|
-      puts parser.help
-      exit
+      parser.help_exit
     end
   end
 
@@ -1013,7 +1106,7 @@ XXX
   #
   Officious['*-completion-zsh'] = proc do |parser|
     Switch::OptionalArgument.new do |arg|
-      parser.compsys(STDOUT, arg)
+      parser.compsys($stdout, arg)
       exit
     end
   end
@@ -1026,7 +1119,7 @@ XXX
     Switch::OptionalArgument.new do |pkg|
       if pkg
         begin
-          require 'optparse/version'
+          require_relative 'optparse/version'
         rescue LoadError
         else
           show_version(*pkg.split(/,/)) or
@@ -1071,6 +1164,10 @@ XXX
       default.to_i + 1
     end
   end
+
+  #
+  # See self.inc
+  #
   def inc(*args)
     self.class.inc(*args)
   end
@@ -1089,6 +1186,8 @@ XXX
     @summary_width = width
     @summary_indent = indent
     @default_argv = ARGV
+    @require_exact = false
+    @raise_unknown = true
     add_officious
     yield self if block_given?
   end
@@ -1107,11 +1206,19 @@ XXX
   def terminate(arg = nil)
     self.class.terminate(arg)
   end
+  #
+  # See #terminate.
+  #
   def self.terminate(arg = nil)
     throw :terminate, arg
   end
 
   @stack = [DefaultList]
+  #
+  # Returns the global top option list.
+  #
+  # Do not use directly.
+  #
   def self.top() DefaultList end
 
   #
@@ -1132,9 +1239,9 @@ XXX
   #
   # Directs to reject specified class argument.
   #
-  # +t+:: Argument class specifier, any object including Class.
+  # +type+:: Argument class specifier, any object including Class.
   #
-  #   reject(t)
+  #   reject(type)
   #
   def reject(*args, &blk) top.reject(*args, &blk) end
   #
@@ -1162,6 +1269,13 @@ XXX
   # Strings to be parsed in default.
   attr_accessor :default_argv
 
+  # Whether to require that options match exactly (disallows providing
+  # abbreviated long option as short option).
+  attr_accessor :require_exact
+
+  # Whether to raise at unknown option.
+  attr_accessor :raise_unknown
+
   #
   # Heading banner preceding summary.
   #
@@ -1178,7 +1292,15 @@ XXX
   # to $0.
   #
   def program_name
-    @program_name || File.basename($0, '.*')
+    @program_name || strip_ext(File.basename($0))
+  end
+
+  private def strip_ext(name)  # :nodoc:
+    exts = /#{
+      require "rbconfig"
+      Regexp.union(*RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split(" "))
+    }\z/o
+    name.sub(exts, "")
   end
 
   # for experimental cascading :-)
@@ -1217,10 +1339,24 @@ XXX
     end
   end
 
+  #
+  # Shows warning message with the program name
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#warn.
+  #
   def warn(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
 
+  #
+  # Shows message with the program name then aborts.
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#abort.
+  #
   def abort(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
@@ -1241,6 +1377,9 @@ XXX
 
   #
   # Pushes a new List.
+  #
+  # If a block is given, yields +self+ and returns the result of the
+  # block, otherwise returns +self+.
   #
   def new
     @stack.push(List.new)
@@ -1280,6 +1419,29 @@ XXX
   def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
 
+  def pretty_print(q)           # :nodoc:
+    q.object_group(self) do
+      first = true
+      if @stack.size > 2
+        @stack.each_with_index do |s, i|
+          next if i < 2
+          next if s.list.empty?
+          if first
+            first = false
+            q.text ":"
+          end
+          q.breakable
+          s.pretty_print(q)
+        end
+      end
+    end
+  end
+
+  def inspect                   # :nodoc:
+    require 'pp'
+    pretty_print_inspect
+  end
+
   #
   # Returns option summary list.
   #
@@ -1293,75 +1455,20 @@ XXX
   # +prv+:: Previously specified argument.
   # +msg+:: Exception message.
   #
-  def notwice(obj, prv, msg)
+  private def notwice(obj, prv, msg) # :nodoc:
     unless !prv or prv == obj
       raise(ArgumentError, "argument #{msg} given twice: #{obj}",
             ParseError.filter_backtrace(caller(2)))
     end
     obj
   end
-  private :notwice
 
   SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
+
+  # :call-seq:
+  #   make_switch(params, block = nil)
   #
-  # Creates an OptionParser::Switch from the parameters. The parsed argument
-  # value is passed to the given block, where it can be processed.
-  #
-  # See at the beginning of OptionParser for some full examples.
-  #
-  # +opts+ can include the following elements:
-  #
-  # [Argument style:]
-  #   One of the following:
-  #     :NONE, :REQUIRED, :OPTIONAL
-  #
-  # [Argument pattern:]
-  #   Acceptable option argument format, must be pre-defined with
-  #   OptionParser.accept or OptionParser#accept, or Regexp. This can appear
-  #   once or assigned as String if not present, otherwise causes an
-  #   ArgumentError. Examples:
-  #     Float, Time, Array
-  #
-  # [Possible argument values:]
-  #   Hash or Array.
-  #     [:text, :binary, :auto]
-  #     %w[iso-2022-jp shift_jis euc-jp utf8 binary]
-  #     { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
-  #
-  # [Long style switch:]
-  #   Specifies a long style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "--switch=MANDATORY" or "--switch MANDATORY"
-  #     "--switch[=OPTIONAL]"
-  #     "--switch"
-  #
-  # [Short style switch:]
-  #   Specifies short style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "-xMANDATORY"
-  #     "-x[OPTIONAL]"
-  #     "-x"
-  #   There is also a special form which matches character range (not full
-  #   set of regular expression):
-  #     "-[a-z]MANDATORY"
-  #     "-[a-z][OPTIONAL]"
-  #     "-[a-z]"
-  #
-  # [Argument style and description:]
-  #   Instead of specifying mandatory or optional arguments directly in the
-  #   switch parameter, this separate parameter can be used.
-  #     "=MANDATORY"
-  #     "=[OPTIONAL]"
-  #
-  # [Description:]
-  #   Description string for the option.
-  #     "Run verbosely"
-  #   If you give multiple description strings, each string will be printed
-  #   line by line.
-  #
-  # [Handler:]
-  #   Handler for the parsed argument value. Either give a block or pass a
-  #   Proc or Method as an argument.
+  # :include: ../doc/optparse/creates_option.rdoc
   #
   def make_switch(opts, block = nil)
     short, long, nolong, style, pattern, conv, not_pattern, not_conv, not_style = [], [], []
@@ -1371,6 +1478,7 @@ XXX
     klass = nil
     q, a = nil
     has_arg = false
+    values = nil
 
     opts.each do |o|
       # argument class
@@ -1384,7 +1492,7 @@ XXX
       end
 
       # directly specified pattern(any object possible to match)
-      if (!(String === o || Symbol === o)) and o.respond_to?(:match)
+      if !Completion.completable?(o) and o.respond_to?(:match)
         pattern = notwice(o, pattern, 'pattern')
         if pattern.respond_to?(:convert)
           conv = pattern.method(:convert).to_proc
@@ -1398,7 +1506,12 @@ XXX
       case o
       when Proc, Method
         block = notwice(o, block, 'block')
-      when Array, Hash
+      when Array, Hash, Set
+        if Array === o
+          o, v = o.partition {|v,| Completion.completable?(v)}
+          values = notwice(v, values, 'values') unless v.empty?
+          next if o.empty?
+        end
         case pattern
         when CompletingHash
         when nil
@@ -1408,11 +1521,13 @@ XXX
           raise ArgumentError, "argument pattern given twice"
         end
         o.each {|pat, *v| pattern[pat] = v.fetch(0) {pat}}
+      when Range
+        values = notwice(o, values, 'values')
       when Module
         raise ArgumentError, "unsupported argument type: #{o}", ParseError.filter_backtrace(caller(4))
       when *ArgumentStyle.keys
         style = notwice(ArgumentStyle[o], style, 'style')
-      when /^--no-([^\[\]=\s]*)(.+)?/
+      when /\A--no-([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         not_pattern, not_conv = search(:atype, o) unless not_style
@@ -1423,7 +1538,7 @@ XXX
         (q = q.downcase).tr!('_', '-')
         long << "no-#{q}"
         nolong << q
-      when /^--\[no-\]([^\[\]=\s]*)(.+)?/
+      when /\A--\[no-\]([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         if a
@@ -1436,7 +1551,7 @@ XXX
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
         not_style = Switch::NoArgument
         nolong << "no-#{o}"
-      when /^--([^\[\]=\s]*)(.+)?/
+      when /\A--([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1446,7 +1561,7 @@ XXX
         ldesc << "--#{q}"
         (o = q.downcase).tr!('_', '-')
         long << o
-      when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
+      when /\A-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
         q, a = $1, $2
         o = notwice(Object, klass, 'type')
         if a
@@ -1457,7 +1572,7 @@ XXX
         end
         sdesc << "-#{q}"
         short << Regexp.new(q)
-      when /^-(.)(.+)?/
+      when /\A-(.)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1466,21 +1581,27 @@ XXX
         end
         sdesc << "-#{q}"
         short << q
-      when /^=/
+      when /\A=/
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
-        desc.push(o)
+        desc.push(o) if o && !o.empty?
       end
     end
 
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
+    if Range === values and klass
+      unless (!values.begin or klass === values.begin) and
+            (!values.end or klass === values.end)
+        raise ArgumentError, "range does not match class"
+      end
+    end
     if !(short.empty? and long.empty?)
       if has_arg and default_style == Switch::NoArgument
         default_style = Switch::RequiredArgument
       end
       s = (style || default_style).new(pattern || default_pattern,
-                                       conv, sdesc, ldesc, arg, desc, block)
+                                       conv, sdesc, ldesc, arg, desc, block, values)
     elsif !block
       if style or pattern
         raise ArgumentError, "no switch given", ParseError.filter_backtrace(caller)
@@ -1489,21 +1610,33 @@ XXX
     else
       short << pattern
       s = (style || default_style).new(pattern,
-                                       conv, nil, nil, arg, desc, block)
+                                       conv, nil, nil, arg, desc, block, values)
     end
     return s, short, long,
       (not_style.new(not_pattern, not_conv, sdesc, ldesc, nil, desc, block) if not_style),
       nolong
   end
 
+  # ----
+  # Option definition phase methods
+  #
+  # These methods are used to define options, or to construct an
+  # OptionParser instance in other words.
+
+  # :call-seq:
+  #   define(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define(*opts, &block)
     top.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on(*params, &block)
   #
-  # Add option switch and handler. See #make_switch for an explanation of
-  # parameters.
+  # :include: ../doc/optparse/creates_option.rdoc
   #
   def on(*opts, &block)
     define(*opts, &block)
@@ -1511,13 +1644,22 @@ XXX
   end
   alias def_option define
 
+  # :call-seq:
+  #   define_head(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define_head(*opts, &block)
     top.prepend(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on_head(*params, &block)
   #
-  # Add option switch like with #on, but at head of summary.
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
+  # The new option is added at the head of the summary.
   #
   def on_head(*opts, &block)
     define_head(*opts, &block)
@@ -1525,13 +1667,23 @@ XXX
   end
   alias def_head_option define_head
 
+  # :call-seq:
+  #   define_tail(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define_tail(*opts, &block)
     base.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
   #
-  # Add option switch like with #on, but at tail of summary.
+  # :call-seq:
+  #   on_tail(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
+  # The new option is added at the tail of the summary.
   #
   def on_tail(*opts, &block)
     define_tail(*opts, &block)
@@ -1546,6 +1698,13 @@ XXX
     top.append(string, nil, nil)
   end
 
+  # ----
+  # Arguments parse phase methods
+  #
+  # These methods parse +argv+, convert, and store the results by
+  # calling handlers.  As these methods do not modify +self+, +self+
+  # can be frozen.
+
   #
   # Parses command line arguments +argv+ in order. When a block is given,
   # each non-option argument is yielded. When optional +into+ keyword
@@ -1555,21 +1714,21 @@ XXX
   #
   # Returns the rest of +argv+ left unparsed.
   #
-  def order(*argv, into: nil, &nonopt)
+  def order(*argv, **keywords, &nonopt)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    order!(argv, into: into, &nonopt)
+    order!(argv, **keywords, &nonopt)
   end
 
   #
   # Same as #order, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def order!(argv = default_argv, into: nil, &nonopt)
+  def order!(argv = default_argv, into: nil, **keywords, &nonopt)
     setter = ->(name, val) {into[name.to_sym] = val} if into
-    parse_in_order(argv, setter, &nonopt)
+    parse_in_order(argv, setter, **keywords, &nonopt)
   end
 
-  def parse_in_order(argv = default_argv, setter = nil, &nonopt)  # :nodoc:
+  private def parse_in_order(argv = default_argv, setter = nil, exact: require_exact, **, &nonopt)  # :nodoc:
     opt, arg, val, rest = nil
     nonopt ||= proc {|a| throw :terminate, a}
     argv.unshift(arg) if arg = catch(:terminate) {
@@ -1580,14 +1739,24 @@ XXX
           opt, rest = $1, $2
           opt.tr!('_', '-')
           begin
-            sw, = complete(:long, opt, true)
+            if exact
+              sw, = search(:long, opt)
+            else
+              sw, = complete(:long, opt, true)
+            end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
+          else
+            unless sw
+              throw :terminate, arg unless raise_unknown
+              raise InvalidOption, arg
+            end
           end
           begin
             opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            val = callback!(cb, 1, val) if cb
+            callback!(setter, 2, sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1605,6 +1774,7 @@ XXX
                 val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
+                raise if exact
                 # if no short options match, try completion with long
                 # options.
                 sw, = complete(:long, opt)
@@ -1612,14 +1782,20 @@ XXX
               end
             end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
           end
           begin
             opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+          rescue ParseError
+            raise $!.set_option(arg, arg.length > 2)
+          else
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
+          end
+          begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            val = callback!(cb, 1, val) if cb
+            callback!(setter, 2, sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1643,7 +1819,18 @@ XXX
 
     argv
   end
-  private :parse_in_order
+
+  # Calls callback with _val_.
+  private def callback!(cb, max_arity, *args) # :nodoc:
+    args.compact!
+
+    if (size = args.size) < max_arity and cb.to_proc.lambda?
+      (arity = cb.arity) < 0 and arity = (1-arity)
+      arity = max_arity if arity > max_arity
+      args[arity - 1] = nil if arity > size
+    end
+    cb.call(*args)
+  end
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -1652,18 +1839,18 @@ XXX
   # <code>[]=</code> method (so it can be Hash, or OpenStruct, or other
   # similar object).
   #
-  def permute(*argv, into: nil)
+  def permute(*argv, **keywords)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    permute!(argv, into: into)
+    permute!(argv, **keywords)
   end
 
   #
   # Same as #permute, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def permute!(argv = default_argv, into: nil)
+  def permute!(argv = default_argv, **keywords)
     nonopts = []
-    order!(argv, into: into, &nonopts.method(:<<))
+    order!(argv, **keywords) {|nonopt| nonopts << nonopt}
     argv[0, 0] = nonopts
     argv
   end
@@ -1675,20 +1862,20 @@ XXX
   # values are stored there via <code>[]=</code> method (so it can be Hash,
   # or OpenStruct, or other similar object).
   #
-  def parse(*argv, into: nil)
+  def parse(*argv, **keywords)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    parse!(argv, into: into)
+    parse!(argv, **keywords)
   end
 
   #
   # Same as #parse, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def parse!(argv = default_argv, into: nil)
+  def parse!(argv = default_argv, **keywords)
     if ENV.include?('POSIXLY_CORRECT')
-      order!(argv, into: into)
+      order!(argv, **keywords)
     else
-      permute!(argv, into: into)
+      permute!(argv, **keywords)
     end
   end
 
@@ -1702,18 +1889,30 @@ XXX
   #   # params["bar"] = "x"  # --bar x
   #   # params["zot"] = "z"  # --zot Z
   #
-  def getopts(*args)
+  # Option +symbolize_names+ (boolean) specifies whether returned Hash keys should be Symbols; defaults to +false+ (use Strings).
+  #
+  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option", symbolize_names: true)
+  #   # params[:a] = true   # -a
+  #   # params[:b] = "1"    # -b1
+  #   # params[:foo] = "1"  # --foo
+  #   # params[:bar] = "x"  # --bar x
+  #   # params[:zot] = "z"  # --zot Z
+  #
+  def getopts(*args, symbolize_names: false, **keywords)
     argv = Array === args.first ? args.shift : default_argv
     single_options, *long_options = *args
 
     result = {}
+    setter = (symbolize_names ?
+                ->(name, val) {result[name.to_sym] = val}
+              : ->(name, val) {result[name] = val})
 
     single_options.scan(/(.)(:)?/) do |opt, val|
       if val
-        result[opt] = nil
+        setter[opt, nil]
         define("-#{opt} VAL")
       else
-        result[opt] = false
+        setter[opt, false]
         define("-#{opt}")
       end
     end if single_options
@@ -1722,47 +1921,45 @@ XXX
       arg, desc = arg.split(';', 2)
       opt, val = arg.split(':', 2)
       if val
-        result[opt] = val.empty? ? nil : val
+        setter[opt, (val unless val.empty?)]
         define("--#{opt}=#{result[opt] || "VAL"}", *[desc].compact)
       else
-        result[opt] = false
+        setter[opt, false]
         define("--#{opt}", *[desc].compact)
       end
     end
 
-    parse_in_order(argv, result.method(:[]=))
+    parse_in_order(argv, setter, **keywords)
     result
   end
 
   #
   # See #getopts.
   #
-  def self.getopts(*args)
-    new.getopts(*args)
+  def self.getopts(*args, symbolize_names: false)
+    new.getopts(*args, symbolize_names: symbolize_names)
   end
 
   #
   # Traverses @stack, sending each element method +id+ with +args+ and
   # +block+.
   #
-  def visit(id, *args, &block)
+  private def visit(id, *args, &block) # :nodoc:
     @stack.reverse_each do |el|
-      el.send(id, *args, &block)
+      el.__send__(id, *args, &block)
     end
     nil
   end
-  private :visit
 
   #
   # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
-  def search(id, key)
+  private def search(id, key) # :nodoc:
     block_given = block_given?
     visit(:search, id, key) do |k|
       return block_given ? yield(k) : k
     end
   end
-  private :search
 
   #
   # Completes shortened long style option switch and returns pair of
@@ -1773,7 +1970,7 @@ XXX
   # +icase+:: Search case insensitive if true.
   # +pat+::   Optional pattern for completion.
   #
-  def complete(typ, opt, icase = false, *pat)
+  private def complete(typ, opt, icase = false, *pat) # :nodoc:
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
@@ -1781,9 +1978,8 @@ XXX
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
     }
     exc = ambiguous ? AmbiguousOption : InvalidOption
-    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
+    raise exc.new(opt, additional: proc {|o| additional_message(typ, o)})
   end
-  private :complete
 
   #
   # Returns additional info.
@@ -1799,6 +1995,9 @@ XXX
     DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
   end
 
+  #
+  # Return candidates for +word+.
+  #
   def candidate(word)
     list = []
     case word
@@ -1837,26 +2036,37 @@ XXX
   # directory ~/.options, then the basename with '.options' suffix
   # under XDG and Haiku standard places.
   #
-  def load(filename = nil)
+  # The optional +into+ keyword argument works exactly like that accepted in
+  # method #parse.
+  #
+  def load(filename = nil, **keywords)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      return true if load(File.expand_path("~/.options/#{basename}"), **keywords) rescue nil
       basename << ".options"
+      if !(xdg = ENV['XDG_CONFIG_HOME']) or xdg.empty?
+        # https://specifications.freedesktop.org/basedir-spec/latest/#variables
+        #
+        # If $XDG_CONFIG_HOME is either not set or empty, a default
+        # equal to $HOME/.config should be used.
+        xdg = ['~/.config', true]
+      end
       return [
-        # XDG
-        ENV['XDG_CONFIG_HOME'],
-        '~/.config',
+        xdg,
+
         *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
 
         # Haiku
-        '~/config/settings',
-      ].any? {|dir|
+        ['~/config/settings', true],
+      ].any? {|dir, expand|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir)) rescue nil
+        filename = File.join(dir, basename)
+        filename = File.expand_path(filename) if expand
+        load(filename, **keywords) rescue nil
       }
     end
     begin
-      parse(*IO.readlines(filename).each {|s| s.chomp!})
+      parse(*File.readlines(filename, chomp: true), **keywords)
       true
     rescue Errno::ENOENT, Errno::ENOTDIR
       false
@@ -1869,10 +2079,10 @@ XXX
   #
   # +env+ defaults to the basename of the program.
   #
-  def environment(env = File.basename($0, '.*'))
+  def environment(env = File.basename($0, '.*'), **keywords)
     env = ENV[env] || ENV[env.upcase] or return
     require 'shellwords'
-    parse(*Shellwords.shellwords(env))
+    parse(*Shellwords.shellwords(env), **keywords)
   end
 
   #
@@ -2008,10 +2218,23 @@ XXX
       f |= Regexp::IGNORECASE if /i/ =~ o
       f |= Regexp::MULTILINE if /m/ =~ o
       f |= Regexp::EXTENDED if /x/ =~ o
-      k = o.delete("imx")
-      k = nil if k.empty?
+      case o = o.delete("imx")
+      when ""
+      when "u"
+        s = s.encode(Encoding::UTF_8)
+      when "e"
+        s = s.encode(Encoding::EUC_JP)
+      when "s"
+        s = s.encode(Encoding::SJIS)
+      when "n"
+        f |= Regexp::NOENCODING
+      else
+        raise OptionParser::InvalidArgument, "unknown regexp option - #{o}"
+      end
+    else
+      s ||= all
     end
-    Regexp.new(s || all, f, k)
+    Regexp.new(s, f)
   end
 
   #
@@ -2025,6 +2248,7 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
+    # :nodoc:
     def initialize(*args, additional: nil)
       @additional = additional
       @arg0, = args
@@ -2044,9 +2268,10 @@ XXX
       argv
     end
 
+    DIR = File.join(__dir__, '')
     def self.filter_backtrace(array)
       unless $DEBUG
-        array.delete_if(&%r"\A#{Regexp.quote(__FILE__)}:"o.method(:=~))
+        array.delete_if {|bt| bt.start_with?(DIR)}
       end
       array
     end
@@ -2089,42 +2314,42 @@ XXX
   # Raises when ambiguously completable string is encountered.
   #
   class AmbiguousOption < ParseError
-    const_set(:Reason, 'ambiguous option')
+    Reason = 'ambiguous option'    # :nodoc:
   end
 
   #
   # Raises when there is an argument for a switch which takes no argument.
   #
   class NeedlessArgument < ParseError
-    const_set(:Reason, 'needless argument')
+    Reason = 'needless argument'    # :nodoc:
   end
 
   #
   # Raises when a switch with mandatory argument has no argument.
   #
   class MissingArgument < ParseError
-    const_set(:Reason, 'missing argument')
+    Reason = 'missing argument'    # :nodoc:
   end
 
   #
   # Raises when switch is undefined.
   #
   class InvalidOption < ParseError
-    const_set(:Reason, 'invalid option')
+    Reason = 'invalid option'    # :nodoc:
   end
 
   #
   # Raises when the given argument does not match required format.
   #
   class InvalidArgument < ParseError
-    const_set(:Reason, 'invalid argument')
+    Reason = 'invalid argument'    # :nodoc:
   end
 
   #
   # Raises when the given argument word can't be completed uniquely.
   #
   class AmbiguousArgument < InvalidArgument
-    const_set(:Reason, 'ambiguous argument')
+    Reason = 'ambiguous argument'    # :nodoc:
   end
 
   #
@@ -2175,19 +2400,19 @@ XXX
     # Parses +self+ destructively in order and returns +self+ containing the
     # rest arguments left unparsed.
     #
-    def order!(&blk) options.order!(self, &blk) end
+    def order!(**keywords, &blk) options.order!(self, **keywords, &blk) end
 
     #
     # Parses +self+ destructively in permutation mode and returns +self+
     # containing the rest arguments left unparsed.
     #
-    def permute!() options.permute!(self) end
+    def permute!(**keywords) options.permute!(self, **keywords) end
 
     #
     # Parses +self+ destructively and returns +self+ containing the
     # rest arguments left unparsed.
     #
-    def parse!() options.parse!(self) end
+    def parse!(**keywords) options.parse!(self, **keywords) end
 
     #
     # Substitution of getopts is possible as follows. Also see
@@ -2200,8 +2425,8 @@ XXX
     #   rescue OptionParser::ParseError
     #   end
     #
-    def getopts(*args)
-      options.getopts(self, *args)
+    def getopts(*args, symbolize_names: false, **keywords)
+      options.getopts(self, *args, symbolize_names: symbolize_names, **keywords)
     end
 
     #
@@ -2211,7 +2436,8 @@ XXX
       super
       obj.instance_eval {@optparse = nil}
     end
-    def initialize(*args)
+
+    def initialize(*args)       # :nodoc:
       super
       @optparse = nil
     end
@@ -2222,9 +2448,11 @@ XXX
   # and DecimalNumeric. See Acceptable argument classes (in source code).
   #
   module Acceptables
-    const_set(:DecimalInteger, OptionParser::DecimalInteger)
-    const_set(:OctalInteger, OptionParser::OctalInteger)
-    const_set(:DecimalNumeric, OptionParser::DecimalNumeric)
+    # :stopdoc:
+    DecimalInteger = OptionParser::DecimalInteger
+    OctalInteger = OptionParser::OctalInteger
+    DecimalNumeric = OptionParser::DecimalNumeric
+    # :startdoc:
   end
 end
 

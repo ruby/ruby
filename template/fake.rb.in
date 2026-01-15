@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+# shareable_constant_value: literal
 <%
 arg = {}
 while /\A(\w+)=(.*)/ =~ ARGV[0]
@@ -7,17 +9,24 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
-  def src.value(name)
-    eval(self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
-  end
-  arg['versions'] = version = {}
-  File.read(File.join(arg['srcdir'], 'version.c')).
-    scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
-    version[n] = src.value(v)
-  end
-  arg['RUBY_DESCRIPTION_WITH_JIT'] = src.value('description_with_jit')
+  src.tr!("\r", " ")
+  src.gsub!(/^#.*\n/, '')
+else
+  src = ""
 end
-%>baseruby="<%=arg['BASERUBY']%>"
+def src.value(name)
+  unless val = self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1]
+    return
+  end
+  eval(val.gsub(/#/, '\\#').gsub(/((?:\G|[^\\])(?:\\\\)*)\n/, '\1'))
+end
+arg['versions'] = version = {}
+File.read(File.join(arg['srcdir'], 'version.c')).
+  scan(/rb_define_(?:global_)?const\((mRuby, *)?"(?(1)|RUBY_)(\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |_, n, s, v|
+  version[n] = arg[v] || src.value(v) || (s ? v : 0)
+end
+-%>
+baseruby="<%=arg['BASERUBY']%>"
 _\
 =begin
 _=
@@ -30,14 +39,27 @@ exec $ruby "$r" "$@"
 class Object
   remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
+  options = remove_const(:RUBY_DESCRIPTION)[/( \+[^\[\]\+]+)*(?= \[\S+\]\z)/]
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled? ?
-    <%=arg['RUBY_DESCRIPTION_WITH_JIT'].inspect%> :
-    <%end%><%=v.inspect%>
+  RUBY_<%=n%> = <%if n=='DESCRIPTION'
+    v1, v2 = v.split(/(?= \[\S+\]\z)/)
+    %><%=v1.dump.chomp('"')%>#{options}<%=
+    v2.dump[1..-1]%>.freeze<%
+  else%><%=v.inspect%><%end%>
+% }
+end
+v=$VERBOSE;$VERBOSE=nil;module Ruby; end;$VERBOSE=v
+module Ruby
+  constants.each {|n| remove_const n}
+% arg['versions'].each {|n, v|
+  <%=n%> = ::RUBY_<%=n%>
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
+libpathenv = libpathenv = "<%=arg['LIBPATHENV']%>"
+preloadenv = preloadenv = "<%=arg['PRELOADENV']%>"
+libruby_so = libruby_so = "<%=arg['LIBRUBY_SO']%>"
 srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")

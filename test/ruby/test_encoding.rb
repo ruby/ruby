@@ -33,7 +33,7 @@ class TestEncoding < Test::Unit::TestCase
     encodings.each do |e|
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
-      assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
+      assert_same(e, Marshal.load(Marshal.dump(e)))
     end
   end
 
@@ -53,33 +53,6 @@ class TestEncoding < Test::Unit::TestCase
 
     bug5150 = '[ruby-dev:44327]'
     assert_raise(TypeError, bug5150) {Encoding.find(1)}
-  end
-
-  def test_replicate
-    assert_separately([], "#{<<~'END;'}")
-    assert_instance_of(Encoding, Encoding::UTF_8.replicate("UTF-8-ANOTHER#{Time.now.to_f}"))
-    assert_instance_of(Encoding, Encoding::ISO_2022_JP.replicate("ISO-2022-JP-ANOTHER#{Time.now.to_f}"))
-    bug3127 = '[ruby-dev:40954]'
-    assert_raise(TypeError, bug3127) {Encoding::UTF_8.replicate(0)}
-    assert_raise(ArgumentError, bug3127) {Encoding::UTF_8.replicate("\0")}
-    END;
-  end
-
-  def test_extra_encoding
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      200.times {|i|
-        Encoding::UTF_8.replicate("dummy#{i}")
-      }
-      e = Encoding.list.last
-      format = "%d".force_encoding(e)
-      assert_equal("0", format % 0)
-      assert_equal(e, format.dup.encoding)
-      assert_equal(e, (format*1).encoding)
-
-      assert_equal(e, (("x"*30).force_encoding(e)*1).encoding)
-      GC.start
-    end;
   end
 
   def test_dummy_p
@@ -133,7 +106,7 @@ class TestEncoding < Test::Unit::TestCase
   end
 
   def test_errinfo_after_autoload
-    assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug9038 = '[ruby-core:57949] [Bug #9038]'
     begin;
       e = assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, bug9038) {
@@ -149,8 +122,58 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(Encoding::US_ASCII, __ENCODING__)
       $:.unshift("/\x80")
       assert_raise_with_message(LoadError, /\[Bug #16382\]/) do
-        $:.resolve_feature_path "[Bug #16382]"
+        require "[Bug #16382]"
       end
+    end;
+  end
+
+  def test_ractor_load_encoding
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ractor.new{}.join
+      $-w = nil
+      Encoding.default_external = Encoding::ISO8859_2
+      assert "[Bug #19562]"
+    end;
+  end
+
+  def test_ractor_lazy_load_encoding_concurrently
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze
+      7.times do
+        rs << Ractor.new(autoload_encodings) do |encodings|
+          str = "abc".dup
+          encodings.each do |enc|
+            str.force_encoding(enc)
+          end
+        end
+      end
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert_empty rs
+    end;
+  end
+
+  def test_ractor_set_default_external_string
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+    $-w = nil
+    rs = []
+    7.times do |i|
+      rs << Ractor.new(i) do |i|
+        Encoding.default_external = "us-ascii"
+      end
+    end
+
+    while rs.any?
+      r, _obj = Ractor.select(*rs)
+      rs.delete(r)
+    end
+    assert_empty rs
     end;
   end
 end

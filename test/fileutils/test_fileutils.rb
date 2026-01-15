@@ -51,7 +51,11 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_symlink?
-      File.symlink "", ""
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.symlink "symlink", "symlink"
+        end
+      end
     rescue NotImplementedError, Errno::EACCES
       return false
     rescue
@@ -68,8 +72,13 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_hardlink?
-      File.link nil, nil
-    rescue NotImplementedError
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          File.write "dummy", "dummy"
+          File.link "dummy", "hardlink"
+        end
+      end
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue
       return true
@@ -84,12 +93,24 @@ class TestFileUtils < Test::Unit::TestCase
       @@no_broken_symlink
     end
 
+    def has_capsh?
+      !!system('capsh', '--print', out: File::NULL, err: File::NULL)
+    end
+
+    def has_root_file_capabilities?
+      !!system(
+        'capsh', '--has-p=CAP_DAC_OVERRIDE', '--has-p=CAP_CHOWN', '--has-p=CAP_FOWNER',
+        out: File::NULL, err: File::NULL
+      )
+    end
+
     def root_in_posix?
       if /cygwin/ =~ RUBY_PLATFORM
         # FIXME: privilege if groups include root user?
         return Process.groups.include?(0)
-      end
-      if Process.respond_to?('uid')
+      elsif has_capsh?
+        return has_root_file_capabilities?
+      elsif Process.respond_to?('uid')
         return Process.uid == 0
       else
         return false
@@ -233,7 +254,7 @@ class TestFileUtils < Test::Unit::TestCase
   #
 
   def test_assert_output_lines
-    assert_raise(MiniTest::Assertion) {
+    assert_raise(Test::Unit::AssertionFailedError) {
       Timeout.timeout(0.5) {
         assert_output_lines([]) {
           Thread.current.report_on_exception = false
@@ -308,7 +329,7 @@ class TestFileUtils < Test::Unit::TestCase
   def test_cp_preserve_permissions
     bug4507 = '[ruby-core:35518]'
     touch 'tmp/cptmp'
-    chmod 0755, 'tmp/cptmp'
+    chmod 0o755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
 
     assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, mask: ~File.umask)
@@ -318,9 +339,9 @@ class TestFileUtils < Test::Unit::TestCase
     bug7246 = '[ruby-core:48603]'
     mkdir 'tmp/cptmp'
     mkdir 'tmp/cptmp/d1'
-    chmod 0745, 'tmp/cptmp/d1'
+    chmod 0o745, 'tmp/cptmp/d1'
     mkdir 'tmp/cptmp/d2'
-    chmod 0700, 'tmp/cptmp/d2'
+    chmod 0o700, 'tmp/cptmp/d2'
     cp_r 'tmp/cptmp', 'tmp/cptmp2', :preserve => true
     assert_equal_filemode('tmp/cptmp/d1', 'tmp/cptmp2/d1', bug7246)
     assert_equal_filemode('tmp/cptmp/d2', 'tmp/cptmp2/d2', bug7246)
@@ -463,10 +484,14 @@ class TestFileUtils < Test::Unit::TestCase
   else
     def test_cp_r_socket
       pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+
       Dir.mkdir('tmp/cpr_src')
       UNIXServer.new('tmp/cpr_src/socket').close
       cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
       assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    rescue Errno::EINVAL => error
+      # On some platforms (windows) sockets cannot be copied by FileUtils.
+      omit error.message
     end if defined?(UNIXServer)
   end
 
@@ -741,6 +766,52 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir3'
   end
 
+  def test_rm_r_no_permissions
+    check_singleton :rm_rf
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    mkdir 'tmpdatadir'
+    touch 'tmpdatadir/tmpdata'
+    chmod "-x", 'tmpdatadir'
+
+    begin
+      assert_raise Errno::EACCES do
+        rm_r 'tmpdatadir'
+      end
+    ensure
+      chmod "+x", 'tmpdatadir'
+    end
+  end
+
+  def test_remove_entry_cjk_path
+    dir = "tmpdir\u3042"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/\u3042.txt", "test_remove_entry_cjk_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
+  def test_remove_entry_multibyte_path
+    c = "\u00a7"
+    begin
+      c = c.encode('filesystem')
+    rescue EncodingError
+      c = c.b
+    end
+    dir = "tmpdir#{c}"
+    my_rm_rf dir
+
+    Dir.mkdir dir
+    File.write("#{dir}/#{c}.txt", "test_remove_entry_multibyte_path")
+
+    remove_entry dir
+    assert_file_not_exist dir
+  end
+
   def test_remove_entry_secure
     check_singleton :remove_entry_secure
 
@@ -786,7 +857,7 @@ class TestFileUtils < Test::Unit::TestCase
       if File.sticky?('tmp/tmpdir')
         Dir.mkdir 'tmp/tmpdir/d', 0
         assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
-        File.chmod 0777, 'tmp/tmpdir/d'
+        File.chmod 0o777, 'tmp/tmpdir/d'
         Dir.rmdir 'tmp/tmpdir/d'
       end
     end
@@ -884,16 +955,27 @@ class TestFileUtils < Test::Unit::TestCase
   def test_ln_s
     check_singleton :ln_s
 
+    ln_s TARGETS, 'tmp'
+    each_srcdest do |fname, lnfname|
+      assert_equal fname, File.readlink(lnfname)
+    ensure
+      rm_f lnfname
+    end
+
+    lnfname = 'symlink'
+    assert_raise(Errno::ENOENT, "multiple targets need a destination directory") {
+      ln_s TARGETS, lnfname
+    }
+    assert_file.not_exist?(lnfname)
+
     TARGETS.each do |fname|
-      begin
-        fname = "../#{fname}"
-        lnfname = 'tmp/lnsdest'
-        ln_s fname, lnfname
-        assert FileTest.symlink?(lnfname), 'not symlink'
-        assert_equal fname, File.readlink(lnfname)
-      ensure
-        rm_f lnfname
-      end
+      fname = "../#{fname}"
+      lnfname = 'tmp/lnsdest'
+      ln_s fname, lnfname
+      assert_file.symlink?(lnfname)
+      assert_equal fname, File.readlink(lnfname)
+    ensure
+      rm_f lnfname
     end
   end if have_symlink? and !no_broken_symlink?
 
@@ -940,6 +1022,85 @@ class TestFileUtils < Test::Unit::TestCase
       ln_sf Pathname.new('lns_dest'), 'tmp/symlink_tmp1'
       ln_sf 'lns_dest', Pathname.new('tmp/symlink_tmp2')
       ln_sf Pathname.new('lns_dest'), Pathname.new('tmp/symlink_tmp3')
+    }
+  end if have_symlink?
+
+  def test_ln_sr
+    check_singleton :ln_sr
+
+    assert_all_assertions_foreach(nil, *TARGETS) do |fname|
+      lnfname = 'tmp/lnsdest'
+      ln_sr fname, lnfname
+      assert_file.symlink?(lnfname)
+      assert_file.identical?(lnfname, fname)
+      assert_equal "../#{fname}", File.readlink(lnfname)
+    ensure
+      rm_f lnfname
+    end
+
+    ln_sr TARGETS, 'tmp'
+    assert_all_assertions do |all|
+      each_srcdest do |fname, lnfname|
+        all.for(fname) do
+          assert_equal "../#{fname}", File.readlink(lnfname)
+        end
+      ensure
+        rm_f lnfname
+      end
+    end
+
+    File.symlink 'data', 'link'
+    mkdir 'link/d1'
+    mkdir 'link/d2'
+    ln_sr 'link/d1/z', 'link/d2'
+    assert_equal '../d1/z', File.readlink('data/d2/z')
+
+    mkdir 'data/src'
+    File.write('data/src/xxx', 'ok')
+    File.symlink '../data/src', 'tmp/src'
+    ln_sr 'tmp/src/xxx', 'data'
+    assert_file.symlink?('data/xxx')
+    assert_equal 'ok', File.read('data/xxx')
+    assert_equal 'src/xxx', File.readlink('data/xxx')
+  end
+
+  def test_ln_sr_not_target_directory
+    assert_raise(ArgumentError) {
+      ln_sr TARGETS, 'tmp', target_directory: false
+    }
+    assert_empty(Dir.children('tmp'))
+
+    lnfname = 'symlink'
+    assert_raise(ArgumentError) {
+      ln_sr TARGETS, lnfname, target_directory: false
+    }
+    assert_file.not_exist?(lnfname)
+
+    assert_all_assertions_foreach(nil, *TARGETS) do |fname|
+      assert_raise(Errno::EEXIST, Errno::EACCES) {
+        ln_sr fname, 'tmp', target_directory: false
+      }
+      dest = File.join('tmp/', File.basename(fname))
+      assert_file.not_exist? dest
+      ln_sr fname, dest, target_directory: false
+      assert_file.symlink?(dest)
+      assert_equal("../#{fname}", File.readlink(dest))
+    end
+  end if have_symlink?
+
+  def test_ln_sr_broken_symlink
+    assert_nothing_raised {
+      ln_sr 'tmp/symlink', 'tmp/symlink'
+    }
+  end if have_symlink? and !no_broken_symlink?
+
+  def test_ln_sr_pathname
+    # pathname
+    touch 'tmp/lns_dest'
+    assert_nothing_raised {
+      ln_sr Pathname.new('tmp/lns_dest'), 'tmp/symlink_tmp1'
+      ln_sr 'tmp/lns_dest', Pathname.new('tmp/symlink_tmp2')
+      ln_sr Pathname.new('tmp/lns_dest'), Pathname.new('tmp/symlink_tmp3')
     }
   end if have_symlink?
 
@@ -1061,6 +1222,14 @@ class TestFileUtils < Test::Unit::TestCase
     ensure
       Dir.rmdir(drive) if drive and File.directory?(drive)
     end
+
+    def test_mkdir_p_offline_drive
+      offline_drive = ("A".."Z").to_a.reverse.find {|d| !File.exist?("#{d}:/") }
+
+      assert_raise(Errno::ENOENT) {
+        mkdir_p "#{offline_drive}:/new_dir"
+      }
+    end
   end
 
   def test_mkdir_p_file_perm
@@ -1133,6 +1302,14 @@ class TestFileUtils < Test::Unit::TestCase
       install Pathname.new('tmp/a'), 'tmp/b'
       rm_f 'tmp/a'; touch 'tmp/a'
       install Pathname.new('tmp/a'), Pathname.new('tmp/b')
+      my_rm_rf 'tmp/new_dir_end_with_slash'
+      install Pathname.new('tmp/a'), 'tmp/new_dir_end_with_slash/'
+      my_rm_rf 'tmp/new_dir_end_with_slash'
+      my_rm_rf 'tmp/new_dir'
+      install Pathname.new('tmp/a'), 'tmp/new_dir/a'
+      my_rm_rf 'tmp/new_dir'
+      install Pathname.new('tmp/a'), 'tmp/new_dir/new_dir_end_with_slash/'
+      my_rm_rf 'tmp/new_dir'
       rm_f 'tmp/a'
       touch 'tmp/a'
       touch 'tmp/b'
@@ -1182,15 +1359,17 @@ class TestFileUtils < Test::Unit::TestCase
     assert_filemode 04500, 'tmp/j'
     install 'tmp/j', 'tmp/k', :mode => "+s"
     assert_filemode 06500, 'tmp/k'
+    install 'tmp/a', 'tmp/l', :mode => "o+X"
+    assert_equal_filemode 'tmp/a', 'tmp/l'
   end if have_file_perm?
 
   def test_chmod
     check_singleton :chmod
 
     touch 'tmp/a'
-    chmod 0700, 'tmp/a'
+    chmod 0o700, 'tmp/a'
     assert_filemode 0700, 'tmp/a'
-    chmod 0500, 'tmp/a'
+    chmod 0o500, 'tmp/a'
     assert_filemode 0500, 'tmp/a'
   end if have_file_perm?
 
@@ -1223,7 +1402,7 @@ class TestFileUtils < Test::Unit::TestCase
     # regular file. It's slightly strange. Anyway it's no effect bit.
     # see /usr/src/sys/ufs/ufs/ufs_chmod()
     # NetBSD, OpenBSD, Solaris, and AIX also deny it.
-    if /freebsd|netbsd|openbsd|solaris|aix/ !~ RUBY_PLATFORM
+    if /freebsd|netbsd|openbsd|aix/ !~ RUBY_PLATFORM
       chmod "u+t,o+t", 'tmp/a'
       assert_filemode 07500, 'tmp/a'
       chmod "a-t,a-s", 'tmp/a'
@@ -1294,9 +1473,9 @@ class TestFileUtils < Test::Unit::TestCase
 
     assert_output_lines(["chmod 700 tmp/a", "chmod 500 tmp/a"]) {
       touch 'tmp/a'
-      chmod 0700, 'tmp/a', verbose: true
+      chmod 0o700, 'tmp/a', verbose: true
       assert_filemode 0700, 'tmp/a', mask: 0777
-      chmod 0500, 'tmp/a', verbose: true
+      chmod 0o500, 'tmp/a', verbose: true
       assert_filemode 0500, 'tmp/a', mask: 0777
     }
   end if have_file_perm?
@@ -1304,7 +1483,7 @@ class TestFileUtils < Test::Unit::TestCase
   def test_s_chmod_verbose
     assert_output_lines(["chmod 700 tmp/a"], FileUtils) {
       touch 'tmp/a'
-      FileUtils.chmod 0700, 'tmp/a', verbose: true
+      FileUtils.chmod 0o700, 'tmp/a', verbose: true
       assert_filemode 0700, 'tmp/a', mask: 0777
     }
   end if have_file_perm?
@@ -1617,7 +1796,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_remove_file_file_perm
     File.open('data/tmp', 'w') {|f| f.puts 'dummy' }
-    File.chmod 0, 'data/tmp'
+    File.chmod 0o000, 'data/tmp'
     remove_file 'data/tmp'
     assert_file_not_exist 'data/tmp'
   end if have_file_perm?
@@ -1632,10 +1811,18 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_remove_dir_file_perm
     Dir.mkdir 'data/tmpdir'
-    File.chmod 0555, 'data/tmpdir'
+    File.chmod 0o555, 'data/tmpdir'
     remove_dir 'data/tmpdir'
     assert_file_not_exist 'data/tmpdir'
   end if have_file_perm?
+
+  def test_remove_dir_with_file
+    File.write('data/tmpfile', 'dummy')
+    assert_raise(Errno::ENOTDIR) { remove_dir 'data/tmpfile' }
+    assert_file_exist 'data/tmpfile'
+  ensure
+    File.unlink('data/tmpfile') if File.exist?('data/tmpfile')
+  end
 
   def test_compare_file
     check_singleton :compare_file
@@ -1709,16 +1896,16 @@ class TestFileUtils < Test::Unit::TestCase
     o.extend(FileUtils)
     o.singleton_class.send(:public, :chdir)
     o.freeze
-    orig_stderr = $stderr
-    $stderr = StringIO.new
+    orig_stdout = $stdout
+    $stdout = StringIO.new
     o.chdir('.', verbose: true){}
-    $stderr.rewind
-    assert_equal(<<-END, $stderr.read)
+    $stdout.rewind
+    assert_equal(<<-END, $stdout.read)
 cd .
 cd -
     END
   ensure
-    $stderr = orig_stderr if orig_stderr
+    $stdout = orig_stdout if orig_stdout
   end
 
   def test_getwd
@@ -1751,7 +1938,7 @@ cd -
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
     mkdir 'tmpdatadir'
-    chmod 700, 'tmpdatadir'
+    chmod 0o000, 'tmpdatadir'
     rm_rf 'tmpdatadir'
 
     assert_file_not_exist 'tmpdatadir'

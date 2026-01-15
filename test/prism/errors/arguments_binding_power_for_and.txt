@@ -1,0 +1,5 @@
+foo(*bar and baz)
+         ^~~ unexpected 'and'; expected a `)` to close the arguments
+                ^ unexpected ')', expecting end-of-input
+                ^ unexpected ')', ignoring it
+

@@ -47,7 +47,11 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -55,13 +59,13 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
  * Name: Shift_JIS
  * MIBenum: 17
  * Link: http://www.iana.org/assignments/character-sets
- * Link: http://ja.wikipedia.org/wiki/Shift_JIS
+ * Link: https://ja.wikipedia.org/wiki/Shift_JIS
  */
 
 /*
  * Name: MacJapanese
  * Link: http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/JAPANESE.TXT
- * Link: http://ja.wikipedia.org/wiki/MacJapanese
+ * Link: https://ja.wikipedia.org/wiki/MacJapanese
  */
 ENC_REPLICATE("MacJapanese", "Shift_JIS")
 ENC_ALIAS("MacJapan", "MacJapanese")

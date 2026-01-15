@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ASSUME / #RBIMPL_UNREACHABLE.
  *
  * These macros must be defined at once because:
@@ -32,10 +32,7 @@
 #include "ruby/internal/warning_push.h"
 
 /** @cond INTERNAL_MACRO */
-#if RBIMPL_COMPILER_SINCE(MSVC, 13, 10, 0)
-# define RBIMPL_HAVE___ASSUME
-
-#elif RBIMPL_COMPILER_SINCE(Intel, 13, 0, 0)
+#if defined(HAVE___ASSUME)
 # define RBIMPL_HAVE___ASSUME
 #endif
 /** @endcond */

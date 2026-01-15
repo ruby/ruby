@@ -15,13 +15,11 @@ static VALUE struct_spec_rb_struct_getmember(VALUE self, VALUE st, VALUE key) {
   return rb_struct_getmember(st, SYM2ID(key));
 }
 
-static VALUE struct_spec_rb_struct_s_members(VALUE self, VALUE klass)
-{
+static VALUE struct_spec_rb_struct_s_members(VALUE self, VALUE klass) {
   return rb_ary_dup(rb_struct_s_members(klass));
 }
 
-static VALUE struct_spec_rb_struct_members(VALUE self, VALUE st)
-{
+static VALUE struct_spec_rb_struct_members(VALUE self, VALUE st) {
   return rb_ary_dup(rb_struct_members(st));
 }
 
@@ -30,7 +28,7 @@ static VALUE struct_spec_rb_struct_aset(VALUE self, VALUE st, VALUE key, VALUE v
 }
 
 /* Only allow setting three attributes, should be sufficient for testing. */
-static VALUE struct_spec_struct_define(VALUE self, VALUE name,
+static VALUE struct_spec_rb_struct_define(VALUE self, VALUE name,
   VALUE attr1, VALUE attr2, VALUE attr3) {
 
   const char *a1 = StringValuePtr(attr1);
@@ -44,7 +42,7 @@ static VALUE struct_spec_struct_define(VALUE self, VALUE name,
 }
 
 /* Only allow setting three attributes, should be sufficient for testing. */
-static VALUE struct_spec_struct_define_under(VALUE self, VALUE outer,
+static VALUE struct_spec_rb_struct_define_under(VALUE self, VALUE outer,
   VALUE name, VALUE attr1, VALUE attr2, VALUE attr3) {
 
   const char *nm = StringValuePtr(name);
@@ -56,16 +54,32 @@ static VALUE struct_spec_struct_define_under(VALUE self, VALUE outer,
 }
 
 static VALUE struct_spec_rb_struct_new(VALUE self, VALUE klass,
-                                       VALUE a, VALUE b, VALUE c)
-{
-
+                                       VALUE a, VALUE b, VALUE c) {
   return rb_struct_new(klass, a, b, c);
 }
 
-#ifdef RUBY_VERSION_IS_2_4
-static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st)
-{
+static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st) {
   return rb_struct_size(st);
+}
+
+static VALUE struct_spec_rb_struct_initialize(VALUE self, VALUE st, VALUE values) {
+  return rb_struct_initialize(st, values);
+}
+
+#if defined(RUBY_VERSION_IS_3_3)
+/* Only allow setting three attributes, should be sufficient for testing. */
+static VALUE struct_spec_rb_data_define(VALUE self, VALUE superclass,
+  VALUE attr1, VALUE attr2, VALUE attr3) {
+
+  const char *a1 = StringValuePtr(attr1);
+  const char *a2 = StringValuePtr(attr2);
+  const char *a3 = StringValuePtr(attr3);
+
+  if (superclass == Qnil) {
+    superclass = 0;
+  }
+
+  return rb_data_define(superclass, a1, a2, a3, NULL);
 }
 #endif
 
@@ -76,11 +90,13 @@ void Init_struct_spec(void) {
   rb_define_method(cls, "rb_struct_s_members", struct_spec_rb_struct_s_members, 1);
   rb_define_method(cls, "rb_struct_members", struct_spec_rb_struct_members, 1);
   rb_define_method(cls, "rb_struct_aset", struct_spec_rb_struct_aset, 3);
-  rb_define_method(cls, "rb_struct_define", struct_spec_struct_define, 4);
-  rb_define_method(cls, "rb_struct_define_under", struct_spec_struct_define_under, 5);
+  rb_define_method(cls, "rb_struct_define", struct_spec_rb_struct_define, 4);
+  rb_define_method(cls, "rb_struct_define_under", struct_spec_rb_struct_define_under, 5);
   rb_define_method(cls, "rb_struct_new", struct_spec_rb_struct_new, 4);
-#ifdef RUBY_VERSION_IS_2_4
   rb_define_method(cls, "rb_struct_size", struct_spec_rb_struct_size, 1);
+  rb_define_method(cls, "rb_struct_initialize", struct_spec_rb_struct_initialize, 2);
+#if defined(RUBY_VERSION_IS_3_3)
+  rb_define_method(cls, "rb_data_define", struct_spec_rb_data_define, 4);
 #endif
 }
 

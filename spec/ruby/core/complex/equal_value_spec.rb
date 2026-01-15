@@ -53,7 +53,7 @@ describe "Complex#==" do
   end
 
   describe "with Object" do
-    # Fixnum#==, Float#== and Bignum#== only return booleans - Bug?
+    # Integer#== and Float#== only return booleans - Bug?
     it "calls other#== with self" do
       value = Complex(3, 0)
 
@@ -76,7 +76,7 @@ describe "Complex#==" do
       (Complex(real, 0) == @other).should be_true
     end
 
-    it "returns false when when the imaginary part is not zero" do
+    it "returns false when the imaginary part is not zero" do
       (Complex(3, 1) == @other).should be_false
     end
   end

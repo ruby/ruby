@@ -17,7 +17,7 @@ static VALUE tracepoint_spec_rb_tracepoint_new(VALUE self, VALUE data) {
   return rb_tracepoint_new(Qnil, RUBY_EVENT_LINE, callback, (void*) data);
 }
 
-static VALUE tracepoint_spec_callback_called(VALUE self){
+static VALUE tracepoint_spec_callback_called(VALUE self) {
   return callback_called;
 }
 

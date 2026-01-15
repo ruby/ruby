@@ -22,7 +22,7 @@ module Psych
       ss = StructSubclass.new(nil, 'foo')
       ss.foo = ss
 
-      loaded = Psych.load(Psych.dump(ss))
+      loaded = Psych.unsafe_load(Psych.dump(ss))
       assert_instance_of(StructSubclass, loaded.foo)
 
       assert_equal(ss, loaded)
@@ -30,14 +30,14 @@ module Psych
 
     def test_roundtrip
       thing = PsychStructWithIvar.new('bar')
-      struct = Psych.load(Psych.dump(thing))
+      struct = Psych.unsafe_load(Psych.dump(thing))
 
       assert_equal 'hello', struct.bar
       assert_equal 'bar', struct.foo
     end
 
     def test_load
-      obj = Psych.load(<<-eoyml)
+      obj = Psych.unsafe_load(<<-eoyml)
 --- !ruby/struct:PsychStructWithIvar
 :foo: bar
 :@bar: hello

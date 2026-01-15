@@ -19,7 +19,6 @@ class ComplainMatcher
     @verbose = $VERBOSE
     err = IOStub.new
 
-    Thread.current[:in_mspec_complain_matcher] = true
     $stderr = err
     $VERBOSE = @options.key?(:verbose) ? @options[:verbose] : false
     begin
@@ -27,7 +26,6 @@ class ComplainMatcher
     ensure
       $VERBOSE = @verbose
       $stderr = @saved_err
-      Thread.current[:in_mspec_complain_matcher] = false
     end
 
     @warning = err.to_s

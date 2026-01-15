@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'strscan'
 
 module Psych
   ###
@@ -9,32 +8,40 @@ module Psych
     TIME = /^-?\d{4}-\d{1,2}-\d{1,2}(?:[Tt]|\s+)\d{1,2}:\d\d:\d\d(?:\.\d*)?(?:\s*(?:Z|[-+]\d{1,2}:?(?:\d\d)?))?$/
 
     # Taken from http://yaml.org/type/float.html
-    FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10)
-              |[-+]?\.(inf|Inf|INF)(?# infinity)
-              |\.(nan|NaN|NAN)(?# not a number))$/x
+    # Base 60, [-+]inf and NaN are handled separately
+    FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10))$/x
 
-    # Taken from http://yaml.org/type/int.html
-    INTEGER = /^(?:[-+]?0b[0-1_,]+          (?# base 2)
-                  |[-+]?0[0-7_,]+           (?# base 8)
-                  |[-+]?(?:0|[1-9][0-9_,]*) (?# base 10)
-                  |[-+]?0x[0-9a-fA-F_,]+    (?# base 16))$/x
+    # Taken from http://yaml.org/type/int.html and modified to ensure at least one numerical symbol exists
+    INTEGER_STRICT = /^(?:[-+]?0b[_]*[0-1][0-1_]*             (?# base 2)
+                         |[-+]?0[_]*[0-7][0-7_]*              (?# base 8)
+                         |[-+]?(0|[1-9][0-9_]*)               (?# base 10)
+                         |[-+]?0x[_]*[0-9a-fA-F][0-9a-fA-F_]* (?# base 16))$/x
+
+    # Same as above, but allows commas.
+    # Not to YML spec, but kept for backwards compatibility
+    INTEGER_LEGACY = /^(?:[-+]?0b[_,]*[0-1][0-1_,]*                (?# base 2)
+                         |[-+]?0[_,]*[0-7][0-7_,]*                 (?# base 8)
+                         |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
+                         |[-+]?0x[_,]*[0-9a-fA-F][0-9a-fA-F_,]*    (?# base 16))$/x
 
     attr_reader :class_loader
 
     # Create a new scanner
-    def initialize class_loader
+    def initialize class_loader, strict_integer: false, parse_symbols: true
       @symbol_cache = {}
       @class_loader = class_loader
+      @strict_integer = strict_integer
+      @parse_symbols = parse_symbols
     end
 
     # Tokenize +string+ returning the Ruby object
     def tokenize string
       return nil if string.empty?
       return @symbol_cache[string] if @symbol_cache.key?(string)
-
+      integer_regex = @strict_integer ? INTEGER_STRICT : INTEGER_LEGACY
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
       # special floats (e.g., -.inf).
-      if string.match?(/^[^\d\.:-]?[A-Za-z_\s!@#\$%\^&\*\(\)\{\}\<\>\|\/\\~;=]+/) || string.match?(/\n/)
+      if string.match?(%r{^[^\d.:-]?[[:alpha:]_\s!@#$%\^&*(){}<>|/\\~;=]+}) || string.match?(/\n/)
         return string if string.length > 5
 
         if string.match?(/^[^ytonf~]/i)
@@ -55,19 +62,18 @@ module Psych
           string
         end
       elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
-        require 'date'
         begin
-          class_loader.date.strptime(string, '%Y-%m-%d')
+          class_loader.date.strptime(string, '%F', Date::GREGORIAN)
         rescue ArgumentError
           string
         end
-      elsif string.match?(/^\.inf$/i)
+      elsif string.match?(/^\+?\.inf$/i)
         Float::INFINITY
       elsif string.match?(/^-\.inf$/i)
         -Float::INFINITY
       elsif string.match?(/^\.nan$/i)
         Float::NAN
-      elsif string.match?(/^:./)
+      elsif @parse_symbols && string.match?(/^:./)
         if string =~ /^:(["'])(.*)\1/
           @symbol_cache[string] = class_loader.symbolize($2.sub(/^:/, ''))
         else
@@ -89,9 +95,9 @@ module Psych
         if string.match?(/\A[-+]?\.\Z/)
           string
         else
-          Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
+          Float(string.delete(',_').gsub(/\.([Ee]|$)/, '\1'))
         end
-      elsif string.match?(INTEGER)
+      elsif string.match?(integer_regex)
         parse_int string
       else
         string
@@ -101,7 +107,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      Integer(string.gsub(/[,]/, ''))
+      Integer(string.delete(',_'))
     end
 
     ###

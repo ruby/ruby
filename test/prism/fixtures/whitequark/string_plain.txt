@@ -1,0 +1,3 @@
+%q(foobar)
+
+'foobar'

@@ -19,12 +19,12 @@ assert_equal %q{ok}, %q{
 }
 
 assert_equal %q{ok}, %q{
-  10_000.times.collect{Fiber.new{}}
+  100.times.collect{Fiber.new{}}
   :ok
 }
 
 assert_equal %q{ok}, %q{
-  fibers = 100.times.collect{Fiber.new{Fiber.yield}}
+  fibers = 1000.times.collect{Fiber.new{Fiber.yield}}
   fibers.each(&:resume)
   fibers.each(&:resume)
   :ok
@@ -37,3 +37,8 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   Fiber.new(&Object.method(:class_eval)).resume("foo")
 }, '[ruby-dev:34128]'
+
+# [Bug #21400]
+assert_normal_exit %q{
+  Thread.new { Fiber.current.kill }.join
+}

@@ -17,6 +17,19 @@ describe "The class keyword" do
     eval "class ClassSpecsKeywordWithoutSemicolon end"
     ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
   end
+
+  it "can redefine a class when called from a block" do
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+
+    Object.send(:remove_const, :A)
+    defined?(A).should be_nil
+
+    ClassSpecs::DEFINE_CLASS.call
+    A.should be_an_instance_of(Class)
+  ensure
+    Object.send(:remove_const, :A) if defined?(::A)
+  end
 end
 
 describe "A class definition" do
@@ -33,7 +46,14 @@ describe "A class definition" do
     -> {
       class ClassSpecsNumber
       end
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, /\AClassSpecsNumber is not a class/)
+  end
+
+  it "raises TypeError if constant given as class name exists and is a Module but not a Class" do
+    -> {
+      class ClassSpecs
+      end
+    }.should raise_error(TypeError, /\AClassSpecs is not a class/)
   end
 
   # test case known to be detecting bugs (JRuby, MRI)
@@ -258,6 +278,8 @@ describe "A class definition" do
 
       AnonWithConstant.name.should == 'AnonWithConstant'
       klass.get_class_name.should == 'AnonWithConstant'
+    ensure
+      Object.send(:remove_const, :AnonWithConstant)
     end
   end
 end
@@ -285,20 +307,20 @@ describe "A class definition extending an object (sclass)" do
     }.should raise_error(TypeError)
   end
 
-  ruby_version_is ""..."2.8" do
-    it "allows accessing the block of the original scope" do
-      suppress_warning do
-        ClassSpecs.sclass_with_block { 123 }.should == 123
-      end
-    end
+  it "raises a TypeError when trying to extend non-Class" do
+    error_msg = /superclass must be a.* Class/
+    -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < mock('o');       end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < Module.new;      end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
   end
 
-  ruby_version_is "2.8" do
-    it "does not allow accessing the block of the original scope" do
-      -> {
-        ClassSpecs.sclass_with_block { 123 }
-      }.should raise_error(SyntaxError)
-    end
+  it "does not allow accessing the block of the original scope" do
+    -> {
+      ClassSpecs.sclass_with_block { 123 }
+    }.should raise_error(SyntaxError)
   end
 
   it "can use return to cause the enclosing method to return" do
@@ -330,6 +352,39 @@ describe "Reopening a class" do
     end
     ClassSpecs::M.m.should == 1
     ClassSpecs::L.singleton_class.send(:remove_method, :m)
+  end
+
+  it "does not reopen a class included in Object" do
+    ruby_exe(<<~RUBY).should == "false"
+      module IncludedInObject
+        class IncludedClass
+        end
+      end
+      class Object
+        include IncludedInObject
+      end
+      class IncludedClass
+      end
+      print IncludedInObject::IncludedClass == Object::IncludedClass
+    RUBY
+  end
+
+  it "does not reopen a class included in non-Object modules" do
+    ruby_exe(<<~RUBY).should == "false/false"
+      module Included
+        module IncludedClass; end
+      end
+      module M
+        include Included
+        module IncludedClass; end
+      end
+      class C
+        include Included
+        module IncludedClass; end
+      end
+      print Included::IncludedClass == M::IncludedClass, "/",
+            Included::IncludedClass == C::IncludedClass
+    RUBY
   end
 end
 

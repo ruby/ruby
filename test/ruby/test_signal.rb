@@ -291,7 +291,8 @@ class TestSignal < Test::Unit::TestCase
 
     if trap = Signal.list['TRAP']
       bug9820 = '[ruby-dev:48592] [Bug #9820]'
-      status = assert_in_out_err(['-e', 'Process.kill(:TRAP, $$)'])
+      no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
+      status = assert_in_out_err(['-e', "#{no_core}Process.kill(:TRAP, $$)"])
       assert_predicate(status, :signaled?, bug9820)
       assert_equal(trap, status.termsig, bug9820)
     end
@@ -309,65 +310,30 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_self_stop
-    assert_ruby_status([], <<-'end;')
-      begin
-        fork{
-          sleep 1
-          Process.kill(:CONT, Process.ppid)
-        }
-        Process.kill(:STOP, Process.pid)
-      rescue NotImplementedError
-        # ok
-      end
-    end;
-  end
+    omit unless Process.respond_to?(:fork)
+    omit unless defined?(Process::WUNTRACED)
 
-  def test_sigchld_ignore
-    skip 'no SIGCHLD' unless Signal.list['CHLD']
-    old = trap(:CHLD, 'IGNORE')
-    cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
-    assert(system(*cmd, 'exit!(0)'), 'no ECHILD')
-    IO.pipe do |r, w|
-      pid = spawn(*cmd, "STDIN.read", in: r)
-      nb = Process.wait(pid, Process::WNOHANG)
-      th = Thread.new(Thread.current) do |parent|
-        Thread.pass until parent.stop? # wait for parent to Process.wait
-        w.close
-      end
-      assert_raise(Errno::ECHILD) { Process.wait(pid) }
-      th.join
-      assert_nil nb
+    # Make a process that stops itself
+    child_pid = fork do
+      Process.kill(:STOP, Process.pid)
     end
 
-    IO.pipe do |r, w|
-      pids = 3.times.map { spawn(*cmd, 'exit!', out: w) }
-      w.close
-      zombies = pids.dup
-      assert_nil r.read(1), 'children dead'
+    # The parent should be notified about the stop
+    _, status = Process.waitpid2(child_pid, Process::WUNTRACED)
+    assert_predicate status, :stopped?
 
-      Timeout.timeout(10) do
-        zombies.delete_if do |pid|
-          begin
-            Process.kill(0, pid)
-            false
-          rescue Errno::ESRCH
-            true
-          end
-        end while zombies[0]
-      end
-      assert_predicate zombies, :empty?, 'zombies leftover'
+    # It can be continued
+    Process.kill(:CONT, child_pid)
 
-      pids.each do |pid|
-        assert_raise(Errno::ECHILD) { Process.waitpid(pid) }
-      end
-    end
-  ensure
-    trap(:CHLD, old) if Signal.list['CHLD']
+    # And the child then runs to completion
+    _, status = Process.waitpid2(child_pid)
+    assert_predicate status, :exited?
+    assert_predicate status, :success?
   end
 
   def test_sigwait_fd_unused
     t = EnvUtil.apply_timeout_scale(0.1)
-    assert_separately([], <<-End)
+    assert_ruby_status([], <<-End)
       tgt = $$
       trap(:TERM) { exit(0) }
       e = "Process.daemon; sleep #{t * 2}; Process.kill(:TERM,\#{tgt})"

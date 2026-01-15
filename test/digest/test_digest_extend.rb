@@ -6,6 +6,11 @@ require_relative '../lib/with_different_ofs'
 class TestDigestExtend < Test::Unit::TestCase
   extend DifferentOFS
 
+  TEST_DIGEST = %w[SHA1024 SHA512 SHA384 SHA256 SHA1].find do |n|
+    break Digest.const_get(n)
+  rescue LoadError
+  end
+
   class MyDigest < Digest::Class
     def initialize(*arg)
       super
@@ -54,7 +59,7 @@ class TestDigestExtend < Test::Unit::TestCase
   end
 
   def test_class_reset
-    a = Digest::SHA1.new
+    a = TEST_DIGEST.new
     base = a.to_s
     assert_equal(base, a.reset.to_s)
     b = a.new
@@ -62,7 +67,7 @@ class TestDigestExtend < Test::Unit::TestCase
     b.update('1')
     assert_not_equal(base, b.to_s)
     assert_equal(base, b.reset.to_s)
-  end
+  end if TEST_DIGEST
 
   def test_digest
     assert_equal("\3", MyDigest.digest("foo"))
@@ -83,7 +88,7 @@ class TestDigestExtend < Test::Unit::TestCase
   end
 
   def test_new
-    a = Digest::SHA1.new
+    a = TEST_DIGEST.new
     b = a.new
     obj = a.to_s
     assert_equal(obj, a.to_s)
@@ -91,7 +96,7 @@ class TestDigestExtend < Test::Unit::TestCase
     a.update('1')
     assert_not_equal(obj, a.to_s)
     assert_equal(obj, b.to_s)
-  end
+  end if TEST_DIGEST
 
   def test_digest_hexdigest
     [:digest, :hexdigest].each do |m|

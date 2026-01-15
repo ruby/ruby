@@ -9,27 +9,13 @@
 #
 # = Licence
 # This program is licensed under the same licence as Ruby.
-# (See the file 'LICENCE'.)
+# (See the file 'COPYING'.)
 #++
+
+require_relative 'marshal'
 
 module OpenSSL
   module X509
-    module Marshal
-      def self.included(base)
-        base.extend(ClassMethods)
-      end
-
-      module ClassMethods
-        def _load(string)
-          new(string)
-        end
-      end
-
-      def _dump(_level)
-        to_der
-      end
-    end
-
     class ExtensionFactory
       def create_extension(*arg)
         if arg.size > 1
@@ -57,7 +43,7 @@ module OpenSSL
     end
 
     class Extension
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Extension === other
@@ -136,8 +122,8 @@ module OpenSSL
         include Helpers
 
         # Get the distributionPoint fullName URI from the certificate's CRL
-        # distribution points extension, as described in RFC5280 Section
-        # 4.2.1.13
+        # distribution points extension, as described in RFC 5280 Section
+        # 4.2.1.13.
         #
         # Returns an array of strings or nil or raises ASN1::ASN1Error.
         def crl_uris
@@ -149,19 +135,19 @@ module OpenSSL
             raise ASN1::ASN1Error, "invalid extension"
           end
 
-          crl_uris = cdp_asn1.map do |crl_distribution_point|
+          crl_uris = cdp_asn1.flat_map do |crl_distribution_point|
             distribution_point = crl_distribution_point.value.find do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
             end
             full_name = distribution_point&.value&.find do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
             end
-            full_name&.value&.find do |v|
+            full_name&.value&.select do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 6 # uniformResourceIdentifier
             end
           end
 
-          crl_uris&.map(&:value)
+          crl_uris.empty? ? nil : crl_uris.map(&:value)
         end
       end
 
@@ -216,7 +202,7 @@ module OpenSSL
     end
 
     class Name
-      include Marshal
+      include OpenSSL::Marshal
 
       module RFC2253DN
         Special = ',=+<>#;'
@@ -293,11 +279,29 @@ module OpenSSL
       end
 
       class << self
+        # Parses the UTF-8 string representation of a distinguished name,
+        # according to RFC 2253.
+        #
+        # See also #to_utf8 for the opposite operation.
         def parse_rfc2253(str, template=OBJECT_TYPE_TEMPLATE)
           ary = OpenSSL::X509::Name::RFC2253DN.scan(str)
           self.new(ary, template)
         end
 
+        # Parses the string representation of a distinguished name. Two
+        # different forms are supported:
+        #
+        # - \OpenSSL format (<tt>X509_NAME_oneline()</tt>) used by
+        #   <tt>#to_s</tt>. For example: <tt>/DC=com/DC=example/CN=nobody</tt>
+        # - \OpenSSL format (<tt>X509_NAME_print()</tt>)
+        #   used by <tt>#to_s(OpenSSL::X509::Name::COMPAT)</tt>. For example:
+        #   <tt>DC=com, DC=example, CN=nobody</tt>
+        #
+        # Neither of them is standardized and has quirks and inconsistencies
+        # in handling of escaped characters or multi-valued RDNs.
+        #
+        # Use of this method is discouraged in new applications. See
+        # Name.parse_rfc2253 and #to_utf8 for the alternative.
         def parse_openssl(str, template=OBJECT_TYPE_TEMPLATE)
           if str.start_with?("/")
             # /A=B/C=D format
@@ -321,7 +325,7 @@ module OpenSSL
     end
 
     class Attribute
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Attribute === other
@@ -336,11 +340,20 @@ module OpenSSL
     end
 
     class Certificate
-      include Marshal
+      include OpenSSL::Marshal
       include Extension::SubjectKeyIdentifier
       include Extension::AuthorityKeyIdentifier
       include Extension::CRLDistributionPoints
       include Extension::AuthorityInfoAccess
+
+      def inspect
+        "#<#{self.class}: " \
+          "subject=#{subject.inspect}, " \
+          "issuer=#{issuer.inspect}, " \
+          "serial=#{serial.inspect}, " \
+          "not_before=#{not_before.inspect rescue "(error)"}, " \
+          "not_after=#{not_after.inspect rescue "(error)"}>"
+      end
 
       def pretty_print(q)
         q.object_group(self) {
@@ -352,10 +365,14 @@ module OpenSSL
           q.text 'not_after='; q.pp self.not_after
         }
       end
+
+      def self.load_file(path)
+        load(File.binread(path))
+      end
     end
 
     class CRL
-      include Marshal
+      include OpenSSL::Marshal
       include Extension::AuthorityKeyIdentifier
 
       def ==(other)
@@ -372,7 +389,7 @@ module OpenSSL
     end
 
     class Request
-      include Marshal
+      include OpenSSL::Marshal
 
       def ==(other)
         return false unless Request === other

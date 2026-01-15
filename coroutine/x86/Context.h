@@ -1,3 +1,6 @@
+#ifndef COROUTINE_X86_CONTEXT_H
+#define COROUTINE_X86_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -20,6 +23,7 @@ enum {COROUTINE_REGISTERS = 4};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self) __attribute__((fastcall));
@@ -41,7 +45,7 @@ static inline void coroutine_initialize(
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
     *--context->stack_pointer = NULL;
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
 
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
@@ -53,3 +57,5 @@ static inline void coroutine_destroy(struct coroutine_context * context)
 {
     context->stack_pointer = NULL;
 }
+
+#endif /* COROUTINE_X86_CONTEXT_H */

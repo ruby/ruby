@@ -27,12 +27,13 @@ describe "Module#public" do
                   :module_specs_private_method_on_object_for_kernel_public)
   end
 
-  it "returns self" do
+  it "returns argument or arguments if given" do
     (class << Object.new; self; end).class_eval do
       def foo; end
-      private :foo
-      public(:foo).should equal(self)
-      public.should equal(self)
+      public(:foo).should equal(:foo)
+      public([:foo, :foo]).should == [:foo, :foo]
+      public(:foo, :foo).should == [:foo, :foo]
+      public.should equal(nil)
     end
   end
 

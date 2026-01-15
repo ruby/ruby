@@ -51,6 +51,10 @@ class NameMap
     SpecVersion
   ]
 
+  ALWAYS_PRIVATE = %w[
+    initialize initialize_copy initialize_clone initialize_dup respond_to_missing?
+  ].map(&:to_sym)
+
   def initialize(filter = false)
     @seen = {}
     @filter = filter
@@ -62,10 +66,17 @@ class NameMap
   end
 
   def class_or_module(c)
-    const = Object.const_get(c, false)
+    begin
+      const = Object.const_get(c, false)
+    rescue NameError, RuntimeError
+      # Either the constant doesn't exist or it is
+      # explicitly raising an error, like `SortedSet`.
+      return nil
+    end
+    return nil unless Module === const
+
     filtered = @filter && EXCLUDED.include?(const.name)
-    return const if Module === const and !filtered
-  rescue NameError
+    return const unless filtered
   end
 
   def namespace(mod, const)
@@ -86,7 +97,8 @@ class NameMap
       hash["#{name}."] = ms.sort unless ms.empty?
 
       ms = m.public_instance_methods(false) +
-           m.protected_instance_methods(false)
+           m.protected_instance_methods(false) +
+           (m.private_instance_methods(false) & ALWAYS_PRIVATE)
       ms.map! { |x| x.to_s }
       hash["#{name}#"] = ms.sort unless ms.empty?
 

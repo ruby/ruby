@@ -7,17 +7,19 @@
 # You can freely distribute/modify this library.
 #
 
+require 'monitor.so'
+
 #
 # In concurrent programming, a monitor is an object or module intended to be
-# used safely by more than one thread.  The defining characteristic of a
-# monitor is that its methods are executed with mutual exclusion.  That is, at
+# used safely by more than one thread. The defining characteristic of a
+# monitor is that its methods are executed with mutual exclusion. That is, at
 # each point in time, at most one thread may be executing any of its methods.
 # This mutual exclusion greatly simplifies reasoning about the implementation
 # of monitors compared to reasoning about parallel code that updates a data
 # structure.
 #
 # You can read more about the general principles on the Wikipedia page for
-# Monitors[http://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
+# Monitors[https://en.wikipedia.org/wiki/Monitor_%28synchronization%29].
 #
 # == Examples
 #
@@ -48,7 +50,7 @@
 #   end
 #
 # The consumer thread waits for the producer thread to push a line to buf
-# while <tt>buf.empty?</tt>.  The producer thread (main thread) reads a
+# while <tt>buf.empty?</tt>. The producer thread (main thread) reads a
 # line from ARGF and pushes it into buf then calls <tt>empty_cond.signal</tt>
 # to notify the consumer thread of new data.
 #
@@ -86,9 +88,6 @@
 # This Class is implemented as subclass of Array which includes the
 # MonitorMixin module.
 #
-
-require 'monitor.so'
-
 module MonitorMixin
   #
   # FIXME: This isn't documented in Nutshell.
@@ -144,13 +143,13 @@ module MonitorMixin
 
     private
 
-    def initialize(monitor)
+    def initialize(monitor) # :nodoc:
       @monitor = monitor
       @cond = Thread::ConditionVariable.new
     end
   end
 
-  def self.extend_object(obj)
+  def self.extend_object(obj) # :nodoc:
     super(obj)
     obj.__send__(:mon_initialize)
   end
@@ -220,7 +219,7 @@ module MonitorMixin
   # Use <tt>extend MonitorMixin</tt> or <tt>include MonitorMixin</tt> instead
   # of this constructor.  Have look at the examples above to understand how to
   # use this module.
-  def initialize(*args)
+  def initialize(...)
     super
     mon_initialize
   end
@@ -239,6 +238,8 @@ module MonitorMixin
     @mon_data_owner_object_id = self.object_id
   end
 
+  # Ensures that the MonitorMixin is owned by the current thread,
+  # otherwise raises an exception.
   def mon_check_owner
     @mon_data.mon_check_owner
   end
@@ -255,6 +256,10 @@ end
 #   end
 #
 class Monitor
+  #
+  # Creates a new MonitorMixin::ConditionVariable associated with the
+  # Monitor object.
+  #
   def new_cond
     ::MonitorMixin::ConditionVariable.new(self)
   end

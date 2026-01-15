@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A VendorSet represents gems that have been unpacked into a specific
 # directory that contains a gemspec.
@@ -15,7 +16,6 @@
 # rake.gemspec (watching the given name).
 
 class Gem::Resolver::VendorSet < Gem::Resolver::Set
-
   ##
   # The specifications for this set.
 
@@ -70,7 +70,7 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[VendorSet', ']' do
+    q.group 2, "[VendorSet", "]" do
       next if @directories.empty?
       q.breakable
 
@@ -83,5 +83,4 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
       end
     end
   end
-
 end

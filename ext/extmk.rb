@@ -2,6 +2,15 @@
 # -*- mode: ruby; coding: us-ascii -*-
 # frozen_string_literal: false
 
+module Gem
+  # Used by Gem::Platform.local
+  def self.target_rbconfig
+    RbConfig::CONFIG
+  end
+end
+# only needs Gem::Platform
+require 'rubygems/platform'
+
 # :stopdoc:
 $extension = nil
 $extstatic = nil
@@ -34,16 +43,14 @@ require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
+$extmk = true
+inplace = File.identical?($top_srcdir, $topdir)
 
 $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
 
-if defined?(File::NULL)
-  @null = File::NULL
-elsif !File.chardev?(@null = "/dev/null")
-  @null = "nul"
-end
+@null = File::NULL
 
 def verbose?
   $mflags.defined?("V") == "1"
@@ -62,12 +69,17 @@ end
 
 def atomic_write_open(filename)
   filename_new = filename + ".new.#$$"
-  open(filename_new, "wb") do |f|
+  clean = false
+  File.open(filename_new, "wbx") do |f|
+    clean = true
     yield f
   end
   if File.binread(filename_new) != (File.binread(filename) rescue nil)
     File.rename(filename_new, filename)
-  else
+    clean = false
+  end
+ensure
+  if clean
     File.unlink(filename_new)
   end
 end
@@ -99,7 +111,7 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
-  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}.sort
+  srcs = Dir[*SRC_EXT.map {|e| "*.#{e}"}, base: $srcdir].map {|fn| File.basename(fn)}.sort
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
     (old_srcs.split - srcs).empty? or return false
@@ -135,7 +147,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     d = target
     until (d = File.dirname(d)) == '.'
       if File.exist?("#{$top_srcdir}/#{basedir}/#{d}/extconf.rb")
-        parent = (/^all:\s*install/ =~ IO.read("#{d}/Makefile") rescue false)
+        parent = (/^all:\s*install/ =~ File.read("#{d}/Makefile") rescue false)
         break
       end
     end
@@ -146,7 +158,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     top_srcdir = $top_srcdir
     topdir = $topdir
     hdrdir = $hdrdir
-    prefix = "../" * (target.count("/")+1)
+    prefix = "../" * (basedir.count("/")+target.count("/")+1)
     $top_srcdir = relative_from(top_srcdir, prefix)
     $hdrdir = relative_from(hdrdir, prefix)
     $topdir = prefix + $topdir
@@ -154,8 +166,6 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     $mdir = target
     $srcdir = File.join($top_srcdir, basedir, $mdir)
     $preload = nil
-    $objs = []
-    $srcs = []
     $extso = []
     makefile = "./Makefile"
     static = $static
@@ -189,7 +199,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
       begin
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
-	old_objs = $objs
+	old_objs = $objs || []
 	old_cleanfiles = $distcleanfiles | $cleanfiles
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
 	if (!ok || ($extconf_h && !File.exist?($extconf_h)) ||
@@ -252,6 +262,8 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += ["DESTDIR=" + relative_from($destdir, "../"+prefix)]
     end
+    $objs ||= []
+    $srcs ||= []
     if $static and ok and !$objs.empty? and !noinstall
       args += ["static"]
       $extlist.push [(maybestatic ? $static : false), target, $target, $preload]
@@ -408,8 +420,10 @@ if CROSS_COMPILING
   $ruby = $mflags.defined?("MINIRUBY") || CONFIG['MINIRUBY']
 elsif sep = config_string('BUILD_FILE_SEPARATOR')
   $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
-else
+elsif CONFIG['EXTSTATIC']
   $ruby = '$(topdir)/miniruby' + EXEEXT
+else
+  $ruby = '$(topdir)/ruby' + EXEEXT
 end
 $ruby = [$ruby]
 $ruby << "-I'$(topdir)'"
@@ -421,6 +435,7 @@ end
 topruby = $ruby
 $ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
+$builtruby = '$(topdir)/miniruby' + EXEEXT # Must be an executable path
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
@@ -435,9 +450,8 @@ if $extstatic
 end
 for dir in ["ext", File::join($top_srcdir, "ext")]
   setup = File::join(dir, CONFIG['setup'])
-  if File.file? setup
-    f = open(setup)
-    while line = f.gets()
+  if (f = File.stat(setup) and f.file? rescue next)
+    File.foreach(setup) do |line|
       line.chomp!
       line.sub!(/#.*$/, '')
       next if /^\s*$/ =~ line
@@ -454,23 +468,24 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
     end
     MTIMES << f.mtime
     $setup = setup
-    f.close
     break
   end
 end unless $extstatic
 
 @gemname = nil
-if ARGV[0]
-  ext_prefix, exts = ARGV.shift.split('/', 2)
+if exts = ARGV.shift
+  ext_prefix = exts[%r[\A(?>\.bundle/)?[^/]+(?:/(?=(.+)?)|\z)]]
+  exts = $1
   $extension = [exts] if exts
-  if ext_prefix == 'gems'
+  if ext_prefix.start_with?('.')
     @gemname = exts
-  elsif exts
-    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+    exts = []
+  else
+    exts &&= $static_ext.select {|t, *| File.fnmatch(t, exts)}
   end
 end
-ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
-exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+ext_prefix ||= 'ext'
+exts = (exts || $static_ext).sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
   when $cygwin
@@ -483,28 +498,30 @@ default_exclude_exts =
 mandatory_exts = {}
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-    d ? proc {|c1| d.any?(&c1)} : proc {true}
+    d ? proc {|&c1| d.any?(&c1)} : proc {true}
   elsif (w = w.grep(String)).empty?
     proc {true}
   else
     w = w.collect {|o| o.split(/,/)}.flatten
     w.collect! {|o| o == '+' ? d : o}.flatten!
-    proc {|c1| w.any?(&c1)}
+    proc {|&c1| w.any?(&c1)}
   end
 }
 cond = proc {|ext, *|
-  withes.call(proc {|n|
-                !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))
-              }) and
-    !withouts.call(proc {|n| File.fnmatch(n, ext)})
+  withes.call {|n| !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))} and
+    !withouts.call {|n| File.fnmatch(n, ext)}
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
-    d = File.dirname(d)
-    d.slice!(0, ext_prefix.length + 1)
-    d
+  incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
+    File.dirname(d)
   }.partition {|ext|
+    if @gemname
+      ext = ext[%r[\A[^/]+]] # extract gem name
+      Dir.glob("*.gemspec", base: "#$top_srcdir/#{ext_prefix}/#{ext}") do |g|
+        break ext = g if ext.start_with?("#{g.chomp!(".gemspec")}-")
+      end
+    end
     with_config(ext, &cond)
   }
   incl.sort!
@@ -515,14 +532,22 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = File.basename(ext_prefix)
+ext_prefix.chomp!("/")
 
+@ext_prefix = ext_prefix
+@inplace = inplace
 extend Module.new {
+
   def timestamp_file(name, target_prefix = nil)
     if @gemname and name == '$(TARGET_SO_DIR)'
-      name = "$(arch)/gems/#{@gemname}#{target_prefix}"
+      gem = true
+      name = "$(gem_platform)/$(ruby_version)/gems/#{@gemname}#{target_prefix}"
     end
-    super.sub(%r[/\.extout\.(?:-\.)?], '/.')
+    path = super.sub(%r[/\.extout\.(?:-\.)?], '/.')
+    if gem
+      nil while path.sub!(%r[/\.(gem_platform|ruby_version)\.-(?=\.)], '/$(\1)/')
+    end
+    path
   end
 
   def configuration(srcdir)
@@ -530,28 +555,85 @@ extend Module.new {
   end
 
   def create_makefile(*args, &block)
-    return super unless @gemname
+    unless @gemname
+      if $static and (target = args.first).include?("/")
+        base = File.basename(target)
+        $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+        $defs << "-DInitVM_#{base}=InitVM_#{target.tr('/', '_')}"
+      end
+      return super
+    end
     super(*args) do |conf|
       conf.find do |s|
+        s.sub!(%r(^(srcdir *= *)\$\(top_srcdir\)/\.bundle/gems/[^/]+(?=/))) {
+          "gem_#{$&}\n" "#{$1}$(gem_srcdir)"
+        }
+        s.sub!(/^(TIMESTAMP_DIR *= *)\$\(extout\)/) {
+          "TARGET_TOPDIR = $(topdir)/.bundle\n" "#{$1}$(TARGET_TOPDIR)"
+        }
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(extout)/gems/$(arch)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(TARGET_TOPDIR)/extensions/$(gem_platform)"\
+          "/$(ruby_version)#{$enable_shared ? '' : '-static'}/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
-      conf.any? {|s| /^TARGET *= *\S/ =~ s} and conf << %{
+
+      conf = yield conf if block
+
+      if conf.any? {|s| /^TARGET *= *\S/ =~ s}
+        conf << %{
+gem_platform = #{Gem::Platform.local}
 
 # default target
 all:
 
+gem = #{@gemname}
+
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
+clean-so:: clean-build_complete
+
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
-clean-so::
+clean-build_complete:
 	-$(Q)$(RM) $(build_complete)
+
+install: gemspec
+clean: clean-gemspec
+
+gemspec = $(TARGET_TOPDIR)/specifications/$(gem).gemspec
+$(gemspec): $(gem_srcdir)/.bundled.$(gem).gemspec
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(COPY) $(gem_srcdir)/.bundled.$(gem).gemspec $@
+
+gemspec: $(gemspec)
+
+clean-gemspec:
+	-$(Q)$(RM) $(gemspec)
+
+LN_S = #{config_string('LN_S')}
+CP_R = #{config_string('CP')} -r
 }
+        unless @inplace
+          %w[bin lib].each do |d|
+            next unless File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/#{d}")
+            conf << %{
+install-rb: gem#{d}
+clean-rb:: clean-gem#{d}
+
+gem#{d} = $(TARGET_TOPDIR)/gems/$(gem)/#{d}
+gem#{d}:#{%{ $(gem#{d})\n$(gem#{d}): $(gem_srcdir)/#{d}} if $nmake}
+	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/#{d} $(gem#{d})
+
+clean-gem#{d}:
+	$(Q) $(RM_RF) $(gem#{d})
+}
+          end
+        end
+      end
+
       conf
     end
   end
@@ -566,7 +648,9 @@ $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 extso = []
 fails = []
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[d]
+  $static = $force_static ? true : $static_ext.fetch(d) do
+    $static_ext.any? {|t, | File.fnmatch?(t, d)}
+  end
 
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
@@ -634,7 +718,7 @@ rubies = []
   end
 }
 
-Dir.chdir ".."
+Dir.chdir dir
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
@@ -647,11 +731,14 @@ FileUtils.makedirs(File.dirname($command_output))
 begin
   atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
+    mf.puts "V0 = $(V:0=)"
     mf.puts "Q1 = $(V:1=)"
     mf.puts "Q = $(Q1:0=@)"
     mf.puts "ECHO1 = $(V:1=@:)"
     mf.puts "ECHO = $(ECHO1:0=@echo)"
     mf.puts "MFLAGS = -$(MAKEFLAGS)" if $nmake
+    mf.puts "override MFLAGS := $(filter-out -j%,$(MFLAGS))" if $gnumake
+    mf.puts "ext_build_dir = #{File.dirname($command_output)}"
     mf.puts
 
     def mf.macro(name, values, max = 70)
@@ -689,11 +776,18 @@ begin
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
     submakeopts << 'EXTINITS="$(EXTINITS)"'
-    submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
     mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
     mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb fail]
+    %w[RM RMDIRS RMDIR RMALL].each {|w| mf.macro w, [RbConfig::CONFIG[w]]}
+    if $nmake
+      message = ['@(for %I in (', ') do @echo.%~I)']
+    else
+      message = ['@for line in', '; do echo "$$line"; done']
+    end
+    mf.macro "MESSAGE_BEGIN", [message.first]
+    mf.macro "MESSAGE_END", [message.last]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -720,24 +814,28 @@ begin
     if $gnumake == "yes"
       submake = "$(MAKE) -C $(@D)"
     else
-      submake = "cd $(@D) && "
-      config_string("exec") {|str| submake << str << " "}
-      submake << "$(MAKE)"
+      submake = ["cd", (sep ? "$(@D:/=#{sep})" : "$(@D)"), "&&"]
+      config_string("exec") {|str| submake << str}
+      submake = (submake << "$(MAKE)").join(" ")
     end
     targets.each do |tgt|
       exts.each do |d|
         d = d[0..-2]
         t = "#{d}#{tgt}"
-        if  /^(dist|real)?clean$/ =~ tgt
+        if clean = /^(dist|real)?clean$/.match(tgt)
           deps = exts.select {|e|e.start_with?(d)}.map {|e|"#{e[0..-2]}#{tgt}"} - [t]
-          pd = ' ' + deps.join(' ') unless deps.empty?
+          pd = [' clean-local', *deps].join(' ')
         else
           pext = File.dirname(d)
           pd = " #{pext}/#{tgt}" if exts.include?("#{pext}/.")
         end
         mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
+        if clean and clean.begin(1)
+          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) $(@D)"
+        end
       end
     end
+    mf.puts "\n""clean-local:\n\t$(Q)$(RM) $(ext_build_dir)/*~ $(ext_build_dir)/*.bak $(ext_build_dir)/core"
     mf.puts "\n""extso:\n"
     mf.puts "\t@echo EXTSO=$(EXTSO)"
 
@@ -752,15 +850,17 @@ begin
       fails.each do |ext, (parent, err)|
         abandon ||= mandatory_exts[ext]
         mf.puts %Q<\t@$(NOTE_NAME) "#{ext}:">
+        mf.puts "\t$(MESSAGE_BEGIN) \\"
         if parent
-          mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
+          mf.puts %Q<\t"\tCould not be configured. It will not be installed." \\>
           err and err.scan(/.+/) do |ee|
-            mf.puts %Q<\t@echo "\t#{ee.gsub(/["`$^]/, '\\\\\\&')}">
+            mf.puts %Q<\t"\t#{ee.gsub(/["`$^]/, '\\\\\\&')}" \\>
           end
-          mf.puts %Q<\t@echo "\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details.">
+          mf.puts %Q<\t"\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details." \\>
         else
-          mf.puts %Q<\t@echo "\tSkipped because its parent was not configured.">
+          mf.puts %Q<\t"\tSkipped because its parent was not configured." \\>
         end
+        mf.puts "\t$(MESSAGE_END)"
       end
       mf.puts "note:\n"
       mf.puts %Q<\t@$(NOTE_MESG) "*** Fix the problems, then remove these directories and try again if you want.">

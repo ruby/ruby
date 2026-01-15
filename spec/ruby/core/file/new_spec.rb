@@ -78,13 +78,29 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
+  it "returns a new read-only File when mode is not specified" do
+    @fh = File.new(@file)
+
+    -> { @fh.puts("test") }.should raise_error(IOError)
+    @fh.read.should == ""
+    File.should.exist?(@file)
+  end
+
+  it "returns a new read-only File when mode is not specified but flags option is present" do
+    @fh = File.new(@file, flags: File::CREAT)
+
+    -> { @fh.puts("test") }.should raise_error(IOError)
+    @fh.read.should == ""
+    File.should.exist?(@file)
+  end
+
   it "creates a new file when use File::EXCL mode" do
     @fh = File.new(@file, File::EXCL)
     @fh.should be_kind_of(File)
     File.should.exist?(@file)
   end
 
-  it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
+  it "raises an Errno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
     -> { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
   end
 
@@ -112,11 +128,30 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
-
   it "creates a new file when use File::WRONLY|File::TRUNC mode" do
     @fh = File.new(@file, File::WRONLY|File::TRUNC)
     @fh.should be_kind_of(File)
     File.should.exist?(@file)
+  end
+
+  it "returns a new read-only File when use File::RDONLY|File::CREAT mode" do
+    @fh = File.new(@file, File::RDONLY|File::CREAT)
+    @fh.should be_kind_of(File)
+    File.should.exist?(@file)
+
+    # it's read-only
+    -> { @fh.puts("test") }.should raise_error(IOError)
+    @fh.read.should == ""
+  end
+
+  it "returns a new read-only File when use File::CREAT mode" do
+    @fh = File.new(@file, File::CREAT)
+    @fh.should be_kind_of(File)
+    File.should.exist?(@file)
+
+    # it's read-only
+    -> { @fh.puts("test") }.should raise_error(IOError)
+    @fh.read.should == ""
   end
 
   it "coerces filename using to_str" do
@@ -131,6 +166,32 @@ describe "File.new" do
     name.should_receive(:to_path).and_return(@file)
     @fh = File.new(name, "w")
     File.should.exist?(@file)
+  end
+
+  it "accepts options as a keyword argument" do
+    @fh = File.new(@file, 'w', 0755, flags: @flags)
+    @fh.should be_kind_of(File)
+    @fh.close
+
+    -> {
+      @fh = File.new(@file, 'w', 0755, {flags: @flags})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
+  end
+
+  it "bitwise-ORs mode and flags option" do
+    -> {
+      @fh = File.new(@file, 'w', flags: File::EXCL)
+    }.should raise_error(Errno::EEXIST, /File exists/)
+
+    -> {
+      @fh = File.new(@file, mode: 'w', flags: File::EXCL)
+    }.should raise_error(Errno::EEXIST, /File exists/)
+  end
+
+  it "does not use the given block and warns to use File::open" do
+    -> {
+      @fh = File.new(@file) { raise }
+    }.should complain(/warning: File::new\(\) does not take block; use File::open\(\) instead/)
   end
 
   it "raises a TypeError if the first parameter can't be coerced to a string" do

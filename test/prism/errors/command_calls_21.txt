@@ -1,0 +1,5 @@
+def f(a = b c); end
+            ^ unexpected local variable or method; expected a `)` to close the parameters
+             ^ unexpected ')', expecting end-of-input
+             ^ unexpected ')', ignoring it
+

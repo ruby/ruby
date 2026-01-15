@@ -3,7 +3,7 @@ require 'strscan'
 
 describe "StringScanner#string" do
   before :each do
-    @string = "This is a test"
+    @string = +"This is a test"
     @s = StringScanner.new(@string)
   end
 

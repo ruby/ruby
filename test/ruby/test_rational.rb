@@ -117,9 +117,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(111, 1000), Rational('1.11e-1'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
-    assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
-      Rational("\u{221a 2668}")
-    }
+
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
+        Rational("\u{221a 2668}")
+      }
+    end
+
     assert_warning('') {
       assert_predicate(Rational('1e-99999999999999999999'), :zero?)
     }
@@ -127,6 +131,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(TypeError){Rational(Object.new)}
     assert_raise(TypeError){Rational(Object.new, Object.new)}
     assert_raise(TypeError){Rational(1, Object.new)}
+
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Rational(o, 1), bug12485)
+    assert_equal(1, Rational(1, o), bug12485)
+    assert_equal(1, Rational(o, o), bug12485)
 
     o = Object.new
     def o.to_r; 1/42r; end
@@ -158,6 +169,14 @@ class Rational_Test < Test::Unit::TestCase
     if (1.0/0).infinite?
       assert_raise(FloatDomainError){Rational(1.0/0)}
     end
+
+    bug16518 = "[ruby-core:96942] [Bug #16518]"
+    cls = Class.new(Numeric) do
+      def /(y); 42; end
+      def to_r; 1r; end
+      def to_int; 1; end
+    end
+    assert_equal(1/2r, Rational(cls.new, 2), bug16518)
   end
 
   def test_attr
@@ -598,6 +617,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_nothing_raised(TypeError, '[Bug #5020] [ruby-dev:44088]') do
       Rational(1,2).coerce(Complex(1,1))
     end
+
+    assert_raise(ZeroDivisionError) do
+      1 / 0r.coerce(0+0i)[0]
+    end
+    assert_raise(ZeroDivisionError) do
+      1 / 0r.coerce(0.0+0i)[0]
+    end
   end
 
   class ObjectX
@@ -801,6 +827,8 @@ class Rational_Test < Test::Unit::TestCase
     ng[5, 1, '5/_3']
     ng[5, 3, '5/3_']
     ng[5, 3, '5/3x']
+
+    ng[5, 1, '5/-3']
   end
 
   def test_parse_zero_denominator
@@ -832,6 +860,18 @@ class Rational_Test < Test::Unit::TestCase
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
+
+    bug12485 = '[ruby-core:75995] [Bug #12485]'
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(RuntimeError, bug12485) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Rational(1, o, exception: false))
     }
 
     o = Object.new;
@@ -1030,11 +1070,10 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_power_overflow
-    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
-    x = EnvUtil.suppress_warning {4r**40000000}
-    assert_predicate x, :infinite?, bug
-    x = EnvUtil.suppress_warning {(1/4r)**40000000}
-    assert_equal 0, x, bug
+    assert_raise(ArgumentError) { 4r**400000000000000000000 }
+    exp = 4**40000000
+    assert_equal exp, 4r**40000000
+    assert_equal 1r/exp, (1/4r)**40000000
   end
 
   def test_positive_p

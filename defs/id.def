@@ -2,11 +2,14 @@
 firstline, predefined = __LINE__+1, %[\
   max
   min
+  hash
   freeze
   nil?
   inspect
   intern
   object_id
+  __id__
+  const_added
   const_missing
   method_missing                                        MethodMissing
   method_added
@@ -24,7 +27,7 @@ firstline, predefined = __LINE__+1, %[\
   lambda
   send
   __send__
-  __attached__
+  __recursive_key__
   initialize
   initialize_copy
   initialize_clone
@@ -56,6 +59,12 @@ firstline, predefined = __LINE__+1, %[\
   quo
   name
   nil
+  path
+  pack
+  buffer
+  include?
+  aborted
+  exited
 
   _                                                     UScore
 
@@ -69,10 +78,13 @@ firstline, predefined = __LINE__+1, %[\
   _7  NUMPARAM_7
   _8  NUMPARAM_8
   _9  NUMPARAM_9
+  <it>  ItImplicit
+  it    It
 
   "/*NULL*/"                                            NULL
   empty?
   eql?
+  default
   respond_to?                                           Respond_to
   respond_to_missing?                                   Respond_to_missing
   <IFUNC>
@@ -86,12 +98,15 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ptr
   core#hash_merge_kwd
   core#raise
+  core#sprintf
 
   -                                                     debug#created_info
 
   $_                                                    LASTLINE
   $~                                                    BACKREF
   $!                                                    ERROR_INFO
+
+  Ruby
 ]
 
 # VM ID         OP      Parser Token
@@ -138,6 +153,21 @@ class KeywordError < RuntimeError
   end
 end
 
+def id2varname(token, prefix = nil)
+  if /#/ =~ token
+    token = "_#{token.gsub(/\W+/, '_')}"
+  else
+    token = token.sub(/\?/, 'P')
+    token = prefix + token if prefix
+    token.sub!(/\A[a-z]/) {$&.upcase}
+    token.sub!(/\A\$/, "_G_")
+    token.sub!(/\A@@/, "_C_")
+    token.sub!(/\A@/, "_I_")
+    token.gsub!(/\W+/, "")
+  end
+  token
+end
+
 predefined_ids = {}
 preserved_ids = []
 local_ids = []
@@ -153,16 +183,7 @@ predefined.split(/^/).each_with_index do |line, num|
   line.sub!(/\s+#.*/, '')
   name, token = line.split
   next unless name
-  token ||= name
-  if /#/ =~ token
-    token = "_#{token.gsub(/\W+/, '_')}"
-  else
-    token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
-    token.sub!(/\A\$/, "_G_")
-    token.sub!(/\A@@/, "_C_")
-    token.sub!(/\A@/, "_I_")
-    token.gsub!(/\W+/, "")
-  end
+  token = id2varname(token || name)
   if name == '-'
     preserved_ids << token
     next
@@ -185,13 +206,14 @@ predefined.split(/^/).each_with_index do |line, num|
   end << token
   predefined_ids[token] = name
 end
+index = 127
 token_ops.split(/^/).each do |line|
   next if /^#/ =~ line
   line.sub!(/\s+#.*/, '')
   id, op, token = line.split
   next unless id and op
   token ||= (id unless /\A\W\z/ =~ op)
-  token_op_ids << [id, op, token]
+  token_op_ids << [id, op, token, (index += 1 if token)]
 end
 {
   "LOCAL" => local_ids,
@@ -203,4 +225,5 @@ end
   :preserved => preserved_ids,
   :predefined => predefined_ids,
   :token_op => token_op_ids,
+  :last_token => index,
 }

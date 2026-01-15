@@ -20,23 +20,38 @@
 #undef RUBY_EXPORT
 #include "ruby.h"
 #include "vm_debug.h"
+#include "internal/sanitizers.h"
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-#if RUBY_DEVEL && !defined RUBY_DEBUG_ENV
+
+#if defined RUBY_DEVEL && !defined RUBY_DEBUG_ENV
 # define RUBY_DEBUG_ENV 1
 #endif
 #if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
 # undef RUBY_DEBUG_ENV
 #endif
-#ifdef RUBY_DEBUG_ENV
-#include <stdlib.h>
+
+RUBY_GLOBAL_SETUP
+
+static int
+rb_main(int argc, char **argv)
+{
+    RUBY_INIT_STACK;
+    ruby_init();
+    return ruby_run_node(ruby_options(argc, argv));
+}
+
+#ifdef _WIN32
+#define main(argc, argv) w32_main(argc, argv)
+static int main(int argc, char **argv);
+int wmain(void) {return main(0, NULL);}
 #endif
 
 int
 main(int argc, char **argv)
 {
-#ifdef RUBY_DEBUG_ENV
+#if defined(RUBY_DEBUG_ENV) || USE_RUBY_DEBUG_LOG
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
 #endif
 #ifdef HAVE_LOCALE_H
@@ -44,9 +59,5 @@ main(int argc, char **argv)
 #endif
 
     ruby_sysinit(&argc, &argv);
-    {
-	RUBY_INIT_STACK;
-	ruby_init();
-	return ruby_run_node(ruby_options(argc, argv));
-    }
+    return ruby_start_main(rb_main, argc, argv);
 }

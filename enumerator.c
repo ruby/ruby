@@ -18,78 +18,131 @@
 #include <float.h>
 #endif
 
+#include <limits.h>
 #include "id.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "internal/rational.h"
 #include "ruby/ruby.h"
 
 /*
  * Document-class: Enumerator
  *
- * A class which allows both internal and external iteration.
+ * \Class \Enumerator supports:
  *
- * An Enumerator can be created by the following methods.
- * - Object#to_enum
- * - Object#enum_for
- * - Enumerator.new
+ * - {External iteration}[rdoc-ref:Enumerator@External+Iteration].
+ * - {Internal iteration}[rdoc-ref:Enumerator@Internal+Iteration].
  *
- * Most methods have two forms: a block form where the contents
- * are evaluated for each item in the enumeration, and a non-block form
- * which returns a new Enumerator wrapping the iteration.
+ * An \Enumerator may be created by the following methods:
  *
- *   enumerator = %w(one two three).each
- *   puts enumerator.class # => Enumerator
+ * - Object#to_enum.
+ * - Object#enum_for.
+ * - Enumerator.new.
  *
- *   enumerator.each_with_object("foo") do |item, obj|
- *     puts "#{obj}: #{item}"
+ * In addition, certain Ruby methods return \Enumerator objects:
+ * a Ruby iterator method that accepts a block
+ * may return an \Enumerator if no block is given.
+ * There are many such methods, for example, in classes Array and Hash.
+ * (In the documentation for those classes, search for `new_enumerator`.)
+ *
+ * == Internal Iteration
+ *
+ * In _internal iteration_, an iterator method drives the iteration
+ * and the caller's block handles the processing;
+ * this example uses method #each_with_index:
+ *
+ *   words = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *   enumerator = words.each # => #<Enumerator: ...>
+ *   enumerator.each_with_index {|word, i| puts "#{i}: #{word}" }
+ *   0: foo
+ *   1: bar
+ *   2: baz
+ *
+ * Iterator methods in class \Enumerator include:
+ *
+ * - #each:
+ *   passes each item to the block.
+ * - #each_with_index:
+ *   passes each item and its index to the block.
+ * - #each_with_object (aliased as #with_object):
+ *   passes each item and a given object to the block.
+ * - #with_index:
+ *   like #each_with_index, but starting at a given offset (instead of zero).
+ *
+ * \Class \Enumerator includes module Enumerable,
+ * which provides many more iterator methods.
+ *
+ * == External Iteration
+ *
+ * In _external iteration_, the user's program both drives the iteration
+ * and handles the processing in stream-like fashion;
+ * this example uses method #next:
+ *
+ *   words = %w[foo bar baz]
+ *   enumerator = words.each
+ *   enumerator.next # => "foo"
+ *   enumerator.next # => "bar"
+ *   enumerator.next # => "baz"
+ *   enumerator.next # Raises StopIteration: iteration reached an end
+ *
+ * External iteration methods in class \Enumerator include:
+ *
+ * - #feed:
+ *   sets the value that is next to be returned.
+ * - #next:
+ *   returns the next value and increments the position.
+ * - #next_values:
+ *   returns the next value in a 1-element array and increments the position.
+ * - #peek:
+ *   returns the next value but does not increment the position.
+ * - #peek_values:
+ *   returns the next value in a 1-element array but does not increment the position.
+ * - #rewind:
+ *   sets the position to zero.
+ *
+ * Each of these methods raises FrozenError if called from a frozen \Enumerator.
+ *
+ * == External Iteration and \Fiber
+ *
+ * External iteration that uses Fiber differs *significantly* from internal iteration:
+ *
+ * - Using \Fiber adds some overhead compared to internal enumeration.
+ * - The stacktrace will only include the stack from the \Enumerator, not above.
+ * - \Fiber-local variables are *not* inherited inside the \Enumerator \Fiber,
+ *   which instead starts with no \Fiber-local variables.
+ * - \Fiber storage variables *are* inherited and are designed
+ *   to handle \Enumerator Fibers. Assigning to a \Fiber storage variable
+ *   only affects the current \Fiber, so if you want to change state
+ *   in the caller \Fiber of the \Enumerator \Fiber, you need to use an
+ *   extra indirection (e.g., use some object in the \Fiber storage
+ *   variable and mutate some ivar of it).
+ *
+ * Concretely:
+ *
+ *   Thread.current[:fiber_local] = 1
+ *   Fiber[:storage_var] = 1
+ *   e = Enumerator.new do |y|
+ *     p Thread.current[:fiber_local] # for external iteration: nil, for internal iteration: 1
+ *     p Fiber[:storage_var] # => 1, inherited
+ *     Fiber[:storage_var] += 1
+ *     y << 42
  *   end
  *
- *   # foo: one
- *   # foo: two
- *   # foo: three
+ *   p e.next # => 42
+ *   p Fiber[:storage_var] # => 1 (it ran in a different Fiber)
  *
- *   enum_with_obj = enumerator.each_with_object("foo")
- *   puts enum_with_obj.class # => Enumerator
+ *   e.each { p _1 }
+ *   p Fiber[:storage_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
  *
- *   enum_with_obj.each do |item, obj|
- *     puts "#{obj}: #{item}"
- *   end
+ * == Converting External Iteration to Internal Iteration
  *
- *   # foo: one
- *   # foo: two
- *   # foo: three
- *
- * This allows you to chain Enumerators together.  For example, you
- * can map a list's elements to strings containing the index
- * and the element as a string via:
- *
- *   puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
- *   # => ["0:foo", "1:bar", "2:baz"]
- *
- * An Enumerator can also be used as an external iterator.
- * For example, Enumerator#next returns the next value of the iterator
- * or raises StopIteration if the Enumerator is at the end.
- *
- *   e = [1,2,3].each   # returns an enumerator object.
- *   puts e.next   # => 1
- *   puts e.next   # => 2
- *   puts e.next   # => 3
- *   puts e.next   # raises StopIteration
- *
- * Note that enumeration sequence by +next+, +next_values+, +peek+ and
- * +peek_values+ do not affect other non-external
- * enumeration methods, unless the underlying iteration method itself has
- * side-effect, e.g. IO#each_line.
- *
- * Moreover, implementation typically uses fibers so performance could be
- * slower and exception stacktraces different than expected.
- *
- * You can use this to implement an internal iterator as follows:
+ * You can use an external iterator to implement an internal iterator as follows:
  *
  *   def ext_each(e)
  *     while true
@@ -124,14 +177,16 @@
  */
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
-static ID id_rewind, id_new, id_to_enum;
+static ID id_rewind, id_to_enum, id_each_entry;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle, sym_yield;
+static VALUE sym_each, sym_yield;
 
 static VALUE lazy_use_super_method;
 
+extern ID ruby_static_id_cause;
+
 #define id_call idCall
+#define id_cause ruby_static_id_cause
 #define id_each idEach
 #define id_eqq idEqq
 #define id_initialize idInitialize
@@ -154,6 +209,19 @@ struct enumerator {
     int kw_splat;
 };
 
+RUBY_REFERENCES(enumerator_refs) = {
+    RUBY_REF_EDGE(struct enumerator, obj),
+    RUBY_REF_EDGE(struct enumerator, args),
+    RUBY_REF_EDGE(struct enumerator, fib),
+    RUBY_REF_EDGE(struct enumerator, dst),
+    RUBY_REF_EDGE(struct enumerator, lookahead),
+    RUBY_REF_EDGE(struct enumerator, feedvalue),
+    RUBY_REF_EDGE(struct enumerator, stop_exc),
+    RUBY_REF_EDGE(struct enumerator, size),
+    RUBY_REF_EDGE(struct enumerator, procs),
+    RUBY_REF_END
+};
+
 static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
 
 struct generator {
@@ -168,13 +236,16 @@ struct yielder {
 struct producer {
     VALUE init;
     VALUE proc;
+    VALUE size;
 };
 
 typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
 typedef VALUE lazyenum_size_func(VALUE, VALUE);
+typedef int lazyenum_precheck_func(VALUE proc_entry);
 typedef struct {
     lazyenum_proc_func *proc;
     lazyenum_size_func *size;
+    lazyenum_precheck_func *precheck;
 } lazyenum_funcs;
 
 struct proc_entry {
@@ -193,58 +264,23 @@ struct enum_chain {
     long pos;
 };
 
+static VALUE rb_cEnumProduct;
+
+struct enum_product {
+    VALUE enums;
+};
+
 VALUE rb_cArithSeq;
-
-/*
- * Enumerator
- */
-static void
-enumerator_mark(void *p)
-{
-    struct enumerator *ptr = p;
-    rb_gc_mark_movable(ptr->obj);
-    rb_gc_mark_movable(ptr->args);
-    rb_gc_mark_movable(ptr->fib);
-    rb_gc_mark_movable(ptr->dst);
-    rb_gc_mark_movable(ptr->lookahead);
-    rb_gc_mark_movable(ptr->feedvalue);
-    rb_gc_mark_movable(ptr->stop_exc);
-    rb_gc_mark_movable(ptr->size);
-    rb_gc_mark_movable(ptr->procs);
-}
-
-static void
-enumerator_compact(void *p)
-{
-    struct enumerator *ptr = p;
-    ptr->obj = rb_gc_location(ptr->obj);
-    ptr->args = rb_gc_location(ptr->args);
-    ptr->fib = rb_gc_location(ptr->fib);
-    ptr->dst = rb_gc_location(ptr->dst);
-    ptr->lookahead = rb_gc_location(ptr->lookahead);
-    ptr->feedvalue = rb_gc_location(ptr->feedvalue);
-    ptr->stop_exc = rb_gc_location(ptr->stop_exc);
-    ptr->size = rb_gc_location(ptr->size);
-    ptr->procs = rb_gc_location(ptr->procs);
-}
-
-#define enumerator_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-enumerator_memsize(const void *p)
-{
-    return sizeof(struct enumerator);
-}
 
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
     {
-	enumerator_mark,
-	enumerator_free,
-	enumerator_memsize,
-        enumerator_compact,
+        RUBY_REFS_LIST_PTR(enumerator_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+        NULL,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct enumerator *
@@ -253,44 +289,29 @@ enumerator_ptr(VALUE obj)
     struct enumerator *ptr;
 
     TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, ptr);
-    if (!ptr || ptr->obj == Qundef) {
-	rb_raise(rb_eArgError, "uninitialized enumerator");
+    if (!ptr || UNDEF_P(ptr->obj)) {
+        rb_raise(rb_eArgError, "uninitialized enumerator");
     }
     return ptr;
 }
 
 static void
-proc_entry_mark(void *p)
+proc_entry_mark_and_move(void *p)
 {
     struct proc_entry *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-    rb_gc_mark_movable(ptr->memo);
-}
-
-static void
-proc_entry_compact(void *p)
-{
-    struct proc_entry *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
-    ptr->memo = rb_gc_location(ptr->memo);
-}
-
-#define proc_entry_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-proc_entry_memsize(const void *p)
-{
-    return p ? sizeof(struct proc_entry) : 0;
+    rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->memo);
 }
 
 static const rb_data_type_t proc_entry_data_type = {
     "proc_entry",
     {
-	proc_entry_mark,
-	proc_entry_free,
-	proc_entry_memsize,
-        proc_entry_compact,
+        proc_entry_mark_and_move,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+        proc_entry_mark_and_move,
     },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct proc_entry *
@@ -370,12 +391,12 @@ obj_to_enum(int argc, VALUE *argv, VALUE obj)
     VALUE enumerator, meth = sym_each;
 
     if (argc > 0) {
-	--argc;
-	meth = *argv++;
+        --argc;
+        meth = *argv++;
     }
     enumerator = rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
     if (rb_block_given_p()) {
-	enumerator_ptr(enumerator)->size = rb_block_proc();
+        RB_OBJ_WRITE(enumerator, &enumerator_ptr(enumerator)->size, rb_block_proc());
     }
     return enumerator;
 }
@@ -401,95 +422,78 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     TypedData_Get_Struct(enum_obj, struct enumerator, &enumerator_data_type, ptr);
 
     if (!ptr) {
-	rb_raise(rb_eArgError, "unallocated enumerator");
+        rb_raise(rb_eArgError, "unallocated enumerator");
     }
 
-    ptr->obj  = obj;
+    RB_OBJ_WRITE(enum_obj, &ptr->obj, obj);
     ptr->meth = rb_to_id(meth);
-    if (argc) ptr->args = rb_ary_new4(argc, argv);
+    if (argc) RB_OBJ_WRITE(enum_obj, &ptr->args, rb_ary_new4(argc, argv));
     ptr->fib = 0;
     ptr->dst = Qnil;
     ptr->lookahead = Qundef;
     ptr->feedvalue = Qundef;
     ptr->stop_exc = Qfalse;
-    ptr->size = size;
+    RB_OBJ_WRITE(enum_obj, &ptr->size, size);
     ptr->size_fn = size_fn;
     ptr->kw_splat = kw_splat;
 
     return enum_obj;
 }
 
+static VALUE
+convert_to_feasible_size_value(VALUE obj)
+{
+    if (NIL_P(obj)) {
+        return obj;
+    }
+    else if (rb_respond_to(obj, id_call)) {
+        return obj;
+    }
+    else if (RB_FLOAT_TYPE_P(obj) && RFLOAT_VALUE(obj) == HUGE_VAL) {
+        return obj;
+    }
+    else {
+        return rb_to_int(obj);
+    }
+}
+
 /*
  * call-seq:
- *   Enumerator.new(size = nil) { |yielder| ... }
- *   Enumerator.new(obj, method = :each, *args)
+ *   Enumerator.new(size = nil) {|yielder| ... }
  *
- * Creates a new Enumerator object, which can be used as an
- * Enumerable.
+ * Returns a new \Enumerator object that can be used for iteration.
  *
- * In the first form, iteration is defined by the given block, in
- * which a "yielder" object, given as block parameter, can be used to
- * yield a value by calling the +yield+ method (aliased as <code><<</code>):
+ * The given block defines the iteration;
+ * it is called with a "yielder" object that can yield an object
+ * via a call to method <tt>yielder.yield</tt>:
  *
- *   fib = Enumerator.new do |y|
- *     a = b = 1
- *     loop do
- *       y << a
- *       a, b = b, a + b
+ *   fib = Enumerator.new do |yielder|
+ *     n = next_n = 1
+ *     while true do
+ *       yielder.yield(n)
+ *       n, next_n = next_n, n + next_n
  *     end
  *   end
  *
  *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
- * The optional parameter can be used to specify how to calculate the size
- * in a lazy fashion (see Enumerator#size). It can either be a value or
- * a callable object.
+ * Parameter +size+ specifies how the size is to be calculated (see #size);
+ * it can either be a value or a callable object:
  *
- * In the deprecated second form, a generated Enumerator iterates over the
- * given object using the given method with the given arguments passed.
- *
- * Use of this form is discouraged.  Use Object#enum_for or Object#to_enum
- * instead.
- *
- *   e = Enumerator.new(ObjectSpace, :each_object)
- *       #-> ObjectSpace.enum_for(:each_object)
- *
- *   e.select { |obj| obj.is_a?(Class) }  # => array of all classes
+ *   Enumerator.new{}.size          # => nil
+ *   Enumerator.new(42){}.size      # => 42
+ *   Enumerator.new(-> {42}){}.size # => 42
  *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE recv, meth = sym_each;
-    VALUE size = Qnil;
-    int kw_splat = 0;
+    VALUE iter = rb_block_proc();
+    VALUE recv = generator_init(generator_allocate(rb_cGenerator), iter);
+    VALUE arg0 = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    VALUE size = convert_to_feasible_size_value(arg0);
 
-    if (rb_block_given_p()) {
-	rb_check_arity(argc, 0, 1);
-	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
-	if (argc) {
-            if (NIL_P(argv[0]) || rb_respond_to(argv[0], id_call) ||
-                (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == HUGE_VAL)) {
-                size = argv[0];
-            }
-            else {
-                size = rb_to_int(argv[0]);
-            }
-            argc = 0;
-        }
-    }
-    else {
-	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-	rb_warn_deprecated("Enumerator.new without a block", "Object#to_enum");
-	recv = *argv++;
-	if (--argc) {
-	    meth = *argv++;
-	    --argc;
-	}
-        kw_splat = rb_keyword_given_p();
-    }
-
-    return enumerator_init(obj, recv, meth, argc, argv, 0, size, kw_splat);
+    return enumerator_init(obj, recv, sym_each, 0, 0, 0, size, false);
 }
 
 /* :nodoc: */
@@ -501,23 +505,23 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     if (!OBJ_INIT_COPY(obj, orig)) return obj;
     ptr0 = enumerator_ptr(orig);
     if (ptr0->fib) {
-	/* Fibers cannot be copied */
-	rb_raise(rb_eTypeError, "can't copy execution context");
+        /* Fibers cannot be copied */
+        rb_raise(rb_eTypeError, "can't copy execution context");
     }
 
     TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, ptr1);
 
     if (!ptr1) {
-	rb_raise(rb_eArgError, "unallocated enumerator");
+        rb_raise(rb_eArgError, "unallocated enumerator");
     }
 
-    ptr1->obj  = ptr0->obj;
+    RB_OBJ_WRITE(obj, &ptr1->obj, ptr0->obj);
     ptr1->meth = ptr0->meth;
-    ptr1->args = ptr0->args;
+    RB_OBJ_WRITE(obj, &ptr1->args, ptr0->args);
     ptr1->fib  = 0;
     ptr1->lookahead  = Qundef;
     ptr1->feedvalue  = Qundef;
-    ptr1->size  = ptr0->size;
+    RB_OBJ_WRITE(obj, &ptr1->size, ptr0->size);
     ptr1->size_fn  = ptr0->size_fn;
 
     return obj;
@@ -532,31 +536,29 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, const VALUE *argv)
     return rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
 }
 
-static VALUE
-lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
-
-VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
-{
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
-    else
-	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
-}
+static VALUE lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
+static int lazy_precheck(VALUE procs);
 
 VALUE
 rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
 {
-    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
-       Kernel#to_enum vs Lazy#to_enum */
-    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
-        return lazy_to_enum_i(obj, meth, argc, argv, size_fn, kw_splat);
-    else
-        return enumerator_init(enumerator_allocate(rb_cEnumerator),
-                               obj, meth, argc, argv, size_fn, Qnil, kw_splat);
+    VALUE base_class = rb_cEnumerator;
+
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy))) {
+        base_class = rb_cLazy;
+    }
+    else if (RTEST(rb_obj_is_kind_of(obj, rb_cEnumChain))) {
+        obj = enumerator_init(enumerator_allocate(rb_cEnumerator), obj, sym_each, 0, 0, 0, Qnil, false);
+    }
+
+    return enumerator_init(enumerator_allocate(base_class),
+                           obj, meth, argc, argv, size_fn, Qnil, kw_splat);
+}
+
+VALUE
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
+{
+    return rb_enumeratorize_with_size_kw(obj, meth, argc, argv, size_fn, rb_keyword_given_p());
 }
 
 static VALUE
@@ -567,11 +569,17 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
     const struct enumerator *e = enumerator_ptr(obj);
     ID meth = e->meth;
 
-    if (e->args) {
-	argc = RARRAY_LENINT(e->args);
-	argv = RARRAY_CONST_PTR(e->args);
+    VALUE args = e->args;
+    if (args) {
+        argc = RARRAY_LENINT(args);
+        argv = RARRAY_CONST_PTR(args);
     }
-    return rb_block_call_kw(e->obj, meth, argc, argv, func, arg, e->kw_splat);
+
+    VALUE ret = rb_block_call_kw(e->obj, meth, argc, argv, func, arg, e->kw_splat);
+
+    RB_GC_GUARD(args);
+
+    return ret;
 }
 
 /*
@@ -613,25 +621,29 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 static VALUE
 enumerator_each(int argc, VALUE *argv, VALUE obj)
 {
+    struct enumerator *e = enumerator_ptr(obj);
+
     if (argc > 0) {
-	struct enumerator *e = enumerator_ptr(obj = rb_obj_dup(obj));
-	VALUE args = e->args;
-	if (args) {
+        VALUE args = (e = enumerator_ptr(obj = rb_obj_dup(obj)))->args;
+        if (args) {
 #if SIZEOF_INT < SIZEOF_LONG
-	    /* check int range overflow */
-	    rb_long2int(RARRAY_LEN(args) + argc);
+            /* check int range overflow */
+            rb_long2int(RARRAY_LEN(args) + argc);
 #endif
-	    args = rb_ary_dup(args);
-	    rb_ary_cat(args, argv, argc);
-	}
-	else {
-	    args = rb_ary_new4(argc, argv);
-	}
-	e->args = args;
+            args = rb_ary_dup(args);
+            rb_ary_cat(args, argv, argc);
+        }
+        else {
+            args = rb_ary_new4(argc, argv);
+        }
+        RB_OBJ_WRITE(obj, &e->args, args);
         e->size = Qnil;
         e->size_fn = 0;
     }
     if (!rb_block_given_p()) return obj;
+
+    if (!lazy_precheck(e->procs)) return Qnil;
+
     return enumerator_block_call(obj, 0, obj);
 }
 
@@ -643,7 +655,7 @@ enumerator_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
     MEMO_V1_SET(memo, rb_int_succ(idx));
 
     if (argc <= 1)
-	return rb_yield_values(2, val, idx);
+        return rb_yield_values(2, val, idx);
 
     return rb_yield_values(2, rb_ary_new4(argc, argv), idx);
 }
@@ -677,7 +689,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
-    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
+    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)rb_imemo_memo_new(memo, 0, 0));
 }
 
 /*
@@ -700,7 +712,7 @@ static VALUE
 enumerator_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memo))
 {
     if (argc <= 1)
-	return rb_yield_values(2, val, memo);
+        return rb_yield_values(2, val, memo);
 
     return rb_yield_values(2, rb_ary_new4(argc, argv), memo);
 }
@@ -750,7 +762,7 @@ next_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, obj))
     VALUE feedvalue = Qnil;
     VALUE args = rb_ary_new4(argc, argv);
     rb_fiber_yield(1, &args);
-    if (e->feedvalue != Qundef) {
+    if (!UNDEF_P(e->feedvalue)) {
         feedvalue = e->feedvalue;
         e->feedvalue = Qundef;
     }
@@ -765,7 +777,7 @@ next_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, obj))
     VALUE result;
 
     result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
-    e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached an end");
+    RB_OBJ_WRITE(obj, &e->stop_exc, rb_exc_new2(rb_eStopIteration, "iteration reached an end"));
     rb_ivar_set(e->stop_exc, id_result, result);
     return rb_fiber_yield(1, &nil);
 }
@@ -774,8 +786,8 @@ static void
 next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
-    e->dst = curr;
-    e->fib = rb_fiber_new(next_i, obj);
+    RB_OBJ_WRITE(obj, &e->dst, curr);
+    RB_OBJ_WRITE(obj, &e->fib, rb_fiber_new(next_i, obj));
     e->lookahead = Qundef;
 }
 
@@ -784,22 +796,30 @@ get_next_values(VALUE obj, struct enumerator *e)
 {
     VALUE curr, vs;
 
-    if (e->stop_exc)
-	rb_exc_raise(e->stop_exc);
+    if (e->stop_exc) {
+        VALUE exc = e->stop_exc;
+        VALUE result = rb_attr_get(exc, id_result);
+        VALUE mesg = rb_attr_get(exc, idMesg);
+        if (!NIL_P(mesg)) mesg = rb_str_dup(mesg);
+        VALUE stop_exc = rb_exc_new_str(rb_eStopIteration, mesg);
+        rb_ivar_set(stop_exc, id_cause, exc);
+        rb_ivar_set(stop_exc, id_result, result);
+        rb_exc_raise(stop_exc);
+    }
 
     curr = rb_fiber_current();
 
     if (!e->fib || !rb_fiber_alive_p(e->fib)) {
-	next_init(obj, e);
+        next_init(obj, e);
     }
 
     vs = rb_fiber_resume(e->fib, 1, &curr);
     if (e->stop_exc) {
-	e->fib = 0;
-	e->dst = Qnil;
-	e->lookahead = Qundef;
-	e->feedvalue = Qundef;
-	rb_exc_raise(e->stop_exc);
+        e->fib = 0;
+        e->dst = Qnil;
+        e->lookahead = Qundef;
+        e->feedvalue = Qundef;
+        rb_exc_raise(e->stop_exc);
     }
     return vs;
 }
@@ -855,7 +875,9 @@ enumerator_next_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE vs;
 
-    if (e->lookahead != Qundef) {
+    rb_check_frozen(obj);
+
+    if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
         e->lookahead = Qundef;
         return vs;
@@ -916,9 +938,12 @@ enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
-    if (e->lookahead == Qundef) {
-        e->lookahead = get_next_values(obj, e);
+    rb_check_frozen(obj);
+
+    if (UNDEF_P(e->lookahead)) {
+        RB_OBJ_WRITE(obj, &e->lookahead, get_next_values(obj, e));
     }
+
     return e->lookahead;
 }
 
@@ -1040,10 +1065,12 @@ enumerator_feed(VALUE obj, VALUE v)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
-    if (e->feedvalue != Qundef) {
-	rb_raise(rb_eTypeError, "feed value already set");
+    rb_check_frozen(obj);
+
+    if (!UNDEF_P(e->feedvalue)) {
+        rb_raise(rb_eTypeError, "feed value already set");
     }
-    e->feedvalue = v;
+    RB_OBJ_WRITE(obj, &e->feedvalue, v);
 
     return Qnil;
 }
@@ -1061,6 +1088,8 @@ static VALUE
 enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     rb_check_funcall(e->obj, id_rewind, 0, 0);
 
@@ -1085,37 +1114,37 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
     cname = rb_obj_class(obj);
 
-    if (!e || e->obj == Qundef) {
-	return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(cname));
+    if (!e || UNDEF_P(e->obj)) {
+        return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(cname));
     }
 
     if (recur) {
-	str = rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(cname));
-	return str;
+        str = rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(cname));
+        return str;
     }
 
     if (e->procs) {
-	long i;
+        long i;
 
-	eobj = generator_ptr(e->obj)->obj;
-	/* In case procs chained enumerator traversing all proc entries manually */
-	if (rb_obj_class(eobj) == cname) {
-	    str = rb_inspect(eobj);
-	}
-	else {
-	    str = rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE">", rb_class_path(cname), eobj);
-	}
-	for (i = 0; i < RARRAY_LEN(e->procs); i++) {
-	    str = rb_sprintf("#<%"PRIsVALUE": %"PRIsVALUE, cname, str);
-	    append_method(RARRAY_AREF(e->procs, i), str, e->meth, e->args);
-	    rb_str_buf_cat2(str, ">");
-	}
-	return str;
+        eobj = generator_ptr(e->obj)->obj;
+        /* In case procs chained enumerator traversing all proc entries manually */
+        if (rb_obj_class(eobj) == cname) {
+            str = rb_inspect(eobj);
+        }
+        else {
+            str = rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE">", rb_class_path(cname), eobj);
+        }
+        for (i = 0; i < RARRAY_LEN(e->procs); i++) {
+            str = rb_sprintf("#<%"PRIsVALUE": %"PRIsVALUE, cname, str);
+            append_method(RARRAY_AREF(e->procs, i), str, e->meth, e->args);
+            rb_str_buf_cat2(str, ">");
+        }
+        return str;
     }
 
     eobj = rb_attr_get(obj, id_receiver);
     if (NIL_P(eobj)) {
-	eobj = e->obj;
+        eobj = e->obj;
     }
 
     /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
@@ -1150,48 +1179,48 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
-	if (!NIL_P(method)) {
-	    Check_Type(method, T_SYMBOL);
-	    method = rb_sym2str(method);
-	}
-	else {
-	    method = rb_id2str(default_method);
-	}
-	rb_str_buf_cat2(str, ":");
-	rb_str_buf_append(str, method);
+        if (!NIL_P(method)) {
+            Check_Type(method, T_SYMBOL);
+            method = rb_sym2str(method);
+        }
+        else {
+            method = rb_id2str(default_method);
+        }
+        rb_str_buf_cat2(str, ":");
+        rb_str_buf_append(str, method);
     }
 
     eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
-	eargs = default_args;
+        eargs = default_args;
     }
     if (eargs != Qfalse) {
-	long   argc = RARRAY_LEN(eargs);
-	const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
+        long   argc = RARRAY_LEN(eargs);
+        const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
 
-	if (argc > 0) {
-	    VALUE kwds = Qnil;
+        if (argc > 0) {
+            VALUE kwds = Qnil;
 
-	    rb_str_buf_cat2(str, "(");
+            rb_str_buf_cat2(str, "(");
 
             if (RB_TYPE_P(argv[argc-1], T_HASH) && !RHASH_EMPTY_P(argv[argc-1])) {
-		int all_key = TRUE;
-		rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
-		if (all_key) kwds = argv[--argc];
-	    }
+                int all_key = TRUE;
+                rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
+                if (all_key) kwds = argv[--argc];
+            }
 
-	    while (argc--) {
-		VALUE arg = *argv++;
+            while (argc--) {
+                VALUE arg = *argv++;
 
-		rb_str_append(str, rb_inspect(arg));
-		rb_str_buf_cat2(str, ", ");
-	    }
-	    if (!NIL_P(kwds)) {
-		rb_hash_foreach(kwds, kwd_append, str);
-	    }
-	    rb_str_set_len(str, RSTRING_LEN(str)-2);
-	    rb_str_buf_cat2(str, ")");
-	}
+                rb_str_append(str, rb_inspect(arg));
+                rb_str_buf_cat2(str, ", ");
+            }
+            if (!NIL_P(kwds)) {
+                rb_hash_foreach(kwds, kwd_append, str);
+            }
+            rb_str_set_len(str, RSTRING_LEN(str)-2);
+            rb_str_buf_cat2(str, ")");
+        }
     }
 
     return str;
@@ -1219,6 +1248,24 @@ enumerator_inspect(VALUE obj)
  *   (1..100).to_a.permutation(4).size # => 94109400
  *   loop.size # => Float::INFINITY
  *   (1..100).drop_while.size # => nil
+ *
+ * Note that enumerator size might be inaccurate, and should be rather treated as a hint.
+ * For example, there is no check that the size provided to ::new is accurate:
+ *
+ *   e = Enumerator.new(5) { |y| 2.times { y << it} }
+ *   e.size # => 5
+ *   e.to_a.size # => 2
+ *
+ * Another example is an enumerator created by ::produce without a +size+ argument.
+ * Such enumerators return +Infinity+ for size, but this is inaccurate if the passed
+ * block raises StopIteration:
+ *
+ *   e = Enumerator.produce(1) { it + 1 }
+ *   e.size # => Infinity
+ *
+ *   e = Enumerator.produce(1) { it > 3 ? raise(StopIteration) : it + 1 }
+ *   e.size # => Infinity
+ *   e.to_a.size # => 4
  */
 
 static VALUE
@@ -1230,31 +1277,31 @@ enumerator_size(VALUE obj)
     VALUE size;
 
     if (e->procs) {
-	struct generator *g = generator_ptr(e->obj);
-	VALUE receiver = rb_check_funcall(g->obj, id_size, 0, 0);
-	long i = 0;
+        struct generator *g = generator_ptr(e->obj);
+        VALUE receiver = rb_check_funcall(g->obj, id_size, 0, 0);
+        long i = 0;
 
-	for (i = 0; i < RARRAY_LEN(e->procs); i++) {
-	    VALUE proc = RARRAY_AREF(e->procs, i);
-	    struct proc_entry *entry = proc_entry_ptr(proc);
-	    lazyenum_size_func *size_fn = entry->fn->size;
-	    if (!size_fn) {
-		return Qnil;
-	    }
-	    receiver = (*size_fn)(proc, receiver);
-	}
-	return receiver;
+        for (i = 0; i < RARRAY_LEN(e->procs); i++) {
+            VALUE proc = RARRAY_AREF(e->procs, i);
+            struct proc_entry *entry = proc_entry_ptr(proc);
+            lazyenum_size_func *size_fn = entry->fn->size;
+            if (!size_fn) {
+                return Qnil;
+            }
+            receiver = (*size_fn)(proc, receiver);
+        }
+        return receiver;
     }
 
     if (e->size_fn) {
-	return (*e->size_fn)(e->obj, e->args, obj);
+        return (*e->size_fn)(e->obj, e->args, obj);
     }
     if (e->args) {
-	argc = (int)RARRAY_LEN(e->args);
-	argv = RARRAY_CONST_PTR(e->args);
+        argc = (int)RARRAY_LEN(e->args);
+        argv = RARRAY_CONST_PTR(e->args);
     }
     size = rb_check_funcall_kw(e->size, id_call, argc, argv, e->kw_splat);
-    if (size != Qundef) return size;
+    if (!UNDEF_P(size)) return size;
     return e->size;
 }
 
@@ -1262,36 +1309,21 @@ enumerator_size(VALUE obj)
  * Yielder
  */
 static void
-yielder_mark(void *p)
+yielder_mark_and_move(void *p)
 {
     struct yielder *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-}
-
-static void
-yielder_compact(void *p)
-{
-    struct yielder *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
-}
-
-#define yielder_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-yielder_memsize(const void *p)
-{
-    return sizeof(struct yielder);
+    rb_gc_mark_and_move(&ptr->proc);
 }
 
 static const rb_data_type_t yielder_data_type = {
     "yielder",
     {
-	yielder_mark,
-	yielder_free,
-	yielder_memsize,
-        yielder_compact,
+        yielder_mark_and_move,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL,
+        yielder_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct yielder *
@@ -1300,8 +1332,8 @@ yielder_ptr(VALUE obj)
     struct yielder *ptr;
 
     TypedData_Get_Struct(obj, struct yielder, &yielder_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
-	rb_raise(rb_eArgError, "uninitialized yielder");
+    if (!ptr || UNDEF_P(ptr->proc)) {
+        rb_raise(rb_eArgError, "uninitialized yielder");
     }
     return ptr;
 }
@@ -1327,10 +1359,10 @@ yielder_init(VALUE obj, VALUE proc)
     TypedData_Get_Struct(obj, struct yielder, &yielder_data_type, ptr);
 
     if (!ptr) {
-	rb_raise(rb_eArgError, "unallocated yielder");
+        rb_raise(rb_eArgError, "unallocated yielder");
     }
 
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
 
     return obj;
 }
@@ -1365,7 +1397,7 @@ yielder_yield_push(VALUE obj, VALUE arg)
 }
 
 /*
- * Returns a Proc object that takes an argument and yields it.
+ * Returns a Proc object that takes arguments and yields them.
  *
  * This method is implemented so that a Yielder object can be directly
  * passed to another method as a block argument.
@@ -1400,38 +1432,22 @@ yielder_new(void)
  * Generator
  */
 static void
-generator_mark(void *p)
+generator_mark_and_move(void *p)
 {
     struct generator *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-    rb_gc_mark_movable(ptr->obj);
-}
-
-static void
-generator_compact(void *p)
-{
-    struct generator *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
-    ptr->obj = rb_gc_location(ptr->obj);
-}
-
-#define generator_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-generator_memsize(const void *p)
-{
-    return sizeof(struct generator);
+    rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->obj);
 }
 
 static const rb_data_type_t generator_data_type = {
     "generator",
     {
-	generator_mark,
-	generator_free,
-	generator_memsize,
-        generator_compact,
+        generator_mark_and_move,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL,
+        generator_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct generator *
@@ -1440,8 +1456,8 @@ generator_ptr(VALUE obj)
     struct generator *ptr;
 
     TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
-	rb_raise(rb_eArgError, "uninitialized generator");
+    if (!ptr || UNDEF_P(ptr->proc)) {
+        rb_raise(rb_eArgError, "uninitialized generator");
     }
     return ptr;
 }
@@ -1468,10 +1484,10 @@ generator_init(VALUE obj, VALUE proc)
     TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
 
     if (!ptr) {
-	rb_raise(rb_eArgError, "unallocated generator");
+        rb_raise(rb_eArgError, "unallocated generator");
     }
 
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
 
     return obj;
 }
@@ -1483,21 +1499,21 @@ generator_initialize(int argc, VALUE *argv, VALUE obj)
     VALUE proc;
 
     if (argc == 0) {
-	rb_need_block();
+        rb_need_block();
 
-	proc = rb_block_proc();
+        proc = rb_block_proc();
     }
     else {
-	rb_scan_args(argc, argv, "1", &proc);
+        rb_scan_args(argc, argv, "1", &proc);
 
-	if (!rb_obj_is_proc(proc))
-	    rb_raise(rb_eTypeError,
-		     "wrong argument type %"PRIsVALUE" (expected Proc)",
-		     rb_obj_class(proc));
+        if (!rb_obj_is_proc(proc))
+            rb_raise(rb_eTypeError,
+                     "wrong argument type %"PRIsVALUE" (expected Proc)",
+                     rb_obj_class(proc));
 
-	if (rb_block_given_p()) {
-	    rb_warn("given block not used");
-	}
+        if (rb_block_given_p()) {
+            rb_warn("given block not used");
+        }
     }
 
     return generator_init(obj, proc);
@@ -1516,10 +1532,10 @@ generator_init_copy(VALUE obj, VALUE orig)
     TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr1);
 
     if (!ptr1) {
-	rb_raise(rb_eArgError, "unallocated generator");
+        rb_raise(rb_eArgError, "unallocated generator");
     }
 
-    ptr1->proc = ptr0->proc;
+    RB_OBJ_WRITE(obj, &ptr1->proc, ptr0->proc);
 
     return obj;
 }
@@ -1533,7 +1549,7 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 
     rb_ary_push(args, yielder_new());
     if (argc > 0) {
-	rb_ary_cat(args, argv, argc);
+        rb_ary_cat(args, argv, argc);
     }
 
     return rb_proc_call_kw(ptr->proc, args, RB_PASS_CALLED_KEYWORDS);
@@ -1544,7 +1560,7 @@ static VALUE
 enum_size(VALUE self)
 {
     VALUE r = rb_check_funcall(self, id_size, 0, 0);
-    return (r == Qundef) ? Qnil : r;
+    return UNDEF_P(r) ? Qnil : r;
 }
 
 static VALUE
@@ -1553,41 +1569,31 @@ lazyenum_size(VALUE self, VALUE args, VALUE eobj)
     return enum_size(self);
 }
 
-static VALUE
-lazy_size(VALUE self)
-{
-    return enum_size(rb_ivar_get(self, id_receiver));
-}
-
-static VALUE
-lazy_receiver_size(VALUE generator, VALUE args, VALUE lazy)
-{
-    return lazy_size(lazy);
-}
+#define lazy_receiver_size lazy_map_size
 
 static VALUE
 lazy_init_iterator(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 {
     VALUE result;
     if (argc == 1) {
-	VALUE args[2];
-	args[0] = m;
-	args[1] = val;
-	result = rb_yield_values2(2, args);
+        VALUE args[2];
+        args[0] = m;
+        args[1] = val;
+        result = rb_yield_values2(2, args);
     }
     else {
-	VALUE args;
-	int len = rb_long2int((long)argc + 1);
-	VALUE *nargv = ALLOCV_N(VALUE, args, len);
+        VALUE args;
+        int len = rb_long2int((long)argc + 1);
+        VALUE *nargv = ALLOCV_N(VALUE, args, len);
 
-	nargv[0] = m;
-	if (argc > 0) {
-	    MEMCPY(nargv + 1, argv, VALUE, argc);
-	}
-	result = rb_yield_values2(len, nargv);
-	ALLOCV_END(args);
+        nargv[0] = m;
+        if (argc > 0) {
+            MEMCPY(nargv + 1, argv, VALUE, argc);
+        }
+        result = rb_yield_values2(len, nargv);
+        ALLOCV_END(args);
     }
-    if (result == Qundef) rb_iter_break();
+    if (UNDEF_P(result)) rb_iter_break();
     return Qnil;
 }
 
@@ -1605,9 +1611,17 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_BREAK_P(memo) ((memo)->memo_flags & LAZY_MEMO_BREAK)
 #define LAZY_MEMO_PACKED_P(memo) ((memo)->memo_flags & LAZY_MEMO_PACKED)
 #define LAZY_MEMO_SET_BREAK(memo) ((memo)->memo_flags |= LAZY_MEMO_BREAK)
+#define LAZY_MEMO_RESET_BREAK(memo) ((memo)->memo_flags &= ~LAZY_MEMO_BREAK)
 #define LAZY_MEMO_SET_VALUE(memo, value) MEMO_V2_SET(memo, value)
 #define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
+
+#define LAZY_NEED_BLOCK(func) \
+    if (!rb_block_given_p()) { \
+        rb_raise(rb_eArgError, "tried to call lazy " #func " without a block"); \
+    }
+
+static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i);
 
 static VALUE
 lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
@@ -1615,27 +1629,47 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
     VALUE yielder = RARRAY_AREF(m, 0);
     VALUE procs_array = RARRAY_AREF(m, 1);
     VALUE memos = rb_attr_get(yielder, id_memo);
-    long i = 0;
     struct MEMO *result;
+
+    result = rb_imemo_memo_new(m, rb_enum_values_pack(argc, argv),
+                      argc > 1 ? LAZY_MEMO_PACKED : 0);
+    return lazy_yielder_result(result, yielder, procs_array, memos, 0);
+}
+
+static VALUE
+lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *argv)
+{
+    VALUE m = result->v1;
+    VALUE yielder = RARRAY_AREF(m, 0);
+    VALUE procs_array = RARRAY_AREF(m, 1);
+    VALUE memos = rb_attr_get(yielder, id_memo);
+    LAZY_MEMO_SET_VALUE(result, rb_enum_values_pack(argc, argv));
+    if (argc > 1)
+        LAZY_MEMO_SET_PACKED(result);
+    else
+        LAZY_MEMO_RESET_PACKED(result);
+    return lazy_yielder_result(result, yielder, procs_array, memos, memo_index);
+}
+
+static VALUE
+lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i)
+{
     int cont = 1;
 
-    result = MEMO_NEW(Qnil, rb_enum_values_pack(argc, argv),
-		      argc > 1 ? LAZY_MEMO_PACKED : 0);
-
-    for (i = 0; i < RARRAY_LEN(procs_array); i++) {
-	VALUE proc = RARRAY_AREF(procs_array, i);
-	struct proc_entry *entry = proc_entry_ptr(proc);
-	if (!(*entry->fn->proc)(proc, result, memos, i)) {
-	    cont = 0;
-	    break;
-	}
+    for (; i < RARRAY_LEN(procs_array); i++) {
+        VALUE proc = RARRAY_AREF(procs_array, i);
+        struct proc_entry *entry = proc_entry_ptr(proc);
+        if (!(*entry->fn->proc)(proc, result, memos, i)) {
+            cont = 0;
+            break;
+        }
     }
 
     if (cont) {
-	rb_funcall2(yielder, idLTLT, 1, &(result->memo_value));
+        rb_funcall2(yielder, idLTLT, 1, &(result->memo_value));
     }
     if (LAZY_MEMO_BREAK_P(result)) {
-	rb_iter_break();
+        rb_iter_break();
     }
     return result->memo_value;
 }
@@ -1647,7 +1681,7 @@ lazy_init_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 
     rb_ivar_set(val, id_memo, rb_ary_new2(RARRAY_LEN(procs)));
     rb_block_call(RARRAY_AREF(m, 0), id_each, 0, 0,
-		  lazy_init_yielder, rb_ary_new3(2, val, procs));
+                  lazy_init_yielder, rb_ary_new3(2, val, procs));
     return Qnil;
 }
 
@@ -1660,22 +1694,38 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
     struct enumerator *e = enumerator_ptr(enumerator);
 
     if (RARRAY_LEN(procs) > 0) {
-	struct generator *old_gen_ptr = generator_ptr(e->obj);
-	obj = old_gen_ptr->obj;
+        struct generator *old_gen_ptr = generator_ptr(e->obj);
+        obj = old_gen_ptr->obj;
     }
     else {
-	obj = enumerator;
+        obj = enumerator;
     }
 
     generator = generator_allocate(rb_cGenerator);
 
     rb_block_call(generator, id_initialize, 0, 0,
-		  lazy_init_block, rb_ary_new3(2, obj, procs));
+                  lazy_init_block, rb_ary_new3(2, obj, procs));
 
     gen_ptr = generator_ptr(generator);
-    gen_ptr->obj = obj;
+    RB_OBJ_WRITE(generator, &gen_ptr->obj, obj);
 
     return generator;
+}
+
+static int
+lazy_precheck(VALUE procs)
+{
+    if (RTEST(procs)) {
+        long num_procs = RARRAY_LEN(procs), i = num_procs;
+        while (i-- > 0) {
+            VALUE proc = RARRAY_AREF(procs, i);
+            struct proc_entry *entry = proc_entry_ptr(proc);
+            lazyenum_precheck_func *precheck = entry->fn->precheck;
+            if (precheck && !precheck(proc)) return FALSE;
+        }
+    }
+
+    return TRUE;
 }
 
 /*
@@ -1717,13 +1767,13 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
  *
  *    # This will fetch all URLs before selecting
  *    # necessary data
- *    URLS.map { |u| JSON.parse(open(u).read) }
+ *    URLS.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
  *    # This will fetch URLs one-by-one, only till
  *    # there is enough data to satisfy the condition
- *    URLS.lazy.map { |u| JSON.parse(open(u).read) }
+ *    URLS.lazy.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
@@ -1774,12 +1824,10 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     VALUE generator;
 
     rb_check_arity(argc, 1, 2);
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy new without a block");
-    }
+    LAZY_NEED_BLOCK(new);
     obj = argv[0];
     if (argc > 1) {
-	size = argv[1];
+        size = argv[1];
     }
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0, lazy_init_block_i, obj);
@@ -1798,7 +1846,8 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
  * Expands +lazy+ enumerator to an array.
  * See Enumerable#to_a.
  */
-static VALUE lazy_to_a(VALUE self)
+static VALUE
+lazy_to_a(VALUE self)
 {
 }
 #endif
@@ -1809,14 +1858,15 @@ lazy_set_args(VALUE lazy, VALUE args)
     ID id = rb_frame_this_func();
     rb_ivar_set(lazy, id_method, ID2SYM(id));
     if (NIL_P(args)) {
-	/* Qfalse indicates that the arguments are empty */
-	rb_ivar_set(lazy, id_arguments, Qfalse);
+        /* Qfalse indicates that the arguments are empty */
+        rb_ivar_set(lazy, id_arguments, Qfalse);
     }
     else {
-	rb_ivar_set(lazy, id_arguments, args);
+        rb_ivar_set(lazy, id_arguments, args);
     }
 }
 
+#if 0
 static VALUE
 lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
 {
@@ -1825,10 +1875,11 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
     e->size_fn = size_fn;
     return lazy;
 }
+#endif
 
 static VALUE
 lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
-		const lazyenum_funcs *fn)
+                const lazyenum_funcs *fn)
 {
     struct enumerator *new_e;
     VALUE new_obj;
@@ -1837,12 +1888,12 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
     struct enumerator *e = enumerator_ptr(obj);
     struct proc_entry *entry;
     VALUE entry_obj = TypedData_Make_Struct(rb_cObject, struct proc_entry,
-					    &proc_entry_data_type, entry);
+                                            &proc_entry_data_type, entry);
     if (rb_block_given_p()) {
-	entry->proc = rb_block_proc();
+        RB_OBJ_WRITE(entry_obj, &entry->proc, rb_block_proc());
     }
     entry->fn = fn;
-    entry->memo = args;
+    RB_OBJ_WRITE(entry_obj, &entry->memo, args);
 
     lazy_set_args(entry_obj, memo);
 
@@ -1851,18 +1902,20 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
     rb_ary_push(new_procs, entry_obj);
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
-    new_e = DATA_PTR(new_obj);
-    new_e->obj = new_generator;
-    new_e->procs = new_procs;
+    new_e = RTYPEDDATA_GET_DATA(new_obj);
+    RB_OBJ_WRITE(new_obj, &new_e->obj, new_generator);
+    RB_OBJ_WRITE(new_obj, &new_e->procs, new_procs);
 
     if (argc > 0) {
-	new_e->meth = rb_to_id(*argv++);
-	--argc;
+        new_e->meth = rb_to_id(*argv++);
+        --argc;
     }
     else {
-	new_e->meth = id_each;
+        new_e->meth = id_each;
     }
-    new_e->args = rb_ary_new4(argc, argv);
+
+    RB_OBJ_WRITE(new_obj, &new_e->args, rb_ary_new4(argc, argv));
+
     return new_obj;
 }
 
@@ -1940,15 +1993,15 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
     VALUE lazy, meth = sym_each, super_meth;
 
     if (argc > 0) {
-	--argc;
-	meth = *argv++;
+        --argc;
+        meth = *argv++;
     }
     if (RTEST((super_meth = rb_hash_aref(lazy_use_super_method, meth)))) {
         meth = super_meth;
     }
     lazy = lazy_to_enum_i(self, meth, argc, argv, 0, rb_keyword_given_p());
     if (rb_block_given_p()) {
-	enumerator_ptr(lazy)->size = rb_block_proc();
+        RB_OBJ_WRITE(lazy, &enumerator_ptr(lazy)->size, rb_block_proc());
     }
     return lazy;
 }
@@ -1987,9 +2040,9 @@ lazyenum_yield_values(VALUE proc_entry, struct MEMO *result)
     int argc = 1;
     const VALUE *argv = &result->memo_value;
     if (LAZY_MEMO_PACKED_P(result)) {
-	const VALUE args = *argv;
-	argc = RARRAY_LENINT(args);
-	argv = RARRAY_CONST_PTR(args);
+        const VALUE args = *argv;
+        argc = RARRAY_LENINT(args);
+        argv = RARRAY_CONST_PTR(args);
     }
     return rb_proc_call_with_block(entry->proc, argc, argv, Qnil);
 }
@@ -2029,64 +2082,61 @@ static const lazyenum_funcs lazy_map_funcs = {
 static VALUE
 lazy_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy map without a block");
-    }
-
+    LAZY_NEED_BLOCK(map);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
-static VALUE
-lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, yielder))
-{
-    VALUE arg = rb_enum_values_pack(argc, argv);
-
-    return rb_funcallv(yielder, idLTLT, 1, &arg);
-}
+struct flat_map_i_arg {
+    struct MEMO *result;
+    long index;
+};
 
 static VALUE
-lazy_flat_map_each(VALUE obj, VALUE yielder)
+lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 {
-    rb_block_call(obj, id_each, 0, 0, lazy_flat_map_i, yielder);
-    return Qnil;
+    struct flat_map_i_arg *arg = (struct flat_map_i_arg *)y;
+
+    return lazy_yielder_yield(arg->result, arg->index, argc, argv);
 }
 
-static VALUE
-lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
+static struct MEMO *
+lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE ary = rb_check_array_type(obj);
-    if (NIL_P(ary)) {
-	rb_funcall(yielder, idLTLT, 1, obj);
+    VALUE value = lazyenum_yield_values(proc_entry, result);
+    VALUE ary = 0;
+    const long proc_index = memo_index + 1;
+    int break_p = LAZY_MEMO_BREAK_P(result);
+
+    if (RB_TYPE_P(value, T_ARRAY)) {
+        ary = value;
     }
-    else {
-	long i;
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(yielder, idLTLT, 1, RARRAY_AREF(ary, i));
-	}
+    else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
+        struct flat_map_i_arg arg = {.result = result, .index = proc_index};
+        LAZY_MEMO_RESET_BREAK(result);
+        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        if (break_p) LAZY_MEMO_SET_BREAK(result);
+        return 0;
     }
-    return Qnil;
+
+    if (ary || !NIL_P(ary = rb_check_array_type(value))) {
+        long i;
+        LAZY_MEMO_RESET_BREAK(result);
+        for (i = 0; i + 1 < RARRAY_LEN(ary); i++) {
+            const VALUE argv = RARRAY_AREF(ary, i);
+            lazy_yielder_yield(result, proc_index, 1, &argv);
+        }
+        if (break_p) LAZY_MEMO_SET_BREAK(result);
+        if (i >= RARRAY_LEN(ary)) return 0;
+        value = RARRAY_AREF(ary, i);
+    }
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
 }
 
-static VALUE
-lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
-{
-    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    if (RB_TYPE_P(result, T_ARRAY)) {
-	long i;
-	for (i = 0; i < RARRAY_LEN(result); i++) {
-	    rb_funcall(argv[0], idLTLT, 1, RARRAY_AREF(result, i));
-	}
-    }
-    else {
-	if (rb_respond_to(result, id_force) && rb_respond_to(result, id_each)) {
-	    lazy_flat_map_each(result, argv[0]);
-	}
-	else {
-	    lazy_flat_map_to_ary(result, argv[0]);
-	}
-    }
-    return Qnil;
-}
+static const lazyenum_funcs lazy_flat_map_funcs = {
+    lazy_flat_map_proc, 0,
+};
 
 /*
  *  call-seq:
@@ -2114,13 +2164,8 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 static VALUE
 lazy_flat_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy flat_map without a block");
-    }
-
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_flat_map_proc, 0),
-			   Qnil, 0);
+    LAZY_NEED_BLOCK(flat_map);
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_flat_map_funcs);
 }
 
 static struct MEMO *
@@ -2146,10 +2191,7 @@ static const lazyenum_funcs lazy_select_funcs = {
 static VALUE
 lazy_select(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy select without a block");
-    }
-
+    LAZY_NEED_BLOCK(select);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_select_funcs);
 }
 
@@ -2180,10 +2222,7 @@ static const lazyenum_funcs lazy_filter_map_funcs = {
 static VALUE
 lazy_filter_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
-    }
-
+    LAZY_NEED_BLOCK(filter_map);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
 }
 
@@ -2209,10 +2248,7 @@ static const lazyenum_funcs lazy_reject_funcs = {
 static VALUE
 lazy_reject(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy reject without a block");
-    }
-
+    LAZY_NEED_BLOCK(reject);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_reject_funcs);
 }
 
@@ -2259,7 +2295,7 @@ static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
     const lazyenum_funcs *const funcs = rb_block_given_p() ?
-	&lazy_grep_iter_funcs : &lazy_grep_funcs;
+        &lazy_grep_iter_funcs : &lazy_grep_funcs;
     return lazy_add_method(obj, 0, 0, pattern, rb_ary_new3(1, pattern), funcs);
 }
 
@@ -2322,57 +2358,56 @@ next_stopped(VALUE obj, VALUE _)
     return Qnil;
 }
 
-static VALUE
-lazy_zip_arrays_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, arrays))
+static struct MEMO *
+lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder, ary, memo;
-    long i, count;
-
-    yielder = argv[0];
-    memo = rb_attr_get(yielder, id_memo);
-    count = NIL_P(memo) ? 0 : NUM2LONG(memo);
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE ary, arrays = entry->memo;
+    VALUE memo = rb_ary_entry(memos, memo_index);
+    long i, count = NIL_P(memo) ? 0 : NUM2LONG(memo);
 
     ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
-    rb_ary_push(ary, argv[1]);
+    rb_ary_push(ary, result->memo_value);
     for (i = 0; i < RARRAY_LEN(arrays); i++) {
-	rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
+        rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
-    rb_funcall(yielder, idLTLT, 1, ary);
-    rb_ivar_set(yielder, id_memo, LONG2NUM(++count));
-    return Qnil;
+    LAZY_MEMO_SET_VALUE(result, ary);
+    rb_ary_store(memos, memo_index, LONG2NUM(++count));
+    return result;
 }
 
-static VALUE
-lazy_zip_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, zip_args))
+static struct MEMO *
+lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder, ary, arg, v;
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE arg = rb_ary_entry(memos, memo_index);
+    VALUE zip_args = entry->memo;
+    VALUE ary, v;
     long i;
 
-    yielder = argv[0];
-    arg = rb_attr_get(yielder, id_memo);
     if (NIL_P(arg)) {
-	arg = rb_ary_new2(RARRAY_LEN(zip_args));
-	for (i = 0; i < RARRAY_LEN(zip_args); i++) {
-	    rb_ary_push(arg, rb_funcall(RARRAY_AREF(zip_args, i), id_to_enum, 0));
-	}
-	rb_ivar_set(yielder, id_memo, arg);
+        arg = rb_ary_new2(RARRAY_LEN(zip_args));
+        for (i = 0; i < RARRAY_LEN(zip_args); i++) {
+            rb_ary_push(arg, rb_funcall(RARRAY_AREF(zip_args, i), id_to_enum, 0));
+        }
+        rb_ary_store(memos, memo_index, arg);
     }
 
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
-    v = Qnil;
-    if (--argc > 0) {
-	++argv;
-	v = argc > 1 ? rb_ary_new_from_values(argc, argv) : *argv;
-    }
-    rb_ary_push(ary, v);
+    rb_ary_push(ary, result->memo_value);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_rescue2(call_next, RARRAY_AREF(arg, i), next_stopped, 0,
-		       rb_eStopIteration, (VALUE)0);
-	rb_ary_push(ary, v);
+        v = rb_rescue2(call_next, RARRAY_AREF(arg, i), next_stopped, 0,
+                       rb_eStopIteration, (VALUE)0);
+        rb_ary_push(ary, v);
     }
-    rb_funcall(yielder, idLTLT, 1, ary);
-    return Qnil;
+    LAZY_MEMO_SET_VALUE(result, ary);
+    return result;
 }
+
+static const lazyenum_funcs lazy_zip_funcs[] = {
+    {lazy_zip_func, lazy_receiver_size,},
+    {lazy_zip_arrays_func, lazy_receiver_size,},
+};
 
 /*
  *  call-seq:
@@ -2387,32 +2422,30 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary, v;
     long i;
-    rb_block_call_func *func = lazy_zip_arrays_func;
+    const lazyenum_funcs *funcs = &lazy_zip_funcs[1];
 
     if (rb_block_given_p()) {
-	return rb_call_super(argc, argv);
+        return rb_call_super(argc, argv);
     }
 
     ary = rb_ary_new2(argc);
     for (i = 0; i < argc; i++) {
-	v = rb_check_array_type(argv[i]);
-	if (NIL_P(v)) {
-	    for (; i < argc; i++) {
-		if (!rb_respond_to(argv[i], id_each)) {
-		    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
-			     rb_obj_class(argv[i]));
-		}
-	    }
-	    ary = rb_ary_new4(argc, argv);
-	    func = lazy_zip_func;
-	    break;
-	}
-	rb_ary_push(ary, v);
+        v = rb_check_array_type(argv[i]);
+        if (NIL_P(v)) {
+            for (; i < argc; i++) {
+                if (!rb_respond_to(argv[i], id_each)) {
+                    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
+                             rb_obj_class(argv[i]));
+                }
+            }
+            ary = rb_ary_new4(argc, argv);
+            funcs = &lazy_zip_funcs[0];
+            break;
+        }
+        rb_ary_push(ary, v);
     }
 
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 func, ary),
-			   ary, lazy_receiver_size);
+    return lazy_add_method(obj, 0, 0, ary, ary, funcs);
 }
 
 static struct MEMO *
@@ -2423,17 +2456,12 @@ lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
     VALUE memo = rb_ary_entry(memos, memo_index);
 
     if (NIL_P(memo)) {
-	memo = entry->memo;
+        memo = entry->memo;
     }
 
     remain = NUM2LONG(memo);
-    if (remain == 0) {
-	LAZY_MEMO_SET_BREAK(result);
-    }
-    else {
-	if (--remain == 0) LAZY_MEMO_SET_BREAK(result);
-	rb_ary_store(memos, memo_index, LONG2NUM(remain));
-    }
+    if (--remain == 0) LAZY_MEMO_SET_BREAK(result);
+    rb_ary_store(memos, memo_index, LONG2NUM(remain));
     return result;
 }
 
@@ -2442,12 +2470,19 @@ lazy_take_size(VALUE entry, VALUE receiver)
 {
     long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(entry, id_arguments), 0));
     if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
-	return receiver;
+        return receiver;
     return LONG2NUM(len);
 }
 
+static int
+lazy_take_precheck(VALUE proc_entry)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    return entry->memo != INT2FIX(0);
+}
+
 static const lazyenum_funcs lazy_take_funcs = {
-    lazy_take_proc, lazy_take_size,
+    lazy_take_proc, lazy_take_size, lazy_take_precheck,
 };
 
 /*
@@ -2461,20 +2496,14 @@ static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
     long len = NUM2LONG(n);
-    int argc = 0;
-    VALUE argv[2];
 
     if (len < 0) {
-	rb_raise(rb_eArgError, "attempt to take negative size");
+        rb_raise(rb_eArgError, "attempt to take negative size");
     }
 
-    if (len == 0) {
-       argv[0] = sym_cycle;
-       argv[1] = INT2NUM(0);
-       argc = 2;
-    }
+    n = LONG2NUM(len);          /* no more conversion */
 
-    return lazy_add_method(obj, argc, argv, n, rb_ary_new3(1, n), &lazy_take_funcs);
+    return lazy_add_method(obj, 0, 0, n, rb_ary_new3(1, n), &lazy_take_funcs);
 }
 
 static struct MEMO *
@@ -2482,8 +2511,8 @@ lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
 {
     VALUE take = lazyenum_yield_values(proc_entry, result);
     if (!RTEST(take)) {
-	LAZY_MEMO_SET_BREAK(result);
-	return 0;
+        LAZY_MEMO_SET_BREAK(result);
+        return 0;
     }
     return result;
 }
@@ -2502,10 +2531,7 @@ static const lazyenum_funcs lazy_take_while_funcs = {
 static VALUE
 lazy_take_while(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy take_while without a block");
-    }
-
+    LAZY_NEED_BLOCK(take_while);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_take_while_funcs);
 }
 
@@ -2514,10 +2540,10 @@ lazy_drop_size(VALUE proc_entry, VALUE receiver)
 {
     long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(proc_entry, id_arguments), 0));
     if (NIL_P(receiver))
-	return receiver;
+        return receiver;
     if (FIXNUM_P(receiver)) {
-	len = FIX2LONG(receiver) - len;
-	return LONG2FIX(len < 0 ? 0 : len);
+        len = FIX2LONG(receiver) - len;
+        return LONG2FIX(len < 0 ? 0 : len);
     }
     return rb_funcall(receiver, '-', 1, LONG2NUM(len));
 }
@@ -2530,13 +2556,13 @@ lazy_drop_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
     VALUE memo = rb_ary_entry(memos, memo_index);
 
     if (NIL_P(memo)) {
-	memo = entry->memo;
+        memo = entry->memo;
     }
     remain = NUM2LONG(memo);
     if (remain > 0) {
-	--remain;
-	rb_ary_store(memos, memo_index, LONG2NUM(remain));
-	return 0;
+        --remain;
+        rb_ary_store(memos, memo_index, LONG2NUM(remain));
+        return 0;
     }
 
     return result;
@@ -2562,7 +2588,7 @@ lazy_drop(VALUE obj, VALUE n)
     argv[1] = n;
 
     if (len < 0) {
-	rb_raise(rb_eArgError, "attempt to drop negative size");
+        rb_raise(rb_eArgError, "attempt to drop negative size");
     }
 
     return lazy_add_method(obj, 2, argv, n, rb_ary_new3(1, n), &lazy_drop_funcs);
@@ -2575,13 +2601,13 @@ lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     VALUE memo = rb_ary_entry(memos, memo_index);
 
     if (NIL_P(memo)) {
-	memo = entry->memo;
+        memo = entry->memo;
     }
 
     if (!RTEST(memo)) {
-	VALUE drop = lazyenum_yield_values(proc_entry, result);
-	if (RTEST(drop)) return 0;
-	rb_ary_store(memos, memo_index, Qtrue);
+        VALUE drop = lazyenum_yield_values(proc_entry, result);
+        if (RTEST(drop)) return 0;
+        rb_ary_store(memos, memo_index, Qtrue);
     }
     return result;
 }
@@ -2600,10 +2626,7 @@ static const lazyenum_funcs lazy_drop_while_funcs = {
 static VALUE
 lazy_drop_while(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy drop_while without a block");
-    }
-
+    LAZY_NEED_BLOCK(drop_while);
     return lazy_add_method(obj, 0, 0, Qfalse, Qnil, &lazy_drop_while_funcs);
 }
 
@@ -2661,6 +2684,30 @@ lazy_uniq(VALUE obj)
 }
 
 static struct MEMO *
+lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    if (NIL_P(result->memo_value)) return 0;
+    return result;
+}
+
+static const lazyenum_funcs lazy_compact_funcs = {
+    lazy_compact_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.compact                  -> lazy_enumerator
+ *
+ *  Like Enumerable#compact, but chains operation to be lazy-evaluated.
+ */
+
+static VALUE
+lazy_compact(VALUE obj)
+{
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_compact_funcs);
+}
+
+static struct MEMO *
 lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -2685,8 +2732,14 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     return result;
 }
 
+static VALUE
+lazy_with_index_size(VALUE proc, VALUE receiver)
+{
+    return receiver;
+}
+
 static const lazyenum_funcs lazy_with_index_funcs = {
-    lazy_with_index_proc, 0,
+    lazy_with_index_proc, lazy_with_index_size,
 };
 
 /*
@@ -2694,7 +2747,8 @@ static const lazyenum_funcs lazy_with_index_funcs = {
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
  *   lazy.with_index(offset = 0)
  *
- * If a block is given, iterates the given block for each element
+ * If a block is given, returns a lazy enumerator that will
+ * iterate over the given block for each element
  * with an index, which starts from +offset+, and returns a
  * lazy enumerator that yields the same values (without the index).
  *
@@ -2725,7 +2779,8 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
  *
  *  Like Enumerable#chunk, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_chunk(VALUE self)
+static VALUE
+lazy_chunk(VALUE self)
 {
 }
 
@@ -2735,7 +2790,8 @@ static VALUE lazy_chunk(VALUE self)
  *
  *  Like Enumerable#chunk_while, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_chunk_while(VALUE self)
+static VALUE
+lazy_chunk_while(VALUE self)
 {
 }
 
@@ -2746,7 +2802,8 @@ static VALUE lazy_chunk_while(VALUE self)
  *
  *  Like Enumerable#slice_after, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_after(VALUE self)
+static VALUE
+lazy_slice_after(VALUE self)
 {
 }
 
@@ -2757,7 +2814,8 @@ static VALUE lazy_slice_after(VALUE self)
  *
  *  Like Enumerable#slice_before, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_before(VALUE self)
+static VALUE
+lazy_slice_before(VALUE self)
 {
 }
 
@@ -2767,7 +2825,8 @@ static VALUE lazy_slice_before(VALUE self)
  *
  *  Like Enumerable#slice_when, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_when(VALUE self)
+static VALUE
+lazy_slice_when(VALUE self)
 {
 }
 # endif
@@ -2849,19 +2908,12 @@ stop_result(VALUE self)
  */
 
 static void
-producer_mark(void *p)
+producer_mark_and_move(void *p)
 {
     struct producer *ptr = p;
-    rb_gc_mark_movable(ptr->init);
-    rb_gc_mark_movable(ptr->proc);
-}
-
-static void
-producer_compact(void *p)
-{
-    struct producer *ptr = p;
-    ptr->init = rb_gc_location(ptr->init);
-    ptr->proc = rb_gc_location(ptr->proc);
+    rb_gc_mark_and_move(&ptr->init);
+    rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->size);
 }
 
 #define producer_free RUBY_TYPED_DEFAULT_FREE
@@ -2875,12 +2927,12 @@ producer_memsize(const void *p)
 static const rb_data_type_t producer_data_type = {
     "producer",
     {
-        producer_mark,
+        producer_mark_and_move,
         producer_free,
         producer_memsize,
-        producer_compact,
+        producer_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct producer *
@@ -2889,7 +2941,7 @@ producer_ptr(VALUE obj)
     struct producer *ptr;
 
     TypedData_Get_Struct(obj, struct producer, &producer_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
+    if (!ptr || UNDEF_P(ptr->proc)) {
         rb_raise(rb_eArgError, "uninitialized producer");
     }
     return ptr;
@@ -2905,12 +2957,13 @@ producer_allocate(VALUE klass)
     obj = TypedData_Make_Struct(klass, struct producer, &producer_data_type, ptr);
     ptr->init = Qundef;
     ptr->proc = Qundef;
+    ptr->size = Qnil;
 
     return obj;
 }
 
 static VALUE
-producer_init(VALUE obj, VALUE init, VALUE proc)
+producer_init(VALUE obj, VALUE init, VALUE proc, VALUE size)
 {
     struct producer *ptr;
 
@@ -2920,8 +2973,9 @@ producer_init(VALUE obj, VALUE init, VALUE proc)
         rb_raise(rb_eArgError, "unallocated producer");
     }
 
-    ptr->init = init;
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->init, init);
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
+    RB_OBJ_WRITE(obj, &ptr->size, size);
 
     return obj;
 }
@@ -2944,7 +2998,7 @@ producer_each_i(VALUE obj)
     init = ptr->init;
     proc = ptr->proc;
 
-    if (init == Qundef) {
+    if (UNDEF_P(init)) {
         curr = Qnil;
     }
     else {
@@ -2972,12 +3026,18 @@ producer_each(VALUE obj)
 static VALUE
 producer_size(VALUE obj, VALUE args, VALUE eobj)
 {
-    return DBL2NUM(HUGE_VAL);
+    struct producer *ptr = producer_ptr(obj);
+    VALUE size = ptr->size;
+
+    if (NIL_P(size)) return Qnil;
+    if (RB_INTEGER_TYPE_P(size) || RB_FLOAT_TYPE_P(size)) return size;
+
+    return rb_funcall(size, id_call, 0);
 }
 
 /*
  * call-seq:
- *    Enumerator.produce(initial = nil) { |prev| block } -> enumerator
+ *    Enumerator.produce(initial = nil, size: nil) { |prev| block } -> enumerator
  *
  * Creates an infinite enumerator from any block, just called over and
  * over.  The result of the previous iteration is passed to the next one.
@@ -2996,7 +3056,7 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   enclosing_section = ancestors.find { |n| n.type == :section }
  *
  * Using ::produce together with Enumerable methods like Enumerable#detect,
- * Enumerable#slice, Enumerable#take_while can provide Enumerator-based alternatives
+ * Enumerable#slice_after, Enumerable#take_while can provide Enumerator-based alternatives
  * for +while+ and +until+ cycles:
  *
  *   # Find next Tuesday
@@ -3009,19 +3069,50 @@ producer_size(VALUE obj, VALUE args, VALUE eobj)
  *   PATTERN = %r{\d+|[-/+*]}
  *   Enumerator.produce { scanner.scan(PATTERN) }.slice_after { scanner.eos? }.first
  *   # => ["7", "+", "38", "/", "6"]
+ *
+ * The optional +size+ keyword argument specifies the size of the enumerator,
+ * which can be retrieved by Enumerator#size.  It can be an integer,
+ * +Float::INFINITY+, a callable object (such as a lambda), or +nil+ to
+ * indicate unknown size.  When not specified, the size defaults to
+ * +Float::INFINITY+.
+ *
+ *   # Infinite enumerator
+ *   enum = Enumerator.produce(1, size: Float::INFINITY, &:succ)
+ *   enum.size  # => Float::INFINITY
+ *
+ *   # Finite enumerator with known/computable size
+ *   abs_dir = File.expand_path("./baz") # => "/foo/bar/baz"
+ *   traverser = Enumerator.produce(abs_dir, size: -> { abs_dir.count("/") + 1 }) {
+ *     raise StopIteration if it == "/"
+ *     File.dirname(it)
+ *   }
+ *   traverser.size  # => 4
+ *
+ *   # Finite enumerator with unknown size
+ *   calendar = Enumerator.produce(Date.today, size: nil) {
+ *     it.monday? ? raise(StopIteration) : it + 1
+ *   }
+ *   calendar.size  # => nil
  */
 static VALUE
 enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE init, producer;
+    VALUE init, producer, opts, size;
+    ID keyword_ids[1];
 
     if (!rb_block_given_p()) rb_raise(rb_eArgError, "no block given");
 
-    if (rb_scan_args(argc, argv, "01", &init) == 0) {
+    keyword_ids[0] = rb_intern("size");
+    rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "01:", &init, &opts);
+    rb_get_kwargs(opts, keyword_ids, 0, 1, &size);
+
+    size = UNDEF_P(size) ? DBL2NUM(HUGE_VAL) : convert_to_feasible_size_value(size);
+
+    if (argc == 0 || (argc == 1 && !NIL_P(opts))) {
         init = Qundef;
     }
 
-    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc());
+    producer = producer_init(producer_allocate(rb_cEnumProducer), init, rb_block_proc(), size);
 
     return rb_enumeratorize_with_size_kw(producer, sym_each, 0, 0, producer_size, RB_NO_KEYWORDS);
 }
@@ -3037,17 +3128,10 @@ enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
  */
 
 static void
-enum_chain_mark(void *p)
+enum_chain_mark_and_move(void *p)
 {
     struct enum_chain *ptr = p;
-    rb_gc_mark_movable(ptr->enums);
-}
-
-static void
-enum_chain_compact(void *p)
-{
-    struct enum_chain *ptr = p;
-    ptr->enums = rb_gc_location(ptr->enums);
+    rb_gc_mark_and_move(&ptr->enums);
 }
 
 #define enum_chain_free RUBY_TYPED_DEFAULT_FREE
@@ -3061,12 +3145,12 @@ enum_chain_memsize(const void *p)
 static const rb_data_type_t enum_chain_data_type = {
     "chain",
     {
-        enum_chain_mark,
+        enum_chain_mark_and_move,
         enum_chain_free,
         enum_chain_memsize,
-        enum_chain_compact,
+        enum_chain_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct enum_chain *
@@ -3075,7 +3159,7 @@ enum_chain_ptr(VALUE obj)
     struct enum_chain *ptr;
 
     TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         rb_raise(rb_eArgError, "uninitialized chain");
     }
     return ptr;
@@ -3116,8 +3200,23 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr->enums = rb_obj_freeze(enums);
+    RB_OBJ_WRITE(obj, &ptr->enums, rb_ary_freeze(enums));
     ptr->pos = -1;
+
+    return obj;
+}
+
+static VALUE
+new_enum_chain(VALUE enums)
+{
+    long i;
+    VALUE obj = enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        if (RTEST(rb_obj_is_kind_of(RARRAY_AREF(enums, i), rb_cLazy))) {
+            return enumerable_lazy(obj);
+        }
+    }
 
     return obj;
 }
@@ -3135,7 +3234,7 @@ enum_chain_init_copy(VALUE obj, VALUE orig)
 
     if (!ptr1) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr1->enums = ptr0->enums;
+    RB_OBJ_WRITE(obj, &ptr1->enums, ptr0->enums);
     ptr1->pos = ptr0->pos;
 
     return obj;
@@ -3150,7 +3249,7 @@ enum_chain_total_size(VALUE enums)
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
 
-        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+        if (NIL_P(size) || (RB_FLOAT_TYPE_P(size) && isinf(NUM2DBL(size)))) {
             return size;
         }
         if (!RB_INTEGER_TYPE_P(size)) {
@@ -3253,7 +3352,7 @@ inspect_enum_chain(VALUE obj, VALUE dummy, int recur)
 
     TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
 
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(klass));
     }
 
@@ -3291,8 +3390,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums = rb_ary_new_from_values(1, &obj);
     rb_ary_cat(enums, argv, argc);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(enums);
 }
 
 /*
@@ -3308,9 +3406,416 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_plus(VALUE obj, VALUE eobj)
 {
-    VALUE enums = rb_ary_new_from_args(2, obj, eobj);
+    return new_enum_chain(rb_ary_new_from_args(2, obj, eobj));
+}
 
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+/*
+ * Document-class: Enumerator::Product
+ *
+ * Enumerator::Product generates a Cartesian product of any number of
+ * enumerable objects.  Iterating over the product of enumerable
+ * objects is roughly equivalent to nested each_entry loops where the
+ * loop for the rightmost object is put innermost.
+ *
+ *   innings = Enumerator::Product.new(1..9, ['top', 'bottom'])
+ *
+ *   innings.each do |i, h|
+ *     p [i, h]
+ *   end
+ *   # [1, "top"]
+ *   # [1, "bottom"]
+ *   # [2, "top"]
+ *   # [2, "bottom"]
+ *   # [3, "top"]
+ *   # [3, "bottom"]
+ *   # ...
+ *   # [9, "top"]
+ *   # [9, "bottom"]
+ *
+ * The method used against each enumerable object is `each_entry`
+ * instead of `each` so that the product of N enumerable objects
+ * yields an array of exactly N elements in each iteration.
+ *
+ * When no enumerator is given, it calls a given block once yielding
+ * an empty argument list.
+ *
+ * This type of objects can be created by Enumerator.product.
+ */
+
+static void
+enum_product_mark_and_move(void *p)
+{
+    struct enum_product *ptr = p;
+    rb_gc_mark_and_move(&ptr->enums);
+}
+
+#define enum_product_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+enum_product_memsize(const void *p)
+{
+    return sizeof(struct enum_product);
+}
+
+static const rb_data_type_t enum_product_data_type = {
+    "product",
+    {
+        enum_product_mark_and_move,
+        enum_product_free,
+        enum_product_memsize,
+        enum_product_mark_and_move,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+};
+
+static struct enum_product *
+enum_product_ptr(VALUE obj)
+{
+    struct enum_product *ptr;
+
+    TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
+    if (!ptr || UNDEF_P(ptr->enums)) {
+        rb_raise(rb_eArgError, "uninitialized product");
+    }
+    return ptr;
+}
+
+/* :nodoc: */
+static VALUE
+enum_product_allocate(VALUE klass)
+{
+    struct enum_product *ptr;
+    VALUE obj;
+
+    obj = TypedData_Make_Struct(klass, struct enum_product, &enum_product_data_type, ptr);
+    ptr->enums = Qundef;
+
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   Enumerator::Product.new(*enums) -> enum
+ *
+ * Generates a new enumerator object that generates a Cartesian
+ * product of given enumerable objects.
+ *
+ *   e = Enumerator::Product.new(1..3, [4, 5])
+ *   e.to_a #=> [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
+ *   e.size #=> 6
+ */
+static VALUE
+enum_product_initialize(int argc, VALUE *argv, VALUE obj)
+{
+    struct enum_product *ptr;
+    VALUE enums = Qnil, options = Qnil;
+
+    rb_scan_args(argc, argv, "*:", &enums, &options);
+
+    if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
+        rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));
+    }
+
+    rb_check_frozen(obj);
+    TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
+
+    if (!ptr) rb_raise(rb_eArgError, "unallocated product");
+
+    RB_OBJ_WRITE(obj, &ptr->enums, rb_ary_freeze(enums));
+
+    return obj;
+}
+
+/* :nodoc: */
+static VALUE
+enum_product_init_copy(VALUE obj, VALUE orig)
+{
+    struct enum_product *ptr0, *ptr1;
+
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
+    ptr0 = enum_product_ptr(orig);
+
+    TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr1);
+
+    if (!ptr1) rb_raise(rb_eArgError, "unallocated product");
+
+    RB_OBJ_WRITE(obj, &ptr1->enums, ptr0->enums);
+
+    return obj;
+}
+
+static VALUE
+enum_product_total_size(VALUE enums)
+{
+    VALUE total = INT2FIX(1);
+    VALUE sizes = rb_ary_hidden_new(RARRAY_LEN(enums));
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        VALUE size = enum_size(RARRAY_AREF(enums, i));
+        if (size == INT2FIX(0)) {
+            rb_ary_resize(sizes, 0);
+            return size;
+        }
+        rb_ary_push(sizes, size);
+    }
+    for (i = 0; i < RARRAY_LEN(sizes); i++) {
+        VALUE size = RARRAY_AREF(sizes, i);
+
+        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+            return size;
+        }
+        if (!RB_INTEGER_TYPE_P(size)) {
+            return Qnil;
+        }
+
+        total = rb_funcall(total, '*', 1, size);
+    }
+
+    return total;
+}
+
+/*
+ * call-seq:
+ *   obj.size -> int, Float::INFINITY or nil
+ *
+ * Returns the total size of the enumerator product calculated by
+ * multiplying the sizes of enumerables in the product.  If any of the
+ * enumerables reports its size as nil or Float::INFINITY, that value
+ * is returned as the size.
+ */
+static VALUE
+enum_product_size(VALUE obj)
+{
+    return enum_product_total_size(enum_product_ptr(obj)->enums);
+}
+
+static VALUE
+enum_product_enum_size(VALUE obj, VALUE args, VALUE eobj)
+{
+    return enum_product_size(obj);
+}
+
+struct product_state {
+    VALUE  obj;
+    VALUE  block;
+    int    index;
+    int    argc;
+    VALUE *argv;
+};
+
+static VALUE product_each(VALUE, struct product_state *);
+
+static VALUE
+product_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(value, state))
+{
+    struct product_state *pstate = (struct product_state *)state;
+    pstate->argv[pstate->index++] = value;
+
+    VALUE val = product_each(pstate->obj, pstate);
+    pstate->index--;
+    return val;
+}
+
+static VALUE
+product_each(VALUE obj, struct product_state *pstate)
+{
+    struct enum_product *ptr = enum_product_ptr(obj);
+    VALUE enums = ptr->enums;
+
+    if (pstate->index < pstate->argc) {
+        VALUE eobj = RARRAY_AREF(enums, pstate->index);
+
+        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
+    }
+    else {
+        rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
+    }
+
+    return obj;
+}
+
+static VALUE
+enum_product_run(VALUE obj, VALUE block)
+{
+    struct enum_product *ptr = enum_product_ptr(obj);
+    int argc = RARRAY_LENINT(ptr->enums);
+    if (argc == 0) { /* no need to allocate state.argv */
+        rb_funcall(block, id_call, 1, rb_ary_new());
+        return obj;
+    }
+
+    VALUE argsbuf = 0;
+    struct product_state state = {
+        .obj = obj,
+        .block = block,
+        .index = 0,
+        .argc = argc,
+        .argv = ALLOCV_N(VALUE, argsbuf, argc),
+    };
+
+    VALUE ret = product_each(obj, &state);
+    ALLOCV_END(argsbuf);
+    return ret;
+}
+
+/*
+ * call-seq:
+ *   obj.each { |...| ... } -> obj
+ *   obj.each -> enumerator
+ *
+ * Iterates over the elements of the first enumerable by calling the
+ * "each_entry" method on it with the given arguments, then proceeds
+ * to the following enumerables in sequence until all of the
+ * enumerables are exhausted.
+ *
+ * If no block is given, returns an enumerator.  Otherwise, returns self.
+ */
+static VALUE
+enum_product_each(VALUE obj)
+{
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_product_enum_size);
+
+    return enum_product_run(obj, rb_block_proc());
+}
+
+/*
+ * call-seq:
+ *   obj.rewind -> obj
+ *
+ * Rewinds the product enumerator by calling the "rewind" method on
+ * each enumerable in reverse order.  Each call is performed only if
+ * the enumerable responds to the method.
+ */
+static VALUE
+enum_product_rewind(VALUE obj)
+{
+    struct enum_product *ptr = enum_product_ptr(obj);
+    VALUE enums = ptr->enums;
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        rb_check_funcall(RARRAY_AREF(enums, i), id_rewind, 0, 0);
+    }
+
+    return obj;
+}
+
+static VALUE
+inspect_enum_product(VALUE obj, VALUE dummy, int recur)
+{
+    VALUE klass = rb_obj_class(obj);
+    struct enum_product *ptr;
+
+    TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
+
+    if (!ptr || UNDEF_P(ptr->enums)) {
+        return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(klass));
+    }
+
+    if (recur) {
+        return rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(klass));
+    }
+
+    return rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE">", rb_class_path(klass), ptr->enums);
+}
+
+/*
+ * call-seq:
+ *   obj.inspect -> string
+ *
+ * Returns a printable version of the product enumerator.
+ */
+static VALUE
+enum_product_inspect(VALUE obj)
+{
+    return rb_exec_recursive(inspect_enum_product, obj, 0);
+}
+
+/*
+ * call-seq:
+ *   Enumerator.product(*enums) -> enumerator
+ *   Enumerator.product(*enums) { |elts| ... } -> enumerator
+ *
+ * Generates a new enumerator object that generates a Cartesian
+ * product of given enumerable objects.  This is equivalent to
+ * Enumerator::Product.new.
+ *
+ *   e = Enumerator.product(1..3, [4, 5])
+ *   e.to_a #=> [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
+ *   e.size #=> 6
+ *
+ * When a block is given, calls the block with each N-element array
+ * generated and returns +nil+.
+ */
+static VALUE
+enumerator_s_product(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE enums = Qnil, options = Qnil, block = Qnil;
+
+    rb_scan_args(argc, argv, "*:&", &enums, &options, &block);
+
+    if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
+        rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));
+    }
+
+    VALUE obj = enum_product_initialize(argc, argv, enum_product_allocate(rb_cEnumProduct));
+
+    if (!NIL_P(block)) {
+        enum_product_run(obj, block);
+        return Qnil;
+    }
+
+    return obj;
+}
+
+struct arith_seq {
+    struct enumerator enumerator;
+    VALUE begin;
+    VALUE end;
+    VALUE step;
+    bool exclude_end;
+};
+
+RUBY_REFERENCES(arith_seq_refs) = {
+    RUBY_REF_EDGE(struct enumerator, obj),
+    RUBY_REF_EDGE(struct enumerator, args),
+    RUBY_REF_EDGE(struct enumerator, fib),
+    RUBY_REF_EDGE(struct enumerator, dst),
+    RUBY_REF_EDGE(struct enumerator, lookahead),
+    RUBY_REF_EDGE(struct enumerator, feedvalue),
+    RUBY_REF_EDGE(struct enumerator, stop_exc),
+    RUBY_REF_EDGE(struct enumerator, size),
+    RUBY_REF_EDGE(struct enumerator, procs),
+
+    RUBY_REF_EDGE(struct arith_seq, begin),
+    RUBY_REF_EDGE(struct arith_seq, end),
+    RUBY_REF_EDGE(struct arith_seq, step),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t arith_seq_data_type = {
+    "arithmetic_sequence",
+    {
+        RUBY_REFS_LIST_PTR(arith_seq_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+        NULL,
+    },
+    .parent = &enumerator_data_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+};
+
+static VALUE
+arith_seq_allocate(VALUE klass)
+{
+    struct arith_seq *ptr;
+    VALUE enum_obj;
+
+    enum_obj = TypedData_Make_Struct(klass, struct arith_seq, &arith_seq_data_type, ptr);
+    ptr->enumerator.obj = Qundef;
+
+    return enum_obj;
 }
 
 /*
@@ -3320,6 +3825,9 @@ enumerator_plus(VALUE obj, VALUE eobj)
  * that is a representation of sequences of numbers with common difference.
  * Instances of this class can be generated by the Range#step and Numeric#step
  * methods.
+ *
+ * The class can be used for slicing Array (see Array#slice) or custom
+ * collections.
  */
 
 VALUE
@@ -3327,12 +3835,16 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                  rb_enumerator_size_func *size_fn,
                  VALUE beg, VALUE end, VALUE step, int excl)
 {
-    VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
+    VALUE aseq = enumerator_init(arith_seq_allocate(rb_cArithSeq),
                                  obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
-    rb_ivar_set(aseq, id_begin, beg);
-    rb_ivar_set(aseq, id_end, end);
-    rb_ivar_set(aseq, id_step, step);
-    rb_ivar_set(aseq, id_exclude_end, excl ? Qtrue : Qfalse);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(aseq, struct arith_seq, &enumerator_data_type, ptr);
+
+    RB_OBJ_WRITE(aseq, &ptr->begin, beg);
+    RB_OBJ_WRITE(aseq, &ptr->end, end);
+    RB_OBJ_WRITE(aseq, &ptr->step, step);
+    ptr->exclude_end = excl;
+
     return aseq;
 }
 
@@ -3345,7 +3857,9 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
 static inline VALUE
 arith_seq_begin(VALUE self)
 {
-    return rb_ivar_get(self, id_begin);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->begin;
 }
 
 /*
@@ -3356,7 +3870,9 @@ arith_seq_begin(VALUE self)
 static inline VALUE
 arith_seq_end(VALUE self)
 {
-    return rb_ivar_get(self, id_end);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->end;
 }
 
 /*
@@ -3368,7 +3884,9 @@ arith_seq_end(VALUE self)
 static inline VALUE
 arith_seq_step(VALUE self)
 {
-    return rb_ivar_get(self, id_step);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->step;
 }
 
 /*
@@ -3379,13 +3897,17 @@ arith_seq_step(VALUE self)
 static inline VALUE
 arith_seq_exclude_end(VALUE self)
 {
-    return rb_ivar_get(self, id_exclude_end);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return RBOOL(ptr->exclude_end);
 }
 
 static inline int
 arith_seq_exclude_end_p(VALUE self)
 {
-    return RTEST(arith_seq_exclude_end(self));
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->exclude_end;
 }
 
 int
@@ -3398,57 +3920,68 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
         component->exclude_end = arith_seq_exclude_end_p(obj);
         return 1;
     }
-    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
-        component->begin = RANGE_BEG(obj);
-        component->end   = RANGE_END(obj);
+    else if (rb_range_values(obj, &component->begin, &component->end, &component->exclude_end)) {
         component->step  = INT2FIX(1);
-        component->exclude_end = RTEST(RANGE_EXCL(obj));
         return 1;
     }
 
     return 0;
 }
 
-/*
- * call-seq:
- *   aseq.first -> num or nil
- *   aseq.first(n) -> an_array
- *
- * Returns the first number in this arithmetic sequence,
- * or an array of the first +n+ elements.
- */
+VALUE
+rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+{
+    RBIMPL_NONNULL_ARG(begp);
+    RBIMPL_NONNULL_ARG(lenp);
+    RBIMPL_NONNULL_ARG(stepp);
+
+    rb_arithmetic_sequence_components_t aseq;
+    if (!rb_arithmetic_sequence_extract(obj, &aseq)) {
+        return Qfalse;
+    }
+
+    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    *stepp = step;
+
+    if (step < 0) {
+        if (aseq.exclude_end && !NIL_P(aseq.end)) {
+            /* Handle exclusion before range reversal */
+            aseq.end = LONG2NUM(NUM2LONG(aseq.end) + 1);
+
+            /* Don't exclude the previous beginning */
+            aseq.exclude_end = 0;
+        }
+        VALUE tmp = aseq.begin;
+        aseq.begin = aseq.end;
+        aseq.end = tmp;
+    }
+
+    if (err == 0 && (step < -1 || step > 1)) {
+        if (rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, 1) == Qtrue) {
+            if (*begp > len)
+                goto out_of_range;
+            if (*lenp > len)
+                goto out_of_range;
+            return Qtrue;
+        }
+    }
+    else {
+        return rb_range_component_beg_len(aseq.begin, aseq.end, aseq.exclude_end, begp, lenp, len, err);
+    }
+
+  out_of_range:
+    rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", obj);
+    return Qnil;
+}
+
 static VALUE
-arith_seq_first(int argc, VALUE *argv, VALUE self)
+arith_seq_take(VALUE self, VALUE num)
 {
     VALUE b, e, s, ary;
     long n;
     int x;
 
-    rb_check_arity(argc, 0, 1);
-
-    b = arith_seq_begin(self);
-    e = arith_seq_end(self);
-    s = arith_seq_step(self);
-    if (argc == 0) {
-        if (NIL_P(b)) {
-            return Qnil;
-        }
-        if (!NIL_P(e)) {
-            VALUE zero = INT2FIX(0);
-            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
-            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
-                return Qnil;
-            }
-            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
-                return Qnil;
-            }
-        }
-        return b;
-    }
-
-    // TODO: the following code should be extracted as arith_seq_take
-
-    n = NUM2LONG(argv[0]);
+    n = NUM2LONG(num);
     if (n < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
     }
@@ -3456,6 +3989,9 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
     x = arith_seq_exclude_end_p(self);
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(s)) {
@@ -3490,7 +4026,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i < end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit < i) break;
+                if (i > LONG_MAX - unit) break;
                 i += unit;
                 --n;
             }
@@ -3503,7 +4039,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i > end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit > i) break;
+                if (i < LONG_MIN - unit) break;
                 i += unit;
                 --n;
             }
@@ -3550,7 +4086,131 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return ary;
     }
 
-    return rb_call_super(argc, argv);
+    {
+        VALUE argv[1];
+        argv[0] = num;
+        return rb_call_super(1, argv);
+    }
+}
+
+/*
+ * call-seq:
+ *   aseq.first -> num or nil
+ *   aseq.first(n) -> an_array
+ *
+ * Returns the first number in this arithmetic sequence,
+ * or an array of the first +n+ elements.
+ */
+static VALUE
+arith_seq_first(int argc, VALUE *argv, VALUE self)
+{
+    VALUE b, e, s;
+
+    rb_check_arity(argc, 0, 1);
+
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
+    if (argc == 0) {
+        if (NIL_P(b)) {
+            return Qnil;
+        }
+        if (!NIL_P(e)) {
+            VALUE zero = INT2FIX(0);
+            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
+            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
+                return Qnil;
+            }
+            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
+                return Qnil;
+            }
+        }
+        return b;
+    }
+
+    return arith_seq_take(self, argv[0]);
+}
+
+static inline VALUE
+num_plus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_plus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_plus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_plus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '+', 1, &b);
+    }
+}
+
+static inline VALUE
+num_minus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_minus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_minus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_minus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '-', 1, &b);
+    }
+}
+
+static inline VALUE
+num_mul(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_mul(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_mul(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_mul(a, b);
+    }
+    else {
+        return rb_funcallv(a, '*', 1, &b);
+    }
+}
+
+static inline VALUE
+num_idiv(VALUE a, VALUE b)
+{
+    VALUE q;
+    if (RB_INTEGER_TYPE_P(a)) {
+        q = rb_int_idiv(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        q = rb_float_div(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        q = rb_rational_div(a, b);
+    }
+    else {
+        q = rb_funcallv(a, idDiv, 1, &b);
+    }
+
+    if (RB_INTEGER_TYPE_P(q)) {
+        return q;
+    }
+    else if (RB_FLOAT_TYPE_P(q)) {
+        return rb_float_floor(q, 0);
+    }
+    else if (RB_TYPE_P(q, T_RATIONAL)) {
+        return rb_rational_floor(q, 0);
+    }
+    else {
+        return rb_funcall(q, rb_intern("floor"), 0);
+    }
 }
 
 /*
@@ -3577,7 +4237,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
     b = arith_seq_begin(self);
     s = arith_seq_step(self);
 
-    len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+    len_1 = num_idiv(num_minus(e, b), s);
     if (rb_num_negative_int_p(len_1)) {
         if (argc == 0) {
             return Qnil;
@@ -3585,9 +4245,9 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
-    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    last = num_plus(b, num_mul(s, len_1));
     if ((last_is_adjusted = arith_seq_exclude_end_p(self) && rb_equal(last, e))) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (argc == 0) {
@@ -3796,22 +4456,22 @@ arith_seq_each(VALUE self)
         return self;
     }
 
-    len_1 = rb_int_idiv(rb_int_minus(e, c), s);
-    last = rb_int_plus(c, rb_int_mul(s, len_1));
+    len_1 = num_idiv(num_minus(e, c), s);
+    last = num_plus(c, num_mul(s, len_1));
     if (x && rb_equal(last, e)) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (rb_num_negative_int_p(s)) {
         while (NUM_GE(c, last)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
     else {
         while (NUM_GE(last, c)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
 
@@ -3885,10 +4545,11 @@ arith_seq_size(VALUE self)
     return len;
 }
 
+#define sym(name) ID2SYM(rb_intern_const(name))
 void
 InitVM_Enumerator(void)
 {
-    ID id_private = rb_intern("private");
+    ID id_private = rb_intern_const("private");
 
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
@@ -3938,23 +4599,23 @@ InitVM_Enumerator(void)
     rb_define_alias(rb_cLazy, "_enumerable_uniq", "uniq");
     rb_define_private_method(rb_cLazy, "_enumerable_with_index", enumerator_with_index, -1);
 
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_collect")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_flat_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_collect_concat")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_select")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_find_all")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_filter")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_filter_map")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_reject")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_grep")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_grep_v")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_zip")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_take")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_take_while")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_drop")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_drop_while")));
-    rb_funcall(rb_cLazy, id_private, 1, ID2SYM(rb_intern("_enumerable_uniq")));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_flat_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect_concat"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_select"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_find_all"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter_map"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_reject"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep_v"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_zip"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take_while"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop_while"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_uniq"));
 
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "to_enum", lazy_to_enum, -1);
@@ -3983,29 +4644,30 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
+    rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("map")), ID2SYM(rb_intern("_enumerable_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("collect")), ID2SYM(rb_intern("_enumerable_collect")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("flat_map")), ID2SYM(rb_intern("_enumerable_flat_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("collect_concat")), ID2SYM(rb_intern("_enumerable_collect_concat")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("select")), ID2SYM(rb_intern("_enumerable_select")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("find_all")), ID2SYM(rb_intern("_enumerable_find_all")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("filter")), ID2SYM(rb_intern("_enumerable_filter")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("filter_map")), ID2SYM(rb_intern("_enumerable_filter_map")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("reject")), ID2SYM(rb_intern("_enumerable_reject")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("grep")), ID2SYM(rb_intern("_enumerable_grep")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("grep_v")), ID2SYM(rb_intern("_enumerable_grep_v")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("zip")), ID2SYM(rb_intern("_enumerable_zip")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("take")), ID2SYM(rb_intern("_enumerable_take")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("take_while")), ID2SYM(rb_intern("_enumerable_take_while")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("drop")), ID2SYM(rb_intern("_enumerable_drop")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("drop_while")), ID2SYM(rb_intern("_enumerable_drop_while")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("uniq")), ID2SYM(rb_intern("_enumerable_uniq")));
-    rb_hash_aset(lazy_use_super_method, ID2SYM(rb_intern("with_index")), ID2SYM(rb_intern("_enumerable_with_index")));
+    rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
+    rb_hash_aset(lazy_use_super_method, sym("collect"), sym("_enumerable_collect"));
+    rb_hash_aset(lazy_use_super_method, sym("flat_map"), sym("_enumerable_flat_map"));
+    rb_hash_aset(lazy_use_super_method, sym("collect_concat"), sym("_enumerable_collect_concat"));
+    rb_hash_aset(lazy_use_super_method, sym("select"), sym("_enumerable_select"));
+    rb_hash_aset(lazy_use_super_method, sym("find_all"), sym("_enumerable_find_all"));
+    rb_hash_aset(lazy_use_super_method, sym("filter"), sym("_enumerable_filter"));
+    rb_hash_aset(lazy_use_super_method, sym("filter_map"), sym("_enumerable_filter_map"));
+    rb_hash_aset(lazy_use_super_method, sym("reject"), sym("_enumerable_reject"));
+    rb_hash_aset(lazy_use_super_method, sym("grep"), sym("_enumerable_grep"));
+    rb_hash_aset(lazy_use_super_method, sym("grep_v"), sym("_enumerable_grep_v"));
+    rb_hash_aset(lazy_use_super_method, sym("zip"), sym("_enumerable_zip"));
+    rb_hash_aset(lazy_use_super_method, sym("take"), sym("_enumerable_take"));
+    rb_hash_aset(lazy_use_super_method, sym("take_while"), sym("_enumerable_take_while"));
+    rb_hash_aset(lazy_use_super_method, sym("drop"), sym("_enumerable_drop"));
+    rb_hash_aset(lazy_use_super_method, sym("drop_while"), sym("_enumerable_drop_while"));
+    rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
+    rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
     rb_obj_freeze(lazy_use_super_method);
-    rb_gc_register_mark_object(lazy_use_super_method);
+    rb_vm_register_global_object(lazy_use_super_method);
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);
@@ -4051,6 +4713,27 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumChain, "size", enum_chain_size, 0);
     rb_define_method(rb_cEnumChain, "rewind", enum_chain_rewind, 0);
     rb_define_method(rb_cEnumChain, "inspect", enum_chain_inspect, 0);
+    rb_undef_method(rb_cEnumChain, "feed");
+    rb_undef_method(rb_cEnumChain, "next");
+    rb_undef_method(rb_cEnumChain, "next_values");
+    rb_undef_method(rb_cEnumChain, "peek");
+    rb_undef_method(rb_cEnumChain, "peek_values");
+
+    /* Product */
+    rb_cEnumProduct = rb_define_class_under(rb_cEnumerator, "Product", rb_cEnumerator);
+    rb_define_alloc_func(rb_cEnumProduct, enum_product_allocate);
+    rb_define_method(rb_cEnumProduct, "initialize", enum_product_initialize, -1);
+    rb_define_method(rb_cEnumProduct, "initialize_copy", enum_product_init_copy, 1);
+    rb_define_method(rb_cEnumProduct, "each", enum_product_each, 0);
+    rb_define_method(rb_cEnumProduct, "size", enum_product_size, 0);
+    rb_define_method(rb_cEnumProduct, "rewind", enum_product_rewind, 0);
+    rb_define_method(rb_cEnumProduct, "inspect", enum_product_inspect, 0);
+    rb_undef_method(rb_cEnumProduct, "feed");
+    rb_undef_method(rb_cEnumProduct, "next");
+    rb_undef_method(rb_cEnumProduct, "next_values");
+    rb_undef_method(rb_cEnumProduct, "peek");
+    rb_undef_method(rb_cEnumProduct, "peek_values");
+    rb_define_singleton_method(rb_cEnumerator, "product", enumerator_s_product, -1);
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
@@ -4072,28 +4755,23 @@ InitVM_Enumerator(void)
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
+#undef sym
 
-#undef rb_intern
 void
 Init_Enumerator(void)
 {
-    id_rewind = rb_intern("rewind");
-    id_new = rb_intern("new");
-    id_next = rb_intern("next");
-    id_result = rb_intern("result");
-    id_receiver = rb_intern("receiver");
-    id_arguments = rb_intern("arguments");
-    id_memo = rb_intern("memo");
-    id_method = rb_intern("method");
-    id_force = rb_intern("force");
-    id_to_enum = rb_intern("to_enum");
-    id_begin = rb_intern("begin");
-    id_end = rb_intern("end");
-    id_step = rb_intern("step");
-    id_exclude_end = rb_intern("exclude_end");
+    id_rewind = rb_intern_const("rewind");
+    id_next = rb_intern_const("next");
+    id_result = rb_intern_const("result");
+    id_receiver = rb_intern_const("receiver");
+    id_arguments = rb_intern_const("arguments");
+    id_memo = rb_intern_const("memo");
+    id_method = rb_intern_const("method");
+    id_force = rb_intern_const("force");
+    id_to_enum = rb_intern_const("to_enum");
+    id_each_entry = rb_intern_const("each_entry");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern("cycle"));
-    sym_yield = ID2SYM(rb_intern("yield"));
+    sym_yield = ID2SYM(rb_intern_const("yield"));
 
     InitVM(Enumerator);
 }

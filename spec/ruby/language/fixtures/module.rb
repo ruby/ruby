@@ -12,13 +12,4 @@ module ModuleSpecs
 
   module Anonymous
   end
-
-  module IncludedInObject
-    module IncludedModuleSpecs
-    end
-  end
-end
-
-class Object
-  include ModuleSpecs::IncludedInObject
 end

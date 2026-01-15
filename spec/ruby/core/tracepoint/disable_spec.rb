@@ -1,9 +1,11 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe 'TracePoint#disable' do
   it 'returns true if trace was enabled' do
     called = false
     trace = TracePoint.new(:line) do |tp|
+      next unless TracePointSpec.target_thread?
       called = true
     end
 
@@ -25,6 +27,7 @@ describe 'TracePoint#disable' do
   it 'returns false if trace was disabled' do
     called = false
     trace = TracePoint.new(:line) do |tp|
+      next unless TracePointSpec.target_thread?
       called = true
     end
 

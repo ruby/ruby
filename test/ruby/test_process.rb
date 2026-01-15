@@ -3,7 +3,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
-require 'io/wait'
 require 'rbconfig'
 
 class TestProcess < Test::Unit::TestCase
@@ -24,12 +23,6 @@ class TestProcess < Test::Unit::TestCase
     return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
-  def write_file(filename, content)
-    File.open(filename, "w") {|f|
-      f << content
-    }
-  end
-
   def with_tmpchdir
     Dir.mktmpdir {|d|
       d = File.realpath(d)
@@ -40,7 +33,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def run_in_child(str) # should be called in a temporary directory
-    write_file("test-script", str)
+    File.write("test-script", str)
     Process.wait spawn(RUBY, "test-script")
     $?
   end
@@ -65,8 +58,10 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
+    omit "LSAN needs to open proc file" if Test::Sanitizers.lsan_enabled?
+
     with_tmpchdir {
-      write_file 's', <<-"End"
+      File.write 's', <<-"End"
         # Too small RLIMIT_NOFILE, such as zero, causes problems.
         # [OpenBSD] Setting to zero freezes this test.
         # [GNU/Linux] EINVAL on poll().  EINVAL on ruby's internal poll() ruby with "[ASYNC BUG] thread_timer: select".
@@ -121,14 +116,19 @@ class TestProcess < Test::Unit::TestCase
     }
     assert_raise(ArgumentError) { Process.getrlimit(:FOO) }
     assert_raise(ArgumentError) { Process.getrlimit("FOO") }
-    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.getrlimit("\u{30eb 30d3 30fc}") }
+
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.getrlimit("\u{30eb 30d3 30fc}") }
+    end
   end
 
   def test_rlimit_value
     return unless rlimit_exist?
     assert_raise(ArgumentError) { Process.setrlimit(:FOO, 0) }
     assert_raise(ArgumentError) { Process.setrlimit(:CORE, :FOO) }
-    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit("\u{30eb 30d3 30fc}", 0) }
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit("\u{30eb 30d3 30fc}", 0) }
+    end
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit(:CORE, "\u{30eb 30d3 30fc}") }
     with_tmpchdir do
       s = run_in_child(<<-'End')
@@ -169,7 +169,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_pgroup
-    skip "system(:pgroup) is not supported" if windows?
+    omit "system(:pgroup) is not supported" if windows?
     assert_nothing_raised { system(*TRUECOMMAND, :pgroup=>false) }
 
     io = IO.popen([RUBY, "-e", "print Process.getpgrp"])
@@ -206,75 +206,97 @@ class TestProcess < Test::Unit::TestCase
 
     max = Process.getrlimit(:CORE).last
 
+    # When running under ASAN, we need to set disable_coredump=0 for this test; by default
+    # the ASAN runtime library sets RLIMIT_CORE to 0, "to avoid dumping a 16T+ core file", and
+    # that inteferes with this test.
+    asan_options = ENV['ASAN_OPTIONS'] || ''
+    asan_options  << ':' unless asan_options.empty?
+    env = {
+      'ASAN_OPTIONS' => "#{asan_options}disable_coredump=0"
+    }
+
     n = max
-    IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
-      assert_equal("[#{n}, #{n}]\n", io.read)
+    IO.popen([env, RUBY, "-e",
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = 0
-    IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
-      assert_equal("[#{n}, #{n}]\n", io.read)
+    IO.popen([env, RUBY, "-e",
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     n = max
-    IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
-      assert_equal("[#{n}, #{n}]", io.read.chomp)
+    IO.popen([env, RUBY, "-e",
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
+      assert_equal("#{n}\n#{n}\n", io.read)
     }
 
     m, n = 0, max
-    IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
-      assert_equal("[#{m}, #{n}]", io.read.chomp)
+    IO.popen([env, RUBY, "-e",
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
+      assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     m, n = 0, 0
-    IO.popen([RUBY, "-e",
-             "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
-      assert_equal("[#{m}, #{n}]", io.read.chomp)
+    IO.popen([env, RUBY, "-e",
+             "puts Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
+      assert_equal("#{m}\n#{n}\n", io.read)
     }
 
     n = max
-    IO.popen([RUBY, "-e",
-      "p Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
+    IO.popen([env, RUBY, "-e",
+      "puts Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
-      assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
+      assert_equal("#{n}\n#{n}\n""3600\n3600\n", io.read)
     }
 
     assert_raise(ArgumentError) do
-      system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
+      system(env, RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
+    assert_separately([env],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
     BUG = "[ruby-core:82033] [Bug #13744]"
     begin;
       assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
     end;
 
     assert_raise_with_message(ArgumentError, /bogus/) do
-      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+      system(env, RUBY, '-e', 'exit', :rlimit_bogus => 123)
     end
 
     assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
-      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+      system(env, RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
-  case RbConfig::CONFIG['target_os']
-  when /linux/
-    MANDATORY_ENVS << 'LD_PRELOAD'
-  when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
-  when /darwin/
-    MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
+  def test_overwrite_ENV
+    assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
+    BUG = "[ruby-core:105223] [Bug #18164]"
+    begin;
+      $VERBOSE = nil
+      ENV = {}
+      pid = spawn({}, *#{TRUECOMMAND.inspect})
+      ENV.replace({})
+      assert_kind_of(Integer, pid, BUG)
+    end;
   end
+
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RUBY_FREE_AT_EXIT]
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
   end
   if e = RbConfig::CONFIG['PRELOADENV'] and !e.empty?
     MANDATORY_ENVS << e
+  end
+  case RbConfig::CONFIG['target_os']
+  when /mswin|mingw/
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+  when /darwin/
+    MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
+    # IO.popen([ENV.keys.to_h {|e| [e, nil]},
+    #           RUBY, "-e", %q[print ENV.keys.join(?\0)]],
+    #          &:read).split(?\0)
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
   ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
@@ -350,7 +372,7 @@ class TestProcess < Test::Unit::TestCase
   def test_execopt_env_path
     bug8004 = '[ruby-core:53103] [Bug #8004]'
     Dir.mktmpdir do |d|
-      open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      File.write("#{d}/tmp_script.cmd", ": ;\n", perm: 0o755)
       assert_not_nil(pid = Process.spawn({"PATH" => d}, "tmp_script.cmd"), bug8004)
       wpid, st = Process.waitpid2(pid)
       assert_equal([pid, true], [wpid, st.success?], bug8004)
@@ -388,7 +410,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_env_popen_string
     with_tmpchdir do |d|
-      open('test-script', 'w') do |f|
+      File.open('test-script', 'w') do |f|
         ENVCOMMAND.each_with_index do |cmd, i|
           next if i.zero? or cmd == "-e"
           f.puts cmd
@@ -400,16 +422,14 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_preserve_env_on_exec_failure
     with_tmpchdir {|d|
-      write_file 's', <<-"End"
+      File.write 's', <<-"End"
         ENV["mgg"] = nil
         prog = "./nonexistent"
         begin
           Process.exec({"mgg" => "mggoo"}, [prog, prog])
         rescue Errno::ENOENT
         end
-        open('out', 'w') {|f|
-          f.print ENV["mgg"].inspect
-        }
+        File.write('out', ENV["mgg"].inspect)
       End
       system(RUBY, 's')
       assert_equal(nil.inspect, File.read('out'),
@@ -419,9 +439,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_env_single_word
     with_tmpchdir {|d|
-      open("test_execopts_env_single_word.rb", "w") {|f|
-        f.puts "print ENV['hgga']"
-      }
+      File.write("test_execopts_env_single_word.rb", "print ENV['hgga']\n")
       system({"hgga"=>"ugu"}, RUBY,
              :in => 'test_execopts_env_single_word.rb',
              :out => 'test_execopts_env_single_word.out')
@@ -499,7 +517,7 @@ class TestProcess < Test::Unit::TestCase
   UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
 
   def test_execopts_umask
-    skip "umask is not supported" if windows?
+    omit "umask is not supported" if windows?
     IO.popen([*UMASK, :umask => 0]) {|io|
       assert_equal("0000", io.read.chomp)
     }
@@ -543,7 +561,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("a", File.read("out").chomp)
       if windows?
         # currently telling to child the file modes is not supported.
-        open("out", "a") {|f| f.write "0\n"}
+        File.write("out", "0\n", mode: "a")
       else
         Process.wait Process.spawn(*ECHO["0"], STDOUT=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
         assert_equal("a\n0\n", File.read("out"))
@@ -654,6 +672,7 @@ class TestProcess < Test::Unit::TestCase
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_raise
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -671,15 +690,21 @@ class TestProcess < Test::Unit::TestCase
           puts "ok"
         end
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.5
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)} if pid
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_print
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -692,14 +717,25 @@ class TestProcess < Test::Unit::TestCase
         puts "start"
         system("cat", :in => "fifo")
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
+        sleep 0.2 # wait for the child to return to opening "fifo".
+        # On arm64-darwin22, often deadlocks while the child is
+        # opening "fifo".  Not sure to where "ok" line being written
+        # at the next has gone.
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    if pid
+      assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)}
+    end
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_pipe
@@ -825,7 +861,7 @@ class TestProcess < Test::Unit::TestCase
                          STDERR=>"out", STDOUT=>[:child, STDERR])
       assert_equal("errout", File.read("out"))
 
-      skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+      omit "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
                          STDOUT=>"out",
                          STDERR=>[:child, 3],
@@ -847,7 +883,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_exec
     with_tmpchdir {|d|
-      write_file("s", 'exec "echo aaa", STDOUT=>"foo"')
+      File.write("s", 'exec "echo aaa", STDOUT=>"foo"')
       pid = spawn RUBY, 's'
       Process.wait pid
       assert_equal("aaa\n", File.read("foo"))
@@ -877,7 +913,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_popen_extra_fd
-    skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    omit "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
     with_tmpchdir {|d|
       with_pipe {|r, w|
         IO.popen([RUBY, '-e', 'IO.new(3, "w").puts("a"); puts "b"', 3=>w]) {|io|
@@ -894,19 +930,33 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  def test_popen_fork
-    IO.popen("-") {|io|
-      if !io
-        puts "fooo"
-      else
-        assert_equal("fooo\n", io.read)
+  if Process.respond_to?(:fork)
+    def test_popen_fork
+      IO.popen("-") do |io|
+        if !io
+          puts "fooo"
+        else
+          assert_equal("fooo\n", io.read)
+        end
       end
-    }
-  rescue NotImplementedError
+    end
+
+    def test_popen_fork_ensure
+      IO.popen("-") do |io|
+        if !io
+          STDERR.reopen(STDOUT)
+          raise "fooo"
+        else
+          assert_empty io.read
+        end
+      end
+    rescue RuntimeError
+      abort "[Bug #20995] should not reach here"
+    end
   end
 
   def test_fd_inheritance
-    skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    omit "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
     with_pipe {|r, w|
       system(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts(:ba)', w.fileno.to_s, w=>w)
       w.close
@@ -921,7 +971,7 @@ class TestProcess < Test::Unit::TestCase
     }
     with_pipe {|r, w|
       with_tmpchdir {|d|
-	write_file("s", <<-"End")
+	File.write("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
 	       'IO.new(ARGV[0].to_i, "w").puts("bu") rescue nil',
 	       #{w.fileno.to_s.dump}, :close_others=>false)
@@ -952,7 +1002,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_close_others
-    skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    omit "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
     with_tmpchdir {|d|
       with_pipe {|r, w|
         system(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("ma")', w.fileno.to_s, :close_others=>true)
@@ -975,7 +1025,7 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
-	write_file("s", <<-"End")
+	File.write("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
 	       'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i, "w").puts("mu")',
 	       #{w.fileno.to_s.dump},
@@ -1046,7 +1096,7 @@ class TestProcess < Test::Unit::TestCase
         }
       }
     rescue NotImplementedError
-      skip "IO#close_on_exec= is not supported"
+      omit "IO#close_on_exec= is not supported"
     end
   end unless windows? # passing non-stdio fds is not supported on Windows
 
@@ -1101,7 +1151,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_noshell
     with_tmpchdir {|d|
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	  str = "echo non existing command name which contains spaces"
 	  STDERR.reopen(STDOUT)
 	  begin
@@ -1117,7 +1167,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_system_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t| t << "haha pid=#{$$} ppid=#{Process.ppid}" }
         exit 5
       End
@@ -1133,7 +1183,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t| t << "hihi pid=#{$$} ppid=#{Process.ppid}" }
         exit 6
       End
@@ -1150,7 +1200,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         print "fufu pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
@@ -1169,7 +1219,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_wordsplit_beginning_and_trailing_spaces
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         print "fufumm pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
@@ -1188,7 +1238,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_wordsplit
     with_tmpchdir {|d|
-      write_file("script", <<-'End')
+      File.write("script", <<-'End')
         File.open("result", "w") {|t|
           if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
@@ -1198,7 +1248,7 @@ class TestProcess < Test::Unit::TestCase
         }
         exit 6
       End
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	ruby = #{RUBY.dump}
 	exec "\#{ruby} script"
       End
@@ -1219,11 +1269,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_system_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "taka pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "taki pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
@@ -1239,7 +1289,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        File.write(bat = path + "/bat test.bat", "@echo %1>out")
         system(bat, "foo 'bar'")
         assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
         system(%[#{bat.dump} "foo 'bar'"])
@@ -1250,11 +1300,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "taku pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "take pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
@@ -1271,7 +1321,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1>out")
+        File.write(bat = path + "/bat test.bat", "@echo %1>out")
         pid = spawn(bat, "foo 'bar'")
         Process.wait pid
         status = $?
@@ -1290,11 +1340,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         puts "tako pid=#{$$} ppid=#{Process.ppid}"
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         puts "tika pid=#{$$} ppid=#{Process.ppid}"
         exit 8
       End
@@ -1309,7 +1359,7 @@ class TestProcess < Test::Unit::TestCase
 
       if windows?
         Dir.mkdir(path = "path with space")
-        write_file(bat = path + "/bat test.bat", "@echo %1")
+        File.write(bat = path + "/bat test.bat", "@echo %1")
         r = IO.popen([bat, "foo 'bar'"]) {|f| f.read}
         assert_equal(%["foo 'bar'"\n], r, '[ruby-core:22960]')
         r = IO.popen(%[#{bat.dump} "foo 'bar'"]) {|f| f.read}
@@ -1320,15 +1370,15 @@ class TestProcess < Test::Unit::TestCase
 
   def test_exec_shell
     with_tmpchdir {|d|
-      write_file("script1", <<-'End')
+      File.write("script1", <<-'End')
         File.open("result1", "w") {|t| t << "tiki pid=#{$$} ppid=#{Process.ppid}" }
         exit 7
       End
-      write_file("script2", <<-'End')
+      File.write("script2", <<-'End')
         File.open("result2", "w") {|t| t << "tiku pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
 	ruby = #{RUBY.dump}
 	exec("\#{ruby} script1 || \#{ruby} script2")
       End
@@ -1355,7 +1405,7 @@ class TestProcess < Test::Unit::TestCase
 
       assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]) {|f| f.read })
 
-      write_file("s", <<-"End")
+      File.write("s", <<-"End")
         exec([#{RUBY.dump}, "lkjh"], "-e", "exit 5")
       End
       pid = spawn RUBY, "s"
@@ -1365,7 +1415,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def with_stdin(filename)
-    open(filename) {|f|
+    File.open(filename) {|f|
       begin
         old = STDIN.dup
         begin
@@ -1382,8 +1432,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_argv0_noarg
     with_tmpchdir {|d|
-      open("t", "w") {|f| f.print "exit true" }
-      open("f", "w") {|f| f.print "exit false" }
+      File.write("t", "exit true")
+      File.write("f",  "exit false")
 
       with_stdin("t") { assert_equal(true, system([RUBY, "qaz"])) }
       with_stdin("f") { assert_equal(false, system([RUBY, "wsx"])) }
@@ -1413,6 +1463,11 @@ class TestProcess < Test::Unit::TestCase
     REPRO
   end
 
+  def test_argv0_frozen
+    assert_predicate Process.argv0, :frozen?
+    assert_predicate $0, :frozen?
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
@@ -1421,10 +1476,10 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      assert_equal(s.to_i >> 1, s >> 1)
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1436,12 +1491,14 @@ class TestProcess < Test::Unit::TestCase
     expected = Signal.list.include?("QUIT") ? [false, true, false, nil] : [true, false, false, true]
 
     with_tmpchdir do
-      write_file("foo", "Process.kill(:KILL, $$); exit(42)")
+      File.write("foo", "Process.kill(:KILL, $$); exit(42)")
       system(RUBY, "foo")
       s = $?
       assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1456,12 +1513,33 @@ class TestProcess < Test::Unit::TestCase
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
                    s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
+    end
+  end
+
+  def test_status_fail
+    ret = Process::Status.wait($$)
+    assert_instance_of(Process::Status, ret)
+    assert_equal(-1, ret.pid)
+  end
+
+
+  def test_status_wait
+    IO.popen([RUBY, "-e", "gets"], "w") do |io|
+      pid = io.pid
+      assert_nil(Process::Status.wait(pid, Process::WNOHANG))
+      io.puts
+      ret = Process::Status.wait(pid)
+      assert_instance_of(Process::Status, ret)
+      assert_equal(pid, ret.pid)
+      assert_predicate(ret, :exited?)
     end
   end
 
   def test_wait_without_arg
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
       assert_equal(pid, Process.wait)
     end
@@ -1469,7 +1547,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_wait2
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
       assert_equal([pid, 0], Process.wait2)
     end
@@ -1477,7 +1555,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_waitall
     with_tmpchdir do
-      write_file("foo", "sleep 0.1")
+      File.write("foo", "sleep 0.1")
       ps = (0...3).map { spawn(RUBY, "foo") }.sort
       ss = Process.waitall.sort
       ps.zip(ss) do |p1, (p2, s)|
@@ -1510,6 +1588,8 @@ class TestProcess < Test::Unit::TestCase
       assert_operator(diff, :<, sec,
                   ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
+    rescue Errno::EPIPE
+      omit "child process exited already in #{diff} seconds"
     end
   end
 
@@ -1517,7 +1597,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir do
       s = run_in_child("abort")
       assert_not_predicate(s, :success?)
-      write_file("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
+      File.write("test-script", "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         STDERR.reopen(STDOUT)
         begin
@@ -1573,7 +1653,7 @@ class TestProcess < Test::Unit::TestCase
   else
     assert_kind_of(Integer, max)
     assert_predicate(max, :positive?)
-    skip "not limited to NGROUPS_MAX" if /darwin/ =~ RUBY_PLATFORM
+    omit "not limited to NGROUPS_MAX" if /darwin/ =~ RUBY_PLATFORM
     gs = Process.groups
     assert_operator(gs.size, :<=, max)
     gs[0] ||= 0
@@ -1600,7 +1680,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_setegid
-    skip "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
+    omit "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
     assert_nothing_raised(TypeError) {Process.egid += 0}
   rescue NotImplementedError
   end
@@ -1610,9 +1690,10 @@ class TestProcess < Test::Unit::TestCase
       if u = Etc.getpwuid(Process.uid)
         assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
       end
-      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
+      exc = assert_raise_kind_of(ArgumentError, SystemCallError) {
         Process::UID.from_name("\u{4e0d 5b58 5728}")
       }
+      assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
     end
   end
 
@@ -1621,9 +1702,10 @@ class TestProcess < Test::Unit::TestCase
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
       end
-      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
-        Process::GID.from_name("\u{4e0d 5b58 5728}")
-      }
+      exc = assert_raise_kind_of(ArgumentError, SystemCallError) do
+        Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
+      end
+      assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
     end
   end
 
@@ -1652,11 +1734,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_and_sigchild
-    if /freebsd|openbsd/ =~ RUBY_PLATFORM
-      # this relates #4173
-      # When ruby can use 2 cores, signal and wait4 may miss the signal.
-      skip "this fails on FreeBSD and OpenBSD on multithreaded environment"
-    end
     signal_received = []
     IO.pipe do |sig_r, sig_w|
       Signal.trap(:CHLD) do
@@ -1664,22 +1741,23 @@ class TestProcess < Test::Unit::TestCase
         sig_w.write('?')
       end
       pid = nil
+      th = nil
       IO.pipe do |r, w|
         pid = fork { r.read(1); exit }
-        Thread.start {
+        th = Thread.start {
           Thread.current.report_on_exception = false
           raise
         }
         w.puts
       end
       Process.wait pid
+      begin
+        th.join
+      rescue Exception
+      end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
-      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
-    else
-      assert_equal [true], signal_received, "[ruby-core:19744]"
-    end
+    assert_equal [true], signal_received, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1694,7 +1772,7 @@ class TestProcess < Test::Unit::TestCase
       status = nil
       Dir.chdir("vd") {
         dir = "#{d}/vd"
-        # OpenSolaris cannot remove the current directory.
+        # Windows cannot remove the current directory with permission issues.
         system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}", err: File::NULL)
         system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
@@ -1706,16 +1784,16 @@ class TestProcess < Test::Unit::TestCase
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
     with_tmpchdir do |d|
-      open("tmp_script.#{$$}", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", ": ;\n", perm: 0o755)
       assert_not_nil(pid = Process.spawn("./tmp_script.#{$$}"), feature)
       wpid, st = Process.waitpid2(pid)
       assert_equal([pid, true], [wpid, st.success?], feature)
 
-      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $#: $@"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", "echo $#: $@", perm: 0o755)
       result = IO.popen(["./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("2: a b c\n", result, feature)
 
-      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $hghg"; f.chmod(0755)}
+      File.write("tmp_script.#{$$}", "echo $hghg", perm: 0o755)
       result = IO.popen([{"hghg" => "mogomogo"}, "./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("mogomogo\n", result, feature)
 
@@ -1728,9 +1806,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
-    if /solaris/i =~ RUBY_PLATFORM && !defined?(Process::RLIMIT_NPROC)
-      skip "Too exhaustive test on platforms without Process::RLIMIT_NPROC such as Solaris 10"
-    end
     bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
@@ -1740,16 +1815,23 @@ class TestProcess < Test::Unit::TestCase
     min = 1_000 / (cmd.size + sep.size)
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
+    exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
+    if defined?(Process::RLIMIT_NPROC)
+      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
+    end
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
           loop do
             Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
-            cmds *= 100
+            begin
+              cmds *= 100
+            rescue ArgumentError
+              raise NoMemoryError
+            end
           end
         rescue NoMemoryError
           size = cmds.size
@@ -1770,7 +1852,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        EnvUtil.timeout(3) do
+        EnvUtil.timeout(10) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -1827,6 +1909,28 @@ class TestProcess < Test::Unit::TestCase
         puts $$
       end
       assert_not_equal(cpid, dpid)
+    end
+
+    def test_daemon_detached
+      IO.popen("-", "r+") do |f|
+        if f
+          assert_equal(f.pid, Process.wait(f.pid))
+
+          dpid, ppid, dsid = 3.times.map {Integer(f.gets)}
+
+          message = "daemon #{dpid} should be detached"
+          assert_not_equal($$, ppid, message) # would be 1 almost always
+          assert_raise(Errno::ECHILD, message) {Process.wait(dpid)}
+          assert_kind_of(Integer, Process.kill(0, dpid), message)
+          assert_equal(dpid, dsid)
+
+          break # close f, and let the daemon resume and exit
+        end
+        Process.setsid rescue nil
+        Process.daemon(false, true)
+        puts $$, Process.ppid, Process.getsid
+        $stdin.gets # wait for the above assertions using signals
+      end
     end
 
     if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
@@ -1892,7 +1996,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_reopen
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
       io2 = io.dup
@@ -1911,7 +2015,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_uid
-    skip "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
+    omit "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
@@ -1942,8 +2046,8 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_gid
-    skip "Process.groups not implemented on Windows platform" if windows?
-    skip "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
+    omit "Process.groups not implemented on Windows platform" if windows?
+    omit "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     groups = Process.groups.map do |g|
@@ -2069,7 +2173,7 @@ EOS
       "c\u{1EE7}a",
     ].each do |arg|
       begin
-        arg = arg.encode(Encoding.find("locale"))
+        arg = arg.encode(Encoding.local_charmap)
       rescue
       else
         assert_in_out_err([], "#{<<-"begin;"}\n#{<<-"end;"}", [arg], [], bug12841)
@@ -2087,7 +2191,9 @@ EOS
     t3 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
     assert_operator(t1, :<=, t2)
     assert_operator(t2, :<=, t3)
-    assert_raise(Errno::EINVAL) { Process.clock_gettime(:foo) }
+    assert_raise_with_message(Errno::EINVAL, /:foo/) do
+      Process.clock_gettime(:foo)
+    end
   end
 
   def test_clock_gettime_unit
@@ -2192,7 +2298,9 @@ EOS
   rescue Errno::EINVAL
   else
     assert_kind_of(Integer, r)
-    assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
+    assert_raise_with_message(Errno::EINVAL, /:foo/) do
+      Process.clock_getres(:foo)
+    end
   end
 
   def test_clock_getres_constants
@@ -2279,7 +2387,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
+    assert_ruby_status(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2401,7 +2509,7 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
-        q = Queue.new
+        q = Thread::Queue.new
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
@@ -2464,7 +2572,7 @@ EOS
   end
 
   def test_forked_child_handles_signal
-    skip "fork not supported" unless Process.respond_to?(:fork)
+    omit "fork not supported" unless Process.respond_to?(:fork)
     assert_normal_exit(<<-"end;", '[ruby-core:82883] [Bug #13916]')
       require 'timeout'
       pid = fork { sleep }
@@ -2486,10 +2594,271 @@ EOS
     assert_same(Process.last_status, $?)
   end
 
+  def test_last_status_failure
+    assert_nil system("sad")
+    assert_not_predicate $?, :success?
+    assert_equal $?.exitstatus, 127
+  end
+
   def test_exec_failure_leaves_no_child
     assert_raise(Errno::ENOENT) do
       spawn('inexistent_command')
     end
     assert_empty(Process.waitall)
   end
+
+  def test__fork
+    r, w = IO.pipe
+    pid = Process._fork
+    if pid == 0
+      begin
+        r.close
+        w << "ok: #$$"
+        w.close
+      ensure
+        exit!
+      end
+    else
+      w.close
+      assert_equal("ok: #{pid}", r.read)
+      r.close
+      Process.waitpid(pid)
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_pid_cache
+    _parent_pid = Process.pid
+    r, w = IO.pipe
+    pid = Process._fork
+    if pid == 0
+      begin
+        r.close
+        w << "ok: #{Process.pid}"
+        w.close
+      ensure
+        exit!
+      end
+    else
+      w.close
+      assert_equal("ok: #{pid}", r.read)
+      r.close
+      Process.waitpid(pid)
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook
+    %w(fork Process.fork).each do |method|
+      feature17795 = '[ruby-core:103400] [Feature #17795]'
+      assert_in_out_err([], <<-"end;", [], [], feature17795, timeout: 60) do |r, e|
+        module ForkHook
+          def _fork
+            p :before
+            ret = super
+            p :after
+            ret
+          end
+        end
+
+        Process.singleton_class.prepend(ForkHook)
+
+        pid = #{ method }
+        p pid
+        Process.waitpid(pid) if pid
+      end;
+        assert_equal([], e)
+        assert_equal(":before", r.shift)
+        assert_equal(":after", r.shift)
+        s = r.map {|s| s.chomp }.sort #=> [pid, ":after", "nil"]
+        assert_match(/^\d+$/, s[0]) # pid
+        assert_equal(":after", s[1])
+        assert_equal("nil", s[2])
+      end
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook_popen
+    feature17795 = '[ruby-core:103400] [Feature #17795]'
+    assert_in_out_err([], <<-"end;", %w(:before :after :after foo bar), [], feature17795, timeout: 60)
+      module ForkHook
+        def _fork
+          p :before
+          ret = super
+          p :after
+          ret
+        end
+      end
+
+      Process.singleton_class.prepend(ForkHook)
+
+      IO.popen("-") {|io|
+        if !io
+          puts "foo"
+        else
+          puts io.read + "bar"
+        end
+      }
+    end;
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_wrong_type_hook
+    feature17795 = '[ruby-core:103400] [Feature #17795]'
+    assert_in_out_err([], <<-"end;", ["OK"], [], feature17795, timeout: 60)
+      module ForkHook
+        def _fork
+          "BOO"
+        end
+      end
+
+      Process.singleton_class.prepend(ForkHook)
+
+      begin
+        fork
+      rescue TypeError
+        puts "OK"
+      end
+    end;
+  end if Process.respond_to?(:_fork)
+
+  def test_warmup_promote_all_objects_to_oldgen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = Object.new
+
+      assert_not_include(ObjectSpace.dump(obj), '"old":true')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"old":true')
+    end;
+  end
+
+  def test_warmup_run_major_gc_and_compact
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # Run a GC to ensure that we are not in the middle of a GC run
+      GC.start
+
+      major_gc_count = GC.stat(:major_gc_count)
+      compact_count = GC.stat(:compact_count)
+      Process.warmup
+      assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
+      assert_equal compact_count + 1, GC.stat(:compact_count)
+    end;
+  end
+
+  def test_warmup_precompute_string_coderange
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = "a" * 12
+      obj.force_encoding(Encoding::UTF_16LE)
+      obj.force_encoding(Encoding::BINARY)
+      assert_include(ObjectSpace.dump(obj), '"coderange":"unknown"')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"coderange":"7bit"')
+    end;
+  end
+
+  def test_warmup_frees_pages
+    assert_separately([{"RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO" => "1.0"}, "-W0"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      GC.start
+
+      TIMES = 100_000
+      ary = Array.new(TIMES)
+      TIMES.times do |i|
+        ary[i] = Object.new
+      end
+      ary.clear
+      ary = nil
+
+      # Disable GC so we can make sure GC only runs in Process.warmup
+      GC.disable
+
+      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots)
+
+      Process.warmup
+
+      # TODO: flaky
+      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots))
+
+      assert_equal(0, GC.stat(:heap_empty_pages))
+      assert_operator(GC.stat(:total_freed_pages), :>, 0)
+    end;
+  end
+
+  def test_concurrent_group_and_pid_wait
+    # Use a pair of pipes that will make long_pid exit when this test exits, to avoid
+    # leaking temp processes.
+    long_rpipe, long_wpipe = IO.pipe
+    short_rpipe, short_wpipe = IO.pipe
+    # This process should run forever
+    long_pid = fork do
+      [short_rpipe, short_wpipe, long_wpipe].each(&:close)
+      long_rpipe.read
+    end
+    # This process will exit
+    short_pid = fork do
+      [long_rpipe, long_wpipe, short_wpipe].each(&:close)
+      short_rpipe.read
+    end
+    t1, t2, t3 = nil
+    EnvUtil.timeout(5) do
+      t1 = Thread.new do
+        Process.waitpid long_pid
+      end
+      # Wait for us to be blocking in a call to waitpid2
+      Thread.pass until t1.stop?
+      short_wpipe.close # Make short_pid exit
+
+      # The short pid has exited, so -1 should pick that up.
+      assert_equal short_pid, Process.waitpid(-1)
+
+      # Terminate t1 for the next phase of the test.
+      t1.kill
+      t1.join
+
+      t2 = Thread.new do
+        Process.waitpid(-1)
+      rescue Errno::ECHILD
+        nil
+      end
+      Thread.pass until t2.stop?
+      t3 = Thread.new do
+        Process.waitpid long_pid
+      rescue Errno::ECHILD
+        nil
+      end
+      Thread.pass until t3.stop?
+
+      # it's actually nondeterministic which of t2 or t3 will receive the wait (this
+      # nondeterminism comes from the behaviour of the underlying system calls)
+      long_wpipe.close
+      assert_equal [long_pid], [t2, t3].map(&:value).compact
+    end
+  ensure
+    [t1, t2, t3].each { _1&.kill rescue nil }
+    [t1, t2, t3].each { _1&.join rescue nil }
+    [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
+  end if defined?(fork)
+
+  def test_handle_interrupt_with_fork
+    Thread.handle_interrupt(RuntimeError => :never) do
+      Thread.current.raise(RuntimeError, "Queued error")
+
+      assert_predicate Thread, :pending_interrupt?
+
+      pid = Process.fork do
+        if Thread.pending_interrupt?
+          exit 1
+        end
+      end
+
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+
+      assert_predicate Thread, :pending_interrupt?
+    end
+  rescue RuntimeError
+    # Ignore.
+  end if defined?(fork)
 end

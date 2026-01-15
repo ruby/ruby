@@ -1,0 +1,4 @@
+benchmark:
+  - 'Time.now'
+  - 'Time.now(in: "+09:00")'
+  - 'Time.now.year'

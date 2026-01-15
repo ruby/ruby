@@ -1,67 +1,202 @@
 name: macOS
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
 jobs:
   make:
-    runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems", "leaked-globals" ]
+        include:
+          - test_task: check
+            os: macos-14
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gcc=gcc-14'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gmp'
+          - test_task: test-all
+            test_opts: --repeat-count=2
+            os: macos-14
+          - test_task: test-bundler-parallel
+            os: macos-14
+          - test_task: test-bundled-gems
+            os: macos-14
+          - test_task: check
+            os: macos-15
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
+    runs-on: ${{ matrix.os }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
     steps:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
-      - name: Checkout ruby
-        run: |
-          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
-          git -C src reset --hard "$GITHUB_SHA"
-        if: github.event_name == 'push'
-      - name: Checkout a pull request
-        run: |
-          git clone --single-branch --depth=50 --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
-          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
-        if: github.event_name == 'pull_request'
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
-      - name: Install libraries
-        run: |
-          export WAITS='5 60'
-          tool/travis_retry.sh brew upgrade
-          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-        working-directory: src
-      - name: Set ENV
-        run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - run: autoconf
-        working-directory: src
-      - run: mkdir build
-      - name: Run configure
-        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-        working-directory: build
-      - run: make $JOBS
-        working-directory: build
-      - run: make prepare-gems
-        working-directory: build
-        if: matrix.test_task == 'check'
-      - run: make $JOBS -s ${{ matrix.test_task }}
-        working-directory: build
-        env:
-          RUBY_TESTOPTS: "-q --tty=no"
-          # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rexml"
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
-            }
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - name: Install libraries
+        uses: ./.github/actions/setup/macos
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+          # Set fetch-depth: 0 so that Launchable can receive commits information.
+          fetch-depth: 10
+
+      - name: make sure that kern.coredump=1
+        run: |
+          sysctl -n kern.coredump
+          sudo sysctl -w kern.coredump=1
+          sudo chmod -R +rwx /cores/
+
+      - name: Delete unused SDKs
+        # To free up disk space to not run out during the run
+        run: |
+          sudo rm -rf ~/.dotnet
+          sudo rm -rf /Library/Android
+          sudo rm -rf /Library/Developer/CoreSimulator
+        continue-on-error: true
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
+
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
+      - run: make
+
+      - run: make hello
+
+      - name: runirb
+        run: |
+          echo IRB::VERSION | make runirb RUNOPT="-- -f"
+
+      - name: Set test options for skipped tests
+        run: |
+          set -x
+          TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
+          echo "TESTS=${TESTS}" >> $GITHUB_ENV
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+
+      - name: Set up Launchable
+        id: launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: ${{ matrix.os }}
+          test-opts: ${{ matrix.test_opts }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
+        timeout-minutes: 3
+
+      - name: Set extra test options
+        run: |
+          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
+        if: matrix.test_opts
+
+      - name: make ${{ matrix.test_task }}
+        run: |
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+
+          ulimit -c unlimited
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+        timeout-minutes: 90
         env:
+          RUBY_TESTOPTS: '-q --tty=no'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+
+      - name: make skipped tests
+        run: |
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
+          PRECHECK_BUNDLED_GEMS: 'no'
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.os }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() }}
+
+      - name: Resolve job ID
+        id: job_id
+        uses: actions/github-script@main
+        env:
+          matrix: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const { data: workflow_run } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            const matrix = JSON.parse(process.env.matrix);
+            const job_name = `${context.job}${matrix ? ` (${Object.values(matrix).join(", ")})` : ""}`;
+            return workflow_run.jobs.find((job) => job.name === job_name).id;
+
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: macos-latest
+    needs: [make]
+    steps:
+      - run: exit 1
+        working-directory:
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
+defaults:
+  run:
+    working-directory: build

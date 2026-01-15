@@ -75,11 +75,11 @@ describe "Array#flatten" do
     [[obj]].flatten(1)
   end
 
-  it "returns subclass instance for Array subclasses" do
-    ArraySpecs::MyArray[].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(ArraySpecs::MyArray)
-    ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == ArraySpecs::MyArray[1, 2, 3, 4]
+  it "returns Array instance for Array subclasses" do
+    ArraySpecs::MyArray[].flatten.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].flatten.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, [2], 3].flatten.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, [2, 3], 4].flatten.should == [1, 2, 3, 4]
     [ArraySpecs::MyArray[1, 2, 3]].flatten.should be_an_instance_of(Array)
   end
 
@@ -132,16 +132,6 @@ describe "Array#flatten" do
     it "calls #method_missing if defined" do
       @obj.should_receive(:method_missing).with(:to_ary).and_return([1, 2, 3])
       [@obj].flatten.should == [1, 2, 3]
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted array if self is tainted" do
-      [].taint.flatten.tainted?.should be_true
-    end
-
-    it "returns an untrusted array if self is untrusted" do
-      [].untrust.flatten.untrusted?.should be_true
     end
   end
 

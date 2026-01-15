@@ -19,14 +19,5 @@ with_feature :readline do
       Readline::HISTORY.shift.should == "3"
       Readline::HISTORY.size.should == 0
     end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the returned strings" do
-        Readline::HISTORY.push("1", "2", "3")
-        Readline::HISTORY.shift.tainted?.should be_true
-        Readline::HISTORY.shift.tainted?.should be_true
-        Readline::HISTORY.shift.tainted?.should be_true
-      end
-    end
   end
 end

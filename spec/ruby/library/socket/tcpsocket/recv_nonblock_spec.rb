@@ -27,6 +27,20 @@ describe "TCPSocket#recv_nonblock" do
     @socket.recv_nonblock(50).should == "TCPSocket#recv_nonblock"
   end
 
+  it 'writes the read to a buffer from the socket' do
+    @socket = TCPSocket.new @hostname, @server.port
+    @socket.write "TCPSocket#recv_nonblock"
+
+    # Wait for the server to echo. This spec is testing the return
+    # value, not the non-blocking behavior.
+    #
+    # TODO: Figure out a good way to test non-blocking.
+    IO.select([@socket])
+    buffer = "".b
+    @socket.recv_nonblock(50, 0, buffer)
+    buffer.should == 'TCPSocket#recv_nonblock'
+  end
+
   it 'returns :wait_readable in exceptionless mode' do
     @socket = TCPSocket.new @hostname, @server.port
     @socket.recv_nonblock(50, exception: false).should == :wait_readable

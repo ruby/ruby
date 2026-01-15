@@ -655,6 +655,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   return n;
 }
 
+#ifdef USE_CASE_MAP_API
 /* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
 #define CASE_MAPPING_SLACK 12
 #define MODIFIED (flags |= ONIGENC_CASE_MODIFIED)
@@ -682,15 +683,13 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     *pp += codepoint_length;
 
     if (code <= 'z') { /* ASCII comes first */
-      if (code >= 'a' && code <= 'z') {
+      if (code >= 'a' /*&& code <= 'z'*/) {
 	if (flags & ONIGENC_CASE_UPCASE) {
 	  MODIFIED;
 	  if (flags & ONIGENC_CASE_FOLD_TURKISH_AZERI && code == 'i')
 	    code = I_WITH_DOT_ABOVE;
-          else {
-            code -= 'a';
-            code += 'A';
-          }
+          else
+            code -= 'a' - 'A';
 	}
       }
       else if (code >= 'A' && code <= 'Z') {
@@ -800,8 +799,8 @@ SpecialsCopy:
   *flagP = flags;
   return (int )(to - to_start);
 }
+#endif
 
-#if 0
 const char onigenc_unicode_version_string[] =
 #ifdef ONIG_UNICODE_VERSION_STRING
     ONIG_UNICODE_VERSION_STRING
@@ -817,4 +816,3 @@ const int onigenc_unicode_version_number[3] = {
     0
 #endif
 };
-#endif

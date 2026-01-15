@@ -2,11 +2,13 @@
 
 module Bundler
   class EnvironmentPreserver
-    INTENTIONALLY_NIL = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL".freeze
+    INTENTIONALLY_NIL = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL"
     BUNDLER_KEYS = %w[
       BUNDLE_BIN_PATH
       BUNDLE_GEMFILE
+      BUNDLE_LOCKFILE
       BUNDLER_VERSION
+      BUNDLER_SETUP
       GEM_HOME
       GEM_PATH
       MANPATH
@@ -15,14 +17,23 @@ module Bundler
       RUBYLIB
       RUBYOPT
     ].map(&:freeze).freeze
-    BUNDLER_PREFIX = "BUNDLER_ORIG_".freeze
+    BUNDLER_PREFIX = "BUNDLER_ORIG_"
 
-    # @param env [ENV]
+    def self.from_env
+      new(ENV.to_hash, BUNDLER_KEYS)
+    end
+
+    # @param env [Hash]
     # @param keys [Array<String>]
     def initialize(env, keys)
-      @original = env.to_hash
+      @original = env
       @keys = keys
       @prefix = BUNDLER_PREFIX
+    end
+
+    # Replaces `ENV` with the bundler environment variables backed up
+    def replace_with_backup
+      ENV.replace(backup)
     end
 
     # @return [Hash]
@@ -30,9 +41,9 @@ module Bundler
       env = @original.clone
       @keys.each do |key|
         value = env[key]
-        if !value.nil? && !value.empty?
+        if !value.nil?
           env[@prefix + key] ||= value
-        elsif value.nil?
+        else
           env[@prefix + key] ||= INTENTIONALLY_NIL
         end
       end
@@ -44,7 +55,7 @@ module Bundler
       env = @original.clone
       @keys.each do |key|
         value_original = env[@prefix + key]
-        next if value_original.nil? || value_original.empty?
+        next if value_original.nil?
         if value_original == INTENTIONALLY_NIL
           env.delete(key)
         else

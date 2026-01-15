@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NOEXCEPT.
  *
  * This isn't actually an attribute in C++ but who cares...
@@ -54,7 +54,7 @@
  *       get smarter and  smarter.  Today they can infer if  it actually throws
  *       or not without any annotations by humans (correct me if I'm wrong).
  *
- *     - When an inline function attributed `noexcepr` actually _does_ throw an
+ *     - When an inline function attributed `noexcept` actually _does_ throw an
  *       exception:  they  have to  call  `std::terminate`  then (C++  standard
  *       mandates  so).  This  means exception  handling routines  are actually
  *       enforced, not  omitted.  This doesn't impact  runtime performance (The
@@ -78,7 +78,7 @@
 #elif defined(__INTEL_CXX11_MODE__)
 # define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 19, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif __cplusplus >= 201103L

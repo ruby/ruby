@@ -65,8 +65,12 @@ assert_equal ':a3c',            ':"a#{1+2}c".inspect'
 assert_equal 'Symbol',          ':"a#{1+2}c".class'
 
 # xstring
-assert_equal "foo\n",           %q(`echo foo`)
-assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
+# WASI doesn't support spawning a new process for now.
+if /wasi/ !~ target_platform
+  assert_equal "foo\n",           %q(`echo foo`)
+  assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
+end
+assert_equal "ECHO FOO",        %q(def `(s) s.upcase; end; `echo foo`)
 
 # regexp
 assert_equal '',                '//.source'
@@ -113,16 +117,16 @@ assert_equal '1',               'a = [obj = Object.new]; a.size'
 assert_equal 'true',            'a = [obj = Object.new]; a[0] == obj'
 assert_equal '5',               'a = [1,2,3]; a[1] = 5; a[1]'
 assert_equal 'bar',             '[*:foo];:bar'
-assert_equal '[1, 2]',          'def nil.to_a; [2]; end; [1, *nil]'
-assert_equal '[1, 2]',          'def nil.to_a; [1, 2]; end; [*nil]'
-assert_equal '[0, 1, {2=>3}]',  '[0, *[1], 2=>3]', "[ruby-dev:31592]"
+assert_equal '[]',              'def nil.to_a; [1, 2]; end; [*nil]'
+assert_equal '[1]',             'def nil.to_a; [2]; end; [1, *nil]'
+assert_equal '[0, 1, {2 => 3}]', '[0, *[1], 2=>3]', "[ruby-dev:31592]"
 
 
 # hash
 assert_equal 'Hash',            '{}.class'
 assert_equal '{}',              '{}.inspect'
 assert_equal 'Hash',            '{1=>2}.class'
-assert_equal '{1=>2}',          '{1=>2}.inspect'
+assert_equal '{1 => 2}',        '{1=>2}.inspect'
 assert_equal '2',               'h = {1 => 2}; h[1]'
 assert_equal '0',               'h = {1 => 2}; h.delete(1); h.size'
 assert_equal '',                'h = {1 => 2}; h.delete(1); h[1]'

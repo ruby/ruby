@@ -54,6 +54,10 @@ platform_is_not :windows do
       File.realpath(@relative_symlink).should == @file
     end
 
+    it "removes the file element when going one level up" do
+      File.realpath('../', @file).should == @real_dir
+    end
+
     it "raises an Errno::ELOOP if the symlink points to itself" do
       File.unlink @link
       File.symlink(@link, @link)

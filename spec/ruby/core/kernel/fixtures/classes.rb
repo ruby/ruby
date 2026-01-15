@@ -219,9 +219,27 @@ module KernelSpecs
       block_given?
     end
 
+    def self.accept_block_inside_block()
+      yield_self {
+        block_given?
+      }
+    end
+
+    def self.accept_block_as_argument_inside_block(&block)
+      yield_self {
+        block_given?
+      }
+    end
+
     class << self
       define_method(:defined_block) do
         block_given?
+      end
+
+      define_method(:defined_block_inside_block) do
+        yield_self {
+          block_given?
+        }
       end
     end
   end
@@ -235,9 +253,27 @@ module KernelSpecs
       self.send(:block_given?)
     end
 
+    def self.accept_block_inside_block
+      yield_self {
+        self.send(:block_given?)
+      }
+    end
+
+    def self.accept_block_as_argument_inside_block(&block)
+      yield_self {
+        self.send(:block_given?)
+      }
+    end
+
     class << self
       define_method(:defined_block) do
         self.send(:block_given?)
+      end
+
+      define_method(:defined_block_inside_block) do
+        yield_self {
+          self.send(:block_given?)
+        }
       end
     end
   end
@@ -251,9 +287,27 @@ module KernelSpecs
       Kernel.block_given?
     end
 
+    def self.accept_block_inside_block
+      yield_self {
+        Kernel.block_given?
+      }
+    end
+
+    def self.accept_block_as_argument_inside_block(&block)
+      yield_self {
+        Kernel.block_given?
+      }
+    end
+
     class << self
       define_method(:defined_block) do
         Kernel.block_given?
+      end
+
+      define_method(:defined_block_inside_block) do
+        yield_self {
+          Kernel.block_given?
+        }
       end
     end
   end
@@ -281,14 +335,25 @@ module KernelSpecs
       @two = two
     end
 
-    def initialize_copy(other)
+    def initialize_copy(other, **kw)
       ScratchPad.record object_id
+    end
+
+    # define to support calling #clone with optional :freeze keyword argument
+    def initialize_clone(other, **kw)
+      super(other) # to call #initialize_copy
     end
   end
 
   class Clone
     def initialize_clone(other)
-      ScratchPad.record other.object_id
+      ScratchPad.record other
+    end
+  end
+
+  class CloneFreeze
+    def initialize_clone(other, **kwargs)
+      ScratchPad.record([other, kwargs])
     end
   end
 
@@ -350,7 +415,7 @@ module KernelSpecs
 
     module Ampersand
       def lambda(&block)
-        super(&block)
+        suppress_warning {super(&block)}
       end
     end
 
@@ -362,18 +427,19 @@ module KernelSpecs
   class RespondViaMissing
     def respond_to_missing?(method, priv=false)
       case method
-        when :handled_publicly
-          true
-        when :handled_privately
-          priv
-        when :not_handled
-          false
-        else
-          raise "Typo in method name"
+      when :handled_publicly
+        true
+      when :handled_privately
+        priv
+      when :not_handled
+        false
+      else
+        raise "Typo in method name: #{method.inspect}"
       end
     end
 
     def method_missing(method, *args)
+      raise "the method name should be a Symbol" unless Symbol === method
       "Done #{method}(#{args})"
     end
   end

@@ -93,7 +93,11 @@ OnigEncodingDefine(iso_8859_8, ISO_8859_8) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_single_byte_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -104,7 +108,7 @@ ENC_ALIAS("ISO8859-8", "ISO-8859-8")
  * MIBenum: 2255
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://www.microsoft.com/globaldev/reference/sbcs/1255.mspx
- * Link: http://en.wikipedia.org/wiki/Windows-1255
+ * Link: https://en.wikipedia.org/wiki/Windows-1255
  */
 ENC_REPLICATE("Windows-1255", "ISO-8859-8")
 ENC_ALIAS("CP1255", "Windows-1255")

@@ -1,0 +1,18 @@
+prelude: |
+  str1 = [*"a".."z",*"0".."9"].join("")
+  str10 = str1 * 10 + ":"
+  str100 = str1 * 100 + ":"
+  str1000 = str1 * 1000 + ":"
+  nonascii1 = [*"\u{e0}".."\u{ff}"].join("")
+  nonascii10 = nonascii1 * 10 + ":"
+  nonascii100 = nonascii1 * 100 + ":"
+  nonascii1000 = nonascii1 * 1000 + ":"
+benchmark:
+  rpartition-1: str1.rpartition(":")
+  rpartition-10: str10.rpartition(":")
+  rpartition-100: str100.rpartition(":")
+  rpartition-1000: str1000.rpartition(":")
+  rpartition-nonascii1: nonascii1.rpartition(":")
+  rpartition-nonascii10: nonascii10.rpartition(":")
+  rpartition-nonascii100: nonascii100.rpartition(":")
+  rpartition-nonascii1000: nonascii1000.rpartition(":")

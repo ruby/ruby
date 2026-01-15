@@ -1,5 +1,7 @@
 require_relative '../fixtures/classes'
 
+# NOTE: should be synchronized with library/stringio/initialize_spec.rb
+
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.
 describe :io_new, shared: true do
@@ -18,7 +20,7 @@ describe :io_new, shared: true do
     rm_r @name
   end
 
-  it "creates an IO instance from a Fixnum argument" do
+  it "creates an IO instance from an Integer argument" do
     @io = IO.send(@method, @fd, "w")
     @io.should be_an_instance_of(IO)
   end
@@ -55,11 +57,20 @@ describe :io_new, shared: true do
     end
   end
 
-  it "calls #to_int on an object to convert to a Fixnum" do
+  it "calls #to_int on an object to convert to an Integer" do
     obj = mock("file descriptor")
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
     @io.should be_an_instance_of(IO)
+  end
+
+  it "accepts options as keyword arguments" do
+    @io = IO.send(@method, @fd, "w", flags: File::CREAT)
+    @io.write("foo").should == 3
+
+    -> {
+      IO.send(@method, @fd, "w", {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "accepts a :mode option" do
@@ -197,21 +208,30 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
-  ruby_version_is ''...'2.8' do
-    it "accepts nil options" do
-      @io = suppress_keyword_warning do
-        IO.send(@method, @fd, 'w', nil)
-      end
-      @io.write("foo").should == 3
-    end
+  it "does not use binary encoding when mode encoding is specified along with binmode: true option" do
+    @io = IO.send(@method, @fd, 'w:iso-8859-1', binmode: true)
+    @io.external_encoding.to_s.should == 'ISO-8859-1'
   end
 
-  ruby_version_is '2.8' do
-    it "raises ArgumentError for nil options" do
-      -> {
-        IO.send(@method, @fd, 'w', nil)
-      }.should raise_error(ArgumentError)
-    end
+  it "does not use textmode argument when mode encoding is specified" do
+    @io = IO.send(@method, @fd, 'w:ascii-8bit', textmode: true)
+    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+  end
+
+  it "does not use binmode argument when external encoding is specified via the :external_encoding option" do
+    @io = IO.send(@method, @fd, 'w', binmode: true, external_encoding: 'iso-8859-1')
+    @io.external_encoding.to_s.should == 'ISO-8859-1'
+  end
+
+  it "does not use textmode argument when external encoding is specified via the :external_encoding option" do
+    @io = IO.send(@method, @fd, 'w', textmode: true, external_encoding: 'ascii-8bit')
+    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+  end
+
+  it "raises ArgumentError for nil options" do
+    -> {
+      IO.send(@method, @fd, 'w', nil)
+    }.should raise_error(ArgumentError)
   end
 
   it "coerces mode with #to_str" do
@@ -325,6 +345,9 @@ describe :io_new_errors, shared: true do
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
     -> {
+      @io = IO.send(@method, @fd, 'w:ISO-8859-1', internal_encoding: 'ISO-8859-1')
+    }.should raise_error(ArgumentError)
+    -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
   end
@@ -382,21 +405,9 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.8' do
-    it "raises TypeError if passed a hash for mode and nil for options" do
-      -> {
-        suppress_keyword_warning do
-          @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-        end
-      }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is '2.8' do
-    it "raises ArgumentError if passed a hash for mode and nil for options" do
-      -> {
-        @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-      }.should raise_error(ArgumentError)
-    end
+  it "raises ArgumentError if passed a hash for mode and nil for options" do
+    -> {
+      @io = IO.send(@method, @fd, {mode: 'w'}, nil)
+    }.should raise_error(ArgumentError)
   end
 end
