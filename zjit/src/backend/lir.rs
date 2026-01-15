@@ -25,6 +25,72 @@ pub use crate::backend::current::{
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
+/// Manages stack space allocation for CCall arguments that exceed register capacity.
+///
+/// On ARM64, arguments 9+ go on the stack (X0-X7 used for first 8).
+/// On x86_64, arguments 7+ go on the stack (RDI, RSI, RDX, RCX, R8, R9 used for first 6).
+///
+/// This struct ensures that stack allocation and deallocation are always paired,
+/// preventing the mismatch bug where caller-save registers were incorrectly restored
+/// (see PR #15312 which was reverted due to this bug).
+pub struct CCallStackFrame {
+    /// Number of bytes allocated on the stack for arguments (aligned to 16)
+    stack_arg_bytes: usize,
+}
+
+impl CCallStackFrame {
+    /// Create a new stack frame for a CCall with the given number of arguments.
+    ///
+    /// # Arguments
+    /// * `num_args` - Total number of arguments to the C function
+    /// * `num_reg_args` - Number of arguments that fit in registers (C_ARG_OPNDS.len())
+    pub fn new(num_args: usize, num_reg_args: usize) -> Self {
+        let num_stack_args = num_args.saturating_sub(num_reg_args);
+        let stack_arg_bytes = if num_stack_args > 0 {
+            // Align to 16 bytes for ABI compliance on both ARM64 and x86_64
+            ((num_stack_args * 8) + 15) & !15
+        } else {
+            0
+        };
+        Self { stack_arg_bytes }
+    }
+
+    /// Returns true if this call requires stack arguments
+    pub fn has_stack_args(&self) -> bool {
+        self.stack_arg_bytes > 0
+    }
+
+    /// Returns the number of bytes to allocate on the stack
+    pub fn stack_bytes(&self) -> usize {
+        self.stack_arg_bytes
+    }
+
+    /// Emit instructions to allocate stack space for arguments.
+    /// Must be called AFTER caller-save registers are pushed.
+    pub fn emit_alloc(&self, asm: &mut Assembler) {
+        if self.stack_arg_bytes > 0 {
+            asm.sub_into(NATIVE_STACK_PTR, Opnd::UImm(self.stack_arg_bytes as u64));
+        }
+    }
+
+    /// Emit instructions to deallocate stack space for arguments.
+    /// Must be called BEFORE caller-save registers are popped.
+    pub fn emit_dealloc(&self, asm: &mut Assembler) {
+        if self.stack_arg_bytes > 0 {
+            asm.add_into(NATIVE_STACK_PTR, Opnd::UImm(self.stack_arg_bytes as u64));
+        }
+    }
+
+    /// Get the memory operand for the nth stack argument (0-indexed).
+    ///
+    /// # Arguments
+    /// * `index` - Index of the stack argument (0 = first stack arg, 1 = second, etc.)
+    pub fn stack_arg_slot(&self, index: usize) -> Opnd {
+        // Arguments are stored at [SP + index * 8]
+        Opnd::mem(64, NATIVE_STACK_PTR, (index * 8) as i32)
+    }
+}
+
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum MemBase
@@ -1544,6 +1610,10 @@ impl Assembler
 
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
+        
+        // Stack frame for CCall arguments that exceed register capacity.
+        // This is set before a CCall and used to emit the cleanup after.
+        let mut ccall_stack_frame: Option<CCallStackFrame> = None;
 
         // Remember the indexes of Insn::FrameSetup to update the stack size later
         let mut frame_setup_idxs: Vec<usize> = vec![];
@@ -1559,20 +1629,26 @@ impl Assembler
                 frame_setup_idxs.push(asm.insns.len());
             }
 
-            let before_ccall = match &insn {
-                Insn::CCall { .. } if !pool.is_empty() => {
+            // Check if this is a CCall that needs register saving and/or stack allocation
+            let (save_caller_regs, alloc_stack_for_ccall) = match &insn {
+                Insn::CCall { opnds, .. } => {
+                    let needs_stack = opnds.len() > C_ARG_OPNDS.len();
+                    let needs_save = !pool.is_empty();
+                    
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
-                    if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_opnd = pool.alloc_opnd(vreg_idx);
-                        asm.mov(new_opnd, C_RET_OPND);
-                        pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
-                        vreg_opnd[vreg_idx] = Some(new_opnd);
+                    if needs_save {
+                        if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
+                            let new_opnd = pool.alloc_opnd(vreg_idx);
+                            asm.mov(new_opnd, C_RET_OPND);
+                            pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
+                            vreg_opnd[vreg_idx] = Some(new_opnd);
+                        }
                     }
 
-                    true
+                    (needs_save, needs_stack)
                 },
-                _ => false,
+                _ => (false, false),
             };
 
             // Check if this is the last instruction that uses an operand that
@@ -1598,7 +1674,7 @@ impl Assembler
             }
 
             // Save caller-saved registers on a C call.
-            if before_ccall {
+            if save_caller_regs {
                 // Find all live registers
                 saved_regs = pool.live_regs();
 
@@ -1611,25 +1687,17 @@ impl Assembler
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
                     asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
-                if let Insn::ParallelMov { moves } = &insn {
-                    if moves.len() > C_ARG_OPNDS.len() {
-                        let difference = moves.len().saturating_sub(C_ARG_OPNDS.len());
-
-                        #[cfg(target_arch = "x86_64")]
-                        let offset = {
-                            // double quadword alignment
-                            ((difference + 3) / 4) * 4
-                        };
-
-                        #[cfg(target_arch = "aarch64")]
-                        let offset = {
-                            // quadword alignment
-                            if difference % 2 == 0 { difference } else { difference + 1 }
-                        };
-
-                        asm.sub_into(NATIVE_STACK_PTR, (offset * 8).into());
-                    }
-                }
+            }
+            
+            // Allocate stack space for CCall arguments that exceed register capacity
+            if alloc_stack_for_ccall {
+                let num_args = match &insn {
+                    Insn::CCall { opnds, .. } => opnds.len(),
+                    _ => 0,
+                };
+                let stack_frame = CCallStackFrame::new(num_args, C_ARG_OPNDS.len());
+                stack_frame.emit_alloc(&mut asm);
+                ccall_stack_frame = Some(stack_frame);
             }
 
             // Allocate a register for the output operand if it exists
@@ -1724,14 +1792,15 @@ impl Assembler
                 Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
                     let mut moves: Vec<(Opnd, Opnd)> = vec![];
                     let num_reg_args = opnds.len().min(C_ARG_OPNDS.len());
-                    let num_stack_args = opnds.len().saturating_sub(C_ARG_OPNDS.len());
 
-                    if num_stack_args > 0 {
+                    // Move stack arguments using the stack frame that was allocated earlier
+                    if let Some(ref stack_frame) = ccall_stack_frame {
                         for (i, opnd) in opnds.iter().skip(num_reg_args).enumerate() {
-                            moves.push((Opnd::mem(64, NATIVE_STACK_PTR, 8 * i as i32), *opnd));
+                            moves.push((stack_frame.stack_arg_slot(i), *opnd));
                         }
                     }
 
+                    // Move register arguments
                     if num_reg_args > 0 {
                         for (i, opnd) in opnds.iter().take(num_reg_args).enumerate() {
                             moves.push((C_ARG_OPNDS[i], *opnd));
@@ -1765,6 +1834,14 @@ impl Assembler
 
             // After a C call, restore caller-saved registers
             if is_ccall {
+                // CRITICAL: Deallocate stack arg space BEFORE restoring registers.
+                // This was the bug in PR #15312: registers were popped before stack
+                // cleanup, causing wrong values to be restored.
+                if let Some(ref stack_frame) = ccall_stack_frame {
+                    stack_frame.emit_dealloc(&mut asm);
+                }
+                ccall_stack_frame = None;
+                
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
                     asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));

@@ -2708,6 +2708,112 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_with_9_args_one_on_stack() {
+        // Test CCall with 9 args (8 in registers, 1 on stack)
+        // This test verifies proper stack argument handling.
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, vec![
+            Opnd::UImm(1),  // x0
+            Opnd::UImm(2),  // x1
+            Opnd::UImm(3),  // x2
+            Opnd::UImm(4),  // x3
+            Opnd::UImm(5),  // x4
+            Opnd::UImm(6),  // x5
+            Opnd::UImm(7),  // x6
+            Opnd::UImm(8),  // x7
+            Opnd::UImm(9),  // stack[0]
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        // The disassembly should show:
+        // 1. sub sp for stack arg space (aligned to 16)
+        // 2. store 9th arg to [sp]
+        // 3. mov args to registers
+        // 4. blr (call)
+        // 5. add sp to restore (CRITICAL - this was missing in the reverted PR #15312!)
+        let disasm = cb.disasm();
+        
+        // Verify stack is allocated before the call
+        assert!(disasm.contains("sub sp") || disasm.contains("str") && disasm.contains("[sp"),
+            "Should allocate stack space for 9th argument.\nDisasm:\n{}", disasm);
+        
+        // CRITICAL: Verify stack is deallocated after the call
+        // This is the bug from PR #15312 - the add sp was missing
+        let call_idx = disasm.find("blr").expect("should have call instruction");
+        let after_call = &disasm[call_idx..];
+        assert!(after_call.contains("add sp"),
+            "Stack cleanup (add sp) must appear AFTER the call (blr).\n\
+             This was the bug in PR #15312 that caused it to be reverted.\n\
+             Disassembly:\n{}", disasm);
+    }
+
+    #[test]
+    fn test_ccall_stack_args_with_caller_save_regs() {
+        // Test that stack argument deallocation happens BEFORE register restore.
+        // This is the exact bug that caused the revert of PR #15312.
+        //
+        // The bug was: caller-save registers were pushed, stack args allocated,
+        // but after the call, registers were popped WITHOUT first deallocating
+        // the stack arg space, causing wrong values to be restored.
+        let (mut asm, mut cb) = setup_asm();
+
+        // Use some registers that will need to be saved across the call
+        let v1 = asm.load(Opnd::UImm(100));
+        let v2 = asm.load(Opnd::UImm(200));
+        
+        // Make a call with 9 args (1 on stack)
+        asm.ccall(0 as _, vec![
+            Opnd::UImm(1),
+            Opnd::UImm(2),
+            Opnd::UImm(3),
+            Opnd::UImm(4),
+            Opnd::UImm(5),
+            Opnd::UImm(6),
+            Opnd::UImm(7),
+            Opnd::UImm(8),
+            Opnd::UImm(9),  // 9th arg goes on stack
+        ]);
+        
+        // Use the values after the call to ensure they're live across the call
+        // This forces v1 and v2 to be saved/restored
+        let _ = asm.add(v1, v2);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        let disasm = cb.disasm();
+        
+        // Find key positions in disassembly
+        let call_idx = disasm.find("blr").expect("should have call instruction");
+        let after_call = &disasm[call_idx..];
+        
+        // Check if there's stack cleanup (add sp) after the call
+        let add_sp_pos = after_call.find("add sp");
+        
+        // Check if there's register restore (ldr) after the call
+        let ldr_pos = after_call.find("ldr x");
+        
+        // CRITICAL ASSERTION 1: Stack cleanup MUST exist after a call with stack args
+        assert!(add_sp_pos.is_some(),
+            "Stack cleanup (add sp) must exist after the call.\n\
+             This was the bug in PR #15312: stack space was never deallocated.\n\
+             \n\
+             Disassembly:\n{}", disasm);
+        
+        // CRITICAL ASSERTION 2: If register restore exists, add sp MUST come before ldr
+        if let (Some(add_pos), Some(ldr_pos)) = (add_sp_pos, ldr_pos) {
+            assert!(add_pos < ldr_pos,
+                "Stack cleanup (add sp) must happen BEFORE register restore (ldr).\n\
+                 This was the bug in PR #15312: registers were restored before\n\
+                 stack space was deallocated, causing wrong values.\n\
+                 \n\
+                 add sp position: {}\n\
+                 ldr position: {}\n\
+                 \n\
+                 Disassembly:\n{}", add_pos, ldr_pos, disasm);
+        }
+    }
+
+    #[test]
     fn test_split_spilled_lshift() {
         let (mut asm, mut cb) = setup_asm();
 
