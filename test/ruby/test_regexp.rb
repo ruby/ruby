@@ -1671,34 +1671,26 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_matchdata_large_capture_groups_stack
     env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
-    script = <<~'RUBY'
+    assert_separately([env], <<~'RUBY')
       n = 20000
       require "rbconfig/sizeof"
       stack = RubyVM::DEFAULT_PARAMS[:thread_machine_stack_size]
       size = RbConfig::SIZEOF["long"]
       required = (n + 1) * 4 * size
       if !stack || stack == 0 || stack >= required
-        puts "skip:#{stack}:#{required}"
-        exit
+        omit "thread machine stack size not reduced (#{stack}:#{required})"
       end
 
-      pattern = "(a)" * n
-      str = "a" * n
-
-      Thread.new do
-        m = Regexp.new(pattern).match(str)
-        m.offset(n)
+      inspect = Thread.new do
+        str = "\u{3042}" * n
+        m = Regexp.new("(.)" * n).match(str)
+        assert_not_nil(m)
+        assert_equal([n - 1, n], m.offset(n))
         m.inspect
-        puts "ok"
-      end.join
-    RUBY
+      end.value
 
-    out, err, status = EnvUtil.invoke_ruby([env, "-e", script], "", true, true, timeout: 30)
-    assert_not_predicate(status, :signaled?, err)
-    if out.start_with?("skip:")
-      omit "thread machine stack size not reduced (#{out.strip})"
-    end
-    assert_include(out, "ok")
+      assert_include(inspect, "MatchData")
+    RUBY
   end
 
   def test_regexp_popped
