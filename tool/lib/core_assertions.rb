@@ -384,11 +384,10 @@ eom
         end
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
-        assertions = 0
         marshal_error = nil
         assert(!abort, FailDesc[status, nil, stderr])
         res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
-          assertions += $1.to_i
+          self._assertions += $1.to_i
           res = Marshal.load($2.unpack1("m")) or next
         rescue => marshal_error
           ignore_stderr = nil
