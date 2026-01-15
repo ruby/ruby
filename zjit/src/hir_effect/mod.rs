@@ -23,7 +23,7 @@ include!("hir_effect.inc.rs");
 ///
 /// Lattice Top corresponds to the "Any" effect. All bits are set and any effect is possible.
 /// Lattice Bottom corresponds to the "None" effect. No bits are set and no effects are possible.
-/// Elements between Boabstract_heapsp have effects corresponding to the bits that are set.
+/// Elements between abstract_heaps have effects corresponding to the bits that are set.
 /// This enables more complex analyses compared to prior ZJIT implementations such as "has_effect",
 /// a function that returns a boolean value. Such functions impose an implicit single bit effect
 /// system. This explicit design with a lattice allows us many bits for effects.

@@ -1,6 +1,5 @@
 # Generate hir_effect.inc.rs. To do this, we build up a DAG that
 # represents the ZJIT effect hierarchy.
-# TODO(Jacob): Make sure this function works after all the types and effects replacements
 
 require 'set'
 
@@ -102,8 +101,8 @@ $bits.keys.sort.map {|effect_name|
 }
 puts "  pub const AllBitPatterns: [(&str, #{$int_label}); #{$bits.size}] = ["
 # Sort the bit patterns by decreasing value so that we can print the densest
-# possible to-string representation of an Effect. For example, CSigned instead of
-# CInt8|CInt16|...
+# possible to-string representation of an Effect. For example, Frame instead of
+# PC|Stack|Locals
 $numeric_bits.sort_by {|key, val| -val}.each {|effect_name, _|
   puts "    (\"#{effect_name}\", #{effect_name}),"
 }
@@ -129,10 +128,3 @@ $bits.keys.sort.map {|effect_name|
     puts "  pub const #{effect_name}: Effect = Effect::promote(abstract_heaps::#{effect_name});"
 }
 puts "}"
-
-# puts "pub mod effects {
-#   use super::*;"
-# $bits.keys.sort.map {|effect_name|
-#     puts "  pub const #{effect_name}: AbstractHeap = AbstractHeap::from_bits(bits::#{effect_name});"
-# }
-# puts "}"
