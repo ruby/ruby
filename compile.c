@@ -2596,7 +2596,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     if (stack_max < 0) return COMPILE_NG;
 
-    /* fix label position */
+    VALUE ic_table = 0;
+    if (ISEQ_BODY(iseq)->ic_size > 1) {
+        ic_table = rb_hash_new_capa(ISEQ_BODY(iseq)->ic_size);
+    }
+
+    /* fix label position and deduplicate ICs */
     insn_num = code_index = 0;
     for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
         switch (list->type) {
@@ -2625,6 +2630,33 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 code_index += insn_data_length(iobj);
                 events = 0;
                 data = 0;
+
+                /* deduplicate ICs */
+                if (ic_table) {
+                    int insn = iobj->insn_id;
+                    VALUE *operands = iobj->operands;
+                    const char *types = insn_op_types(insn);
+
+                    for (int j = 0; types[j]; j++) {
+                        char type = types[j];
+
+                        switch (type) {
+                          case TS_IC: /* inline cache: constants */
+                            {
+                                VALUE segments = operands[j];
+                                VALUE ic_index = rb_hash_lookup2(ic_table, segments, Qfalse);
+                                if (ic_index) {
+                                    ISEQ_BODY(iseq)->ic_size--;
+                                }
+                                else {
+                                    rb_hash_aset(ic_table, segments, UINT2NUM(ISEQ_COMPILE_DATA(iseq)->ic_index++));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
                 break;
             }
           case ISEQ_ELEMENT_LABEL:
@@ -2777,8 +2809,15 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                       /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
                       case TS_IC: /* inline cache: constants */
                         {
-                            unsigned int ic_index = ISEQ_COMPILE_DATA(iseq)->ic_index++;
-                            IC ic = &ISEQ_IS_ENTRY_START(body, type)[ic_index].ic_cache;
+                            unsigned int ic_index;
+                            if (ic_table) {
+                                VALUE val = rb_hash_lookup2(ic_table, operands[j], Qnil);
+                                ic_index = NUM2UINT(val);
+                            }
+                            else {
+                                ic_index = ISEQ_COMPILE_DATA(iseq)->ic_index++;
+                            }
+
                             if (UNLIKELY(ic_index >= body->ic_size)) {
                                 BADINSN_DUMP(anchor, &iobj->link, 0);
                                 COMPILE_ERROR(iseq, iobj->insn_info.line_no,
@@ -2786,7 +2825,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = array_to_idlist(operands[j]);
+                            IC ic = &ISEQ_IS_ENTRY_START(body, type)[ic_index].ic_cache;
+                            if (!ic->segments) {
+                                ic->segments = array_to_idlist(operands[j]);
+                            }
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -2911,6 +2953,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             break;
         }
         list = list->next;
+    }
+
+    if (ic_table) {
+        rb_hash_clear(ic_table);
     }
 
     body->iseq_encoded = (void *)generated_iseq;
@@ -12933,9 +12979,9 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                 {
                     IC ic = (IC)op;
                     VALUE arr = idlist_to_array(ic->segments);
-                    wv = ibf_dump_object(dump, arr);
+                    ibf_dump_write_small_value(dump, ibf_dump_object(dump, arr));
                 }
-                break;
+                /* fall through */
               case TS_ISE:
               case TS_IVC:
               case TS_ICVARC:
@@ -12980,7 +13026,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
-    int ic_index = 0;
 
     load_body->iseq_encoded = code;
     load_body->iseq_size = 0;
@@ -13057,9 +13102,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     VALUE arr = ibf_load_object(load, op);
+                    unsigned int ic_index = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-                    IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index);
+                    RUBY_ASSERT(ic_index <= load_body->ic_size);
+                    if (!ic->segments) {
+                        ic->segments = array_to_idlist(arr);
+                    }
 
                     code[code_index] = (VALUE)ic;
                 }
