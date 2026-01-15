@@ -348,10 +348,7 @@ rb_mmtk_vm_live_bytes(void)
 static void
 make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 {
-    MMTK_ASSERT(RB_FL_TEST(obj, RUBY_FL_FINALIZE));
     MMTK_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
-
-    RB_FL_UNSET(obj, RUBY_FL_FINALIZE);
 
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
@@ -364,7 +361,6 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 static int
 rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
 {
-    MMTK_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
     MMTK_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
     MMTK_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
 
@@ -372,6 +368,8 @@ rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data,
 
     if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
         VALUE new_key_location = rb_mmtk_call_object_closure((VALUE)key, false);
+
+        MMTK_ASSERT(RB_FL_TEST(new_key_location, RUBY_FL_FINALIZE));
 
         if (new_key_location != key) {
             return ST_REPLACE;
