@@ -484,6 +484,7 @@ pub enum SideExitReason {
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
     UnhandledCallType(CallType),
+    UnhandledBlockArg,
     TooManyKeywordParameters,
     FixnumAddOverflow,
     FixnumSubOverflow,
@@ -497,6 +498,7 @@ pub enum SideExitReason {
     GuardNotShared,
     GuardLess,
     GuardGreaterEq,
+    GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -647,6 +649,22 @@ pub enum SendFallbackReason {
     /// A singleton class has been seen for the receiver class, so we skip the optimization
     /// to avoid an invalidation loop.
     SingletonClassSeen,
+    /// The super call is passed a block that the optimizer does not support.
+    SuperCallWithBlock,
+    /// The profiled super class cannot be found.
+    SuperClassNotFound,
+    /// The `super` call uses a complex argument pattern that the optimizer does not support.
+    SuperComplexArgsPass,
+    /// The cached target of a `super` call could not be found.
+    SuperTargetNotFound,
+    /// Attempted to specialize a `super` call that doesn't have profile data.
+    SuperNoProfiles,
+    /// Cannot optimize the `super` call due to the target method.
+    SuperNotOptimizedMethodType(MethodType),
+    /// The `super` call is polymorpic.
+    SuperPolymorphic,
+    /// The `super` target call uses a complex argument pattern that the optimizer does not support.
+    SuperTargetComplexArgsPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -684,6 +702,14 @@ impl Display for SendFallbackReason {
             ComplexArgPass => write!(f, "Complex argument passing"),
             UnexpectedKeywordArgs => write!(f, "Unexpected Keyword Args"),
             SingletonClassSeen => write!(f, "Singleton class previously created for receiver class"),
+            SuperCallWithBlock => write!(f, "super: call made with a block"),
+            SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
+            SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
+            SuperNoProfiles => write!(f, "super: no profile data available"),
+            SuperNotOptimizedMethodType(method_type) => write!(f, "super: unsupported target method type {:?}", method_type),
+            SuperPolymorphic => write!(f, "super: polymorphic call site"),
+            SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
+            SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -975,6 +1001,11 @@ pub enum Insn {
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
     GuardLess { left: InsnId, right: InsnId, state: InsnId },
+    /// Side-exit if the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] doesn't match the expected CME.
+    /// Used to ensure super calls are made from the expected method context.
+    GuardSuperMethodEntry { cme: *const rb_callable_method_entry_t, state: InsnId },
+    /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
+    GetBlockHandler,
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1003,7 +1034,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1353,6 +1384,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
+            Insn::GuardSuperMethodEntry { cme, .. } => write!(f, "GuardSuperMethodEntry {:p}", self.ptr_map.map_ptr(cme)),
+            Insn::GetBlockHandler => write!(f, "GetBlockHandler"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -2015,6 +2048,8 @@ impl Function {
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
+            &GuardSuperMethodEntry { cme, state } => GuardSuperMethodEntry { cme, state },
+            &GetBlockHandler => GetBlockHandler,
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2187,8 +2222,9 @@ impl Function {
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
+            | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -2296,6 +2332,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::GetBlockHandler => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -3059,6 +3096,120 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
+                    }
+                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                        // Don't handle calls with literal blocks (e.g., super { ... })
+                        if !blockiseq.is_null() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperCallWithBlock);
+                            continue;
+                        }
+
+                        let ci = unsafe { get_call_data_ci(cd) };
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+                        assert!(flags & VM_CALL_FCALL != 0);
+
+                        // Reject calls with complex argument handling.
+                        let complex_arg_types = VM_CALL_ARGS_SPLAT
+                            | VM_CALL_KW_SPLAT
+                            | VM_CALL_KWARG
+                            | VM_CALL_ARGS_BLOCKARG
+                            | VM_CALL_FORWARDING;
+
+                        if (flags & complex_arg_types) != 0 {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
+                            continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+
+                        // Get the profiled CME from the current method.
+                        let Some(profiles) = self.profiles.as_ref() else {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperNoProfiles);
+                            continue;
+                        };
+
+                        let Some(current_cme) = profiles.payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                            self.push_insn_id(block, insn_id);
+
+                            // The absence of the super CME could be due to a missing profile, but
+                            // if we've made it this far the value would have been deleted, indicating
+                            // that the call is at least polymorphic and possibly megamorphic.
+                            self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
+                            continue;
+                        };
+
+                        // Get defined_class and method ID from the profiled CME.
+                        let current_defined_class = unsafe { (*current_cme).defined_class };
+                        let mid = unsafe { get_def_original_id((*current_cme).def) };
+
+                        // Compute superclass: RCLASS_SUPER(RCLASS_ORIGIN(defined_class))
+                        let superclass = unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
+                        if superclass.nil_p() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperClassNotFound);
+                            continue;
+                        }
+
+                        // Look up the super method.
+                        let super_cme = unsafe { rb_callable_method_entry(superclass, mid) };
+                        if super_cme.is_null() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperTargetNotFound);
+                            continue;
+                        }
+
+                        // Check if it's an ISEQ method; bail if it isn't.
+                        let def_type = unsafe { get_cme_def_type(super_cme) };
+                        if def_type != VM_METHOD_TYPE_ISEQ {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
+                            continue;
+                        }
+
+                        // Check if the super method's parameters support direct send.
+                        // If not, we can't do direct dispatch.
+                        let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+                        if !can_direct_send(self, block, super_iseq, insn_id, args.as_slice()) {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
+                            continue;
+                        }
+
+                        // Add PatchPoint for method redefinition.
+                        self.push_insn(block, Insn::PatchPoint {
+                            invariant: Invariant::MethodRedefined {
+                                klass: unsafe { (*super_cme).defined_class },
+                                method: mid,
+                                cme: super_cme
+                            },
+                            state
+                        });
+
+                        // Guard that we're calling `super` from the expected method context.
+                        self.push_insn(block, Insn::GuardSuperMethodEntry { cme: current_cme, state });
+
+                        // Guard that no block is being passed (implicit or explicit).
+                        let block_handler = self.push_insn(block, Insn::GetBlockHandler);
+                        self.push_insn(block, Insn::GuardBitEquals {
+                            val: block_handler,
+                            expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
+                            reason: SideExitReason::UnhandledBlockArg,
+                            state
+                        });
+
+                        // Use SendWithoutBlockDirect with the super method's CME and ISEQ.
+                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect {
+                            recv,
+                            cd,
+                            cme: super_cme,
+                            iseq: super_iseq,
+                            args,
+                            state
+                        });
+                        self.make_equal_to(insn_id, send_direct);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -3977,6 +4128,7 @@ impl Function {
             | &Insn::LoadEC
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
+            | &Insn::GetBlockHandler
             | &Insn::PutSpecialObject { .. }
             | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
@@ -4205,6 +4357,7 @@ impl Function {
                 worklist.push_back(val);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
+            &Insn::GuardSuperMethodEntry { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
@@ -4720,6 +4873,8 @@ impl Function {
             | Insn::Jump { .. }
             | Insn::EntryPoint { .. }
             | Insn::GuardBlockParamProxy { .. }
+            | Insn::GuardSuperMethodEntry { .. }
+            | Insn::GetBlockHandler
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
@@ -5397,7 +5552,8 @@ fn unspecializable_c_call_type(flags: u32) -> bool {
 fn unspecializable_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
     ((flags & VM_CALL_KW_SPLAT) != 0) ||
-    ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
+    ((flags & VM_CALL_ARGS_BLOCKARG) != 0) ||
+    ((flags & VM_CALL_FORWARDING) != 0)
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
