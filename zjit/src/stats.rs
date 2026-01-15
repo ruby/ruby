@@ -175,6 +175,7 @@ make_counters! {
         exit_unhandled_tailcall,
         exit_unhandled_splat,
         exit_unhandled_kwarg,
+        exit_unhandled_block_arg,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -195,6 +196,7 @@ make_counters! {
         exit_guard_not_shared_failure,
         exit_guard_less_failure,
         exit_guard_greater_eq_failure,
+        exit_guard_super_method_entry,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
@@ -241,10 +243,21 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         // Caller has keyword arguments but callee doesn't expect them.
         send_fallback_unexpected_keyword_args,
+        // Singleton class previously created for receiver class.
+        send_fallback_singleton_class_seen,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
+        send_fallback_super_call_with_block,
+        send_fallback_super_class_not_found,
+        send_fallback_super_complex_args_pass,
+        send_fallback_super_fallback_no_profile,
+        send_fallback_super_not_optimized_method_type,
+        send_fallback_super_polymorphic,
+        send_fallback_super_target_not_found,
+        send_fallback_super_target_complex_args_pass,
+        send_fallback_cannot_send_direct,
         send_fallback_uncategorized,
     }
 
@@ -354,6 +367,21 @@ make_counters! {
     unspecialized_send_def_type_missing,
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
+
+    // Super call def_type related to send fallback to dynamic dispatch
+    unspecialized_super_def_type_iseq,
+    unspecialized_super_def_type_cfunc,
+    unspecialized_super_def_type_attrset,
+    unspecialized_super_def_type_ivar,
+    unspecialized_super_def_type_bmethod,
+    unspecialized_super_def_type_zsuper,
+    unspecialized_super_def_type_alias,
+    unspecialized_super_def_type_undef,
+    unspecialized_super_def_type_not_implemented,
+    unspecialized_super_def_type_optimized,
+    unspecialized_super_def_type_missing,
+    unspecialized_super_def_type_refined,
+    unspecialized_super_def_type_null,
 
     // Unsupported parameter features
     complex_arg_pass_param_rest,
@@ -501,6 +529,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
         UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
+        UnhandledBlockArg             => exit_unhandled_block_arg,
         FixnumAddOverflow             => exit_fixnum_add_overflow,
         FixnumSubOverflow             => exit_fixnum_sub_overflow,
         FixnumMultOverflow            => exit_fixnum_mult_overflow,
@@ -516,6 +545,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardNotShared                => exit_guard_not_shared_failure,
         GuardLess                     => exit_guard_less_failure,
         GuardGreaterEq                => exit_guard_greater_eq_failure,
+        GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
@@ -573,12 +603,21 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         UnexpectedKeywordArgs                     => send_fallback_unexpected_keyword_args,
+        SingletonClassSeen                        => send_fallback_singleton_class_seen,
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
+        SuperCallWithBlock                        => send_fallback_super_call_with_block,
+        SuperClassNotFound                        => send_fallback_super_class_not_found,
+        SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
+        SuperNoProfiles                           => send_fallback_super_fallback_no_profile,
+        SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
+        SuperPolymorphic                          => send_fallback_super_polymorphic,
+        SuperTargetNotFound                       => send_fallback_super_target_not_found,
+        SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
@@ -635,6 +674,27 @@ pub fn send_fallback_counter_for_method_type(method_type: crate::hir::MethodType
         Missing => unspecialized_send_def_type_missing,
         Refined => unspecialized_send_def_type_refined,
         Null => unspecialized_send_def_type_null,
+    }
+}
+
+pub fn send_fallback_counter_for_super_method_type(method_type: crate::hir::MethodType) -> Counter {
+    use crate::hir::MethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Iseq => unspecialized_super_def_type_iseq,
+        Cfunc => unspecialized_super_def_type_cfunc,
+        Attrset => unspecialized_super_def_type_attrset,
+        Ivar => unspecialized_super_def_type_ivar,
+        Bmethod => unspecialized_super_def_type_bmethod,
+        Zsuper => unspecialized_super_def_type_zsuper,
+        Alias => unspecialized_super_def_type_alias,
+        Undefined => unspecialized_super_def_type_undef,
+        NotImplemented => unspecialized_super_def_type_not_implemented,
+        Optimized => unspecialized_super_def_type_optimized,
+        Missing => unspecialized_super_def_type_missing,
+        Refined => unspecialized_super_def_type_refined,
+        Null => unspecialized_super_def_type_null,
     }
 }
 

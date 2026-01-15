@@ -76,8 +76,8 @@ mod snapshot_tests {
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v24:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
           v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
           v26:BasicObject = SendWithoutBlockDirect v24, :foo (0x1048), v13, v15, v11
@@ -111,8 +111,8 @@ mod snapshot_tests {
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
           v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
           v24:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
@@ -3565,10 +3565,10 @@ pub mod hir_build_tests {
           v21:ArrayExact = GuardType v13, ArrayExact
           v22:CInt64 = ArrayLength v21
           v23:CInt64[2] = GuardBitEquals v22, CInt64(2)
-          v24:Fixnum[1] = Const Value(1)
-          v25:BasicObject = ArrayArefFixnum v21, v24
-          v26:Fixnum[0] = Const Value(0)
-          v27:BasicObject = ArrayArefFixnum v21, v26
+          v24:CInt64[1] = Const CInt64(1)
+          v25:BasicObject = ArrayAref v21, v24
+          v26:CInt64[0] = Const CInt64(0)
+          v27:BasicObject = ArrayAref v21, v26
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13

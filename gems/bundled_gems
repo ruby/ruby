@@ -28,7 +28,7 @@ base64              0.3.0   https://github.com/ruby/base64
 bigdecimal          4.0.1   https://github.com/ruby/bigdecimal
 observer            0.1.2   https://github.com/ruby/observer
 abbrev              0.1.2   https://github.com/ruby/abbrev
-resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
+resolv-replace      0.2.0   https://github.com/ruby/resolv-replace
 rinda               0.2.0   https://github.com/ruby/rinda
 drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf

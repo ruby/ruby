@@ -15,7 +15,7 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
+use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
@@ -374,7 +374,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::ArrayArefFixnum { array, index, .. } => gen_aref_fixnum(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
@@ -401,7 +401,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
+        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         // Ensure we have enough room fit ec, self, and arguments
@@ -453,6 +453,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardSuperMethodEntry { cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, cme, &function.frame_state(state))),
+        Insn::GetBlockHandler => gen_get_block_handler(jit, asm),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -713,6 +715,29 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
     asm.cmp(left, right);
     asm.jl(side_exit(jit, state, SideExitReason::GuardGreaterEq));
     left
+}
+
+/// Guard that the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] matches the expected CME.
+/// This ensures we're calling super from the expected method context.
+fn gen_guard_super_method_entry(
+    jit: &JITState,
+    asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
+    state: &FrameState,
+) {
+    asm_comment!(asm, "guard super method entry");
+    let lep = gen_get_lep(jit, asm);
+    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
+    let ep_me = asm.load(ep_me_opnd);
+    asm.cmp(ep_me, Opnd::UImm(cme as u64));
+    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
+}
+
+/// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
+fn gen_get_block_handler(jit: &JITState, asm: &mut Assembler) -> Opnd {
+    asm_comment!(asm, "get block handler from LEP");
+    let lep = gen_get_lep(jit, asm);
+    asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
@@ -1321,8 +1346,10 @@ fn gen_send_without_block(
     )
 }
 
-/// Compile a direct jump to an ISEQ call without block
-fn gen_send_without_block_direct(
+/// Compile a direct call to an ISEQ method.
+/// If `block_handler` is provided, it's used as the specval for the new frame (for forwarding blocks).
+/// Otherwise, `VM_BLOCK_HANDLER_NONE` is used.
+fn gen_send_iseq_direct(
     cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -1331,6 +1358,7 @@ fn gen_send_without_block_direct(
     recv: Opnd,
     args: Vec<Opnd>,
     state: &FrameState,
+    block_handler: Option<Opnd>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1357,7 +1385,8 @@ fn gen_send_without_block_direct(
         let bmethod_specval = (capture.ep.addr() | 1).into();
         (bmethod_frame_type, bmethod_specval)
     } else {
-        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, VM_BLOCK_HANDLER_NONE.into())
+        let specval = block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into());
+        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
     };
 
     // Set up the new frame
@@ -1531,13 +1560,17 @@ fn gen_new_array(
 }
 
 /// Compile array access (`array[index]`)
-fn gen_aref_fixnum(
+fn gen_array_aref(
     asm: &mut Assembler,
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    let unboxed_idx = asm.rshift(index, Opnd::UImm(1));
-    asm_ccall!(asm, rb_ary_entry, array, unboxed_idx)
+    let unboxed_idx = asm.load(index);
+    let array = asm.load(array);
+    let array_ptr = gen_array_ptr(asm, array);
+    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+    let elem_ptr = asm.add(array_ptr, elem_offset);
+    asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
 }
 
 fn gen_array_aset(
@@ -2130,6 +2163,9 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         }
         SendNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_fallback_counter_for_method_type(method_type));
+        }
+        SuperNotOptimizedMethodType(method_type) => {
+            gen_incr_counter(asm, send_fallback_counter_for_super_method_type(method_type));
         }
         _ => {}
     }

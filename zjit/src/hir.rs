@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::has_singleton_class_of, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -484,6 +484,7 @@ pub enum SideExitReason {
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
     UnhandledCallType(CallType),
+    UnhandledBlockArg,
     TooManyKeywordParameters,
     FixnumAddOverflow,
     FixnumSubOverflow,
@@ -497,6 +498,7 @@ pub enum SideExitReason {
     GuardNotShared,
     GuardLess,
     GuardGreaterEq,
+    GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -644,6 +646,25 @@ pub enum SendFallbackReason {
     ComplexArgPass,
     /// Caller has keyword arguments but callee doesn't expect them; need to convert to hash.
     UnexpectedKeywordArgs,
+    /// A singleton class has been seen for the receiver class, so we skip the optimization
+    /// to avoid an invalidation loop.
+    SingletonClassSeen,
+    /// The super call is passed a block that the optimizer does not support.
+    SuperCallWithBlock,
+    /// The profiled super class cannot be found.
+    SuperClassNotFound,
+    /// The `super` call uses a complex argument pattern that the optimizer does not support.
+    SuperComplexArgsPass,
+    /// The cached target of a `super` call could not be found.
+    SuperTargetNotFound,
+    /// Attempted to specialize a `super` call that doesn't have profile data.
+    SuperNoProfiles,
+    /// Cannot optimize the `super` call due to the target method.
+    SuperNotOptimizedMethodType(MethodType),
+    /// The `super` call is polymorpic.
+    SuperPolymorphic,
+    /// The `super` target call uses a complex argument pattern that the optimizer does not support.
+    SuperTargetComplexArgsPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -680,6 +701,15 @@ impl Display for SendFallbackReason {
             ArgcParamMismatch => write!(f, "Argument count does not match parameter count"),
             ComplexArgPass => write!(f, "Complex argument passing"),
             UnexpectedKeywordArgs => write!(f, "Unexpected Keyword Args"),
+            SingletonClassSeen => write!(f, "Singleton class previously created for receiver class"),
+            SuperCallWithBlock => write!(f, "super: call made with a block"),
+            SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
+            SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
+            SuperNoProfiles => write!(f, "super: no profile data available"),
+            SuperNotOptimizedMethodType(method_type) => write!(f, "super: unsupported target method type {:?}", method_type),
+            SuperPolymorphic => write!(f, "super: polymorphic call site"),
+            SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
+            SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -729,7 +759,7 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
-    ArrayArefFixnum { array: InsnId, index: InsnId },
+    ArrayAref { array: InsnId, index: InsnId },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
@@ -971,6 +1001,11 @@ pub enum Insn {
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
     GuardLess { left: InsnId, right: InsnId, state: InsnId },
+    /// Side-exit if the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] doesn't match the expected CME.
+    /// Used to ensure super calls are made from the expected method context.
+    GuardSuperMethodEntry { cme: *const rb_callable_method_entry_t, state: InsnId },
+    /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
+    GetBlockHandler,
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -999,7 +1034,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1128,8 +1163,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::ArrayArefFixnum { array, index, .. } => {
-                write!(f, "ArrayArefFixnum {array}, {index}")
+            Insn::ArrayAref { array, index, .. } => {
+                write!(f, "ArrayAref {array}, {index}")
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
@@ -1349,6 +1384,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
+            Insn::GuardSuperMethodEntry { cme, .. } => write!(f, "GuardSuperMethodEntry {:p}", self.ptr_map.map_ptr(cme)),
+            Insn::GetBlockHandler => write!(f, "GetBlockHandler"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -1891,6 +1928,24 @@ impl Function {
         }
     }
 
+    /// Assume that objects of a given class will have no singleton class.
+    /// Returns true if safe to assume so and emits a PatchPoint.
+    /// Returns false if we've already seen a singleton class for this class,
+    /// to avoid an invalidation loop.
+    pub fn assume_no_singleton_classes(&mut self, block: BlockId, klass: VALUE, state: InsnId) -> bool {
+        if !klass.instance_can_have_singleton_class() {
+            // This class can never have a singleton class, so no patchpoint needed.
+            return true;
+        }
+        if has_singleton_class_of(klass) {
+            // We've seen a singleton class for this klass. Disable the optimization
+            // to avoid an invalidation loop.
+            return false;
+        }
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+        true
+    }
+
     /// Return a copy of the instruction where the instruction and its operands have been read from
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
@@ -1993,6 +2048,8 @@ impl Function {
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
+            &GuardSuperMethodEntry { cme, state } => GuardSuperMethodEntry { cme, state },
+            &GetBlockHandler => GetBlockHandler,
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2093,7 +2150,7 @@ impl Function {
             &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
-            &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayAref { array, index } => ArrayAref { array: find!(array), index: find!(index) },
             &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
@@ -2165,8 +2222,9 @@ impl Function {
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
+            | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -2193,7 +2251,10 @@ impl Function {
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
-            Insn::UnboxFixnum { .. } => types::CInt64,
+            Insn::UnboxFixnum { val } => self
+                .type_of(*val)
+                .fixnum_value()
+                .map_or(types::CInt64, |fixnum| Type::from_cint(types::CInt64, fixnum)),
             Insn::FixnumAref { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
@@ -2205,7 +2266,7 @@ impl Function {
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
-            Insn::ArrayArefFixnum { .. } => types::BasicObject,
+            Insn::ArrayAref { .. } => types::BasicObject,
             Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
@@ -2274,6 +2335,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::GetBlockHandler => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -2531,8 +2593,8 @@ impl Function {
             return false;
         }
         self.gen_patch_points_for_optimized_ccall(block, class, method_id, cme, state);
-        if class.instance_can_have_singleton_class() {
-            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: class }, state });
+        if !self.assume_no_singleton_classes(block, class, state) {
+            return false;
         }
         true
     }
@@ -2702,10 +2764,12 @@ impl Function {
                             if !can_direct_send(self, block, iseq, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if klass.instance_can_have_singleton_class() {
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            // Check singleton class assumption first, before emitting other patchpoints
+                            if !self.assume_no_singleton_classes(block, klass, state) {
+                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                self.push_insn_id(block, insn_id); continue;
                             }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -2754,10 +2818,12 @@ impl Function {
                                 // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if klass.instance_can_have_singleton_class() {
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            // Check singleton class assumption first, before emitting other patchpoints
+                            if !self.assume_no_singleton_classes(block, klass, state) {
+                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                self.push_insn_id(block, insn_id); continue;
                             }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -2788,11 +2854,13 @@ impl Function {
                             if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
+                            // Check singleton class assumption first, before emitting other patchpoints
+                            if !self.assume_no_singleton_classes(block, klass, state) {
+                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if klass.instance_can_have_singleton_class() {
-                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
-                            }
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -2835,10 +2903,12 @@ impl Function {
                                         // No (monomorphic/skewed polymorphic) profile info
                                         self.push_insn_id(block, insn_id); continue;
                                     };
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                    if klass.instance_can_have_singleton_class() {
-                                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                                    // Check singleton class assumption first, before emitting other patchpoints
+                                    if !self.assume_no_singleton_classes(block, klass, state) {
+                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                        self.push_insn_id(block, insn_id); continue;
                                     }
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                                     }
@@ -3029,6 +3099,120 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
+                    }
+                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                        // Don't handle calls with literal blocks (e.g., super { ... })
+                        if !blockiseq.is_null() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperCallWithBlock);
+                            continue;
+                        }
+
+                        let ci = unsafe { get_call_data_ci(cd) };
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+                        assert!(flags & VM_CALL_FCALL != 0);
+
+                        // Reject calls with complex argument handling.
+                        let complex_arg_types = VM_CALL_ARGS_SPLAT
+                            | VM_CALL_KW_SPLAT
+                            | VM_CALL_KWARG
+                            | VM_CALL_ARGS_BLOCKARG
+                            | VM_CALL_FORWARDING;
+
+                        if (flags & complex_arg_types) != 0 {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
+                            continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+
+                        // Get the profiled CME from the current method.
+                        let Some(profiles) = self.profiles.as_ref() else {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperNoProfiles);
+                            continue;
+                        };
+
+                        let Some(current_cme) = profiles.payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                            self.push_insn_id(block, insn_id);
+
+                            // The absence of the super CME could be due to a missing profile, but
+                            // if we've made it this far the value would have been deleted, indicating
+                            // that the call is at least polymorphic and possibly megamorphic.
+                            self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
+                            continue;
+                        };
+
+                        // Get defined_class and method ID from the profiled CME.
+                        let current_defined_class = unsafe { (*current_cme).defined_class };
+                        let mid = unsafe { get_def_original_id((*current_cme).def) };
+
+                        // Compute superclass: RCLASS_SUPER(RCLASS_ORIGIN(defined_class))
+                        let superclass = unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
+                        if superclass.nil_p() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperClassNotFound);
+                            continue;
+                        }
+
+                        // Look up the super method.
+                        let super_cme = unsafe { rb_callable_method_entry(superclass, mid) };
+                        if super_cme.is_null() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperTargetNotFound);
+                            continue;
+                        }
+
+                        // Check if it's an ISEQ method; bail if it isn't.
+                        let def_type = unsafe { get_cme_def_type(super_cme) };
+                        if def_type != VM_METHOD_TYPE_ISEQ {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
+                            continue;
+                        }
+
+                        // Check if the super method's parameters support direct send.
+                        // If not, we can't do direct dispatch.
+                        let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+                        if !can_direct_send(self, block, super_iseq, insn_id, args.as_slice()) {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
+                            continue;
+                        }
+
+                        // Add PatchPoint for method redefinition.
+                        self.push_insn(block, Insn::PatchPoint {
+                            invariant: Invariant::MethodRedefined {
+                                klass: unsafe { (*super_cme).defined_class },
+                                method: mid,
+                                cme: super_cme
+                            },
+                            state
+                        });
+
+                        // Guard that we're calling `super` from the expected method context.
+                        self.push_insn(block, Insn::GuardSuperMethodEntry { cme: current_cme, state });
+
+                        // Guard that no block is being passed (implicit or explicit).
+                        let block_handler = self.push_insn(block, Insn::GetBlockHandler);
+                        self.push_insn(block, Insn::GuardBitEquals {
+                            val: block_handler,
+                            expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
+                            reason: SideExitReason::UnhandledBlockArg,
+                            state
+                        });
+
+                        // Use SendWithoutBlockDirect with the super method's CME and ISEQ.
+                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect {
+                            recv,
+                            cd,
+                            cme: super_cme,
+                            iseq: super_iseq,
+                            args,
+                            state
+                        });
+                        self.make_equal_to(insn_id, send_direct);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -3375,11 +3559,14 @@ impl Function {
                         return Err(());
                     }
 
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+
                     // Commit to the replacement. Put PatchPoint.
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-                    if recv_class.instance_can_have_singleton_class() {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                    }
 
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
@@ -3410,11 +3597,15 @@ impl Function {
                 -1 => {
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
+
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 
-                    if recv_class.instance_can_have_singleton_class() {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                    }
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -3522,11 +3713,14 @@ impl Function {
                         return Err(());
                     }
 
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+
                     // Commit to the replacement. Put PatchPoint.
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-                    if recv_class.instance_can_have_singleton_class() {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                    }
 
                     let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                     if props.is_none() && get_option!(stats) {
@@ -3599,11 +3793,14 @@ impl Function {
                         fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     } else {
+                        // Check singleton class assumption first, before emitting other patchpoints
+                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                            return Err(());
+                        }
+
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 
-                        if recv_class.instance_can_have_singleton_class() {
-                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                        }
                         if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
                             recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -3812,14 +4009,11 @@ impl Function {
                         }
                     }
                     Insn::GuardBitEquals { val, expected, .. } => {
-                        match self.find(val) {
-                            // TODO: Refactor this into a more general method like
-                            // has_value(Const) that can check on the value specialization
-                            // of the Type instead
-                            Insn::Const { val: const_val } if const_val == expected => {
-                                continue;
-                            }
-                            _ => insn_id
+                        let recv_type = self.type_of(val);
+                        if recv_type.has_value(expected) {
+                            continue;
+                        } else {
+                            insn_id
                         }
                     }
                     Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
@@ -3882,15 +4076,16 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::ArrayArefFixnum { array, index } if self.type_of(array).ruby_object_known()
-                                                           && self.type_of(index).ruby_object_known() => {
+                    Insn::ArrayAref { array, index }
+                        if self.type_of(array).ruby_object_known()
+                            && self.type_of(index).is_subtype(types::CInt64) => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
-                        if array_obj.is_frozen() {
-                            let index = self.type_of(index).fixnum_value().unwrap();
-                            let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                            self.new_insn(Insn::Const { val: Const::Value(val) })
-                        } else {
-                            insn_id
+                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
+                            (true, Some(index)) => {
+                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
                         }
                     }
                     Insn::Test { val } if self.type_of(val).is_known_falsy() => {
@@ -3937,6 +4132,7 @@ impl Function {
             | &Insn::LoadEC
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
+            | &Insn::GetBlockHandler
             | &Insn::PutSpecialObject { .. }
             | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
@@ -4079,7 +4275,7 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::ArrayArefFixnum { array, index } => {
+            &Insn::ArrayAref { array, index } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
             }
@@ -4165,6 +4361,7 @@ impl Function {
                 worklist.push_back(val);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
+            &Insn::GuardSuperMethodEntry { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
@@ -4680,6 +4877,8 @@ impl Function {
             | Insn::Jump { .. }
             | Insn::EntryPoint { .. }
             | Insn::GuardBlockParamProxy { .. }
+            | Insn::GuardSuperMethodEntry { .. }
+            | Insn::GetBlockHandler
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
@@ -4800,9 +4999,9 @@ impl Function {
             | Insn::ArrayLength { array, .. } => {
                 self.assert_subtype(insn_id, array, types::Array)
             }
-            Insn::ArrayArefFixnum { array, index } => {
+            Insn::ArrayAref { array, index } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
-                self.assert_subtype(insn_id, index, types::Fixnum)
+                self.assert_subtype(insn_id, index, types::CInt64)
             }
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
@@ -5357,7 +5556,8 @@ fn unspecializable_c_call_type(flags: u32) -> bool {
 fn unspecializable_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
     ((flags & VM_CALL_KW_SPLAT) != 0) ||
-    ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
+    ((flags & VM_CALL_ARGS_BLOCKARG) != 0) ||
+    ((flags & VM_CALL_FORWARDING) != 0)
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
@@ -6345,10 +6545,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), reason: SideExitReason::ExpandArray, state: exit_id });
                     for i in (0..num).rev() {
-                        // TODO(max): Add a short-cut path for long indices into an array where the
-                        // index is known to be in-bounds
-                        let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
-                        let element = fun.push_insn(block, Insn::ArrayArefFixnum { array, index });
+                        // We do not emit a length guard here because in-bounds is already
+                        // ensured by the expandarray length check above.
+                        let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
+                        let element = fun.push_insn(block, Insn::ArrayAref { array, index });
                         state.stack_push(element);
                     }
                 }

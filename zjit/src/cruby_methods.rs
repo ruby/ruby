@@ -326,7 +326,12 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     if let &[index] = args {
         if fun.likely_a(index, types::Fixnum, state) {
             let index = fun.coerce_to(block, index, types::Fixnum, state);
-            let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
+            let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+            let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });
+            let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
             return Some(result);
         }
     }
@@ -857,6 +862,10 @@ fn inline_kernel_respond_to_p(
         }
         (_, _) => return None, // not public and include_all not known, can't compile
     };
+    // Check singleton class assumption first, before emitting other patchpoints
+    if !fun.assume_no_singleton_classes(block, recv_class, state) {
+        return None;
+    }
     fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::NoTracePoint, state });
     fun.push_insn(block, hir::Insn::PatchPoint {
         invariant: hir::Invariant::MethodRedefined {
@@ -865,11 +874,6 @@ fn inline_kernel_respond_to_p(
             cme: target_cme
         }, state
     });
-    if recv_class.instance_can_have_singleton_class() {
-        fun.push_insn(block, hir::Insn::PatchPoint {
-            invariant: hir::Invariant::NoSingletonClass { klass: recv_class }, state
-        });
-    }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
 }
 
