@@ -1670,8 +1670,6 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_matchdata_large_capture_groups_stack
-    omit "thread machine stack size unsupported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-
     env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
     script = <<~'RUBY'
       n = 20000
