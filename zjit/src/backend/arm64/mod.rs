@@ -691,46 +691,6 @@ impl Assembler {
         asm_local
     }
 
-    /// Resolve ParallelMov instructions without using scratch registers.
-    /// This is used for trampolines that don't allow scratch registers.
-    /// Linearizes all blocks into a single giant block.
-    fn resolve_parallel_mov_pass(self) -> Assembler {
-        let mut asm_local = Assembler::new();
-        asm_local.accept_scratch_reg = self.accept_scratch_reg;
-        asm_local.stack_base_idx = self.stack_base_idx;
-        asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
-
-        // Create one giant block to linearize everything into
-        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
-
-        // Get linearized instructions with branch parameters expanded into ParallelMov
-        let linearized_insns = self.linearize_instructions();
-
-        // Process each linearized instruction
-        for insn in linearized_insns {
-            match insn {
-                Insn::ParallelMov { moves } => {
-                    // Resolve parallel moves without scratch register
-                    if let Some(resolved_moves) = Assembler::resolve_parallel_moves(&moves, None) {
-                        for (dst, src) in resolved_moves {
-                            asm_local.mov(dst, src);
-                        }
-                    } else {
-                        unreachable!("ParallelMov requires scratch register but scratch_reg is not allowed");
-                    }
-                }
-                _ => {
-                    // Strip branch args from jumps since everything is now in one block
-                    let insn = self.strip_branch_args(insn);
-                    asm_local.push_insn(insn);
-                }
-            }
-        }
-
-        asm_local
-    }
-
     /// Split instructions using scratch registers. To maximize the use of the register pool for
     /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so this
