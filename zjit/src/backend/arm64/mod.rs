@@ -1609,7 +1609,7 @@ impl Assembler {
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(mut self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
-        let scratch_reg_allowed = !self.accept_scratch_reg;
+        let use_scratch_regs = !self.accept_scratch_reg;
 
         // Initialize block labels before any processing
         self.init_block_labels();
@@ -1628,7 +1628,7 @@ impl Assembler {
 
         // linearize
         //
-        if scratch_reg_allowed {
+        if use_scratch_regs {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
         } else {
