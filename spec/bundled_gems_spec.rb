@@ -393,6 +393,30 @@ RSpec.describe "bundled_gems.rb" do
       end
     end
 
+    context "with bundler/inline" do
+      it "foo is available on LOAD_PATH" do
+        build_lib "foo", "1.0.0" do |s|
+          s.write "lib/foo.rb", "puts :foo"
+        end
+
+        script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+          #!/usr/bin/env ruby
+          gemfile do
+            source "https://gem.repo1"
+            path "#{lib_path}" do
+              gem "foo", "1.0.0"
+            end
+          end
+
+          Gem::BUNDLED_GEMS.force_activate("csv")
+          puts $LOAD_PATH
+        RUBY
+
+        expect(err).to include("gem install csv")
+        expect(out).to include("foo-1.0.0/lib")
+      end
+    end
+
     context "without bundle environment" do
       it "warns about installation requirement" do
         expect_any_instance_of(Object).to receive(:warn)
