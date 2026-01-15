@@ -2,7 +2,7 @@ class Binding
   # :nodoc:
   def irb(...)
     suppress = Thread.current[:__bundled_gems_warning_suppression]
-    Thread.current[:__bundled_gems_warning_suppression] = ['irb', 'reline', 'rdoc']
+    Thread.current[:__bundled_gems_warning_suppression] = ['reline', 'rdoc']
 
     begin
       require 'irb'
