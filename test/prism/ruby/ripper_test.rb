@@ -38,7 +38,7 @@ module Prism
     end
 
     # Skip these tests that we haven't implemented yet.
-    omitted = [
+    omitted_sexp_raw = [
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -59,8 +59,29 @@ module Prism
       "whitequark/slash_newline_in_heredocs.txt"
     ]
 
-    Fixture.each_for_current_ruby(except: incorrect | omitted) do |fixture|
-      define_method(fixture.test_name) { assert_ripper(fixture.read) }
+    omitted_lexer_parse = [
+      "comments.txt",
+      "heredoc_percent_q_newline_delimiter.txt",
+      "heredoc_with_escaped_newline_at_start.txt",
+      "heredocs_with_fake_newlines.txt",
+      "indented_file_end.txt",
+      "seattlerb/TestRubyParserShared.txt",
+      "seattlerb/class_comments.txt",
+      "seattlerb/module_comments.txt",
+      "seattlerb/parse_line_block_inline_comment_leading_newlines.txt",
+      "seattlerb/parse_line_block_inline_multiline_comment.txt",
+      "spanning_heredoc_newlines.txt",
+      "strings.txt",
+      "whitequark/dedenting_heredoc.txt",
+      "whitequark/procarg0.txt",
+    ]
+
+    Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
+      define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
+    end
+
+    Fixture.each_for_current_ruby(except: incorrect | omitted_lexer_parse) do |fixture|
+      define_method("#{fixture.test_name}_lexer_parse") { assert_ripper_lexer_parse(fixture.read) }
     end
 
     # Check that the hardcoded values don't change without us noticing.
@@ -76,8 +97,27 @@ module Prism
 
     private
 
-    def assert_ripper(source)
+    def assert_ripper_sexp_raw(source)
       assert_equal Ripper.sexp_raw(source), Prism::Translation::Ripper.sexp_raw(source)
+    end
+
+    def assert_ripper_lexer_parse(source)
+      prism = Translation::Ripper::Lexer.new(source).parse
+      ripper = Ripper::Lexer.new(source).parse
+      ripper.reject! { |elem| elem.event == :on_sp } # Prism doesn't emit on_sp
+      ripper.sort_by!(&:pos) # Prism emits tokens by their order in the code, not in parse order
+
+      [prism.size, ripper.size].max.times do |i|
+        expected = ripper[i].to_a
+        actual = prism[i].to_a
+        # Since tokens related to heredocs are not emitted in the same order,
+        # the state also doesn't line up.
+        if expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
+          expected[3] = actual[3] = nil
+        end
+
+        assert_equal(expected, actual)
+      end
     end
   end
 end

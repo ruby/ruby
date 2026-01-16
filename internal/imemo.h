@@ -256,8 +256,8 @@ struct rb_fields {
 #define OBJ_FIELD_HEAP ROBJECT_HEAP
 STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
-STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
-STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
+STATIC_ASSERT(imemo_fields_external_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
+STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
