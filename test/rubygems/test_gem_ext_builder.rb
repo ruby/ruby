@@ -201,7 +201,7 @@ install:
     Gem.configuration.install_extension_in_lib = @orig_install_extension_in_lib
   end
 
-def test_build_multiple_extensions
+  def test_build_multiple_extensions
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     extension_in_lib do
