@@ -9086,6 +9086,8 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 #undef CASE3_BI_OFFSET_KEY_ERROR_MATCHEE
 #undef CASE3_BI_OFFSET_KEY_ERROR_KEY
 
+#define LOOP_FLAGS_BEGIN_MODIFIER_P(n) (rb_node_get_fl(n) & RB_LOOP_FLAGS_BEGIN_MODIFIER)
+
 static int
 compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
 {
@@ -9112,7 +9114,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
     push_ensure_entry(iseq, &enl, NULL, NULL);
 
-    if (RNODE_WHILE(node)->nd_state == 1) {
+    if (!LOOP_FLAGS_BEGIN_MODIFIER_P(node)) {
         ADD_INSNL(ret, line_node, jump, next_label);
     }
     else {
@@ -9127,9 +9129,9 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     if (tmp_label) ADD_LABEL(ret, tmp_label);
 
     ADD_LABEL(ret, redo_label);
-    branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == NODE_WHILE ? "while" : "until");
+    branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == RB_WHILE_NODE ? "while" : "until");
 
-    const NODE *const coverage_node = RNODE_WHILE(node)->nd_body ? RNODE_WHILE(node)->nd_body : node;
+    const NODE *const coverage_node = RB_NODE_WHILE(node)->statements ? RB_NODE_WHILE(node)->statements : node;
     add_trace_branch_coverage(
         iseq,
         ret,
@@ -9139,31 +9141,22 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         "body",
         branches);
 
-    CHECK(COMPILE_POPPED(ret, "while body", RNODE_WHILE(node)->nd_body));
+    CHECK(COMPILE_POPPED(ret, "while body", RB_NODE_WHILE(node)->statements));
     ADD_LABEL(ret, next_label);	/* next */
 
-    if (type == NODE_WHILE) {
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+    if (type == RB_WHILE_NODE) {
+        CHECK(compile_branch_condition(iseq, ret, RB_NODE_WHILE(node)->predicate,
                                        redo_label, end_label));
     }
     else {
         /* until */
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+        CHECK(compile_branch_condition(iseq, ret, RB_NODE_WHILE(node)->predicate,
                                        end_label, redo_label));
     }
 
     ADD_LABEL(ret, end_label);
     ADD_ADJUST_RESTORE(ret, adjust_label);
-
-    if (UNDEF_P(RNODE_WHILE(node)->nd_state)) {
-        /* ADD_INSN(ret, line_node, putundef); */
-        COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
-        return COMPILE_NG;
-    }
-    else {
-        ADD_INSN(ret, line_node, putnil);
-    }
-
+    ADD_INSN(ret, line_node, putnil);
     ADD_LABEL(ret, break_label);	/* break */
 
     if (popped) {
@@ -9560,6 +9553,7 @@ compile_begin_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
         nd_else = NULL;
         break;
       default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
 
     const rb_iseq_t *rescue = NEW_CHILD_ISEQ(nd_rescue,
@@ -11869,6 +11863,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_WHILE_NODE:
+      case RB_UNTIL_NODE: {
+        CHECK(compile_loop(iseq, ret, node, popped, type));
+        break;
+      }
+
+      case RB_RETRY_NODE: {
+        CHECK(compile_retry(iseq, ret, node, popped));
+        break;
+      }
       case RB_BEGIN_NODE: {
         CHECK(compile_begin(iseq, ret, node, popped));
         break;
