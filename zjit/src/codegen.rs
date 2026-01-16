@@ -454,7 +454,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardSuperMethodEntry { cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, cme, &function.frame_state(state))),
+        &Insn::GuardSuperMethodEntry { lep, cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, opnd!(lep), cme, &function.frame_state(state))),
         Insn::GetBlockHandler => gen_get_block_handler(jit, asm),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
@@ -724,11 +724,11 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
 fn gen_guard_super_method_entry(
     jit: &JITState,
     asm: &mut Assembler,
+    lep: Opnd,
     cme: *const rb_callable_method_entry_t,
     state: &FrameState,
 ) {
     asm_comment!(asm, "guard super method entry");
-    let lep = gen_get_lep(jit, asm);
     let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
     let ep_me = asm.load(ep_me_opnd);
     asm.cmp(ep_me, Opnd::UImm(cme as u64));

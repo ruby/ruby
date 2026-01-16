@@ -1016,7 +1016,7 @@ pub enum Insn {
     GuardLess { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] doesn't match the expected CME.
     /// Used to ensure super calls are made from the expected method context.
-    GuardSuperMethodEntry { cme: *const rb_callable_method_entry_t, state: InsnId },
+    GuardSuperMethodEntry { lep: InsnId, cme: *const rb_callable_method_entry_t, state: InsnId },
     /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
     GetBlockHandler,
 
@@ -1515,7 +1515,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
-            Insn::GuardSuperMethodEntry { cme, .. } => write!(f, "GuardSuperMethodEntry {:p}", self.ptr_map.map_ptr(cme)),
+            Insn::GuardSuperMethodEntry { lep, cme, .. } => write!(f, "GuardSuperMethodEntry {lep}, {:p}", self.ptr_map.map_ptr(cme)),
             Insn::GetBlockHandler => write!(f, "GetBlockHandler"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
@@ -2180,7 +2180,7 @@ impl Function {
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
-            &GuardSuperMethodEntry { cme, state } => GuardSuperMethodEntry { cme, state },
+            &GuardSuperMethodEntry { lep, cme, state } => GuardSuperMethodEntry { lep: find!(lep), cme, state },
             &GetBlockHandler => GetBlockHandler,
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
@@ -3421,7 +3421,12 @@ impl Function {
                         });
 
                         // Guard that we're calling `super` from the expected method context.
-                        self.push_insn(block, Insn::GuardSuperMethodEntry { cme: current_cme, state });
+                        let lep = self.push_insn(block, Insn::GetLEP);
+                        self.push_insn(block, Insn::GuardSuperMethodEntry {
+                            lep,
+                            cme: current_cme,
+                            state
+                        });
 
                         // Guard that no block is being passed (implicit or explicit).
                         let block_handler = self.push_insn(block, Insn::GetBlockHandler);
@@ -4598,12 +4603,15 @@ impl Function {
                 worklist.push_back(val);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
-            &Insn::GuardSuperMethodEntry { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
+            &Insn::GuardSuperMethodEntry { lep, state, .. } => {
+                worklist.push_back(lep);
+                worklist.push_back(state);
+            }
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
             &Insn::FixnumAref { recv, index } => {
                 worklist.push_back(recv);

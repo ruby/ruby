@@ -10943,12 +10943,13 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          GuardSuperMethodEntry 0x1038
-          v18:RubyValue = GetBlockHandler
-          v19:FalseClass = GuardBitEquals v18, Value(false)
-          v20:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler
+          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v21:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -10986,17 +10987,18 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          GuardSuperMethodEntry 0x1038
-          v27:RubyValue = GetBlockHandler
-          v28:FalseClass = GuardBitEquals v27, Value(false)
-          v29:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v9
+          v26:CPtr = GetLEP
+          GuardSuperMethodEntry v26, 0x1038
+          v28:RubyValue = GetBlockHandler
+          v29:FalseClass = GuardBitEquals v28, Value(false)
+          v30:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v9
           v17:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
-          v32:Fixnum = GuardType v29, Fixnum
-          v33:Fixnum = FixnumAdd v32, v17
+          v33:Fixnum = GuardType v30, Fixnum
+          v34:Fixnum = FixnumAdd v33, v17
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v33
+          Return v34
         ");
     }
 
