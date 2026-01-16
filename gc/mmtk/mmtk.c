@@ -603,7 +603,13 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
 
     ccan_list_del(&cache->list_node);
 
-    MMTK_ASSERT(objspace->live_ractor_cache_count > 1);
+    if (ruby_free_at_exit_p()) {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 0);
+    }
+    else {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 1);
+    }
+
     objspace->live_ractor_cache_count--;
 
     mmtk_destroy_mutator(cache->mutator);
