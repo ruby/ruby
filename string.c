@@ -12087,7 +12087,7 @@ VALUE
 rb_interned_str(const char *ptr, long len)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), TRUE);
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_ASCII_8BIT), TRUE);
 }
 
 VALUE
