@@ -1675,6 +1675,44 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        let rsi = asm.load(Opnd::UImm(4));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(rax, rcx);
+        let _ = asm.add(rdx, rsi);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"");
+        assert_snapshot!(cb.hexdump(), @"");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        let rsi = asm.load(Opnd::UImm(4));
+        let r8 = asm.load(Opnd::UImm(5));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(rax, rcx);
+        let _ = asm.add(rdx, rsi);
+        let _ = asm.add(rdx, r8);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"");
+        assert_snapshot!(cb.hexdump(), @"");
+    }
+
+    #[test]
     fn test_cmov_mem() {
         let (mut asm, mut cb) = setup_asm();
 

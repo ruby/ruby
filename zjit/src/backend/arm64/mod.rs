@@ -1907,7 +1907,7 @@ mod tests {
         0x10: ldp x10, x11, [sp], #0x10
         0x14: ldp x1, x9, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef3bc1a8ed33c1a8eb2bc1a8e907c1a8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ee3fc1a8ec37c1a8ea2fc1a8e127c1a8");
     }
 
     #[test]
@@ -2710,6 +2710,76 @@ mod tests {
             0x1c: blr x16
         ");
         assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
+    }
+    
+    #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        let x2 = asm.load(Opnd::UImm(3));
+        let x3 = asm.load(Opnd::UImm(4));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(x0, x1);
+        let _ = asm.add(x2, x3);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, x0
+        0x14: stp x1, x2, [sp, #-0x10]!
+        0x18: stp x3, x4, [sp, #-0x10]!
+        0x1c: mov x16, #0
+        0x20: blr x16
+        0x24: ldp x3, x4, [sp], #0x10
+        0x28: ldp x1, x2, [sp], #0x10
+        0x2c: adds x4, x4, x1
+        0x30: adds x2, x2, x3
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2e40300aae10bbfa9e313bfa9100080d200023fd6e313c1a8e10bc1a8840001ab420003ab");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        let x2 = asm.load(Opnd::UImm(3));
+        let x3 = asm.load(Opnd::UImm(4));
+        let x4 = asm.load(Opnd::UImm(5));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(x0, x1);
+        let _ = asm.add(x2, x3);
+        let _ = asm.add(x2, x4);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, x0
+        0x18: stp x1, x2, [sp, #-0x10]!
+        0x1c: stp x3, x4, [sp, #-0x10]!
+        0x20: str x5, [sp, #-0x10]!
+        0x24: mov x16, #0
+        0x28: blr x16
+        0x2c: ldr x5, [sp], #0x10
+        0x30: ldp x3, x4, [sp], #0x10
+        0x34: ldp x1, x2, [sp], #0x10
+        0x38: adds x5, x5, x1
+        0x3c: adds x0, x2, x3
+        0x40: adds x2, x2, x4
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e50300aae10bbfa9e313bfa9e50f1ff8100080d200023fd6e50741f8e313c1a8e10bc1a8a50001ab400003ab420004ab");
     }
 
     #[test]
