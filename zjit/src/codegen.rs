@@ -455,7 +455,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardSuperMethodEntry { lep, cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, opnd!(lep), cme, &function.frame_state(state))),
-        Insn::GetBlockHandler => gen_get_block_handler(jit, asm),
+        Insn::GetBlockHandler { lep } => gen_get_block_handler(asm, opnd!(lep)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -736,9 +736,8 @@ fn gen_guard_super_method_entry(
 }
 
 /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-fn gen_get_block_handler(jit: &JITState, asm: &mut Assembler) -> Opnd {
+fn gen_get_block_handler(asm: &mut Assembler, lep: Opnd) -> Opnd {
     asm_comment!(asm, "get block handler from LEP");
-    let lep = gen_get_lep(jit, asm);
     asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
 }
 

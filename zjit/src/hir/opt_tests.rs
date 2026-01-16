@@ -10945,7 +10945,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
           GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler
+          v19:RubyValue = GetBlockHandler v17
           v20:FalseClass = GuardBitEquals v19, Value(false)
           v21:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
           CheckInterrupts
@@ -10989,7 +10989,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v26:CPtr = GetLEP
           GuardSuperMethodEntry v26, 0x1038
-          v28:RubyValue = GetBlockHandler
+          v28:RubyValue = GetBlockHandler v26
           v29:FalseClass = GuardBitEquals v28, Value(false)
           v30:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v9
           v17:Fixnum[1] = Const Value(1)

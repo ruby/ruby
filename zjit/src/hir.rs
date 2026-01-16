@@ -1018,7 +1018,7 @@ pub enum Insn {
     /// Used to ensure super calls are made from the expected method context.
     GuardSuperMethodEntry { lep: InsnId, cme: *const rb_callable_method_entry_t, state: InsnId },
     /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-    GetBlockHandler,
+    GetBlockHandler { lep: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1516,7 +1516,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::GuardSuperMethodEntry { lep, cme, .. } => write!(f, "GuardSuperMethodEntry {lep}, {:p}", self.ptr_map.map_ptr(cme)),
-            Insn::GetBlockHandler => write!(f, "GetBlockHandler"),
+            Insn::GetBlockHandler { lep } => write!(f, "GetBlockHandler {lep}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -2181,7 +2181,7 @@ impl Function {
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &GuardSuperMethodEntry { lep, cme, state } => GuardSuperMethodEntry { lep: find!(lep), cme, state },
-            &GetBlockHandler => GetBlockHandler,
+            &GetBlockHandler { lep } => GetBlockHandler { lep: find!(lep) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2476,7 +2476,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
-            Insn::GetBlockHandler => types::RubyValue,
+            Insn::GetBlockHandler { .. } => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -3429,7 +3429,7 @@ impl Function {
                         });
 
                         // Guard that no block is being passed (implicit or explicit).
-                        let block_handler = self.push_insn(block, Insn::GetBlockHandler);
+                        let block_handler = self.push_insn(block, Insn::GetBlockHandler { lep });
                         self.push_insn(block, Insn::GuardBitEquals {
                             val: block_handler,
                             expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
@@ -4373,12 +4373,14 @@ impl Function {
             | &Insn::GetLEP
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
-            | &Insn::GetBlockHandler
             | &Insn::PutSpecialObject { .. }
             | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
             | &Insn::IncrCounterPtr { .. } =>
                 {}
+            &Insn::GetBlockHandler { lep } => {
+                worklist.push_back(lep);
+            }
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
@@ -5123,7 +5125,7 @@ impl Function {
             | Insn::EntryPoint { .. }
             | Insn::GuardBlockParamProxy { .. }
             | Insn::GuardSuperMethodEntry { .. }
-            | Insn::GetBlockHandler
+            | Insn::GetBlockHandler { .. }
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
