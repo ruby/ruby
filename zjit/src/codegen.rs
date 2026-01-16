@@ -438,6 +438,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::FixnumAref { recv, index } => gen_fixnum_aref(asm, opnd!(recv), opnd!(index)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
+        &Insn::BoolNot { val } => gen_bool_not(asm, opnd!(val)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state: _ } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
@@ -1951,6 +1952,13 @@ fn gen_isnil(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.cmp(val, Qnil.into());
     // TODO: Implement and use setcc
     asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+}
+
+// Compile !val, where val is TrueClass or FalseClass
+fn gen_bool_not(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    // 0x00 ^ 0x14 == 0x14 (false -> true)
+    // 0x14 ^ 0x14 == 0x00 (true -> false)
+    asm.xor(val, Qtrue.into())
 }
 
 fn gen_is_method_cfunc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_data, cfunc: *const u8) -> lir::Opnd {

@@ -784,6 +784,8 @@ pub enum Insn {
     Test { val: InsnId },
     /// Return C `true` if `val` is `Qnil`, else `false`.
     IsNil { val: InsnId },
+    /// Negate the Ruby boolean (TrueClass/FalseClass instance)
+    BoolNot { val: InsnId },
     /// Return C `true` if `val`'s method on cd resolves to the cfunc.
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
     /// Return C `true` if left == right
@@ -1089,6 +1091,7 @@ impl Insn {
             Insn::FixnumAref { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
+            Insn::BoolNot    { .. } => false,
             Insn::LoadPC => false,
             Insn::LoadEC => false,
             Insn::LoadSelf => false,
@@ -1285,6 +1288,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
+            Insn::BoolNot { val } => { write!(f, "BoolNot {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
@@ -2029,6 +2033,7 @@ impl Function {
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
+            &BoolNot { val } => BoolNot { val: find!(val) },
             &IsMethodCfunc { val, cd, cfunc, state } => IsMethodCfunc { val: find!(val), cd, cfunc, state },
             &IsBitEqual { left, right } => IsBitEqual { left: find!(left), right: find!(right) },
             &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
@@ -2246,6 +2251,7 @@ impl Function {
             Insn::IsNil { val } if self.is_a(*val, types::NilClass) => Type::from_cbool(true),
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
+            Insn::BoolNot { .. } => types::BoolExact,
             Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
@@ -4202,7 +4208,8 @@ impl Function {
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
             | &Insn::BoxBool { val }
-            | &Insn::IsNil { val } =>
+            | &Insn::IsNil { val }
+            | &Insn::BoolNot { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
             | &Insn::Defined { v: val, state, .. }
@@ -4890,6 +4897,9 @@ impl Function {
             | Insn::GetLocal { .. }
             | Insn::StoreField { .. } => {
                 Ok(())
+            }
+            Insn::BoolNot { val } => {
+                self.assert_subtype(insn_id, val, types::BoolExact)
             }
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
