@@ -78,6 +78,19 @@ module Prism
         end
       end
 
+      # Tokenizes the Ruby program and returns an array of strings.
+      # The +filename+ and +lineno+ arguments are mostly ignored, since the
+      # return value is just the tokenized input.
+      # By default, this method does not handle syntax errors in +src+,
+      # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
+      #
+      #   p Ripper.tokenize("def m(a) nil end")
+      #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+      #
+      def self.tokenize(...)
+        lex(...).map(&:value)
+      end
+
       # This contains a table of all of the parser events and their
       # corresponding arity.
       PARSER_EVENT_TABLE = {

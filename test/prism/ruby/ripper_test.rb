@@ -84,6 +84,11 @@ module Prism
       define_method("#{fixture.test_name}_lexer_parse") { assert_ripper_lexer_parse(fixture.read) }
     end
 
+    def test_tokenize
+      source = "foo;1;BAZ"
+      assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
+    end
+
     # Check that the hardcoded values don't change without us noticing.
     def test_internals
       actual = Translation::Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
