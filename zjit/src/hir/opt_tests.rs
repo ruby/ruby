@@ -3566,11 +3566,10 @@ mod hir_opt_tests {
           v43:Class[Set@0x1008] = Const Value(VALUE(0x1008))
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Set@0x1008, new@0x1009, cme:0x1010)
-          v18:HeapBasicObject = ObjectAlloc v43
+          v18:SetExact = ObjectAlloc v43
           PatchPoint NoSingletonClass(Set@0x1008)
           PatchPoint MethodRedefined(Set@0x1008, initialize@0x1038, cme:0x1040)
-          v49:SetExact = GuardType v18, SetExact
-          v50:BasicObject = CCallVariadic v49, :Set#initialize@0x1068
+          v49:BasicObject = CCallVariadic v18, :Set#initialize@0x1068
           CheckInterrupts
           CheckInterrupts
           Return v18

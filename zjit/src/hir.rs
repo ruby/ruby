@@ -2274,7 +2274,14 @@ impl Function {
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
             Insn::NewRangeFixnum { .. } => types::RangeExact,
-            Insn::ObjectAlloc { .. } => types::HeapBasicObject,
+            Insn::ObjectAlloc { val, .. } => {
+                let val_type = self.type_of(*val);
+                if val_type.is_subtype(types::Class) {
+                    val_type.ruby_object().map_or(types::HeapBasicObject, Type::from_class)
+                } else {
+                    types::HeapBasicObject
+                }
+            }
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
