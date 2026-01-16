@@ -2995,12 +2995,9 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
-                                Ok(result) => result,
-                                Err(reason) => {
-                                    self.set_dynamic_send_reason(insn_id, reason);
-                                    self.push_insn_id(block, insn_id); continue;
-                                }
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                                self.push_insn_id(block, insn_id); continue;
                             };
 
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
@@ -3041,12 +3038,9 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
-                                Ok(result) => result,
-                                Err(reason) => {
-                                    self.set_dynamic_send_reason(insn_id, reason);
-                                    self.push_insn_id(block, insn_id); continue;
-                                }
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                                self.push_insn_id(block, insn_id); continue;
                             };
 
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
@@ -3430,12 +3424,9 @@ impl Function {
                             state
                         });
 
-                        let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, super_iseq, state) {
-                            Ok(result) => result,
-                            Err(reason) => {
-                                self.set_dynamic_send_reason(insn_id, reason);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                        let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, super_iseq, state)
+                            .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                            self.push_insn_id(block, insn_id); continue;
                         };
 
                         // Use SendWithoutBlockDirect with the super method's CME and ISEQ.
