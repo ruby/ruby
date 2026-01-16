@@ -3587,34 +3587,25 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 break;
 
               default:
-                /*
-                 * Fast path check: can this object skip cleanup?
-                 * Embedded objects without object_id, gen_fields, or
-                 * external resources can skip weak ref and free processing.
-                 */
-                if (gc_sweep_fast_path_p(vp)) {
-                    /*
-                     * Fast path: object does not need cleanup.
-                     * Skip rb_gc_obj_free_vm_weak_references() and rb_gc_obj_free().
-                     */
 #if RGENGC_CHECK_MODE
-                    if (!is_full_marking(objspace)) {
-                        if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                        if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                    }
+                if (!is_full_marking(objspace)) {
+                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                }
 #endif
-                    if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
+                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
 
 #if RGENGC_CHECK_MODE
 #define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                    CHECK(RVALUE_WB_UNPROTECTED);
-                    CHECK(RVALUE_MARKED);
-                    CHECK(RVALUE_MARKING);
-                    CHECK(RVALUE_UNCOLLECTIBLE);
+                CHECK(RVALUE_WB_UNPROTECTED);
+                CHECK(RVALUE_MARKED);
+                CHECK(RVALUE_MARKING);
+                CHECK(RVALUE_UNCOLLECTIBLE);
 #undef CHECK
 #endif
 
-                    /* Fire FREEOBJ event hook if registered (uncommon) */
+                if (gc_sweep_fast_path_p(vp)) {
+                    /* Fast path: skip weak ref cleanup and obj_free */
                     if (UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
                         rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
                     }
@@ -3626,26 +3617,8 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     ctx->freed_slots++;
                 }
                 else {
-                    /*
-                     * Slow path: full cleanup required.
-                     */
+                    /* Slow path: full cleanup required */
                     gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-#if RGENGC_CHECK_MODE
-                    if (!is_full_marking(objspace)) {
-                        if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                        if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                    }
-#endif
-                    if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
-
-#if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                    CHECK(RVALUE_WB_UNPROTECTED);
-                    CHECK(RVALUE_MARKED);
-                    CHECK(RVALUE_MARKING);
-                    CHECK(RVALUE_UNCOLLECTIBLE);
-#undef CHECK
-#endif
 
                     rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
