@@ -848,10 +848,11 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 /*
  * Determines if an object can skip the slow cleanup path during sweep.
  * Returns true only for objects that:
- *   1. Have no object_id registered (no id2ref table entry to clear)
- *   2. Have no gen_fields (no generic_fields_tbl entry to clear)
- *   3. Have no heap allocations to free
- *   4. Have no other external resources or weak references
+ *   1. Have no finalizer (FL_FINALIZE)
+ *   2. Have no object_id registered (no id2ref table entry to clear)
+ *   3. Have no gen_fields (no generic_fields_tbl entry to clear)
+ *   4. Have no heap allocations to free
+ *   5. Have no other external resources or weak references
  *
  * This is a whitelist - unknown types default to false (slow path).
  * We already have flags in cache from the BUILTIN_TYPE() check in the sweep loop.
@@ -862,6 +863,11 @@ gc_sweep_fast_path_p(VALUE obj)
     VALUE flags = RBASIC(obj)->flags;
     uint32_t type = (uint32_t)(flags & RUBY_T_MASK);
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
+    /* Finalizers must run through slow path to become zombies */
+    if (flags & FL_FINALIZE) {
+        return false;
+    }
 
     /* object_id requires cleanup to remove from id2ref table */
     if (rb_shape_has_object_id(shape_id)) {
