@@ -13,6 +13,7 @@ use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
+use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
@@ -1053,61 +1054,167 @@ impl Insn {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
 
-    /// Return true if the instruction needs to be kept around. For example, if the instruction
-    /// might have a side effect, or if the instruction may raise an exception.
-    fn has_effects(&self) -> bool {
-        match self {
-            Insn::Const { .. } => false,
-            Insn::Param => false,
-            Insn::StringCopy { .. } => false,
-            Insn::NewArray { .. } => false,
-            // NewHash's operands may be hashed and compared for equality, which could have
-            // side-effects.
-            Insn::NewHash { elements, .. } => !elements.is_empty(),
-            Insn::ArrayLength { .. } => false,
-            Insn::ArrayDup { .. } => false,
-            Insn::HashDup { .. } => false,
-            Insn::Test { .. } => false,
-            Insn::Snapshot { .. } => false,
-            Insn::FixnumAdd  { .. } => false,
-            Insn::FixnumSub  { .. } => false,
-            Insn::FixnumMult { .. } => false,
-            // TODO(max): Consider adding a Guard that the rhs is non-zero before Div and Mod
-            // Div *is* critical unless we can prove the right hand side != 0
-            // Mod *is* critical unless we can prove the right hand side != 0
-            Insn::FixnumEq   { .. } => false,
-            Insn::FixnumNeq  { .. } => false,
-            Insn::FixnumLt   { .. } => false,
-            Insn::FixnumLe   { .. } => false,
-            Insn::FixnumGt   { .. } => false,
-            Insn::FixnumGe   { .. } => false,
-            Insn::FixnumAnd  { .. } => false,
-            Insn::FixnumOr   { .. } => false,
-            Insn::FixnumXor  { .. } => false,
-            Insn::FixnumLShift { .. } => false,
-            Insn::FixnumRShift { .. } => false,
-            Insn::FixnumAref { .. } => false,
-            Insn::GetLocal   { .. } => false,
-            Insn::IsNil      { .. } => false,
-            Insn::LoadPC => false,
-            Insn::LoadEC => false,
-            Insn::LoadSelf => false,
-            Insn::LoadField { .. } => false,
-            Insn::CCall { elidable, .. } => !elidable,
-            Insn::CCallWithFrame { elidable, .. } => !elidable,
-            Insn::ObjectAllocClass { .. } => false,
-            // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
-            // but we don't have type information here in `impl Insn`. See rb_range_new().
-            Insn::NewRange { .. } => true,
-            Insn::NewRangeFixnum { .. } => false,
-            Insn::StringGetbyte { .. } => false,
-            Insn::IsBlockGiven => false,
-            Insn::BoxFixnum { .. } => false,
-            Insn::BoxBool { .. } => false,
-            Insn::IsBitEqual { .. } => false,
-            Insn::IsA { .. } => false,
-            _ => true,
+    // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
+    // TODO(Jacob): Add sideeffect failure bit
+    fn effects_of(&self) -> Effect {
+        const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
+        match &self {
+            Insn::Const { .. } => effects::Empty,
+            Insn::Param { .. } => effects::Empty,
+            Insn::StringCopy { .. } => allocates,
+            Insn::StringIntern { .. } => effects::Any,
+            Insn::StringConcat { .. } => effects::Any,
+            Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::StringSetbyteFixnum { .. } => effects::Any,
+            Insn::StringAppend { .. } => effects::Any,
+            Insn::StringAppendCodepoint { .. } => effects::Any,
+            Insn::ToRegexp { .. } => effects::Any,
+            Insn::PutSpecialObject { .. } => effects::Any,
+            Insn::ToArray { .. } => effects::Any,
+            Insn::ToNewArray { .. } => effects::Any,
+            Insn::NewArray { .. } => allocates,
+            Insn::NewHash { elements, .. } => {
+                // NewHash's operands may be hashed and compared for equality, which could have
+                // side-effects. Empty hashes are definitely elidable.
+                if elements.is_empty() {
+                    Effect::write(abstract_heaps::Allocator)
+                }
+                else {
+                    effects::Any
+                }
+            },
+            Insn::NewRange { .. } => effects::Any,
+            Insn::NewRangeFixnum { .. } => allocates,
+            Insn::ArrayDup { .. } => allocates,
+            Insn::ArrayHash { .. } => effects::Any,
+            Insn::ArrayMax { .. } => effects::Any,
+            Insn::ArrayInclude { .. } => effects::Any,
+            Insn::ArrayPackBuffer { .. } => effects::Any,
+            Insn::DupArrayInclude { .. } => effects::Any,
+            Insn::ArrayExtend { .. } => effects::Any,
+            Insn::ArrayPush { .. } => effects::Any,
+            Insn::ArrayAref { ..  } => effects::Any,
+            Insn::ArrayAset { .. } => effects::Any,
+            Insn::ArrayPop { ..  } => effects::Any,
+            Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
+            Insn::HashAref { .. } => effects::Any,
+            Insn::HashAset { .. } => effects::Any,
+            Insn::HashDup { .. } => allocates,
+            Insn::ObjectAlloc { .. } => effects::Any,
+            Insn::ObjectAllocClass { .. } => allocates,
+            Insn::Test { .. } => effects::Empty,
+            Insn::IsNil { .. } => effects::Empty,
+            Insn::IsMethodCfunc { .. } => effects::Any,
+            Insn::IsBitEqual { .. } => effects::Empty,
+            Insn::IsBitNotEqual { .. } => effects::Any,
+            Insn::BoxBool { .. } => effects::Empty,
+            Insn::BoxFixnum { .. } => effects::Empty,
+            Insn::UnboxFixnum { .. } => effects::Any,
+            Insn::FixnumAref { .. } => effects::Empty,
+            Insn::Defined { .. } => effects::Any,
+            Insn::GetConstantPath { .. } => effects::Any,
+            Insn::IsBlockGiven { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::FixnumBitCheck { .. } => effects::Any,
+            Insn::IsA { .. } => effects::Empty,
+            Insn::GetGlobal { .. } => effects::Any,
+            Insn::SetGlobal { .. } => effects::Any,
+            Insn::GetIvar { .. } => effects::Any,
+            Insn::SetIvar { .. } => effects::Any,
+            Insn::DefinedIvar { .. } => effects::Any,
+            Insn::LoadPC { .. } => Effect::read_write(abstract_heaps::PC, abstract_heaps::Empty),
+            Insn::LoadEC { .. } => effects::Empty,
+            Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
+            Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::StoreField { .. } => effects::Any,
+            Insn::WriteBarrier { .. } => effects::Any,
+            Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
+            Insn::SetLocal { .. } => effects::Any,
+            Insn::GetSpecialSymbol { .. } => effects::Any,
+            Insn::GetSpecialNumber { .. } => effects::Any,
+            Insn::GetClassVar { .. } => effects::Any,
+            Insn::SetClassVar { .. } => effects::Any,
+            Insn::Snapshot { .. } => effects::Empty,
+            Insn::Jump(_) => effects::Any,
+            Insn::IfTrue { .. } => effects::Any,
+            Insn::IfFalse { .. } => effects::Any,
+            Insn::CCall { elidable, .. } => {
+                if *elidable {
+                    Effect::write(abstract_heaps::Allocator)
+                }
+                else {
+                    effects::Any
+                }
+            },
+            Insn::CCallWithFrame { elidable, .. } => {
+                if *elidable {
+                    Effect::write(abstract_heaps::Allocator)
+                }
+                else {
+                    effects::Any
+                }
+            },
+            Insn::CCallVariadic { .. } => effects::Any,
+            Insn::SendWithoutBlock { .. } => effects::Any,
+            Insn::Send { .. } => effects::Any,
+            Insn::SendForward { .. } => effects::Any,
+            Insn::InvokeSuper { .. } => effects::Any,
+            Insn::InvokeBlock { .. } => effects::Any,
+            Insn::SendWithoutBlockDirect { .. } => effects::Any,
+            Insn::InvokeBuiltin { .. } => effects::Any,
+            Insn::EntryPoint { .. } => effects::Any,
+            Insn::Return { .. } => effects::Any,
+            Insn::Throw { .. } => effects::Any,
+            Insn::FixnumAdd { .. } => effects::Empty,
+            Insn::FixnumSub { .. } => effects::Empty,
+            Insn::FixnumMult { .. } => effects::Empty,
+            Insn::FixnumDiv { .. } => effects::Any,
+            Insn::FixnumMod { .. } => effects::Any,
+            Insn::FixnumEq { .. } => effects::Empty,
+            Insn::FixnumNeq { .. } => effects::Empty,
+            Insn::FixnumLt { .. } => effects::Empty,
+            Insn::FixnumLe { .. } => effects::Empty,
+            Insn::FixnumGt { .. } => effects::Empty,
+            Insn::FixnumGe { .. } => effects::Empty,
+            Insn::FixnumAnd { .. } => effects::Empty,
+            Insn::FixnumOr { .. } => effects::Empty,
+            Insn::FixnumXor { .. } => effects::Empty,
+            Insn::FixnumLShift { .. } => effects::Empty,
+            Insn::FixnumRShift { .. } => effects::Empty,
+            Insn::ObjToString { .. } => effects::Any,
+            Insn::AnyToString { .. } => effects::Any,
+            Insn::GuardType { .. } => effects::Any,
+            Insn::GuardTypeNot { .. } => effects::Any,
+            Insn::GuardBitEquals { .. } => effects::Any,
+            Insn::GuardShape { .. } => effects::Any,
+            Insn::GuardBlockParamProxy { .. } => effects::Any,
+            Insn::GuardNotFrozen { .. } => effects::Any,
+            Insn::GuardNotShared { .. } => effects::Any,
+            Insn::GuardGreaterEq { .. } => effects::Any,
+            Insn::GuardSuperMethodEntry { .. } => effects::Any,
+            Insn::GetBlockHandler { .. } => effects::Any,
+            Insn::GuardLess { .. } => effects::Any,
+            Insn::PatchPoint { .. } => effects::Any,
+            Insn::SideExit { .. } => effects::Any,
+            Insn::IncrCounter(_) => effects::Any,
+            Insn::IncrCounterPtr { .. } => effects::Any,
+            Insn::CheckInterrupts { .. } => effects::Any,
         }
+    }
+
+    /// Return true if we can safely omit the instruction. This occurs when one of the following
+    /// conditions are met.
+    /// 1. The instruction does not write anything.
+    /// 2. The instruction only allocates and writes nothing else.
+    /// Calling the effects of our instruction `insn_effects`, we need:
+    /// `effects::Empty` to include `insn_effects.write` or `effects::Allocator` to include
+    /// `insn_effects.write`.
+    /// We can simplify this to `effects::Empty.union(effects::Allocator).includes(insn_effects.write)`.
+    /// But the union of `Allocator` and `Empty` is simply `Allocator`, so our entire function
+    /// collapses to `effects::Allocator.includes(insn_effects.write)`.
+    /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
+    /// `read: effects::Any` could potentially be omitted.
+    fn is_elidable(&self) -> bool {
+        abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
 
@@ -4388,8 +4495,7 @@ impl Function {
         // otherwise necessary to keep around
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
-                let insn = &self.insns[insn_id.0];
-                if insn.has_effects() {
+                if !&self.insns[insn_id.0].is_elidable() {
                     worklist.push_back(*insn_id);
                 }
             }
