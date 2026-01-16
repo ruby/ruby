@@ -1762,7 +1762,7 @@ impl Assembler
                 for pair in saved_regs.chunks(2).rev() {
                     match pair {
                         &[(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
-                            asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
+                            asm.cpop_pair_into(Opnd::Reg(reg0), Opnd::Reg(reg1));
                             pool.take_reg(&reg1, vreg_idx1);
                             pool.take_reg(&reg0, vreg_idx0);
                         }

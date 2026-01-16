@@ -1435,7 +1435,7 @@ impl Assembler {
                     emit_pop(cb, opnd.into());
                 },
                 Insn::CPopPairInto(opnd0, opnd1) => {
-                    emit_pop_pair(cb, opnd1.into(), opnd0.into());
+                    emit_pop_pair(cb, opnd0.into(), opnd1.into());
                 },
                 Insn::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
@@ -1461,7 +1461,7 @@ impl Assembler {
 
                     for pair in regs.chunks(2).rev() {
                         match pair {
-                            &[reg0, reg1] => emit_pop_pair(cb, A64Opnd::Reg(reg1), A64Opnd::Reg(reg0)),
+                            &[reg0, reg1] => emit_pop_pair(cb, A64Opnd::Reg(reg0), A64Opnd::Reg(reg1)),
                             &[reg] => emit_pop(cb, A64Opnd::Reg(reg)),
                             _ => unreachable!("chunks(2)")
                         }
@@ -1902,10 +1902,10 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: msr nzcv, x16
         0x4: ldr x16, [sp], #0x10
-        0x8: ldp x15, x14, [sp], #0x10
-        0xc: ldp x13, x12, [sp], #0x10
-        0x10: ldp x11, x10, [sp], #0x10
-        0x14: ldp x9, x1, [sp], #0x10
+        0x8: ldp x14, x15, [sp], #0x10
+        0xc: ldp x12, x13, [sp], #0x10
+        0x10: ldp x10, x11, [sp], #0x10
+        0x14: ldp x1, x9, [sp], #0x10
         ");
         assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef3bc1a8ed33c1a8eb2bc1a8e907c1a8");
     }

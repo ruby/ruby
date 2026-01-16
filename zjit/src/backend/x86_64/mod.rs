@@ -851,8 +851,8 @@ impl Assembler {
                     push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
-                    push(cb, opnd0.into());
                     push(cb, opnd1.into());
+                    push(cb, opnd0.into());
                 },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
