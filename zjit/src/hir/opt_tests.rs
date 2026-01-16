@@ -628,7 +628,7 @@ mod hir_opt_tests {
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject):
           EntryPoint JIT(0)
-          v8:Fixnum[0] = Const Value(0)
+          v8:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           CheckInterrupts
