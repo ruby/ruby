@@ -506,6 +506,7 @@ pub enum SideExitReason {
     Interrupt,
     BlockParamProxyModified,
     BlockParamProxyNotIseqOrIfunc,
+    BlockParamWbRequired,
     StackOverflow,
     FixnumModByZero,
     FixnumDivByZero,
@@ -839,6 +840,8 @@ pub enum Insn {
     /// If `use_sp` is true, it uses the SP register to optimize the read.
     /// `rest_param` is used by infer_types to infer the ArrayExact type.
     GetLocal { level: u32, ep_offset: u32, use_sp: bool, rest_param: bool },
+    /// Get the block parameter as a Proc.
+    GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
@@ -1150,6 +1153,7 @@ impl Insn {
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
             Insn::SetClassVar { .. } => effects::Any,
+            Insn::GetBlockParam { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
             Insn::IfTrue { .. } => effects::Any,
@@ -1523,6 +1527,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::GuardSuperMethodEntry { lep, cme, .. } => write!(f, "GuardSuperMethodEntry {lep}, {:p}", self.ptr_map.map_ptr(cme)),
             Insn::GetBlockHandler { lep } => write!(f, "GetBlockHandler {lep}"),
+            &Insn::GetBlockParam { level, ep_offset, .. } => {
+                let name = get_local_var_name_for_printer(self.iseq, level, ep_offset)
+                    .map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "GetBlockParam {name}l{level}, EP@{ep_offset}")
+            },
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
@@ -2193,6 +2202,7 @@ impl Function {
             &GuardSuperMethodEntry { lep, cme, state } => GuardSuperMethodEntry { lep: find!(lep), cme, state },
             &GetBlockHandler { lep } => GetBlockHandler { lep: find!(lep) },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
+            &GetBlockParam { level, ep_offset, state } => GetBlockParam { level, ep_offset, state: find!(state) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2488,6 +2498,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::GetBlockParam { .. } => types::BasicObject,
             Insn::GetBlockHandler { .. } => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
@@ -4396,6 +4407,7 @@ impl Function {
             }
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
+            | &Insn::GetBlockParam { state, .. }
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
             }
@@ -5153,6 +5165,7 @@ impl Function {
             | Insn::GetSpecialNumber { .. }
             | Insn::GetSpecialSymbol { .. }
             | Insn::GetLocal { .. }
+            | Insn::GetBlockParam { .. }
             | Insn::StoreField { .. } => {
                 Ok(())
             }
@@ -6427,6 +6440,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
                     // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
+                }
+                YARVINSN_getblockparam => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = get_arg(pc, 1).as_u32();
+                    let val = fun.push_insn(block, Insn::GetBlockParam { ep_offset, level, state: exit_id });
+                    if level == 0 {
+                        // Keep it in sync for side exits.
+                        state.setlocal(ep_offset, val);
+                    }
+                    state.stack_push(val);
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }

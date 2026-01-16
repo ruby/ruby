@@ -470,6 +470,29 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:getblockparamproxy]
   end
 
+  def test_getblockparam
+    assert_compiles '2', %q{
+      def test(&blk)
+        blk
+      end
+      test { 2 }.call
+      test { 2 }.call
+    }, insns: [:getblockparam]
+  end
+
+  def test_getblockparam_proxy_side_exit_restores_block_local
+    assert_compiles '2', %q{
+      def test(&block)
+        b = block
+        # sideexits here
+        raise "test" unless block
+        b ? 2 : 3
+      end
+      test {}
+      test {}
+    }, insns: [:getblockparam, :getblockparamproxy]
+  end
+
   def test_optimized_method_call_proc_call
     assert_compiles '2', %q{
       p = proc { |x| x * 2 }
