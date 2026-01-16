@@ -627,7 +627,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockDirectKeywordMismatch,
     SendWithoutBlockDirectKeywordCountMismatch,
     SendWithoutBlockDirectMissingKeyword,
-    SendWithoutBlockDirectNonConstantKeywordDefault,
+    SendWithoutBlockDirectTooManyKeywords,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
@@ -688,7 +688,7 @@ impl Display for SendFallbackReason {
             SendWithoutBlockDirectKeywordMismatch => write!(f, "SendWithoutBlockDirect: keyword mismatch"),
             SendWithoutBlockDirectKeywordCountMismatch => write!(f, "SendWithoutBlockDirect: keyword count mismatch"),
             SendWithoutBlockDirectMissingKeyword => write!(f, "SendWithoutBlockDirect: missing keyword"),
-            SendWithoutBlockDirectNonConstantKeywordDefault => write!(f, "SendWithoutBlockDirect: non-constant keyword default"),
+            SendWithoutBlockDirectTooManyKeywords => write!(f, "SendWithoutBlockDirect: too many keywords for fixnum bitmask"),
             SendPolymorphic => write!(f, "Send: polymorphic call site"),
             SendMegamorphic => write!(f, "Send: megamorphic call site"),
             SendNoProfiles => write!(f, "Send: no profile data available"),
@@ -947,6 +947,7 @@ pub enum Insn {
         cme: *const rb_callable_method_entry_t,
         iseq: IseqPtr,
         args: Vec<InsnId>,
+        kw_bits: u32,
         state: InsnId,
     },
 
@@ -2207,12 +2208,13 @@ impl Function {
                 state,
                 reason,
             },
-            &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
+            &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, kw_bits, state } => SendWithoutBlockDirect {
                 recv: find!(recv),
                 cd,
                 cme,
                 iseq,
                 args: find_vec!(args),
+                kw_bits,
                 state,
             },
             &Send { recv, cd, blockiseq, ref args, state, reason } => Send {
@@ -2596,7 +2598,7 @@ impl Function {
     }
 
     /// Prepare arguments for a direct send, handling keyword argument reordering and default synthesis.
-    /// Returns the (state, processed_args) to use for the SendWithoutBlockDirect instruction,
+    /// Returns the (state, processed_args, kw_bits) to use for the SendWithoutBlockDirect instruction,
     /// or Err with the fallback reason if direct send isn't possible.
     fn prepare_direct_send_args(
         &mut self,
@@ -2605,9 +2607,9 @@ impl Function {
         ci: *const rb_callinfo,
         iseq: IseqPtr,
         state: InsnId,
-    ) -> Result<(InsnId, Vec<InsnId>), SendFallbackReason> {
+    ) -> Result<(InsnId, Vec<InsnId>, u32), SendFallbackReason> {
         let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-        let (processed_args, caller_argc) = self.setup_keyword_arguments(block, args, kwarg, iseq)?;
+        let (processed_args, caller_argc, kw_bits) = self.setup_keyword_arguments(block, args, kwarg, iseq)?;
 
         // If args were reordered or synthesized, create a new snapshot with the updated stack
         let send_state = if processed_args != args {
@@ -2617,24 +2619,26 @@ impl Function {
             state
         };
 
-        Ok((send_state, processed_args))
+        Ok((send_state, processed_args, kw_bits))
     }
 
     /// Reorder keyword arguments to match the callee's expected order, and synthesize
-    /// constant default values for any optional keywords not provided by the caller.
+    /// default values for any optional keywords not provided by the caller.
     ///
     /// The output always contains all of the callee's keyword arguments (required + optional),
     /// so the returned vec may be larger than the input args.
     ///
-    /// Returns Ok with (processed_args, caller_argc) if successful, or Err with the fallback reason if not.
+    /// Returns Ok with (processed_args, caller_argc, kw_bits) if successful, or Err with the fallback reason if not.
     /// - caller_argc: number of arguments the caller actually pushed (for stack calculations)
+    /// - kw_bits: bitmask indicating which optional keywords were NOT provided by the caller
+    ///            (used by checkkeyword to determine if non-constant defaults need evaluation)
     fn setup_keyword_arguments(
         &mut self,
         block: BlockId,
         args: &[InsnId],
         kwarg: *const rb_callinfo_kwarg,
         iseq: IseqPtr,
-    ) -> Result<(Vec<InsnId>, usize), SendFallbackReason> {
+    ) -> Result<(Vec<InsnId>, usize, u32), SendFallbackReason> {
         let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         if callee_keyword.is_null() {
             if !kwarg.is_null() {
@@ -2642,12 +2646,19 @@ impl Function {
                 return Err(SendWithoutBlockDirectKeywordMismatch);
             }
             // Neither caller nor callee have keywords - nothing to do
-            return Ok((args.to_vec(), args.len()));
+            return Ok((args.to_vec(), args.len(), 0));
         }
 
         // kwarg may be null if caller passes no keywords but callee has optional keywords
         let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
         let callee_kw_count = unsafe { (*callee_keyword).num } as usize;
+
+        // When there are 31+ keywords, CRuby uses a hash instead of a fixnum bitmask
+        // for kw_bits. Fall back to VM dispatch for this rare case.
+        if callee_kw_count >= VM_KW_SPECIFIED_BITS_MAX as usize {
+            return Err(SendWithoutBlockDirectTooManyKeywords);
+        }
+
         let callee_kw_required = unsafe { (*callee_keyword).required_num } as usize;
         let callee_kw_table = unsafe { (*callee_keyword).table };
         let default_values = unsafe { (*callee_keyword).default_values };
@@ -2689,8 +2700,8 @@ impl Function {
         }
 
         // Reorder keyword arguments to match callee expectation.
-        // Constant defaults are inlined directly, and non-constant defaults (Qundef)
-        // cause fallback to VM dispatch, so we don't need to track kw_bits here.
+        // Track which optional keywords were not provided via kw_bits.
+        let mut kw_bits: u32 = 0;
         let mut reordered_kw_args: Vec<InsnId> = Vec::with_capacity(callee_kw_count);
         for i in 0..callee_kw_count {
             let expected_id = unsafe { *callee_kw_table.add(i) };
@@ -2717,10 +2728,12 @@ impl Function {
 
                 if default_value == Qundef {
                     // Non-constant default (e.g., `def foo(a: compute())`).
-                    // These require checkkeyword to compute the default at runtime.
-                    // For now, fall back to VM dispatch for these cases since the
-                    // JIT-to-JIT call path doesn't properly handle Qundef placeholders.
-                    return Err(SendWithoutBlockDirectNonConstantKeywordDefault);
+                    // Set the bit so checkkeyword knows to evaluate the default at runtime.
+                    // Push Qnil as a placeholder; the callee's checkkeyword will detect this
+                    // and branch to evaluate the default expression.
+                    kw_bits |= 1 << default_idx;
+                    let nil_insn = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                    reordered_kw_args.push(nil_insn);
                 } else {
                     // Constant default value - use it directly
                     let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(default_value) });
@@ -2734,7 +2747,7 @@ impl Function {
         let caller_argc = args.len();
         let mut processed_args = args[..kw_args_start].to_vec();
         processed_args.extend(reordered_kw_args);
-        Ok((processed_args, caller_argc))
+        Ok((processed_args, caller_argc, kw_bits))
     }
 
     /// Resolve the receiver type for method dispatch optimization.
@@ -2982,7 +2995,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
+                            let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
                                 Ok(result) => result,
                                 Err(reason) => {
                                     self.set_dynamic_send_reason(insn_id, reason);
@@ -2990,7 +3003,7 @@ impl Function {
                                 }
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -3028,7 +3041,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
-                            let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
+                            let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, iseq, state) {
                                 Ok(result) => result,
                                 Err(reason) => {
                                     self.set_dynamic_send_reason(insn_id, reason);
@@ -3036,7 +3049,7 @@ impl Function {
                                 }
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, state: send_state });
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -3417,7 +3430,7 @@ impl Function {
                             state
                         });
 
-                        let (send_state, processed_args) = match self.prepare_direct_send_args(block, &args, ci, super_iseq, state) {
+                        let (send_state, processed_args, kw_bits) = match self.prepare_direct_send_args(block, &args, ci, super_iseq, state) {
                             Ok(result) => result,
                             Err(reason) => {
                                 self.set_dynamic_send_reason(insn_id, reason);
@@ -3432,6 +3445,7 @@ impl Function {
                             cme: super_cme,
                             iseq: super_iseq,
                             args: processed_args,
+                            kw_bits,
                             state: send_state
                         });
                         self.make_equal_to(insn_id, send_direct);
@@ -6187,7 +6201,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let index = get_arg(pc, 1).as_u64();
                     let index: u8 = index.try_into().map_err(|_| ParseError::MalformedIseq(insn_idx))?;
-                    let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                    // Use FrameState to get kw_bits when possible, just like getlocal_WC_0.
+                    let val = if !local_inval {
+                        state.getlocal(ep_offset)
+                    } else if ep_escaped || has_blockiseq {
+                        fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false })
+                    } else {
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() });
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                        local_inval = false;
+                        state.getlocal(ep_offset)
+                    };
                     state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
                 }
                 YARVINSN_opt_getconstant_path => {
@@ -6911,10 +6935,12 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             // Omitted optionals are locals, so they start as nils before their code run
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         } else if Some(local_idx) == kw_bits_idx {
-            // We currently only support required keywords so the unspecified bits will always be zero.
-            // TODO: Make this a parameter when we start writing anything other than zero.
-            let unspecified_bits = VALUE::fixnum_from_usize(0);
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(unspecified_bits) }));
+            // Read the kw_bits value written by the caller to the callee frame.
+            // This tells us which optional keywords were NOT provided and need their defaults evaluated.
+            // Note: The caller writes kw_bits to memory via gen_send_iseq_direct but does NOT pass it
+            // as a C argument, so we must read it from memory using GetLocal rather than Param.
+            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::GetLocal { level: 0, ep_offset, use_sp: false, rest_param: false }));
         } else if local_idx < param_size {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {
