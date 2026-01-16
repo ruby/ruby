@@ -1618,7 +1618,6 @@ impl Assembler {
         let asm = self.arm64_split();
         asm_dump!(asm, split);
 
-        // Linearize before here?
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
 
@@ -1626,8 +1625,6 @@ impl Assembler {
         asm.compile_exits();
         asm_dump!(asm, compile_exits);
 
-        // linearize
-        //
         if use_scratch_regs {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
