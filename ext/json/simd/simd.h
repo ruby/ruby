@@ -58,7 +58,7 @@ static inline int trailing_zeros(int input)
 
 #ifdef JSON_ENABLE_SIMD
 
-#define SIMD_MINIMUM_THRESHOLD 6
+#define SIMD_MINIMUM_THRESHOLD 4
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
