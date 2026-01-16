@@ -52,7 +52,7 @@ prefix = $(prefix:\=/)
 
 -baseruby-: nul
 !if "$(HAVE_BASERUBY)" != "no"
-	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose $(HAVE_BASERUBY:yes=|| exit )|| exit 0
+	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
 
 -gmp-:
