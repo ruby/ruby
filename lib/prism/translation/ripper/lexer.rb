@@ -100,21 +100,17 @@ module Prism
           end
         end
 
-        def initialize(...)
-          super
-          @lex_compat = Prism.lex_compat(@source, filepath: filename, line: lineno)
+        # Pretty much just the same as Prism.lex_compat.
+        def lex(raise_errors: false)
+          Ripper.lex(@source, filename, lineno, raise_errors: raise_errors)
         end
 
         # Returns the lex_compat result wrapped in `Elem`. Errors are omitted.
         # Since ripper is a streaming parser, tokens are expected to be emitted in the order
         # that the parser encounters them. This is not implemented.
-        def parse(raise_errors: false)
-          if @lex_compat.failure? && raise_errors
-            raise SyntaxError, @lex_compat.errors.first.message
-          else
-            @lex_compat.value.map do |position, event, token, state|
-              Elem.new(position, event, token, state.to_int)
-            end
+        def parse(...)
+          lex(...).map do |position, event, token, state|
+            Elem.new(position, event, token, state.to_int)
           end
         end
 

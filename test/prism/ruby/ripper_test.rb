@@ -59,7 +59,7 @@ module Prism
       "whitequark/slash_newline_in_heredocs.txt"
     ]
 
-    omitted_lexer_parse = [
+    omitted_lex = [
       "comments.txt",
       "heredoc_percent_q_newline_delimiter.txt",
       "heredoc_with_escaped_newline_at_start.txt",
@@ -80,8 +80,20 @@ module Prism
       define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
     end
 
-    Fixture.each_for_current_ruby(except: incorrect | omitted_lexer_parse) do |fixture|
-      define_method("#{fixture.test_name}_lexer_parse") { assert_ripper_lexer_parse(fixture.read) }
+    Fixture.each_for_current_ruby(except: incorrect | omitted_lex) do |fixture|
+      define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
+    end
+
+    def test_lexer
+      lexer = Translation::Ripper::Lexer.new("foo")
+      expected = [[1, 0], :on_ident, "foo", Translation::Ripper::EXPR_CMDARG]
+
+      assert_equal([expected], lexer.lex)
+      assert_equal(expected, lexer.parse[0].to_a)
+      assert_equal(lexer.parse[0].to_a, lexer.scan[0].to_a)
+
+      assert_equal(%i[on_int on_op], Translation::Ripper::Lexer.new("1 +").lex.map(&:event))
+      assert_raise(SyntaxError) { Translation::Ripper::Lexer.new("1 +").lex(raise_errors: true) }
     end
 
     def test_tokenize
@@ -106,15 +118,15 @@ module Prism
       assert_equal Ripper.sexp_raw(source), Prism::Translation::Ripper.sexp_raw(source)
     end
 
-    def assert_ripper_lexer_parse(source)
-      prism = Translation::Ripper::Lexer.new(source).parse
-      ripper = Ripper::Lexer.new(source).parse
-      ripper.reject! { |elem| elem.event == :on_sp } # Prism doesn't emit on_sp
-      ripper.sort_by!(&:pos) # Prism emits tokens by their order in the code, not in parse order
+    def assert_ripper_lex(source)
+      prism = Translation::Ripper.lex(source)
+      ripper = Ripper.lex(source)
+      ripper.reject! { |elem| elem[1] == :on_sp } # Prism doesn't emit on_sp
+      ripper.sort_by! { |elem| elem[0] } # Prism emits tokens by their order in the code, not in parse order
 
       [prism.size, ripper.size].max.times do |i|
-        expected = ripper[i].to_a
-        actual = prism[i].to_a
+        expected = ripper[i]
+        actual = prism[i]
         # Since tokens related to heredocs are not emitted in the same order,
         # the state also doesn't line up.
         if expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
