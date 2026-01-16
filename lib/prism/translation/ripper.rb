@@ -437,6 +437,7 @@ module Prism
         end
       end
 
+      autoload :Filter, "prism/translation/ripper/filter"
       autoload :Lexer, "prism/translation/ripper/lexer"
       autoload :SexpBuilder, "prism/translation/ripper/sexp"
       autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
