@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "internal/proc.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -504,6 +505,20 @@ fnmatch(
 }
 
 VALUE rb_cDir;
+static VALUE sym_directory, sym_symlink, sym_file, sym_unknown;
+
+#ifdef DT_BLK
+static VALUE sym_block_device;
+#endif
+#ifdef DT_CHR
+static VALUE sym_character_device;
+#endif
+#ifdef DT_FIFO
+static VALUE sym_pipe;
+#endif
+#ifdef DT_SOCK
+static VALUE sym_socket;
+#endif
 
 struct dir_data {
     DIR *dir;
@@ -905,12 +920,54 @@ dir_read(VALUE dir)
     }
 }
 
-static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE), VALUE, int);
+static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE, unsigned char), VALUE, int);
 
 static VALUE
-dir_yield(VALUE arg, VALUE path)
+dir_yield(VALUE arg, VALUE path, unsigned char dtype)
 {
     return rb_yield(path);
+}
+
+static VALUE
+dir_yield_with_type(VALUE arg, VALUE path, unsigned char dtype)
+{
+    VALUE type;
+    switch (dtype) {
+#ifdef DT_BLK
+        case DT_BLK:
+            type = sym_block_device;
+            break;
+#endif
+#ifdef DT_CHR
+        case DT_CHR:
+            type = sym_character_device;
+            break;
+#endif
+        case DT_DIR:
+            type = sym_directory;
+            break;
+#ifdef DT_FIFO
+        case DT_FIFO:
+            type = sym_pipe;
+            break;
+#endif
+        case DT_LNK:
+            type = sym_symlink;
+            break;
+        case DT_REG:
+            type = sym_file;
+            break;
+#ifdef DT_SOCK
+        case DT_SOCK:
+            type = sym_socket;
+            break;
+#endif
+        default:
+            type = sym_unknown;
+            break;
+    }
+
+    return rb_yield_values(2, path, type);
 }
 
 /*
@@ -940,7 +997,7 @@ dir_each(VALUE dir)
 }
 
 static VALUE
-dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_only)
+dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE, unsigned char), VALUE arg, int children_only)
 {
     struct dir_data *dirp;
     struct dirent *dp;
@@ -966,7 +1023,7 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
         else
 #endif
         path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
-        (*each)(arg, path);
+        (*each)(arg, path, dp->d_type);
     }
     return dir;
 }
@@ -3471,10 +3528,16 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
+dir_entry_ary_push(VALUE ary, VALUE entry, unsigned char ftype)
+{
+    return rb_ary_push(ary, entry);
+}
+
+static VALUE
 dir_collect(VALUE dir)
 {
     VALUE ary = rb_ary_new();
-    dir_each_entry(dir, rb_ary_push, ary, FALSE);
+    dir_each_entry(dir, dir_entry_ary_push, ary, FALSE);
     return ary;
 }
 
@@ -3507,7 +3570,8 @@ dir_entries(int argc, VALUE *argv, VALUE io)
 static VALUE
 dir_each_child(VALUE dir)
 {
-    return dir_each_entry(dir, dir_yield, Qnil, TRUE);
+    bool yield_type = rb_block_given_p() && (rb_block_arity() == 2);
+    return dir_each_entry(dir, yield_type ? dir_yield_with_type : dir_yield, Qnil, TRUE);
 }
 
 /*
@@ -3551,7 +3615,8 @@ static VALUE
 dir_each_child_m(VALUE dir)
 {
     RETURN_ENUMERATOR(dir, 0, 0);
-    return dir_each_entry(dir, dir_yield, Qnil, TRUE);
+    bool yield_type = rb_block_given_p() && (rb_block_arity() == 2);
+    return dir_each_entry(dir, yield_type ? dir_yield_with_type : dir_yield, Qnil, TRUE);
 }
 
 /*
@@ -3569,7 +3634,7 @@ static VALUE
 dir_collect_children(VALUE dir)
 {
     VALUE ary = rb_ary_new();
-    dir_each_entry(dir, rb_ary_push, ary, TRUE);
+    dir_each_entry(dir, dir_entry_ary_push, ary, TRUE);
     return ary;
 }
 
@@ -3804,6 +3869,24 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 void
 Init_Dir(void)
 {
+    sym_directory = ID2SYM(rb_intern("directory"));
+    sym_symlink = ID2SYM(rb_intern("symlink"));
+    sym_file = ID2SYM(rb_intern("file"));
+    sym_unknown = ID2SYM(rb_intern("unknown"));
+
+#ifdef DT_BLK
+    sym_block_device = ID2SYM(rb_intern("block_device"));
+#endif
+#ifdef DT_CHR
+    sym_character_device = ID2SYM(rb_intern("character_device"));
+#endif
+#ifdef DT_FIFO
+    sym_pipe = ID2SYM(rb_intern("pipe"));
+#endif
+#ifdef DT_SOCK
+    sym_socket = ID2SYM(rb_intern("socket"));
+#endif
+
     rb_gc_register_address(&chdir_lock.path);
     rb_gc_register_address(&chdir_lock.thread);
 
