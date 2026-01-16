@@ -81,10 +81,6 @@ Set[any, *any.all_subeffects].sort_by(&:name).each {|effect|
   end
 }
 
-# Unions are for names of groups of effect bit patterns that don't fit neatly
-# into the Ruby class hierarchy. For example, we might want to refer to a union
-# of TrueClassExact|FalseClassExact by the name BoolExact even though a "bool"
-# doesn't exist as a class in Ruby.
 def add_union name, effect_names
   effect_names = effect_names.sort
   $bits[name] = effect_names

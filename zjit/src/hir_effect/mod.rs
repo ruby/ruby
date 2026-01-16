@@ -18,6 +18,9 @@ include!("hir_effect.inc.rs");
 /// * union/meet Effect A and Effect B
 ///
 /// The AbstractHeap is the work horse because Effect is simply 2 AbstractHeaps; one for read, and one for write.
+/// Currently, the abstract heap is implemented as a bitset. As we enrich our effect system, this will be updated
+/// to match the name and use a heap implementation, roughly aligned with
+/// https://gist.github.com/pizlonator/cf1e72b8600b1437dda8153ea3fdb963.
 ///
 /// Most questions can be rewritten in terms of these operations.
 ///
@@ -377,14 +380,19 @@ mod tests {
     }
 
     #[test]
-    fn effect_intersect_works() {
+    fn effect_intersect_is_empty() {
         assert_subeffect(effects::Memory.intersect(effects::Control), effects::Empty);
-        assert_subeffect(effects::Frame.intersect(effects::PC), effects::PC);
         assert_subeffect(
             Effect::read_write(abstract_heaps::Allocator, abstract_heaps::Other)
                 .intersect(Effect::read_write(abstract_heaps::Stack, abstract_heaps::PC)),
             effects::Empty
         )
+    }
+
+    #[test]
+    fn effect_intersect_exact_match() {
+        assert_subeffect(effects::Frame.intersect(effects::PC), effects::PC);
+        assert_subeffect(effects::Allocator.intersect(effects::Allocator), effects::Allocator);
     }
 
     #[test]
