@@ -1,6 +1,9 @@
 class Binding
   # :nodoc:
   def irb(...)
+    suppress = Thread.current[:__bundled_gems_warning_suppression]
+    Thread.current[:__bundled_gems_warning_suppression] = ['reline', 'rdoc']
+
     begin
       require 'irb'
     rescue LoadError, Gem::LoadError
@@ -8,6 +11,8 @@ class Binding
       require 'irb'
     end
     irb(...)
+  ensure
+    Thread.current[:__bundled_gems_warning_suppression] = suppress
   end
 
   # suppress redefinition warning
