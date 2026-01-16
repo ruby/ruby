@@ -1092,10 +1092,22 @@ impl Assembler {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
+        /// Emit a push pair instruction for the two given operands by adding to the stack
+        /// pointer and then storing the two given values.
+        fn emit_push_pair(cb: &mut CodeBlock, opnd0: A64Opnd, opnd1: A64Opnd) {
+            stp_pre(cb, opnd0, opnd1, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
+        }
+
         /// Emit a pop instruction into the given operand by loading the value
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+        }
+
+        /// Emit a pop pair instruction into the two given operands by loading the two values
+        /// and then subtracting from the stack pointer.
+        fn emit_pop_pair(cb: &mut CodeBlock, opnd0: A64Opnd, opnd1: A64Opnd) {
+            ldp_post(cb, opnd0, opnd1, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
         // List of GC offsets
@@ -1413,17 +1425,27 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    emit_push_pair(cb, opnd0.into(), opnd1.into());
+                },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     emit_pop(cb, opnd.into());
                 },
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    emit_pop_pair(cb, opnd1.into(), opnd0.into());
+                },
                 Insn::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
 
-                    for reg in regs {
-                        emit_push(cb, A64Opnd::Reg(reg));
+                    for pair in regs.chunks(2) {
+                        match pair {
+                            &[reg0, reg1] => emit_push_pair(cb, A64Opnd::Reg(reg0), A64Opnd::Reg(reg1)),
+                            &[reg] => emit_push(cb, A64Opnd::Reg(reg)),
+                            _ => unreachable!("chunks(2)")
+                        }
                     }
 
                     // Push the flags/state register
@@ -1437,8 +1459,12 @@ impl Assembler {
                     msr(cb, SystemRegister::NZCV, Self::EMIT_OPND);
                     emit_pop(cb, Self::EMIT_OPND);
 
-                    for reg in regs.into_iter().rev() {
-                        emit_pop(cb, A64Opnd::Reg(reg));
+                    for pair in regs.chunks(2).rev() {
+                        match pair {
+                            &[reg0, reg1] => emit_pop_pair(cb, A64Opnd::Reg(reg1), A64Opnd::Reg(reg0)),
+                            &[reg] => emit_pop(cb, A64Opnd::Reg(reg)),
+                            _ => unreachable!("chunks(2)")
+                        }
                     }
                 },
                 Insn::CCall { fptr, .. } => {
@@ -1855,19 +1881,15 @@ mod tests {
         asm.cpush_all();
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: str x1, [sp, #-0x10]!
-        0x4: str x9, [sp, #-0x10]!
-        0x8: str x10, [sp, #-0x10]!
-        0xc: str x11, [sp, #-0x10]!
-        0x10: str x12, [sp, #-0x10]!
-        0x14: str x13, [sp, #-0x10]!
-        0x18: str x14, [sp, #-0x10]!
-        0x1c: str x15, [sp, #-0x10]!
-        0x20: mrs x16, nzcv
-        0x24: str x16, [sp, #-0x10]!
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: stp x1, x9, [sp, #-0x10]!
+        0x4: stp x10, x11, [sp, #-0x10]!
+        0x8: stp x12, x13, [sp, #-0x10]!
+        0xc: stp x14, x15, [sp, #-0x10]!
+        0x10: mrs x16, nzcv
+        0x14: str x16, [sp, #-0x10]!
         ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
+        assert_snapshot!(cb.hexdump(), @"e127bfa9ea2fbfa9ec37bfa9ee3fbfa910423bd5f00f1ff8");
     }
 
     #[test]
@@ -1877,19 +1899,15 @@ mod tests {
         asm.cpop_all();
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: msr nzcv, x16
         0x4: ldr x16, [sp], #0x10
-        0x8: ldr x15, [sp], #0x10
-        0xc: ldr x14, [sp], #0x10
-        0x10: ldr x13, [sp], #0x10
-        0x14: ldr x12, [sp], #0x10
-        0x18: ldr x11, [sp], #0x10
-        0x1c: ldr x10, [sp], #0x10
-        0x20: ldr x9, [sp], #0x10
-        0x24: ldr x1, [sp], #0x10
+        0x8: ldp x15, x14, [sp], #0x10
+        0xc: ldp x13, x12, [sp], #0x10
+        0x10: ldp x11, x10, [sp], #0x10
+        0x14: ldp x9, x1, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef3bc1a8ed33c1a8eb2bc1a8e907c1a8");
     }
 
     #[test]

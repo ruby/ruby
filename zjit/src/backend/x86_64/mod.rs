@@ -850,11 +850,19 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    push(cb, opnd0.into());
+                    push(cb, opnd1.into());
+                },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     pop(cb, opnd.into());
+                },
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    pop(cb, opnd0.into());
+                    pop(cb, opnd1.into());
                 },
 
                 // Push and pop to the C stack all caller-save registers and the
