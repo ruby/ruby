@@ -20,7 +20,7 @@ include!("hir_effect.inc.rs");
 /// The AbstractHeap is the work horse because Effect is simply 2 AbstractHeaps; one for read, and one for write.
 /// Currently, the abstract heap is implemented as a bitset. As we enrich our effect system, this will be updated
 /// to match the name and use a heap implementation, roughly aligned with
-/// https://gist.github.com/pizlonator/cf1e72b8600b1437dda8153ea3fdb963.
+/// <https://gist.github.com/pizlonator/cf1e72b8600b1437dda8153ea3fdb963>.
 ///
 /// Most questions can be rewritten in terms of these operations.
 ///
