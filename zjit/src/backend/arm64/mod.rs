@@ -2711,7 +2711,7 @@ mod tests {
         ");
         assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
     }
-    
+
     #[test]
     fn test_ccall_register_preservation_even() {
         let (mut asm, mut cb) = setup_asm();

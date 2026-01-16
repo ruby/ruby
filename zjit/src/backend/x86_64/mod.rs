@@ -1678,38 +1678,79 @@ mod tests {
     fn test_ccall_register_preservation_even() {
         let (mut asm, mut cb) = setup_asm();
 
-        let rax = asm.load(Opnd::UImm(1));
-        let rcx = asm.load(Opnd::UImm(2));
-        let rdx = asm.load(Opnd::UImm(3));
-        let rsi = asm.load(Opnd::UImm(4));
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        let rcx = asm.load(Opnd::UImm(3));
+        let rdx = asm.load(Opnd::UImm(4));
         asm.ccall(0 as _, vec![]);
-        let _ = asm.add(rax, rcx);
-        let _ = asm.add(rdx, rsi);
+        let _ = asm.add(rsi, rdi);
+        let _ = asm.add(rcx, rdx);
 
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @"");
-        assert_snapshot!(cb.hexdump(), @"");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: push rsi
+        0x15: push rdi
+        0x16: push rcx
+        0x17: push rdx
+        0x18: mov eax, 0
+        0x1d: call rax
+        0x1f: pop rdx
+        0x20: pop rcx
+        0x21: pop rdi
+        0x22: pop rsi
+        0x23: add rdi, rsi
+        0x26: add rdx, rcx
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000056575152b800000000ffd05a595f5e4801f74801ca");
     }
 
     #[test]
     fn test_ccall_register_preservation_odd() {
         let (mut asm, mut cb) = setup_asm();
 
-        let rax = asm.load(Opnd::UImm(1));
-        let rcx = asm.load(Opnd::UImm(2));
-        let rdx = asm.load(Opnd::UImm(3));
-        let rsi = asm.load(Opnd::UImm(4));
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        let rcx = asm.load(Opnd::UImm(3));
+        let rdx = asm.load(Opnd::UImm(4));
         let r8 = asm.load(Opnd::UImm(5));
         asm.ccall(0 as _, vec![]);
-        let _ = asm.add(rax, rcx);
-        let _ = asm.add(rdx, rsi);
-        let _ = asm.add(rdx, r8);
+        let _ = asm.add(rsi, rdi);
+        let _ = asm.add(rcx, rdx);
+        let _ = asm.add(rcx, r8);
 
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @"");
-        assert_snapshot!(cb.hexdump(), @"");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: push rsi
+        0x1b: push rdi
+        0x1c: push rcx
+        0x1d: push rdx
+        0x1e: push r8
+        0x20: push r8
+        0x22: mov eax, 0
+        0x27: call rax
+        0x29: pop r8
+        0x2b: pop r8
+        0x2d: pop rdx
+        0x2e: pop rcx
+        0x2f: pop rdi
+        0x30: pop rsi
+        0x31: add rdi, rsi
+        0x34: mov rdi, rdx
+        0x37: add rdi, rcx
+        0x3a: add rdx, r8
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005657515241504150b800000000ffd0415841585a595f5e4801f74889d74801cf4c01c2");
     }
 
     #[test]
