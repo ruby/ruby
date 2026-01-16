@@ -288,6 +288,8 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
+    RBIMPL_ASSERT_OR_ASSUME(len < vec_len);
+
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
 
@@ -303,37 +305,13 @@ ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned 
 
     // Optimistically copy the remaining 'len' characters to the output FBuffer. If there are no characters
     // to escape, then everything ends up in the correct spot. Otherwise it was convenient temporary storage.
-#if defined(__has_builtin) && __has_builtin(__builtin_memcpy)
-
-#ifdef RBIMPL_ASSERT_OR_ASSUME
-    RBIMPL_ASSERT_OR_ASSUME(len < 16);
-#endif
-
-    if (vec_len == 16 && len >= 4) {
-        // If __builtin_memcpy is available, use it to copy between SIMD_MINIMUM_THRESHOLD and vec_len-1 bytes.
-        // These copies overlap. The first copy will copy the first 8 (or 4) bytes. The second copy will copy
-        // the last 8 (or 4) bytes but overlap with the first copy. The overlapping bytes will be in the correct
-        // position in both copies.
-
-        // Please do not attempt to replace __builtin_memcpy with memcpy without profiling and/or looking at the
-        // generated assembly. On clang-specifically (tested on Apple clang version 17.0.0 (clang-1700.0.13.3)),
-        // when using memcpy, the compiler will notice the only difference is a 4 or 8 and generate a conditional
-        // select instruction instead of direct loads and stores with a branch. This ends up slower than the branch
-        // plus two loads and stores generated when using __builtin_memcpy.
-        if (len >= 8) {
-            __builtin_memcpy(s, search->ptr, 8);
-            __builtin_memcpy(s + len - 8, search->ptr + len - 8, 8);
-        } else {
-            __builtin_memcpy(s, search->ptr, 4);
-            __builtin_memcpy(s + len - 4, search->ptr + len - 4, 4);
-        }
+    if (vec_len == 16) {
+        RBIMPL_ASSERT_OR_ASSUME(len >= SIMD_MINIMUM_THRESHOLD);
+        json_fast_memcpy16(s, search->ptr, len);
     } else {
         MEMCPY(s, search->ptr, char, len);
     }
-#else
-    MEMCPY(s, search->ptr, char, len);
-#endif
-    
+
     return s;
 }
 
