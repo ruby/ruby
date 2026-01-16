@@ -3810,7 +3810,7 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
                 }
             }
-            else {
+            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
