@@ -1772,8 +1772,6 @@ impl Assembler
             }
         }
 
-        // TODO: Add idx field to Insn to store instruction index
-        // insn.idx = insn_idx;
         self.idx += 1;
 
         self.current_block().push_insn(insn);
