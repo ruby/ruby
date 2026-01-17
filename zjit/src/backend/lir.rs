@@ -383,13 +383,15 @@ pub enum Insn {
     /// Pop a register from the C stack and store it into another register
     CPopInto(Opnd),
 
-    /// Pop a pair of registers from the C stack and store it into a pair of registers
+    /// Pop a pair of registers from the C stack and store it into a pair of registers.
+    /// The registers are popped from left to right.
     CPopPairInto(Opnd, Opnd),
 
     /// Push a register onto the C stack
     CPush(Opnd),
 
-    /// Push a pair of registers onto the C stack
+    /// Push a pair of registers onto the C stack.
+    /// The registers are pushed from left to right.
     CPushPair(Opnd, Opnd),
 
     /// Push all of the caller-save registers and the flags to the C stack
