@@ -2802,6 +2802,30 @@ mod tests {
     }
 
     #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        asm.cpush_pair(rsi, rdi);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+        
+        assert_disasm_snapshot!(cb.disasm(), @"");
+        assert_snapshot!(cb.hexdump(), @"");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        asm.cpop_pair_into(rdi, rsi);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+        
+        assert_disasm_snapshot!(cb.disasm(), @"");
+        assert_snapshot!(cb.hexdump(), @"");
+    }
+
+    #[test]
     fn test_split_spilled_lshift() {
         let (mut asm, mut cb) = setup_asm();
 

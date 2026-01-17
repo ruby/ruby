@@ -1706,7 +1706,7 @@ mod tests {
         0x23: add rdi, rsi
         0x26: add rdx, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000056575152b800000000ffd05a595f5e4801f74801ca");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74801ca");
     }
 
     #[test]
@@ -1750,7 +1750,41 @@ mod tests {
         0x37: add rdi, rcx
         0x3a: add rdx, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005657515241504150b800000000ffd0415841585a595f5e4801f74889d74801cf4c01c2");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141504150b800000000ffd041584158595a5e5f4801f74889d74801cf4c01c2");
+    }
+
+    #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        asm.cpush_pair(rsi, rdi);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+        
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: push rdi
+        0xb: push rsi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005756");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let rsi = asm.load(Opnd::UImm(1));
+        let rdi = asm.load(Opnd::UImm(2));
+        asm.cpop_pair_into(rdi, rsi);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+        
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: pop rsi
+        0xb: pop rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005e5f");
     }
 
     #[test]
