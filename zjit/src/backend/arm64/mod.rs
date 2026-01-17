@@ -5,6 +5,7 @@ use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::hir;
 use crate::options::asm_dump;
 use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
@@ -694,7 +695,8 @@ impl Assembler {
     /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so this
     /// splits them and uses scratch registers for it.
-    fn arm64_scratch_split(mut self) -> Assembler {
+    /// Linearizes all blocks into a single giant block.
+    fn arm64_scratch_split(self) -> Assembler {
         /// If opnd is Opnd::Mem with a too large disp, make the disp smaller using lea.
         fn split_large_disp(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
             match opnd {
@@ -750,12 +752,23 @@ impl Assembler {
         // Prepare StackState to lower MemBase::Stack
         let stack_state = StackState::new(self.stack_base_idx);
 
-        let mut asm_local = Assembler::new_with_asm(&self);
-        let asm = &mut asm_local;
-        asm.accept_scratch_reg = true;
-        let iterator = &mut self.instruction_iterator();
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = true;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
-        while let Some((_, mut insn)) = iterator.next(asm) {
+        // Create one giant block to linearize everything into
+        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+
+        let asm = &mut asm_local;
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for (idx, insn) in linearized_insns.iter().enumerate() {
+            let mut insn = insn.clone();
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
@@ -795,7 +808,7 @@ impl Assembler {
                     };
 
                     // If the next instruction is JoMul
-                    if matches!(iterator.peek(), Some((_, Insn::JoMul(_)))) {
+                    if idx + 1 < linearized_insns.len() && matches!(linearized_insns[idx + 1], Insn::JoMul(_)) {
                         // Produce a register that is all zeros or all ones
                         // Based on the sign bit of the 64-bit mul result
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
@@ -907,6 +920,8 @@ impl Assembler {
                     split_patch_point(asm, target, invariant, version);
                 }
                 _ => {
+                    // Strip branch args from jumps since everything is now in one block
+                    let insn = self.strip_branch_args(insn);
                     asm.push_insn(insn);
                 }
             }
@@ -940,7 +955,7 @@ impl Assembler {
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
             fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
                 let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                     // If the jump offset fits into the conditional jump as
@@ -991,23 +1006,24 @@ impl Assembler {
                 (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
             }
 
-            match target {
+            let label = match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
                     generate_branch::<CONDITION>(cb, src_addr, dst_addr);
+                    return;
                 },
-                Target::Label(label_idx) => {
-                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
-                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
-                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
-                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
-                    });
-                },
+                Target::Label(l) => l,
+                Target::Block(edge) => asm.block_label(edge.target),
                 Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
             };
+            // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
+            // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
+            cb.label_ref(label, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
+                generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
+            });
         }
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
@@ -1111,8 +1127,13 @@ impl Assembler {
         let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
 
         // For each instruction
+        // NOTE: At this point, the assembler should have been linearized into a single giant block
+        // by either resolve_parallel_mov_pass() or arm64_scratch_split().
         let mut insn_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insn_idx) {
+        assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
+        let insns = &self.basic_blocks[0].insns;
+
+        while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
             hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
 
@@ -1216,7 +1237,7 @@ impl Assembler {
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is JoMul with RShift created by arm64_scratch_split
-                    match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
+                    match (insns.get(insn_idx + 1), insns.get(insn_idx + 2)) {
                         (Some(Insn::RShift { out: out_sign, opnd: out_opnd, shift: out_shift }), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::EMIT_OPND, left.into(), right.into());
@@ -1476,17 +1497,19 @@ impl Assembler {
                     br(cb, opnd.into());
                 },
                 Insn::Jmp(target) => {
-                    match *target {
+                    match target {
                         Target::CodePtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, dst_ptr, true);
+                            emit_jmp_ptr(cb, *dst_ptr, true);
                         },
                         Target::Label(label_idx) => {
-                            // Here we're going to save enough space for
-                            // ourselves and then come back and write the
-                            // instruction once we know the offset. We're going
-                            // to assume we can fit into a single b instruction.
-                            // It will panic otherwise.
-                            cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
+                            cb.label_ref(*label_idx, 4, |cb, src_addr, dst_addr| {
+                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
+                                b(cb, InstructionOffset::from_bytes(bytes));
+                            });
+                        },
+                        Target::Block(edge) => {
+                            let label = self.block_label(edge.target);
+                            cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
                                 let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
@@ -1497,28 +1520,28 @@ impl Assembler {
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::EQ}>(self, cb, target.clone());
                 },
                 Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::NE}>(self, cb, target.clone());
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LT}>(self, cb, target.clone());
                 },
                 Insn::Jg(target) => {
-                    emit_conditional_jump::<{Condition::GT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GT}>(self, cb, target.clone());
                 },
                 Insn::Jge(target) => {
-                    emit_conditional_jump::<{Condition::GE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GE}>(self, cb, target.clone());
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LS}>(self, cb, target.clone());
                 },
                 Insn::Jb(target) => {
-                    emit_conditional_jump::<{Condition::CC}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::CC}>(self, cb, target.clone());
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::VS}>(self, cb, target.clone());
                 },
                 Insn::Joz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), true, target.clone());
@@ -1541,8 +1564,8 @@ impl Assembler {
                     let Some(Insn::Cmp {
                         left: status_reg @ Opnd::Reg(_),
                         right: Opnd::UImm(_) | Opnd::Imm(_),
-                    }) = self.insns.get(insn_idx + 1) else {
-                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", self.insns.get(insn_idx + 1));
+                    }) = insns.get(insn_idx + 1) else {
+                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", insns.get(insn_idx + 1));
                     };
 
                     // Attempt to increment a counter
@@ -1591,7 +1614,7 @@ impl Assembler {
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
-                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
@@ -1603,9 +1626,12 @@ impl Assembler {
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+    pub fn compile_with_regs(mut self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
-        let use_scratch_reg = !self.accept_scratch_reg;
+        let use_scratch_regs = !self.accept_scratch_reg;
+
+        // Initialize block labels before any processing
+        self.init_block_labels();
         asm_dump!(self, init);
 
         let asm = self.arm64_split();
@@ -1618,9 +1644,13 @@ impl Assembler {
         asm.compile_exits();
         asm_dump!(asm, compile_exits);
 
-        if use_scratch_reg {
+        if use_scratch_regs {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
+        } else {
+            // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
+            asm = asm.resolve_parallel_mov_pass();
+            asm_dump!(asm, resolve_parallel_mov);
         }
 
         // Create label instances in the code block
@@ -1685,12 +1715,15 @@ mod tests {
 
     use super::*;
     use insta::assert_snapshot;
+    use crate::hir;
 
     static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
-        (Assembler::new(), CodeBlock::new_dummy())
+        let mut asm = Assembler::new();
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+        (asm, CodeBlock::new_dummy())
     }
 
     #[test]
@@ -1698,6 +1731,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -2132,6 +2166,7 @@ mod tests {
     #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
@@ -2584,6 +2619,7 @@ mod tests {
         let memory_required = (IMMEDIATE_MAX_VALUE + 8) * 4 + page_size;
 
         let mut asm = Assembler::new();
+        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
