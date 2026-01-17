@@ -843,6 +843,94 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
+
+/*
+ * Determines if an object can skip the slow cleanup path during sweep.
+ * Returns true only for objects that:
+ *   1. Have no finalizer (FL_FINALIZE)
+ *   2. Have no object_id registered (no id2ref table entry to clear)
+ *   3. Have no gen_fields (no generic_fields_tbl entry to clear)
+ *   4. Have no heap allocations to free
+ *   5. Have no other external resources or weak references
+ *
+ * This is a whitelist - unknown types default to false (slow path).
+ * We already have flags in cache from the BUILTIN_TYPE() check in the sweep loop.
+ */
+static inline bool
+gc_sweep_fast_path_p(VALUE obj)
+{
+    VALUE flags = RBASIC(obj)->flags;
+    uint32_t type = (uint32_t)(flags & RUBY_T_MASK);
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
+    /* Finalizers must run through slow path to become zombies */
+    if (flags & FL_FINALIZE) {
+        return false;
+    }
+
+    /* object_id requires cleanup to remove from id2ref table */
+    if (rb_shape_has_object_id(shape_id)) {
+        return false;
+    }
+
+    switch (type) {
+      case T_OBJECT:
+        /*
+         * T_OBJECT uses inline field storage, not gen_fields_tbl.
+         * Fast path when embedded; heap-allocated fields need xfree.
+         * too_complex objects have ROBJECT_HEAP set, so this catches them too.
+         */
+        return !(flags & ROBJECT_HEAP);
+
+      case T_STRING:
+        /*
+         * Embedded strings with no fstring interning can skip cleanup.
+         * RSTRING_NOEMBED: heap-allocated buffer needs xfree
+         * RSTRING_FSTR: registered in fstring table, needs weak ref cleanup
+         */
+        if (rb_shape_has_fields(shape_id)) return false;
+        return !(flags & (RSTRING_NOEMBED | RSTRING_FSTR));
+
+      case T_ARRAY:
+        /* Embedded arrays only; heap-allocated need xfree */
+        if (rb_shape_has_fields(shape_id)) return false;
+        return flags & RARRAY_EMBED_FLAG;
+
+      case T_HASH:
+        /* ar_table (embedded) only; st_table needs st_free_table */
+        if (rb_shape_has_fields(shape_id)) return false;
+        return !(flags & RHASH_ST_TABLE_FLAG);
+
+      case T_BIGNUM:
+        /* Embedded bignums only; heap-allocated digits need xfree */
+        if (rb_shape_has_fields(shape_id)) return false;
+        return flags & BIGNUM_EMBED_FLAG;
+
+      case T_STRUCT:
+        /* Embedded structs only; heap-allocated members need xfree */
+        if (rb_shape_has_fields(shape_id)) return false;
+        return flags & RSTRUCT_EMBED_LEN_MASK;
+
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        /* Never have heap allocations, but can have gen_fields */
+        return !rb_shape_has_fields(shape_id);
+
+      default:
+        /*
+         * Types that always need slow path:
+         *   T_DATA, T_FILE, T_REGEXP, T_MATCH - external resources
+         *   T_SYMBOL - dsymbol table cleanup
+         *   T_CLASS, T_MODULE, T_ICLASS - classext tables
+         *   T_IMEMO - varies by subtype, many have weak refs
+         *   T_NONE, T_MOVED, T_ZOMBIE - handled separately in sweep loop
+         *   Unknown types - be conservative
+         */
+        return false;
+    }
+}
+
 #define RVALUE_AGE_BITMAP_INDEX(n)  (NUM_IN_PAGE(n) / (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT))
 #define RVALUE_AGE_BITMAP_OFFSET(n) ((NUM_IN_PAGE(n) % (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT)) * RVALUE_AGE_BIT_COUNT)
 
@@ -3481,43 +3569,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
         rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
             switch (BUILTIN_TYPE(vp)) {
-              default: /* majority case */
-                gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-#if RGENGC_CHECK_MODE
-                if (!is_full_marking(objspace)) {
-                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                }
-#endif
-
-                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
-
-#if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                CHECK(RVALUE_WB_UNPROTECTED);
-                CHECK(RVALUE_MARKED);
-                CHECK(RVALUE_MARKING);
-                CHECK(RVALUE_UNCOLLECTIBLE);
-#undef CHECK
-#endif
-
-                rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-
-                rb_gc_obj_free_vm_weak_references(vp);
-                if (rb_gc_obj_free(objspace, vp)) {
-                    // always add free slots back to the swept pages freelist,
-                    // so that if we're compacting, we can re-use the slots
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
-                    RVALUE_AGE_SET_BITMAP(vp, 0);
-                    heap_page_add_freeobj(objspace, sweep_page, vp);
-                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                    ctx->freed_slots++;
-                }
-                else {
-                    ctx->final_slots++;
-                }
-                break;
-
               case T_MOVED:
                 if (objspace->flags.during_compacting) {
                     /* The sweep cursor shouldn't have made it to any
@@ -3537,6 +3588,86 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 break;
               case T_NONE:
                 ctx->empty_slots++; /* already freed */
+                break;
+
+              default:
+                /*
+                 * Fast path check: can this object skip cleanup?
+                 * Embedded objects without object_id, gen_fields, or
+                 * external resources can skip weak ref and free processing.
+                 */
+                if (gc_sweep_fast_path_p(vp)) {
+                    /*
+                     * Fast path: object does not need cleanup.
+                     * Skip rb_gc_obj_free_vm_weak_references() and rb_gc_obj_free().
+                     */
+#if RGENGC_CHECK_MODE
+                    if (!is_full_marking(objspace)) {
+                        if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                        if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                    }
+#endif
+                    if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
+
+#if RGENGC_CHECK_MODE
+#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
+                    CHECK(RVALUE_WB_UNPROTECTED);
+                    CHECK(RVALUE_MARKED);
+                    CHECK(RVALUE_MARKING);
+                    CHECK(RVALUE_UNCOLLECTIBLE);
+#undef CHECK
+#endif
+
+                    /* Fire FREEOBJ event hook if registered (uncommon) */
+                    if (UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+                    }
+
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                    RVALUE_AGE_SET_BITMAP(vp, 0);
+                    heap_page_add_freeobj(objspace, sweep_page, vp);
+                    gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
+                    ctx->freed_slots++;
+                }
+                else {
+                    /*
+                     * Slow path: full cleanup required.
+                     */
+                    gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
+#if RGENGC_CHECK_MODE
+                    if (!is_full_marking(objspace)) {
+                        if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                        if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                    }
+#endif
+                    if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
+
+#if RGENGC_CHECK_MODE
+#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
+                    CHECK(RVALUE_WB_UNPROTECTED);
+                    CHECK(RVALUE_MARKED);
+                    CHECK(RVALUE_MARKING);
+                    CHECK(RVALUE_UNCOLLECTIBLE);
+#undef CHECK
+#endif
+
+                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+
+                    rb_gc_obj_free_vm_weak_references(vp);
+                    if (rb_gc_obj_free(objspace, vp)) {
+                        // always add free slots back to the swept pages freelist,
+                        // so that if we're compacting, we can re-use the slots
+                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                        RVALUE_AGE_SET_BITMAP(vp, 0);
+                        heap_page_add_freeobj(objspace, sweep_page, vp);
+                        gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
+                        ctx->freed_slots++;
+                    }
+                    else {
+                        /* Object has a finalizer - slot isn't returned to freelist yet */
+                        ctx->final_slots++;
+                    }
+                }
                 break;
             }
         }
