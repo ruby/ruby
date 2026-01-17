@@ -10200,6 +10200,7 @@ object.$(OBJEXT): {$(VPATH)}config.h
 object.$(OBJEXT): {$(VPATH)}constant.h
 object.$(OBJEXT): {$(VPATH)}debug_counter.h
 object.$(OBJEXT): {$(VPATH)}defines.h
+object.$(OBJEXT): {$(VPATH)}eisel_lemire_pow5.inc
 object.$(OBJEXT): {$(VPATH)}encoding.h
 object.$(OBJEXT): {$(VPATH)}id.h
 object.$(OBJEXT): {$(VPATH)}id_table.h
