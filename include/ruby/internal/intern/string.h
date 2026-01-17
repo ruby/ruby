@@ -444,8 +444,8 @@ VALUE rb_str_to_interned_str(VALUE str);
  *                           terminating NUL character.
  * @exception  rb_eArgError  `len` is negative.
  * @return     A  found or  created instance  of ::rb_cString,  of `len`  bytes
- *             length, of  "binary" encoding,  whose contents are  identical to
- *             that of `ptr`.
+ *             length,  of US-ASCII  or "binary"  encoding, whose  contents are
+ *             identical to that of `ptr`.
  * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
  *             accessible via `ptr`.
  */
