@@ -225,14 +225,6 @@ module Prism
       end
     end
 
-    # Ripper doesn't include the rest of the token in the event, so we need to
-    # trim it down to just the content on the first line when comparing.
-    class EndContentToken < Token
-      def ==(other) # :nodoc:
-        [self[0], self[1], self[2][0..self[2].index("\n")], self[3]] == other
-      end
-    end
-
     # Tokens where state should be ignored
     # used for :on_comment, :on_heredoc_end, :on_embexpr_end
     class IgnoreStateToken < Token
@@ -680,7 +672,10 @@ module Prism
         token =
           case event
           when :on___end__
-            EndContentToken.new([[lineno, column], event, value, lex_state])
+            # Ripper doesn't include the rest of the token in the event, so we need to
+            # trim it down to just the content on the first line.
+            value = value[0..value.index("\n")]
+            Token.new([[lineno, column], event, value, lex_state])
           when :on_comment
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_heredoc_end
