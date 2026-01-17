@@ -998,10 +998,17 @@ impl Assembler {
                     generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                 },
                 Target::Label(label_idx) => {
-                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
-                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
-                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
-                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
+                    // Try to use a single B.cond instruction
+                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
+                        // +1 since src_addr is after the instruction while A64
+                        // counts the offset relative to the start.
+                        let offset = (dst_addr - src_addr) / 4 + 1;
+                        if bcond_offset_fits_bits(offset) {
+                            bcond(cb, CONDITION, InstructionOffset::from_insns(offset as i32));
+                            Ok(())
+                        } else {
+                            Err(())
+                        }
                     });
                 },
                 Target::SideExit { .. } => {
@@ -1399,6 +1406,7 @@ impl Assembler {
                         // Set output to the raw address of the label
                         cb.label_ref(*label_idx, 4, |cb, end_addr, dst_addr| {
                             adr(cb, Self::EMIT_OPND, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
+                            Ok(())
                         });
 
                         mov(cb, out.into(), Self::EMIT_OPND);
@@ -1480,14 +1488,17 @@ impl Assembler {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
                         Target::Label(label_idx) => {
-                            // Here we're going to save enough space for
-                            // ourselves and then come back and write the
-                            // instruction once we know the offset. We're going
-                            // to assume we can fit into a single b instruction.
-                            // It will panic otherwise.
+                            // Reserve space for a single B instruction
                             cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                                b(cb, InstructionOffset::from_bytes(bytes));
+                                // +1 since src_addr is after the instruction while A64
+                                // counts the offset relative to the start.
+                                let offset = (dst_addr - src_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    b(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
                             });
                         },
                         Target::SideExit { .. } => {
@@ -1632,7 +1643,7 @@ impl Assembler {
         let gc_offsets = asm.arm64_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
 
             // Invalidate icache for newly written out region so we don't run stale code.
             unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
@@ -1746,6 +1757,29 @@ mod tests {
             0x8: mov x1, x0
         ");
         assert_snapshot!(cb.hexdump(), @"600080d2207d009be10300aa");
+    }
+
+    #[test]
+    fn test_conditional_branch_to_label() {
+        let (mut asm, mut cb) = setup_asm();
+        let start = asm.new_label("start");
+        let forward = asm.new_label("forward");
+
+        let value = asm.load(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0));
+        asm.write_label(start.clone());
+        asm.cmp(value, 0.into());
+        asm.jg(forward.clone());
+        asm.jl(start.clone());
+        asm.write_label(forward);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: ldur x0, [sp]
+        0x4: cmp x0, #0
+        0x8: b.gt #0x10
+        0xc: b.lt #4
+        ");
+        assert_snapshot!(cb.hexdump(), @"e00340f81f0000f14c000054cbffff54");
     }
 
     #[test]
@@ -2571,7 +2605,7 @@ mod tests {
     }
 
     #[test]
-    fn test_label_branch_generate_bounds() {
+    fn test_exceeding_label_branch_generate_bounds() {
         // The immediate in a conditional branch is a 19 bit unsigned integer
         // which has a max value of 2^18 - 1.
         const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
@@ -2582,6 +2616,7 @@ mod tests {
         let page_size = unsafe { rb_jit_get_page_size() } as usize;
         let memory_required = (IMMEDIATE_MAX_VALUE + 8) * 4 + page_size;
 
+        crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
@@ -2595,7 +2630,7 @@ mod tests {
         });
 
         asm.write_label(far_label.clone());
-        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(Err(CompileError::LabelLinkingFailure), asm.compile(&mut cb));
     }
 
     #[test]

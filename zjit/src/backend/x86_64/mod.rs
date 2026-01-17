@@ -836,6 +836,7 @@ impl Assembler {
                         cb.label_ref(*label, 7, move |cb, src_addr, dst_addr| {
                             let disp = dst_addr - src_addr;
                             lea(cb, out.into(), mem_opnd(8, RIP, disp.try_into().unwrap()));
+                            Ok(())
                         });
                     } else {
                         // Set output to the jump target's raw address
@@ -1104,7 +1105,7 @@ impl Assembler {
         let gc_offsets = asm.x86_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
             Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
