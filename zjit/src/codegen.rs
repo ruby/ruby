@@ -1743,7 +1743,46 @@ fn gen_dup_array_include(
 }
 
 fn gen_is_a(asm: &mut Assembler, obj: Opnd, class: Opnd) -> lir::Opnd {
-    asm_ccall!(asm, rb_obj_is_kind_of, obj, class)
+    let builtin_type = match class {
+        Opnd::Value(value) if value == unsafe { rb_cString } => Some(RUBY_T_STRING),
+        Opnd::Value(value) if value == unsafe { rb_cArray } => Some(RUBY_T_ARRAY),
+        Opnd::Value(value) if value == unsafe { rb_cHash } => Some(RUBY_T_HASH),
+        _ => None
+    };
+
+    if let Some(builtin_type) = builtin_type {
+        asm_comment!(asm, "IsA by matching builtin type");
+        let ret_label = asm.new_label("is_a_ret");
+        let false_label = asm.new_label("is_a_false");
+
+        let val = match obj {
+            Opnd::Reg(_) | Opnd::VReg { .. } => obj,
+            _ => asm.load(obj),
+        };
+
+        // Check special constant
+        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(ret_label.clone());
+
+        // Check false
+        asm.cmp(val, Qfalse.into());
+        asm.je(false_label.clone());
+
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let obj_builtin_type = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(obj_builtin_type, Opnd::UImm(builtin_type as u64));
+        asm.jmp(ret_label.clone());
+
+        // If we get here then the value was false, unset the Z flag
+        // so that csel_e will select false instead of true
+        asm.write_label(false_label);
+        asm.test(Opnd::UImm(1), Opnd::UImm(1));
+
+        asm.write_label(ret_label);
+        asm.csel_e(Qtrue.into(), Qfalse.into())
+    } else {
+        asm_ccall!(asm, rb_obj_is_kind_of, obj, class)
+    }
 }
 
 /// Compile a new hash instruction

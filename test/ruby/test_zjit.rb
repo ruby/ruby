@@ -4417,6 +4417,60 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_is_a_string_special_case
+    assert_compiles '[true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(String)
+      end
+      test("foo")
+      [test("bar"), test(1), test(false), test(:foo), test([]), test({})]
+    }
+  end
+
+  def test_is_a_array_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Array)
+      end
+      test([])
+      [test([1,2,3]), test([]), test(1), test(false), test(:foo), test("foo"), test({})]
+    }
+  end
+
+  def test_is_a_hash_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      [test({:a => "b"}), test({}), test(1), test(false), test(:foo), test([]), test("foo")]
+    }
+  end
+
+  def test_is_a_hash_subclass
+    assert_compiles 'true', %q{
+      class MyHash < Hash
+      end
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      test(MyHash.new)
+    }
+  end
+
+  def test_is_a_normal_case
+    assert_compiles '[true, false]', %q{
+      class MyClass
+      end
+      def test(x)
+        x.is_a?(MyClass)
+      end
+      test("a")
+      [test(MyClass.new), test("a")]
+    }
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
