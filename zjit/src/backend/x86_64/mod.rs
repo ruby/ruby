@@ -851,8 +851,8 @@ impl Assembler {
                     push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
-                    push(cb, opnd1.into());
                     push(cb, opnd0.into());
+                    push(cb, opnd1.into());
                 },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
@@ -1693,16 +1693,16 @@ mod tests {
         0x5: mov esi, 2
         0xa: mov edx, 3
         0xf: mov ecx, 4
-        0x14: push rsi
-        0x15: push rdi
-        0x16: push rcx
-        0x17: push rdx
+        0x14: push rdi
+        0x15: push rsi
+        0x16: push rdx
+        0x17: push rcx
         0x18: mov eax, 0
         0x1d: call rax
-        0x1f: pop rdx
-        0x20: pop rcx
-        0x21: pop rdi
-        0x22: pop rsi
+        0x1f: pop rcx
+        0x20: pop rdx
+        0x21: pop rsi
+        0x22: pop rdi
         0x23: add rdi, rsi
         0x26: add rdx, rcx
         ");
@@ -1731,20 +1731,20 @@ mod tests {
         0xa: mov edx, 3
         0xf: mov ecx, 4
         0x14: mov r8d, 5
-        0x1a: push rsi
-        0x1b: push rdi
-        0x1c: push rcx
-        0x1d: push rdx
+        0x1a: push rdi
+        0x1b: push rsi
+        0x1c: push rdx
+        0x1d: push rcx
         0x1e: push r8
         0x20: push r8
         0x22: mov eax, 0
         0x27: call rax
         0x29: pop r8
         0x2b: pop r8
-        0x2d: pop rdx
-        0x2e: pop rcx
-        0x2f: pop rdi
-        0x30: pop rsi
+        0x2d: pop rcx
+        0x2e: pop rdx
+        0x2f: pop rsi
+        0x30: pop rdi
         0x31: add rdi, rsi
         0x34: mov rdi, rdx
         0x37: add rdi, rcx

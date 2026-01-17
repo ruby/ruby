@@ -1619,13 +1619,13 @@ impl Assembler
 
                 // Save live registers
                 for pair in saved_regs.chunks(2) {
-                    match pair {
-                        &[(reg0, _), (reg1, _)] => {
+                    match *pair {
+                        [(reg0, _), (reg1, _)] => {
                             asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
                             pool.dealloc_opnd(&Opnd::Reg(reg0));
                             pool.dealloc_opnd(&Opnd::Reg(reg1));
                         }
-                        &[(reg, _)] => {
+                        [(reg, _)] => {
                             asm.cpush(Opnd::Reg(reg));
                             pool.dealloc_opnd(&Opnd::Reg(reg));
                         }
@@ -1762,15 +1762,15 @@ impl Assembler
                 }
                 // Restore saved registers
                 for pair in saved_regs.chunks(2).rev() {
-                    match pair {
-                        &[(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
-                            asm.cpop_pair_into(Opnd::Reg(reg0), Opnd::Reg(reg1));
-                            pool.take_reg(&reg1, vreg_idx1);
-                            pool.take_reg(&reg0, vreg_idx0);
-                        }
-                        &[(reg, vreg_idx)] => {
+                    match *pair {
+                        [(reg, vreg_idx)] => {
                             asm.cpop_into(Opnd::Reg(reg));
                             pool.take_reg(&reg, vreg_idx);
+                        }
+                        [(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
+                            asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
+                            pool.take_reg(&reg1, vreg_idx1);
+                            pool.take_reg(&reg0, vreg_idx0);
                         }
                         _ => unreachable!("chunks(2)")
                     }

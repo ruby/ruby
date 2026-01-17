@@ -2567,11 +2567,11 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     asm_comment!(asm, "preserve argument registers");
 
     for pair in ALLOC_REGS.chunks(2) {
-        match pair {
-            &[reg0, reg1] => {
+        match *pair {
+            [reg0, reg1] => {
                 asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
             }
-            &[reg] => {
+            [reg] => {
                 asm.cpush(Opnd::Reg(reg));
             }
             _ => unreachable!("chunks(2)")
@@ -2591,11 +2591,11 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     }
 
     for pair in ALLOC_REGS.chunks(2).rev() {
-        match pair {
-            &[reg0, reg1] => {
-                asm.cpop_pair_into(Opnd::Reg(reg0), Opnd::Reg(reg1));
+        match *pair {
+            [reg0, reg1] => {
+                asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
             }
-            &[reg] => {
+            [reg] => {
                 asm.cpop_into(Opnd::Reg(reg));
             }
             _ => unreachable!("chunks(2)")
