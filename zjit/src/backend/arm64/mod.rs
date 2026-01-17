@@ -1092,22 +1092,10 @@ impl Assembler {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
-        /// Emit a push pair instruction for the two given operands by adding to the stack
-        /// pointer and then storing the two given values.
-        fn emit_push_pair(cb: &mut CodeBlock, opnd0: A64Opnd, opnd1: A64Opnd) {
-            stp_pre(cb, opnd0, opnd1, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
-        }
-
         /// Emit a pop instruction into the given operand by loading the value
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
-        }
-
-        /// Emit a pop pair instruction into the two given operands by loading the two values
-        /// and then subtracting from the stack pointer.
-        fn emit_pop_pair(cb: &mut CodeBlock, opnd0: A64Opnd, opnd1: A64Opnd) {
-            ldp_post(cb, opnd0, opnd1, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
         // List of GC offsets
@@ -1426,7 +1414,8 @@ impl Assembler {
                     emit_push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
-                    emit_push_pair(cb, opnd0.into(), opnd1.into());
+                    // Second operand ends up at the lower stack address
+                    stp_pre(cb, opnd1, opnd0, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
                 },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
@@ -1435,14 +1424,18 @@ impl Assembler {
                     emit_pop(cb, opnd.into());
                 },
                 Insn::CPopPairInto(opnd0, opnd1) => {
-                    emit_pop_pair(cb, opnd0.into(), opnd1.into());
+                    // Second operand is stored at the lower stack address
+                    ldp_post(cb, opnd1, opnd0, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                 },
                 Insn::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
 
                     for pair in regs.chunks(2) {
                         match pair {
-                            &[reg0, reg1] => emit_push_pair(cb, A64Opnd::Reg(reg0), A64Opnd::Reg(reg1)),
+                            &[reg0, reg1] => {
+                                // Second register ends up at the lower stack address
+                                ldp_post(cb, reg1, reg0, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                            }
                             &[reg] => emit_push(cb, A64Opnd::Reg(reg)),
                             _ => unreachable!("chunks(2)")
                         }
@@ -1461,8 +1454,11 @@ impl Assembler {
 
                     for pair in regs.chunks(2).rev() {
                         match pair {
-                            &[reg0, reg1] => emit_pop_pair(cb, A64Opnd::Reg(reg0), A64Opnd::Reg(reg1)),
                             &[reg] => emit_pop(cb, A64Opnd::Reg(reg)),
+                            &[reg0, reg1] => {
+                                // Second operand is stored at the lower stack address
+                                ldp_post(cb, opnd1, opnd0, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                            }
                             _ => unreachable!("chunks(2)")
                         }
                     }
