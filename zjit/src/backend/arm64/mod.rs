@@ -1413,17 +1413,32 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    // Second operand ends up at the lower stack address
+                    stp_pre(cb, opnd1.into(), opnd0.into(), A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
+                },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     emit_pop(cb, opnd.into());
                 },
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    // First operand is popped from the lower stack address
+                    ldp_post(cb, opnd0.into(), opnd1.into(), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                },
                 Insn::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
 
-                    for reg in regs {
-                        emit_push(cb, A64Opnd::Reg(reg));
+                    for pair in regs.chunks(2) {
+                        match *pair {
+                            [reg0, reg1] => {
+                                // Second register ends up at the lower stack address
+                                ldp_post(cb, A64Opnd::Reg(reg1), A64Opnd::Reg(reg0), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                            }
+                            [reg] => emit_push(cb, A64Opnd::Reg(reg)),
+                            _ => unreachable!("chunks(2)")
+                        }
                     }
 
                     // Push the flags/state register
@@ -1437,8 +1452,16 @@ impl Assembler {
                     msr(cb, SystemRegister::NZCV, Self::EMIT_OPND);
                     emit_pop(cb, Self::EMIT_OPND);
 
-                    for reg in regs.into_iter().rev() {
-                        emit_pop(cb, A64Opnd::Reg(reg));
+                    for pair in regs.chunks(2).rev() {
+                        match *pair {
+                            [reg] => emit_pop(cb, A64Opnd::Reg(reg)),
+                            [reg0, reg1] => {
+                                // Second register of the pair was pushed second,
+                                // so pop it first from the lower stack address
+                                ldp_post(cb, A64Opnd::Reg(reg1), A64Opnd::Reg(reg0), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                            }
+                            _ => unreachable!("chunks(2)")
+                        }
                     }
                 },
                 Insn::CCall { fptr, .. } => {
@@ -1855,19 +1878,15 @@ mod tests {
         asm.cpush_all();
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: str x1, [sp, #-0x10]!
-        0x4: str x9, [sp, #-0x10]!
-        0x8: str x10, [sp, #-0x10]!
-        0xc: str x11, [sp, #-0x10]!
-        0x10: str x12, [sp, #-0x10]!
-        0x14: str x13, [sp, #-0x10]!
-        0x18: str x14, [sp, #-0x10]!
-        0x1c: str x15, [sp, #-0x10]!
-        0x20: mrs x16, nzcv
-        0x24: str x16, [sp, #-0x10]!
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldp x9, x1, [sp], #0x10
+        0x4: ldp x11, x10, [sp], #0x10
+        0x8: ldp x13, x12, [sp], #0x10
+        0xc: ldp x15, x14, [sp], #0x10
+        0x10: mrs x16, nzcv
+        0x14: str x16, [sp, #-0x10]!
         ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
+        assert_snapshot!(cb.hexdump(), @"e907c1a8eb2bc1a8ed33c1a8ef3bc1a810423bd5f00f1ff8");
     }
 
     #[test]
@@ -1877,19 +1896,15 @@ mod tests {
         asm.cpop_all();
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: msr nzcv, x16
         0x4: ldr x16, [sp], #0x10
-        0x8: ldr x15, [sp], #0x10
-        0xc: ldr x14, [sp], #0x10
-        0x10: ldr x13, [sp], #0x10
-        0x14: ldr x12, [sp], #0x10
-        0x18: ldr x11, [sp], #0x10
-        0x1c: ldr x10, [sp], #0x10
-        0x20: ldr x9, [sp], #0x10
-        0x24: ldr x1, [sp], #0x10
+        0x8: ldp x15, x14, [sp], #0x10
+        0xc: ldp x13, x12, [sp], #0x10
+        0x10: ldp x11, x10, [sp], #0x10
+        0x14: ldp x9, x1, [sp], #0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
+        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef3bc1a8ed33c1a8eb2bc1a8e907c1a8");
     }
 
     #[test]
@@ -2695,6 +2710,76 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        let x2 = asm.load(Opnd::UImm(3));
+        let x3 = asm.load(Opnd::UImm(4));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(x0, x1);
+        let _ = asm.add(x2, x3);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, x0
+        0x14: stp x2, x1, [sp, #-0x10]!
+        0x18: stp x4, x3, [sp, #-0x10]!
+        0x1c: mov x16, #0
+        0x20: blr x16
+        0x24: ldp x4, x3, [sp], #0x10
+        0x28: ldp x2, x1, [sp], #0x10
+        0x2c: adds x4, x4, x1
+        0x30: adds x2, x2, x3
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2e40300aae207bfa9e40fbfa9100080d200023fd6e40fc1a8e207c1a8840001ab420003ab");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        let x2 = asm.load(Opnd::UImm(3));
+        let x3 = asm.load(Opnd::UImm(4));
+        let x4 = asm.load(Opnd::UImm(5));
+        asm.ccall(0 as _, vec![]);
+        let _ = asm.add(x0, x1);
+        let _ = asm.add(x2, x3);
+        let _ = asm.add(x2, x4);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, x0
+        0x18: stp x2, x1, [sp, #-0x10]!
+        0x1c: stp x4, x3, [sp, #-0x10]!
+        0x20: str x5, [sp, #-0x10]!
+        0x24: mov x16, #0
+        0x28: blr x16
+        0x2c: ldr x5, [sp], #0x10
+        0x30: ldp x4, x3, [sp], #0x10
+        0x34: ldp x2, x1, [sp], #0x10
+        0x38: adds x5, x5, x1
+        0x3c: adds x0, x2, x3
+        0x40: adds x2, x2, x4
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e50300aae207bfa9e40fbfa9e50f1ff8100080d200023fd6e50741f8e40fc1a8e207c1a8a50001ab400003ab420004ab");
+    }
+
+    #[test]
     fn test_ccall_resolve_parallel_moves_large_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -2715,6 +2800,38 @@ mod tests {
             0x14: blr x16
         ");
         assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae10302aae2030faa100080d200023fd6");
+    }
+
+    #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        asm.cpush_pair(x0, x1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: stp x1, x0, [sp, #-0x10]!
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2e103bfa9");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let x0 = asm.load(Opnd::UImm(1));
+        let x1 = asm.load(Opnd::UImm(2));
+        asm.cpop_pair_into(x0, x1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: ldp x0, x1, [sp], #0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2e007c1a8");
     }
 
     #[test]
