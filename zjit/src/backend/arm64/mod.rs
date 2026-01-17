@@ -1456,7 +1456,8 @@ impl Assembler {
                         match *pair {
                             [reg] => emit_pop(cb, A64Opnd::Reg(reg)),
                             [reg0, reg1] => {
-                                // First register is popped from the lower stack address
+                                // Second register of the pair was pushed second,
+                                // so pop it first from the lower stack address
                                 ldp_post(cb, A64Opnd::Reg(reg1), A64Opnd::Reg(reg0), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                             }
                             _ => unreachable!("chunks(2)")
