@@ -1678,12 +1678,12 @@ mod tests {
     fn test_ccall_register_preservation_even() {
         let (mut asm, mut cb) = setup_asm();
 
-        let rsi = asm.load(Opnd::UImm(1));
-        let rdi = asm.load(Opnd::UImm(2));
+        let rdi = asm.load(Opnd::UImm(1));
+        let rsi = asm.load(Opnd::UImm(2));
         let rcx = asm.load(Opnd::UImm(3));
         let rdx = asm.load(Opnd::UImm(4));
         asm.ccall(0 as _, vec![]);
-        let _ = asm.add(rsi, rdi);
+        let _ = asm.add(rdi, rsi);
         let _ = asm.add(rcx, rdx);
 
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
@@ -1713,13 +1713,13 @@ mod tests {
     fn test_ccall_register_preservation_odd() {
         let (mut asm, mut cb) = setup_asm();
 
-        let rsi = asm.load(Opnd::UImm(1));
-        let rdi = asm.load(Opnd::UImm(2));
+        let rdi = asm.load(Opnd::UImm(1));
+        let rsi = asm.load(Opnd::UImm(2));
         let rcx = asm.load(Opnd::UImm(3));
         let rdx = asm.load(Opnd::UImm(4));
         let r8 = asm.load(Opnd::UImm(5));
         asm.ccall(0 as _, vec![]);
-        let _ = asm.add(rsi, rdi);
+        let _ = asm.add(rdi, rsi);
         let _ = asm.add(rcx, rdx);
         let _ = asm.add(rcx, r8);
 
@@ -1756,9 +1756,9 @@ mod tests {
     #[test]
     fn test_cpush_pair() {
         let (mut asm, mut cb) = setup_asm();
-        let rsi = asm.load(Opnd::UImm(1));
-        let rdi = asm.load(Opnd::UImm(2));
-        asm.cpush_pair(rsi, rdi);
+        let rdi = asm.load(Opnd::UImm(1));
+        let rsi = asm.load(Opnd::UImm(2));
+        asm.cpush_pair(rdi, rsi);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
@@ -1773,9 +1773,9 @@ mod tests {
     #[test]
     fn test_cpop_pair_into() {
         let (mut asm, mut cb) = setup_asm();
-        let rsi = asm.load(Opnd::UImm(1));
-        let rdi = asm.load(Opnd::UImm(2));
-        asm.cpop_pair_into(rsi, rdi);
+        let rdi = asm.load(Opnd::UImm(1));
+        let rsi = asm.load(Opnd::UImm(2));
+        asm.cpop_pair_into(rdi, rsi);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
