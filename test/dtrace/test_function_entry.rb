@@ -18,7 +18,28 @@ ruby$target:::method-entry
 	}
 
 	assert_equal 10, foo_calls.length, probes
-	line = '3'
+	line = '6'
+	foo_calls.each { |f| assert_equal line, f[3] }
+	foo_calls.each { |f| assert_equal rb_file, f[2] }
+      }
+    end
+
+    def test_function_entry_without_trace_point
+      probe = <<-eoprobe
+ruby$target:::method-entry
+/arg0 && arg1 && arg2/
+{
+  printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
+}
+      eoprobe
+
+      trap_probe(probe, ruby_program_without_trace_point) { |d_file, rb_file, probes|
+	foo_calls = probes.map { |line| line.split }.find_all { |row|
+	  row.first == 'Foo'  && row[1] == 'foo'
+	}
+
+	assert_equal 10, foo_calls.length, probes
+	line = '5'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -40,6 +61,27 @@ ruby$target:::method-return
 
 	assert_equal 10, foo_calls.length, probes.inspect
 	line = '3'
+	foo_calls.each { |f| assert_equal line, f[3] }
+	foo_calls.each { |f| assert_equal rb_file, f[2] }
+      }
+    end
+
+    def test_function_return_without_trace_point
+      probe = <<-eoprobe
+ruby$target:::method-return
+/arg0 && arg1 && arg2/
+{
+  printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
+}
+      eoprobe
+
+      trap_probe(probe, ruby_program_without_trace_point) { |d_file, rb_file, probes|
+	foo_calls = probes.map { |line| line.split }.find_all { |row|
+	  row.first == 'Foo'  && row[1] == 'foo'
+	}
+
+	assert_equal 10, foo_calls.length, probes.inspect
+	line = '2'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -78,6 +120,16 @@ ruby$target:::method-return
     def ruby_program
       <<-eoruby
       TracePoint.new{}.__enable(nil, nil, Thread.current)
+      class Foo
+	def foo; end
+      end
+      x = Foo.new
+      10.times { x.foo }
+      eoruby
+    end
+
+    def ruby_program_without_trace_point
+      <<-eoruby
       class Foo
 	def foo; end
       end
