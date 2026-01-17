@@ -1205,6 +1205,7 @@ impl Insn {
             Insn::IncrCounter(_) => effects::Any,
             Insn::IncrCounterPtr { .. } => effects::Any,
             Insn::CheckInterrupts { .. } => effects::Any,
+            Insn::InvokeProc { .. } => effects::Any,
         }
     }
 
