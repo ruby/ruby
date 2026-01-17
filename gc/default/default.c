@@ -9582,7 +9582,7 @@ rb_gc_impl_init(void)
         VALUE opts;
         /* \GC build options */
         rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
-#define OPT(o) if (o) rb_ary_push(opts, rb_enc_interned_str(#o, sizeof(#o) - 1, rb_usascii_encoding()))
+#define OPT(o) if (o) rb_ary_push(opts, rb_interned_str(#o, sizeof(#o) - 1))
         OPT(GC_DEBUG);
         OPT(USE_RGENGC);
         OPT(RGENGC_DEBUG);

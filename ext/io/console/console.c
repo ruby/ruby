@@ -84,9 +84,9 @@ getattr(int fd, conmode *t)
 static ID id_getc, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
 
-#ifndef HAVE_RB_ENC_INTERNED_STR_CSTR
+#ifndef HAVE_RB_INTERNED_STR_CSTR
 # define rb_str_to_interned_str(str) rb_str_freeze(str)
-# define rb_enc_interned_str_cstr(str, enc) rb_str_freeze(rb_usascii_str_new_cstr(str))
+# define rb_interned_str_cstr(str) rb_str_freeze(rb_usascii_str_new_cstr(str))
 #endif
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
@@ -1897,7 +1897,7 @@ console_ttyname(VALUE io)
 	size_t size = sizeof(termname);
 	int e;
 	if (ttyname_r(fd, tn, size) == 0)
-	    return rb_enc_interned_str_cstr(tn, rb_usascii_encoding());
+	    return rb_interned_str_cstr(tn);
 	if ((e = errno) == ERANGE) {
 	    VALUE s = rb_str_new(0, size);
 	    while (1) {
@@ -1921,7 +1921,7 @@ console_ttyname(VALUE io)
 	    int e = errno;
 	    rb_syserr_fail_str(e, rb_sprintf("ttyname(%d)", fd));
 	}
-	return rb_enc_interned_str_cstr(tn, rb_usascii_encoding());
+	return rb_interned_str_cstr(tn);
     }
 # else
 #   error No ttyname function
