@@ -1781,10 +1781,10 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov edi, 1
         0x5: mov esi, 2
-        0xa: pop rsi
-        0xb: pop rdi
+        0xa: pop rdi
+        0xb: pop rsi
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005e5f");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005f5e");
     }
 
     #[test]
