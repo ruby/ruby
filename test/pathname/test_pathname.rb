@@ -498,13 +498,11 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_initialize_nul
-    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(ArgumentError) { Pathname.new("a\0") }
   end
 
   def test_initialize_encoding
     omit "https://github.com/jruby/jruby/issues/9120" if RUBY_ENGINE == "jruby"
-    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(Encoding::CompatibilityError) { Pathname.new("a".encode(Encoding::UTF_32BE)) }
   end
 
