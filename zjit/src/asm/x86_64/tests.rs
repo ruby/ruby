@@ -136,7 +136,7 @@ fn test_call_label() {
     let cb = compile(|cb| {
         let label_idx = cb.new_label("fn".to_owned());
         call_label(cb, label_idx);
-        cb.link_labels();
+        cb.link_labels().unwrap();
     });
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
     assert_snapshot!(cb.hexdump(), @"e8fbffffff");
@@ -255,7 +255,7 @@ fn test_jge_label() {
     let cb = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         jge_label(cb, label_idx);
-        cb.link_labels();
+        cb.link_labels().unwrap();
     });
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: jge 0");
     assert_snapshot!(cb.hexdump(), @"0f8dfaffffff");
@@ -268,14 +268,14 @@ fn test_jmp_label() {
         let label_idx = cb.new_label("next".to_owned());
         jmp_label(cb, label_idx);
         cb.write_label(label_idx);
-        cb.link_labels();
+        cb.link_labels().unwrap();
     });
     // Backwards jump
     let cb2 = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         cb.write_label(label_idx);
         jmp_label(cb, label_idx);
-        cb.link_labels();
+        cb.link_labels().unwrap();
     });
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
@@ -301,7 +301,7 @@ fn test_jo_label() {
     let cb = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         jo_label(cb, label_idx);
-        cb.link_labels();
+        cb.link_labels().unwrap();
     });
 
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: jo 0");

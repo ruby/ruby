@@ -20,7 +20,7 @@ pub mod arm64;
 pub struct Label(pub usize);
 
 /// The object that knows how to encode the branch instruction.
-type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64)>;
+type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64) -> Result<(), ()>>;
 
 /// Reference to an ASM label
 pub struct LabelRef {
@@ -233,7 +233,7 @@ impl CodeBlock {
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) + 'static) {
+    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) -> Result<(), ()> + 'static) {
         assert!(label.0 < self.label_addrs.len());
 
         // Keep track of the reference
@@ -248,8 +248,9 @@ impl CodeBlock {
     }
 
     // Link internal label references
-    pub fn link_labels(&mut self) {
+    pub fn link_labels(&mut self) -> Result<(), ()> {
         let orig_pos = self.write_pos;
+        let mut link_result = Ok(());
 
         // For each label reference
         for label_ref in mem::take(&mut self.label_refs) {
@@ -261,11 +262,14 @@ impl CodeBlock {
             assert!(label_addr < self.mem_size);
 
             self.write_pos = ref_pos;
-            (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            let encode_result = (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            link_result = link_result.and(encode_result);
 
-            // Assert that we've written the same number of bytes that we
-            // expected to have written.
-            assert!(self.write_pos == ref_pos + label_ref.num_bytes);
+            // Verify number of bytes written when the callback returns Ok
+            if encode_result.is_ok() {
+                assert_eq!(self.write_pos, ref_pos + label_ref.num_bytes, "label_ref \
+                    callback didn't write number of bytes it claimed to write upfront");
+            }
         }
 
         self.write_pos = orig_pos;
@@ -274,6 +278,8 @@ impl CodeBlock {
         self.label_addrs.clear();
         self.label_names.clear();
         assert!(self.label_refs.is_empty());
+
+        link_result
     }
 
     /// Convert a Label to CodePtr
