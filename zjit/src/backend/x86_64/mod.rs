@@ -1760,7 +1760,7 @@ mod tests {
         let rdi = asm.load(Opnd::UImm(2));
         asm.cpush_pair(rsi, rdi);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
-        
+
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov edi, 1
         0x5: mov esi, 2
@@ -1777,7 +1777,7 @@ mod tests {
         let rdi = asm.load(Opnd::UImm(2));
         asm.cpop_pair_into(rsi, rdi);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
-        
+
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov edi, 1
         0x5: mov esi, 2

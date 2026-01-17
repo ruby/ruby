@@ -2808,7 +2808,7 @@ mod tests {
         let x1 = asm.load(Opnd::UImm(2));
         asm.cpush_pair(x0, x1);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
-        
+
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #1
         0x4: mov x1, #2
@@ -2824,7 +2824,7 @@ mod tests {
         let x1 = asm.load(Opnd::UImm(2));
         asm.cpop_pair_into(x0, x1);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
-        
+
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #1
         0x4: mov x1, #2
