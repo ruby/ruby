@@ -1446,7 +1446,7 @@ allow_frozen_shareable_p(VALUE obj)
     if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else if (RTYPEDDATA_P(obj)) {
+    else {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
             return true;
