@@ -5,6 +5,10 @@
 #include "ruby/encoding.h"
 #include <stdint.h>
 
+#ifndef RBIMPL_ASSERT_OR_ASSUME
+# define RBIMPL_ASSERT_OR_ASSUME(x)
+#endif
+
 #if defined(RUBY_DEBUG) && RUBY_DEBUG
 # define JSON_ASSERT RUBY_ASSERT
 #else

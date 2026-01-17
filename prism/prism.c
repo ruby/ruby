@@ -12438,7 +12438,7 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
 
     pm_parser_err(parser, opening->start, opening->end, diag_id);
 
-    parser->previous.start = opening->end;
+    parser->previous.start = parser->previous.end;
     parser->previous.type = PM_TOKEN_MISSING;
 }
 

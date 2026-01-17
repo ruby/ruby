@@ -1606,10 +1606,15 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
           v25:ArrayExact = GuardType v9, ArrayExact
-          v26:BasicObject = ArrayArefFixnum v25, v14
+          v26:CInt64[0] = UnboxFixnum v14
+          v27:CInt64 = ArrayLength v25
+          v28:CInt64[0] = GuardLess v26, v27
+          v29:CInt64[0] = Const CInt64(0)
+          v30:CInt64[0] = GuardGreaterEq v28, v29
+          v31:BasicObject = ArrayAref v25, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v31
         ");
         assert_snapshot!(inspect("test [1,2,3]"), @"1");
     }
@@ -3813,6 +3818,186 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_proc_call() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p.call(1)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, call@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_aref() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p[2]
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, []@0x1008, cme:0x1010)
+          v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v25:BasicObject = InvokeProc v24, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_yield() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p.yield(3)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[3] = Const Value(3)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, yield@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_eqq() {
+        eval("
+            p = proc { |x| x > 0 }
+            def test(p)
+              p === 1
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, ===@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_proc_call_splat() {
+        eval("
+            p = proc { }
+            def test(p)
+              empty = []
+              p.call(*empty)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v16:ArrayExact = NewArray
+          v22:ArrayExact = ToArray v16
+          IncrCounter complex_arg_pass_caller_splat
+          v24:BasicObject = SendWithoutBlock v11, :call, v22 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_proc_call_kwarg() {
+        eval("
+            p = proc { |a:| a }
+            def test(p)
+              p.call(a: 1)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter complex_arg_pass_caller_kwarg
+          v16:BasicObject = SendWithoutBlock v9, :call, v14 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_dont_specialize_definedivar_with_t_data() {
         eval("
             class C < Range
@@ -4734,10 +4919,15 @@ mod hir_opt_tests {
           v13:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
-          v27:BasicObject = ArrayArefFixnum v23, v13
+          v27:CInt64[0] = UnboxFixnum v13
+          v28:CInt64 = ArrayLength v23
+          v29:CInt64[0] = GuardLess v27, v28
+          v30:CInt64[0] = Const CInt64(0)
+          v31:CInt64[0] = GuardGreaterEq v29, v30
+          v32:BasicObject = ArrayAref v23, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v32
         ");
        // TODO(max): Check the result of `S[0] = 5; test` using `inspect` to make sure that we
        // actually do the load at run-time.
@@ -4763,10 +4953,15 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v26:Fixnum[5] = Const Value(5)
+          v24:CInt64[1] = UnboxFixnum v13
+          v25:CInt64 = ArrayLength v11
+          v26:CInt64[1] = GuardLess v24, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CInt64[1] = GuardGreaterEq v26, v27
+          v31:Fixnum[5] = Const Value(5)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v31
         ");
     }
 
@@ -4790,10 +4985,15 @@ mod hir_opt_tests {
           v13:Fixnum[-3] = Const Value(-3)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v26:Fixnum[4] = Const Value(4)
+          v24:CInt64[-3] = UnboxFixnum v13
+          v25:CInt64 = ArrayLength v11
+          v26:CInt64[-3] = GuardLess v24, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CInt64[-3] = GuardGreaterEq v26, v27
+          v31:Fixnum[4] = Const Value(4)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v31
         ");
     }
 
@@ -4817,10 +5017,15 @@ mod hir_opt_tests {
           v13:Fixnum[-10] = Const Value(-10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v26:NilClass = Const Value(nil)
+          v24:CInt64[-10] = UnboxFixnum v13
+          v25:CInt64 = ArrayLength v11
+          v26:CInt64[-10] = GuardLess v24, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CInt64[-10] = GuardGreaterEq v26, v27
+          v31:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v31
         ");
     }
 
@@ -4844,10 +5049,15 @@ mod hir_opt_tests {
           v13:Fixnum[10] = Const Value(10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v26:NilClass = Const Value(nil)
+          v24:CInt64[10] = UnboxFixnum v13
+          v25:CInt64 = ArrayLength v11
+          v26:CInt64[10] = GuardLess v24, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CInt64[10] = GuardGreaterEq v26, v27
+          v31:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v31
         ");
     }
 
@@ -6735,10 +6945,15 @@ mod hir_opt_tests {
           v19:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v30:BasicObject = ArrayArefFixnum v14, v19
+          v30:CInt64[0] = UnboxFixnum v19
+          v31:CInt64 = ArrayLength v14
+          v32:CInt64[0] = GuardLess v30, v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64[0] = GuardGreaterEq v32, v33
+          v35:BasicObject = ArrayAref v14, v34
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v35
         ");
     }
 
@@ -6766,10 +6981,15 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
           v27:ArrayExact = GuardType v11, ArrayExact
           v28:Fixnum = GuardType v12, Fixnum
-          v29:BasicObject = ArrayArefFixnum v27, v28
+          v29:CInt64 = UnboxFixnum v28
+          v30:CInt64 = ArrayLength v27
+          v31:CInt64 = GuardLess v29, v30
+          v32:CInt64[0] = Const CInt64(0)
+          v33:CInt64 = GuardGreaterEq v31, v32
+          v34:BasicObject = ArrayAref v27, v33
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v34
         ");
     }
 
@@ -6798,10 +7018,15 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
           v27:ArraySubclass[class_exact:C] = GuardType v11, ArraySubclass[class_exact:C]
           v28:Fixnum = GuardType v12, Fixnum
-          v29:BasicObject = ArrayArefFixnum v27, v28
+          v29:CInt64 = UnboxFixnum v28
+          v30:CInt64 = ArrayLength v27
+          v31:CInt64 = GuardLess v29, v30
+          v32:CInt64[0] = Const CInt64(0)
+          v33:CInt64 = GuardGreaterEq v31, v32
+          v34:BasicObject = ArrayAref v27, v33
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v34
         ");
     }
 
@@ -7078,11 +7303,11 @@ mod hir_opt_tests {
           v31:ArrayExact = GuardType v9, ArrayExact
           v32:ArrayExact = GuardNotFrozen v31
           v33:ArrayExact = GuardNotShared v32
-          v34:CInt64 = UnboxFixnum v16
+          v34:CInt64[1] = UnboxFixnum v16
           v35:CInt64 = ArrayLength v33
-          v36:CInt64 = GuardLess v34, v35
+          v36:CInt64[1] = GuardLess v34, v35
           v37:CInt64[0] = Const CInt64(0)
-          v38:CInt64 = GuardGreaterEq v36, v37
+          v38:CInt64[1] = GuardGreaterEq v36, v37
           ArrayAset v33, v38, v18
           WriteBarrier v33, v18
           IncrCounter inline_cfunc_optimized_send_count

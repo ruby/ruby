@@ -374,7 +374,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::ArrayArefFixnum { array, index, .. } => gen_aref_fixnum(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
@@ -404,6 +404,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
+        Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
@@ -1497,6 +1498,35 @@ fn gen_invokeblock(
     )
 }
 
+fn gen_invokeproc(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    kw_splat: bool,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_comment!(asm, "call invokeproc");
+
+    let argv_ptr = gen_push_opnds(asm, &args);
+    let kw_splat_opnd = Opnd::Imm(i64::from(kw_splat));
+    let result = asm_ccall!(
+        asm,
+        rb_optimized_call,
+        recv,
+        EC,
+        args.len().into(),
+        argv_ptr,
+        kw_splat_opnd,
+        VM_BLOCK_HANDLER_NONE.into()
+    );
+    gen_pop_opnds(asm, &args);
+
+    result
+}
+
 /// Compile a dynamic dispatch for `super`
 fn gen_invokesuper(
     jit: &mut JITState,
@@ -1560,13 +1590,17 @@ fn gen_new_array(
 }
 
 /// Compile array access (`array[index]`)
-fn gen_aref_fixnum(
+fn gen_array_aref(
     asm: &mut Assembler,
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    let unboxed_idx = asm.rshift(index, Opnd::UImm(1));
-    asm_ccall!(asm, rb_ary_entry, array, unboxed_idx)
+    let unboxed_idx = asm.load(index);
+    let array = asm.load(array);
+    let array_ptr = gen_array_ptr(asm, array);
+    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+    let elem_ptr = asm.add(array_ptr, elem_offset);
+    asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
 }
 
 fn gen_array_aset(

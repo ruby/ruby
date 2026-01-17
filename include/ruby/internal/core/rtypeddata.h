@@ -265,6 +265,13 @@ struct rb_data_type_struct {
          * @internal
          */
         void (*handle_weak_references)(void *);
+
+         /**
+          * This field  is reserved for future  extension.  For now, it  must be
+          * filled with zeros.
+          */
+        void *reserved[7]; /* For future extension.
+                              This array *must* be filled with ZERO. */
     } function;
 
     /**

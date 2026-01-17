@@ -15,6 +15,7 @@ mod cruby;
 mod cruby_methods;
 mod hir;
 mod hir_type;
+mod hir_effect;
 mod codegen;
 mod stats;
 mod cast;

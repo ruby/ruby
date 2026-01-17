@@ -470,6 +470,74 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:getblockparamproxy]
   end
 
+  def test_optimized_method_call_proc_call
+    assert_compiles '2', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.call(1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_aref
+    assert_compiles '4', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p[2]
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_optimized_method_call_proc_yield
+    assert_compiles '6', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.yield(3)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_kw_splat
+    assert_compiles '3', %q{
+      p = proc { |**kw| kw[:a] + kw[:b] }
+      def test(p, h)
+        p.call(**h)
+      end
+      h = { a: 1, b: 2 }
+      test(p, h)
+      test(p, h)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_call_splat
+    assert_compiles '43', %q{
+      p = proc { |x| x + 1 }
+      def test(p)
+        ary = [42]
+        p.call(*ary)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
+  def test_optimized_method_call_proc_call_kwarg
+    assert_compiles '1', %q{
+      p = proc { |a:| a }
+      def test(p)
+        p.call(a: 1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
   def test_call_a_forwardable_method
     assert_runs '[]', %q{
       def test_root = forwardable
@@ -2158,6 +2226,54 @@ class TestZJIT < Test::Unit::TestCase
       test(2)
       test(2)
     }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_negative_index
+    assert_compiles '3', %q{
+      def test(x) = [1,2,3][x]
+      test(-1)
+      test(-1)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_positive
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(10)
+      test(10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_negative
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(-10)
+      test(-10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_array_subclass
+    assert_compiles '3', %q{
+      class MyArray < Array; end
+      def test(arr, idx) = arr[idx]
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_aref_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx) = arr[idx]
+      test([1,2,3], 1)
+      test([1,2,3], 1)
+      begin
+        test([1,2,3], "1")
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
   end
 
   def test_array_fixnum_aset
