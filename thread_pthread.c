@@ -1133,6 +1133,8 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
     {
         if (!ccan_list_empty(&sched->readyq)) {
             RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+            VM_ASSERT(th->status == THREAD_RUNNABLE);
+            // NOTE: when context switching this way, we don't set th->status = THREAD_STOPPED
             thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             thread_sched_to_ready_common(sched, th, false, can_direct_transfer);
@@ -2855,7 +2857,7 @@ static struct {
 
 #define TIMER_THREAD_CREATED_P() (timer_th.created_fork_gen == current_fork_gen)
 
-static void timer_thread_check_timeslice(rb_vm_t *vm);
+static void timer_thread_check_timeslice(rb_vm_t *vm, int timeout_ms);
 static int timer_thread_set_timeout(rb_vm_t *vm);
 static void timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial);
 
@@ -3024,13 +3026,23 @@ timer_thread_check_timeout(rb_vm_t *vm)
 }
 
 static void
-timer_thread_check_timeslice(rb_vm_t *vm)
+timer_thread_check_timeslice(rb_vm_t *vm, int timeout_ms)
 {
-    // TODO: check time
     rb_thread_t *th;
+    uint32_t default_quantum_us = thread_default_quantum_ms * 1000;
     ccan_list_for_each(&vm->ractor.sched.timeslice_threads, th, sched.node.timeslice_threads) {
-        RUBY_DEBUG_LOG("timeslice th:%u", rb_th_serial(th));
-        RUBY_VM_SET_TIMER_INTERRUPT(th->ec);
+        uint32_t limit_us = default_quantum_us;
+        if (th->priority > 0)  {
+            limit_us <<= th->priority;
+        }
+        else {
+            limit_us >>= -th->priority;
+        }
+        th->running_time_us += timeout_ms * 1000;
+        if (th->running_time_us >= limit_us) {
+            RUBY_DEBUG_LOG("timeslice th:%u", rb_th_serial(th));
+            RUBY_VM_SET_TIMER_INTERRUPT(th->ec);
+        }
     }
 }
 
