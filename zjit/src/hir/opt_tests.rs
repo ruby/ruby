@@ -3818,6 +3818,186 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_proc_call() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p.call(1)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, call@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_aref() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p[2]
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, []@0x1008, cme:0x1010)
+          v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v25:BasicObject = InvokeProc v24, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_yield() {
+        eval("
+            p = proc { |x| x + 1 }
+            def test(p)
+              p.yield(3)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[3] = Const Value(3)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, yield@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_eqq() {
+        eval("
+            p = proc { |x| x > 0 }
+            def test(p)
+              p === 1
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1000)
+          PatchPoint MethodRedefined(Proc@0x1000, ===@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
+          v24:BasicObject = InvokeProc v23, v14
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_proc_call_splat() {
+        eval("
+            p = proc { }
+            def test(p)
+              empty = []
+              p.call(*empty)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v16:ArrayExact = NewArray
+          v22:ArrayExact = ToArray v16
+          IncrCounter complex_arg_pass_caller_splat
+          v24:BasicObject = SendWithoutBlock v11, :call, v22 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_proc_call_kwarg() {
+        eval("
+            p = proc { |a:| a }
+            def test(p)
+              p.call(a: 1)
+            end
+            test p
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :p, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter complex_arg_pass_caller_kwarg
+          v16:BasicObject = SendWithoutBlock v9, :call, v14 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_dont_specialize_definedivar_with_t_data() {
         eval("
             class C < Range

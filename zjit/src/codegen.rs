@@ -404,6 +404,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
+        Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
@@ -1495,6 +1496,35 @@ fn gen_invokeblock(
         rb_vm_invokeblock,
         EC, CFP, Opnd::const_ptr(cd)
     )
+}
+
+fn gen_invokeproc(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    kw_splat: bool,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_comment!(asm, "call invokeproc");
+
+    let argv_ptr = gen_push_opnds(asm, &args);
+    let kw_splat_opnd = Opnd::Imm(i64::from(kw_splat));
+    let result = asm_ccall!(
+        asm,
+        rb_optimized_call,
+        recv,
+        EC,
+        args.len().into(),
+        argv_ptr,
+        kw_splat_opnd,
+        VM_BLOCK_HANDLER_NONE.into()
+    );
+    gen_pop_opnds(asm, &args);
+
+    result
 }
 
 /// Compile a dynamic dispatch for `super`

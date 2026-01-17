@@ -932,6 +932,13 @@ pub enum Insn {
         state: InsnId,
         reason: SendFallbackReason,
     },
+    /// Call Proc#call optimized method type.
+    InvokeProc {
+        recv: InsnId,
+        args: Vec<InsnId>,
+        state: InsnId,
+        kw_splat: bool,
+    },
 
     /// Optimized ISEQ call
     SendWithoutBlockDirect {
@@ -1450,6 +1457,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
+                Ok(())
+            }
+            Insn::InvokeProc { recv, args, kw_splat, .. } => {
+                write!(f, "InvokeProc {recv}")?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                if *kw_splat {
+                    write!(f, ", kw_splat")?;
+                }
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
@@ -2228,6 +2245,12 @@ impl Function {
                 state,
                 reason,
             },
+            &InvokeProc { recv, ref args, state, kw_splat } => InvokeProc {
+                recv: find!(recv),
+                args: find_vec!(args),
+                state: find!(state),
+                kw_splat,
+            },
             &InvokeBuiltin { bf, recv, ref args, state, leaf, return_type } => InvokeBuiltin { bf, recv: find!(recv), args: find_vec!(args), state, leaf, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
@@ -2416,6 +2439,7 @@ impl Function {
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
+            Insn::InvokeProc { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -2828,14 +2852,7 @@ impl Function {
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
 
-                        // If the call site info indicates that the `Function` has overly complex arguments, then
-                        // do not optimize into a `SendWithoutBlockDirect`.
                         let flags = unsafe { rb_vm_ci_flag(ci) };
-                        if unspecializable_call_type(flags) {
-                            self.count_complex_call_features(block, flags);
-                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
 
                         let mid = unsafe { vm_ci_mid(ci) };
                         // Do method lookup
@@ -2861,6 +2878,14 @@ impl Function {
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
                             def_type = unsafe { get_cme_def_type(cme) };
+                        }
+
+                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendWithoutBlockDirect`.
+                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
+                        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
+                            self.count_complex_call_features(block, flags);
+                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            self.push_insn_id(block, insn_id); continue;
                         }
 
                         if def_type == VM_METHOD_TYPE_ISEQ {
@@ -2993,7 +3018,31 @@ impl Function {
                         } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
                             match (opt_type, args.as_slice()) {
+                                (OptimizedMethodType::Call, _) => {
+                                    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
+                                        self.count_complex_call_features(block, flags);
+                                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                    // Check singleton class assumption first, before emitting other patchpoints
+                                    if !self.assume_no_singleton_classes(block, klass, state) {
+                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    if let Some(profiled_type) = profiled_type {
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                    }
+                                    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
+                                    self.make_equal_to(insn_id, invoke_proc);
+                                }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
+                                    if unspecializable_call_type(flags) {
+                                        self.count_complex_call_features(block, flags);
+                                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
                                     let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
                                                     .try_into()
                                                     .unwrap();
@@ -4416,7 +4465,8 @@ impl Function {
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeBuiltin { recv, ref args, state, .. }
-            | &Insn::InvokeSuper { recv, ref args, state, .. } => {
+            | &Insn::InvokeSuper { recv, ref args, state, .. }
+            | &Insn::InvokeProc { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
@@ -5041,6 +5091,7 @@ impl Function {
             | Insn::CCallWithFrame { recv, ref args, .. }
             | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
+            | Insn::InvokeProc { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
