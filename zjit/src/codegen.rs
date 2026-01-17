@@ -2592,11 +2592,11 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 
     for pair in ALLOC_REGS.chunks(2).rev() {
         match *pair {
-            [reg0, reg1] => {
-                asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
-            }
             [reg] => {
                 asm.cpop_into(Opnd::Reg(reg));
+            }
+            [reg0, reg1] => {
+                asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
             }
             _ => unreachable!("chunks(2)")
         }
