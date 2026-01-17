@@ -1775,7 +1775,7 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
         let rsi = asm.load(Opnd::UImm(1));
         let rdi = asm.load(Opnd::UImm(2));
-        asm.cpop_pair_into(rdi, rsi);
+        asm.cpop_pair_into(rsi, rdi);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
         
         assert_disasm_snapshot!(cb.disasm(), @"
