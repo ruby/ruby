@@ -1316,6 +1316,58 @@ CODE
     assert_equal S("\u{3042 3042 3042}!foo!"), S("\u{3042 3042 3042}/foo/").gsub("/", "!"), bug9849
   end
 
+  def test_gsub_one_to_one
+    assert_equal(S("hexxo"), S("hello").gsub(S('l'), S('x')))
+    assert_equal(S("jello"), S("hello").gsub(S('h'), S('j')))
+    assert_equal(S("hello"), S("hello").gsub(S('z'), S('x')))
+
+    # handles multibyte chars
+    assert_equal(S("cafï"), S("café").gsub(S('é'), S('ï')))
+    assert_equal(S("😄"), S("🥺").gsub(S("🥺"), S("😄")))
+
+    # sets $~ to MatchData of last match
+    S('hello').gsub(S('l'), S('x'))
+    assert_equal(3, $~.begin(0))
+    assert_equal(4, $~.end(0))
+    assert_equal(S('l'), $~[0])
+    assert_equal(S('hello'), $~.string)
+    assert_predicate($~.string, :frozen?)
+
+    S('hello').gsub(S('z'), S('x'))
+    assert_nil($~)
+
+    S('hello').gsub(S('h'), S('j'))
+    assert_equal(0, $~.begin(0))
+    assert_equal(S('h'), $~[0])
+
+    # ignores a block if supplied
+    assert_equal(S("good"), S("food").gsub(S('f'), S('g')) { S("w") })
+
+    my_string_klass = Class.new(@cls)
+
+    # char replaced
+    assert_instance_of(
+      String,
+      my_string_klass.new(S("foo")).gsub(S("o"), S("x"))
+    )
+
+    # nothing replaced
+    assert_instance_of(
+      String,
+      my_string_klass.new(S("foo")).gsub(S("-"), S("-"))
+    )
+
+    # converts to super-set encoding only if needed
+    str = S("aa").force_encoding(Encoding::US_ASCII)
+    repl_ascii_compat = S("e")
+    repl_utf8_req = S("é")
+    assert_equal(Encoding::US_ASCII, str.gsub(str, repl_ascii_compat).encoding)
+    assert_equal(Encoding::UTF_8, str.gsub(str, repl_utf8_req).encoding)
+
+    broken_encoding_pat = "\xFF\xFE".force_encoding("UTF-8")
+    assert_raise(RegexpError) { S("a").gsub(broken_encoding_pat, S("bb")) }
+  end
+
   def test_gsub!
     a = S("hello")
     b = a.dup
@@ -1346,6 +1398,49 @@ CODE
       a.gsub!(/([aeiou])/, S('<\1>'))
       assert_equal(S("h<e>ll<o>"), a)
     end
+  end
+
+  def test_gsub_bang_one_to_one
+    a = S("hello")
+    assert_equal(S("hello"), a.gsub!(S(""), S("")))
+    assert_equal(S("hello"), a)
+
+    a = S("hello")
+    assert_same(a, a.gsub!(S('l'), S('x')))
+    assert_equal(S("hexxo"), a)
+
+    a = S("hello")
+    assert_nil(a.gsub!(S('z'), S('x')))
+    assert_equal(S("hello"), a)
+
+    # handles multibyte chars
+    a = S("café")
+    assert_same(a, a.gsub!(S('é'), S('ï')))
+    assert_equal(S("cafï"), a)
+
+    s = S("hello")
+    s.freeze
+    assert_raise(FrozenError) { s.gsub!(S('h'), S('x')) }
+
+    # exception raised even if not mutated
+    assert_raise(FrozenError) { s.gsub!(S('-'), S('*')) }
+
+    str = S('hello')
+    str.gsub!(S('l'), S('x'))
+    assert_equal(S('hello'), $~.string)
+    assert_predicate($~.string, :frozen?)
+    assert_equal(3, $~.begin(0))
+    assert_equal(4, $~.end(0))
+    assert_equal(S('l'), $~[0])
+
+    str = S('hello')
+    str.gsub!(S('z'), S('x'))
+    assert_nil($~)
+
+    # ignores a block if supplied
+    a = S("food")
+    assert_same(a, a.gsub!(S('f'), S('g')) { S("w") })
+    assert_equal(S("good"), a)
   end
 
   def test_sub_hash
