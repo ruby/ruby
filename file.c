@@ -3714,22 +3714,6 @@ chompdirsep(const char *path, const char *end, rb_encoding *enc)
     return (char *)path;
 }
 
-static char *
-single_byte_chompdirsep(const char *path, const char *end)
-{
-    while (path < end) {
-        if (isdirsep(*path)) {
-            const char *last = path++;
-            while (path < end && isdirsep(*path)) path++;
-            if (path >= end) return (char *)last;
-        }
-        else {
-            path++;
-        }
-    }
-    return (char *)path;
-}
-
 char *
 rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
 {
@@ -5374,14 +5358,22 @@ rb_file_join_fastpath(long argc, VALUE *args)
     const char *name = RSTRING_PTR(result);
     for (i = 1; i < argc; i++) {
         VALUE tmp = args[i];
-        StringValueCStr(tmp);
         long len = RSTRING_LEN(result);
 
-        const char *tail = single_byte_chompdirsep(name, name + len);
-        if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
-            rb_str_set_len(result, tail - name);
+        const char *tmp_s;
+        long tmp_len;
+        RSTRING_GETMEM(tmp, tmp_s, tmp_len);
+
+        if (isdirsep(tmp_s[0])) {
+            // right side has a leading separator, remove left side separators.
+            long trailing_seps = 0;
+            while (isdirsep(name[len - trailing_seps - 1])) {
+                trailing_seps++;
+            }
+            rb_str_set_len(result, len - trailing_seps);
         }
-        else if (!*tail) {
+        else if (!isdirsep(name[len - 1])) {
+            // neither side have a separator, append one;
             rb_str_cat(result, "/", 1);
         }
 
@@ -5391,9 +5383,10 @@ rb_file_join_fastpath(long argc, VALUE *args)
             encidx = rb_enc_to_index(new_enc);
         }
 
-        rb_str_buf_append(result, tmp);
+        rb_str_buf_cat(result, tmp_s, tmp_len);
     }
 
+    rb_str_null_check(result);
     return result;
 }
 

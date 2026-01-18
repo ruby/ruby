@@ -2902,6 +2902,34 @@ str_null_check(VALUE str, int *w)
     return s;
 }
 
+const char *
+rb_str_null_check(VALUE str)
+{
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+
+    char *s;
+    long len;
+    RSTRING_GETMEM(str, s, len);
+
+    if (RB_LIKELY(rb_str_enc_fastpath(str))) {
+        if (!s || memchr(s, 0, len)) {
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+    else {
+        int w;
+        const char *s = str_null_check(str, &w);
+        if (!s) {
+            if (w) {
+                rb_raise(rb_eArgError, "string contains null char");
+            }
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+
+    return s;
+}
+
 char *
 rb_str_to_cstr(VALUE str)
 {
