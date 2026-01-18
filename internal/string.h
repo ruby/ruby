@@ -84,6 +84,7 @@ bool rb_str_reembeddable_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);
+const char *rb_str_null_check(VALUE);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
