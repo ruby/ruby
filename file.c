@@ -5350,7 +5350,6 @@ rb_file_join_fastpath(long argc, VALUE *args)
 
     VALUE result = rb_str_buf_new(size);
 
-    StringValueCStr(args[0]);
     int encidx = ENCODING_GET_INLINED(args[0]);
     ENCODING_SET_INLINED(result, encidx);
     rb_str_buf_append(result, args[0]);
