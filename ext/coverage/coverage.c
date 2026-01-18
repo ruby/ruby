@@ -467,7 +467,7 @@ rb_coverage_running(VALUE klass)
     return current_state == RUNNING ? Qtrue : Qfalse;
 }
 
-/* Coverage provides coverage measurement feature for Ruby.
+/* \Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
  *
  * Caveat: Currently, only process-global coverage measurement is supported.
@@ -503,7 +503,7 @@ rb_coverage_running(VALUE klass)
  *   require "foo.rb"
  *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
  *
- * == Lines Coverage
+ * == Lines \Coverage
  *
  * If a coverage mode is not explicitly specified when starting coverage, lines
  * coverage is what will run. It reports the number of line executions for each
@@ -523,7 +523,7 @@ rb_coverage_running(VALUE klass)
  * A +nil+ value means coverage is disabled for this line (lines like +else+
  * and +end+).
  *
- * == Oneshot Lines Coverage
+ * == Oneshot Lines \Coverage
  *
  * Oneshot lines coverage tracks and reports on the executed lines while
  * coverage is running. It will not report how many times a line was executed,
@@ -537,7 +537,7 @@ rb_coverage_running(VALUE klass)
  * The value of the oneshot lines coverage result is an array containing the
  * line numbers that were executed.
  *
- * == Branches Coverage
+ * == Branches \Coverage
  *
  * Branches coverage reports how many times each branch within each conditional
  * was executed.
@@ -562,7 +562,7 @@ rb_coverage_running(VALUE klass)
  * 5. The ending line number it appears on in the file.
  * 6. The ending column number it appears on in the file.
  *
- * == Methods Coverage
+ * == Methods \Coverage
  *
  * Methods coverage reports how many times each method was executed.
  *
@@ -600,7 +600,7 @@ rb_coverage_running(VALUE klass)
  * 5. The ending line number the method appears on in the file.
  * 6. The ending column number the method appears on in the file.
  *
- * == All Coverage Modes
+ * == All \Coverage Modes
  *
  * You can also run all modes of coverage simultaneously with this shortcut.
  * Note that running all coverage modes does not run both lines and oneshot
