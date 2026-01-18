@@ -27,8 +27,7 @@ prettyprint_constant(pm_buffer_t *output_buffer, const ID constant_id) {
 static void
 prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t *prefix_buffer) {
     switch (RB_NODE_TYPE(node)) {
-        case RB_SCOPE_NODE:
-            // We do not need to print a ScopeNode as it's not part of the AST.
+        case RB_NODE_LAST:
             return;
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
