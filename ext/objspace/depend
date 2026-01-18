@@ -602,6 +602,7 @@ objspace_dump.o: $(top_srcdir)/ccan/list/list.h
 objspace_dump.o: $(top_srcdir)/ccan/str/str.h
 objspace_dump.o: $(top_srcdir)/constant.h
 objspace_dump.o: $(top_srcdir)/debug_counter.h
+objspace_dump.o: $(top_srcdir)/encindex.h
 objspace_dump.o: $(top_srcdir)/id_table.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h
