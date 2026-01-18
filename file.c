@@ -5557,7 +5557,7 @@ rb_thread_flock(void *data)
  *  call-seq:
  *    flock(locking_constant) -> 0 or false
  *
- *  Locks or unlocks file +self+ according to the given `locking_constant`,
+ *  Locks or unlocks file `self` according to the given `locking_constant`,
  *  a bitwise OR of the values in the table below.
  *
  *  Not available on all platforms.
@@ -5567,10 +5567,10 @@ rb_thread_flock(void *data)
  *
  *  | Constant        | Lock         | Effect
  *  |-----------------|--------------|-----------------------------------------------------------------------------------------------------------------|
- *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.                                               |
- *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>. |
- *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.                                     |
- *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.                                                                   |
+ *  | `File::LOCK_EX` | Exclusive    | Only one process may hold an exclusive lock for `self` at a time.                                               |
+ *  | `File::LOCK_NB` | Non-blocking | No blocking; may be combined with `File::LOCK_SH` or `File::LOCK_EX` using the bitwise OR operator <tt>\|</tt>. |
+ *  | `File::LOCK_SH` | Shared       | Multiple processes may each hold a shared lock for `self` at the same time.                                     |
+ *  | `File::LOCK_UN` | Unlock       | Remove an existing lock held by this process.                                                                   |
  *
  *  Example:
  *
@@ -5697,11 +5697,11 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
  *
  *  - This test operates only on the entity at `path0`,
- *    and returns an integer size or +nil+:
+ *    and returns an integer size or `nil`:
  *
  *      | Character    | Test                                                                                         |
  *      |:------------:|:---------------------------------------------------------------------------------------------|
- *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, +nil+ otherwise. |
+ *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, `nil` otherwise. |
  *
  *  - Each of these tests operates only on the entity at `path0`,
  *    and returns a Time object;
