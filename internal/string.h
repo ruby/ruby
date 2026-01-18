@@ -14,6 +14,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "encindex.h"
 
 #define STR_SHARED                  FL_USER0 /* = ELTS_SHARED */
 #define STR_NOEMBED                 FL_USER1
@@ -28,6 +29,26 @@ enum ruby_rstring_private_flags {
 #ifdef rb_fstring_cstr
 # undef rb_fstring_cstr
 #endif
+
+static inline bool
+rb_str_encindex_fastpath(int encindex)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    switch (encindex) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_UTF_8:
+      case ENCINDEX_US_ASCII:
+        return true;
+      default:
+        return false;
+    }
+}
+
+static inline bool
+rb_str_enc_fastpath(VALUE str)
+{
+    return rb_str_encindex_fastpath(ENCODING_GET_INLINED(str));
+}
 
 /* string.c */
 VALUE rb_str_dup_m(VALUE str);
