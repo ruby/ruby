@@ -7963,11 +7963,11 @@ Init_File(void)
      *
      * ==== File::FNM_EXTGLOB
      *
-     * Flag File::FNM_EXTGLOB enables pattern <tt>'{_a_,_b_}'</tt>,
+     * Flag File::FNM_EXTGLOB enables pattern <tt>'{a,b}'</tt>,
      * which matches pattern '_a_' and pattern '_b_';
      * behaves like
      * a {regexp union}[rdoc-ref:Regexp.union]
-     * (e.g., <tt>'(?:_a_|_b_)'</tt>):
+     * (e.g., <tt>'(?:a|b)'</tt>):
      *
      *   pattern = '{LEGAL,BSDL}'
      *   Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
