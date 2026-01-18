@@ -45,8 +45,7 @@ enum rb_node_type {
     <%= node.type %> = <%= index + 1 %>,
 
 <%- end -%>
-    /** A special kind of node used for compilation. */
-    RB_SCOPE_NODE
+    RB_NODE_LAST
 };
 
 /**
