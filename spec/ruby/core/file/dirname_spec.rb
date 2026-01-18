@@ -79,6 +79,10 @@ describe "File.dirname" do
   end
 
   platform_is_not :windows do
+    it "ignores repeated leading / (edge cases on non-windows)" do
+      File.dirname("/////foo/bar/").should == "/foo"
+    end
+
     it "returns all the components of filename except the last one (edge cases on non-windows)" do
       File.dirname('/////').should == '/'
       File.dirname("//foo//").should == "/"

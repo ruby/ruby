@@ -240,17 +240,27 @@ rb_get_path_check_to_string(VALUE obj)
     return tmp;
 }
 
-VALUE
-rb_get_path_check_convert(VALUE obj)
+static inline VALUE
+rb_check_path_convert(VALUE obj)
 {
+    obj = rb_get_path_check_to_string(obj);
     obj = file_path_convert(obj);
 
-    check_path_encoding(obj);
+    if (!rb_str_enc_fastpath(obj)) {
+        check_path_encoding(obj);
+    }
     if (!rb_str_to_cstr(obj)) {
         rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new4(obj);
+    return obj;
+}
+
+VALUE
+rb_get_path_check_convert(VALUE obj)
+{
+
+    return rb_str_new_frozen(rb_check_path_convert(obj));
 }
 
 VALUE
@@ -5031,9 +5041,59 @@ rb_file_dirname_n(VALUE fname, int n)
     const char **seps;
 
     if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
-    FilePathStringValue(fname);
-    name = StringValueCStr(fname);
+    fname = rb_check_path_convert(fname);
+    name = RSTRING_PTR(fname);
+
+    if (RB_UNLIKELY(n == 0)) {
+        return rb_str_dup(fname);
+    }
+
     end = name + RSTRING_LEN(fname);
+
+    if (RB_UNLIKELY(name == end)) {
+        dirname = rb_str_new(".", 1);
+        rb_enc_copy(dirname, fname);
+        return dirname;
+    }
+
+#if !defined(DOSISH_UNC) && !defined(DOSISH_DRIVE_LETTER)
+    if (RB_LIKELY(n == 1 && rb_str_enc_fastpath(fname))) {
+        const char *cursor = end - 1;
+
+        while (isdirsep(name[0]) && end > name && isdirsep(name[1])) {
+            name++;
+        }
+
+        while (cursor > name && isdirsep(*cursor)) {
+            cursor--;
+        }
+
+        while (cursor > name) {
+            if (isdirsep(*cursor)) {
+                while (cursor > name && isdirsep(cursor[-1])) {
+                    cursor--;
+                }
+                break;
+            }
+            cursor--;
+        }
+
+        if (cursor == name) {
+            if (isdirsep(name[0])) {
+                dirname = rb_str_new(name, 1);
+            }
+            else {
+                dirname = rb_str_new(".", 1);
+            }
+        }
+        else {
+            dirname = rb_str_new(name, cursor - name);
+        }
+        ENCODING_SET_INLINED(dirname, ENCODING_GET_INLINED(fname));
+        return dirname;
+    }
+#endif
+
     enc = rb_enc_get(fname);
     root = skiproot(name, end, enc);
 #ifdef DOSISH_UNC
