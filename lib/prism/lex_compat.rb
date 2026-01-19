@@ -667,7 +667,7 @@ module Prism
 
         event = RIPPER.fetch(token.type)
         value = token.value
-        lex_state = Translation::Ripper::Lexer::State.new(lex_state)
+        lex_state = Translation::Ripper::Lexer::State.cached(lex_state)
 
         token =
           case event
@@ -734,7 +734,7 @@ module Prism
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                Translation::Ripper::Lexer::State.new(result_value[current_index][1])
+                Translation::Ripper::Lexer::State.cached(result_value[current_index][1])
               else
                 previous_state
               end

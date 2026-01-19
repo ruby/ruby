@@ -38,6 +38,13 @@ module Prism
           def allbits?(i) to_int.allbits?(i) end
           def anybits?(i) to_int.anybits?(i) end
           def nobits?(i) to_int.nobits?(i) end
+
+          # Instances are frozen and there are only a handful of them so we cache them here.
+          STATES = Hash.new { |h,k| h[k] = State.new(k) }
+
+          def self.cached(i)
+            STATES[i]
+          end
         end
 
         class Elem
@@ -47,7 +54,7 @@ module Prism
             @pos = pos
             @event = event
             @tok = tok
-            @state = State.new(state)
+            @state = State.cached(state)
             @message = message
           end
 
