@@ -3571,7 +3571,7 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 # define isADS(x) 0
 #endif
 
-#define Next(p, e, enc) ((p) + rb_enc_mbclen((p), (e), (enc)))
+#define Next(p, e, enc) ((p) + ((enc) ? rb_enc_mbclen((p), (e), (enc)) : 1))
 #define Inc(p, e, enc) ((p) = Next((p), (e), (enc)))
 
 #if defined(DOSISH_UNC)
@@ -5114,12 +5114,7 @@ rb_file_dirname_n(VALUE fname, int n)
                     if (i == n) i = 0;
                 }
                 else {
-                    if (RB_UNLIKELY(enc)) {
-                        Inc(p, end, enc);
-                    }
-                    else {
-                        p++;
-                    }
+                    Inc(p, end, enc);
                 }
             }
             p = seps[i];
