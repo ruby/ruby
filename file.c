@@ -214,15 +214,16 @@ file_path_convert(VALUE name)
     return name;
 }
 
-static rb_encoding *
+static void
 check_path_encoding(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-    if (!rb_enc_asciicompat(enc)) {
-        rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %"PRIsVALUE,
-                 rb_enc_name(enc), rb_str_inspect(str));
+    if (RB_UNLIKELY(!rb_str_enc_fastpath(str))) {
+        rb_encoding *enc = rb_str_enc_get(str);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %"PRIsVALUE,
+                     rb_enc_name(enc), rb_str_inspect(str));
+        }
     }
-    return enc;
 }
 
 VALUE
@@ -250,7 +251,7 @@ rb_get_path_check_convert(VALUE obj)
         rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new4(obj);
+    return rb_str_new_frozen(obj);
 }
 
 VALUE
@@ -264,6 +265,19 @@ rb_get_path(VALUE obj)
 {
     return rb_get_path_check_convert(rb_get_path_check_to_string(obj));
 }
+
+static inline VALUE
+check_path(VALUE obj, const char **cstr)
+{
+    VALUE str = rb_get_path_check_convert(rb_get_path_check_to_string(obj));
+#if RUBY_DEBUG
+    str = rb_str_new_frozen(str);
+#endif
+    *cstr = RSTRING_PTR(str);
+    return str;
+}
+
+#define CheckPath(str, cstr) RB_GC_GUARD(str) = check_path(str, &cstr);
 
 VALUE
 rb_str_encode_ospath(VALUE path)
@@ -4952,7 +4966,8 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     if (rb_check_arity(argc, 1, 2) == 2) {
         fext = argv[1];
         StringValue(fext);
-        enc = check_path_encoding(fext);
+        check_path_encoding(fext);
+        enc = rb_str_enc_get(fext);
     }
     fname = argv[0];
     FilePathStringValue(fname);
@@ -5031,10 +5046,9 @@ rb_file_dirname_n(VALUE fname, int n)
     const char **seps;
 
     if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
-    FilePathStringValue(fname);
-    name = StringValueCStr(fname);
+    CheckPath(fname, name);
     end = name + RSTRING_LEN(fname);
-    enc = rb_enc_get(fname);
+    enc = rb_str_enc_get(fname);
     root = skiproot(name, end, enc);
 #ifdef DOSISH_UNC
     if (root > name + 1 && isdirsep(*name))
@@ -5077,24 +5091,21 @@ rb_file_dirname_n(VALUE fname, int n)
         }
     }
     if (p == name) {
-        dirname = rb_str_new(".", 1);
-        rb_enc_copy(dirname, fname);
-        return dirname;
+        return rb_enc_str_new(".", 1, enc);
     }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end, enc);
-        dirname = rb_str_new(name, 3);
+        dirname = rb_enc_str_new(name, 3, enc);
         rb_str_cat(dirname, top, p - top);
     }
     else
 #endif
-    dirname = rb_str_new(name, p - name);
+    dirname = rb_enc_str_new(name, p - name, enc);
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && root == name + 2 && p - name == 2)
         rb_str_cat(dirname, ".", 1);
 #endif
-    rb_enc_copy(dirname, fname);
     return dirname;
 }
 
