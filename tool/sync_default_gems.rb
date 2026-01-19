@@ -861,13 +861,10 @@ module SyncDefaultGems
       REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
-    if ARGV[1] == "release"
-      REPOSITORIES.each_key do |gem|
-        update_default_gems(gem, release: true)
-        sync_default_gems(gem)
-      end
-    else
-      REPOSITORIES.each_key {|gem| sync_default_gems(gem)}
+    REPOSITORIES.each_key do |gem|
+      next if ["Onigmo"].include?(gem)
+      update_default_gems(gem, release: true) if ARGV[1] == "release"
+      sync_default_gems(gem)
     end
   when "list"
     ARGV.shift
