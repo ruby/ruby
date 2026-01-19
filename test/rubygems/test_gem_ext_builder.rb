@@ -250,7 +250,7 @@ install:
       assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
   end
-  
+
   def test_build_extensions_none
     use_ui @ui do
       @builder.build_extensions
