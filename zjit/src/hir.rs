@@ -5748,7 +5748,44 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         }
                     }
                 }
-            } else {
+            } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
+                if get_option!(stats) {
+                    let iseq_insn_idx = exit_state.insn_idx;
+                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(iseq_insn_idx) {
+                        if let [block_handler_distribution] = &operand_types {
+                            let summary = TypeDistributionSummary::new(&block_handler_distribution);
+
+                            if summary.is_monomorphic() {
+                                let block_handler = summary.bucket(0).class();
+                                if block_handler == VALUE(0) {
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
+                                } else if (block_handler.0 & 0x03) == 0x01 {
+                                    // Tagged iseq block (low bits = 01)
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_iseq));
+                                } else if (block_handler.0 & 0x03) == 0x03 {
+                                    // Tagged ifunc block (low bits = 11)
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_ifunc));
+                                } else if block_handler.symbol_p() {
+                                    // Symbol block
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_symbol));
+                                } else if unsafe { rb_obj_is_proc(block_handler).test() } {
+                                    // Proc block
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_proc));
+                                }
+                            } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
+                              fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_polymorphic));
+                            } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
+                              fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_megamorphic));
+                            }
+                        } else {
+                            fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_no_profiles));
+                        }
+                    } else {
+                        fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_no_profiles));
+                    }
+                }
+            }
+            else {
                 profiles.profile_stack(&exit_state);
             }
 

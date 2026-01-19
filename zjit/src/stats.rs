@@ -421,6 +421,15 @@ make_counters! {
     invokeblock_handler_polymorphic,
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
+
+    getblockparamproxy_handler_iseq,
+    getblockparamproxy_handler_ifunc,
+    getblockparamproxy_handler_symbol,
+    getblockparamproxy_handler_proc,
+    getblockparamproxy_handler_nil,
+    getblockparamproxy_handler_polymorphic,
+    getblockparamproxy_handler_megamorphic,
+    getblockparamproxy_handler_no_profiles,
 }
 
 /// Increase a counter by a specified amount
