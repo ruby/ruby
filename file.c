@@ -3693,7 +3693,6 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 #endif
 }
 
-#define strrdirsep rb_enc_path_last_separator
 char *
 rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
 {
@@ -3710,6 +3709,30 @@ rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
         }
     }
     return last;
+}
+
+static inline char *
+strrdirsep(const char *path, const char *end, rb_encoding *enc)
+{
+    if (RB_LIKELY(enc == NULL)) {
+        const char *cursor = end - 1;
+
+        while (isdirsep(cursor[0])) {
+            cursor--;
+        }
+
+        while (cursor >= path) {
+            if (isdirsep(cursor[0])) {
+                while (cursor > path && isdirsep(cursor[-1])) {
+                    cursor--;
+                }
+                return (char *)cursor;
+            }
+            cursor--;
+        }
+        return NULL;
+    }
+    return rb_enc_path_last_separator(path, end, enc);
 }
 
 static char *
@@ -5036,6 +5059,15 @@ rb_file_dirname(VALUE fname)
     return rb_file_dirname_n(fname, 1);
 }
 
+static inline rb_encoding *
+path_enc_get(VALUE str)
+{
+    if (RB_LIKELY(rb_str_enc_fastpath(str))) {
+        return NULL;
+    }
+    return rb_str_enc_get(str);
+}
+
 static VALUE
 rb_file_dirname_n(VALUE fname, int n)
 {
@@ -5048,7 +5080,7 @@ rb_file_dirname_n(VALUE fname, int n)
     if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
     CheckPath(fname, name);
     end = name + RSTRING_LEN(fname);
-    enc = rb_str_enc_get(fname);
+    enc = path_enc_get(fname);
     root = skiproot(name, end, enc);
 #ifdef DOSISH_UNC
     if (root > name + 1 && isdirsep(*name))
@@ -5082,7 +5114,12 @@ rb_file_dirname_n(VALUE fname, int n)
                     if (i == n) i = 0;
                 }
                 else {
-                    Inc(p, end, enc);
+                    if (RB_UNLIKELY(enc)) {
+                        Inc(p, end, enc);
+                    }
+                    else {
+                        p++;
+                    }
                 }
             }
             p = seps[i];
@@ -5090,18 +5127,19 @@ rb_file_dirname_n(VALUE fname, int n)
             break;
         }
     }
+
     if (p == name) {
-        return rb_enc_str_new(".", 1, enc);
+        return rb_enc_str_new(".", 1, rb_str_enc_get(fname));
     }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end, enc);
-        dirname = rb_enc_str_new(name, 3, enc);
+        dirname = rb_enc_str_new(name, 3, rb_str_enc_get(fname));
         rb_str_cat(dirname, top, p - top);
     }
     else
 #endif
-    dirname = rb_enc_str_new(name, p - name, enc);
+    dirname = rb_enc_str_new(name, p - name, rb_str_enc_get(fname));
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && root == name + 2 && p - name == 2)
         rb_str_cat(dirname, ".", 1);
