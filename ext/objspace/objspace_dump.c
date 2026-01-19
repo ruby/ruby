@@ -572,18 +572,17 @@ dump_object(VALUE obj, struct dump_config *dc)
         }
         break;
 
-      case T_DATA:
-        if (RTYPEDDATA_P(obj)) {
-            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-            dump_append(dc, ", \"struct\":\"");
-            dump_append(dc, type->wrap_struct_name);
-            dump_append(dc, "\"");
-            if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY) &&
-                    type->function.dfree != RUBY_DEFAULT_FREE) {
-                dump_append(dc, ", \"free_immediately\":false");
-            }
+      case T_DATA: {
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+        dump_append(dc, ", \"struct\":\"");
+        dump_append(dc, type->wrap_struct_name);
+        dump_append(dc, "\"");
+        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY) &&
+                type->function.dfree != RUBY_DEFAULT_FREE) {
+            dump_append(dc, ", \"free_immediately\":false");
         }
         break;
+      }
 
       case T_FLOAT:
         dump_append(dc, ", \"value\":\"");
