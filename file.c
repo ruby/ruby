@@ -5074,8 +5074,6 @@ rb_file_dirname_n(VALUE fname, int n)
     const char *name, *root, *p, *end;
     VALUE dirname;
     rb_encoding *enc;
-    VALUE sepsv = 0;
-    const char **seps;
 
     if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
     CheckPath(fname, name);
@@ -5093,33 +5091,13 @@ rb_file_dirname_n(VALUE fname, int n)
         p = root;
     }
     else {
-        int i;
-        switch (n) {
-          case 0:
-            p = end;
-            break;
-          case 1:
-            if (!(p = strrdirsep(root, end, enc))) p = root;
-            break;
-          default:
-            seps = ALLOCV_N(const char *, sepsv, n);
-            for (i = 0; i < n; ++i) seps[i] = root;
-            i = 0;
-            for (p = root; p < end; ) {
-                if (isdirsep(*p)) {
-                    const char *tmp = p++;
-                    while (p < end && isdirsep(*p)) p++;
-                    if (p >= end) break;
-                    seps[i++] = tmp;
-                    if (i == n) i = 0;
-                }
-                else {
-                    Inc(p, end, enc);
-                }
+        p = end;
+        while (n) {
+            if (!(p = strrdirsep(root, p, enc))) {
+                p = root;
+                break;
             }
-            p = seps[i];
-            ALLOCV_END(sepsv);
-            break;
+            n--;
         }
     }
 
